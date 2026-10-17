@@ -22,7 +22,7 @@
     "docs:references:check": "node tooling/documentation/generate.mjs --check",
     "architecture": "depcruise --config .dependency-cruiser.mjs --include-only \"^(apps|packages|tooling|infra)/|^(eslint\\.config|\\.dependency-cruiser)\" .",
     "architecture:test": "node --test tooling/validate/architecture.test.mjs",
-    "docs:check": "node tooling/validate/docs.ts",
+    "docs:check": "node tooling/validate/docs.ts && node --test tooling/validate/docs.test.mjs",
     "agents:check": "node tooling/validate/agent-instructions.ts",
     "agents:test": "node --test tooling/validate/agent-instructions.test.ts",
     "env:example:check": "node tooling/validate/env-example.ts",
