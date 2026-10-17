@@ -1,4 +1,4 @@
-import { createApiClient } from "@orion/sdk";
+import { createApiClient } from "@teluni/sdk";
 import { loadClientConfig } from "./config.js";
 
 // Codes the shared API runtime can return. Modules pass their own codes when

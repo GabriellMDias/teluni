@@ -1,9 +1,20 @@
 {
   "schemaVersion": 2,
-  "kind": "foundation",
-  "name": "Orion",
+  "kind": "project",
+  "name": "Teluni",
+  "packageScope": "@teluni",
   "repository": {
-    "url": "https://github.com/GabriellMDias/Orion",
+    "url": "https://github.com/GabriellMDias/teluni",
     "defaultBranch": "main"
+  },
+  "foundation": {
+    "name": "Orion",
+    "repository": {
+      "url": "https://github.com/GabriellMDias/Orion",
+      "defaultBranch": "main"
+    },
+    "remote": "orion-upstream",
+    "initializedFromCommit": "53bcc705a9f68f01aa1bbea3a0f4df4a009577ea",
+    "baselineCommit": "53bcc705a9f68f01aa1bbea3a0f4df4a009577ea"
   }
 }

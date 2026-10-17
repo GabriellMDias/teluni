@@ -1,14 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="#127362">
-  <defs>
-    <path id="arm" d="M57 47 53 15Q52.5 11 56.5 11H71.5Q75.5 11 75 15L71 47Z" />
-  </defs>
-  <path fill-rule="evenodd" d="M55.72 44H72.28L84 55.72V72.28L72.28 84H55.72L44 72.28V55.72ZM59.44 53 53 59.44V68.56L59.44 75H68.56L75 68.56V59.44L68.56 53Z" />
-  <use href="#arm" />
-  <use href="#arm" transform="rotate(45 64 64)" />
-  <use href="#arm" transform="rotate(90 64 64)" />
-  <use href="#arm" transform="rotate(135 64 64)" />
-  <use href="#arm" transform="rotate(180 64 64)" />
-  <use href="#arm" transform="rotate(225 64 64)" />
-  <use href="#arm" transform="rotate(270 64 64)" />
-  <use href="#arm" transform="rotate(315 64 64)" />
+  <path fill-rule="evenodd" d="M36 16H92Q112 16 112 36V92Q112 112 92 112H36Q16 112 16 92V36Q16 16 36 16ZM64 40A24 24 0 1 0 64 88A24 24 0 1 0 64 40Z" />
 </svg>

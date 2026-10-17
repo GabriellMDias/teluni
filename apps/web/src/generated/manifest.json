@@ -1,97 +1,8 @@
 {
   "version": 1,
-  "title": "Orion Living Documentation",
-  "api": { "title": "Orion API", "version": "1.0.0" },
+  "title": "Teluni Living Documentation",
+  "api": { "title": "Teluni API", "version": "1.0.0" },
   "entries": [
-    {
-      "id": "api/approveApprovalRequest",
-      "kind": "api",
-      "title": "approveApprovalRequest",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "POST /approval-requests/{id}/approve",
-      "method": "POST",
-      "path": "/approval-requests/{id}/approve",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "request", "text": "Request body", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/approveApprovalRequest.json"
-    },
-    {
-      "id": "api/cancelApprovalRequest",
-      "kind": "api",
-      "title": "cancelApprovalRequest",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "POST /approval-requests/{id}/cancel",
-      "method": "POST",
-      "path": "/approval-requests/{id}/cancel",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "request", "text": "Request body", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/cancelApprovalRequest.json"
-    },
-    {
-      "id": "api/createApprovalRequest",
-      "kind": "api",
-      "title": "createApprovalRequest",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "POST /approval-requests",
-      "method": "POST",
-      "path": "/approval-requests",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "request", "text": "Request body", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/createApprovalRequest.json"
-    },
-    {
-      "id": "api/editApprovalRequestDraft",
-      "kind": "api",
-      "title": "editApprovalRequestDraft",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "PUT /approval-requests/{id}/draft",
-      "method": "PUT",
-      "path": "/approval-requests/{id}/draft",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "request", "text": "Request body", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/editApprovalRequestDraft.json"
-    },
-    {
-      "id": "api/getApprovalRequest",
-      "kind": "api",
-      "title": "getApprovalRequest",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "GET /approval-requests/{id}",
-      "method": "GET",
-      "path": "/approval-requests/{id}",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/getApprovalRequest.json"
-    },
     {
       "id": "api/getLiveness",
       "kind": "api",
@@ -144,69 +55,6 @@
       "file": "pages/api/getStartupHealth.json"
     },
     {
-      "id": "api/listApprovalRequests",
-      "kind": "api",
-      "title": "listApprovalRequests",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "GET /approval-requests",
-      "method": "GET",
-      "path": "/approval-requests",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/listApprovalRequests.json"
-    },
-    {
-      "id": "api/rejectApprovalRequest",
-      "kind": "api",
-      "title": "rejectApprovalRequest",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "POST /approval-requests/{id}/reject",
-      "method": "POST",
-      "path": "/approval-requests/{id}/reject",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "request", "text": "Request body", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/rejectApprovalRequest.json"
-    },
-    {
-      "id": "api/submitApprovalRequest",
-      "kind": "api",
-      "title": "submitApprovalRequest",
-      "group": "Approval Requests",
-      "source": "docs/generated/api/openapi.json",
-      "summary": "POST /approval-requests/{id}/submit",
-      "method": "POST",
-      "path": "/approval-requests/{id}/submit",
-      "tags": ["Approval Requests"],
-      "headings": [
-        { "id": "parameters", "text": "Parameters", "level": 2 },
-        { "id": "request", "text": "Request body", "level": 2 },
-        { "id": "responses", "text": "Responses", "level": 2 },
-        { "id": "explorer", "text": "Try this operation", "level": 2 }
-      ],
-      "file": "pages/api/submitApprovalRequest.json"
-    },
-    {
-      "id": "database/approval_requests",
-      "kind": "database",
-      "title": "approval_requests",
-      "group": "Approval Request",
-      "source": "docs/generated/database/schema.md",
-      "summary": "Canonical current state of a human-owned Approval Request, from draft through a terminal decision or cancellation.",
-      "headings": [],
-      "file": "pages/database/approval_requests.json"
-    },
-    {
       "id": "components/ErrorNotice",
       "kind": "component",
       "title": "ErrorNotice",
@@ -247,16 +95,6 @@
       "file": "pages/repository/apps/api/README.json"
     },
     {
-      "id": "repository/apps/api/src/features/approval-requests/AGENTS",
-      "kind": "repository",
-      "title": "Approval Request Reference Module",
-      "group": "Agent instructions",
-      "source": "apps/api/src/features/approval-requests/AGENTS.md",
-      "summary": "This module is Orion's executable reference implementation. It exists only in the Orion foundation repository; projects derived from Orion start without it.",
-      "headings": [],
-      "file": "pages/repository/apps/api/src/features/approval-requests/AGENTS.json"
-    },
-    {
       "id": "repository/apps/web/AGENTS",
       "kind": "repository",
       "title": "Web Application Instructions",
@@ -275,16 +113,6 @@
       "summary": "This React/Vite application provides the application shell, a home page, composed product modules, and the Living Documentation Portal. It calls the API only through the…",
       "headings": [],
       "file": "pages/repository/apps/web/README.json"
-    },
-    {
-      "id": "repository/apps/web/src/approval-requests/AGENTS",
-      "kind": "repository",
-      "title": "Approval Request Reference Workflow",
-      "group": "Agent instructions",
-      "source": "apps/web/src/approval-requests/AGENTS.md",
-      "summary": "This browser workflow is part of Orion's foundation-only reference implementation; projects derived from Orion start without it.",
-      "headings": [],
-      "file": "pages/repository/apps/web/src/approval-requests/AGENTS.json"
     },
     {
       "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
@@ -737,36 +565,6 @@
       "file": "pages/repository/docs/database/transactions-and-concurrency.json"
     },
     {
-      "id": "repository/docs/domains/approval-request-implementation",
-      "kind": "repository",
-      "title": "Approval Request Implementation Conventions",
-      "group": "Domain guides",
-      "source": "docs/domains/approval-request-implementation.md",
-      "summary": "This document owns implementation conventions for the reference feature. The business specification owns actors, invariants, and transitions; executable sources own wire and…",
-      "headings": [],
-      "file": "pages/repository/docs/domains/approval-request-implementation.json"
-    },
-    {
-      "id": "repository/docs/domains/approval-request",
-      "kind": "repository",
-      "title": "Approval Request: Reference Feature",
-      "group": "Domain guides",
-      "source": "docs/domains/approval-request.md",
-      "summary": "This is the canonical business specification for Orion’s Approval Request reference feature, implemented by the API, durable PostgreSQL schema, and web interface. It preserves…",
-      "headings": [],
-      "file": "pages/repository/docs/domains/approval-request.json"
-    },
-    {
-      "id": "repository/docs/foundation-acceptance",
-      "kind": "repository",
-      "title": "Development Foundation Acceptance Report",
-      "group": "Project guides",
-      "source": "docs/foundation-acceptance.md",
-      "summary": "This report assesses the Approval Request reference feature against Phase 9 and the completed living-documentation foundation against Phase 11. It does not certify a production…",
-      "headings": [],
-      "file": "pages/repository/docs/foundation-acceptance.json"
-    },
-    {
       "id": "repository/docs/generated/api/errors",
       "kind": "repository",
       "title": "API Error Registry",
@@ -802,29 +600,9 @@
       "title": "Database Reference",
       "group": "Generated references",
       "source": "docs/generated/database/schema.md",
-      "summary": "Canonical current state of a human-owned Approval Request, from draft through a terminal decision or cancellation.",
+      "summary": "No application-owned tables exist yet. Add a module's Prisma model, reviewed migration, and metadata, then regenerate this reference.",
       "headings": [],
       "file": "pages/repository/docs/generated/database/schema.json"
-    },
-    {
-      "id": "repository/docs/human-actions",
-      "kind": "repository",
-      "title": "Human Actions for Implementation",
-      "group": "Project guides",
-      "source": "docs/human-actions.md",
-      "summary": "This checklist records implementation prerequisites of the Orion foundation repository that require a project-owner decision, human-controlled account action, unavailable…",
-      "headings": [],
-      "file": "pages/repository/docs/human-actions.json"
-    },
-    {
-      "id": "repository/docs/implementation-plan",
-      "kind": "repository",
-      "title": "Orion Implementation Plan",
-      "group": "Project guides",
-      "source": "docs/implementation-plan.md",
-      "summary": "This is Orion's living execution plan. It tracks implementation progress of the Orion foundation repository; it does not replace current architectural policy or accepted ADRs.…",
-      "headings": [],
-      "file": "pages/repository/docs/implementation-plan.json"
     },
     {
       "id": "repository/docs/project-derivation",
@@ -835,6 +613,26 @@
       "summary": "This is the practical reference for turning a revision of Orion into a new, independent project and for keeping that project's foundation current: what to decide and provide,…",
       "headings": [],
       "file": "pages/repository/docs/project-derivation.json"
+    },
+    {
+      "id": "repository/docs/project/human-actions",
+      "kind": "repository",
+      "title": "Teluni Human Actions",
+      "group": "Project guides",
+      "source": "docs/project/human-actions.md",
+      "summary": "This checklist records Teluni's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external…",
+      "headings": [],
+      "file": "pages/repository/docs/project/human-actions.json"
+    },
+    {
+      "id": "repository/docs/project/implementation-plan",
+      "kind": "repository",
+      "title": "Teluni Implementation Plan",
+      "group": "Project guides",
+      "source": "docs/project/implementation-plan.md",
+      "summary": "This is Teluni's living execution plan and the current plan for this repository. It tracks product and repository work; the README, current policies, and accepted ADRs govern…",
+      "headings": [],
+      "file": "pages/repository/docs/project/implementation-plan.json"
     },
     {
       "id": "repository/docs/README",
@@ -1089,32 +887,30 @@
     {
       "id": "repository/README",
       "kind": "repository",
-      "title": "Orion",
+      "title": "Teluni",
       "group": "Project guides",
       "source": "README.md",
-      "summary": "Orion is an AI-first engineering foundation for applications maintained collaboratively by humans and AI agents. The repository connects architecture, contracts, schemas,…",
+      "summary": "Teluni is a software product built on the Orion engineering foundation. Its product scope has not been recorded yet; define it under PJ-02 and replace this introduction.",
       "headings": [],
       "file": "pages/repository/README.json"
     }
   ],
   "search": {
     "shards": [
-      { "file": "search/0000.json", "count": 16, "kinds": ["api"] },
       {
-        "file": "search/0001.json",
-        "count": 92,
-        "kinds": ["api", "component", "database", "repository"]
+        "file": "search/0000.json",
+        "count": 97,
+        "kinds": ["api", "component", "repository"]
       },
-      { "file": "search/0002.json", "count": 112, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 130, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 142, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 133, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 87, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 43, "kinds": ["repository"] }
+      { "file": "search/0001.json", "count": 113, "kinds": ["repository"] },
+      { "file": "search/0002.json", "count": 126, "kinds": ["repository"] },
+      { "file": "search/0003.json", "count": 143, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 133, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 92, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 95, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 19, "kinds": ["repository"] }
     ],
-    "count": 1014
+    "count": 926
   }
 }

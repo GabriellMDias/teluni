@@ -1,5 +1,5 @@
 {
-  "name": "@orion/web",
+  "name": "@teluni/web",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@orion/sdk": "workspace:*",
+    "@teluni/sdk": "workspace:*",
     "@tanstack/react-query": "5.103.2",
     "@tanstack/react-router": "1.170.39",
     "react": "19.3.0",

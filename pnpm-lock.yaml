@@ -127,7 +127,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@orion/sdk':
+      '@teluni/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@tanstack/react-query':

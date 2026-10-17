@@ -12,7 +12,3 @@
 | `RATE_LIMITED` | 429 | rate_limit | yes | Too many requests. Try again later. |
 | `INTERNAL_ERROR` | 500 | internal | no | An unexpected error occurred. |
 | `SERVICE_UNAVAILABLE` | 503 | availability | yes | The service is unavailable. |
-| `PERMISSION_DENIED` | 403 | authorization | no | Permission denied. |
-| `APPROVAL_REQUEST_INVALID_STATE` | 409 | conflict | no | The request cannot be changed in its current state. |
-| `RESOURCE_VERSION_CONFLICT` | 409 | conflict | no | The request changed; reload it before trying again. |
-| `IDEMPOTENCY_KEY_REUSED` | 409 | conflict | no | The creation key was used for different content. |

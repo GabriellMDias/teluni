@@ -1,5 +1,5 @@
 {
-  "name": "@orion/api",
+  "name": "@teluni/api",
   "private": true,
   "type": "module",
   "scripts": {
