@@ -4,6 +4,15 @@
     "title": "Teluni Product Documentation",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Reading routes and ownership",
+    "anchor": "reading-routes-and-ownership",
+    "text": "Reading routes and ownership\nQuestion\nCanonical document\nWhat is Teluni, who uses it, and what is the commercial hypothesis?\n[Product vision](product.md)\nWhat belongs in the MVP, and how will it be accepted?\n[MVP requirements and acceptance](mvp.md)\nWhat are the proposed components, modules, entities, and unresolved technical choices?\n[Product architecture](architecture.md)\nHow must publication, local playback, and recovery behave?\n[Offline playback and synchronization](playback-and-sync.md)\nHow can the residential pilot operate and later move to another host?\n[Deployment and migration planning](operations.md)\nWhat must tenancy, identity, data protection, and localization protect?\n[Security and internationalization](security-and-i18n.md)\nWhat could prevent delivery or safe operation?\n[Risks and dependencies](risks.md)\nWhat is the phase sequence and current execution state?\n[Implementation plan](implementation-plan.md)\nWhich decisions or external prerequisites need a human?\n[Human actions](human-actions.md)\nThe owning contributor updates each document with changes to its subject, links related requirements rather than copying them, and regenerates the documentation portal through the [contributing workflow](../contributing.md). Stable requirement, decision, risk, task, and human-action IDs support traceability; they are documentation references, not implemented registries or API identifiers.\n"
+  },
+  {
+    "id": "repository/docs/project/README",
+    "title": "Teluni Product Documentation",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Meaning of status",
     "anchor": "meaning-of-status",
     "text": "Meaning of status\nProduct/design status\nMeaning\n**Decided**\nA product requirement or inherited accepted direction agreed for planning. It does not mean implemented.\n**Proposed**\nA candidate solution or acceptance policy requiring evaluation/review. New ADRs remain `proposed` under the [ADR process](../adr/authoring.md).\n**Pending**\nAn unanswered choice or investigation; no default has been silently selected.\n**Future**\nOutside the MVP and not approved for immediate implementation.\n**Implemented**\nSupported by repository code and verification evidence.\nTask statuses (`pending`, `in progress`, `completed`, `blocked`, `changed`) have the separate meaning defined by the implementation plan. A completed documentation task establishes a specification, not a completed product capability.\n"
@@ -24,7 +33,7 @@
     "kind": "repository",
     "heading": "Teluni Risks and Dependencies",
     "anchor": "teluni-risks-and-dependencies",
-    "text": "Teluni Risks and Dependencies\n[Project documentation](README.md) · [Architecture choices](architecture.md#pending-decisions) · [Human actions](human-actions.md)\nThis register owns product-delivery risks identified from the owner's brief and the repository baseline. They are prospective risks, not claims of discovered production vulnerabilities. Tasks own implementation progress; human actions own actual owner decisions/access. Review this register at each phase gate and after pilot evidence changes assumptions.\nID\nRisk / consequence\nMitigation and verification\nDependency / activation\nR-01\nCross-tenant or branch leakage exposes private media or allows unauthorized publication\nThreat-model data/reference/cache/media boundaries; negative API and database tests before first tenant slice\nD-01/D-02; PJ-03/PJ-08\nR-02\nInterrupted publication, storage exhaustion or power loss corrupts programming\nImmutable staging, verified assets and durable generation recovery; real power/network tests\nD-04/D-05; PJ-09/PJ-11/PJ-12\nR-03\nOffline operation preserves revoked or commercially expired content\nExplicit offline authorization envelope, expiry/default policy and honest unreachable-device state; test expiry and reconnect\nD-03/D-06; PH-09\nR-04\nAndroid TV models differ in codecs, storage, orientation and unattended reboot/startup behavior\nAgree supported hardware/profile/update matrix and test physical devices before support promises\nD-07; PH-08; PJ-12\nR-05\nResidential power, internet/CGNAT, ISP or disk failures make administration/distribution unavailable\nVerify network/host capability and secure ingress, communicate pilot limits, exercise offline continuity and plan funded migration\nD-08; PH-10; PJ-13\nR-06\nDatabase-only or same-host backups cannot restore complete publications after host loss\nOff-host protected database-plus-media backups, consistency/revocation/deletion reconciliation and timed isolated restore\nPH-10/PH-13; PJ-13\nR-07\nIdentity/provider or device-credential mistakes create abuse or unrecoverable enrollment\nEstablished protocols, scoped identities, recovery/revocation design, race/rate-limit tests; no custom crypto\nD-02/D-03; PH-11\nR-08\nVideo traffic/storage/processing and manual support exceed affordable costs\nMeasure upload/download/storage and support burden; local replay avoids repeated streaming but first downloads/updates still consume uplink\nPH-12; PJ-14\nR-09\nThe single candidate pilot biases the product or has unconfirmed demand\nValidate core journeys with the snack bar and later other segments; keep specialized capabilities outside core\nPH-08; PJ-14\nR-10\nUnresolved name/domain, copyright attribution, proprietary material or privacy obligations delay distribution\nApache-2.0 selected for Teluni; preserve inherited rights, verify any named notices and privacy obligations; do not reuse PDT Display property without authorization\nPH-06/PH-07/PH-13/PH-14\nR-11\nOld/offline players cannot interpret new manifests or reconnect after a host move\nExplicit compatibility window, endpoint overlap, controlled app update/recovery and migration rehearsal\nD-04/D-07/D-08; PJ-11/PJ-12/PJ-13\nR-12\nProduct expansion overwhelms MVP delivery and introduces paid services prematurely\nPhase exit criteria, device-group/campaign scope review, no mandatory AI/payment/ERP dependency\nD-06; PH-09; PJ-15/PJ-16\nR-13\nIncorrect time/locale handling displays wrong schedules or prices\nZone-aware shared fixtures, exact monetary semantics and localized presentation separated from rules\nD-06/D-10/D-11; PJ-10/PJ-15\nR-14\nProposals, inherited CI configuration or written requirements are mistaken for working product/remote acceptance\nExplicit status vocabulary, code-based baseline, local gate evidence and separate remote/hardware/pilot verification\nPJ-01; phase gates\nNo numeric probability, severity score, SLA, cost ceiling or residual-risk acceptance is fabricated. Quantify these when pilot/hardware/network evidence is available; the project owner accepts operational/commercial exposure before real-customer operation. None prevents completing the current documentation stage.\n"
+    "text": "Teluni Risks and Dependencies\n[Project documentation](README.md) · [Architecture choices](architecture.md#pending-decisions) · [Human actions](human-actions.md)\nThis register owns product-delivery risks identified from the owner's brief and the repository baseline. They are prospective risks, not claims of discovered production vulnerabilities. Tasks own implementation progress; human actions own actual owner decisions/access. Review this register at each phase gate and after pilot evidence changes assumptions.\nID\nRisk / consequence\nMitigation and verification\nDependency / activation\nR-01\nCross-tenant or branch leakage exposes private media or allows unauthorized publication\nThreat-model data/reference/cache/media boundaries; negative API and database tests before first tenant slice\nD-01/D-02; PJ-03/PJ-08\nR-02\nInterrupted publication, storage exhaustion or power loss corrupts programming\nImmutable staging, verified assets and durable generation recovery; real power/network tests\nD-04/D-05; PJ-09/PJ-11/PJ-12\nR-03\nOffline operation preserves revoked or commercially expired content\nExplicit offline authorization envelope, expiry/default policy and honest unreachable-device state; test expiry and reconnect\nD-03/D-06; PH-09\nR-04\nAndroid TV models differ in codecs, storage, orientation and unattended reboot/startup behavior\nAgree supported hardware/profile/update matrix and test physical devices before support promises\nD-07; PH-08; PJ-12\nR-05\nResidential power, internet/CGNAT, ISP or disk failures make administration/distribution unavailable\nVerify network/host capability and secure ingress, communicate pilot limits, exercise offline continuity and plan funded migration\nD-08; PH-10; PJ-13\nR-06\nDatabase-only or same-host backups cannot restore complete publications after host loss\nOff-host protected database-plus-media backups, consistency/revocation/deletion reconciliation and timed isolated restore\nPH-10/PH-13; PJ-13\nR-07\nIdentity/provider or device-credential mistakes create abuse or unrecoverable enrollment\nEstablished protocols, scoped identities, recovery/revocation design, race/rate-limit tests; no custom crypto\nD-02/D-03; PH-11\nR-08\nVideo traffic/storage/processing and manual support exceed affordable costs\nMeasure upload/download/storage and support burden; local replay avoids repeated streaming but first downloads/updates still consume uplink\nPH-12; PJ-14\nR-09\nThe single candidate pilot biases the product or has unconfirmed demand\nValidate core journeys with the snack bar and later other segments; keep specialized capabilities outside core\nPH-08; PJ-14\nR-10\nUnresolved name/domain, copyright attribution, proprietary material or privacy obligations delay distribution\nApache-2.0 selected for Teluni; preserve inherited rights, verify any named notices and privacy obligations; do not reuse PDT Display property without authorization\nPH-06/PH-07/PH-13/PH-14\nR-11\nOld/offline players cannot interpret new manifests or reconnect after a host move\nExplicit compatibility window, endpoint overlap, controlled app update/recovery and migration rehearsal\nD-04/D-07/D-08; PJ-11/PJ-12/PJ-13\nR-12\nProduct expansion overwhelms MVP delivery and introduces paid services prematurely\nPhase exit criteria, device-group/campaign scope review, no mandatory AI/payment/ERP dependency\nD-06; PH-09; PJ-15/PJ-16\nR-13\nIncorrect time/locale handling displays wrong schedules or prices\nZone-aware shared fixtures, exact monetary semantics and localized presentation separated from rules\nD-06/D-10/D-11; PJ-10/PJ-15\nR-14\nProposals, inherited CI configuration or written requirements are mistaken for working product/remote acceptance\nExplicit status vocabulary, code-based baseline, local gate evidence and separate remote/hardware/pilot verification\nPJ-01; phase gates\nR-15\nExisting high-severity `source-map-js` advisory may expose affected source-map processing to event-loop denial of service\nTriage [Dependabot alert #1](https://github.com/GabriellMDias/teluni/security/dependabot/1), identify affected dependency paths and validate a compatible fix; controls are active but this alert remains open as of 2026-10-17\nPJ-18; outside the licensing/security-activation change\nNo numeric probability, severity score, SLA, cost ceiling or residual-risk acceptance is fabricated. Quantify these when pilot/hardware/network evidence is available; the project owner accepts operational/commercial exposure before real-customer operation. None prevents completing the current documentation stage.\n"
   },
   {
     "id": "repository/docs/project/security-and-i18n",
@@ -826,50 +835,5 @@
     "heading": "Runbook: Procedure Title",
     "anchor": "runbook-procedure-title",
     "text": "Runbook: Procedure Title\n**Owner:** actual responsible owner\n**Status:** active only after the procedure exists and is verified\n**Environment / applicability:**\n**Related alerts:**\n**Required access:**\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md). Replace prompts with current, verified details; this template is not an executable procedure or an authorization grant.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Purpose",
-    "anchor": "purpose",
-    "text": "Purpose\nState the one operational condition or task handled by this procedure.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Trigger / Symptoms",
-    "anchor": "trigger--symptoms",
-    "text": "Trigger / Symptoms\nIdentify observable alerts, errors, or symptoms that activate the procedure, and cases where it must not be used.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Impact",
-    "anchor": "impact",
-    "text": "Impact\nDescribe affected capabilities, scope, urgency, and data/security risk, including any known limit on impact.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Preconditions",
-    "anchor": "preconditions",
-    "text": "Preconditions\nVerify the target environment and observed condition.\nVerify required access and authorization for the planned actions.\nVerify procedure-specific safety conditions and current state.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Diagnosis",
-    "anchor": "diagnosis",
-    "text": "Diagnosis\nOrder low-risk inspection before mutation: relevant metrics, alerts, logs, traces, errors, and bounded read-only checks. Establish affected scope and whether deployment, migration, configuration, or dependency changes contributed. Include expected results and evidence-based branches. Add provider commands only when tooling exists; continue only while evidence matches the procedure.\n"
   }
 ]

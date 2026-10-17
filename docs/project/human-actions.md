@@ -61,14 +61,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-04
 
-- [ ] **Enable and verify applicable GitHub security controls.**
+- [x] **Enable and verify applicable GitHub security controls.**
 
-**Status:** in progress. **Owner:** repository administrator.
+**Status:** completed. **Owner:** repository administrator.
 **Dependency / trigger:** PH-01.
 **Request and reason:** Enable available code scanning, secret scanning and push protection, dependency graph, and vulnerability alerts, and set the Actions variable `DEPENDENCY_REVIEW_ENABLED=true` so the dependency-review job runs. Record entitlement limits for this repository's visibility and plan.
 **Configuration:** Actions variable `DEPENDENCY_REVIEW_ENABLED` (non-secret).
 **Verification:** Inspect effective security settings and a pull-request run in which dependency review executed and the aggregate gate passed.
-**Evidence / blocker:** 2026-10-17: owner confirmed setup. GitHub API verified this public repository has secret scanning and push protection enabled, vulnerability alerts enabled (HTTP 204), an available dependency graph/SBOM, CodeQL default setup configured, and Actions variable `DEPENDENCY_REVIEW_ENABLED=true`. [CodeQL run 39079537512](https://github.com/GabriellMDias/teluni/actions/runs/39079537512) passed analysis for Actions and JavaScript/TypeScript. Earlier PR runs skipped dependency review before the variable was set. Remaining verification: a new PR run must execute dependency review and pass the aggregate gate. Dependabot automatic security-update PRs are disabled; they are not an acceptance requirement and do not replace Renovate.
+**Evidence / blocker:** 2026-10-17: owner confirmed setup. GitHub API verified this public repository has secret scanning and push protection enabled, vulnerability alerts enabled (HTTP 204), an available dependency graph/SBOM, CodeQL default setup configured, and Actions variable `DEPENDENCY_REVIEW_ENABLED=true`. [CodeQL run 39079537512](https://github.com/GabriellMDias/teluni/actions/runs/39079537512) passed analysis for Actions and JavaScript/TypeScript. Earlier PR runs skipped dependency review before the variable was set. [PR #3 run 39080134706](https://github.com/GabriellMDias/teluni/actions/runs/39080134706) passed `Validate`, `Dependency review` and `Orion required gate` for head `e92673af60fe99d23023aaedccfde004a6984c16`, completing the required PR verification. The existing high-severity [Dependabot alert #1](https://github.com/GabriellMDias/teluni/security/dependabot/1) for `source-map-js` remains open and is separately tracked as PJ-18; enabled controls do not imply a vulnerability-free dependency tree. Dependabot automatic security-update PRs are disabled; they are not an acceptance requirement and do not replace Renovate.
 
 ## PH-05
 
