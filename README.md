@@ -1,6 +1,10 @@
 # Teluni
 
-Teluni is a software product built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. Its product scope has not been recorded yet; define it under [PJ-02](docs/project/implementation-plan.md#current-work) and replace this introduction.
+Teluni is a planned multi-tenant digital signage SaaS built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. It will let companies centrally manage images, videos, playlists and schedules on displays, with reliable offline playback. Brazil is the initial market, with international use anticipated. The core is intended for multiple business segments, from a single shop to a branch network.
+
+**Every screen. One place.** · **Todas as suas telas. Um só lugar.**
+
+Start with the [product documentation](docs/project/README.md) for the vision, MVP acceptance criteria, proposed architecture, risks and delivery phases. Teluni is the intended identity; trademark/domain verification and commercial pricing remain pending.
 
 ## Current state
 
@@ -8,10 +12,13 @@ This repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f0
 
 The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.
 
+The initial product brief is documented. Tenant workflows, media/programming/publication modules, the Android TV player, and production deployment remain unimplemented. The [product architecture](docs/project/architecture.md) and ADR-0018 through ADR-0021 are proposals for review; this documentation does not authorize their implementation.
+
 ## Start here
 
 | Task | Entry point |
 | --- | --- |
+| Understand Teluni's product, MVP, proposed modules, risks and roadmap | [Product documentation](docs/project/README.md) |
 | Find the policy for a change | [Documentation task index](docs/README.md) |
 | Understand contributor and agent obligations | [Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md) |
 | Understand architecture and code placement | [Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md) |

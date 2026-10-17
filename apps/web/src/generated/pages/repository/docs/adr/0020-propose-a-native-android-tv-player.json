@@ -1,0 +1,30 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0020-propose-a-native-android-tv-player.md",
+  "title": "ADR-0020: Propose a Native Android TV Player",
+  "html": "<p><strong>Status:</strong> proposed\n<strong>Date:</strong> 2026-10-17</p>\n<h2 id=\"context\">Context</h2>\n<p>The intended first player is Android TV, with continuous image/video playback, local persistence, temporary-code pairing and offline recovery. Orion supplies TypeScript API/web foundations but deliberately does not select a mobile/native stack. No Android application or hardware validation exists in Teluni.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Propose an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.</p>\n<p>Minimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. This proposal does not imply every Android TV or Smart TV is supported.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>This is the owner's preferred initial direction and matches the requested native device lifecycle and local-playback responsibilities. There are no completed benchmarks or device tests establishing that it meets the reliability envelope. A separate runtime is justified by installation and hardware lifecycle, while backend distribution is not.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<ul>\n<li><strong>Web player first:</strong> remains a possible future platform, but browser lifecycle, storage and unattended playback would need separate validation. It is not the requested MVP target.</li>\n<li><strong>Other Smart TV or dedicated-computer players:</strong> could expand coverage later; validating multiple platforms now would widen MVP support and test obligations without pilot evidence.</li>\n</ul>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Gives the first player a clear device-specific owner and keeps interoperable contracts with Orion.</li>\n<li>Allows targeted validation of local storage, playback and restart behavior on pilot hardware.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Adds Android build/signing/distribution, hardware testing and old-client compatibility responsibilities.</li>\n<li>Media capability and unattended behavior must be verified per supported device; TypeScript tooling cannot establish them.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>Acceptance requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/project/architecture\">Product components and pending decisions</a></li>\n<li><a href=\"/docs/repository/docs/project/mvp\">MVP acceptance</a></li>\n<li><a href=\"/docs/repository/docs/architecture/application-boundaries#additional-runtime-boundaries\">Additional runtime boundaries</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0020-propose-a-native-android-tv-player",
+      "text": "ADR-0020: Propose a Native Android TV Player",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

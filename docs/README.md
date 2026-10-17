@@ -15,6 +15,7 @@ Choose the route relevant to the change, then use the policy's headings and sour
 
 | Task | Authoritative policy |
 | --- | --- |
+| Understand Teluni's vision, MVP, proposed architecture, offline behavior and delivery phases | [Teluni product documentation](project/README.md) |
 | Execute or track implementation work | The implementation plan linked from the README's [Current state](../README.md#current-state) |
 | Start a new project from Orion, check its provenance, or upgrade its Orion baseline | [Start and upgrade a project from Orion](project-derivation.md) |
 | Name a stable Orion foundation release or assess derived-project compatibility | [Foundation versioning](versioning.md) |
