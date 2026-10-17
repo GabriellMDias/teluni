@@ -39,14 +39,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-02
 
-- [ ] **Require pull requests and the CI gate on this repository's default branch, and keep merge commits available.**
+- [x] **Require pull requests and the CI gate on this repository's default branch, and keep merge commits available.**
 
-**Status:** in progress. **Owner:** repository administrator.
+**Status:** completed. **Owner:** repository administrator.
 **Dependency / trigger:** PH-01; [PJ-01](implementation-plan.md#current-work).
 **Request and reason:** Protect `main`: require pull requests and the `Orion required gate` status check, block force pushes and deletion, and review bypass actors. Keep merge commits allowed and do not require linear history on `main`, because Orion upgrade pull requests must be merged with a merge commit to preserve upstream ancestry ([upgrade workflow](../project-derivation.md#upgrade-to-a-newer-orion-revision)). Branch protection is repository administration that local automation cannot perform.
 **Configuration:** none beyond the repository ruleset and merge settings.
 **Verification:** Read the effective rules for `main` and confirm the required check name matches [CI](../../.github/workflows/ci.yml) and that no linear-history requirement applies; confirm merge commits are allowed; a successful required-gate run appears on a pull request.
-**Evidence / blocker:** 2026-10-17: verified through the GitHub API that active [ruleset 25323352, Protect main](https://github.com/GabriellMDias/teluni/rules/25323352) targets the default branch `main`, requires pull requests and the `Orion required gate` check from GitHub Actions (integration 15368), blocks deletion and non-fast-forward updates, has no bypass actors, and does not require linear history. Merge commits are allowed in both the repository settings and the ruleset. [CI run 39077703462](https://github.com/GabriellMDias/teluni/actions/runs/39077703462) succeeded for push commit `c9193734d5f5de22883af433d48006805fb86604`, including `Validate` and `Orion required gate`. No pull requests exist yet. Configuration verification is complete; the remaining acceptance evidence is a successful required-gate run on a pull request. No repository settings were changed during verification.
+**Evidence / blocker:** 2026-10-17: verified through the GitHub API that active [ruleset 25323352, Protect main](https://github.com/GabriellMDias/teluni/rules/25323352) targets the default branch `main`, requires pull requests and the `Orion required gate` check from GitHub Actions (integration 15368), blocks deletion and non-fast-forward updates, has no bypass actors, and does not require linear history. Merge commits are allowed in both the repository settings and the ruleset. [CI run 39077703462](https://github.com/GabriellMDias/teluni/actions/runs/39077703462) succeeded for push commit `c9193734d5f5de22883af433d48006805fb86604`, including `Validate` and `Orion required gate`. [PR #2](https://github.com/GabriellMDias/teluni/pull/2) then exercised the pull-request workflow: [run 39078757654](https://github.com/GabriellMDias/teluni/actions/runs/39078757654) passed `Validate` and `Orion required gate` for head commit `98a87a896fce6126566ba1521c8954b1fdb5866a`. Configuration and successful PR-gate verification are complete. No repository settings were changed during verification.
 
 ## PH-03
 
