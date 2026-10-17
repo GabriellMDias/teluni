@@ -1053,6 +1053,105 @@
     "text": "References\n[Deployment and migration planning](../project/operations.md)\n[Production access](../security/production-access.md)\n[Configuration](../architecture/configuration.md)\n[Data retention and recovery](../security/data-retention.md)\n"
   },
   {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0022: License Teluni under Apache-2.0",
+    "anchor": "adr-0022-license-teluni-under-apache-20",
+    "text": "ADR-0022: License Teluni under Apache-2.0\n**Status:** accepted\n**Date:** 2026-10-17\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nTeluni is derived from Orion, whose source already carries Apache-2.0 under ADR-0016. That foundation decision explicitly leaves independently developed product licensing to the product owner. Teluni's owner explicitly approved Apache License 2.0 for Teluni on 2026-10-17; this record documents that owner-authorized decision. The repository already contains the standard root license text, but its README and human actions previously said product licensing was undecided.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nLicense Teluni repository source and documentation, including independently developed product material, under the unmodified Apache License, Version 2.0. Retain the root `LICENSE` as the canonical terms and use SPDX identifier `Apache-2.0` in the root, API, web and SDK package metadata. Update README and project documentation to make the scope explicit.\nPreserve Orion provenance and its applicable rights/notices. Do not relabel third-party dependencies or separately licensed material. Do not invent a named copyright holder or NOTICE without confirmed attribution. This decision concerns repository licensing; SaaS pricing, support and customer service terms remain separate product decisions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThe owner explicitly selected Apache-2.0 rather than delegating the legal choice to an agent. Applying the existing standard text consistently to Teluni resolves the previous distinction between inherited foundation licensing and undecided product licensing, without changing architecture or runtime behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Keep product licensing undecided",
+    "anchor": "keep-product-licensing-undecided",
+    "text": "Keep product licensing undecided\nThis was the documented state. It no longer reflects the owner's explicit instruction and leaves the intended licensing scope unclear.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nTeluni's source/documentation license is explicit and consistent with the standard license file and package metadata.\nThe product decision remains separate from the historical Orion ADR and commercial pricing decisions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nDistribution must preserve applicable license/attribution obligations; the choice does not determine third-party rights or authorize reuse of PDT Display material.\nNamed attribution still needs confirmed ownership evidence if such notices are added.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo database migration, dependency upgrade, application feature or deployment change is required. Existing tags/history and the canonical license text remain unchanged. PH-06 records the owner's selection; PH-14 tracks conditional named-attribution work.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Canonical license](../../LICENSE)\n[README licensing scope](../../README.md#license)\n[Orion license decision](0016-license-the-orion-foundation-under-apache-2-0.md)\n[Product human actions](../project/human-actions.md#ph-06)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -1140,7 +1239,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nPropose Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nPropose Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nPropose a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nPropose a Single-Host Pilot with Portable Persistent Storage\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nPropose Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nPropose Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nPropose a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nPropose a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1456,32 +1555,5 @@
     "heading": "Compatibility and documentation",
     "anchor": "compatibility-and-documentation",
     "text": "Compatibility and documentation\nIdentify actual consumers and how independently they deploy. Follow [API versioning](versioning.md) for structural, semantic, authorization, error, ordering, retry, and side-effect changes. Prefer compatible evolution over new versions, and keep deprecated behavior functional until its removal conditions are satisfied. Internal consumers can have real compatibility commitments; mobile/desktop consumers can lag.\nGenerate reference facts from canonical contracts and maintain authored explanations for intent the schema cannot express. Use synthetic examples that conform to current contracts. The [Living Documentation Portal](../architecture/living-documentation.md) presents generated facts without becoming another source. A contributor should navigate operation → contract → application owner → authorization → implementation → tests without reverse engineering framework code.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "New API Operation Checklist",
-    "anchor": "new-api-operation-checklist",
-    "text": "New API Operation Checklist\nBefore adding or changing an operation:\nIdentify the capability, owner, actual consumers, and compatibility commitments; reuse existing patterns and semantic errors.\nDefine input/output field meaning, bounds, classification, omission/null behavior, stable operation identity, authentication, authorization, and expected failures.\nSpecify duplicate/concurrent/retry behavior, synchronous versus asynchronous completion, external effects, and pagination/query cost where applicable.\nImplement explicit mapping at the boundary and test validation, serialization, statuses/headers, authentication, denials, hidden resources, and relevant domain behavior through the real HTTP boundary. A policy unit test alone does not prove endpoint enforcement.\nTest security risks proportionally, including mass assignment, oversized inputs, restricted fields, and cross-tenant access where applicable. Preserve actual consumer compatibility commitments.\nRegenerate OpenAPI, SDK, and affected references; run [validation](../validation.md). Current drift checks prove alignment with current sources, not historical consumer compatibility. Review the semantic change as well as the generated diff.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Versioning",
-    "anchor": "api-versioning",
-    "text": "API Versioning\n[Task index](../README.md) · [Cross-system compatibility](../architecture/versioning-and-compatibility.md) · [Release workflow](../database/release-evolution.md) · [Error contract](error-contract.md)\nThis policy owns consumer-facing API evolution. Prefer compatible evolution; create a new API version only when a meaningful incompatibility cannot reasonably be handled within the existing contract. Versions create parallel contracts, SDKs, documentation, tests, support, and security-maintenance obligations.\n[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable contracts and generated OpenAPI/SDK tooling. The current API, SDK, and web consumer evolve together in this repository. No independently released consumer baseline, public support window, or API version-routing scheme is recorded. Current-source freshness checks exist; historical breaking-change detection is conditional on a real released baseline, recorded as a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Released Contract",
-    "anchor": "released-contract",
-    "text": "Released Contract\nA contract is a compatibility commitment once supported consumers depend on it, even when its URL has no numeric version or it is called internal. Before a change, identify consumers, deployment coordination, support promises, and actual usage. Web clients deployed together may permit tighter coordination; mobile, desktop, partner, worker, service, CLI, and other independently deployed consumers may lag. Auto-update does not prove atomic migration.\nUnreleased shapes with no consumer commitment may be refined instead of retaining development experiments. Update canonical source, tests, generated SDK, and consumers coherently. Git preserves development history; API versions preserve meaningful consumer boundaries. Unlike immutable released SQL migrations, released APIs can evolve compatibly in place.\nDo not invent support periods before actual obligations exist. Minimum supported client versions or forced upgrades require a product decision that accounts for availability and user impact; they are not shortcuts around compatibility design. Explicitly identify experimental/beta guarantees if such a lifecycle is needed, rather than relabeling an unstable production contract to evade commitments.\n"
   }
 ]

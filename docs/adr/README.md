@@ -29,3 +29,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md) | Propose Immutable Publications and Atomic Player Activation |
 | [ADR-0020](0020-propose-a-native-android-tv-player.md) | Propose a Native Android TV Player |
 | [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md) | Propose a Single-Host Pilot with Portable Persistent Storage |
+| [ADR-0022](0022-license-teluni-under-apache-2-0.md) | License Teluni under Apache-2.0 |

@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "New API Operation Checklist",
+    "anchor": "new-api-operation-checklist",
+    "text": "New API Operation Checklist\nBefore adding or changing an operation:\nIdentify the capability, owner, actual consumers, and compatibility commitments; reuse existing patterns and semantic errors.\nDefine input/output field meaning, bounds, classification, omission/null behavior, stable operation identity, authentication, authorization, and expected failures.\nSpecify duplicate/concurrent/retry behavior, synchronous versus asynchronous completion, external effects, and pagination/query cost where applicable.\nImplement explicit mapping at the boundary and test validation, serialization, statuses/headers, authentication, denials, hidden resources, and relevant domain behavior through the real HTTP boundary. A policy unit test alone does not prove endpoint enforcement.\nTest security risks proportionally, including mass assignment, oversized inputs, restricted fields, and cross-tenant access where applicable. Preserve actual consumer compatibility commitments.\nRegenerate OpenAPI, SDK, and affected references; run [validation](../validation.md). Current drift checks prove alignment with current sources, not historical consumer compatibility. Review the semantic change as well as the generated diff.\n"
+  },
+  {
+    "id": "repository/docs/api/versioning",
+    "title": "API Versioning",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "API Versioning",
+    "anchor": "api-versioning",
+    "text": "API Versioning\n[Task index](../README.md) · [Cross-system compatibility](../architecture/versioning-and-compatibility.md) · [Release workflow](../database/release-evolution.md) · [Error contract](error-contract.md)\nThis policy owns consumer-facing API evolution. Prefer compatible evolution; create a new API version only when a meaningful incompatibility cannot reasonably be handled within the existing contract. Versions create parallel contracts, SDKs, documentation, tests, support, and security-maintenance obligations.\n[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable contracts and generated OpenAPI/SDK tooling. The current API, SDK, and web consumer evolve together in this repository. No independently released consumer baseline, public support window, or API version-routing scheme is recorded. Current-source freshness checks exist; historical breaking-change detection is conditional on a real released baseline, recorded as a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
+  },
+  {
+    "id": "repository/docs/api/versioning",
+    "title": "API Versioning",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Released Contract",
+    "anchor": "released-contract",
+    "text": "Released Contract\nA contract is a compatibility commitment once supported consumers depend on it, even when its URL has no numeric version or it is called internal. Before a change, identify consumers, deployment coordination, support promises, and actual usage. Web clients deployed together may permit tighter coordination; mobile, desktop, partner, worker, service, CLI, and other independently deployed consumers may lag. Auto-update does not prove atomic migration.\nUnreleased shapes with no consumer commitment may be refined instead of retaining development experiments. Update canonical source, tests, generated SDK, and consumers coherently. Git preserves development history; API versions preserve meaningful consumer boundaries. Unlike immutable released SQL migrations, released APIs can evolve compatibly in place.\nDo not invent support periods before actual obligations exist. Minimum supported client versions or forced upgrades require a product decision that accounts for availability and user impact; they are not shortcuts around compatibility design. Explicitly identify experimental/beta guarantees if such a lifecycle is needed, rather than relabeling an unstable production contract to evade commitments.\n"
+  },
+  {
     "id": "repository/docs/api/versioning",
     "title": "API Versioning",
     "group": "API guides",
@@ -1150,77 +1177,5 @@
     "heading": "46. Important Decisions Must Preserve Rationale",
     "anchor": "46-important-decisions-must-preserve-rationale",
     "text": "46. Important Decisions Must Preserve Rationale\nFor consequential architecture, retain context, alternatives, choice, tradeoffs, and consequences in an ADR when the [authoring policy](../adr/authoring.md) calls for one. Distinguish deliberate constraints from accidents.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "47. Prefer Reversible Decisions Early",
-    "anchor": "47-prefer-reversible-decisions-early",
-    "text": "47. Prefer Reversible Decisions Early\nWhen evidence is incomplete, preserve flexibility with clear boundaries, explicit contracts, limited coupling, and documented decisions rather than speculative abstraction. Commit to specifics when requirements justify them.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "48. Complexity Must Pay Rent",
-    "anchor": "48-complexity-must-pay-rent",
-    "text": "48. Complexity Must Pay Rent\nEvery layer, dependency, service, package, process, or technology adds knowledge cost. Use it only when its concrete benefit exceeds a simpler alternative.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "49. Prefer Consistency Over Personal Preference",
-    "anchor": "49-prefer-consistency-over-personal-preference",
-    "text": "49. Prefer Consistency Over Personal Preference\nFollow established good patterns unless there is a concrete reason to improve them. Change an inadequate pattern deliberately rather than creating silent competing conventions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "50. The Architecture Must Be Able to Evolve",
-    "anchor": "50-the-architecture-must-be-able-to-evolve",
-    "text": "50. The Architecture Must Be Able to Evolve\nWhen evidence invalidates a fundamental choice, identify the limit, evaluate alternatives, document the new decision, migrate deliberately, remove obsolete architecture, and update validation/documentation. Do not accumulate contradictory generations of policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Decision Priority",
-    "anchor": "decision-priority",
-    "text": "Decision Priority\nWhen principles conflict, consider correctness, security/privacy, data integrity, production safety, explicit contracts/boundaries, observability, maintainability, simplicity, consistency, then development convenience. This is guidance, not a substitute for explaining significant tradeoffs.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Exceptions",
-    "anchor": "exceptions",
-    "text": "Exceptions\nAn exception needs a concrete reason, understood consequences, explicit scope, documentation when significant, and no silent competing pattern. Give temporary deviations a removal path where practical.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Relationship to Other Documentation",
-    "anchor": "relationship-to-other-documentation",
-    "text": "Relationship to Other Documentation\nThis page owns architectural principles, not implementation recipes. [Policies](../README.md) own current requirements, [ADRs](../adr/README.md) own decision rationale, [setup](../setup.md) owns development commands, and [AGENTS.md](../../AGENTS.md) owns global contributor/agent instructions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Repository Structure",
-    "anchor": "repository-structure",
-    "text": "Repository Structure\n[Documentation index](../README.md) · [Application boundaries](application-boundaries.md) · [Dependency rules](dependency-rules.md)\nThis page owns repository placement and local discovery. [ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md) governs workspace management; [ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) governs enforcement. Organize by responsibility so humans and agents can change one area without loading the whole repository.\n"
   }
 ]

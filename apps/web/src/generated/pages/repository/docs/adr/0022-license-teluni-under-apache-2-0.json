@@ -1,0 +1,35 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0022-license-teluni-under-apache-2-0.md",
+  "title": "ADR-0022: License Teluni under Apache-2.0",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-17</p>\n<h2 id=\"context\">Context</h2>\n<p>Teluni is derived from Orion, whose source already carries Apache-2.0 under ADR-0016. That foundation decision explicitly leaves independently developed product licensing to the product owner. Teluni's owner explicitly approved Apache License 2.0 for Teluni on 2026-10-17; this record documents that owner-authorized decision. The repository already contains the standard root license text, but its README and human actions previously said product licensing was undecided.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>License Teluni repository source and documentation, including independently developed product material, under the unmodified Apache License, Version 2.0. Retain the root <code>LICENSE</code> as the canonical terms and use SPDX identifier <code>Apache-2.0</code> in the root, API, web and SDK package metadata. Update README and project documentation to make the scope explicit.</p>\n<p>Preserve Orion provenance and its applicable rights/notices. Do not relabel third-party dependencies or separately licensed material. Do not invent a named copyright holder or NOTICE without confirmed attribution. This decision concerns repository licensing; SaaS pricing, support and customer service terms remain separate product decisions.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>The owner explicitly selected Apache-2.0 rather than delegating the legal choice to an agent. Applying the existing standard text consistently to Teluni resolves the previous distinction between inherited foundation licensing and undecided product licensing, without changing architecture or runtime behavior.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"keep-product-licensing-undecided\">Keep product licensing undecided</h3>\n<p>This was the documented state. It no longer reflects the owner's explicit instruction and leaves the intended licensing scope unclear.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Teluni's source/documentation license is explicit and consistent with the standard license file and package metadata.</li>\n<li>The product decision remains separate from the historical Orion ADR and commercial pricing decisions.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Distribution must preserve applicable license/attribution obligations; the choice does not determine third-party rights or authorize reuse of PDT Display material.</li>\n<li>Named attribution still needs confirmed ownership evidence if such notices are added.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>No database migration, dependency upgrade, application feature or deployment change is required. Existing tags/history and the canonical license text remain unchanged. PH-06 records the owner's selection; PH-14 tracks conditional named-attribution work.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"https://github.com/GabriellMDias/teluni/blob/main/LICENSE\" rel=\"noreferrer noopener\">Canonical license</a></li>\n<li><a href=\"/docs/repository/README#license\">README licensing scope</a></li>\n<li><a href=\"/docs/repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0\">Orion license decision</a></li>\n<li><a href=\"/docs/repository/docs/project/human-actions#ph-06\">Product human actions</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0022-license-teluni-under-apache-20",
+      "text": "ADR-0022: License Teluni under Apache-2.0",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "keep-product-licensing-undecided",
+      "text": "Keep product licensing undecided",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

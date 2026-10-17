@@ -37,4 +37,4 @@ Directory trees in architecture documents describe intended responsibilities, no
 
 ## License
 
-Teluni's product license has not been chosen; [PH-06](docs/project/human-actions.md#ph-06) tracks that decision. Material inherited from Orion remains available under the [Apache License 2.0](LICENSE).
+Teluni repository source and documentation are licensed under the [Apache License, Version 2.0](LICENSE) (`Apache-2.0`), including independently developed Teluni material. [ADR-0022](docs/adr/0022-license-teluni-under-apache-2-0.md) records the product owner's decision. Material inherited from Orion retains its Apache-2.0 license and provenance; third-party dependencies and separately licensed material retain their own terms.
