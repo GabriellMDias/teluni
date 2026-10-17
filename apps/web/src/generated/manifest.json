@@ -285,6 +285,46 @@
       "file": "pages/repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline.json"
     },
     {
+      "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+      "kind": "repository",
+      "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+      "group": "Decisions",
+      "source": "docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend.md",
+      "summary": "Teluni requires independent customer companies with branches, memberships, media and devices. The derived repository has PostgreSQL infrastructure and composable API modules…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend.json"
+    },
+    {
+      "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+      "kind": "repository",
+      "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+      "group": "Decisions",
+      "source": "docs/adr/0019-propose-immutable-publications-and-atomic-player-activation.md",
+      "summary": "Teluni displays must continue through temporary backend/network outages. Videos must normally play locally. Partial downloads, concurrent publications and power loss must not…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation.json"
+    },
+    {
+      "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+      "kind": "repository",
+      "title": "ADR-0020: Propose a Native Android TV Player",
+      "group": "Decisions",
+      "source": "docs/adr/0020-propose-a-native-android-tv-player.md",
+      "summary": "The intended first player is Android TV, with continuous image/video playback, local persistence, temporary-code pairing and offline recovery. Orion supplies TypeScript API/web…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0020-propose-a-native-android-tv-player.json"
+    },
+    {
+      "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
+      "kind": "repository",
+      "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+      "group": "Decisions",
+      "source": "docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md",
+      "summary": "The owner currently has no cloud-service budget and intends to evaluate a personal residential server for development and first pilots. Network exposure, CGNAT, domain,…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -615,6 +655,16 @@
       "file": "pages/repository/docs/project-derivation.json"
     },
     {
+      "id": "repository/docs/project/architecture",
+      "kind": "repository",
+      "title": "Teluni Product Architecture",
+      "group": "Project guides",
+      "source": "docs/project/architecture.md",
+      "summary": "Implemented foundation: Node.js/TypeScript ESM, Fastify, PostgreSQL/Prisma infrastructure, TypeBox/OpenAPI and generated TypeScript SDK, React/Vite with TanStack Router/Query,…",
+      "headings": [],
+      "file": "pages/repository/docs/project/architecture.json"
+    },
+    {
       "id": "repository/docs/project/human-actions",
       "kind": "repository",
       "title": "Teluni Human Actions",
@@ -633,6 +683,76 @@
       "summary": "This is Teluni's living execution plan and the current plan for this repository. It tracks product and repository work; the README, current policies, and accepted ADRs govern…",
       "headings": [],
       "file": "pages/repository/docs/project/implementation-plan.json"
+    },
+    {
+      "id": "repository/docs/project/mvp",
+      "kind": "repository",
+      "title": "Teluni MVP Requirements and Acceptance",
+      "group": "Project guides",
+      "source": "docs/project/mvp.md",
+      "summary": "Decided: the MVP must complete the company-to-screen journey for images and videos, including offline Android TV playback and basic monitoring. All capabilities below are…",
+      "headings": [],
+      "file": "pages/repository/docs/project/mvp.json"
+    },
+    {
+      "id": "repository/docs/project/operations",
+      "kind": "repository",
+      "title": "Teluni Deployment and Migration Planning",
+      "group": "Project guides",
+      "source": "docs/project/operations.md",
+      "summary": "Decided constraint: no present cloud-service budget. The owner intends to use a personal residential server for development, tests and potentially initial customers, moving to…",
+      "headings": [],
+      "file": "pages/repository/docs/project/operations.json"
+    },
+    {
+      "id": "repository/docs/project/playback-and-sync",
+      "kind": "repository",
+      "title": "Teluni Offline Playback and Synchronization",
+      "group": "Project guides",
+      "source": "docs/project/playback-and-sync.md",
+      "summary": "Decided requirements: normal playback uses local images/videos, continues during temporary server/network outages, validates new content, activates a complete programming…",
+      "headings": [],
+      "file": "pages/repository/docs/project/playback-and-sync.json"
+    },
+    {
+      "id": "repository/docs/project/product",
+      "kind": "repository",
+      "title": "Teluni Product Vision",
+      "group": "Project guides",
+      "source": "docs/project/product.md",
+      "summary": "Decided: Teluni is a multi-tenant digital signage SaaS for centralized management of visual content on televisions, monitors, and other display devices. It should combine…",
+      "headings": [],
+      "file": "pages/repository/docs/project/product.json"
+    },
+    {
+      "id": "repository/docs/project/README",
+      "kind": "repository",
+      "title": "Teluni Product Documentation",
+      "group": "Project guides",
+      "source": "docs/project/README.md",
+      "summary": "This is the entry point for Teluni-specific product and architecture planning. The product owner's brief of 2026-10-17 is the source of the initial requirements. Engineering…",
+      "headings": [],
+      "file": "pages/repository/docs/project/README.json"
+    },
+    {
+      "id": "repository/docs/project/risks",
+      "kind": "repository",
+      "title": "Teluni Risks and Dependencies",
+      "group": "Project guides",
+      "source": "docs/project/risks.md",
+      "summary": "This register owns product-delivery risks identified from the owner's brief and the repository baseline. They are prospective risks, not claims of discovered production…",
+      "headings": [],
+      "file": "pages/repository/docs/project/risks.json"
+    },
+    {
+      "id": "repository/docs/project/security-and-i18n",
+      "kind": "repository",
+      "title": "Teluni Security and Internationalization Requirements",
+      "group": "Project guides",
+      "source": "docs/project/security-and-i18n.md",
+      "summary": "Decided requirements: HTTPS, secure established authentication, server-side authorization and tenant isolation, separate device identities with revocable credentials, relevant…",
+      "headings": [],
+      "file": "pages/repository/docs/project/security-and-i18n.json"
     },
     {
       "id": "repository/docs/README",
@@ -890,7 +1010,7 @@
       "title": "Teluni",
       "group": "Project guides",
       "source": "README.md",
-      "summary": "Teluni is a software product built on the Orion engineering foundation. Its product scope has not been recorded yet; define it under PJ-02 and replace this introduction.",
+      "summary": "Teluni is a planned multi-tenant digital signage SaaS built on the Orion engineering foundation. It will let companies centrally manage images, videos, playlists and schedules…",
       "headings": [],
       "file": "pages/repository/README.json"
     }
@@ -904,13 +1024,14 @@
       },
       { "file": "search/0001.json", "count": 113, "kinds": ["repository"] },
       { "file": "search/0002.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 143, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 133, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 92, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 95, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 19, "kinds": ["repository"] }
+      { "file": "search/0003.json", "count": 165, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 136, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 94, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 82, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 101, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 93, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 12, "kinds": ["repository"] }
     ],
-    "count": 926
+    "count": 1019
   }
 }

@@ -24,7 +24,15 @@ async function markdownFiles(directory: string): Promise<string[]> {
   const found: string[] = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory() && !ignoredDirectories.has(entry.name)) {
+    // Installed tool skills are external references, not project documentation.
+    const isToolSkills =
+      entry.name === "skills" &&
+      [".agents", ".claude", ".windsurf"].includes(path.basename(directory));
+    if (
+      entry.isDirectory() &&
+      !ignoredDirectories.has(entry.name) &&
+      !isToolSkills
+    ) {
       found.push(...(await markdownFiles(absolute)));
     } else if (entry.isFile() && entry.name.endsWith(".md")) {
       found.push(absolute);

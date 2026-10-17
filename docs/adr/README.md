@@ -25,3 +25,7 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md) | Name Stable Orion Foundation Revisions with Semantic Tags |
 | [ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md) | License the Orion Foundation under Apache-2.0 |
 | [ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md) | Start Derived Projects from a Clean Foundation Baseline |
+| [ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md) | Propose Tenant-Owned Data in the Modular Backend |
+| [ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md) | Propose Immutable Publications and Atomic Player Activation |
+| [ADR-0020](0020-propose-a-native-android-tv-player.md) | Propose a Native Android TV Player |
+| [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md) | Propose a Single-Host Pilot with Portable Persistent Storage |
