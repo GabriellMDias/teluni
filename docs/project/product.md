@@ -17,7 +17,7 @@ Teluni is the intended product name. Trademark registration and final domain ava
 
 The initial opportunity is a snack bar considering televisions for products, images, videos, and promotions. It is a candidate pilot, not a confirmed customer or an exclusive definition of the product.
 
-The owner's experience with PDT Display provides conceptual learning only. Teluni must have independent architecture, identity, and implementation. Do not copy PDT Display code, assets, credentials, customer data, private designs, or proprietary information without authorization. Authorized Orion material remains governed by the repository's provenance and license. Teluni's own licensing remains [PH-06](human-actions.md#ph-06).
+The owner's experience with PDT Display provides conceptual learning only. Teluni must have independent architecture, identity, and implementation. Do not copy PDT Display code, assets, credentials, customer data, private designs, or proprietary information without authorization. Authorized Orion material remains governed by the repository's provenance and license. The owner selected Apache-2.0 for Teluni source and documentation; [ADR-0022](../adr/0022-license-teluni-under-apache-2-0.md) records that decision and [PH-06](human-actions.md#ph-06) records its verification. SaaS pricing and customer terms remain separate commercial decisions.
 
 ## Audience and use cases
 

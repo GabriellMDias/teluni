@@ -59,6 +59,7 @@ Every contributor or coding agent performing implementation work must maintain t
 | PJ-14 | Run integrated MVP acceptance and the candidate customer pilot; record usability, offline/recovery, operating cost and support evidence. | pending | Phase 2 exit; PJ-08 through PJ-13, applicable PJ-01/PH-06/PH-07/PH-08/PH-09/PH-12/PH-13 prerequisites. No real-customer acceptance until the security/operations gates pass. |
 | PJ-15 | Evaluate and prioritize professional layouts/editor, catalog/dynamic prices, campaigns and advanced monitoring/history/version recovery. | pending | Future Phase 3; PJ-14 evidence, reviewed D-11, separate scope/ADRs and implementation authorization. |
 | PJ-16 | Evaluate commercial expansion: integrations, fleet capabilities, other players, AI, subscriptions, white-label and infrastructure scaling. | pending | Future Phase 4; validated demand/costs and independent discovery before committing to each feature; no mandatory sequence between unrelated expansions. |
+| PJ-17 | Apply the owner's Apache-2.0 product license choice and verify Renovate/security activation with repository evidence. | in progress | PH-03 dashboard verified; PH-06 license choice applied to README and workspace metadata; PH-04 awaits dependency-review execution on a new PR. PH-14 preserves conditional named-attribution work. |
 
 ## Phase sequence and exit criteria
 

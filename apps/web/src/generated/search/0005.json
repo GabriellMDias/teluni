@@ -1,5 +1,77 @@
 [
   {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "47. Prefer Reversible Decisions Early",
+    "anchor": "47-prefer-reversible-decisions-early",
+    "text": "47. Prefer Reversible Decisions Early\nWhen evidence is incomplete, preserve flexibility with clear boundaries, explicit contracts, limited coupling, and documented decisions rather than speculative abstraction. Commit to specifics when requirements justify them.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "48. Complexity Must Pay Rent",
+    "anchor": "48-complexity-must-pay-rent",
+    "text": "48. Complexity Must Pay Rent\nEvery layer, dependency, service, package, process, or technology adds knowledge cost. Use it only when its concrete benefit exceeds a simpler alternative.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "49. Prefer Consistency Over Personal Preference",
+    "anchor": "49-prefer-consistency-over-personal-preference",
+    "text": "49. Prefer Consistency Over Personal Preference\nFollow established good patterns unless there is a concrete reason to improve them. Change an inadequate pattern deliberately rather than creating silent competing conventions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "50. The Architecture Must Be Able to Evolve",
+    "anchor": "50-the-architecture-must-be-able-to-evolve",
+    "text": "50. The Architecture Must Be Able to Evolve\nWhen evidence invalidates a fundamental choice, identify the limit, evaluate alternatives, document the new decision, migrate deliberately, remove obsolete architecture, and update validation/documentation. Do not accumulate contradictory generations of policy.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Decision Priority",
+    "anchor": "decision-priority",
+    "text": "Decision Priority\nWhen principles conflict, consider correctness, security/privacy, data integrity, production safety, explicit contracts/boundaries, observability, maintainability, simplicity, consistency, then development convenience. This is guidance, not a substitute for explaining significant tradeoffs.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Exceptions",
+    "anchor": "exceptions",
+    "text": "Exceptions\nAn exception needs a concrete reason, understood consequences, explicit scope, documentation when significant, and no silent competing pattern. Give temporary deviations a removal path where practical.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Relationship to Other Documentation",
+    "anchor": "relationship-to-other-documentation",
+    "text": "Relationship to Other Documentation\nThis page owns architectural principles, not implementation recipes. [Policies](../README.md) own current requirements, [ADRs](../adr/README.md) own decision rationale, [setup](../setup.md) owns development commands, and [AGENTS.md](../../AGENTS.md) owns global contributor/agent instructions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Repository Structure",
+    "anchor": "repository-structure",
+    "text": "Repository Structure\n[Documentation index](../README.md) · [Application boundaries](application-boundaries.md) · [Dependency rules](dependency-rules.md)\nThis page owns repository placement and local discovery. [ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md) governs workspace management; [ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) governs enforcement. Organize by responsibility so humans and agents can change one area without loading the whole repository.\n"
+  },
+  {
     "id": "repository/docs/architecture/repository-structure",
     "title": "Repository Structure",
     "group": "Architecture",
@@ -799,50 +871,5 @@
     "heading": "ErrorNotice",
     "anchor": "errornotice",
     "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props",
-    "text": "Props\nName\nType\nMeaning\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states",
-    "text": "States\nFailure message\nFailure message with reload action\nAccessibility: Uses role=alert so the failure is announced; the optional reload control is a native button.\nUsage: Pass the original error to preserve stable-code mapping. Offer reload only when the current data can be refreshed, and never imply that an unknown write outcome failed.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples",
-    "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n"
-  },
-  {
-    "id": "repository/docs/generated/configuration/api",
-    "title": "API Configuration Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "API Configuration Reference",
-    "anchor": "api-configuration-reference",
-    "text": "API Configuration Reference\n[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)\nNo values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. API modules that require the database or bearer authentication stay unmounted until those settings exist, and production startup fails instead.\nEnvironment variable\nType\nRequired\nDefault\nVisibility\nClassification\nSecret\nPurpose\n`ORION_ENV`\ndevelopment | test | production\nyes\n—\nserver\nINTERNAL\nno\nRuntime environment.\n`ORION_RELEASE_ID`\nartifact identifier, 1..128 ASCII letters/digits/._-\nno\n`local`\nserver\nINTERNAL\nno\nActual artifact revision for correlated logs and traces; local for unversioned development.\n`ORION_API_HOST`\nnonempty string\nno\n`127.0.0.1`\nserver\nINTERNAL\nno\nListen address; loopback by default.\n`ORION_API_PORT`\ninteger 0..65535\nno\n`3000`\nserver\nINTERNAL\nno\nListen port; zero selects an ephemeral port.\n`ORION_LOG_LEVEL`\nPino level\nno\n`info`\nserver\nINTERNAL\nno\nStructured log threshold.\n`ORION_SHUTDOWN_TIMEOUT_MS`\ninteger 100..30000\nno\n`5000`\nserver\nINTERNAL\nno\nTotal graceful shutdown deadline.\n`ORION_OTLP_ENDPOINT`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nOptional OTLP HTTP collector base URL.\n`ORION_TRACE_SAMPLE_RATIO`\nnumber 0..1\nno\n`1`\nserver\nINTERNAL\nno\nTrace sampling probability.\n`ORION_DATABASE_URL`\nPostgreSQL URL\nno\n—\nserver\nRESTRICTED\nyes\nRuntime PostgreSQL credential; enables the database for modules that require it and adds it to readiness.\n`ORION_TOKEN_ISSUER`\nissuer URL\nno\n—\nserver\nINTERNAL\nno\nExpected access-token issuer; configure with audience and JWKS URL to enable bearer authentication.\n`ORION_TOKEN_AUDIENCE`\nnonempty string\nno\n—\nserver\nINTERNAL\nno\nExpected API access-token audience.\n`ORION_TOKEN_JWKS_URL`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nTrusted issuer public-key endpoint.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Database Reference",
-    "anchor": "database-reference",
-    "text": "Database Reference\n[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)\nNo application-owned tables exist yet. Add a module's Prisma model, reviewed migration, and metadata, then regenerate this reference.\n"
   }
 ]

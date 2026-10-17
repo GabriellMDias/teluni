@@ -50,25 +50,25 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-03
 
-- [ ] **Enable Renovate for this repository.**
+- [x] **Enable Renovate for this repository.**
 
-**Status:** pending. **Owner:** repository administrator.
+**Status:** completed. **Owner:** repository administrator.
 **Dependency / trigger:** PH-01.
 **Request and reason:** Grant the Renovate GitHub App access to https://github.com/GabriellMDias/teluni so the committed [configuration](../../renovate.json) runs. App installation is an account action.
 **Configuration:** none; no personal token is required.
 **Verification:** Renovate opens this repository's Dependency Dashboard reflecting the committed dependencies and schedule.
-**Evidence / blocker:** Not started.
+**Evidence / blocker:** 2026-10-17: owner confirmed installation; GitHub API verified [Dependency Dashboard #1](https://github.com/GabriellMDias/teluni/issues/1), authored by `app/renovate`, with detected workspace dependencies, updates awaiting the configured schedule, and major updates pending approval. These match `renovate.json` (weekly schedule, dashboard/major approval, automerge disabled).
 
 ## PH-04
 
 - [ ] **Enable and verify applicable GitHub security controls.**
 
-**Status:** pending. **Owner:** repository administrator.
+**Status:** in progress. **Owner:** repository administrator.
 **Dependency / trigger:** PH-01.
 **Request and reason:** Enable available code scanning, secret scanning and push protection, dependency graph, and vulnerability alerts, and set the Actions variable `DEPENDENCY_REVIEW_ENABLED=true` so the dependency-review job runs. Record entitlement limits for this repository's visibility and plan.
 **Configuration:** Actions variable `DEPENDENCY_REVIEW_ENABLED` (non-secret).
 **Verification:** Inspect effective security settings and a pull-request run in which dependency review executed and the aggregate gate passed.
-**Evidence / blocker:** Not started.
+**Evidence / blocker:** 2026-10-17: owner confirmed setup. GitHub API verified this public repository has secret scanning and push protection enabled, vulnerability alerts enabled (HTTP 204), an available dependency graph/SBOM, CodeQL default setup configured, and Actions variable `DEPENDENCY_REVIEW_ENABLED=true`. [CodeQL run 39079537512](https://github.com/GabriellMDias/teluni/actions/runs/39079537512) passed analysis for Actions and JavaScript/TypeScript. Earlier PR runs skipped dependency review before the variable was set. Remaining verification: a new PR run must execute dependency review and pass the aggregate gate. Dependabot automatic security-update PRs are disabled; they are not an acceptance requirement and do not replace Renovate.
 
 ## PH-05
 
@@ -83,14 +83,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-06
 
-- [ ] **Determine the product license before distribution requires it.**
+- [x] **Determine the product license before distribution requires it.**
 
-**Status:** pending (conditional on distribution). **Owner:** project owner, with legal input when needed.
+**Status:** completed. **Owner:** project owner, with legal input when needed.
 **Dependency / trigger:** Publication or distribution of Teluni.
-**Request and reason:** Choose the license, copyright holder, and distribution model for Teluni's own work. Agents must not choose legal policy by assumption. Material inherited from Orion is Apache-2.0, which does not decide Teluni's license.
+**Request and reason:** Record the owner's explicit Apache-2.0 selection for Teluni source and documentation. Inherited Orion rights remain intact; commercial SaaS terms remain PH-12. Named copyright/NOTICE attribution, if required for distribution, is separately tracked in PH-14 rather than invented.
 **Configuration:** none.
 **Verification:** License files, the README, and publication metadata match the recorded decision.
-**Evidence / blocker:** No product license selected.
+**Evidence / blocker:** 2026-10-17: owner explicitly selected Apache-2.0. [ADR-0022](../adr/0022-license-teluni-under-apache-2-0.md), the root README and all four workspace `package.json` license fields record that selection. The existing canonical root `LICENSE` already contains Apache License 2.0 and is retained unmodified. No named copyright holder or fabricated NOTICE is added.
 
 ## PH-07
 
@@ -168,6 +168,17 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Configuration:** no legal/privacy settings implemented; do not put customer records or private advice in public examples.
 **Verification:** Approved obligations and retention/deletion/access procedures linked to implementation and restore acceptance; no sensitive clinic/patient dataset required for signage.
 **Evidence / blocker:** Initial classifications documented; legal/operational policies and retention periods remain pending.
+
+## PH-14
+
+- [ ] **Confirm named copyright and attribution notices when distribution requires them.**
+
+**Status:** pending (conditional). **Owner:** project owner, with qualified input where needed.
+**Dependency / trigger:** PH-06; before adding holder-specific notices or distributing artifacts with attribution requirements beyond the current repository license/provenance.
+**Request and reason:** Confirm the exact attribution names and any applicable third-party notices from evidence. Apache-2.0 is selected, but agents must not infer legal ownership from a GitHub account or invent a NOTICE. This preserves the attribution portion of the original PH-06 scope without blocking the owner's license choice.
+**Configuration:** none.
+**Verification:** Any added notices identify confirmed holders and preserve applicable inherited/third-party notices; distribution metadata matches the owner-approved attribution.
+**Evidence / blocker:** No holder-specific notice supplied or added in this task. Root `LICENSE` and Orion provenance remain intact.
 
 ## New action template
 
