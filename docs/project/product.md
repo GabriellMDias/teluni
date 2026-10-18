@@ -11,7 +11,7 @@
 | `pt-BR` | Todas as suas telas. Um só lugar. |
 | `en-US` | Every screen. One place. |
 
-**Decided:** the owner approved Teluni as the product name and `teluni.app` as the principal domain. `teluni.com.br` is the secondary/defensive Brazil option (availability reported by the owner); unavailable/premium `teluni.com` is outside the current budget and scope. [Branding](branding/README.md) owns these decisions and the A/B/C identity proposals. Preliminary trademark research has advanced, but registration/control and final clearance are not inferred. [PH-07](human-actions.md#ph-07) remains in progress pending visual identity approval and integration; runtime brand assets remain placeholders.
+**Decided:** the owner approved Teluni as the product name and `teluni.app` as the principal domain. `teluni.com.br` is the secondary/defensive Brazil option (availability reported by the owner); unavailable/premium `teluni.com` is outside the current budget and scope. [Branding](branding/README.md) owns these decisions and the approved Connected Tiles identity. Preliminary trademark research has advanced, but registration/control and final clearance are not inferred. Connected Tiles is integrated into the web shell, portal and favicon, with the selected locally served font and derived touch icon. [PH-07](human-actions.md#ph-07) remains in progress for domain registration/control and trademark evidence.
 
 ## Origin and pilot
 

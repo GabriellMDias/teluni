@@ -1,68 +1,5 @@
 [
   {
-    "id": "repository/docs/reliability/tracing",
-    "title": "Tracing",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Outcomes and cross-signal correlation",
-    "anchor": "outcomes-and-cross-signal-correlation",
-    "text": "Outcomes and cross-signal correlation\nSpan status follows operational semantics. Expected domain rejection or inbound `4xx` is not automatically an infrastructure error; an unexpected outbound `401` may be a credential/configuration failure. Record a bounded result/error code when useful. Associate unexpected failures with the responsible operation; do not repeat exception events on every ancestor unless distinct operations failed.\nA failed attempt can remain an error child of a successful parent after retry. Preserve meaningful partial failures, timeout distinctions, cancellation, fallback, and circuit-breaker states where applicable. Do not hide degradation simply because eventual completion succeeded.\nLogs and error reports should inherit active trace/span correlation centrally where practical. Span events explain one execution; independent searchable semantic events may belong in logs. Do not duplicate both automatically. Metrics answer frequency/distribution questions, not the cause of one trace. Sampled tracing is never the sole required audit/security record.\n"
-  },
-  {
-    "id": "repository/docs/reliability/tracing",
-    "title": "Tracing",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Sampling and volume",
-    "anchor": "sampling-and-volume",
-    "text": "Sampling and volume\nSampling must preserve useful coverage while bounding CPU, memory, network, storage, and cost. Head sampling is cheaper/early but cannot know the final outcome; tail sampling can prioritize errors/slow traces but needs more infrastructure. Propagate sampling decisions as required by the standard. Keep strategy transparent: an ID in a log may have no exported trace due to sampling, not necessarily broken instrumentation.\nPrioritize unexpected errors, important slow executions, and rare high-value operations where supported. Thresholds/rates depend on actual service expectations and traffic; do not invent a universal production percentage. Dynamic/incident changes must be bounded and understandable, not a global unsampling switch for one local issue. Development/tests may sample more while keeping the same redaction rules and isolated exporters.\nBound attributes, lengths, events, links, and spans per trace. Do not emit one event per row/item/loop iteration in large workloads; use safe summaries or justified child spans. Truncation is not privacy protection. Routine health probes, metric scrapes, and low-value static/polling routes should generally be excluded or heavily sampled without hiding critical behavior. Startup/shutdown and migrations normally need logs/metrics first; trace only meaningful diagnostic work. Low-level DNS/filesystem/cache spans need demonstrable value rather than automatic maximum detail.\n"
-  },
-  {
-    "id": "repository/docs/reliability/tracing",
-    "title": "Tracing",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Export reliability and clients",
-    "anchor": "export-reliability-and-clients",
-    "text": "Export reliability and clients\nExporter/collector outages must normally degrade safely without failing business operations. Use bounded buffering, timeouts, dropping behavior, and safe rate-limited diagnostics for export failures, dropped spans, or saturation. Avoid recursive telemetry storms. [Retention](../security/data-retention.md) and [production access](../security/production-access.md) apply to traces and third-party processors.\nBrowser/mobile/desktop tracing is requirement-driven, with privacy and cross-origin safety; mobile also requires battery/network/offline consideration. Local paths, usernames, machine identifiers, and sensitive input are not default trace data. Do not introduce client tracing just to match the server implementation.\n"
-  },
-  {
-    "id": "repository/docs/reliability/tracing",
-    "title": "Tracing",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Tests and change checklist",
-    "anchor": "tests-and-change-checklist",
-    "text": "Tests and change checklist\nTest important propagation across boundaries, malformed external context, async isolation/cleanup, redaction and final exporter output, safe failure behavior, and meaningful causal relationships using in-memory/test exporters. Do not require production infrastructure or assert every automatic span.\nBefore a manual span/attribute, identify causal value, existing instrumentation, name/standard convention, parent/link relation, permitted fields, trust-boundary propagation, volume, duplicate risk, and tests. For async work, include delay, multiple parents, retries/duplicates, IDs, and context lifetime. Before changing sampling, evaluate traffic, retained error/slow/rare evidence, bias, cost, dropped telemetry, and how results will be reviewed. Preserve current source/export limitations explicitly until implementation satisfies the intended policy.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/AGENTS",
-    "title": "Runbook Instructions",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Runbook Instructions",
-    "anchor": "runbook-instructions",
-    "text": "Runbook Instructions\nConsult the [index](README.md), [authoring policy](authoring.md), and [template](template.md).\nDocument real operational conditions only. Do not invent provider commands, organizational roles, or runnable procedures before they exist.\nInclude applicability, required access, verifiable preconditions, bounded actions, postcondition verification, and stop/escalation conditions.\nFollow [production-access policy](../security/production-access.md). A runbook grants no additional authority; verify delegated authorization before privileged or destructive actions.\nPreserve recovery and unknown-outcome semantics. Do not equate command success with recovery or retry an uncertain state-changing operation blindly.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/authoring",
-    "title": "Authoring and Using Runbooks",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Authoring and Using Runbooks",
-    "anchor": "authoring-and-using-runbooks",
-    "text": "Authoring and Using Runbooks\nUse the [index](README.md) and [template](template.md). Runbooks are current, repeatable operational procedures for authorized operators, not architecture explanations, ADRs, incident histories, or speculative troubleshooting notes.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/authoring",
-    "title": "Authoring and Using Runbooks",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Applicability, scope, and ownership",
-    "anchor": "applicability-scope-and-ownership",
-    "text": "Applicability, scope, and ownership\nCreate a runbook for a real runtime, dependency, workflow, or recurring incident when response is non-obvious, risky, time-sensitive, or dependent on individual knowledge. Do not create hypothetical systems, commands, organizational roles, or empty index entries.\nHandle one coherent condition or procedure per runbook. Use a descriptive English filename such as `<condition-or-operation>.md`; avoid generic collections of unrelated production problems. Use concrete symptom, service, dependency, error-code, alert, and operation terminology so the procedure is searchable.\nEvery runbook should have an identifiable owner, even across several systems. The owner maintains commands, links, permissions, safety assumptions, and recovery behavior. An active runbook represents an implemented operation in its stated environment. A deprecated one should identify its reason and replacement where relevant. Remove obsolete procedures when they no longer provide value; Git preserves history. Add lifecycle complexity only when needed.\n"
-  },
-  {
     "id": "repository/docs/runbooks/authoring",
     "title": "Authoring and Using Runbooks",
     "group": "Runbooks",
@@ -970,5 +907,68 @@
     "heading": "Database and provider instrumentation",
     "anchor": "database-and-provider-instrumentation",
     "text": "Database and provider instrumentation\nDatabase telemetry may describe operation, logical entity, system, duration, and result. Raw SQL can contain literals; use normalized/parameterized representations when query telemetry is required. Do not automatically capture bind values, rows, connection strings, or raw ORM objects. Any exceptional parameter diagnostics still require explicit classification/access controls and cannot capture restricted data.\nReview driver/ORM error metadata before export: errors may contain SQL, values, hostnames, and connection information. Never expose raw database/provider exceptions to users. Review SDK requests, responses, headers, breadcrumbs, and debug modes independently. Prefer safe provider result codes and references; payment and authentication credentials remain prohibited. Provider-specific codes need sensitivity and cardinality review and do not replace the API's public error contract.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Errors, traces, metrics, and audit",
+    "anchor": "errors-traces-metrics-and-audit",
+    "text": "Errors, traces, metrics, and audit\nError SDK automatic capture must be reviewed before use: requests, queries, cookies, locals, environment, console output, user context, and breadcrumbs can leak data. Local-variable capture is disabled by default unless an explicitly acceptable environment and controls justify it. `captureException(error)` is not automatically safe. Internal stacks can help diagnosis but may expose implementation paths and must not reach untrusted users or intentionally contain secrets.\nUse safe minimal user context, preferring a justified internal identifier to profile data, and clear it on logout. Review navigation, console, database, HTTP, and interaction breadcrumbs. Trace attributes/events must use safe selected metadata, not objects or payloads.\nMetric labels must never contain secrets and should avoid personal/entity-specific values, arbitrary error messages, full URLs, and request/trace IDs. Any exceptional dimension requires explicit privacy and cardinality justification; prefer bounded error/result categories. Audit/security records may justify confidential actor/resource identifiers that routine diagnostics omit, but still exclude credentials and unnecessary payloads.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Clients, infrastructure, and special diagnostics",
+    "anchor": "clients-infrastructure-and-special-diagnostics",
+    "text": "Clients, infrastructure, and special diagnostics\nDo not automatically collect form values, clipboard, local storage, navigation state, screen contents, or user content. Session replay, screenshots, crash attachments, and full memory dumps are separate high-risk collection capabilities requiring explicit review; replay must mask/exclude sensitive areas. Memory dumps can contain arbitrary credentials and require justified collection and restricted access. Do not enable features merely because a vendor offers them.\nCollect IP, user-agent, device identifiers, file paths, and geolocation only for justified needs with suitable retention; normalized platform/version/device-class data is often sufficient. Precise location is not default telemetry. Feature-flag diagnostics should contain bounded state, not full targeting contexts.\nInspect reverse proxies, load balancers, database server logs, container stdout/stderr, CI, and SDK debug logging independently. Application redaction cannot stop another layer from recording URLs, failed SQL, or credentials. CI output must not echo secrets; use platform masking where available. Development follows the same secret rules. Tests should use isolated/disabled exporters and never send synthetic test telemetry into production systems.\nTemporary/emergency diagnostics must be explicit, minimized, reviewed, time-bounded, and removed afterward. They still cannot intentionally collect restricted data. Do not globally expand collection merely to investigate one issue.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Representative secret tests",
+    "anchor": "representative-secret-tests",
+    "text": "Representative secret tests\nImportant redaction behavior must have automated tests using obvious synthetic secrets. Assert both that safe correlation remains and that prohibited values appear nowhere in emitted logs, spans, breadcrumbs, or errors. Exercise headers, nested metadata, query strings, bodies, exception objects, and serialization failure where relevant. Inspect final export payloads for important flows; helper-level tests alone may miss SDK enrichment.\nTreat redaction regressions as security defects. Extend tests when instrumentation, schemas, SDKs, or destinations change. Static rules, runtime guards, schema validation, and secret scanning are complementary; consult [validation](../validation.md) before claiming any check exists.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Destinations, access, and leakage",
+    "anchor": "destinations-access-and-leakage",
+    "text": "Destinations, access, and leakage\nExport only to approved destinations. Each additional provider/copy creates independent access, retention, residency, and deletion responsibilities; significant changes may need an ADR and security/privacy review. Do not duplicate telemetry across vendors without concrete value. [Retention](data-retention.md) and [production access](production-access.md) govern storage and readers, including AI agents.\nProvide AI/support tooling with structured, sanitized, task-relevant evidence, never raw environment dumps, credential-bearing logs, or full customer/request objects by default. A future diagnostic bundle must exclude restricted data by construction and be introduced only for real need.\nFor leakage, follow [incident response](incident-response.md): stop further collection, identify data/classification/destinations/exposure, restrict access, remove data where possible, revoke/rotate exposed credentials, review usage, fix instrumentation, and add regression protection. Historical logs, traces, errors, exports, provider retention, and backups may still contain leaked values. Deleting an entry does not restore credential secrecy.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New telemetry checklist",
+    "anchor": "new-telemetry-checklist",
+    "text": "New telemetry checklist\nBefore adding telemetry, identify the question answered, required fields and classifications, safer representations, untrusted/credential-bearing inputs, size/cardinality bounds, approved destination, retention/access, and redaction tests. Do not ship unexplained collection. Derive structural redaction references from canonical sources where practical; provider deployment, retention durations, session replay, and a cross-application metadata engine remain separate decisions, not implied capabilities.\n"
+  },
+  {
+    "id": "repository/docs/setup",
+    "title": "Development Setup",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Development Setup",
+    "anchor": "development-setup",
+    "text": "Development Setup\n[Repository README](../README.md) · [Validation](validation.md) · [API runtime](../apps/api/README.md) · [Web workflow](../apps/web/README.md)\nThis is the canonical local setup and execution path. Tests use disposable PostgreSQL and synthetic identities; no production database, identity provider, telemetry vendor, or deployment account is needed. Commands address workspace packages by path (`pnpm -C apps/api …`), so they work unchanged whatever a project names its packages.\nGoal\nPrerequisites after installing pinned Node.js/pnpm\nStart here\nBrowse the documentation portal\nFrozen dependency install; no container, API, or test browser needed\n[Portal](#living-documentation-portal)\nRun the API and web application locally\nFrozen dependency install, generated Prisma client, and local configuration\n[Configuration](#load-local-configuration)\nUse a local PostgreSQL or access-token issuer\nA database or issuer you control for development\n[Local database and authentication](#local-database-and-authentication)\nRun the complete validation gate\nAll clean-checkout prerequisites, including containers and test browsers\n[Prepare a clean checkout](#prepare-a-clean-checkout), then [validate](#validate-regenerate-and-build)\nStart a new project from Orion or upgrade a project's Orion baseline\nA fresh full clone and frozen dependency install\n[Project derivation](project-derivation.md)\n"
+  },
+  {
+    "id": "repository/docs/setup",
+    "title": "Development Setup",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Prepare a clean checkout",
+    "anchor": "prepare-a-clean-checkout",
+    "text": "Prepare a clean checkout\nUse Node.js 24.13.0 and pnpm 11.25.0, as pinned by `.node-version` and `package.json`. For full validation, start Docker or another Testcontainers-compatible container runtime and verify that its daemon is reachable with `docker info`. From a fresh checkout, run:\npnpm install --frozen-lockfile\npnpm db:generate\npnpm -C apps/web exec playwright install chromium\n\nOn Linux, use `pnpm -C apps/web exec playwright install --with-deps chromium` if the browser's system libraries are absent. Windows browser component tests use the installed Edge channel; Playwright end-to-end tests use Chromium. Do not put credentials in tracked files.\n"
   }
 ]

@@ -1,5 +1,5 @@
 {
-  "method": "sRGB relative luminance contrast ratio; candidate surfaces only",
+  "method": "sRGB relative luminance contrast ratio; identity surfaces only",
   "pairs": [
     {
       "foreground": "#0F172A",
@@ -38,46 +38,21 @@
     }
   ],
   "proofSizesPx": [16, 24, 32, 64, 128, 180, 512],
-  "approval": "pending",
-  "fontRendering": "Pango outline exports from bundled unmodified font sources; no runtime font integration",
-  "productionAssetsReplaced": false,
+  "approval": "Connected Tiles approved by product owner for integration",
+  "fontRendering": "Outlined wordmark exports; Plus Jakarta Sans served locally by the web app with its OFL notice",
+  "productionAssetsReplaced": true,
   "verifiedOutputs": {
-    "a": {
+    "connectedTiles": {
       "svgXmlValid": true,
       "pngs": {
-        "application-dark.png": {
-          "width": 1000,
-          "height": 560,
-          "colorType": 6
-        },
-        "touch-icon-180.png": {
-          "width": 180,
-          "height": 180,
-          "colorType": 2
-        },
-        "identity-board.png": {
-          "width": 1536,
-          "height": 1024,
-          "colorType": 2
-        },
         "app-icon-512.png": {
           "width": 512,
           "height": 512,
           "colorType": 6
         },
-        "favicon-16.png": {
-          "width": 16,
-          "height": 16,
-          "colorType": 6
-        },
-        "wordmark.png": {
-          "width": 275,
-          "height": 132,
-          "colorType": 6
-        },
-        "logo-dark.png": {
-          "width": 1200,
-          "height": 345,
+        "application-dark.png": {
+          "width": 1000,
+          "height": 560,
           "colorType": 6
         },
         "application-light.png": {
@@ -85,24 +60,29 @@
           "height": 560,
           "colorType": 6
         },
+        "favicon-16.png": {
+          "width": 16,
+          "height": 16,
+          "colorType": 6
+        },
+        "favicon-32.png": {
+          "width": 32,
+          "height": 32,
+          "colorType": 6
+        },
+        "identity-board.png": {
+          "width": 1536,
+          "height": 1024,
+          "colorType": 2
+        },
+        "logo-dark.png": {
+          "width": 1200,
+          "height": 356,
+          "colorType": 6
+        },
         "logo-light.png": {
           "width": 1200,
-          "height": 345,
-          "colorType": 6
-        },
-        "symbol-monochrome.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "symbol-dark.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "symbol.png": {
-          "width": 128,
-          "height": 128,
+          "height": 356,
           "colorType": 6
         },
         "small-size-proof.png": {
@@ -110,19 +90,24 @@
           "height": 260,
           "colorType": 2
         },
-        "favicon-32.png": {
-          "width": 32,
-          "height": 32,
+        "symbol-dark.png": {
+          "width": 128,
+          "height": 128,
           "colorType": 6
-        }
-      }
-    },
-    "b": {
-      "svgXmlValid": true,
-      "pngs": {
-        "application-dark.png": {
-          "width": 1000,
-          "height": 560,
+        },
+        "symbol-monochrome.png": {
+          "width": 128,
+          "height": 128,
+          "colorType": 6
+        },
+        "symbol-surfaces.png": {
+          "width": 720,
+          "height": 300,
+          "colorType": 2
+        },
+        "symbol.png": {
+          "width": 128,
+          "height": 128,
           "colorType": 6
         },
         "touch-icon-180.png": {
@@ -130,142 +115,70 @@
           "height": 180,
           "colorType": 2
         },
-        "identity-board.png": {
-          "width": 1536,
-          "height": 1024,
+        "web-docs-desktop.png": {
+          "width": 1440,
+          "height": 1320,
           "colorType": 2
         },
-        "app-icon-512.png": {
-          "width": 512,
-          "height": 512,
-          "colorType": 6
+        "web-docs-mobile.png": {
+          "width": 390,
+          "height": 2005,
+          "colorType": 2
         },
-        "favicon-16.png": {
-          "width": 16,
-          "height": 16,
-          "colorType": 6
+        "web-home-desktop.png": {
+          "width": 1440,
+          "height": 1000,
+          "colorType": 2
+        },
+        "web-home-mobile.png": {
+          "width": 390,
+          "height": 844,
+          "colorType": 2
         },
         "wordmark.png": {
           "width": 263,
           "height": 132,
           "colorType": 6
-        },
-        "logo-dark.png": {
-          "width": 1200,
-          "height": 356,
-          "colorType": 6
-        },
-        "application-light.png": {
-          "width": 1000,
-          "height": 560,
-          "colorType": 6
-        },
-        "logo-light.png": {
-          "width": 1200,
-          "height": 356,
-          "colorType": 6
-        },
-        "symbol-monochrome.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "symbol-dark.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "symbol.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "small-size-proof.png": {
-          "width": 640,
-          "height": 260,
-          "colorType": 2
-        },
-        "favicon-32.png": {
-          "width": 32,
-          "height": 32,
-          "colorType": 6
         }
+      }
+    }
+  },
+  "runtimeVerification": {
+    "date": "2026-10-17",
+    "fontStatus": 200,
+    "fontLicenseStatus": 200,
+    "pages": {
+      "web-home-desktop": {
+        "font": "\"Plus Jakarta Sans\", ui-sans-serif, system-ui, sans-serif",
+        "fontLoaded": true,
+        "noHorizontalOverflow": true,
+        "imageLoaded": true
+      },
+      "web-docs-desktop": {
+        "font": "\"Plus Jakarta Sans\", ui-sans-serif, system-ui, sans-serif",
+        "fontLoaded": true,
+        "noHorizontalOverflow": true,
+        "imageLoaded": true
+      },
+      "web-home-mobile": {
+        "font": "\"Plus Jakarta Sans\", ui-sans-serif, system-ui, sans-serif",
+        "fontLoaded": true,
+        "noHorizontalOverflow": true,
+        "imageLoaded": true
+      },
+      "web-docs-mobile": {
+        "font": "\"Plus Jakarta Sans\", ui-sans-serif, system-ui, sans-serif",
+        "fontLoaded": true,
+        "noHorizontalOverflow": true,
+        "imageLoaded": true
       }
     },
-    "c": {
-      "svgXmlValid": true,
-      "pngs": {
-        "application-dark.png": {
-          "width": 1000,
-          "height": 560,
-          "colorType": 6
-        },
-        "touch-icon-180.png": {
-          "width": 180,
-          "height": 180,
-          "colorType": 2
-        },
-        "identity-board.png": {
-          "width": 1536,
-          "height": 1024,
-          "colorType": 2
-        },
-        "app-icon-512.png": {
-          "width": 512,
-          "height": 512,
-          "colorType": 6
-        },
-        "favicon-16.png": {
-          "width": 16,
-          "height": 16,
-          "colorType": 6
-        },
-        "wordmark.png": {
-          "width": 271,
-          "height": 132,
-          "colorType": 6
-        },
-        "logo-dark.png": {
-          "width": 1200,
-          "height": 349,
-          "colorType": 6
-        },
-        "application-light.png": {
-          "width": 1000,
-          "height": 560,
-          "colorType": 6
-        },
-        "logo-light.png": {
-          "width": 1200,
-          "height": 349,
-          "colorType": 6
-        },
-        "symbol-monochrome.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "symbol-dark.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "symbol.png": {
-          "width": 128,
-          "height": 128,
-          "colorType": 6
-        },
-        "small-size-proof.png": {
-          "width": 640,
-          "height": 260,
-          "colorType": 2
-        },
-        "favicon-32.png": {
-          "width": 32,
-          "height": 32,
-          "colorType": 6
-        }
-      }
+    "pageErrors": [],
+    "fullValidation": {
+      "command": "pnpm validate",
+      "result": "passed",
+      "e2eTestsPassed": 16,
+      "scope": "local checkout"
     }
   }
 }

@@ -1,0 +1,13 @@
+[
+  {
+    "file": "OFL.txt",
+    "source": "https://github.com/google/fonts/blob/main/ofl/plusjakartasans/OFL.txt",
+    "gitBlob": "ea69b0ca12a02556c436680ea0a159efb7a748fa",
+    "localTextNormalization": "LF line endings and trailing whitespace only; license wording preserved"
+  },
+  {
+    "file": "plus-jakarta-sans.ttf",
+    "source": "https://github.com/google/fonts/blob/main/ofl/plusjakartasans/PlusJakartaSans[wght].ttf",
+    "gitBlob": "0cb13a998ed525ba226d911b10d6c4c4f923a961"
+  }
+]

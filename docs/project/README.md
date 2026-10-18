@@ -7,7 +7,7 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | Question | Canonical document |
 | --- | --- |
 | What is Teluni, who uses it, and what is the commercial hypothesis? | [Product vision](product.md) |
-| What name/domains are approved, and which identity should be selected? | [Branding decisions and A/B/C studies](branding/README.md) |
+| What name/domains and visual identity are approved? | [Teluni brand identity](branding/README.md) |
 | What belongs in the MVP, and how will it be accepted? | [MVP requirements and acceptance](mvp.md) |
 | What are the proposed components, modules, entities, and unresolved technical choices? | [Product architecture](architecture.md) |
 | How must publication, local playback, and recovery behave? | [Offline playback and synchronization](playback-and-sync.md) |

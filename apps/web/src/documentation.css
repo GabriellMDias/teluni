@@ -6,7 +6,7 @@
   font: inherit;
 }
 .docs-workspace {
-  --docs-ink: #172c3e;
+  --docs-ink: #0f172a;
   --docs-muted: #536677;
   --docs-border: #dce4e9;
   color: var(--docs-ink);
@@ -47,14 +47,13 @@
   overflow-y: auto;
   padding: 1.8rem 1.2rem;
   border-right: 1px solid var(--docs-border);
-  background: #f7f9fa;
+  background: #f8fafc;
 }
 .docs-rail-brand {
   padding: 0 0.55rem 1.65rem;
   font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 .docs-brand-symbol {
   width: 28px;
@@ -101,10 +100,10 @@
   color: #173f59;
 }
 .docs-rail nav > a[aria-current] {
-  background: #dcece7;
-  color: #135444;
+  background: #dbeafe;
+  color: #1d4ed8;
   font-weight: 700;
-  box-shadow: inset 3px 0 #267663;
+  box-shadow: inset 3px 0 #2563eb;
 }
 .docs-nav-label {
   font-size: 0.68rem;
@@ -153,7 +152,7 @@
 .docs-topbar select {
   border: 1px solid #c4d0d8;
   border-radius: 6px;
-  background: #f7f9fa;
+  background: #f8fafc;
   color: #29465a;
   padding: 0.6rem 0.7rem;
   font-size: 0.83rem;
@@ -162,8 +161,8 @@
   font-size: 0.83rem;
   padding: 0.62rem 0.9rem;
   color: #fff;
-  background: #1c5b4c;
-  border-color: #1c5b4c;
+  background: #2563eb;
+  border-color: #2563eb;
 }
 .docs-app-link {
   font-size: 0.76rem;
@@ -207,7 +206,7 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-weight: 800;
-  color: #347262;
+  color: #1d4ed8;
   margin: 0 0 0.4rem;
 }
 .docs-page-header h1 {
@@ -243,22 +242,22 @@
   border-radius: 9px;
   text-decoration: none;
   color: var(--docs-ink);
-  background: linear-gradient(135deg, #fff, #f9fbfa);
+  background: linear-gradient(135deg, #fff, #f8fafc);
   transition:
     border-color 0.15s,
     background 0.15s;
 }
 .docs-hub-card:hover {
-  border-color: #78a797;
-  background: #f2f8f5;
+  border-color: #60a5fa;
+  background: #eff6ff;
 }
 .docs-hub-symbol {
   display: inline-grid;
   place-items: center;
   height: 36px;
   width: 36px;
-  background: #e6f0eb;
-  color: #1b6452;
+  background: #dbeafe;
+  color: #1d4ed8;
   border-radius: 7px;
   font-size: 1.4rem;
 }
@@ -280,8 +279,8 @@
   justify-content: space-between;
   margin-top: 1.3rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e4ebe7;
-  color: #466254;
+  border-top: 1px solid #cbd5e1;
+  color: #64748b;
   font-size: 0.74rem;
 }
 .docs-start {
@@ -311,7 +310,7 @@
   border-bottom: 1px solid var(--docs-border);
   font-size: 0.86rem;
   text-decoration: none;
-  color: #245847;
+  color: #2563eb;
 }
 .docs-article h2 {
   font-size: 1.35rem;
@@ -354,11 +353,11 @@
   padding: 0.1em 0.25em;
 }
 .docs-article blockquote {
-  border-left: 3px solid #74a99a;
+  border-left: 3px solid #14b8a6;
   padding: 0.4rem 1rem;
   margin: 1.4rem 0;
-  background: #f5f9f7;
-  color: #486154;
+  background: #f8fafc;
+  color: #334155;
 }
 .docs-article details {
   border: 1px solid var(--docs-border);
@@ -432,7 +431,7 @@
   line-height: 1.5;
 }
 .docs-outline a:hover {
-  color: #155b49;
+  color: #2563eb;
   text-decoration: underline;
 }
 .docs-outline .subheading {
@@ -484,7 +483,7 @@
   color: #27485a;
 }
 .docs-entry:hover {
-  background: #f6faf8;
+  background: #f8fafc;
 }
 .docs-entry > div {
   display: flex;
@@ -548,7 +547,7 @@
   font-size: 0.85rem;
 }
 .docs-facts {
-  background: #f7f9fa;
+  background: #f8fafc;
   padding: 1rem;
   border-radius: 7px;
   font-size: 0.83rem;
@@ -584,7 +583,7 @@
 }
 .docs-results h2 a {
   text-decoration: none;
-  color: #265d4c;
+  color: #2563eb;
 }
 .docs-results p {
   font-size: 0.84rem;
@@ -597,8 +596,8 @@
   border-color: #b2c5ce;
 }
 .docs-explorer {
-  background: #f6f9f8;
-  border: 1px solid #ccdcd5;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   border-radius: 9px;
   padding: 1.3rem;
 }
@@ -620,11 +619,11 @@
 .docs-explorer textarea {
   width: 100%;
   min-width: 0;
-  border: 1px solid #b4c7bf;
+  border: 1px solid #cbd5e1;
   border-radius: 5px;
   background: #fff;
   padding: 0.6rem;
-  color: #1c3a2c;
+  color: #0f172a;
 }
 .docs-explorer textarea {
   font-family: ui-monospace, monospace;
@@ -651,8 +650,8 @@
   margin-top: 1rem;
 }
 .docs-actions button[type="submit"] {
-  background: #1c5b4c;
-  border-color: #1c5b4c;
+  background: #2563eb;
+  border-color: #2563eb;
   color: #fff;
 }
 .docs-error {

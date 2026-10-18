@@ -677,10 +677,10 @@
     {
       "id": "repository/docs/project/branding/README",
       "kind": "repository",
-      "title": "Teluni Brand Identity Studies",
+      "title": "Teluni Brand Identity",
       "group": "Project guides",
       "source": "docs/project/branding/README.md",
-      "summary": "This document owns Teluni's brand/domain direction and the comparison of initial visual candidates. The product owner approved the following direction on 2026-10-17; approval…",
+      "summary": "This document owns Teluni's current brand/domain direction and approved Connected Tiles visual identity. The owner approved the name/domain direction and selected Connected…",
       "headings": [],
       "file": "pages/repository/docs/project/branding/README.json"
     },
@@ -1048,10 +1048,10 @@
       { "file": "search/0004.json", "count": 131, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 97, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 80, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 90, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 92, "kinds": ["repository"] },
       { "file": "search/0008.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 28, "kinds": ["repository"] }
+      { "file": "search/0009.json", "count": 21, "kinds": ["repository"] }
     ],
-    "count": 1043
+    "count": 1038
   }
 }
