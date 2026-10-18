@@ -11,7 +11,7 @@
 | `pt-BR` | Todas as suas telas. Um só lugar. |
 | `en-US` | Every screen. One place. |
 
-Teluni is the intended product name. Trademark registration and final domain availability are **pending** verification under [PH-07](human-actions.md#ph-07). The existing neutral brand assets are placeholders; this stage does not replace them.
+**Decided:** the owner approved Teluni as the product name and `teluni.app` as the principal domain. `teluni.com.br` is the secondary/defensive Brazil option (availability reported by the owner); unavailable/premium `teluni.com` is outside the current budget and scope. [Branding](branding/README.md) owns these decisions and the A/B/C identity proposals. Preliminary trademark research has advanced, but registration/control and final clearance are not inferred. [PH-07](human-actions.md#ph-07) remains in progress pending visual identity approval and integration; runtime brand assets remain placeholders.
 
 ## Origin and pilot
 

@@ -675,6 +675,16 @@
       "file": "pages/repository/docs/project/architecture.json"
     },
     {
+      "id": "repository/docs/project/branding/README",
+      "kind": "repository",
+      "title": "Teluni Brand Identity Studies",
+      "group": "Project guides",
+      "source": "docs/project/branding/README.md",
+      "summary": "This document owns Teluni's brand/domain direction and the comparison of initial visual candidates. The product owner approved the following direction on 2026-10-17; approval…",
+      "headings": [],
+      "file": "pages/repository/docs/project/branding/README.json"
+    },
+    {
       "id": "repository/docs/project/human-actions",
       "kind": "repository",
       "title": "Teluni Human Actions",
@@ -1037,11 +1047,11 @@
       { "file": "search/0003.json", "count": 173, "kinds": ["repository"] },
       { "file": "search/0004.json", "count": 131, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 97, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 83, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 93, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 15, "kinds": ["repository"] }
+      { "file": "search/0006.json", "count": 80, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 90, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 28, "kinds": ["repository"] }
     ],
-    "count": 1031
+    "count": 1043
   }
 }

@@ -1,0 +1,35 @@
+[
+  {
+    "file": "Manrope[wght].ttf",
+    "source": "https://github.com/google/fonts/blob/main/ofl/manrope/Manrope[wght].ttf",
+    "gitBlob": "75274da58537d6123b14f2cd0c355ad4681fc2b3"
+  },
+  {
+    "file": "manrope-OFL.txt",
+    "source": "https://github.com/google/fonts/blob/main/ofl/manrope/OFL.txt",
+    "gitBlob": "e271172a9ed0cddc895aabb6509f1c7d880b492d",
+    "localTextNormalization": "LF line endings and trailing whitespace only; license wording preserved"
+  },
+  {
+    "file": "plusjakartasans-OFL.txt",
+    "source": "https://github.com/google/fonts/blob/main/ofl/plusjakartasans/OFL.txt",
+    "gitBlob": "ea69b0ca12a02556c436680ea0a159efb7a748fa",
+    "localTextNormalization": "LF line endings and trailing whitespace only; license wording preserved"
+  },
+  {
+    "file": "PlusJakartaSans[wght].ttf",
+    "source": "https://github.com/google/fonts/blob/main/ofl/plusjakartasans/PlusJakartaSans[wght].ttf",
+    "gitBlob": "0cb13a998ed525ba226d911b10d6c4c4f923a961"
+  },
+  {
+    "file": "spacegrotesk-OFL.txt",
+    "source": "https://github.com/google/fonts/blob/main/ofl/spacegrotesk/OFL.txt",
+    "gitBlob": "cb512b9af44ff61e75e1aad387b7424cdfab36a3",
+    "localTextNormalization": "LF line endings and trailing whitespace only; license wording preserved"
+  },
+  {
+    "file": "SpaceGrotesk[wght].ttf",
+    "source": "https://github.com/google/fonts/blob/main/ofl/spacegrotesk/SpaceGrotesk[wght].ttf",
+    "gitBlob": "a1b2e6c26093066510a31147e7aec9abdc8d6c5e"
+  }
+]

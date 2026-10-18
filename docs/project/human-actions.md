@@ -96,12 +96,12 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 - [ ] **Verify the intended Teluni name, domains and visual identity before public launch.**
 
-**Status:** pending. **Owner:** project owner, with specialist input where needed.
+**Status:** in progress. **Owner:** project owner, with specialist input where needed.
 **Dependency / trigger:** PJ-04 and PJ-14; before external brand commitments.
-**Request and reason:** Confirm trademark/domain viability and ownership, then provide/approve the visual identity. The intended name and slogans are recorded in [product vision](product.md); they are not registration or availability evidence.
+**Request and reason:** Review and approve the initial [A/B/C identity studies](branding/README.md), then approve their final web integration. The owner approved Teluni and `teluni.app`, designated `teluni.com.br` as the secondary/defensive Brazil option (reported available), and excluded unavailable/premium `teluni.com` from the current budget/scope. Preliminary trademark research has advanced; registration/control and final clearance must only be recorded when evidenced.
 **Configuration:** none; do not publish registrar credentials.
-**Verification:** Record dated non-secret ownership/clearance evidence and approved identity assets; later verify the web/player use them.
-**Evidence / blocker:** No availability/registration or final assets verified. Does not block the documentation stage.
+**Verification:** Record the owner's selected/refined visual identity and explicit asset approval; integrate the approved SVG and derived touch icon through the existing web pipeline and verify light/dark and small-size outputs. Record dated non-secret domain-control/registration and trademark outcomes before claiming them; player/store exports are conditional on the later Android application.
+**Evidence / blocker:** 2026-10-17: owner explicitly confirmed the name/domain direction and reported preliminary trademark progress; [branding documentation](branding/README.md#approved-name-and-domain-direction) distinguishes those decisions from ownership/registration. Delivered three unapproved image-generated identity boards (A/B/C), plus separate logo/wordmark, symbol, light/dark application, favicon/app/touch and small-size SVG/PNG proofs. Built-in tool prompts, font sources/licenses and contrast/dimension checks are recorded with the studies. Frozen install and full local `pnpm validate` passed, including 16 E2E tests. The existing runtime assets remain unchanged. Human choice/refinement/approval and final integration remain outstanding; PH-07 is not complete.
 
 ## PH-08
 

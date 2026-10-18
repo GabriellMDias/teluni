@@ -27,6 +27,8 @@ The display name comes from `.orion/project.json` at build time: page titles, th
 
 The shell, documentation navigation, and browser favicon consume the SVG directly. Only the Apple touch icon uses a derived 180×180 PNG on a light neutral background. After editing the SVG, run `pnpm -C apps/web identity:write` to regenerate that raster through the [export script](scripts/generate-touch-icon.mjs), using the Playwright Chromium installation described in [setup](../../docs/setup.md#prepare-a-clean-checkout). Commit both files, then rebuild. Do not edit the PNG independently. Adjacent live text names the decorative mark for accessibility.
 
+Teluni's [branding studies](../../docs/project/branding/README.md) contain A/B/C candidates and the approval/integration checklist. They are review assets only; the production SVG and touch icon above remain unchanged until the owner approves a direction.
+
 ## Run the application
 
 Use the canonical [setup guide](../../docs/setup.md) for installation, environment loading, and prerequisites. For an API at `127.0.0.1:3000`, run `pnpm -C apps/web dev`.
