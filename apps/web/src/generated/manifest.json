@@ -1307,7 +1307,7 @@
       "title": "API SDK",
       "group": "Workspace guides",
       "source": "packages/sdk/README.md",
-      "summary": "This private workspace package (packages/sdk) is the client boundary for the API. src/index.ts exports createApiClient(baseUrl, getAccessToken), ApiClient, and generated paths…",
+      "summary": "This private workspace package (packages/sdk) is the client boundary for the API. src/index.ts exports createApiClient(baseUrl, getAccessToken, { getCsrfToken }), ApiClient,…",
       "headings": [],
       "file": "pages/repository/packages/sdk/README.json"
     },
@@ -1336,11 +1336,11 @@
       { "file": "search/0005.json", "count": 136, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 91, "kinds": ["repository"] },
       { "file": "search/0007.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 56, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 55, "kinds": ["repository"] },
       { "file": "search/0009.json", "count": 74, "kinds": ["repository"] },
       { "file": "search/0010.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 81, "kinds": ["repository"] }
+      { "file": "search/0011.json", "count": 83, "kinds": ["repository"] }
     ],
-    "count": 1170
+    "count": 1171
   }
 }

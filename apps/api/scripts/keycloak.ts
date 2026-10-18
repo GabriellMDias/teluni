@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { GenericContainer, Wait } from "testcontainers";
+import { GenericContainer, Wait, type StartedNetwork } from "testcontainers";
 
 // Pinned by digest: the identity design qualifies this exact Keycloak build.
 export const keycloakImage =
@@ -59,7 +59,7 @@ export function keycloakAdmin(
  */
 export async function withKeycloak<T>(
   work: (admin: KeycloakAdmin) => Promise<T>,
-  options: { network?: string; alias?: string } = {},
+  options: { network?: StartedNetwork; alias?: string } = {},
 ): Promise<T> {
   const password = randomBytes(18).toString("base64url");
   let container = new GenericContainer(keycloakImage)
@@ -73,7 +73,7 @@ export async function withKeycloak<T>(
     .withWaitStrategy(Wait.forHttp("/health/ready", 9000))
     .withStartupTimeout(180_000);
   if (options.network) {
-    container = container.withNetworkMode(options.network);
+    container = container.withNetwork(options.network);
     if (options.alias) container = container.withNetworkAliases(options.alias);
   }
   const started = await container.start();
@@ -94,13 +94,13 @@ export async function withMailpit<T>(
     smtpPort: number;
     apiUrl: string;
   }) => Promise<T>,
-  options: { network?: string; alias?: string } = {},
+  options: { network?: StartedNetwork; alias?: string } = {},
 ): Promise<T> {
   let container = new GenericContainer(mailpitImage)
     .withExposedPorts(1025, 8025)
     .withWaitStrategy(Wait.forHttp("/readyz", 8025));
   if (options.network) {
-    container = container.withNetworkMode(options.network);
+    container = container.withNetwork(options.network);
     if (options.alias) container = container.withNetworkAliases(options.alias);
   }
   const started = await container.start();

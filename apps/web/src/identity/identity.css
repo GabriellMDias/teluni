@@ -1,0 +1,56 @@
+.identity-panel {
+  max-width: 44rem;
+}
+.identity-panel .notice {
+  margin: 1rem 0;
+}
+.button-link {
+  display: inline-block;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 0.65rem 1rem;
+  text-decoration: none;
+}
+.identity-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+}
+.session-list {
+  list-style: none;
+  margin: 1rem 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid #d7e0e7;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+.session-times {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.8rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #536879;
+}
+.session-times dd {
+  margin: 0;
+}
+@media (max-width: 520px) {
+  .session-item {
+    flex-direction: column;
+  }
+}
+.header-nav .identity-nav .button-text {
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 0;
+}

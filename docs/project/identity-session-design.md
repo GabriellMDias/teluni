@@ -117,7 +117,7 @@ Each Keycloak assumption in this document (header type, protected attribute mapp
 
 ## Implementation status
 
-**Implemented and verified on 2026-10-18** (API only; no web workflow yet):
+**Implemented and verified on 2026-10-18:**
 
 | Capability | Source | Evidence |
 | --- | --- | --- |
@@ -127,9 +127,12 @@ Each Keycloak assumption in this document (header type, protected attribute mapp
 | Session boundary: cookie lookup by digest, idle/absolute expiry, CSRF and Origin checks, 30-second introspection, single-flight refresh, ADR-0012 verification, background activity | `service.ts`, `routes.ts`, `public.ts` | CSRF/Origin rejection; idle expiry and background requests; disabled principals and provider-disabled users denied; three waves of ten concurrent requests share one refresh each (a regression test for a stale-token race found during validation); bearer-only requests rejected |
 | Session list/termination, five-session limit with pending activation, logout ending the provider session, back-channel logout | `service.ts`, `routes.ts` | Foreign session IDs not found; sixth session pending until one ends; next login after logout asks for credentials; provider-side logout revokes through back-channel logout |
 
+| Web sign-in, sessions page and header sign-out; SDK CSRF header on unsafe methods; pt-BR/en-US copy | [`apps/web/src/identity/`](../../apps/web/src/identity/routes.tsx), [`packages/sdk/src/index.ts`](../../packages/sdk/src/index.ts) | [Browser journeys](../../apps/web/test/e2e/identity/login.spec.ts) through the real Keycloak pages: sign in, cookie attributes and empty browser storage, sessions list, sign-out, ending the current session, localized forged-callback guidance, English copy and axe scans |
+| Disposable local identity stack | [`scripts/local-identity.ts`](../../apps/api/scripts/local-identity.ts), [manual stack](../../apps/web/test/e2e/identity/manual.ts) | Used by the browser journeys; [setup](../setup.md#try-sign-in-locally) |
+
 Also implemented: the narrow `requiresModules` contract and `public.ts` dependency rule, the `access`/`bodyContentType` operation metadata with cookie security in OpenAPI, and the six `TELUNI_` settings in the [configuration reference](../generated/configuration/api.md).
 
-**Not yet implemented:** the web sign-in, session-expiry and session-management workflow and SDK CSRF handling; step-up to `teluni-aal2`, OTP/passkey/recovery-code flows and recent-authentication checks (IA-05); signup, email verification and password recovery through Mailpit (IA-01, IA-06); per-membership idle limits (every session currently uses the 30-minute administrative bound, the stricter value); global disablement as a platform operation; cleanup of expired attempts and replay records; a manual local stack; Google (PH-16). Real environments still need PH-10 and PH-15–PH-17.
+**Not yet implemented:** idle-timeout warnings and draft protection in the panel; step-up to `teluni-aal2`, OTP/passkey/recovery-code flows and recent-authentication checks (IA-05); signup, email verification and password recovery through Mailpit (IA-01, IA-06); per-membership idle limits (every session currently uses the 30-minute administrative bound, the stricter value); global disablement as a platform operation; cleanup of expired attempts and replay records; Google (PH-16). Real environments still need PH-10 and PH-15–PH-17.
 
 ## Alternatives considered
 

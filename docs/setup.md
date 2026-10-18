@@ -57,6 +57,18 @@ To try an API route, also run the API as described above, open an API operation,
 
 After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Build with `pnpm -C apps/web build`; preview with `pnpm -C apps/web exec vite preview --host 127.0.0.1`, then open `/docs` on the printed port. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.
 
+## Try sign-in locally
+
+The identity workflow needs a Keycloak that the API calls back, so it runs as a disposable stack rather than with `.env.local`. With Docker running, from the repository root:
+
+```sh
+pnpm db:generate
+pnpm -C apps/api build
+node apps/web/test/e2e/identity/manual.ts
+```
+
+It starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It prints the panel URL, the Mailpit inbox URL and the synthetic user's email and password; you can also create an account on the Keycloak sign-in page and read its verification email in Mailpit. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).
+
 ## Exercise automated workflows
 
 Automated workflows use disposable databases and synthetic identities. No seed data or external account is needed:
