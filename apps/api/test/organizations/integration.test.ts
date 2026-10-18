@@ -32,6 +32,7 @@ const people = {
   bAdmin: randomUUID(),
   multi: randomUUID(),
   outsider: randomUUID(),
+  paged: randomUUID(),
 };
 type Person = keyof typeof people;
 
@@ -547,10 +548,17 @@ describe("organizations: two-company isolation", () => {
         strong: true,
       },
     );
-    const items = audit.body.items as { action: string }[];
+    const items = audit.body.items as {
+      action: string;
+      details: { branchName: string };
+    }[];
     expect(items.map((item) => item.action)).toEqual([
       "branch.created",
       "branch.archived",
+    ]);
+    expect(items.map((item) => item.details.branchName)).toEqual([
+      "temporária",
+      "Temporária",
     ]);
     // Cursors are bound to the principal that received them.
     const foreign = await call(
@@ -591,6 +599,115 @@ describe("organizations: two-company isolation", () => {
       ).rejects.toThrow(new OrganizationFailure("RESOURCE_VERSION_CONFLICT"));
     } finally {
       await single.$disconnect();
+    }
+  });
+
+  it("paginates more than 200 companies with stable boundaries and current membership predicates", async () => {
+    const { rows } = await sql.query<{ company_id: string }>(
+      `
+      WITH created AS (
+        INSERT INTO companies (id, display_name, default_locale, time_zone,
+          created_by_principal_id, creation_key, creation_fingerprint, created_at)
+        SELECT gen_random_uuid(), 'Page company ' || n, 'pt-BR', 'UTC', $1,
+          'page-' || n, repeat('0', 64), '2026-10-18 00:00:00+00'
+        FROM generate_series(1, 205) n RETURNING id
+      ), members AS (
+        INSERT INTO memberships (id, company_id, principal_id)
+        SELECT gen_random_uuid(), id, $1 FROM created RETURNING id, company_id
+      )
+      INSERT INTO membership_grants (id, company_id, membership_id, role, scope)
+      SELECT gen_random_uuid(), company_id, id, 'OPERATOR', 'COMPANY' FROM members
+      RETURNING company_id`,
+      [people.paged],
+    );
+    const expected = rows
+      .map((row) => row.company_id)
+      .sort()
+      .reverse();
+    const first = await call("paged", "GET", "/companies?limit=100");
+    expect(first.status).toBe(200);
+    const firstItems = first.body.items as { id: string }[];
+    expect(firstItems.map((item) => item.id)).toEqual(expected.slice(0, 100));
+    const cursor = first.body.nextCursor as string;
+    expect(typeof cursor).toBe("string");
+    const foreign = await call("aAdmin", "GET", `/companies?cursor=${cursor}`);
+    expect(foreign.status).toBe(400);
+    expect(code(foreign)).toBe("VALIDATION_FAILED");
+
+    // Renames cannot move the page boundary, and current access still applies.
+    await sql.query(
+      "UPDATE companies SET display_name = 'Renamed boundary' WHERE id = $1",
+      [expected[99]],
+    );
+    await sql.query(
+      "UPDATE memberships SET status = 'REMOVED' WHERE company_id = $1 AND principal_id = $2",
+      [expected[110], people.paged],
+    );
+    await sql.query(
+      "UPDATE memberships SET status = 'SUSPENDED' WHERE company_id = $1 AND principal_id = $2",
+      [expected[111], people.paged],
+    );
+    await sql.query(
+      "UPDATE membership_grants SET starts_at = now() - interval '1 hour', expires_at = now() - interval '1 second' WHERE company_id = $1",
+      [expected[112]],
+    );
+    await sql.query("UPDATE companies SET status = 'SUSPENDED' WHERE id = $1", [
+      expected[113],
+    ]);
+    const all = [...firstItems];
+    let next: string | null = cursor;
+    while (next) {
+      const page = await call(
+        "paged",
+        "GET",
+        `/companies?limit=100&cursor=${next}`,
+      );
+      expect(page.status).toBe(200);
+      const items = page.body.items as {
+        id: string;
+        roles: string[];
+        status: string;
+      }[];
+      const expired = items.find((item) => item.id === expected[112]);
+      if (expired) expect(expired.roles).toEqual([]);
+      const suspended = items.find((item) => item.id === expected[113]);
+      if (suspended) expect(suspended.status).toBe("SUSPENDED");
+      all.push(...items);
+      next = page.body.nextCursor as string | null;
+    }
+    expect(all.map((item) => item.id)).toEqual(
+      expected.filter((_, index) => index !== 110 && index !== 111),
+    );
+    expect(new Set(all.map((item) => item.id)).size).toBe(203);
+    const defaultPage = await call("paged", "GET", "/companies");
+    expect(defaultPage.body.items).toHaveLength(50);
+
+    const fields = JSON.parse(
+      Buffer.from(cursor, "base64url").toString("utf8"),
+    ) as Record<string, string>;
+    for (const invalid of [
+      "bad-json",
+      Buffer.from("[]").toString("base64url"),
+      ...[
+        { ...fields, t: "invalid" },
+        { ...fields, i: "invalid" },
+        { ...fields, k: "audit" },
+        { ...fields, c: companyA },
+      ].map((value) =>
+        Buffer.from(JSON.stringify(value)).toString("base64url"),
+      ),
+    ]) {
+      const rejected = await call(
+        "paged",
+        "GET",
+        `/companies?cursor=${invalid}`,
+      );
+      expect(rejected.status).toBe(400);
+      expect(code(rejected)).toBe("VALIDATION_FAILED");
+    }
+    for (const limit of [0, 101, -1]) {
+      const rejected = await call("paged", "GET", `/companies?limit=${limit}`);
+      expect(rejected.status).toBe(400);
     }
   });
 

@@ -117,14 +117,18 @@ export function registerOrganizationRoutes(
                 });
               }
               case "listCompanies": {
-                const items = await service.listCompanies(context);
+                const page = await service.listCompanies(context, {
+                  limit: query.limit ?? 50,
+                  ...(query.cursor ? { cursor: query.cursor } : {}),
+                });
                 return reply.send({
-                  items: items.map((item) => ({
+                  items: page.items.map((item) => ({
                     id: item.id,
                     displayName: item.displayName,
                     status: item.status,
                     roles: item.roles,
                   })),
+                  nextCursor: page.nextCursor,
                 });
               }
               case "getCompany": {

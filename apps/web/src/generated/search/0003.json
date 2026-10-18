@@ -4,6 +4,15 @@
     "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Biome as the Unified Formatter and Linter",
+    "anchor": "biome-as-the-unified-formatter-and-linter",
+    "text": "Biome as the Unified Formatter and Linter\nBiome provides integrated formatting and linting with strong performance characteristics and a growing set of TypeScript and JavaScript rules.\nUsing one tool for both responsibilities would reduce the number of tools in the repository and could improve validation performance.\nIt was not selected as Orion's initial primary linting platform because Orion places significant value on extensible static analysis, TypeScript type-aware linting, and compatibility with a broad ecosystem of framework- and domain-specific rules.\nESLint and typescript-eslint currently provide a stronger fit for those requirements.\nThe decision does not imply that Biome is unsuitable for Orion permanently. Formatting and linting tooling may be reevaluated if the capabilities and tradeoffs materially change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "ESLint for Both Formatting and Static Analysis",
     "anchor": "eslint-for-both-formatting-and-static-analysis",
     "text": "ESLint for Both Formatting and Static Analysis\nESLint can enforce many formatting-related rules in addition to semantic code rules.\nThis could reduce the need for a separate formatter.\nIt was not selected because mixing formatting and semantic analysis increases configuration complexity and makes lint results less focused on correctness and maintainability.\nOrion prefers the clearer responsibility boundary of Prettier for formatting and ESLint for static analysis.\n"
@@ -979,14 +988,5 @@
     "heading": "Default web architecture",
     "anchor": "default-web-architecture",
     "text": "Default web architecture\nOrion web applications will use a **client-first single-page application architecture by default**.\nThe normal architecture is:\nbrowser\n    ↓\nReact application\n    ↓\ngenerated TypeScript API client\n    ↓\nHTTP / JSON\n    ↓\nFastify API\n\nThe Fastify backend remains the authoritative application and data boundary.\nWeb applications must not access PostgreSQL, Prisma, or backend persistence infrastructure directly.\nBusiness rules that must remain authoritative across clients belong behind the backend application boundary rather than exclusively in the web application.\nThe client-first default applies primarily to application-oriented web systems such as:\nERP applications;\nCRM systems;\nadministrative applications;\nauthenticated SaaS products;\noperational dashboards;\ninternal business systems;\nother interaction-heavy web applications.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Server rendering",
-    "anchor": "server-rendering",
-    "text": "Server rendering\nServer-side rendering, static-site generation, React Server Components, or other server-assisted rendering models will **not be baseline Orion requirements**.\nThey may be introduced when concrete product requirements justify them, including concerns such as:\nsearch-engine indexing;\npublic content discovery;\nfirst-content requirements;\nmarketing pages;\ncontent-heavy public websites;\ne-commerce discovery surfaces;\nother workloads that materially benefit from server rendering.\nIntroducing server rendering must not silently move authoritative backend responsibilities from the Fastify application into the web application.\nA full-stack React framework is therefore not part of Orion's default web foundation.\n"
   }
 ]

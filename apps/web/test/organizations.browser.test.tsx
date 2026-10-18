@@ -11,7 +11,7 @@ import { browserLocale } from "../src/locale.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
 import { organizationMessages } from "../src/organizations/messages.js";
-import { branchesKey } from "../src/organizations/api.js";
+import { branchesKey, companyKey } from "../src/organizations/api.js";
 
 const companyId = "00000000-0000-4000-8000-000000000001";
 const companyPath = `/companies/${companyId}`;
@@ -43,7 +43,12 @@ async function open(path: string, signedIn = true) {
   return { screen, router, client };
 }
 
-function respond(handler: (url: URL) => { status?: number; body: unknown }) {
+function respond(
+  handler: (
+    url: URL,
+    request: RequestInfo | URL,
+  ) => { status?: number; body: unknown },
+) {
   const fetchOriginal = globalThis.fetch;
   vi.stubGlobal(
     "fetch",
@@ -54,7 +59,7 @@ function respond(handler: (url: URL) => { status?: number; body: unknown }) {
       );
       if (!url.pathname.startsWith("/api/"))
         return fetchOriginal(request, init);
-      const { status = 200, body } = handler(url);
+      const { status = 200, body } = handler(url, request);
       return Promise.resolve(
         new Response(JSON.stringify(body), {
           status,
@@ -220,3 +225,247 @@ test("keeps the edited version across refetch and reviews current data after a c
     .element(screen.getByLabelText(t.fieldBranchName).nth(0))
     .toHaveValue("Concurrent change");
 });
+
+test("preserves company pagination in the URL and browser history", async () => {
+  respond((url) => ({
+    body: {
+      items: [
+        {
+          id: companyId,
+          displayName: url.searchParams.has("cursor")
+            ? "Older company"
+            : "Recent company",
+          roles: ["OPERATOR"],
+        },
+      ],
+      nextCursor: url.searchParams.has("cursor") ? null : "company-page2",
+    },
+  }));
+  const { screen, router } = await open("/companies");
+  await expect
+    .element(screen.getByRole("link", { name: "Recent company" }))
+    .toBeVisible();
+  await screen.getByRole("link", { name: t.nextPage }).click();
+  await expect
+    .element(screen.getByRole("link", { name: "Older company" }))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({ cursor: "company-page2" });
+  router.history.back();
+  await expect
+    .element(screen.getByRole("link", { name: "Recent company" }))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({});
+});
+
+const administratorAccess = {
+  roles: ["COMPANY_ADMINISTRATOR"],
+  responsible: true,
+  capabilities: [
+    "company.view",
+    "company.settings.manage",
+    "branches.view",
+    "audit.view",
+  ],
+  capabilitiesAfterStrongAuthentication: [],
+};
+
+test("keeps the company draft and its version across refetch until a conflict is reviewed", async () => {
+  let version = 1;
+  let name = "Original company";
+  respond((_url, request) =>
+    request instanceof Request && request.method === "PATCH"
+      ? {
+          status: 409,
+          body: {
+            error: { code: "RESOURCE_VERSION_CONFLICT", message: "Changed" },
+          },
+        }
+      : {
+          body: {
+            company: {
+              id: companyId,
+              displayName: name,
+              version,
+              timeZone: "Asia/Kolkata",
+              defaultLocale: "pt-BR",
+            },
+            access: administratorAccess,
+          },
+        },
+  );
+  const { screen, client } = await open(`${companyPath}?view=settings`);
+  await screen.getByRole("button", { name: t.editSettings }).click();
+  await expect
+    .element(screen.getByLabelText(t.fieldTimeZone))
+    .toHaveValue("Asia/Kolkata");
+  await screen.getByLabelText(t.fieldCompanyName).fill("My settings");
+  version = 2;
+  name = "Concurrent company";
+  await client.invalidateQueries({ queryKey: companyKey(companyId) });
+  await expect.element(screen.getByRole("heading", { name })).toBeVisible();
+  await screen.getByRole("button", { name: t.save }).click();
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.RESOURCE_VERSION_CONFLICT);
+  await expect
+    .element(screen.getByRole("button", { name: t.save }))
+    .toBeDisabled();
+  const request = vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => input)
+    .find((input) => input instanceof Request && input.method === "PATCH");
+  if (!(request instanceof Request))
+    throw new Error("The settings request was not sent");
+  expect(await request.clone().json()).toEqual({
+    displayName: "My settings",
+    timeZone: "Asia/Kolkata",
+    defaultLocale: "pt-BR",
+    expectedVersion: 1,
+  });
+  await screen.getByRole("button", { name: t.reload }).click();
+  await screen.getByRole("button", { name: t.editSettings }).click();
+  await expect
+    .element(screen.getByLabelText(t.fieldCompanyName))
+    .toHaveValue(name);
+});
+
+test("reconciles a lost company update response before another save", async () => {
+  let name = "Original company";
+  let writes = 0;
+  respond((_url, request) => {
+    if (request instanceof Request && request.method === "PATCH") {
+      writes++;
+      name = "Saved despite disconnect";
+      throw new TypeError("Synthetic lost response");
+    }
+    return {
+      body: {
+        company: {
+          id: companyId,
+          displayName: name,
+          version: writes + 1,
+          timeZone: "UTC",
+          defaultLocale: "pt-BR",
+        },
+        access: administratorAccess,
+      },
+    };
+  });
+  const { screen } = await open(`${companyPath}?view=settings`);
+  await screen.getByRole("button", { name: t.editSettings }).click();
+  await screen
+    .getByLabelText(t.fieldCompanyName)
+    .fill("Saved despite disconnect");
+  await screen.getByRole("button", { name: t.save }).click();
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.unknownWrite);
+  await expect
+    .element(screen.getByRole("button", { name: t.save }))
+    .toBeDisabled();
+  await screen.getByRole("button", { name: t.reload }).click();
+  await expect
+    .element(screen.getByRole("heading", { name: "Saved despite disconnect" }))
+    .toBeVisible();
+  expect(writes).toBe(1);
+});
+
+test("paginates localized history and resets the cursor when changing views", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              {
+                id: url.searchParams.has("cursor")
+                  ? "older-event"
+                  : "recent-event",
+                action: url.searchParams.has("cursor")
+                  ? "__proto__"
+                  : "company.updated",
+                actorPrincipalId: "synthetic",
+                occurredAt: "2026-10-18T12:00:00.000Z",
+                targetType: "branch",
+                details: {
+                  branchName: "Historic branch",
+                  fields: ["displayName", "__proto__", { untrusted: true }],
+                },
+              },
+            ],
+            nextCursor: url.searchParams.has("cursor") ? null : "history-page2",
+          },
+        }
+      : {
+          body: {
+            company: {
+              id: companyId,
+              displayName: "History company",
+              version: 1,
+              timeZone: "UTC",
+              defaultLocale: "pt-BR",
+            },
+            access: administratorAccess,
+          },
+        },
+  );
+  const { screen, router } = await open(`${companyPath}?view=history`);
+  await expect
+    .element(screen.getByText(t.historyActions["company.updated"]))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.historyYou, { exact: false }))
+    .toBeVisible();
+  await screen.getByRole("link", { name: t.nextPage }).click();
+  await expect.element(screen.getByText(t.historyUnknown)).toBeVisible();
+  await expect
+    .element(screen.getByText(`${t.fieldBranchName}: Historic branch`))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    view: "history",
+    cursor: "history-page2",
+  });
+  router.history.back();
+  await expect
+    .element(screen.getByText(t.historyActions["company.updated"]))
+    .toBeVisible();
+  await screen.getByRole("link", { name: t.settingsTitle }).click();
+  expect(router.state.location.search).toEqual({ view: "settings" });
+  await expect
+    .element(screen.getByRole("button", { name: t.editSettings }))
+    .toBeVisible();
+});
+
+test.each(["settings", "history"])(
+  "denies an operator's direct %s view without requesting protected data",
+  async (view) => {
+    respond(() => ({
+      body: {
+        company: { id: companyId, displayName: "Restricted company" },
+        access: {
+          roles: ["OPERATOR"],
+          responsible: false,
+          capabilities: ["company.view", "branches.view"],
+          capabilitiesAfterStrongAuthentication: [],
+        },
+      },
+    }));
+    const { screen } = await open(`${companyPath}?view=${view}`);
+    await expect
+      .element(screen.getByRole("alert"))
+      .toMatchTextContent(t.errors.PERMISSION_DENIED);
+    await expect
+      .element(screen.getByRole("link", { name: t.historyTitle }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: t.editSettings }))
+      .not.toBeInTheDocument();
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.every(
+          ([input]) =>
+            !(input instanceof Request) || !input.url.includes("audit-events"),
+        ),
+    ).toBe(true);
+  },
+);

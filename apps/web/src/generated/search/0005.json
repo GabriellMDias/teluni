@@ -4,6 +4,15 @@
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Test artifacts",
+    "anchor": "test-artifacts",
+    "text": "Test artifacts\nDiagnostic test artifacts may be retained when they materially improve failure investigation.\nExamples include:\nPlaywright traces;\nscreenshots;\nvideos;\ncoverage reports;\nstructured test reports.\nArtifact retention should remain bounded.\nArtifacts must follow Orion's security and data-classification policies and must not become an uncontrolled channel for exposing secrets or sensitive test data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "GitHub Actions security",
     "anchor": "github-actions-security",
     "text": "GitHub Actions security\nGitHub Actions workflows must follow least-privilege principles.\nWorkflow and job permissions must be declared explicitly when access beyond the minimal default is required.\nOrdinary validation jobs should normally require no repository write permission.\nThe expected baseline is conceptually:\nrepository contents\n    → read\n\nrepository modification\n    → none\n\nunless a job has an explicit responsibility requiring greater access.\n"
@@ -1564,14 +1573,5 @@
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nRequires schema evolution/reference handling and qualified multi-area/video rendering across independent runtimes.\nPublication fan-out, processing and retained generations add storage/work and recovery obligations.\nDoes not remove real device limits, trusted-time uncertainty or the inability to erase an unreachable player instantly.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo product schema or deployment currently exists, so this decision adds no migration or running component. Future implementations must keep retained snapshots readable, reconcile interrupted price/publication work and qualify protocol overlap, offline/power recovery and supported device profiles. Apply accepted ADR-0019 alongside this record; neither supersedes an earlier foundation decision.\n"
   }
 ]

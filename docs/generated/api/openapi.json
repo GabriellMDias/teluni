@@ -2853,14 +2853,35 @@
       },
       "get": {
         "operationId": "listCompanies",
-        "description": "List the companies where the caller has an active membership, with the caller's effective roles. Other members' companies are never visible.",
+        "description": "List companies with a current active membership, newest first by immutable creation time and ID, with the caller's effective roles. Cursors are bound to the caller and collection; membership is checked again on every page. The default page has 50 entries, with a maximum of 100. Other members' companies are never visible.",
         "tags": ["Organizations"],
         "security": [
           {
             "sessionCookie": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Response",
@@ -2868,7 +2889,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["items"],
+                  "required": ["items", "nextCursor"],
                   "properties": {
                     "items": {
                       "type": "array",
@@ -2920,6 +2941,16 @@
                         },
                         "additionalProperties": false
                       }
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "additionalProperties": false

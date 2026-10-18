@@ -327,7 +327,7 @@
           "classification": "INTERNAL"
         },
         "details": {
-          "description": "Allowlisted non-secret change details, such as changed field names; never secrets or full payloads.",
+          "description": "Allowlisted non-secret change details: changed field names and, for branch events, the branch name at the time of the event. Never secrets or full payloads.",
           "classification": "CONFIDENTIAL"
         }
       },

@@ -23,17 +23,25 @@ export type Capability = Access["capabilities"][number];
 export type Role = Access["roles"][number];
 export type Branch =
   paths["/companies/{companyId}/branches"]["post"]["responses"][201]["content"]["application/json"];
+export type AuditEvent =
+  paths["/companies/{companyId}/audit-events"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
 
 export const companiesKey = ["organizations", "companies"] as const;
 export const companyKey = (id: string) =>
   ["organizations", "company", id] as const;
 export const branchesKey = (id: string) =>
   ["organizations", "branches", id] as const;
+export const auditKey = (id: string) => ["organizations", "audit", id] as const;
 
 const client = sessionApiClient;
 
-export async function listCompanies(): Promise<readonly CompanySummary[]> {
-  return unwrap(await client().GET("/companies"), organizationErrorCodes).items;
+export async function listCompanies(cursor?: string) {
+  return unwrap(
+    await client().GET("/companies", {
+      params: { query: cursor ? { cursor } : {} },
+    }),
+    organizationErrorCodes,
+  );
 }
 
 export async function createCompany(
@@ -55,6 +63,30 @@ export async function getCompany(
   return unwrap(
     await client().GET("/companies/{companyId}", {
       params: { path: { companyId } },
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function updateCompany(
+  companyId: string,
+  input: Pick<Company, "displayName" | "defaultLocale" | "timeZone"> & {
+    expectedVersion: number;
+  },
+): Promise<Company> {
+  return unwrap(
+    await client().PATCH("/companies/{companyId}", {
+      params: { path: { companyId } },
+      body: input,
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function listAuditEvents(companyId: string, cursor?: string) {
+  return unwrap(
+    await client().GET("/companies/{companyId}/audit-events", {
+      params: { path: { companyId }, query: cursor ? { cursor } : {} },
     }),
     organizationErrorCodes,
   );

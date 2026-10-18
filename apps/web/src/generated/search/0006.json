@@ -4,6 +4,15 @@
     "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo product schema or deployment currently exists, so this decision adds no migration or running component. Future implementations must keep retained snapshots readable, reconcile interrupted price/publication work and qualify protocol overlap, offline/power recovery and supported device profiles. Apply accepted ADR-0019 alongside this record; neither supersedes an earlier foundation decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "References",
     "anchor": "references",
     "text": "References\n[Release policies and PH-09 decision record](../project/release-policies.md)\n[Release acceptance targets](../project/release-targets.md)\n[Product architecture](../project/architecture.md)\n[Immutable publication decision](0019-propose-immutable-publications-and-atomic-player-activation.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
@@ -1015,23 +1024,5 @@
     "heading": "Queue Visibility Timeout",
     "anchor": "queue-visibility-timeout",
     "text": "Queue Visibility Timeout\nA queue can redeliver when processing outlives its visibility timeout or lease. Account for long work, renewal, stale ownership, and duplicate execution.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Distributed Scheduling",
-    "anchor": "distributed-scheduling",
-    "text": "Distributed Scheduling\nDefine whether each instance runs a schedule or one logical execution runs globally. Schedulers do not necessarily coordinate across instances. Singleton jobs need crash-tolerant claims/ownership; overlapping runs must be explicitly allowed, forbidden, coalesced, or queued.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Ordering and Versioned Events",
-    "anchor": "ordering-and-versioned-events",
-    "text": "Ordering and Versioned Events\nDo not assume ordering without a guarantee for the relevant partition/scope. Define the ordering key, reordering tolerance, and whether stale events are ignored, reconciled, or rejected. Correctness may require sequence numbers, versions, or state checks.\n"
   }
 ]

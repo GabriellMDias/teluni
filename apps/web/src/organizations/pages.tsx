@@ -1,11 +1,17 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useIsFetching,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale, type Locale } from "../locale.js";
 import {
   archiveBranch,
+  auditKey,
   branchesKey,
   companiesKey,
   companyKey,
@@ -15,8 +21,11 @@ import {
   getCompany,
   listBranches,
   listCompanies,
+  listAuditEvents,
   renameBranch,
+  updateCompany,
   type Branch,
+  type Company,
 } from "./api.js";
 import { organizationMessages, timeZoneChoices } from "./messages.js";
 
@@ -168,12 +177,12 @@ function CreateCompanyForm() {
   );
 }
 
-export function CompaniesPage() {
+export function CompaniesPage({ cursor }: { cursor?: string }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
   const companies = useQuery({
-    queryKey: companiesKey,
-    queryFn: listCompanies,
+    queryKey: [...companiesKey, cursor ?? null],
+    queryFn: () => listCompanies(cursor),
     enabled: Boolean(session.data),
   });
   return (
@@ -193,7 +202,9 @@ export function CompaniesPage() {
           onReload={() => void session.refetch()}
         />
       ) : !session.data ? (
-        <SignInPrompt returnTo="/companies" />
+        <SignInPrompt
+          returnTo={`/companies${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}
+        />
       ) : (
         <>
           <p>{t.companiesLead}</p>
@@ -205,11 +216,13 @@ export function CompaniesPage() {
               operation="read"
               onReload={() => void companies.refetch()}
             />
-          ) : companies.data.length === 0 ? (
-            <p className="empty-state">{t.companiesEmpty}</p>
+          ) : companies.data.items.length === 0 ? (
+            <p className="empty-state">
+              {cursor ? t.pageEmpty : t.companiesEmpty}
+            </p>
           ) : (
             <ul className="organization-list">
-              {companies.data.map((company) => (
+              {companies.data.items.map((company) => (
                 <li key={company.id}>
                   <Link
                     to="/companies/$companyId"
@@ -224,6 +237,21 @@ export function CompaniesPage() {
               ))}
             </ul>
           )}
+          <nav className="pagination" aria-label={t.companiesTitle}>
+            {cursor && (
+              <Link to="/companies" search={{}}>
+                {t.firstPage}
+              </Link>
+            )}
+            {companies.data?.nextCursor && (
+              <Link
+                to="/companies"
+                search={{ cursor: companies.data.nextCursor }}
+              >
+                {t.nextPage}
+              </Link>
+            )}
+          </nav>
           <CreateCompanyForm />
         </>
       )}
@@ -246,7 +274,10 @@ function BranchRow({
   const [name, setName] = useState(branch.name);
   const [editingVersion, setEditingVersion] = useState(branch.version);
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: branchesKey(companyId) });
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: branchesKey(companyId) }),
+      queryClient.invalidateQueries({ queryKey: auditKey(companyId) }),
+    ]);
   const rename = useMutation({
     mutationFn: () =>
       renameBranch(companyId, { ...branch, version: editingVersion }, name),
@@ -361,7 +392,10 @@ function Branches({
     mutationFn: () => createBranch(companyId, name),
     onSuccess: async () => {
       setName("");
-      await queryClient.invalidateQueries({ queryKey: branchesKey(companyId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: branchesKey(companyId) }),
+        queryClient.invalidateQueries({ queryKey: auditKey(companyId) }),
+      ]);
     },
   });
   const items = branches.data?.items ?? [];
@@ -446,12 +480,252 @@ function Branches({
   );
 }
 
-export function CompanyPage({
+function CompanySettings({ company }: { company: Company }) {
+  const { t } = useOrganizationMessages();
+  const queryClient = useQueryClient();
+  const refreshing = useIsFetching({ queryKey: companyKey(company.id) }) > 0;
+  type Draft = Pick<Company, "displayName" | "defaultLocale" | "timeZone"> & {
+    expectedVersion: number;
+  };
+  // Capture the version with the draft; background refetches cannot rebase it.
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [saved, setSaved] = useState(false);
+  const zones = [...new Set([company.timeZone, ...zoneChoices()])];
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: companyKey(company.id) }),
+      queryClient.invalidateQueries({ queryKey: companiesKey }),
+      queryClient.invalidateQueries({ queryKey: auditKey(company.id) }),
+    ]);
+  const save = useMutation({
+    mutationFn: (input: Draft) => updateCompany(company.id, input),
+    onSuccess: async () => {
+      setDraft(null);
+      setSaved(true);
+      await refresh();
+    },
+  });
+  const mustReload =
+    Boolean(save.error) &&
+    (!(save.error instanceof ApiFailure) ||
+      save.error.status >= 500 ||
+      save.error.code === "RESOURCE_VERSION_CONFLICT");
+  return (
+    <section aria-labelledby="company-settings-title">
+      <h2 id="company-settings-title">{t.settingsTitle}</h2>
+      {saved && <p role="status">{t.settingsSaved}</p>}
+      {draft ? (
+        <form
+          className="form-stack"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!mustReload) save.mutate(draft);
+          }}
+        >
+          <label htmlFor="settings-name">{t.fieldCompanyName}</label>
+          <input
+            id="settings-name"
+            required
+            maxLength={120}
+            value={draft.displayName}
+            disabled={save.isPending}
+            onChange={(event) =>
+              setDraft({ ...draft, displayName: event.target.value })
+            }
+          />
+          <label htmlFor="settings-time-zone">{t.fieldTimeZone}</label>
+          <select
+            id="settings-time-zone"
+            value={draft.timeZone}
+            disabled={save.isPending}
+            onChange={(event) =>
+              setDraft({ ...draft, timeZone: event.target.value })
+            }
+          >
+            {zones.map((zone) => (
+              <option key={zone} value={zone}>
+                {zone}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="settings-locale">{t.fieldLocale}</label>
+          <select
+            id="settings-locale"
+            value={draft.defaultLocale}
+            disabled={save.isPending}
+            onChange={(event) =>
+              setDraft({
+                ...draft,
+                defaultLocale: event.target.value as Locale,
+              })
+            }
+          >
+            {(["pt-BR", "en-US"] as const).map((value) => (
+              <option key={value} value={value}>
+                {t.localeNames[value]}
+              </option>
+            ))}
+          </select>
+          {save.error && (
+            <Failure
+              error={save.error}
+              operation="write"
+              onReload={() => {
+                setDraft(null);
+                save.reset();
+                void refresh();
+              }}
+            />
+          )}
+          <div className="action-group">
+            <button
+              type="submit"
+              className="button-primary"
+              disabled={save.isPending || mustReload}
+            >
+              {save.isPending ? t.saving : t.save}
+            </button>
+            <button
+              type="button"
+              disabled={save.isPending}
+              onClick={() => {
+                setDraft(null);
+                save.reset();
+                if (mustReload) void refresh();
+              }}
+            >
+              {t.cancel}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <dl className="company-settings">
+            <dt>{t.fieldCompanyName}</dt>
+            <dd>{company.displayName}</dd>
+            <dt>{t.fieldTimeZone}</dt>
+            <dd>{company.timeZone}</dd>
+            <dt>{t.fieldLocale}</dt>
+            <dd>{t.localeNames[company.defaultLocale]}</dd>
+          </dl>
+          <button
+            type="button"
+            disabled={refreshing}
+            onClick={() => {
+              setSaved(false);
+              save.reset();
+              setDraft({
+                displayName: company.displayName,
+                timeZone: company.timeZone,
+                defaultLocale: company.defaultLocale,
+                expectedVersion: company.version,
+              });
+            }}
+          >
+            {t.editSettings}
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+
+function CompanyHistory({
   companyId,
+  principalId,
   cursor,
 }: {
   companyId: string;
+  principalId: string;
   cursor?: string;
+}) {
+  const { locale, t } = useOrganizationMessages();
+  const events = useQuery({
+    queryKey: [...auditKey(companyId), cursor ?? null],
+    queryFn: () => listAuditEvents(companyId, cursor),
+  });
+  return (
+    <section aria-labelledby="company-history-title">
+      <h2 id="company-history-title">{t.historyTitle}</h2>
+      <p>{t.historyLead}</p>
+      {events.isPending ? (
+        <p>{t.loading}</p>
+      ) : events.isError ? (
+        <Failure
+          error={events.error}
+          operation="read"
+          onReload={() => void events.refetch()}
+        />
+      ) : events.data.items.length === 0 ? (
+        <p className="empty-state">{t.historyEmpty}</p>
+      ) : (
+        <ol className="audit-list">
+          {events.data.items.map((event) => {
+            const fields = Array.isArray(event.details.fields)
+              ? event.details.fields
+                  .filter((field): field is string => typeof field === "string")
+                  .map((field) => t.historyFields[field])
+                  .filter((field): field is string => typeof field === "string")
+              : [];
+            const action = t.historyActions[event.action];
+            return (
+              <li key={event.id}>
+                <strong>
+                  {typeof action === "string" ? action : t.historyUnknown}
+                </strong>
+                {event.targetType === "branch" &&
+                  typeof event.details.branchName === "string" && (
+                    <span>
+                      {t.fieldBranchName}: {event.details.branchName}
+                    </span>
+                  )}
+                <span className="hint">
+                  <time dateTime={event.occurredAt}>
+                    {new Intl.DateTimeFormat(locale, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }).format(new Date(event.occurredAt))}
+                  </time>
+                  {` · ${event.actorPrincipalId === principalId ? t.historyYou : t.historyMember}`}
+                </span>
+                {fields.length > 0 && <span>{fields.join(", ")}</span>}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      <nav className="pagination" aria-label={t.historyTitle}>
+        {cursor && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "history" }}
+          >
+            {t.firstPage}
+          </Link>
+        )}
+        {events.data?.nextCursor && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "history", cursor: events.data.nextCursor }}
+          >
+            {t.nextPage}
+          </Link>
+        )}
+      </nav>
+    </section>
+  );
+}
+
+export function CompanyPage({
+  companyId,
+  cursor,
+  view,
+}: {
+  companyId: string;
+  cursor?: string;
+  view?: "settings" | "history";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -460,7 +734,11 @@ export function CompanyPage({
     queryFn: () => getCompany(companyId),
     enabled: Boolean(session.data),
   });
-  const returnTo = `/companies/${companyId}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`;
+  const search = new URLSearchParams({
+    ...(view ? { view } : {}),
+    ...(cursor ? { cursor } : {}),
+  });
+  const returnTo = `/companies/${companyId}${search.size ? `?${search}` : ""}`;
   if (session.isPending) return <p>{t.loading}</p>;
   if (session.isError)
     return (
@@ -513,12 +791,69 @@ export function CompanyPage({
         {access.responsible ? ` · ${t.responsible}` : ""}
       </p>
       {needsStepUp && <StepUpPrompt returnTo={returnTo} />}
-      {canView && (
-        <Branches
-          companyId={companyId}
-          cursor={cursor}
-          manage={access.capabilities.includes("branches.manage")}
-        />
+      <nav
+        className="company-navigation"
+        aria-label={company.data.company.displayName}
+      >
+        {canView && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{}}
+            aria-current={!view ? "page" : undefined}
+          >
+            {t.branchesTitle}
+          </Link>
+        )}
+        {access.capabilities.includes("company.settings.manage") && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "settings" }}
+            aria-current={view === "settings" ? "page" : undefined}
+          >
+            {t.settingsTitle}
+          </Link>
+        )}
+        {access.capabilities.includes("audit.view") && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "history" }}
+            aria-current={view === "history" ? "page" : undefined}
+          >
+            {t.historyTitle}
+          </Link>
+        )}
+      </nav>
+      {view === "settings" ? (
+        access.capabilities.includes("company.settings.manage") ? (
+          <CompanySettings company={company.data.company} />
+        ) : (
+          <p role="alert" className="notice notice-error">
+            {t.errors.PERMISSION_DENIED}
+          </p>
+        )
+      ) : view === "history" ? (
+        access.capabilities.includes("audit.view") ? (
+          <CompanyHistory
+            companyId={companyId}
+            principalId={session.data.principalId}
+            cursor={cursor}
+          />
+        ) : (
+          <p role="alert" className="notice notice-error">
+            {t.errors.PERMISSION_DENIED}
+          </p>
+        )
+      ) : (
+        canView && (
+          <Branches
+            companyId={companyId}
+            cursor={cursor}
+            manage={access.capabilities.includes("branches.manage")}
+          />
+        )
       )}
     </section>
   );

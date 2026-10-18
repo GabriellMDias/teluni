@@ -92,7 +92,7 @@
       "Nullable": "no",
       "Default": "'{}'::jsonb",
       "Classification": "CONFIDENTIAL",
-      "Meaning": "Allowlisted non-secret change details, such as changed field names; never secrets or full payloads.",
+      "Meaning": "Allowlisted non-secret change details: changed field names and, for branch events, the branch name at the time of the event. Never secrets or full payloads.",
       "Null meaning": "—",
       "Unit": "—"
     }

@@ -18,7 +18,7 @@ test.afterAll(async () => {
   await stack?.stop();
 });
 
-test("creates a company, verifies in two steps and manages branches", async ({
+test("creates a company, verifies in two steps and manages branches, settings and history", async ({
   page,
 }) => {
   await page.goto(`${stack.webUrl}/companies`);
@@ -78,9 +78,54 @@ test("creates a company, verifies in two steps and manages branches", async ({
   await expect(page.getByText("Arquivada", { exact: false })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
+  await page.getByRole("link", { name: "Configurações da empresa" }).click();
+  await page.getByRole("button", { name: "Editar configurações" }).click();
+  await page.getByLabel("Nome da empresa").fill("Lanchonete Central Renovada");
+  await page.getByLabel("Fuso horário").selectOption("America/Manaus");
+  await page.getByLabel("Idioma padrão").selectOption("en-US");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("button", { name: "Salvar", exact: true }).click();
+  await expect(page.getByText("Configurações salvas.")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Lanchonete Central Renovada" }),
+  ).toBeVisible();
+  await page.reload();
+  await afterNavigation(
+    page.getByRole("button", { name: "Editar configurações" }),
+  ).toBeVisible();
+  await expect(page.getByText("America/Manaus", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("English (United States)", { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: "Histórico de alterações" }).click();
+  await expect(
+    page.getByText("Configurações da empresa alteradas", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Empresa criada", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Filial arquivada", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".audit-list > li").filter({ hasText: "Filial arquivada" }),
+  ).toContainText("Centro Histórico");
+  await expect(page.locator(".audit-list > li").first()).toContainText(
+    "Por você",
+  );
+  await expect(page.locator(".audit-list > li").first()).toContainText(
+    "Idioma padrão",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
   await page.getByRole("link", { name: "Suas empresas" }).click();
   await expect(
-    page.getByRole("link", { name: "Lanchonete Central" }),
+    page.getByRole("link", { name: "Lanchonete Central Renovada" }),
   ).toBeVisible();
   await expect(page.getByText("Administrador")).toBeVisible();
 });
@@ -112,7 +157,7 @@ test("shows the company workflow in English", async ({ browser }) => {
       .click();
     await enterCredentials(page, stack.user);
     await afterNavigation(
-      page.getByRole("link", { name: "Lanchonete Central" }),
+      page.getByRole("link", { name: "Lanchonete Central Renovada" }),
     ).toBeVisible();
     await expect(page.getByLabel("Company name")).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);

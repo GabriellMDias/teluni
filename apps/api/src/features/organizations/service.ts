@@ -53,13 +53,13 @@ function branchScope(reach: "all" | ReadonlySet<string>): string {
         .digest("base64url");
 }
 
-/** Cursors are bound to the company and principal that received them. */
+/** Cursors are bound to their collection, principal and applicable tenant scope. */
 function decodeCursor(
   value: string | undefined,
   binding: {
     company: string;
     principal: string;
-    kind: "branches" | "audit";
+    kind: "companies" | "branches" | "audit";
     scope: string;
   },
 ): Cursor | undefined {
@@ -177,8 +177,39 @@ export class OrganizationService {
     return { ...created, access: this.summarize(access) };
   }
 
-  async listCompanies(context: HumanContext) {
-    return this.#repository.listCompanies(context.principalId);
+  async listCompanies(
+    context: HumanContext,
+    options: { limit: number; cursor?: string },
+  ) {
+    const binding = {
+      company: "",
+      principal: context.principalId,
+      kind: "companies" as const,
+      scope: "memberships",
+    };
+    const cursor = decodeCursor(options.cursor, binding);
+    const rows = await this.#repository.listCompanies(context.principalId, {
+      limit: options.limit + 1,
+      ...(cursor
+        ? { before: { createdAt: new Date(cursor.t), id: cursor.i } }
+        : {}),
+    });
+    const items = rows.slice(0, options.limit);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        rows.length > options.limit && last
+          ? encodeCursor({
+              c: binding.company,
+              p: binding.principal,
+              k: binding.kind,
+              r: binding.scope,
+              t: last.createdAt.toISOString(),
+              i: last.id,
+            })
+          : null,
+    };
   }
 
   async getCompany(

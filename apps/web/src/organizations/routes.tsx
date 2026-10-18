@@ -10,12 +10,6 @@ import "./organizations.css";
 const companiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies",
-  component: CompaniesPage,
-});
-
-const companyRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/companies/$companyId",
   validateSearch: (search: Record<string, unknown>): { cursor?: string } => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
@@ -23,11 +17,37 @@ const companyRoute = createRoute({
       ? { cursor: search.cursor }
       : {}),
   }),
+  component: function CompaniesRoute() {
+    const { cursor } = companiesRoute.useSearch();
+    return <CompaniesPage cursor={cursor} />;
+  },
+});
+
+const companyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/companies/$companyId",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { cursor?: string; view?: "settings" | "history" } => ({
+    ...(typeof search.cursor === "string" &&
+    search.cursor.length > 0 &&
+    search.cursor.length <= 1024
+      ? { cursor: search.cursor }
+      : {}),
+    ...(search.view === "settings" || search.view === "history"
+      ? { view: search.view }
+      : {}),
+  }),
   component: function CompanyRoute() {
     const { companyId } = companyRoute.useParams();
-    const { cursor } = companyRoute.useSearch();
+    const { cursor, view } = companyRoute.useSearch();
     return (
-      <CompanyPage key={companyId} companyId={companyId} cursor={cursor} />
+      <CompanyPage
+        key={companyId}
+        companyId={companyId}
+        cursor={cursor}
+        view={view}
+      />
     );
   },
 });

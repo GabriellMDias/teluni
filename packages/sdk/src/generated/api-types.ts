@@ -198,7 +198,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the companies where the caller has an active membership, with the caller's effective roles. Other members' companies are never visible. */
+        /** @description List companies with a current active membership, newest first by immutable creation time and ID, with the caller's effective roles. Cursors are bound to the caller and collection; membership is checked again on every page. The default page has 50 entries, with a maximum of 100. Other members' companies are never visible. */
         get: operations["listCompanies"];
         put?: never;
         /** @description Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. Further administration requires two-step verification. */
@@ -1282,7 +1282,10 @@ export interface operations {
     };
     listCompanies: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1302,6 +1305,7 @@ export interface operations {
                             status: "ACTIVE" | "SUSPENDED";
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                         }[];
+                        nextCursor: string | null;
                     };
                 };
             };

@@ -78,6 +78,7 @@ const companyListSchema = Type.Object(
         { additionalProperties: false },
       ),
     ),
+    nextCursor: Type.Union([Type.String(), Type.Null()]),
   },
   { additionalProperties: false },
 );
@@ -190,8 +191,14 @@ export const organizationOperations = [
     operationId: "listCompanies",
     access: "session",
     description:
-      "List the companies where the caller has an active membership, with the caller's effective roles. Other members' companies are never visible.",
-    schema: { response: { 200: companyListSchema, ...common } },
+      "List companies with a current active membership, newest first by immutable creation time and ID, with the caller's effective roles. Cursors are bound to the caller and collection; membership is checked again on every page. The default page has 50 entries, with a maximum of 100. Other members' companies are never visible.",
+    schema: {
+      querystring: Type.Object(
+        { limit, cursor },
+        { additionalProperties: false },
+      ),
+      response: { 200: companyListSchema, ...common },
+    },
     expectedErrors: [...session],
   },
   {

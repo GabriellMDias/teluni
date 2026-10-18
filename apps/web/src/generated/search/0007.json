@@ -4,6 +4,24 @@
     "title": "Delivery and Side Effects",
     "group": "Architecture",
     "kind": "repository",
+    "heading": "Distributed Scheduling",
+    "anchor": "distributed-scheduling",
+    "text": "Distributed Scheduling\nDefine whether each instance runs a schedule or one logical execution runs globally. Schedulers do not necessarily coordinate across instances. Singleton jobs need crash-tolerant claims/ownership; overlapping runs must be explicitly allowed, forbidden, coalesced, or queued.\n"
+  },
+  {
+    "id": "repository/docs/architecture/delivery-and-side-effects",
+    "title": "Delivery and Side Effects",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Ordering and Versioned Events",
+    "anchor": "ordering-and-versioned-events",
+    "text": "Ordering and Versioned Events\nDo not assume ordering without a guarantee for the relevant partition/scope. Define the ordering key, reordering tolerance, and whether stale events are ignored, reconciled, or rejected. Correctness may require sequence numbers, versions, or state checks.\n"
+  },
+  {
+    "id": "repository/docs/architecture/delivery-and-side-effects",
+    "title": "Delivery and Side Effects",
+    "group": "Architecture",
+    "kind": "repository",
     "heading": "Versioned Events",
     "anchor": "versioned-events",
     "text": "Versioned Events\nAn aggregate version can help detect duplicate, stale, or out-of-order events; it is not mandatory for every event. Retained event/job schemas also follow [compatibility policy](versioning-and-compatibility.md).\n"
@@ -1132,14 +1150,5 @@
     "heading": "Documentation ownership",
     "anchor": "documentation-ownership",
     "text": "Documentation ownership\nInformation\nAuthoritative location\nCurrent architectural policy and intended behavior\nRelevant policy under `docs/`\nArchitectural decision history and rationale\n[ADRs](adr/README.md)\nCurrent executable operational procedure\n[Runbooks](runbooks/README.md)\nDevelopment history\nGit\nReleased database transitions\n[Migration history](database/migrations.md)\nExternally relevant release history\nChangelog when releases exist\nStructural reference\nGenerated from canonical schemas, contracts, or metadata\nDomain meaning\nNear the owning domain; `docs/domains/` when cross-file explanation is needed\nApplication/package-specific knowledge\nNear the owning application or package\nExecution status and outstanding work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nDecisions or access requiring a human\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nRepository identity, Orion provenance, and the derivation contract\n[`.orion/project.json`](../.orion/project.json) and [`.orion/derivation.json`](../.orion/derivation.json), under [project derivation](project-derivation.md)\nThe maintainer of the owning code or policy is responsible for keeping its documentation current in the same change. This is responsibility by repository boundary, not an invented team or approval hierarchy. Indexes route readers; they do not own copies of another document's rules. Root `AGENTS.md` owns global invariants and task routes; nested instructions add only distinct local obligations. They apply to every contributor and agent; tool-specific files may only adapt discovery under [agent instructions](architecture/agent-instructions.md). Application/package READMEs explain local responsibility and usage, with links to shared setup and policy.\nPrefer the narrowest authoritative location. Do not create empty documentation directories, speculative runbooks, or placeholder applications to match an illustrative tree. `docs/domains/` and `docs/generated/` should appear only when real content exists. Technology-specific documentation is appropriate after the technology exists or has been selected.\nPackages should document responsibility, public API, dependency constraints, and important assumptions when these cannot be safely inferred from code or contracts. Domain documentation may explain terminology, invariants, ownership, workflows, state transitions, side effects, and failure semantics. Repository-wide policy must not become a dumping ground for one feature or provider integration.\n"
-  },
-  {
-    "id": "repository/docs/contributing",
-    "title": "Contributing and Documentation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Authored meaning and generated facts",
-    "anchor": "authored-meaning-and-generated-facts",
-    "text": "Authored meaning and generated facts\nDocument architectural decisions, business rules, invariants, non-obvious constraints, side effects, public contracts, security-sensitive behavior, failure modes, operational procedures, integrations, and unusual implementation choices with their rationale. Explain why, constraints, and consequences rather than restating code or type signatures.\nA fact should have one canonical source wherever practical. Small navigational summaries are useful; independently maintained normative copies are not. Link to the authoritative policy instead of repeating its rules. Code comments should explain local non-obvious reasoning, such as ordering, protected invariants, retry safety, or workaround constraints.\nReference\nCanonical source and governing policy\nDatabase\nSchema semantics and metadata under [schema documentation](database/schema-documentation.md); the complete physical reference must account for migrated PostgreSQL, including custom SQL\nAPI and SDK\nExecutable contracts and route metadata, then generated OpenAPI and clients under [API principles](api/principles.md)\nConfiguration\nCanonical schema and metadata under [configuration](architecture/configuration.md): name, type, description, required/default, classification, secret status, and validation\nPublic errors\nAPI-owned [`errorRegistry`](../apps/api/src/errors.ts) under [error contract](api/error-contract.md), with a [generated reference](generated/api/errors.md)\nComponents\nWeb component source and [owned examples/metadata](../apps/web/src/components.docs.json), with generated [AI-readable reference](generated/components/web.md) and [human-facing portal](architecture/living-documentation.md)\nFiles marked as generated must not be edited independently. Update their canonical source and regenerate using repository tooling. Generated output must not become a source of truth or be patched to hide stale generation. Reviewed SQL migrations have the distinct authorship and release rules in [migration policy](database/migrations.md); this does not authorize editing generated SDKs or references.\n"
   }
 ]

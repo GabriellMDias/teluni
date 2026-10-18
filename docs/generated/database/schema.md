@@ -326,7 +326,7 @@ Lifecycle: Never updated or deleted by the runtime; retention follows PH-13.
 | `action` | `character varying(64)` | no | — | INTERNAL | Stable dotted action identifier, such as company.created or branch.archived. | — | — |
 | `target_type` | `character varying(32)` | no | — | INTERNAL | Kind of changed resource, such as company or branch. | — | — |
 | `target_id` | `uuid` | no | — | INTERNAL | Identifier of the changed resource. | — | — |
-| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Allowlisted non-secret change details, such as changed field names; never secrets or full payloads. | — | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Allowlisted non-secret change details: changed field names and, for branch events, the branch name at the time of the event. Never secrets or full payloads. | — | — |
 
 ### Constraints and indexes
 

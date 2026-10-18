@@ -180,7 +180,11 @@ export class PrismaOrganizationRepository {
   /** Companies where the principal has an active membership, with effective roles. */
   async listCompanies(
     principalId: string,
+    options: { limit: number; before?: { createdAt: Date; id: string } },
   ): Promise<(CompanyRecord & { roles: AccessRole[] })[]> {
+    const before = options.before
+      ? Prisma.sql`AND (c.created_at, c.id) < (${options.before.createdAt}, ${options.before.id}::uuid)`
+      : Prisma.empty;
     const rows = await this.#db.$queryRaw<
       (CompanyRow & { roles: AccessRole[] })[]
     >`
@@ -193,9 +197,10 @@ export class PrismaOrganizationRepository {
         AND g.revoked_at IS NULL AND g.starts_at <= now()
         AND (g.expires_at IS NULL OR g.expires_at > now())
       WHERE m.principal_id = ${principalId}::uuid AND m.status = 'ACTIVE'
+        ${before}
       GROUP BY c.id
-      ORDER BY lower(c.display_name), c.id
-      LIMIT 200`;
+      ORDER BY c.created_at DESC, c.id DESC
+      LIMIT ${options.limit}`;
     return rows.map((row) => ({
       ...company(row),
       roles: [...row.roles].sort(),
@@ -360,7 +365,7 @@ export class PrismaOrganizationRepository {
           action: "branch.created",
           targetType: "branch",
           targetId: id,
-          details: {},
+          details: { branchName: row.name },
         });
         return branch(row);
       });
@@ -406,8 +411,8 @@ export class PrismaOrganizationRepository {
           targetType: "branch",
           targetId: branchId,
           details: changes.archive
-            ? {}
-            : { fields: Object.keys(changes).sort() },
+            ? { branchName: row.name }
+            : { branchName: row.name, fields: Object.keys(changes).sort() },
         });
         return branch(row);
       });
