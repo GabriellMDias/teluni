@@ -4,7 +4,7 @@ Teluni is a planned multi-tenant digital signage SaaS built on the [Orion](https
 
 **Every screen. One place.** · **Todas as suas telas. Um só lugar.**
 
-Start with the [product documentation](docs/project/README.md) for the vision, initial release policies/acceptance targets, accepted architecture directions, pending detailed design, risks and delivery phases. The name Teluni and principal domain `teluni.app` are approved; [branding](docs/project/branding/README.md) records the defensive `teluni.com.br` option, current exclusion of `teluni.com`, and the approved Connected Tiles identity. Domain registration/control evidence, trademark outcome and commercial pricing remain pending.
+Start with the [product documentation](docs/project/README.md) for the vision, initial release policies/acceptance targets, accepted architecture directions, pending detailed design, risks and delivery phases. The name Teluni and principal domain `teluni.app` are approved; [branding](docs/project/branding/README.md) records the defensive `teluni.com.br` option, current exclusion of `teluni.com`, and the approved Connected Tiles identity. Domain registration/control evidence and trademark outcome remain pending. The owner approved [initial commercial policies](docs/project/commercial-policies.md) and validation prices; actual customer acceptance, costs, capacity and billing readiness remain unverified.
 
 ## Current state
 

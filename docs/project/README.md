@@ -11,6 +11,7 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | What belongs in the initial release, and how will it be accepted? | [Release requirements and acceptance](mvp.md) |
 | Which product policies were selected, including the PH-09 questionnaire and delegated choices? | [Release policies](release-policies.md) |
 | What numeric limits and qualification goals were selected, and which measurements remain pending? | [Release acceptance targets](release-targets.md) |
+| Which pilot/trial, pricing, license, quota, support and cancellation policies are approved? | [Initial commercial policies](commercial-policies.md) |
 | What are the accepted architecture directions, proposed module details and unresolved technical choices? | [Product architecture](architecture.md) |
 | How must publication, local playback, and recovery behave? | [Offline playback and synchronization](playback-and-sync.md) |
 | How can the residential pilot operate and later move to another host? | [Deployment and migration planning](operations.md) |

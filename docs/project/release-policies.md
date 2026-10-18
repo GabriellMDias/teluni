@@ -69,6 +69,8 @@ Keep active and previous valid player generations plus valid staging resources. 
 
 ## Offline authorization and clock trust
 
+[Commercial policies](commercial-policies.md#payment-expiry-cancellation-and-retention) additionally bound future playback authorization by known trial/paid/grace deadlines; the shorter commercial or seven-day offline bound wins. This does not change already-issued unreachable leases retroactively, relax identity/security controls or select a credential mechanism. Commercial restriction, security suspension and confirmed erasure remain distinct.
+
 The target specification fixes the maximum offline authorization interval and clock-uncertainty bound. After authorization expires, show neutral output and request reconnection. Revocation denies new protected server operations; an unreachable device may retain playback until its local authorization expires. Do not claim remote erasure while unreachable or extend authorization by restoring an older generation.
 
 Detectable incompatible clock jumps or insufficient trusted time suspend time-dependent schedules/prices and produce neutral output with diagnostics. Do not guess promotional validity or claim all wrong clocks can be detected without a reference. Elapsed-time retries and business wall-clock time are separate. Reboot/offline trusted-time estimation and credential mechanisms require threat-model/technical review using established security components.

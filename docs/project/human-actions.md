@@ -149,14 +149,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-12
 
-- [ ] **Validate pilot commercial terms, costs and eventual plans before offering subscriptions.**
+- [x] **Approve the initial pilot, subscription and commercial-access policies.**
 
-**Status:** pending. **Owner:** project owner.
-**Dependency / trigger:** PJ-14 pilot terms; PJ-16 commercial expansion.
-**Request and reason:** Validate per-screen/company pricing, storage/traffic/processing limits, support, installation, cancellation, operating cost and partnerships/referrals. PH-11 selects public signup with automatic company activation: approve eligibility/entitlements, initial quotas and any trial/free/paid conditions before opening it; no commercial defaults are inferred from identity verification. BRL 79.90/month for two screens is exploratory only. Automatic billing remains outside the mandatory MVP.
-**Configuration:** none; no plan IDs, prices, gateway or entitlements implemented.
-**Verification:** Record approved pilot terms and measured cost/support evidence; later approve plan limits and commercial policies before implementing subscription enforcement.
-**Evidence / blocker:** Recurring SaaS is intended; no definitive pricing or paid infrastructure/provider budget established.
+**Status:** completed. **Owner:** project owner.
+**Dependency / trigger:** PJ-14 pilot planning, PJ-27 basic commercial access and PJ-16 later expansion.
+**Request and reason:** All 38 questionnaire recommendations are approved in [commercial policies](commercial-policies.md), including conditional support and delegated resource dimensioning. Initial validation prices are BRL 79.90/month/company for two licenses plus BRL 29.90/additional license, with a 30-day first accompanied pilot and 14-day public trial. No published offer or proven margin is inferred.
+**Configuration:** none; no plan IDs, entitlements, quotas, gateway, bank destination or payment implementation is introduced. Numerical paid resource examples remain a proposed qualification baseline under P16=C, not approved production capacity.
+**Verification:** Owner explicitly instructed proceeding with every suggestion and closing PH-12 on 2026-10-18. The canonical decision record covers P01–P38, including P10=B, P16=C/delegation, P32=B and conditional P23/P24. CP-01–CP-12 specify future verification without claiming execution. Conditional availability and the cost worksheet remain unknown.
+**Evidence / blocker:** 2026-10-18: owner commercial-policy selection is complete. **Explicit scope split:** the original action combined owner decisions with real commercial evidence; the latter is preserved in pending PH-18 (pilot/customer acceptance, measured cost/support, capacity-qualified offer) and PH-19 (billing/fiscal readiness), linked to PJ-14/PJ-27. No customer agreement, cost measurement, real support window or fiscal capability was supplied. This completion closes decisions only and does not authorize charging, public admission, procurement, implementation or production claims.
 
 ## PH-13
 
@@ -212,6 +212,28 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Configuration:** no mail-specific application keys are implemented; future credentials go only in the approved protected store. Do not publish credentials, reset links or private recipient records.
 **Verification:** Authorized implementation tests delivery/failure/retry and invitation/reset expiry/single-use behavior with synthetic addresses under actual approved sender configuration. DNS/service/account facts need owner evidence; documentation is not delivery proof.
 **Evidence / blocker:** 2026-10-18: P03=A confirms no recurring identity/email procurement now. No existing sender, delivery service, DNS configuration or successful delivery is established.
+
+## PH-18
+
+- [ ] **Verify pilot commercial acceptance, real costs/support coverage and qualified offer limits.**
+
+**Status:** pending. **Owner:** project owner and pilot operator, with engineering/operations measurement.
+**Dependency / trigger:** PJ-14/PJ-27 and PH-08/PH-10. Customer agreement and a safe bounded budget precede the pilot; measured outcomes, offer capacity and coverage precede applicable paid/public commitments.
+**Request and reason:** This retains the empirical portion of PH-12's original verification scope. Confirm the customer's actual acceptance of proposed pilot/conversion conditions separately from Teluni owner approval. Record real support channels/coverage/calendar, physical capacity and original/rendition/history/backup demand, transfers/conversion, onboarding/support hours, identity/mail/network/energy and payment/fiscal costs. Qualify numerical commercial quotas before advertising/enforcing them; distinguish measured, estimated, assumed and unknown inputs.
+**Configuration:** none implemented. Record safe facts/results and evidence references; no customer personal records, private support contacts, bank details or secrets in public documentation.
+**Verification:** Attributable customer agreement before entry; pilot measurements and host/admission evidence; a reviewed offer whose price/usage/support commitments fit the recorded cost/capacity analysis. Compare the selected 70% contribution goal using the stated BRL 50/hour analytical assumption or a justified revised value, without claiming profitability from arithmetic. Support hours/WhatsApp are offered only with verified coverage. Measured data may require a new owner-approved price/limit change before offers; PH-12 is not an instruction to ignore contradictory evidence.
+**Evidence / blocker:** 2026-10-18: all questionnaire suggestions approved, but none of the 12 cost/fact worksheet categories was supplied as measured evidence. Paid quota numbers remain a proposed qualification baseline; real support availability and customer acceptance remain unknown. Do not mark this passed through foundation tests or a policy approval.
+
+## PH-19
+
+- [ ] **Confirm the billing issuer, fiscal process and reviewed commercial documents before charging.**
+
+**Status:** pending. **Owner:** project owner with qualified fiscal/legal input appropriate to the actual operation.
+**Dependency / trigger:** P36/completed PH-12, PH-13 and PJ-27; before the first paid offer/charge and applicable public contracting.
+**Request and reason:** Establish who supplies the SaaS, the applicable registration/fiscal/documentation process, recording and reconciliation responsibilities, reviewed subscription/cancellation/refund terms and an appropriate protected destination for financial records. The selected manual Pix/transfer method does not establish fiscal readiness. No legal holder, tax regime/rate, account or ability to issue fiscal documents is inferred from the repository or GitHub identity.
+**Configuration:** none implemented; no payment/tax/provider keys or bank destination are selected. Supply financial identifiers/credentials only through appropriate protected channels, not this checklist or chat.
+**Verification:** Record safe confirmation of the qualified review, responsible issuer/process and usable billing/documentation workflow; distinguish settlement, receipt and applicable fiscal documentation. Confirm final conditions against the approved commercial policy and PH-13, including cancellation/refund/retention obligations. No tax or legal compliance certification is produced by documentation validation.
+**Evidence / blocker:** 2026-10-18: P36=A approved professional preparation before charging; actual formalization, fiscal process and reviewed documents remain unknown. No charge, invoice, contract or registration action was performed.
 
 ## New action template
 

@@ -715,6 +715,16 @@
       "file": "pages/repository/docs/project/branding/README.json"
     },
     {
+      "id": "repository/docs/project/commercial-policies",
+      "kind": "repository",
+      "title": "Teluni Initial Commercial Policies",
+      "group": "Project guides",
+      "source": "docs/project/commercial-policies.md",
+      "summary": "Decided for planning on 2026-10-18: the owner explicitly approved all recommendations in the 38-question PH-12 working questionnaire and requested completion of the action.…",
+      "headings": [],
+      "file": "pages/repository/docs/project/commercial-policies.json"
+    },
+    {
       "id": "repository/docs/project/human-actions",
       "kind": "repository",
       "title": "Teluni Human Actions",
@@ -1117,12 +1127,12 @@
       { "file": "search/0003.json", "count": 180, "kinds": ["repository"] },
       { "file": "search/0004.json", "count": 103, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 121, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 84, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 81, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 35, "kinds": ["repository"] }
+      { "file": "search/0006.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 59, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 65, "kinds": ["repository"] }
     ],
-    "count": 1109
+    "count": 1121
   }
 }

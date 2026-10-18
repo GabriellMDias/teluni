@@ -34,7 +34,7 @@ Before any real pilot, record and demonstrate:
 - Development/test and customer data, identities, credentials and backups are separated; logs/diagnostics are redacted; real data does not enter development fixtures.
 - Durable database and media survive container recreation, controlled app updates and host reboot. Schema migrations use reviewed release procedures and an explicit recovery plan.
 - Offline playback has been tested independently from backend availability. A home outage still prevents new uploads, publication, pairing, current monitoring and some recovery; communicate these limits to pilot participants.
-- The owner agrees measurable availability, maintenance, incident contact, backup RPO/RTO and support expectations. No commercial SLA is implied by the architecture.
+- The owner agrees measurable availability, maintenance, incident contact, backup RPO/RTO and support expectations. [Commercial policies](commercial-policies.md) select no initial formal availability SLA; actual support coverage and cost/capacity evidence remain PH-18. Do not advertise the delegated example paid quotas as measured host capacity. No commercial SLA is implied by the architecture.
 
 Until verified, external exposure and real-customer operation are **pending**, even if development works locally.
 
@@ -64,5 +64,7 @@ Rehearse restore into an isolated environment: verify migration/application comp
 4. Update endpoints through the approved mechanism with certificate validation and rollback capability. Keep the old address/redirect or compatibility path only for an explicitly defined overlap, accounting for long-offline players. Never accept arbitrary redirected credential recipients.
 5. Verify representative players reconnect, reconcile desired/active versions, and continue offline playback. Check uploads, access denial, publication, backups and monitoring on the new host.
 6. Close the rollback window deliberately, reconcile retained data/deletions and retire old storage/credentials safely. The endpoint overlap and maximum supported offline interval must be compatible; unresolved unreachable devices require a support plan.
+
+Commercial admission must budget originals plus renditions/protected history/staging/backups, aggregate traffic/control work and conversion concurrency. PH-12 policy selection does not authorize unlimited public trials or new recurring procurement; PH-18/PJ-27 require measured safe quotas before admission.
 
 Triggers for migration include measured cost/availability/support risk, storage or uplink saturation, growth, or earned revenue supporting operations. Cloud procurement and live migration are outside this documentation task.
