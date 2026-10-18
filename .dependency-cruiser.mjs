@@ -66,6 +66,18 @@ export default {
       { path: "^apps/api/src/features/" },
     ),
     error(
+      "no-feature-internals",
+      "A feature module uses another module only through that module's public.ts capability surface.",
+      { path: "^apps/api/src/features/([^/]+)/" },
+      {
+        path: "^apps/api/src/features/",
+        pathNot: [
+          "^apps/api/src/features/$1/",
+          "^apps/api/src/features/[^/]+/public\\.ts$",
+        ],
+      },
+    ),
+    error(
       "no-domain-to-infrastructure",
       "Domain code must stay independent of HTTP, persistence, and infrastructure adapters.",
       { path: "^(apps|packages)/.+/domain(/|\\.[cm]?[jt]sx?$)" },

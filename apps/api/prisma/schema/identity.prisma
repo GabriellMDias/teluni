@@ -1,0 +1,76 @@
+// Identity module: provider-independent principals and server-managed human
+// sessions. See docs/project/identity-session-design.md; reviewed SQL in
+// prisma/migrations owns the checks Prisma cannot express.
+
+enum PrincipalStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum HumanSessionState {
+  PENDING_LIMIT
+  ACTIVE
+  REVOKED
+}
+
+model Principal {
+  id         String          @id @db.Uuid
+  issuer     String          @db.VarChar(512)
+  subject    String          @db.VarChar(255)
+  status     PrincipalStatus @default(ACTIVE)
+  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  disabledAt DateTime?       @map("disabled_at") @db.Timestamptz(3)
+  sessions   HumanSession[]
+
+  @@unique([issuer, subject], map: "principals_issuer_subject_key")
+  @@map("principals")
+}
+
+model HumanSession {
+  id                    String            @id @db.Uuid
+  principalId           String            @map("principal_id") @db.Uuid
+  tokenHash             Bytes             @map("token_hash")
+  state                 HumanSessionState
+  providerSessionId     String?           @map("provider_session_id") @db.VarChar(255)
+  assuranceLevel        String            @map("assurance_level") @db.VarChar(64)
+  authenticatedAt       DateTime          @map("authenticated_at") @db.Timestamptz(3)
+  strongAuthenticatedAt DateTime?         @map("strong_authenticated_at") @db.Timestamptz(3)
+  idleTimeoutSeconds    Int               @map("idle_timeout_seconds")
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastActivityAt        DateTime          @default(now()) @map("last_activity_at") @db.Timestamptz(3)
+  absoluteExpiresAt     DateTime          @map("absolute_expires_at") @db.Timestamptz(3)
+  providerTokens        Bytes             @map("provider_tokens")
+  accessTokenExpiresAt  DateTime          @map("access_token_expires_at") @db.Timestamptz(3)
+  providerCheckedAt     DateTime          @default(now()) @map("provider_checked_at") @db.Timestamptz(3)
+  refreshLeaseUntil     DateTime?         @map("refresh_lease_until") @db.Timestamptz(3)
+  revokedAt             DateTime?         @map("revoked_at") @db.Timestamptz(3)
+  revocationReason      String?           @map("revocation_reason") @db.VarChar(32)
+  principal             Principal         @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([tokenHash], map: "human_sessions_token_hash_key")
+  @@index([principalId, state], map: "human_sessions_principal_state_idx")
+  @@index([providerSessionId], map: "human_sessions_provider_session_idx")
+  @@map("human_sessions")
+}
+
+model OidcLoginAttempt {
+  id         String    @id @db.Uuid
+  handleHash Bytes     @map("handle_hash")
+  state      String    @db.VarChar(128)
+  secrets    Bytes
+  returnTo   String    @map("return_to") @db.VarChar(2048)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+
+  @@unique([handleHash], map: "oidc_login_attempts_handle_hash_key")
+  @@map("oidc_login_attempts")
+}
+
+model BackchannelLogoutReplay {
+  jti        String   @id @db.VarChar(255)
+  receivedAt DateTime @default(now()) @map("received_at") @db.Timestamptz(3)
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@map("backchannel_logout_replays")
+}

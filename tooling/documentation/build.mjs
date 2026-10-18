@@ -54,10 +54,14 @@ function authenticationLabel(security, components) {
       return names
         .map((name) => {
           const scheme = components.securitySchemes?.[name];
-          return scheme?.type === "http" &&
+          if (
+            scheme?.type === "http" &&
             scheme.scheme?.toLowerCase() === "bearer"
-            ? "Bearer access token"
-            : `${name} (${scheme?.type ?? "unknown"})`;
+          )
+            return "Bearer access token";
+          if (scheme?.type === "apiKey" && scheme.in === "cookie")
+            return "Session cookie";
+          return `${name} (${scheme?.type ?? "unknown"})`;
         })
         .join(" and ");
     })
@@ -163,13 +167,16 @@ export async function buildDocumentation(sources) {
         ].includes(method)
       )
         continue;
-      const success = Object.entries(operation.responses).filter(([status]) =>
-        status.startsWith("2"),
+      // Browser-navigation operations succeed with a redirect instead of 2xx.
+      const success = Object.entries(operation.responses).filter(
+        ([status]) => status.startsWith("2") || status.startsWith("3"),
       );
       if (!operation.operationId || success.length === 0)
         fail(`missing operationId or success response: ${method} ${route}`);
+      // Most bodies are JSON; protocol endpoints may declare a form instead.
       const requestSchema =
-        operation.requestBody?.content?.["application/json"]?.schema;
+        operation.requestBody?.content?.["application/json"]?.schema ??
+        Object.values(operation.requestBody?.content ?? {})[0]?.schema;
       const security = operation.security ?? openapi.security ?? [];
       const parameters = new Map();
       for (const parameter of [

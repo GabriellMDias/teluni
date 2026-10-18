@@ -1,0 +1,122 @@
+{
+  "kind": "database",
+  "name": "oidc_login_attempts",
+  "description": "Single-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.",
+  "owner": "Identity",
+  "classification": "RESTRICTED",
+  "lifecycle": "Created when a login starts, consumed once by the callback and expired after 10 minutes; expired rows are retained until a cleanup rule is approved.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated attempt UUID that binds the sealed secrets.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "handle_hash",
+      "PostgreSQL type": "bytea",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 of the random login-attempt cookie value.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "state",
+      "PostgreSQL type": "character varying(128)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "OIDC state value expected back at the callback.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "secrets",
+      "PostgreSQL type": "bytea",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "PKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "return_to",
+      "PostgreSQL type": "character varying(2048)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Validated same-origin relative path to open after a successful login.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the login started.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant after which the callback can no longer consume the attempt.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "consumed_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the callback consumed the attempt; a second use is rejected.",
+      "Null meaning": "The attempt has not been used.",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "oidc_login_attempts_expiry_bounds",
+      "Physical definition": "CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))",
+      "Purpose": "An attempt expires after creation and within 10 minutes."
+    },
+    {
+      "Object": "oidc_login_attempts_handle_sha256",
+      "Physical definition": "CHECK ((octet_length(handle_hash) = 32))",
+      "Purpose": "Handle hash is exactly one SHA-256 digest."
+    },
+    {
+      "Object": "oidc_login_attempts_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique attempt identity."
+    },
+    {
+      "Object": "oidc_login_attempts_return_relative",
+      "Physical definition": "CHECK (((return_to)::text ~ '^/'::text))",
+      "Purpose": "Return path is relative to the panel origin."
+    },
+    {
+      "Object": "oidc_login_attempts_state_nonblank",
+      "Physical definition": "CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))",
+      "Purpose": "State uses the base64url alphabet and cannot be blank."
+    },
+    {
+      "Object": "oidc_login_attempts_handle_hash_key",
+      "Physical definition": "CREATE UNIQUE INDEX oidc_login_attempts_handle_hash_key ON public.oidc_login_attempts USING btree (handle_hash)",
+      "Purpose": "One attempt per browser handle; supports consumption by handle."
+    }
+  ]
+}

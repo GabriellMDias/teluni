@@ -27,6 +27,16 @@ export const serverConfigSchema = Type.Object(
     tokenIssuer: Type.Optional(Type.String({ minLength: 1 })),
     tokenAudience: Type.Optional(Type.String({ minLength: 1 })),
     tokenJwksUrl: Type.Optional(Type.String({ minLength: 1 })),
+    publicOrigin: Type.Optional(Type.String({ minLength: 1 })),
+    oidcClientId: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9._-]{1,255}$" }),
+    ),
+    oidcClientSecret: Type.Optional(Type.String({ minLength: 16 })),
+    provisionerClientId: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9._-]{1,255}$" }),
+    ),
+    provisionerClientSecret: Type.Optional(Type.String({ minLength: 16 })),
+    sessionKeys: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
@@ -182,7 +192,99 @@ export const configReference = Object.freeze([
     secret: false,
     purpose: "Trusted issuer public-key endpoint.",
   },
+  {
+    key: "publicOrigin",
+    name: "TELUNI_PUBLIC_ORIGIN",
+    type: "origin URL (scheme, host, optional port)",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Browser-visible panel origin for OIDC callbacks, cookie security and CSRF origin checks; HTTPS outside loopback development.",
+  },
+  {
+    key: "oidcClientId",
+    name: "TELUNI_OIDC_CLIENT_ID",
+    type: "client identifier",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Confidential human-login OIDC client used by the server-managed session boundary.",
+  },
+  {
+    key: "oidcClientSecret",
+    name: "TELUNI_OIDC_CLIENT_SECRET",
+    type: "secret string, at least 16 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose: "Credential of the human-login OIDC client.",
+  },
+  {
+    key: "provisionerClientId",
+    name: "TELUNI_IDENTITY_PROVISIONER_CLIENT_ID",
+    type: "client identifier",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Service-account client that writes the administrator-only application principal attribute.",
+  },
+  {
+    key: "provisionerClientSecret",
+    name: "TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET",
+    type: "secret string, at least 16 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose: "Credential of the principal provisioner service account.",
+  },
+  {
+    key: "sessionKeys",
+    name: "TELUNI_SESSION_KEYS",
+    type: "comma-separated id:base64url 32-byte keys, newest first",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Key ring for provider-token encryption and CSRF tokens; the first key protects new values, all keys remain readable during rotation.",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
+
+const sessionKeyPattern = /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9_-]{43}$/;
+
+/** Parses the validated session key ring; the first entry is current. */
+export function parseSessionKeys(
+  value: string,
+): readonly Readonly<{ id: string; key: Buffer }>[] {
+  const entries = value.split(",").map((entry) => entry.trim());
+  const ids = new Set<string>();
+  const keys = entries.map((entry) => {
+    if (!sessionKeyPattern.test(entry))
+      throw new Error("Invalid API configuration: session keys");
+    const [id, encoded] = entry.split(":") as [string, string];
+    if (ids.has(id)) throw new Error("Invalid API configuration: session keys");
+    ids.add(id);
+    const key = Buffer.from(encoded, "base64url");
+    if (key.length !== 32)
+      throw new Error("Invalid API configuration: session keys");
+    return Object.freeze({ id, key });
+  });
+  return Object.freeze(keys);
+}
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
   if (value === undefined) return fallback;
@@ -216,6 +318,27 @@ export function parseServerConfig(
     ...(env.ORION_TOKEN_JWKS_URL === undefined
       ? {}
       : { tokenJwksUrl: env.ORION_TOKEN_JWKS_URL }),
+    ...(env.TELUNI_PUBLIC_ORIGIN === undefined
+      ? {}
+      : { publicOrigin: env.TELUNI_PUBLIC_ORIGIN }),
+    ...(env.TELUNI_OIDC_CLIENT_ID === undefined
+      ? {}
+      : { oidcClientId: env.TELUNI_OIDC_CLIENT_ID }),
+    ...(env.TELUNI_OIDC_CLIENT_SECRET === undefined
+      ? {}
+      : { oidcClientSecret: env.TELUNI_OIDC_CLIENT_SECRET }),
+    ...(env.TELUNI_IDENTITY_PROVISIONER_CLIENT_ID === undefined
+      ? {}
+      : { provisionerClientId: env.TELUNI_IDENTITY_PROVISIONER_CLIENT_ID }),
+    ...(env.TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET === undefined
+      ? {}
+      : {
+          provisionerClientSecret:
+            env.TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET,
+        }),
+    ...(env.TELUNI_SESSION_KEYS === undefined
+      ? {}
+      : { sessionKeys: env.TELUNI_SESSION_KEYS }),
   };
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
@@ -285,6 +408,39 @@ export function parseServerConfig(
     candidate.tokenAudience.trim() === ""
   )
     throw new Error("Invalid API configuration: token audience");
+  const identityValues = [
+    candidate.publicOrigin,
+    candidate.oidcClientId,
+    candidate.oidcClientSecret,
+    candidate.provisionerClientId,
+    candidate.provisionerClientSecret,
+    candidate.sessionKeys,
+  ];
+  // Human sessions are all-or-none and reuse the access-token issuer.
+  if (identityValues.some(Boolean)) {
+    if (identityValues.some((value) => !value) || !candidate.tokenIssuer)
+      throw new Error(
+        "Invalid API configuration: incomplete human identity settings",
+      );
+    let origin: URL;
+    try {
+      origin = new URL(candidate.publicOrigin!);
+    } catch {
+      throw new Error("Invalid API configuration: public origin");
+    }
+    const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(
+      origin.hostname,
+    );
+    if (
+      origin.origin !== candidate.publicOrigin ||
+      (origin.protocol !== "https:" &&
+        (origin.protocol !== "http:" ||
+          !loopback ||
+          candidate.environment === "production"))
+    )
+      throw new Error("Invalid API configuration: public origin");
+    parseSessionKeys(candidate.sessionKeys!);
+  }
   return Object.freeze(candidate);
 }
 

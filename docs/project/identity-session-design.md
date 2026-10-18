@@ -4,7 +4,7 @@
 
 ## Status and scope
 
-**Approved detailed design for D-02, 2026-10-18.** The owner approved it as proposed under [PH-20](human-actions.md#ph-20). It turns accepted ADR-0024 (Keycloak, server-managed browser sessions) and ADR-0025 (application-owned access) into concrete trust boundaries, flows, state and controls, and preserves accepted ADR-0012 unchanged. It answers the [new authentication mechanism checklist](../security/authentication.md#new-authentication-mechanism-checklist). Nothing here is implemented or qualified: no provider, client, route, table, cookie or configuration setting exists. PJ-24 implements and qualifies it after approval; every Keycloak behavior below is a requirement to prove with the pinned version, not an established result.
+**Approved detailed design for D-02, 2026-10-18.** The owner approved it as proposed under [PH-20](human-actions.md#ph-20). It turns accepted ADR-0024 (Keycloak, server-managed browser sessions) and ADR-0025 (application-owned access) into concrete trust boundaries, flows, state and controls, and preserves accepted ADR-0012 unchanged. It answers the [new authentication mechanism checklist](../security/authentication.md#new-authentication-mechanism-checklist). PJ-24 implements it incrementally; [implementation status](#implementation-status) separates what exists and is qualified from what remains. A Keycloak behavior below is established only where that section names the passing test.
 
 Out of scope here: company, membership, grant and invitation semantics ([tenant data design](tenant-data-design.md) and the organizations implementation conventions), invitation email delivery (designed with the organizations invitation slice under the [delivery policy](../architecture/delivery-and-side-effects.md)), player/device credentials (D-03) and real environment provisioning (PH-15–PH-17).
 
@@ -114,6 +114,22 @@ Integration and browser tests start disposable containers, as PostgreSQL already
 | IA-15 | Keycloak, JWKS and database outages fail closed with safe errors and recover |
 
 Each Keycloak assumption in this document (header type, protected attribute mapping, human-only client restrictions, level-of-authentication step-up and OTP enrollment, passkey user verification counting as `teluni-aal2`, recovery codes, introspection reflecting session end and disablement, back-channel logout on recovery, reset-token lifetime, brute-force behavior) is a qualification item. If the pinned version cannot meet one, PJ-24 records the gap and proposes a reviewed change rather than relaxing a check.
+
+## Implementation status
+
+**Implemented and verified on 2026-10-18** (API only; no web workflow yet):
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| Pinned Keycloak 26.8.1 container and idempotent realm provisioning | [`scripts/keycloak.ts`](../../apps/api/scripts/keycloak.ts), [`scripts/identity-realm.ts`](../../apps/api/scripts/identity-realm.ts) | [Realm contract test](../../apps/api/test/identity/keycloak-contract.test.ts): `at+jwt` header, API audience and human-actor claims; the unchanged verifier rejects tokens until principal provisioning and then accepts them; refresh rotation without reuse; password, client-credential and implicit grants refused; users cannot write the principal attribute through the account console; introspection reports ended sessions and disabled users |
+| `identity` API module: principals, PostgreSQL sessions, login attempts, logout-token replay records | [`src/features/identity/`](../../apps/api/src/features/identity/module.ts), [migration](../../apps/api/prisma/migrations/20261018000000_identity_sessions/migration.sql), [grants](../../apps/api/prisma/runtime-grants/identity.sql) | [Integration test](../../apps/api/test/identity/integration.test.ts) against real Keycloak and PostgreSQL |
+| Login with PKCE/state/nonce, principal provisioning through the provisioner account, return-path validation | `service.ts`, `provider.ts` | One principal per provider identity across browsers; unbound, forged-state and replayed callbacks fail; external and `/api` return paths become `/` |
+| Session boundary: cookie lookup by digest, idle/absolute expiry, CSRF and Origin checks, 30-second introspection, single-flight refresh, ADR-0012 verification, background activity | `service.ts`, `routes.ts`, `public.ts` | CSRF/Origin rejection; idle expiry and background requests; disabled principals and provider-disabled users denied; three waves of ten concurrent requests share one refresh each (a regression test for a stale-token race found during validation); bearer-only requests rejected |
+| Session list/termination, five-session limit with pending activation, logout ending the provider session, back-channel logout | `service.ts`, `routes.ts` | Foreign session IDs not found; sixth session pending until one ends; next login after logout asks for credentials; provider-side logout revokes through back-channel logout |
+
+Also implemented: the narrow `requiresModules` contract and `public.ts` dependency rule, the `access`/`bodyContentType` operation metadata with cookie security in OpenAPI, and the six `TELUNI_` settings in the [configuration reference](../generated/configuration/api.md).
+
+**Not yet implemented:** the web sign-in, session-expiry and session-management workflow and SDK CSRF handling; step-up to `teluni-aal2`, OTP/passkey/recovery-code flows and recent-authentication checks (IA-05); signup, email verification and password recovery through Mailpit (IA-01, IA-06); per-membership idle limits (every session currently uses the 30-minute administrative bound, the stricter value); global disablement as a platform operation; cleanup of expired attempts and replay records; a manual local stack; Google (PH-16). Real environments still need PH-10 and PH-15–PH-17.
 
 ## Alternatives considered
 

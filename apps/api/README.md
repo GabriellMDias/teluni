@@ -2,7 +2,7 @@
 
 [Setup](../../docs/setup.md) · [API principles](../../docs/api/principles.md) · [OpenAPI](../../docs/generated/api/openapi.json) · [Validation](../../docs/validation.md)
 
-The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma, and optional bearer access-token verification. Product capabilities are [modules](#modules) composed in [`src/modules.ts`](src/modules.ts). The [web application](../web/README.md) consumes the generated API contract through the workspace SDK package (`packages/sdk`). The API verifies access tokens; it does not implement login, passwords, refresh tokens, or provider-specific sessions.
+The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma, and optional bearer access-token verification. Product capabilities are [modules](#modules) composed in [`src/modules.ts`](src/modules.ts). The [web application](../web/README.md) consumes the generated API contract through the workspace SDK package (`packages/sdk`). The composed `identity` module implements Keycloak login and server-managed human sessions without handling passwords; see [identity and sessions](#identity-and-sessions).
 
 ## Find the owning implementation
 
@@ -39,7 +39,7 @@ From the repository root:
 | Intentionally regenerate tracked API/database/configuration/error references | `pnpm -C apps/api references:write` |
 | Check current API/database/SDK references without editing them | `pnpm references:check` |
 
-Tests and reference generation use fresh migrated Testcontainers PostgreSQL, so a compatible container runtime must be reachable. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md) for downstream SDK/portal generation after source changes. The root `pnpm validate` also checks emitted builds, real-process recovery, and browser behavior; a focused package check alone does not replace it.
+Tests and reference generation use fresh migrated Testcontainers PostgreSQL, and identity tests also start the pinned Keycloak image, so a compatible container runtime must be reachable. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md) for downstream SDK/portal generation after source changes. The root `pnpm validate` also checks emitted builds, real-process recovery, and browser behavior; a focused package check alone does not replace it.
 
 ## Configuration and database access
 
@@ -50,6 +50,12 @@ Tests and reference generation use fresh migrated Testcontainers PostgreSQL, so 
 The runtime role needs `USAGE` on the application schema plus only the table and column privileges that each module declares in `prisma/runtime-grants/`. It needs no DDL grant. The [database fixture](scripts/migrated-database.ts) provisions separate migration/runtime roles and applies those grants, so integration tests run with the same least-privilege runtime role.
 
 The [release workflow](../../docs/database/release-evolution.md) owns durable migration recording. An empty registry is not permission to rewrite unverified history.
+
+## Identity and sessions
+
+The [`identity` module](src/features/identity/AGENTS.md) owns application principals and PostgreSQL-backed browser sessions under the [identity and session design](../../docs/project/identity-session-design.md). It requires the database, the token settings and the six `TELUNI_` human identity settings, and stays unmounted outside production until they are configured. Login, callback and back-channel logout are public browser/provider routes under `/auth`; session routes and every product module that needs a human authenticate through its session boundary, exposed to other modules only by `src/features/identity/public.ts`. That boundary passes the stored provider access token through the unchanged verifier below, so the cookie never bypasses it. Bearer-only requests without a session are rejected by session-protected operations.
+
+The realm contract is provisioned by [`scripts/identity-realm.ts`](scripts/identity-realm.ts) and qualified against the pinned Keycloak image in [`scripts/keycloak.ts`](scripts/keycloak.ts). Identity tests start that image and PostgreSQL through Testcontainers.
 
 ## Identity and contract
 

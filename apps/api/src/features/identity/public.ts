@@ -1,0 +1,20 @@
+// The identity module's public capability surface. Other modules import only
+// this file; dependency rules reject imports of the module's internals.
+import type { IncomingHttpHeaders } from "node:http";
+import type { HumanContext } from "./domain.js";
+
+export { SessionFailure, type HumanContext } from "./domain.js";
+export type { SessionFailureCode } from "./domain.js";
+export { identityErrors } from "./errors.js";
+
+/** Authenticates a human request through the server-managed session boundary. */
+export type HumanSessionPort = Readonly<{
+  /**
+   * Resolves the verified human behind a request or throws `SessionFailure`
+   * with a public code: missing/expired/revoked session, failed CSRF/Origin
+   * check for unsafe methods, a pending session limit or provider outage.
+   */
+  authenticate(
+    request: Readonly<{ method: string; headers: IncomingHttpHeaders }>,
+  ): Promise<HumanContext>;
+}>;

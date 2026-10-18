@@ -4,6 +4,23 @@
   "api": { "title": "Teluni API", "version": "1.0.0" },
   "entries": [
     {
+      "id": "api/completeLogin",
+      "kind": "api",
+      "title": "completeLogin",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /auth/callback",
+      "method": "GET",
+      "path": "/auth/callback",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/completeLogin.json"
+    },
+    {
       "id": "api/getLiveness",
       "kind": "api",
       "title": "getLiveness",
@@ -38,6 +55,23 @@
       "file": "pages/api/getReadiness.json"
     },
     {
+      "id": "api/getSession",
+      "kind": "api",
+      "title": "getSession",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /auth/session",
+      "method": "GET",
+      "path": "/auth/session",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getSession.json"
+    },
+    {
       "id": "api/getStartupHealth",
       "kind": "api",
       "title": "getStartupHealth",
@@ -53,6 +87,149 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getStartupHealth.json"
+    },
+    {
+      "id": "api/listSessions",
+      "kind": "api",
+      "title": "listSessions",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /auth/sessions",
+      "method": "GET",
+      "path": "/auth/sessions",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listSessions.json"
+    },
+    {
+      "id": "api/logout",
+      "kind": "api",
+      "title": "logout",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /auth/logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/logout.json"
+    },
+    {
+      "id": "api/receiveBackchannelLogout",
+      "kind": "api",
+      "title": "receiveBackchannelLogout",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /auth/backchannel-logout",
+      "method": "POST",
+      "path": "/auth/backchannel-logout",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/receiveBackchannelLogout.json"
+    },
+    {
+      "id": "api/startLogin",
+      "kind": "api",
+      "title": "startLogin",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /auth/login",
+      "method": "GET",
+      "path": "/auth/login",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/startLogin.json"
+    },
+    {
+      "id": "api/terminateAllSessions",
+      "kind": "api",
+      "title": "terminateAllSessions",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /auth/sessions/terminate-all",
+      "method": "POST",
+      "path": "/auth/sessions/terminate-all",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/terminateAllSessions.json"
+    },
+    {
+      "id": "api/terminateSession",
+      "kind": "api",
+      "title": "terminateSession",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /auth/sessions/{id}",
+      "method": "DELETE",
+      "path": "/auth/sessions/{id}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/terminateSession.json"
+    },
+    {
+      "id": "database/backchannel_logout_replays",
+      "kind": "database",
+      "title": "backchannel_logout_replays",
+      "group": "Identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Identifiers of accepted provider logout tokens, kept to reject a replayed token.",
+      "headings": [],
+      "file": "pages/database/backchannel_logout_replays.json"
+    },
+    {
+      "id": "database/human_sessions",
+      "kind": "database",
+      "title": "human_sessions",
+      "group": "Identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Server-managed browser session: an opaque cookie credential's hash, its bounds and assurance, and the sealed provider tokens obtained for it.",
+      "headings": [],
+      "file": "pages/database/human_sessions.json"
+    },
+    {
+      "id": "database/oidc_login_attempts",
+      "kind": "database",
+      "title": "oidc_login_attempts",
+      "group": "Identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Single-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.",
+      "headings": [],
+      "file": "pages/database/oidc_login_attempts.json"
+    },
+    {
+      "id": "database/principals",
+      "kind": "database",
+      "title": "principals",
+      "group": "Identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.",
+      "headings": [],
+      "file": "pages/database/principals.json"
     },
     {
       "id": "components/ErrorNotice",
@@ -93,6 +270,16 @@
       "summary": "The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma,…",
       "headings": [],
       "file": "pages/repository/apps/api/README.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/identity/AGENTS",
+      "kind": "repository",
+      "title": "Identity Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/identity/AGENTS.md",
+      "summary": "This module owns application principals, server-managed human sessions and the session boundary other modules use. Read the identity and session design and the identity…",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/identity/AGENTS.json"
     },
     {
       "id": "repository/apps/web/AGENTS",
@@ -670,7 +857,7 @@
       "title": "API Configuration Reference",
       "group": "Generated references",
       "source": "docs/generated/configuration/api.md",
-      "summary": "No values are eligible for client exposure. ORION_ENV is always required. The three token settings are configured together. API modules that require the database or bearer…",
+      "summary": "No values are eligible for client exposure. ORION_ENV is always required. The three token settings are configured together. The six TELUNI_ human identity settings are also…",
       "headings": [],
       "file": "pages/repository/docs/generated/configuration/api.json"
     },
@@ -680,7 +867,7 @@
       "title": "Database Reference",
       "group": "Generated references",
       "source": "docs/generated/database/schema.md",
-      "summary": "No application-owned tables exist yet. Add a module's Prisma model, reviewed migration, and metadata, then regenerate this reference.",
+      "summary": "Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.",
       "headings": [],
       "file": "pages/repository/docs/generated/database/schema.json"
     },
@@ -1139,21 +1326,21 @@
     "shards": [
       {
         "file": "search/0000.json",
-        "count": 97,
-        "kinds": ["api", "component", "repository"]
+        "count": 41,
+        "kinds": ["api", "component", "database", "repository"]
       },
-      { "file": "search/0001.json", "count": 113, "kinds": ["repository"] },
-      { "file": "search/0002.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 180, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 121, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 74, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 61, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 100, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 94, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 7, "kinds": ["repository"] }
+      { "file": "search/0001.json", "count": 105, "kinds": ["repository"] },
+      { "file": "search/0002.json", "count": 117, "kinds": ["repository"] },
+      { "file": "search/0003.json", "count": 146, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 153, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 136, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 91, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 56, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 81, "kinds": ["repository"] }
     ],
-    "count": 1146
+    "count": 1170
   }
 }

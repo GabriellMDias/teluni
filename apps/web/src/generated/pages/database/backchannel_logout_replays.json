@@ -1,0 +1,52 @@
+{
+  "kind": "database",
+  "name": "backchannel_logout_replays",
+  "description": "Identifiers of accepted provider logout tokens, kept to reject a replayed token.",
+  "owner": "Identity",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.",
+  "columns": [
+    {
+      "Column": "jti",
+      "PostgreSQL type": "character varying(255)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Unique identifier (jti) of an accepted logout token.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "received_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the token was accepted.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant after which the token would fail the five-minute age check, so its record is no longer needed.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "backchannel_logout_replays_expiry_after_receipt",
+      "Physical definition": "CHECK ((expires_at > received_at))",
+      "Purpose": "A replay record expires after it was received."
+    },
+    {
+      "Object": "backchannel_logout_replays_pkey",
+      "Physical definition": "PRIMARY KEY (jti)",
+      "Purpose": "Each logout token is accepted at most once."
+    }
+  ]
+}

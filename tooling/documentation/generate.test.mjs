@@ -293,8 +293,13 @@ test("generation is deterministic and preserves full contracts with bounded per-
       ),
     );
     if (operation.requestBody) assert.equal(page.request.schema.type, "object");
-    if (operation.security)
-      assert.equal(page.components.securitySchemes.bearerAuth.type, "http");
+    for (const requirement of operation.security ?? [])
+      for (const name of Object.keys(requirement))
+        assert.ok(
+          ["http", "apiKey"].includes(
+            page.components.securitySchemes[name].type,
+          ),
+        );
   }
   assert.ok(manifest.search.shards.every((shard) => shard.kinds.length));
 });

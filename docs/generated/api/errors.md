@@ -12,3 +12,5 @@
 | `RATE_LIMITED` | 429 | rate_limit | yes | Too many requests. Try again later. |
 | `INTERNAL_ERROR` | 500 | internal | no | An unexpected error occurred. |
 | `SERVICE_UNAVAILABLE` | 503 | availability | yes | The service is unavailable. |
+| `CSRF_VALIDATION_FAILED` | 403 | authentication | no | The request could not be verified as coming from the Teluni panel. Reload the page and try again. |
+| `SESSION_LIMIT_REACHED` | 409 | conflict | no | You already have the maximum number of active sessions. End one of them to continue. |

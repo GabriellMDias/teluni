@@ -1,5 +1,788 @@
 [
   {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Log correlation",
+    "anchor": "log-correlation",
+    "text": "Log correlation\nPino logs emitted while an OpenTelemetry span is active should include trace correlation metadata.\nThe standard correlation fields will be:\ntrace_id\nspan_id\n\nand, when useful:\ntrace_flags\n\nThis allows an operator to navigate conceptually from:\nlog\n    ↓\ntrace_id\n    ↓\ndistributed trace\n    ↓\nrequest\n    ↓\napplication operation\n    ↓\ndatabase / integration\n\nTrace correlation should be provided through instrumentation or centralized logging configuration rather than manually added at every call site.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Request correlation",
+    "anchor": "request-correlation",
+    "text": "Request correlation\nOrion will retain an independent **`request_id`** for HTTP request correlation.\n`request_id`, `trace_id`, and `span_id` serve different purposes:\nrequest_id\n    → identifies one HTTP request\n\ntrace_id\n    → identifies one distributed trace\n\nspan_id\n    → identifies one specific traced operation\n\nOrion will not require `request_id` and `trace_id` to contain the same value.\nRequest IDs remain useful even when tracing is unavailable, disabled, sampled differently, or incomplete across an external boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Log export",
+    "anchor": "log-export",
+    "text": "Log export\nPino logs will be emitted through the application's normal process output by default.\nProduction deployments should normally emit structured logs through:\nstdout / stderr\n    ↓\ndeployment log collection\n    ↓\nconfigured log backend\n\nApplication code must not require direct integration with a specific logging vendor merely to emit ordinary logs.\nThis preserves compatibility with containers, process supervisors, cloud platforms, orchestration systems, and local execution.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OpenTelemetry Logs",
+    "anchor": "opentelemetry-logs",
+    "text": "OpenTelemetry Logs\nThe OpenTelemetry Logs SDK will **not be part of Orion's initial default logging path**.\nPino remains authoritative for application logging.\nOpenTelemetry instrumentation may be used to enrich Pino records with active tracing context.\nA future OpenTelemetry Logs integration may be introduced when its JavaScript implementation, deployment requirements, and operational value justify doing so.\nSuch an addition does not require replacing Pino unless the fundamental logging responsibilities established here change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Redaction",
+    "anchor": "redaction",
+    "text": "Redaction\nSensitive-data redaction is mandatory.\nLogging configuration must provide centralized protection against common sensitive values.\nLogs must not capture secrets or credentials simply because those values are available in application objects.\nExamples that must normally be excluded or redacted include:\n`Authorization` headers;\ncookies;\n`Set-Cookie`;\naccess tokens;\nrefresh tokens;\npasswords;\nAPI keys;\nprivate keys;\ndatabase credentials;\nsecret configuration values.\nRaw request and response bodies must **not be logged by default**.\nBodies, query parameters, and headers can contain:\npersonal data;\nfinancial information;\ncredentials;\nconfidential business information;\nprotected customer data.\nWhen a particular value is operationally necessary, it must be logged intentionally and consistently with Orion's data-classification and security policies.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Logging errors",
+    "anchor": "logging-errors",
+    "text": "Logging errors\nUnexpected errors should be recorded as structured errors rather than converted only to interpolated text.\nError logging should preserve useful technical context such as:\nerror type;\nmessage;\nstack trace when appropriate;\ncause chain where available;\nrequest correlation;\nactive trace correlation;\nrelevant operation context that is safe to record.\nSensitive application input must not be attached indiscriminately to error records.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Expected versus unexpected failures",
+    "anchor": "expected-versus-unexpected-failures",
+    "text": "Expected versus unexpected failures\nOrion will distinguish expected application outcomes from unexpected operational failures.\nExamples of expected outcomes may include:\nvalidation failure;\nnot-found result;\nauthorization rejection;\nbusiness-rule rejection;\nconcurrency conflict that is explicitly modeled.\nSuch results must not automatically be treated as production incidents merely because they map to non-success HTTP responses.\nUnexpected failures may include:\nunhandled programming errors;\nunavailable required dependencies;\nunexpected database failures;\ninvariant violations;\nunanticipated integration failures.\nThis distinction should influence:\nlog level;\ntracing error status;\nexternal error reporting;\nalerting.\nThe existing Orion error-handling policy remains authoritative for application-level error semantics.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Error reporting",
+    "anchor": "error-reporting",
+    "text": "Error reporting\nOrion will not select a global external error-reporting vendor.\nUnexpected errors should first participate in the standard observability model through:\ncentral error handling\n    ↓\nstructured Pino log\n    +\nactive OpenTelemetry trace/span context\n\nAn application or deployment may additionally integrate an error-reporting provider when operational requirements justify it.\nExamples could include dedicated error-monitoring or APM platforms.\nSuch integration should occur at appropriate technical boundaries rather than introducing vendor APIs throughout domain and application code.\nOrion will not create generic abstraction layers solely to hide a provider when no application responsibility requires such an abstraction.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fatal process failures",
+    "anchor": "fatal-process-failures",
+    "text": "Fatal process failures\nFatal startup or process-level failures should be recorded where possible before process termination.\nExamples include:\nfailure to initialize required configuration;\nunrecoverable application initialization failure;\nuncaught exceptions that make process state unsafe.\nWhere practical, the process should perform best-effort telemetry flushing before termination.\nThe runtime or deployment platform should be responsible for restarting failed processes when restart behavior is appropriate.\nA process must not continue accepting work when its state can no longer be considered reliable.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OpenTelemetry resources",
+    "anchor": "opentelemetry-resources",
+    "text": "OpenTelemetry resources\nTelemetry-producing processes must identify themselves using stable OpenTelemetry resource attributes.\nAt minimum, deployments should provide meaningful values for concepts such as:\nservice.name\nservice.version\ndeployment.environment.name\n\nA namespace or equivalent organizational identifier may also be provided when useful.\nServices must not intentionally rely on generic unidentified defaults when the deployment knows the actual service identity.\nExamples of separate service identities may include:\napi\nworker\nscheduler\n\nif those processes are introduced.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Telemetry transport",
+    "anchor": "telemetry-transport",
+    "text": "Telemetry transport\n**OTLP will be Orion's preferred telemetry transport protocol for OpenTelemetry signals.**\nApplications should export OpenTelemetry telemetry through OTLP-compatible infrastructure rather than depend directly on a vendor-specific telemetry protocol when practical.\nThe intended model is:\nOrion process\n    ↓\nOpenTelemetry SDK\n    ↓\nOTLP\n    ↓\ntelemetry infrastructure\n\nThis helps preserve backend portability.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OpenTelemetry Collector",
+    "anchor": "opentelemetry-collector",
+    "text": "OpenTelemetry Collector\nThe **OpenTelemetry Collector is the preferred production telemetry routing and processing layer** when deployment complexity justifies it.\nThe conceptual architecture is:\napplication\n    ↓\nOTLP\n    ↓\nOpenTelemetry Collector\n    ↓\nbackend(s)\n\nThe Collector may provide capabilities such as:\nbatching;\nrouting;\nfiltering;\ntransformation;\nsampling;\ncredential isolation;\nexporting to multiple destinations.\nOrion does not require every small deployment to operate a Collector.\nDirect OTLP export to a compatible backend is acceptable when it provides the simpler and appropriate deployment model.\nApplications must not depend on whether telemetry reaches its final backend directly or through a Collector.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Observability backend",
+    "anchor": "observability-backend",
+    "text": "Observability backend\nNo global observability backend will be selected.\nDeployment-specific systems may provide:\ntrace storage;\nmetric storage;\nlog storage;\ndashboards;\nalerting;\nquerying;\nerror reporting.\nBackend selection depends on operational context and is not part of Orion's foundation-level architecture.\nChanging the observability backend should normally be a deployment change rather than an application architecture change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Browser observability",
+    "anchor": "browser-observability",
+    "text": "Browser observability\nOpenTelemetry browser instrumentation will not be part of Orion's initial web foundation.\nThe first observability baseline applies primarily to server-side Node.js processes.\nFrontend observability concerns such as:\nreal-user monitoring;\nbrowser errors;\nCore Web Vitals;\nfrontend performance;\nbrowser tracing;\nsession diagnostics;\nwill be evaluated when a concrete web product requires them.\nBrowser observability does not need to use exactly the same implementation strategy as server observability as long as resulting integration preserves appropriate correlation and security boundaries.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Audit logging",
+    "anchor": "audit-logging",
+    "text": "Audit logging\nOperational observability is explicitly separate from business audit history.\nThe following are not automatically an audit trail:\nPino logs\nOpenTelemetry traces\nOpenTelemetry metrics\n\nA business audit requirement such as:\nwho changed an invoice\nwhat changed\nwhen it changed\nwhy it changed\n\nmay require dedicated persistent application data with its own rules for:\nintegrity;\nretention;\nauthorization;\nimmutability;\ndomain semantics;\nregulatory compliance.\nAn application must not rely on ordinary application logs as its only source of authoritative audit history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nOpenTelemetry provides a vendor-neutral observability model that can represent traces, metrics, propagation, instrumentation, and telemetry export without forcing Orion applications to depend on a particular monitoring backend.\nThis fits Orion's goal of preserving infrastructure portability while still providing a strong production observability baseline.\nDistributed tracing is particularly valuable because large systems frequently spend significant time across multiple boundaries:\nHTTP\napplication behavior\ndatabase access\nexternal APIs\nbackground processing\nother services\n\nA trace allows those operations to be investigated as one causal workflow rather than as independent log records.\nMetrics complement traces by providing aggregate time-series information appropriate for:\ndashboards;\ncapacity monitoring;\nlatency distributions;\nrequest rates;\nfailure rates;\nalert conditions.\nPino remains the default logging implementation because it is already integrated naturally with Fastify and provides efficient structured logging.\nKeeping logging and tracing as separate but correlated responsibilities avoids making the application's log pipeline dependent on the maturity or deployment model of a specific OpenTelemetry log implementation.\nThe correlation model:\nPino log\n    +\ntrace_id\n    +\nspan_id\n\nprovides the practical operational benefit needed from the integration without requiring application logs and traces to use the same internal API.\nAn independent request identifier is retained because request-level operational correlation remains useful even when distributed tracing is unavailable or incomplete.\nOTLP is selected as the preferred telemetry transport because it preserves OpenTelemetry's vendor-neutral architecture between application processes and observability infrastructure.\nThe Collector is preferred for production systems that require centralized telemetry processing because it can move routing, transformation, batching, and backend-specific exporting out of application processes.\nHowever, making the Collector mandatory for every application would introduce infrastructure complexity that does not always provide sufficient value.\nTherefore direct OTLP export remains valid for simpler deployments.\nExplicit rules around redaction and cardinality are necessary because observability systems can themselves become security, privacy, reliability, or cost risks.\nUncontrolled logging may expose sensitive information.\nUnbounded metric attributes may create excessive time-series cardinality.\nExcessive tracing can generate unnecessary overhead and telemetry cost.\nThe strategy therefore treats observability as engineered production behavior rather than unconditional collection of all available information.\nNo error-reporting vendor is selected because the appropriate provider depends on deployment requirements.\nOrion preserves provider independence while allowing dedicated error-reporting tools to be added at technical boundaries when they provide concrete value.\nFinally, keeping operational telemetry separate from audit history prevents infrastructure logs from becoming an accidental and unreliable business record.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Vendor-Specific Observability SDK as the Foundation Standard",
+    "anchor": "vendor-specific-observability-sdk-as-the-foundation-standard",
+    "text": "Vendor-Specific Observability SDK as the Foundation Standard\nOrion could select a platform such as Datadog, New Relic, Honeycomb, or another APM provider and use its proprietary application SDK directly.\nThis could provide a highly integrated initial experience.\nIt was not selected because Orion is intended for many future applications and deployment environments.\nA globally selected vendor would create unnecessary infrastructure coupling and could complicate self-hosting, regulated deployments, cost optimization, or future vendor migration.\nOpenTelemetry provides a more portable instrumentation boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OpenTelemetry for Application Logging Instead of Pino",
+    "anchor": "opentelemetry-for-application-logging-instead-of-pino",
+    "text": "OpenTelemetry for Application Logging Instead of Pino\nOrion could standardize all logs directly through OpenTelemetry's logging APIs and SDK.\nThis would conceptually unify all telemetry signals.\nIt was not selected as the initial approach because Pino already provides a mature and efficient structured logging implementation that integrates naturally with the selected Fastify stack.\nThe practical requirement is correlation between logs and traces, not necessarily one API for all telemetry.\nPino therefore remains responsible for application logging while OpenTelemetry provides trace context and observability signals.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Direct Export from Every Application to a Specific Backend",
+    "anchor": "direct-export-from-every-application-to-a-specific-backend",
+    "text": "Direct Export from Every Application to a Specific Backend\nEach Orion service could embed the exporter required by its selected observability provider.\nThis can be simple in small deployments.\nIt was not selected as the preferred production architecture because backend-specific exporters create stronger application-to-vendor coupling and duplicate routing, authentication, batching, and transformation responsibilities across processes.\nDirect OTLP export remains acceptable for simple deployments, but a Collector is preferred when centralized telemetry processing provides operational value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mandatory OpenTelemetry Collector",
+    "anchor": "mandatory-opentelemetry-collector",
+    "text": "Mandatory OpenTelemetry Collector\nOrion could require every deployment to operate an OpenTelemetry Collector.\nThis would produce a uniform telemetry architecture.\nIt was not selected because small applications may not benefit enough from an additional deployed component.\nThe Collector is therefore preferred rather than mandatory.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fixed Production Trace Sampling Rate",
+    "anchor": "fixed-production-trace-sampling-rate",
+    "text": "Fixed Production Trace Sampling Rate\nOrion could establish one default production value such as 10% trace sampling.\nThis would simplify configuration.\nIt was not selected because appropriate sampling depends heavily on traffic volume, telemetry cost, backend capabilities, and incident-response requirements.\nSampling therefore remains deployment-configurable.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Log Bodies and Complete Request Data for Maximum Diagnostics",
+    "anchor": "log-bodies-and-complete-request-data-for-maximum-diagnostics",
+    "text": "Log Bodies and Complete Request Data for Maximum Diagnostics\nOrion could log complete requests, responses, headers, and payloads to maximize debugging information.\nIt was not selected because doing so would create substantial security and privacy risk and could significantly increase storage and processing cost.\nStructured observability should record intentional diagnostic context rather than indiscriminately duplicate application data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Global Sentry or Equivalent Error Reporting Provider",
+    "anchor": "global-sentry-or-equivalent-error-reporting-provider",
+    "text": "Global Sentry or Equivalent Error Reporting Provider\nOrion could select a dedicated error-reporting service as part of the foundation.\nThis would provide a ready-made error monitoring experience.\nIt was not selected because provider requirements differ by application and deployment.\nStructured logging and tracing provide the provider-neutral foundation, while a dedicated error-reporting service may be added when required.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Logs as Business Audit History",
+    "anchor": "logs-as-business-audit-history",
+    "text": "Logs as Business Audit History\nOrion could use structured application logs to answer business audit questions.\nThis appears simple because many relevant operations already produce logs.\nIt was not selected because operational logs generally do not provide the persistence, integrity, authorization, retention, or domain guarantees required for authoritative audit history.\nAudit history remains a separate application responsibility.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Browser OpenTelemetry Instrumentation as a Baseline",
+    "anchor": "browser-opentelemetry-instrumentation-as-a-baseline",
+    "text": "Browser OpenTelemetry Instrumentation as a Baseline\nOrion could instrument React applications with OpenTelemetry from the beginning to create end-to-end traces from browser interactions to database queries.\nThis could provide useful distributed diagnostics.\nIt was not selected as part of the initial baseline because browser observability has different operational, privacy, performance, and maturity considerations from server-side instrumentation.\nFrontend observability will be introduced when real application requirements justify it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion receives a vendor-neutral observability foundation.\nTraces and metrics use one broadly interoperable telemetry standard.\nPino remains a focused and mature structured logging implementation.\nLogs can be correlated with distributed traces through `trace_id` and `span_id`.\nIndependent request IDs remain available for straightforward request correlation.\nFastify and Prisma can participate in distributed traces through supported instrumentation.\nStandard trace propagation allows future distributed services to preserve causal traces.\nOTLP reduces coupling between applications and observability backends.\nThe OpenTelemetry Collector can centralize production telemetry concerns when needed.\nApplications can change observability vendors without rewriting domain or application behavior.\nProduction logs are machine-readable structured JSON.\nRedaction requirements reduce accidental secret and sensitive-data exposure.\nMetric-cardinality rules reduce observability-system reliability and cost risks.\nSampling remains tunable according to real deployment characteristics.\nError-reporting providers can be introduced without becoming global foundation dependencies.\nOperational telemetry remains clearly distinct from authoritative audit history.\nBrowser observability can evolve independently when real requirements become known.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe observability stack contains multiple complementary technologies rather than one unified telemetry API.\nContributors must understand the distinction between logs, traces, metrics, and audit records.\nOpenTelemetry instrumentation adds runtime and configuration overhead.\nTracing can increase CPU, memory, network, and storage consumption.\nExcessive spans can increase telemetry cost and reduce signal quality.\nMetrics require disciplined attribute design to avoid cardinality problems.\nTrace/log correlation depends on correctly propagated asynchronous context.\nA production Collector introduces another infrastructure component when deployed.\nVendor neutrality does not eliminate backend-specific configuration in deployment infrastructure.\nDirect stdout logging relies on the execution environment to collect and persist logs appropriately.\nRedaction configuration requires maintenance as request structures and integrations evolve.\nBrowser observability is not solved by the initial foundation.\nDedicated business audit requirements will require separate application design.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion already selected Pino as the Fastify runtime logger, so structured logging implementation does not require replacement.\nThe initial observability implementation should introduce OpenTelemetry before instrumented infrastructure is initialized.\nServer bootstrap should follow an ordering compatible with:\nconfiguration\n    ↓\nobservability initialization\n    ↓\ninstrumentation registration\n    ↓\nPrisma / Fastify / HTTP infrastructure\n    ↓\napplication composition\n\nFastify instrumentation should use `@fastify/otel`.\nPrisma tracing should use the supported Prisma OpenTelemetry instrumentation compatible with the repository's selected Prisma version.\nHTTP instrumentation must support distributed context propagation for inbound and outbound calls.\nPino tracing correlation should inject active `trace_id` and `span_id` values centrally rather than requiring manual fields at each logging call.\nPino configuration must establish production JSON logging and centralized redaction.\nThe initial server-side telemetry export should support OTLP through configuration.\nProduction deployments may send OTLP either:\napplication\n    → Collector\n    → backend\n\nor, for simpler environments:\napplication\n    → compatible backend\n\nwithout changing domain or application code.\nTelemetry resource identity must be configured explicitly for each executable service.\nSampling must be externally configurable and must not require source-code changes.\nGraceful shutdown should attempt to flush buffered telemetry before process termination when practical.\nNo OpenTelemetry Logs SDK integration, browser instrumentation, observability vendor, or external error-reporting provider is required by the initial Orion implementation.\nRepository validation should verify observability configuration and architecture where such verification can be performed mechanically.\nOperational dashboards, alert thresholds, telemetry retention, and backend-specific infrastructure remain deployment concerns and may be documented by application-specific runbooks.\nRoutine compatible upgrades to OpenTelemetry, Pino, Fastify instrumentation, Prisma instrumentation, or OTLP exporters do not require a new ADR when the responsibilities established here remain unchanged.\nSelecting a particular observability backend for one deployment does not supersede this ADR.\nReplacing OpenTelemetry as the observability standard, replacing Pino as the logging strategy, or materially changing the responsibility boundaries defined here would require an ADR that supersedes this decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated policy: [error handling](../architecture/error-handling.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [logging](../reliability/logging.md)\nRelated policy: [observability](../reliability/observability.md)\nRelated policy: [data classification](../security/data-classification.md)\nRelated policy: [secrets management](../security/secrets-management.md)\nExternal reference: OpenTelemetry JavaScript documentation.\nExternal reference: OpenTelemetry specification and semantic conventions.\nExternal reference: OpenTelemetry Protocol documentation.\nExternal reference: OpenTelemetry Collector documentation.\nExternal reference: `@fastify/otel` documentation.\nExternal reference: Prisma OpenTelemetry tracing documentation.\nExternal reference: OpenTelemetry Pino instrumentation documentation.\nExternal reference: Pino documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "anchor": "adr-0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "text": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a continuous-integration strategy that converts the repository validation contract established by ADR-0003 into an enforceable pull-request and primary-branch quality gate.\nThe CI system must support the repository as it grows from a small TypeScript monorepo into potentially large applications containing:\nbackend services;\nReact web applications;\nshared packages;\ndatabase migrations;\ngenerated API artifacts;\nintegration tests using real infrastructure;\nbrowser tests;\nend-to-end tests;\narchitecture validation;\nsecurity checks.\nThe CI strategy must preserve a fundamental Orion principle:\nlocal validation\n    =\nCI validation capabilities\n\nCI must not become a separate implementation of repository correctness.\nA contributor or AI agent should be able to reproduce a CI failure locally using repository-owned commands rather than reverse-engineering workflow YAML.\nThe repository has already established:\npnpm validate\n\nas its canonical repository validation entry point.\nCI must orchestrate those capabilities without duplicating their logic.\nThe CI system must also address software supply-chain risks.\nA modern TypeScript repository depends on:\nnpm packages;\ntransitive dependencies;\nGitHub Actions;\ngenerated lockfiles;\nbrowser binaries;\ncontainer images;\nexternal development tools.\nDependency updates must therefore be automated enough to prevent stagnation while remaining reviewable and controlled.\nGitHub is the repository platform assumed by the current Orion foundation, making GitHub Actions a natural CI candidate.\nHowever, GitHub-specific workflow mechanics must remain an orchestration concern rather than leak into application architecture.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **GitHub Actions as its primary continuous-integration platform**.\nCI will execute repository-owned validation commands and will not duplicate linting, formatting, type-checking, testing, architecture, generation, or build logic directly in workflow YAML.\nThe primary model is:\ndeveloper / AI agent\n        ↓\nrepository commands\n        ↓\npnpm validate\n        ↓\nsame capabilities\n        ↓\nGitHub Actions\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Canonical validation contract",
+    "anchor": "canonical-validation-contract",
+    "text": "Canonical validation contract\n`pnpm validate` remains the canonical repository validation contract.\nCI may decompose validation capabilities into separate jobs for:\nparallel execution;\nclearer failure reporting;\nresource isolation;\nbrowser requirements;\ncontainer requirements;\nfuture sharding.\nFor example, CI may conceptually execute:\nformat / lint / architecture\ntypecheck\nunit tests\nintegration tests\nbrowser tests\nE2E tests\ngenerated-artifact validation\nbuild validation\n\nas independent jobs.\nThose jobs must invoke repository scripts implementing the same capabilities available locally.\nWorkflow YAML must not contain an independent implementation of validation logic.\nFor example, this is preferred:\nGitHub Actions\n    ↓\npnpm test:integration\n\nrather than embedding database setup, test discovery, test filters, and project-specific test semantics exclusively inside the workflow.\nThe stable interface is the repository command.\nThe CI workflow is an orchestrator.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Incremental validation capabilities",
+    "anchor": "incremental-validation-capabilities",
+    "text": "Incremental validation capabilities\nNot every validation category must exist before the repository contains the corresponding capability.\nThe validation system will grow with the repository.\nFor example:\ninitial foundation\n├── format:check\n├── lint\n├── typecheck\n└── architecture\n\nafter application code exists\n├── unit tests\n├── integration tests\n├── generated artifacts\n├── web build\n├── browser tests\n└── E2E tests\n\nA capability should enter required CI validation when the repository contains meaningful content that the capability protects.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Pull-request validation",
+    "anchor": "pull-request-validation",
+    "text": "Pull-request validation\nRequired CI validation will run for pull requests targeting the primary protected branch.\nPull requests must pass the required validation gate before normal merge.\nThe primary branch should be protected so that repository correctness does not depend on contributors remembering to execute checks manually.\nDirect pushes or administrative bypass mechanisms, when permitted by repository governance, must remain exceptional rather than the ordinary delivery workflow.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Primary-branch validation",
+    "anchor": "primary-branch-validation",
+    "text": "Primary-branch validation\nCI will also run after changes reach the primary branch.\nPull-request validation reduces risk but does not make primary-branch validation redundant.\nPrimary-branch execution verifies the exact merged commit and provides a stable post-merge signal for future release, deployment, packaging, or downstream automation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Manual execution",
+    "anchor": "manual-execution",
+    "text": "Manual execution\nImportant CI workflows should support manual execution where GitHub Actions provides an appropriate mechanism.\nThis supports:\ndiagnostics;\ninfrastructure investigation;\nvalidation after configuration changes;\ncontrolled reruns;\nfuture release workflows.\nManual execution must not require a separate validation implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Required CI gate",
+    "anchor": "required-ci-gate",
+    "text": "Required CI gate\nOrion will expose a **stable aggregate required CI gate** for branch protection.\nConceptually:\nstatic validation ──────┐\ntype checking ──────────┤\nunit tests ─────────────┤\nintegration tests ──────┤\nbrowser tests ──────────┤\nE2E tests ──────────────┤\nbuild validation ───────┤\n                        ↓\n                 required CI gate\n\nThe specific internal jobs may evolve without requiring branch-protection configuration to track every implementation change.\nThe aggregate gate succeeds only when all required jobs for that repository state succeed.\nThis creates a stable external contract between CI implementation and repository governance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI execution environment",
+    "anchor": "ci-execution-environment",
+    "text": "CI execution environment\nGitHub-hosted Linux runners will be Orion's default CI execution environment initially.\nThe foundation will not run a Windows/macOS operating-system matrix by default.\nAdditional operating systems should be introduced only when a product or supported runtime genuinely depends on cross-platform behavior.\nThe CI operating system does not imply that every Orion application must deploy on the same operating system.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Runtime versions",
+    "anchor": "runtime-versions",
+    "text": "Runtime versions\nCI must use repository-pinned runtime and package-manager versions.\nThe CI workflow must not independently choose a different Node.js or pnpm release from the versions established by repository configuration.\nConceptually:\nrepository\n├── Node version policy / pin\n└── packageManager → pnpm version\n        ↓\nCI consumes those versions\n\nThis avoids situations where:\nlocal development\n→ Node A / pnpm A\n\nCI\n→ Node B / pnpm B\n\nsilently creates environment-dependent behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency installation",
+    "anchor": "dependency-installation",
+    "text": "Dependency installation\nCI will install dependencies using the committed pnpm lockfile in frozen mode.\nThe intended requirement is equivalent to:\npnpm install --frozen-lockfile\n\nCI must fail when package manifests and the committed lockfile disagree.\nCI must not automatically rewrite the lockfile to make a validation run succeed.\nDependency changes belong in the source change being reviewed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI caching",
+    "anchor": "ci-caching",
+    "text": "CI caching\nCaching is an optimization, not a correctness requirement.\nThe initial CI strategy may cache the pnpm package store using the committed lockfile as part of the cache identity.\n`node_modules` will not be treated as a portable canonical build artifact.\nA cache miss must produce the same correct result as a cache hit.\nCI must never depend on cached state that cannot be reconstructed from canonical repository inputs.\nTask-output or build caching will not be introduced globally until repository scale demonstrates a meaningful need.\nIf Orion later adopts a monorepo task runner or remote cache, the existing repository commands must remain the validation interface.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Full validation before affected-project optimization",
+    "anchor": "full-validation-before-affected-project-optimization",
+    "text": "Full validation before affected-project optimization\nOrion will initially favor complete required validation over sophisticated affected-project analysis.\nPath-based skipping, dependency-graph selective testing, incremental CI, and remote execution may eventually reduce CI cost substantially.\nThey also add complexity and create the risk that an incorrect dependency graph allows a relevant validation step to be skipped.\nTherefore:\nfull deterministic validation first\n    ↓\nmeasure CI cost\n    ↓\nintroduce selective execution when justified\n\nAffected-project optimization should only be introduced when the repository is large enough for the saved execution time to justify the additional correctness machinery.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Pull-request concurrency",
+    "anchor": "pull-request-concurrency",
+    "text": "Pull-request concurrency\nSuperseded validation runs for the same pull request should be cancelled when practical.\nWhen a contributor pushes a new commit to a pull request, continuing expensive validation for an obsolete commit normally provides little value.\nThis is particularly relevant for:\nintegration tests;\nbrowser tests;\nE2E tests;\nlarge builds.\nPrimary-branch validation should not be cancelled merely because another commit is pushed unless the workflow semantics explicitly make doing so safe.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Integration-test infrastructure",
+    "anchor": "integration-test-infrastructure",
+    "text": "Integration-test infrastructure\nCI integration tests will use the strategy established by ADR-0009.\nWhere tests require PostgreSQL:\nGitHub Actions runner\n    ↓\nTestcontainers\n    ↓\nreal PostgreSQL\n    ↓\ncommitted migrations\n    ↓\nVitest integration tests\n\nCI must not use a simplified database substitute merely to make CI configuration easier.\nContainer infrastructure is a testing implementation detail and does not establish Docker or a particular container platform as Orion's application deployment strategy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Browser testing",
+    "anchor": "browser-testing",
+    "text": "Browser testing\nBrowser-dependent component tests will use the Vitest Browser Mode strategy established by ADR-0009.\nFull browser E2E tests will use Playwright Test.\nChromium remains the initial routine browser.\nAdditional browser matrices should be introduced according to product support requirements.\nCI may later shard browser or E2E suites when execution time justifies doing so.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Test artifacts",
+    "anchor": "test-artifacts",
+    "text": "Test artifacts\nDiagnostic test artifacts may be retained when they materially improve failure investigation.\nExamples include:\nPlaywright traces;\nscreenshots;\nvideos;\ncoverage reports;\nstructured test reports.\nArtifact retention should remain bounded.\nArtifacts must follow Orion's security and data-classification policies and must not become an uncontrolled channel for exposing secrets or sensitive test data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "GitHub Actions security",
+    "anchor": "github-actions-security",
+    "text": "GitHub Actions security\nGitHub Actions workflows must follow least-privilege principles.\nWorkflow and job permissions must be declared explicitly when access beyond the minimal default is required.\nOrdinary validation jobs should normally require no repository write permission.\nThe expected baseline is conceptually:\nrepository contents\n    → read\n\nrepository modification\n    → none\n\nunless a job has an explicit responsibility requiring greater access.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Action pinning",
+    "anchor": "action-pinning",
+    "text": "Action pinning\nExternal GitHub Actions will be pinned to **full-length immutable commit SHAs**.\nReadable release/version information should remain present as an adjacent comment or equivalent maintainability aid where useful.\nConceptually:\nuses: actions/checkout@<full-commit-sha> # vX.Y.Z\n\nrather than:\nuses: actions/checkout@vX\n\nas the canonical Orion security posture.\nDependency automation will keep these action pins current.\nThis requirement applies to GitHub-maintained actions as well as third-party actions when they are referenced externally.\nRepository-local actions remain controlled by repository history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Third-party Actions",
+    "anchor": "third-party-actions",
+    "text": "Third-party Actions\nThird-party GitHub Actions must not be introduced merely for convenience when a small repository-owned command provides the same capability with lower supply-chain exposure.\nWhen a third-party action provides meaningful value, its:\npublisher;\nmaintenance status;\npermissions;\ninputs;\nsupply-chain exposure;\nshould be reviewed.\nThe number of privileged workflow dependencies should remain intentionally small.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Untrusted pull requests",
+    "anchor": "untrusted-pull-requests",
+    "text": "Untrusted pull requests\nUntrusted pull-request code must not execute with privileged credentials.\nValidation workflows triggered by pull requests should be designed so that code under review cannot obtain:\ndeployment credentials;\nproduction secrets;\nprivileged repository tokens;\nunrelated infrastructure access.\nOrion will avoid using `pull_request_target` for ordinary build or validation execution of untrusted pull-request code.\nIf that event is ever required for a metadata-only workflow, untrusted pull-request contents must not be checked out and executed with privileged context.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI secrets",
+    "anchor": "ci-secrets",
+    "text": "CI secrets\nOrdinary validation should require as few secrets as possible.\nTests should use ephemeral test credentials and local container infrastructure instead of external production-like credentials where practical.\nCI secrets must:\nfollow least privilege;\nbe scoped narrowly;\nnot be printed;\nnot be copied into artifacts;\nnot be required for unrelated validation jobs.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OIDC for future privileged workflows",
+    "anchor": "oidc-for-future-privileged-workflows",
+    "text": "OIDC for future privileged workflows\nFuture workflows that need to authenticate to supported cloud providers or publishing systems should prefer short-lived identity federation through OpenID Connect when practical.\nLong-lived cloud credentials stored as GitHub secrets should not be the preferred Orion pattern.\nThe intended model is:\nGitHub Actions identity\n    ↓\nOIDC\n    ↓\nshort-lived provider credential\n\nrather than:\nGitHub secret\n    ↓\nlong-lived cloud access key\n\nActual deployment authentication is outside the scope of this ADR and will be decided when deployment targets exist.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency automation",
+    "anchor": "dependency-automation",
+    "text": "Dependency automation\nOrion will use **Renovate as its primary dependency-update automation tool**.\nRenovate will manage relevant repository dependencies including, where supported:\nnpm/pnpm dependencies;\ndevelopment dependencies;\nruntime dependencies;\nGitHub Actions references;\ntoolchain versions represented in supported files;\nother machine-readable dependency declarations introduced later.\nDependabot version-update pull requests will not be enabled alongside Renovate for the same dependency ecosystem.\nRunning two competing version-update systems would create redundant pull requests and overlapping configuration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Renovate configuration",
+    "anchor": "renovate-configuration",
+    "text": "Renovate configuration\nRenovate configuration will be stored in the repository and treated as repository policy.\nThe configuration should begin from Renovate's recommended baseline and be customized deliberately.\nA **Dependency Dashboard** will be enabled to provide a machine-maintained overview of:\npending updates;\ndeferred updates;\nmajor upgrades;\ndeprecated dependencies;\ndependency-maintenance state.\nThis provides both human contributors and AI agents with an explicit view of dependency debt.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency update cadence",
+    "anchor": "dependency-update-cadence",
+    "text": "Dependency update cadence\nRoutine dependency updates will be grouped and scheduled to reduce unnecessary pull-request noise.\nThe initial approach will favor a **weekly routine update cadence** for ordinary dependency updates.\nSecurity remediation updates should not be intentionally delayed to the routine maintenance window when Renovate identifies them as security-related.\nUpdate frequency may later be adjusted based on repository activity and risk.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency grouping",
+    "anchor": "dependency-grouping",
+    "text": "Dependency grouping\nRelated dependency families may be grouped when they are expected to evolve together.\nExamples may include ecosystems such as:\nReact ecosystem\nTanStack ecosystem\nPrisma ecosystem\nOpenTelemetry ecosystem\nFastify ecosystem\nVitest ecosystem\nPlaywright ecosystem\n\nGrouping should reduce update noise without creating large unrelated upgrade pull requests.\nA generic \"update every dependency\" mega-group will not be the default.\nThe objective is:\ncoherent upgrade units\n\nrather than:\nminimum possible number of pull requests\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Major dependency upgrades",
+    "anchor": "major-dependency-upgrades",
+    "text": "Major dependency upgrades\nMajor-version upgrades require deliberate review.\nRenovate should expose pending major upgrades and may require Dependency Dashboard approval before opening selected major-upgrade pull requests when that improves signal.\nA major version must not be ignored indefinitely merely to keep automation quiet.\nMajor upgrades should remain visible even when they are intentionally deferred.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency automerge",
+    "anchor": "dependency-automerge",
+    "text": "Dependency automerge\nAutomatic merging of dependency updates will be **disabled by default initially**.\nPassing CI is necessary but does not prove that every dependency change is semantically harmless.\nSelective automerge may later be enabled for explicitly identified low-risk dependency classes when sufficient repository experience demonstrates that doing so is safe.\nExamples might eventually include narrowly scoped patch updates to development-only tooling.\nThere will be no blanket:\npatch update\n    → automerge\n\nrule initially.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Lockfile maintenance",
+    "anchor": "lockfile-maintenance",
+    "text": "Lockfile maintenance\nAutomated dependency updates must keep the shared pnpm lockfile synchronized with package manifests.\nThe lockfile remains committed repository state.\nDependency automation must not create manifest changes without the corresponding deterministic lockfile update.\nPeriodic lockfile maintenance may be enabled if it produces concrete value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency security alerts",
+    "anchor": "dependency-security-alerts",
+    "text": "Dependency security alerts\nOrion will enable GitHub's dependency graph and **Dependabot vulnerability alerts** where supported.\nThis use of Dependabot is distinct from Dependabot version-update automation.\nThe responsibility split is:\nRenovate\n    → routine/version dependency updates\n\nDependabot alerts / GitHub advisory data\n    → vulnerability visibility\n\nSecurity findings should result in explicit remediation, acceptance, or documented exception rather than being silently ignored.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency review",
+    "anchor": "dependency-review",
+    "text": "Dependency review\nWhere the repository's GitHub feature entitlement supports it, Orion will enable the GitHub dependency review capability for pull requests.\nDependency review should prevent newly introduced vulnerable dependencies from entering unnoticed.\nThe initial enforcement threshold should block newly introduced vulnerabilities rated **high or critical**, unless an explicitly reviewed exception exists.\nThe policy may become stricter for applications with higher risk or regulatory requirements.\nDependency review is an additional guardrail and does not replace repository tests or dependency update automation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Static security analysis",
+    "anchor": "static-security-analysis",
+    "text": "Static security analysis\nWhere available for the repository, Orion will enable **GitHub CodeQL for JavaScript and TypeScript security analysis**.\nCode scanning should be represented by repository-visible configuration when customization is required.\nThe initial objective is to detect actionable security defects without making a paid GitHub security product a mandatory dependency of the Orion architecture.\nIf CodeQL is unavailable for a particular private repository, the absence of that GitHub entitlement does not invalidate the Orion foundation.\nA different SAST implementation may be introduced when the risk profile of that application requires one.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Secret scanning and push protection",
+    "anchor": "secret-scanning-and-push-protection",
+    "text": "Secret scanning and push protection\nGitHub secret scanning and push protection should be enabled where available.\nThese capabilities complement Orion's existing secrets-management policies by detecting common credentials committed to repository history or preventing supported secrets from being pushed.\nThey do not eliminate the need to:\navoid committing secrets;\nrotate exposed credentials;\nscope credentials narrowly;\nuse environment or secret-management systems appropriately.\nA secret that reaches Git history must be treated as potentially exposed even if the commit is later removed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency audit commands",
+    "anchor": "dependency-audit-commands",
+    "text": "Dependency audit commands\nPackage-manager vulnerability-audit commands may be used for diagnostics or additional automation.\nThey will not initially serve as Orion's sole security gate.\nSecurity decisions should combine:\ndependency advisory visibility;\ndependency review when available;\nautomated remediation;\ntests;\napplication-specific risk assessment.\nThis avoids making one advisory command the complete definition of dependency security.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "License policy",
+    "anchor": "license-policy",
+    "text": "License policy\nThis ADR does not establish a global dependency-license allowlist or denylist.\nAcceptable licensing depends on how a specific Orion-based product is:\ndistributed;\nsold;\nembedded;\nhosted;\nmodified.\nLicense enforcement should be added when the product's legal/distribution model establishes the required policy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI-generated modifications",
+    "anchor": "ci-generated-modifications",
+    "text": "CI-generated modifications\nRequired validation workflows must not silently modify tracked source files to make CI pass.\nThis preserves ADR-0003's distinction between:\nvalidation\n    → check\n\nfixing\n    → explicit developer action\n\nCI may generate temporary artifacts for validation, but source corrections belong in a committed change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Reusable workflows and custom Actions",
+    "anchor": "reusable-workflows-and-custom-actions",
+    "text": "Reusable workflows and custom Actions\nOrion will not introduce reusable workflows, custom Actions, or a CI abstraction framework merely to make the initial workflow appear generic.\nThe initial workflow should remain understandable directly from the repository.\nReusable CI abstractions may be introduced when genuine duplication exists across:\nmultiple workflows;\nmultiple repositories;\nmultiple release pipelines.\nComplexity must provide measurable maintenance value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Continuous delivery",
+    "anchor": "continuous-delivery",
+    "text": "Continuous delivery\nThis ADR establishes **continuous integration**, not a global continuous-delivery strategy.\nSuccessful CI means:\nthe repository revision satisfies required validation\n\nIt does not imply:\nautomatically deploy revision to production\n\nDeployment targets, environments, release policies, approvals, rollbacks, and CD architecture remain deferred until an Orion application has concrete deployment requirements.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nGitHub Actions is selected because the repository already uses GitHub as its collaboration and source-management platform and Actions provides direct integration with pull requests, protected branches, repository permissions, artifacts, security capabilities, and repository automation.\nMore importantly, Orion does not make GitHub Actions the owner of validation semantics.\nThe repository remains authoritative.\nThis gives:\nlocal environment\nCI\nAI coding environment\nfuture alternative CI\n\na common validation interface.\nIf Orion later needs to move a project to another CI provider, repository commands such as:\npnpm validate\npnpm test:integration\npnpm test:e2e\n\nremain usable.\nGitHub-specific orchestration can therefore be replaced without redesigning the application's quality model.\nA stable aggregate CI gate prevents branch-protection configuration from becoming coupled to the current internal job topology.\nJobs can later be:\nsplit;\ncombined;\nsharded;\ncached;\nmigrated to another runner class;\nwhile the repository still exposes one stable required result.\nFrozen lockfile installation ensures CI evaluates the dependency graph actually committed to the repository instead of resolving a subtly different graph during validation.\nCaching only reconstructible package-manager state preserves deterministic behavior and avoids making mutable CI cache content part of correctness.\nFull validation is preferred initially because selective monorepo validation requires a sufficiently reliable dependency graph.\nOrion already permits adding a dedicated task runner later if repository scale justifies affected-project analysis and advanced caching.\nIntroducing these mechanisms only after measurement avoids increasing CI complexity before it provides meaningful value.\nRenovate is selected for dependency automation because Orion requires more than simple individual package bumping.\nA large monorepo benefits from configurable:\ngrouping;\nschedules;\ndependency dashboards;\nmajor-upgrade policies;\nGitHub Actions updates;\nlockfile maintenance;\nfuture custom dependency sources.\nThe Dependency Dashboard also improves discoverability of dependency maintenance work and makes intentionally deferred upgrades visible instead of silently forgotten.\nAutomerge remains disabled initially because dependency correctness cannot be inferred from semantic-version classification alone.\nA successful test suite is an important signal, but dependency changes can modify behavior outside the currently exercised test surface.\nOrion prefers deliberate automation over unconditional automation.\nPinning external GitHub Actions to immutable commit SHAs reduces dependency on mutable tags.\nCombining SHA pins with Renovate allows Orion to preserve both:\nimmutable execution\n\nand:\nmaintainable upgrades\n\nwithout manually monitoring every action repository.\nExplicit minimal `GITHUB_TOKEN` permissions reduce the blast radius of a compromised workflow dependency.\nThis becomes increasingly important as CI gains access to:\nartifacts;\npackages;\ndeployment systems;\nsecurity reports;\ncloud environments.\nSeparating ordinary validation from privileged workflows also makes pull requests from untrusted sources safer.\nOIDC is preferred for future deployment authentication because short-lived identity federation reduces dependence on long-lived cloud credentials stored in repository automation.\nDependency vulnerability alerts, dependency review, CodeQL, and secret scanning provide complementary security capabilities.\nNo single mechanism is treated as sufficient.\nAvailability-based GitHub security features remain optional capabilities because Orion must remain usable across repositories with different GitHub plans and hosting arrangements.\nFinally, CD is deliberately excluded.\nDeployment architecture depends heavily on the target environment, and Orion has explicitly chosen not to select a global cloud or deployment platform.\nCI can therefore become mature without prematurely deciding where applications must run.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "GitLab CI",
+    "anchor": "gitlab-ci",
+    "text": "GitLab CI\nGitLab CI provides a mature repository-integrated CI/CD platform and would be technically capable of implementing Orion's validation requirements.\nIt was not selected because Orion's current source-management and collaboration environment is GitHub.\nSelecting GitLab CI would introduce a second primary platform without a concrete benefit.\nRepository-owned validation commands preserve the possibility of using GitLab CI for a future project when necessary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Buildkite, CircleCI, or Similar External CI Platforms",
+    "anchor": "buildkite-circleci-or-similar-external-ci-platforms",
+    "text": "Buildkite, CircleCI, or Similar External CI Platforms\nDedicated CI platforms may provide advanced scaling, execution, or enterprise capabilities.\nThey were not selected as the foundation default because GitHub Actions is sufficient for Orion's current requirements and requires less platform integration.\nA future repository may adopt another CI provider if scale, compliance, runner requirements, or economics justify the change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dedicated Monorepo Task Runner for CI",
+    "anchor": "dedicated-monorepo-task-runner-for-ci",
+    "text": "Dedicated Monorepo Task Runner for CI\nOrion could introduce Nx, Turborepo, or another task-graph system specifically to optimize CI from the beginning.\nThis could provide affected-project detection, task caching, and remote execution.\nIt was not selected because ADR-0002 already established that such tooling should enter only when real repository scale makes it valuable.\nCI will initially execute the complete validation capabilities directly through pnpm workspace commands.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependabot Version Updates",
+    "anchor": "dependabot-version-updates",
+    "text": "Dependabot Version Updates\nDependabot can create dependency-update pull requests and integrates directly with GitHub.\nIt was not selected as Orion's primary version-update system because Renovate provides a broader and more configurable dependency-maintenance model suited to a growing monorepo.\nDependabot vulnerability alerts may still be used as a security signal.\nDependabot version-update automation and Renovate should not manage the same dependencies simultaneously.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Automatic Merge for All Patch Updates",
+    "anchor": "automatic-merge-for-all-patch-updates",
+    "text": "Automatic Merge for All Patch Updates\nOrion could automatically merge every dependency patch update that passes CI.\nThis would minimize maintenance effort.\nIt was not selected because semantic-version classification does not guarantee operational safety, and the initial foundation does not yet have enough production history to justify blanket dependency automerge.\nSelective automerge may be introduced later.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mutable GitHub Action Tags",
+    "anchor": "mutable-github-action-tags",
+    "text": "Mutable GitHub Action Tags\nGitHub Actions could be referenced through convenient tags such as:\nactions/checkout@vX\n\nThis is easy to read and update manually.\nIt was not selected as the Orion security baseline because a mutable reference allows workflow execution to change without a repository commit changing the reference.\nFull commit SHA pinning provides a stronger reproducibility boundary.\nReadable version comments preserve maintainability.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Long-Lived Cloud Credentials in Repository Secrets",
+    "anchor": "long-lived-cloud-credentials-in-repository-secrets",
+    "text": "Long-Lived Cloud Credentials in Repository Secrets\nFuture deployment workflows could store permanent cloud credentials in GitHub secrets.\nThis is broadly supported and straightforward.\nIt is not Orion's preferred future authentication model because long-lived credentials create greater rotation and exposure risk.\nOIDC-based short-lived federation should be preferred where supported.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mandatory Paid GitHub Security Features",
+    "anchor": "mandatory-paid-github-security-features",
+    "text": "Mandatory Paid GitHub Security Features\nOrion could require dependency review, private-repository CodeQL, secret scanning, and push protection as mandatory capabilities for every repository.\nThis would provide a stronger uniform security baseline.\nIt was not selected because feature availability depends on repository visibility and GitHub plan.\nOrion should take advantage of those capabilities when available without making a commercial GitHub product a prerequisite for adopting the foundation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Package Manager Audit as the Sole Vulnerability Gate",
+    "anchor": "package-manager-audit-as-the-sole-vulnerability-gate",
+    "text": "Package Manager Audit as the Sole Vulnerability Gate\nOrion could fail every pull request solely based on `pnpm audit` or an equivalent package-manager command.\nThis would provide a simple portable rule.\nIt was not selected because dependency-security assessment benefits from context including whether a vulnerability is newly introduced, its severity, available remediation, runtime exposure, and advisory quality.\nPackage-manager auditing remains useful but is not the complete supply-chain security strategy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI-Specific Validation Scripts",
+    "anchor": "ci-specific-validation-scripts",
+    "text": "CI-Specific Validation Scripts\nGitHub workflow steps could independently run tools with CI-specific arguments and configuration.\nThis might make workflow files self-contained.\nIt was not selected because it would make CI behavior harder to reproduce locally and risk divergence from `pnpm validate`.\nRepository scripts remain the authoritative interface.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion has a concrete CI platform integrated with the repository host.\nLocal development and CI use the same validation capabilities.\nAI agents can reproduce CI failures through repository commands.\n`pnpm validate` remains the stable validation contract.\nCI jobs can evolve independently behind a stable aggregate required check.\nPull requests receive mechanical validation before merge.\nThe exact merged primary-branch revision is validated again.\nDependency installation is deterministic through the committed frozen lockfile.\nCI caching cannot become an implicit source of correctness.\nReal PostgreSQL and browser testing remain supported in CI.\nSuperseded pull-request runs can be cancelled to control resource usage.\nRenovate provides one explicit dependency-update automation system.\nDependency Dashboard makes pending dependency maintenance visible.\nRelated technology ecosystems can be updated coherently.\nMajor upgrades remain visible and deliberate.\nGitHub Actions dependencies are immutable at the referenced commit.\nRenovate can maintain action pins without sacrificing reproducibility.\nExplicit workflow permissions reduce CI blast radius.\nUntrusted pull-request code remains separated from privileged credentials.\nFuture deployment workflows can use OIDC rather than long-lived credentials.\nGitHub dependency/security capabilities can be adopted without coupling application code to them.\nCI remains separate from deployment architecture.\nOrion does not require a specific paid GitHub security tier.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nGitHub Actions becomes the default CI orchestration platform.\nFull SHA action pins are less readable without accompanying version comments.\nRenovate introduces another repository automation configuration surface.\nWeekly dependency grouping may delay routine non-security upgrades compared with immediate per-release pull requests.\nManual dependency review creates some ongoing maintenance work because broad automerge is disabled.\nFull repository validation may become increasingly expensive as the monorepo grows.\nGitHub-hosted runner performance and cost may eventually require optimization.\nTestcontainers and Playwright increase CI resource requirements.\nSecurity capabilities may differ between public and private repositories depending on GitHub feature availability.\nA conditional security baseline provides less uniform enforcement than mandating one paid toolset.\nBranch-protection and repository-security settings exist partly outside version-controlled source and therefore require administrative configuration.\nCI hardening adds maintenance work when GitHub Actions dependencies release new versions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nThe repository will introduce GitHub Actions workflows under:\n.github/workflows/\n\nwhen implementation begins.\nInitial CI should include pull-request and primary-branch validation.\nThe workflow must install the repository-pinned Node.js and pnpm versions and perform a frozen-lockfile dependency installation.\nExternal GitHub Actions must be referenced by full commit SHA.\nThe repository should enable a protected primary branch with the aggregate Orion CI gate configured as a required status check.\nRenovate configuration must be committed to the repository.\nInitial Renovate behavior should include:\nrecommended baseline\nDependency Dashboard\nweekly routine updates\nsecurity updates without routine delay\ncoherent dependency grouping\nmajor upgrades requiring deliberate review\nautomerge disabled by default\nGitHub Actions update management\n\nDependabot version-update configuration should not be enabled for ecosystems already managed by Renovate.\nGitHub dependency vulnerability alerts should be enabled.\nDependency review, CodeQL, secret scanning, and push protection should be enabled where repository visibility, product entitlement, and platform capabilities permit.\nRequired validation jobs should use minimal `GITHUB_TOKEN` permissions.\nPull-request validation must not receive production deployment credentials.\nFuture privileged workflows should prefer OIDC-based authentication when the destination platform supports it.\nCI diagnostic artifacts must use bounded retention and must not contain secrets or sensitive production data.\nRepository validation should initially favor complete execution.\nCI optimization through:\naffected-project detection\nremote task caching\nadvanced path filtering\nlarge test matrices\ntest sharding\nself-hosted runners\n\nshould be introduced only when measured CI performance or cost demonstrates the need.\nNo deployment workflow is required by this ADR.\nSelecting a deployment target or establishing CD should occur only when a concrete application provides the necessary operational requirements.\nRoutine compatible GitHub Actions, Renovate, or CI configuration updates do not require a new ADR when they preserve the responsibilities defined here.\nChanging Orion's default CI platform, replacing Renovate as the primary dependency automation strategy, or materially changing the local-versus-CI validation contract should be documented by an ADR that supersedes this decision.\n"
+  },
+  {
     "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
@@ -529,1094 +1312,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion source has a clear, standard distribution license.\nDerived projects can identify the terms of inherited Orion material without changing SHA-based provenance or upgrade mechanics.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nRedistributors must satisfy applicable Apache-2.0 conditions for Orion material; choosing a different license for their own code does not remove those obligations.\nThe root license does not settle separate rights or obligations for package dependencies or independently created project code.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo manifest, package publication, application, or deployment change is required. The licensing change is a compatible PATCH candidate after PR review, merge, and CI verification. No `NOTICE` or copyright holder statement is added without supporting repository evidence.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[Foundation versioning](../versioning.md) and [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\n[Project derivation](../project-derivation.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "anchor": "adr-0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "text": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline\n**Status:** accepted\n**Date:** 2026-09-30\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the foundation workspace package scope; its Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nADR-0014 derived projects through Git ancestry and kept everything Orion contained. A project therefore started with Orion's own implementation plan, human actions, and acceptance report as \"inherited history\", with the Approval Request slice as a retained reference implementation awaiting a product decision, and with `@orion/*` workspace packages. The first real derivation showed the cost: a new product repository read as Orion itself, carried documentation describing how Orion was built, and shipped an unrelated feature through its API, database, SDK, web application, and portal.\nThe owner directed that a new project start as a clean base for developing a product: it keeps Orion's architecture, principles, tooling, validation, CI, Living Documentation Portal, provenance, and future upgrades, but contains neither the reference implementation nor documentation of the foundation's development, and it carries the project's own name on its important surfaces.\nTwo structural facts made removal brittle under ADR-0014: shared runtime code imported the reference feature directly, and shared documentation linked to foundation-only files. A deletion step would have had to rewrite shared files and would conflict on every upgrade.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nOrion separates its content into three categories, recorded in the machine-readable derivation contract `.orion/derivation.json`:\n**Shared foundation**: architecture, policies, ADRs, tooling, CI, the API runtime and module contract, the web shell and portal, and generated-reference machinery. Shared code and documentation must work without foundation-only content: they do not import, link to, name, or describe it. Validation in Orion enforces this isolation.\n**Foundation-only**: Orion's Approval Request reference implementation (feature code, schema, migration, metadata, grants, smoke, tests, browser journeys, and domain documentation) and Orion's own implementation plan, human actions, and acceptance history.\n**Project-owned**: files every repository owns from its first commit, rendered from templates at initialization: the README, the API and web composition files (`apps/api/src/modules.ts`, `apps/web/src/modules.tsx`), the brand assets, and `docs/project/implementation-plan.md` and `docs/project/human-actions.md`. Orion's own copies compose the reference implementation and describe Orion.\n`pnpm orion:init-project` removes the foundation-only paths, renders the project-owned files from the project identity, renames the workspace package scope (package manifests, the lockfile, and source; not authored prose) to the project's scope, names the root package after it, regenerates every derived artifact from the changed sources, and records manifest schema version 2 with the project name and package scope. It then commits on top of Orion's history and protects the upstream remote exactly as ADR-0014 decided. Living Documentation titles, the HTML title, the OpenAPI title, and the telemetry service name derive from the manifest name and package names.\nUpgrades remain reviewed merges with ancestry. Because the project deleted foundation-only paths, an upgrade that changes them conflicts or reintroduces them; `pnpm orion:prune` reapplies the contract by removing those paths and renaming foundation scope references, and project validation fails while either remains. Project-owned files keep the project's version during upgrades.\nThe `ORION_*` configuration names, `orion_*` token claims and database role names, and the `Orion required gate` check name remain the foundation's technical namespace. Renaming them would touch shared files throughout the repository and conflict on every upgrade, and the check name is bound to branch protection.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nIsolating shared content from foundation-only content turns removal into deleting a known list of paths rather than editing shared files, so a derived project shares every shared file byte for byte with Orion and upgrades merge cleanly there. Composition files give each repository a single owned seam for its modules; keeping Orion's reference behind that seam keeps it executable and validated in Orion, where it remains the example a project can study upstream.\nA project that starts with Orion's history documents and a foreign feature must first remove or disclaim them, and its agents read another repository's plan as context. Starting clean makes the project's own plan and human actions the only current work and its README describe its actual state.\nRenaming the package scope affects only package manifests, the lockfile, and a few imports, so it costs little at upgrade time and removes the most visible remaining Orion identity; `pnpm orion:prune` reapplies it mechanically. The configuration and claim namespaces appear in far more shared files and external configuration and are documented as foundation names instead.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Keep the reference implementation with a recorded disposition",
-    "anchor": "keep-the-reference-implementation-with-a-recorded-disposition",
-    "text": "Keep the reference implementation with a recorded disposition\nADR-0014's model. It keeps initialization simple but makes every new product carry and validate an unrelated feature until someone performs a multi-artifact removal, which is exactly the brittle step this decision eliminates.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Delete the reference implementation by editing shared files during initialization",
-    "anchor": "delete-the-reference-implementation-by-editing-shared-files-during-initialization",
-    "text": "Delete the reference implementation by editing shared files during initialization\nA script could rewrite shared code and documentation, but every edited shared file would then differ from Orion and conflict on later upgrades. Isolation moves those differences into project-owned composition files instead.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Move the reference implementation to a separate repository or a non-default branch",
-    "anchor": "move-the-reference-implementation-to-a-separate-repository-or-a-non-default-branch",
-    "text": "Move the reference implementation to a separate repository or a non-default branch\nThis would keep Orion's main branch clean but lose the executable example in the foundation's own validation gate, and projects could no longer see in Orion how a complete module fits the architecture.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rename every Orion namespace",
-    "anchor": "rename-every-orion-namespace",
-    "text": "Rename every Orion namespace\nRenaming configuration variables, token claims, database roles, and the CI check would maximize branding but touch most of the repository and external settings, making every upgrade conflict.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nA new project contains only shared foundation content and its own files; its README, plan, human actions, package names, portal, and API contract describe it.\nOrion keeps a complete, validated reference implementation and its development history.\nIsolation, project cleanliness, and remaining foundation scope references are checked mechanically.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nUpgrades that change foundation-only paths conflict in projects, and every upgrade must run `pnpm orion:prune` before validation.\nInitialization regenerates references, so it requires dependencies installed and a Testcontainers-compatible container runtime.\nShared documentation cannot refer to the reference implementation except through the derivation guide.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nThis changes the derivation contract and the manifest schema incompatibly, which [foundation versioning](../versioning.md#compatibility-meaning) classifies as a MAJOR foundation change.\nProjects derived under ADR-0014 have a schema version 1 manifest; `pnpm orion:check` refuses it with directions to the migration steps in the [derivation guide](../project-derivation.md#migrate-a-project-from-schema-version-1).\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[ADR-0014: derive projects through Git ancestry](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n[Foundation versioning](../versioning.md)\n[API modules](../../apps/api/README.md#modules) and [web modules](../../apps/web/README.md#modules)\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "anchor": "adr-0018-adopt-tenant-owned-data-in-the-modular-backend",
-    "text": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni requires independent customer companies with branches, memberships, media and devices. The derived repository has PostgreSQL infrastructure and composable API modules but no product tables or tenant enforcement. Tenant isolation must exist in the first product slice, within Orion's modular backend boundaries.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt one customer company as the tenant ownership boundary in a shared PostgreSQL database and schema. Model explicit tenant-scoped ownership and references, server-derived membership/branch authorization, and database constraints that prevent cross-tenant associations. Keep capabilities in the existing modular backend, with explicit application interfaces and owned tables; no microservice split is proposed.\nRow-level security is an additional option to evaluate, not assumed protection. Review its connection-pooling, runtime-role and migration implications before selecting it. Platform administration remains a separate scoped capability, not an implicit bypass for tenant data access.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nA shared deployment fits the initial cost and operational constraints. Explicit ownership allows branch scoping and future company scale without treating a branch as another tenant. It also places substantial responsibility on query/reference design, constraints and adversarial authorization tests; the accepted architecture has not yet been proven by a schema or implementation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Database or schema per company:** provides a different isolation boundary, but adds migration, connection, backup and recovery coordination for every tenant. Revisit if contractual isolation or measured scale justifies it.\n**Application filters without relational tenant constraints:** simpler initially, but insufficient to protect mixed-tenant references or accidental omitted scope checks. Not a sufficient candidate for the product requirement.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nPreserves one operational backend while giving each module clear ownership and tenant semantics.\nEnables negative integration tests against real PostgreSQL from the first vertical slice.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nEvery data access, reference, cache, media path and asynchronous operation must preserve scope.\nIsolation in a shared database requires continuing review; application administrator access and recovery operations remain sensitive.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo tables or migrations are introduced by this decision. Before dependent implementation/release, complete the ownership/constraint design and row-level-security evaluation and verify the selected role matrix with cross-tenant tests under PJ-03/PJ-07. Later changing tenant partitioning may require a deliberate data migration.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Teluni conceptual ownership and modules](../project/architecture.md)\n[Authorization](../security/authorization.md)\n[Database principles](../database/principles.md)\n[Application boundaries](../architecture/application-boundaries.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "anchor": "adr-0019-adopt-immutable-publications-and-atomic-player-activation",
-    "text": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni displays must continue through temporary backend/network outages. Videos must normally play locally. Partial downloads, concurrent publications and power loss must not replace usable programming with an incomplete set. Backend and installed players will evolve independently.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt immutable publication snapshots with versioned manifests that bind programming rules to verified asset versions. The player durably stages missing assets and switches its active generation only after the complete supported snapshot is ready, retaining a valid recovery generation. Separate desired, staged and reported-active versions and reconcile duplicate or lost acknowledgements.\nDefine protocol compatibility, integrity metadata, capacity/retention, scheduling expiry and offline authorization policy before implementation. No transport, storage library, cryptographic mechanism or manifest serialization format is selected by this record.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe owner's requirement is consistent offline playback, not normal continuous server streaming. A generation boundary makes interruption and recovery behavior testable and avoids exposing partially updated programming. Architectural acceptance is not evidence of crash-safe storage or hardware compatibility.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Continuous server streaming:** makes ordinary playback depend on connectivity and repeated transfer; does not satisfy the central offline requirement.\n**Overwrite active files/programming as downloads arrive:** reduces temporary storage but can mix incompatible versions and leave no valid program after interruption. It does not satisfy the required activation boundary.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nEnables local replay through outages and explicit recovery/failure acceptance tests.\nSeparates publication intent from device observations without assuming exactly-once delivery.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nStaging plus recovery versions consume additional storage and need safe garbage collection.\nCached content cannot be immediately recalled from unreachable devices; expiry/revocation rules need explicit review.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nAtomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Player/release qualification under PJ-11/PJ-12/PJ-14 requires representative network/power-cut and stale/reordered message cases, not only unit tests.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0020: Adopt a Native Android TV Player",
-    "anchor": "adr-0020-adopt-a-native-android-tv-player",
-    "text": "ADR-0020: Adopt a Native Android TV Player\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe intended first player is Android TV, with continuous image/video playback, local persistence, temporary-code pairing and offline recovery. Orion supplies TypeScript API/web foundations but deliberately does not select a mobile/native stack. No Android application or hardware validation exists in Teluni.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.\nMinimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. Architecture acceptance does not imply every Android TV or Smart TV is supported.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThis is the owner's preferred initial direction and matches the requested native device lifecycle and local-playback responsibilities. There are no completed benchmarks or device tests establishing that it meets the reliability envelope. A separate runtime is justified by installation and hardware lifecycle, while backend distribution is not.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Web player first:** remains a possible future platform, but browser lifecycle, storage and unattended playback would need separate validation. It is not the requested MVP target.\n**Other Smart TV or dedicated-computer players:** could expand coverage later; validating multiple platforms now would widen MVP support and test obligations without pilot evidence.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nGives the first player a clear device-specific owner and keeps interoperable contracts with Orion.\nAllows targeted validation of local storage, playback and restart behavior on pilot hardware.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nAdds Android build/signing/distribution, hardware testing and old-client compatibility responsibilities.\nMedia capability and unattended behavior must be verified per supported device; TypeScript tooling cannot establish them.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nSupported-device/release qualification under PH-08/PJ-12/PJ-14 requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Product components and pending decisions](../project/architecture.md)\n[MVP acceptance](../project/mvp.md)\n[Additional runtime boundaries](../architecture/application-boundaries.md#additional-runtime-boundaries)\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "anchor": "adr-0021-adopt-a-single-host-pilot-with-portable-persistent-storage",
-    "text": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe owner currently has no cloud-service budget and intends to evaluate a personal residential server for development and first pilots. Network exposure, CGNAT, domain, hardware capacity, backup destination and acceptable downtime have not been verified. Orion does not select a production deployment platform.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt an initial Debian host with Docker Compose, HTTPS reverse-proxy ingress, private PostgreSQL and media on durable mounted storage outside disposable containers. Keep environment-specific endpoints/configuration out of domain identity. Media storage remains a cohesive capability with replaceable filesystem I/O, allowing a later S3-compatible implementation when justified.\nReal-customer exposure is conditional on network/security review, owner-approved availability and recovery targets, off-host backup/restore proof and tested player behavior during outages. No tunnel, DNS, proxy, object-storage or cloud provider is selected or presumed to satisfy these gates.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nOne host and local media fit the stated budget and avoid premature distributed operations. Stable logical asset identity, explicit configuration and tested recovery make a host/storage move tractable. They do not remove single-host failure or bandwidth constraints, nor make a future migration automatic.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Immediate paid VPS/cloud:** potentially changes power/network risk, but needs an actual affordable operating budget. Revisit with revenue or a demonstrated operational requirement.\n**Distributed services or orchestration first:** adds deployment and failure-management costs without measured need at the initial pilot scope.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nKeeps the first operating model understandable and limits mandatory paid infrastructure.\nEstablishes persistent state and endpoint portability as design obligations before deployment.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nResidential availability, uplink and physical security remain material risks; no production SLA follows from Compose.\nDatabase-plus-media consistency, off-host recovery, secure exposure and maintenance remain owner/operator responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nReal-customer deployment readiness under PH-10/PJ-13 requires the host/network inventory, endpoint migration strategy and timed recovery rehearsal. Implementation must later supply tested deployment/recovery runbooks and release procedures. No container manifest or production change is introduced here.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Deployment and migration planning](../project/operations.md)\n[Production access](../security/production-access.md)\n[Configuration](../architecture/configuration.md)\n[Data retention and recovery](../security/data-retention.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0022: License Teluni under Apache-2.0",
-    "anchor": "adr-0022-license-teluni-under-apache-20",
-    "text": "ADR-0022: License Teluni under Apache-2.0\n**Status:** accepted\n**Date:** 2026-10-17\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni is derived from Orion, whose source already carries Apache-2.0 under ADR-0016. That foundation decision explicitly leaves independently developed product licensing to the product owner. Teluni's owner explicitly approved Apache License 2.0 for Teluni on 2026-10-17; this record documents that owner-authorized decision. The repository already contains the standard root license text, but its README and human actions previously said product licensing was undecided.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nLicense Teluni repository source and documentation, including independently developed product material, under the unmodified Apache License, Version 2.0. Retain the root `LICENSE` as the canonical terms and use SPDX identifier `Apache-2.0` in the root, API, web and SDK package metadata. Update README and project documentation to make the scope explicit.\nPreserve Orion provenance and its applicable rights/notices. Do not relabel third-party dependencies or separately licensed material. Do not invent a named copyright holder or NOTICE without confirmed attribution. This decision concerns repository licensing; SaaS pricing, support and customer service terms remain separate product decisions.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe owner explicitly selected Apache-2.0 rather than delegating the legal choice to an agent. Applying the existing standard text consistently to Teluni resolves the previous distinction between inherited foundation licensing and undecided product licensing, without changing architecture or runtime behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Keep product licensing undecided",
-    "anchor": "keep-product-licensing-undecided",
-    "text": "Keep product licensing undecided\nThis was the documented state. It no longer reflects the owner's explicit instruction and leaves the intended licensing scope unclear.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nTeluni's source/documentation license is explicit and consistent with the standard license file and package metadata.\nThe product decision remains separate from the historical Orion ADR and commercial pricing decisions.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nDistribution must preserve applicable license/attribution obligations; the choice does not determine third-party rights or authorize reuse of PDT Display material.\nNamed attribution still needs confirmed ownership evidence if such notices are added.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo database migration, dependency upgrade, application feature or deployment change is required. Existing tags/history and the canonical license text remain unchanged. PH-06 records the owner's selection; PH-14 tracks conditional named-attribution work.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical license](../../LICENSE)\n[README licensing scope](../../README.md#license)\n[Orion license decision](0016-license-the-orion-foundation-under-apache-2-0.md)\n[Product human actions](../project/human-actions.md#ph-06)\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "anchor": "adr-0023-adopt-versioned-catalog-and-composition-publications",
-    "text": "ADR-0023: Adopt Versioned Catalog and Composition Publications\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe owner requires freeform simultaneous content, regional schedules with optional page coordination, multiple videos/audio and configurable data catalogs beyond products, such as weekly agendas. Saving designated prices must automatically publish affected content, while other drafts remain private. Players must render locally through bounded outages and recover complete valid generations.\nThese approved product policies affect schema evolution, references, module ownership and backend/web/player contracts. They do not choose a physical schema, editor/renderer, serialization or queue provider. ADR-0019 establishes immutable publication generations; the expanded presentation/data boundary needs explicit design review before implementation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt versioned declarative composition definitions and typed catalog definitions/records with stable field/binding identities. Customization is validated data rather than executable user code or direct database access. Catalog presets may express products/prices or agendas without making a product schema mandatory for every collection.\nCompose immutable publication snapshots from explicitly identified layout/schema/record/media revisions and the rules needed for offline evaluation. Published snapshots remain interpretable after draft schema evolution. A price save records durable intent and generates affected snapshots from published dependencies, excluding unrelated drafts; expose incomplete/retry states and prevent stale work from overwriting newer desired generations.\nKeep catalogs, layout authoring, programming and publication behind explicit module capabilities in the modular backend. No arbitrary cross-module table writes, circular imports or new generic shared framework are implied. Carry interoperable contracts to the native player rather than importing TypeScript application internals.\nBefore dependent implementation, review concrete schemas, module collaboration, import security, destructive field evolution, snapshot granularity, trusted time, rendering/media profiles and the failure/compatibility fixtures. Serialization, storage layout, libraries and processing/transport mechanisms remain intentionally unselected.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nUser-defined fields and freeform geometry need stable meaning across independent editor/player releases. A versioned declarative boundary makes validation, copying, private references and offline rendering reviewable. Immutable data snapshots preserve the existing consistency/activation direction while allowing automatic price updates without live mutation of an issued program.\nThis is reasoned architecture, not a measured renderer/storage evaluation. PH-09 policy selection alone did not accept this ADR; explicit architectural approval is recorded above. Neither establishes product availability.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Product-only fixed fields and opaque final artwork:** cannot satisfy configurable non-product catalogs, field-bound editing and independent regional presentation without rebuilding the model.\n**Read mutable live records while rendering an old publication:** makes ordinary playback depend on the server or mixes data/layout/schema revisions; obscures rollback and offline commercial validity.\n**Unversioned arbitrary catalog/layout objects:** initially flexible but leaves incompatible field changes, unsafe references and preview/player interpretation undefined. Extensibility still needs typed validation and compatibility rules.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nSupports sector-neutral catalogs, reusable textual layouts and controlled offline interpretation.\nKeeps ordinary drafts separate from explicit automatic price publication and preserves attributable generation history.\nMakes schema/reference/security and regional scheduling cases part of contract verification.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nRequires schema evolution/reference handling and qualified multi-area/video rendering across independent runtimes.\nPublication fan-out, processing and retained generations add storage/work and recovery obligations.\nDoes not remove real device limits, trusted-time uncertainty or the inability to erase an unreachable player instantly.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo product schema or deployment currently exists, so this decision adds no migration or running component. Future implementations must keep retained snapshots readable, reconcile interrupted price/publication work and qualify protocol overlap, offline/power recovery and supported device profiles. Apply accepted ADR-0019 alongside this record; neither supersedes an earlier foundation decision.\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Release policies and PH-09 decision record](../project/release-policies.md)\n[Release acceptance targets](../project/release-targets.md)\n[Product architecture](../project/architecture.md)\n[Immutable publication decision](0019-propose-immutable-publications-and-atomic-player-activation.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "anchor": "adr-0024-adopt-keycloak-and-server-managed-human-sessions",
-    "text": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe owner answered PH-11's identity questionnaire, selecting self-hosted Keycloak as candidate, email/password with optional passkeys, Google as the only external login, and server-managed browser sessions. Public company activation, strong administrative assurance, safe recovery and bounded revocation must work within an initially unfunded residential deployment. A concrete provider/version has not been provisioned or qualified.\nAccepted ADR-0012 governs the existing API's signed JWT access-token boundary. Its header/claims are not ordinary provider defaults, and its current principal result does not expose session or authentication-assurance evidence. The web shell's in-memory bearer support is not a login/refresh implementation. This decision must distinguish product-policy approval from technical acceptance and implementation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt Keycloak as the human identity provider, self-hosted subject to PH-10 feasibility, with a server-managed browser session integrated into the modular backend where appropriate. Use established OIDC Authorization Code with PKCE and maintained session/security components; keep provider credentials server-side and an opaque protected session cookie in the browser. Do not introduce a new microservice by default or an API-owned password/cryptographic implementation.\nPreserve ADR-0012's API boundary and stable application principal. A reviewed session boundary must obtain legitimate issuer access tokens and establish trusted session/assurance context; a cookie or caller-supplied MFA/session assertion cannot bypass the existing verifier. Define protected cookies, explicit CSRF protection, OIDC state/nonce/redirect validation, session fixation defenses, refresh rotation/replay/concurrency and local/global logout reconciliation before implementation. No session library, route, schema or deployment image is selected by this decision. The pinned Keycloak source assessment in the provider evaluation is review evidence, not an installed production version.\nApply the owner's canonical identity policies, including strong/recent authentication, distinct platform accounts, recovery, inactivity/absolute expiry, session-count and 30-second revocation requirements. Current account/session/membership state must supplement JWT verification. Keep Google brokering/account linking and provider/email credentials at trusted boundaries. A human actor mapper must not accidentally make machine flows authenticate as humans.\nThe [pinned-source compatibility assessment](../project/identity-provider-evaluation.md#pinned-source-assessment) supports this architectural choice. Before integration readiness, implement and verify immutable principal mapping, every required token claim and trusted session/assurance linkage against the selected deployment version using the remaining qualification cases. Where evidence is insufficient, retain an explicit qualification task; do not modify accepted checks to make a default provider token pass. Review deployment/recovery resources separately under PH-10/PH-15. This decision neither supersedes ADR-0012 nor authorizes provisioning.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe provider matches the owner's control/budget direction and has relevant documented identity primitives. Server-managed sessions reduce browser exposure of provider tokens and permit accountable session lifecycle controls, at the cost of persistent state and CSRF/refresh coordination. A five-minute token alone cannot enforce the selected 30-second revocation bound. Local JWT verification can remain useful without pretending it provides a complete session or authorization system.\nThe documentation review establishes plausible compatibility, including Keycloak's configurable `at+jwt` header, not passed interoperability, recovery or capacity tests. Public signup still needs commercial/privacy and abuse readiness; choosing it does not authorize a free plan or immediate public exposure.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Managed OIDC provider:** may reduce some operating responsibilities, but costs/limits/claim compatibility require evaluation beyond the current no-procurement direction. No vendor benchmark or unconditional free-tier assumption is made.\n**Browser-token SPA with Authorization Code and PKCE:** preserves a simpler server session topology but leaves browser token exposure and refresh/lifecycle tradeoffs; the owner selected server-managed sessions instead. This does not reject the client-first React/Vite application or require server rendering.\n**Another established self-hosted provider:** fallback if qualification rejects Keycloak; no unperformed comparative assessment is claimed.\n**Custom issuer/password storage or relaxed JWT checks:** violates governing controls and is not an acceptable workaround.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nKeeps human credentials with an established provider and browser tokens out of JavaScript-accessible persistence.\nPreserves provider-independent identity and explicit failure/revocation/assurance boundaries.\nDefines compatibility and operational evidence before a production integration is claimed.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nSelf-hosting adds patching, resources, recovery and mail-delivery responsibilities despite no procurement budget.\nServer sessions introduce persistence, CSRF, concurrency and logout synchronization work.\nCurrent foundation principal/configuration contracts do not yet carry all needed session/assurance semantics.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo runtime, dependency, API contract, migration or deployment changes accompany this decision. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 decision acceptance is complete; PJ-24 retains every unperformed interoperability/session/assurance test.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical identity and access policies](../project/identity-and-access.md)\n[Provider evidence and qualification gaps](../project/identity-provider-evaluation.md)\n[Existing JWT access-token decision](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\n[Authentication policy](../security/authentication.md)\n[Application boundaries](../architecture/application-boundaries.md)\n[OAuth security best current practice](https://www.rfc-editor.org/rfc/rfc9700.html)\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "anchor": "adr-0025-adopt-application-owned-scoped-access-profiles",
-    "text": "ADR-0025: Adopt Application-Owned Scoped Access Profiles\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nPH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.\nThe foundation verifies human identity but has no product membership/permission implementation. ADR-0018 establishes the accepted tenant-owned modular-data direction; its concrete constraints/enforcement remain design and implementation work. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.\nKeep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.\nEnforce resource ownership, operation, current state, assurance and scope on every protected entry point, including reads/collections, media, imports, bulk work and delayed effects. Revalidate sensitive effects and ensure the selected freshness bound. Grantors cannot delegate authority they lack, responsible-administrator approval cannot be bypassed, and local membership administration cannot reset global identities.\nAuthorize every published dependency/target affected by a price save before accepting the mutation; deny the entire out-of-scope mutation without partial publication or automatic approval fallback. Optional company approval policies distinguish a proposal from an effective saved price and prohibit self-approval where required. Pending protected work rechecks authority; an already-issued valid publication continues its delivery lifecycle unless explicitly revoked by the appropriate control.\nRoutine support uses the real support identity and a visible, expiring customer-authorized scope, read-only by default and separate write grants. No impersonation is selected. Emergency access requires a separately reviewed, exceptional controlled procedure; there is no standing unrestricted content-browsing right.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nApplication ownership keeps mutable company permissions and resources independent of provider migration and stale identity claims. Explicit capabilities/scopes accommodate both small-business presets and teams working across branches without making every operator an administrator. Attributable publication/support checks preserve the approved product behavior and tenant boundaries.\nThe owner approved policy and required allow/deny cases, not a database model or proven permission evaluator. Custom profiles, optional approvals and bounded asynchronous revocation add real implementation work and must not be claimed merely from a matrix.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Fixed roles only:** simpler, but cannot satisfy the selected customizable capability/scoping policy without revisiting the product requirements.\n**Provider roles/groups as complete authorization:** insufficient for current memberships, mutable resource relationships, publication fan-out and tenant-safe support; would couple application permission meaning to identity infrastructure.\n**General-purpose policy engine:** no measured need or evaluation justifies another dependency or distributed component at this stage. Review if actual policy complexity warrants it later.\n**Platform superuser and silent price partial success:** obscure authority and violate selected customer-content boundaries and complete price-impact validation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nMakes granted authority, tenant/resource scope, responsibility and delegated support explainable and testable.\nKeeps identity migration independent from company permission ownership.\nPreserves safe all-target publication and attributable pending-work behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nCustom profiles, shared resources and optional approvals increase UX, schema and test complexity.\nFreshness, grant races and background work require explicit consistency/invalidation design.\nA safe role matrix alone cannot prevent unsafe queries, caches or credential mapping.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo permission identifiers, schema, migration or running engine is created here. Implementation/release qualification under PJ-03/PJ-07/PJ-24 requires reviewed capability ownership, consistency/enforcement design and passing IA-01–IA-16 cases, including two-company negative fixtures and trustworthy session/assurance context. Later renaming persisted grants or broadening presets is a compatibility/security change. Audit/privacy retention and host recovery remain separate gates.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Selected identity policy and permission matrix](../project/identity-and-access.md)\n[Tenant-owned data decision](0018-propose-tenant-owned-data-in-the-modular-backend.md)\n[Human provider/session decision](0024-propose-keycloak-and-server-managed-human-sessions.md)\n[Authorization policy](../security/authorization.md)\n[Release publication policies](../project/release-policies.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/AGENTS",
-    "title": "ADR Instructions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR Instructions",
-    "anchor": "adr-instructions",
-    "text": "ADR Instructions\nConsult the [decision index](README.md) and [authoring policy](authoring.md) before creating or changing an ADR.\nStart new proposals with the [template](template.md) and `proposed` status. Acceptance is distinct from implementation completion.\nPreserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.\nRetain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.\nUpdate current policy and reciprocal supersession references when an accepted architectural change requires them.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Authoring Architecture Decision Records",
-    "anchor": "authoring-architecture-decision-records",
-    "text": "Authoring Architecture Decision Records\nUse the [decision index](README.md) to search existing decisions and the [template](template.md) to draft a record. ADRs preserve decision history and rationale; current policy describes current architecture. Git, migrations, changelogs, design documents, and runbooks retain their separate responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "When a decision needs an ADR",
-    "anchor": "when-a-decision-needs-an-adr",
-    "text": "When a decision needs an ADR\nCreate an ADR for a significant choice whose rationale a future contributor cannot reliably infer from implementation. Relevant effects include system boundaries, dependency direction, ownership, runtime/deployment topology, security, persistence, public contracts, cross-cutting technology, operational behavior, and long-term maintainability.\nConsider the breadth, reversibility, long-term dependency, plausible alternatives, integrity/security implications, and risk of losing the reasoning. Ordinary local refactors, fixes, tests, small helpers, individual indexes, and routine dependency additions do not each need an ADR. Major technology choices generally do. Existing foundation policies do not each need retroactive ADRs.\nAn ADR records a sufficiently concrete architectural conclusion, not every discussion or rejected idea. It must not become a task tracker, changelog, runbook, detailed implementation design, or snapshot of volatile vendor data. A separate RFC system is not required. Bundle decisions only when their rationale and lifecycle belong together; avoid giant records deciding unrelated parts of the stack.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Lifecycle and historical integrity",
-    "anchor": "lifecycle-and-historical-integrity",
-    "text": "Lifecycle and historical integrity\nStatus\nMeaning\n`proposed`\nUnder active consideration; implementation must not assume finality unless explicitly exploratory\n`accepted`\nApproved architectural direction; implementation and current documentation should align, allowing an explicit migration period\n`rejected`\nConsidered and deliberately not adopted\n`superseded`\nPreviously accepted, then replaced by another decision; link the replacement\n`deprecated`\nHistorically relevant but no longer appropriate for new architecture; use sparingly when replacement is transitional or incomplete\nDo not add statuses without a clear need. Normal transitions are proposed to accepted/rejected and accepted to superseded/deprecated. Do not normally revert historical decisions to proposed; create a new record when reconsidering them.\nAccepted does not mean implemented or released. Track pending/partial/completed implementation through normal issues, tasks, or pull requests, not extra ADR statuses. Exploratory work and proofs of concept provide evidence but do not themselves establish acceptance. Long-lived production implementation should generally not rely on an unresolved major proposal.\nAccepted substantive history should remain immutable. Non-semantic spelling, formatting, broken-link, and obvious-typo corrections may be acceptable, but must not change historical meaning. When architecture changes, create a new ADR. Retain the old record, mark it superseded, and add reciprocal `Supersedes` / `Superseded by` references. Keep the original date. For partial supersession, identify precisely what remains valid, what changed, and which decision replaces it.\nRejected records can preserve useful evaluation and constraints; a changed context can justify reconsideration in a new ADR. Do not treat rejection as a permanent prohibition. Purely local abandoned proposals may be removed before meaningful shared history; preserve broadly reviewed or referenced proposals as rejected where useful. Do not record every immediately dismissed idea.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Identity and metadata",
-    "anchor": "identity-and-metadata",
-    "text": "Identity and metadata\nUse monotonic numeric identifiers and descriptive English filenames of the form `NNNN-short-decision-title.md`. Numbers identify records, not importance, domain, priority, or version. Gaps are acceptable. Never reuse or renumber identifiers already in shared history. Resolve parallel numbering conflicts before merge; an unshared identifier may be changed.\nRecord title, status, date, context, decision, and consequences. For accepted records, the date should generally be the acceptance date. Titles should describe the decision rather than merely name a topic. Preserve identifiers once merged and referenced.\nSimple Markdown metadata is the current format. `pnpm docs:check` validates filenames, matching titles/IDs, status, ISO dates, required sections, and index membership. Preserve these field names as tooling contracts. Supersession semantics still require review; no automatic numbering or supersession checker is implemented. ADR files remain canonical; avoid duplicate status stores or custom ADR software without a concrete need.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Content and evidence",
-    "anchor": "content-and-evidence",
-    "text": "Content and evidence\n**Context:** explain the actual problem, relevant constraints, scope, timing, and assumptions. Avoid unnecessary implementation detail.\n**Decision:** state the chosen direction clearly enough to understand independently of the alternatives.\n**Rationale:** explain the material tradeoffs, evidence, and constraints. Distinguish confirmed evidence, reasoned tradeoffs, and assumptions.\n**Alternatives:** describe serious alternatives considered; do not fabricate alternatives or evaluation evidence to fill a template.\n**Consequences:** include benefits, costs, limitations, new responsibilities, security/operational effects, and reversibility or migration costs where relevant. Formal scoring is not required.\n**References:** link relevant repository policy, earlier decisions, designs, benchmarks, proofs of concept, and durable evidence. Avoid unnecessary dependency graphs and large volatile datasets. Preserve enough explanation that disappearing external links do not destroy the rationale.\nUse current evidence at decision time when product capability, support lifecycle, pricing, security status, or provider limits matter. Vendor documentation can support constraints but must not be the sole location of the explanation. Detailed implementation and operational migration steps normally belong outside the ADR.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Creation, review, and acceptance",
-    "anchor": "creation-review-and-acceptance",
-    "text": "Creation, review, and acceptance\nSearch the index and related policies for the same question, accepted direction, superseded decision, or rejected alternative. Determine whether this is an architectural decision rather than an implementation detail.\nAllocate the next available identifier, copy the template, and use `proposed` status.\nDocument context, explicit direction, meaningful alternatives, rationale, constraints, and positive and negative consequences while the context is still known.\nReview in proportion to impact: is the problem real, the complexity justified, and the choice consistent with existing architecture? Identify conflicts and intentional deviations explicitly.\nAccept or reject through repository review. For a small team, review, merge, and accepted status are sufficient; do not add governance ceremony without a concrete need.\nOn acceptance, update affected current documentation and implement the selected direction with relevant verification. Do not retain rejected experimental paths unnecessarily.\nFor supersession, additionally identify changed constraints, reciprocal references, affected current policy, and compatibility/migration work. For rejection, record decisive reasons, preferred alternatives where applicable, and conditions that could justify reconsideration.\nRetrospective ADRs should say the decision was already in effect. Record only known reasoning and state uncertainty rather than inventing a historical evaluation. Significant principle deviations belong in the decision and corresponding current-policy update. When later accepted decisions supersede older records, follow the replacement and current policy rather than treating the superseded record as current architecture.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Maintenance and deferred mechanisms",
-    "anchor": "maintenance-and-deferred-mechanisms",
-    "text": "Maintenance and deferred mechanisms\nRoutine maintenance should be limited to permitted corrections and supersession metadata. Current architecture must remain discoverable without reading the entire chronological ADR history. Keep descriptive titles, explicit technologies/concepts, and useful related references.\nFrontmatter, automatic numbering, generated indexing, status/supersession validation, approval workflows, and required reviewers remain tooling or organizational decisions. Introduce them only when justified. ADRs should preserve meaningful reasoning without becoming bureaucratic records for every change.\n"
-  },
-  {
-    "id": "repository/docs/adr/README",
-    "title": "Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Architecture Decision Records",
-    "anchor": "architecture-decision-records",
-    "text": "Architecture Decision Records\nUse this index to locate governing decisions without reading the full history. Each linked record owns its status, decision, rationale, and consequences. Acceptance does not imply implementation; see [validation availability](../validation.md) and the [technology map](../architecture/technology-decisions.md).\nFor a new decision, read [authoring policy](authoring.md), inspect related records, and use the [proposed template](template.md). Current behavior belongs in the [policy index](../README.md), not in rewritten historical ADRs.\n"
-  },
-  {
-    "id": "repository/docs/adr/README",
-    "title": "Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision index",
-    "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-NNNN: Decision Title",
-    "anchor": "adr-nnnn-decision-title",
-    "text": "ADR-NNNN: Decision Title\n**Status:** proposed\n**Date:** YYYY-MM-DD\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nDescribe the architectural problem or constraint that requires a decision.\nInclude only the context necessary to understand:\nwhy a decision is needed;\nwhich systems or boundaries are affected;\nwhich constraints materially influence the choice;\nwhich assumptions matter.\nAvoid turning this section into a complete implementation design.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nState the architectural decision clearly.\nThis section should make it possible to understand the chosen direction without inferring it from the alternatives or rationale.\nExample form:\nThis repository will ...\n\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nExplain why this option was selected.\nFocus on the tradeoffs, constraints, and evidence that materially influenced the decision.\nDo not list only advantages.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternative A",
-    "anchor": "alternative-a",
-    "text": "Alternative A\nBriefly describe the alternative and why it was not selected.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternative B",
-    "anchor": "alternative-b",
-    "text": "Alternative B\nBriefly describe the alternative and why it was not selected.\nRemove unused alternative sections rather than inventing alternatives.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nDescribe meaningful benefits.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nDescribe accepted costs, limitations, or additional responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nDescribe important deployment, compatibility, data, security, or migration consequences when applicable.\nRemove this subsection when there is no meaningful operational or migration impact.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nInclude only useful references.\nLink relevant [current policies](../README.md), [related ADRs](README.md), design documents, and evidence. Use actual relative Markdown links to existing records; remove unused references.\nIf this ADR supersedes another accepted ADR, update that ADR to reference this one as its replacement.\n"
   }
 ]

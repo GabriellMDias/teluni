@@ -3,6 +3,7 @@ import {
   clientConfigFrom,
   configReference,
   parseServerConfig,
+  parseSessionKeys,
   serverConfigSchema,
 } from "../src/config.js";
 
@@ -119,5 +120,73 @@ describe("API configuration boundary", () => {
         "postgresql://migration:synthetic@127.0.0.1/example",
     });
     expect(JSON.stringify(config)).not.toContain("migration");
+  });
+});
+
+describe("human identity configuration", () => {
+  const key = Buffer.alloc(32, 7).toString("base64url");
+  const complete = {
+    ORION_ENV: "test",
+    ORION_TOKEN_ISSUER: "http://localhost:8080/realms/teluni",
+    ORION_TOKEN_AUDIENCE: "teluni-api",
+    ORION_TOKEN_JWKS_URL:
+      "http://localhost:8080/realms/teluni/protocol/openid-connect/certs",
+    TELUNI_PUBLIC_ORIGIN: "http://127.0.0.1:5173",
+    TELUNI_OIDC_CLIENT_ID: "teluni-web",
+    TELUNI_OIDC_CLIENT_SECRET: "synthetic-client-secret",
+    TELUNI_IDENTITY_PROVISIONER_CLIENT_ID: "teluni-provisioner",
+    TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET: "synthetic-provisioner-secret",
+    TELUNI_SESSION_KEYS: `k2:${key},k1:${Buffer.alloc(32, 1).toString("base64url")}`,
+  };
+
+  it("accepts a complete loopback development configuration and parses the key ring", () => {
+    const config = parseServerConfig(complete);
+    expect(config.publicOrigin).toBe("http://127.0.0.1:5173");
+    expect(parseSessionKeys(config.sessionKeys!).map(({ id }) => id)).toEqual([
+      "k2",
+      "k1",
+    ]);
+  });
+
+  it.each([
+    { TELUNI_OIDC_CLIENT_SECRET: undefined },
+    {
+      ORION_TOKEN_ISSUER: undefined,
+      ORION_TOKEN_AUDIENCE: undefined,
+      ORION_TOKEN_JWKS_URL: undefined,
+    },
+    { TELUNI_PUBLIC_ORIGIN: "http://example.test" },
+    { TELUNI_PUBLIC_ORIGIN: "http://127.0.0.1:5173/panel" },
+    { TELUNI_PUBLIC_ORIGIN: "https://user@app.example.test" },
+    { TELUNI_SESSION_KEYS: "k1:short" },
+    { TELUNI_SESSION_KEYS: `k1:${key},k1:${key}` },
+    { TELUNI_OIDC_CLIENT_SECRET: "short" },
+  ])("rejects incomplete or unsafe human identity settings %#", (change) => {
+    const env: Record<string, string | undefined> = { ...complete, ...change };
+    for (const [name, value] of Object.entries(env))
+      if (value === undefined) delete env[name];
+    expect(() => parseServerConfig(env)).toThrow("Invalid API configuration");
+  });
+
+  it("requires an HTTPS public origin in production", () => {
+    expect(() =>
+      parseServerConfig({
+        ...complete,
+        ORION_ENV: "production",
+        ORION_TOKEN_ISSUER: "https://id.example.test/realms/teluni",
+        ORION_TOKEN_JWKS_URL:
+          "https://id.example.test/realms/teluni/protocol/openid-connect/certs",
+      }),
+    ).toThrow("public origin");
+    expect(
+      parseServerConfig({
+        ...complete,
+        ORION_ENV: "production",
+        ORION_TOKEN_ISSUER: "https://id.example.test/realms/teluni",
+        ORION_TOKEN_JWKS_URL:
+          "https://id.example.test/realms/teluni/protocol/openid-connect/certs",
+        TELUNI_PUBLIC_ORIGIN: "https://app.example.test",
+      }).publicOrigin,
+    ).toBe("https://app.example.test");
   });
 });
