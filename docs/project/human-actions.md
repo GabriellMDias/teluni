@@ -237,14 +237,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-20
 
-- [ ] **Review and approve the proposed D-01 tenant data and D-02 identity/session designs.**
+- [x] **Review and approve the proposed D-01 tenant data and D-02 identity/session designs.**
 
-**Status:** pending. **Owner:** project owner, with engineering/security review.
+**Status:** completed. **Owner:** project owner, with engineering/security review.
 **Dependency / trigger:** [PJ-28](implementation-plan.md#current-work) and PJ-29; blocks PJ-24 and PJ-03, and through them every tenant-owned Phase 2 module. The plan requires reviewed D-01/D-02 before the first product migration and identity implementation.
 **Request and reason:** Read the [tenant data design](tenant-data-design.md) and the [identity and session design](identity-session-design.md), then approve, reject or adjust each decision below. They are security and persistence choices with long-lived consequences, which the repository requires a human to review rather than an agent to self-approve. (1) Row-level security is not adopted for the first slice; composite tenant keys, immutable `company_id` grants, mandatory adapter scope, per-request access resolution, a structural catalog test and the two-company suite compensate; reevaluate before PJ-14. (2) An API `identity` module in the existing process owns principals and PostgreSQL-backed sessions, with provider tokens encrypted at rest, `openid-client` and `@fastify/cookie`, and no generic session plugin. (3) The application creates principal UUIDs and writes them to an administrator-only Keycloak attribute through a `teluni-provisioner` service account holding `manage-users`. (4) Provider revalidation by token introspection every 30 seconds meets the revocation bound, so a Keycloak outage stops protected panel operations within 30 seconds. (5) Product modules reject bearer-only human requests without a session. (6) The shared module contract gains a narrow module-to-module requirement. (7) The proposed password policy (length 12–128, not username/email, no composition rules). (8) Local and CI qualification use disposable `quay.io/keycloak/keycloak` 26.8.1 and Mailpit containers pulled from their public registries, before PH-15–PH-17, which remain gates for real environments only.
 **Configuration:** none. The designs name configuration concepts only; settings are added to the canonical configuration schema when implemented.
 **Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark both designs approved, complete PJ-28/PJ-29 and move PJ-24 to `in progress`. A rejected or changed item updates the affected design and, where it is a significant new mechanism, goes through the ADR process.
-**Evidence / blocker:** 2026-10-18: both designs drafted and linked from the plan and the product architecture; no implementation, migration, provider or container use has occurred.
+**Evidence / blocker:** 2026-10-18: both designs drafted and linked from the plan and the product architecture. The same day the owner explicitly approved all eight decisions above as proposed, in chat, and instructed proceeding to PJ-24/PJ-03 implementation. This approves the designs, including pulling the pinned Keycloak and Mailpit test images, and the reading that PH-15–PH-17 gate real environments rather than local/CI development. It does not qualify any Keycloak behavior or replace PJ-24's tests, and PH-15–PH-17 remain pending for real environments.
 
 ## New action template
 

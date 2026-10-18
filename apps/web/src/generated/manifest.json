@@ -760,7 +760,7 @@
       "title": "Teluni Human Identity and Session Integration Design",
       "group": "Project guides",
       "source": "docs/project/identity-session-design.md",
-      "summary": "Proposed detailed design for D-02, 2026-10-18; awaiting owner review under PH-20. It turns accepted ADR-0024 (Keycloak, server-managed browser sessions) and ADR-0025…",
+      "summary": "Approved detailed design for D-02, 2026-10-18. The owner approved it as proposed under PH-20. It turns accepted ADR-0024 (Keycloak, server-managed browser sessions) and…",
       "headings": [],
       "file": "pages/repository/docs/project/identity-session-design.json"
     },
@@ -870,7 +870,7 @@
       "title": "Teluni Tenant Data Ownership and Access Design",
       "group": "Project guides",
       "source": "docs/project/tenant-data-design.md",
-      "summary": "Proposed detailed design for D-01, 2026-10-18; awaiting owner review under PH-20. It applies accepted ADR-0018 (shared database and schema, company as tenant, relational tenant…",
+      "summary": "Approved detailed design for D-01, 2026-10-18. The owner approved it as proposed under PH-20. It applies accepted ADR-0018 (shared database and schema, company as tenant,…",
       "headings": [],
       "file": "pages/repository/docs/project/tenant-data-design.json"
     },
