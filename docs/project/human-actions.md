@@ -108,22 +108,22 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 - [ ] **Confirm the pilot participant, physical devices and supported hardware envelope.**
 
 **Status:** pending. **Owner:** project owner and candidate pilot operator.
-**Dependency / trigger:** PJ-07, PJ-08, PJ-09, PJ-12 and PJ-14; before hardware-specific commitments and pilot acceptance.
-**Request and reason:** Confirm the snack bar's participation and core workflow, screen/device quantity and models, Android versions, connection/storage conditions, orientations and installation/update access. A candidate customer is not a confirmed pilot or a tested hardware profile.
+**Dependency / trigger:** PJ-07, PJ-08, PJ-09, PJ-12, PJ-20 and PJ-14; before hardware-specific commitments and pilot acceptance.
+**Request and reason:** Confirm the snack bar's participation and core workflow, screen/device quantity and models, Android versions, connection/storage conditions, orientations and installation/update access. Qualify AT-04 and the selected startup/power/offline/timing targets with the FR-10 video/audio and FR-11 generic-catalog profiles; policy approval is not physical support evidence. A candidate customer is not a confirmed pilot or a tested hardware profile.
 **Configuration:** none yet; record model/capability facts without private access details.
 **Verification:** Approved hardware/support matrix and operator workflow, available test devices, and recorded playback/reboot/codec tests during implementation.
 **Evidence / blocker:** Owner identified a potential snack bar pilot; hardware, participation and capacity remain unverified.
 
 ## PH-09
 
-- [ ] **Agree MVP policy boundaries and measurable acceptance targets.**
+- [x] **Agree product policy boundaries and measurable release acceptance targets.**
 
-**Status:** pending. **Owner:** product owner with engineering input.
-**Dependency / trigger:** PJ-07 and the dependent Phase 2 slices; before claiming FR/NF acceptance or real pilot readiness.
-**Request and reason:** Review the [proposed MVP policies](mvp.md#proposed-behavior-requiring-confirmation): direct device assignment versus groups, schedule conflict/default/expiry behavior, duration rules, deletion/reference retention and safe unlink/offline revocation. Set the offline duration/clock limits, storage reserve, upload/media bounds, boot/recovery expectations, fleet/concurrency and usability targets with hardware evidence. These tradeoffs affect visible commercial content and cannot be selected from a generic engineering foundation.
-**Configuration:** none; future defaults/limits must be defined with canonical schemas when implemented.
-**Verification:** Record decisions and numeric acceptance targets in their owning specifications, with tests mapped to FR/NF IDs and review of dependent ADRs.
-**Evidence / blocker:** Candidate choices are prepared in MVP/playback docs; no numeric reliability/capacity guarantee is approved. Documentation work can finish independently.
+**Status:** completed. **Owner:** product owner with delegated engineering decisions.
+**Dependency / trigger:** PJ-07 and the dependent Phase 2 slices; policy/target selection before implementation and acceptance claims.
+**Request and reason:** Consolidate the owner's questionnaire and explicitly delegated unanswered choices into [release policies](release-policies.md) and [acceptance targets](release-targets.md), including configurable catalogs beyond products, hybrid regions, automatic price publication, multi-video/audio, calendar/offline/retention rules and measurable qualification goals.
+**Configuration:** no runtime settings or schemas introduced; selected limits become canonical validated configuration/contracts only during implementation.
+**Verification:** All P01–P31 have a recorded owner or delegated disposition. AT-01–AT-26 name numeric limits/measurement boundaries and FR/NF evidence requirements. Technical design/ADR acceptance and physical measurements remain PJ-07, PH-08/PH-10 and implementation/qualification tasks; they are not silently marked passed.
+**Evidence / blocker:** 2026-10-18: owner supplied detailed questionnaire responses and explicitly authorized decisions for delegated or unanswered items. The [decision record](release-policies.md#ph-09-decision-record) preserves 21 direct answers and 10 delegated selections; the unfilled optional summary table does not override those answers. Product-policy/target selection is complete with no remaining PH-09 owner question. ADR-0023 remains proposed; hardware, deployment, identity, privacy and actual target results remain separately pending. PJ-22 tracks documentation validation, not product delivery.
 
 ## PH-10
 

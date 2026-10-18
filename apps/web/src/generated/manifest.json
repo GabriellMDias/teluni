@@ -335,6 +335,16 @@
       "file": "pages/repository/docs/adr/0022-license-teluni-under-apache-2-0.json"
     },
     {
+      "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+      "kind": "repository",
+      "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+      "group": "Decisions",
+      "source": "docs/adr/0023-propose-versioned-catalog-and-composition-publications.md",
+      "summary": "The owner requires freeform simultaneous content, regional schedules with optional page coordination, multiple videos/audio and configurable data catalogs beyond products, such…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -707,10 +717,10 @@
     {
       "id": "repository/docs/project/mvp",
       "kind": "repository",
-      "title": "Teluni MVP Requirements and Acceptance",
+      "title": "Teluni Initial Release Requirements and Acceptance",
       "group": "Project guides",
       "source": "docs/project/mvp.md",
-      "summary": "Decided: the MVP must complete the company-to-screen journey for images and videos, including offline Android TV playback and basic monitoring. All capabilities below are…",
+      "summary": "Decided: complete the company-to-screen journey with tenant-safe remote management, images/videos, configurable data catalogs, freeform simultaneous content, regional…",
       "headings": [],
       "file": "pages/repository/docs/project/mvp.json"
     },
@@ -730,7 +740,7 @@
       "title": "Teluni Offline Playback and Synchronization",
       "group": "Project guides",
       "source": "docs/project/playback-and-sync.md",
-      "summary": "Decided requirements: normal playback uses local images/videos, continues during temporary server/network outages, validates new content, activates a complete programming…",
+      "summary": "Decided requirements: local media and catalog rendering through the bounded offline envelope, integrity validation, complete-generation activation and last-valid recovery.…",
       "headings": [],
       "file": "pages/repository/docs/project/playback-and-sync.json"
     },
@@ -753,6 +763,26 @@
       "summary": "This is the entry point for Teluni-specific product and architecture planning. The product owner's brief of 2026-10-17 is the source of the initial requirements. Engineering…",
       "headings": [],
       "file": "pages/repository/docs/project/README.json"
+    },
+    {
+      "id": "repository/docs/project/release-policies",
+      "kind": "repository",
+      "title": "Teluni Release Policies",
+      "group": "Project guides",
+      "source": "docs/project/release-policies.md",
+      "summary": "Decided on 2026-10-18: these product policies consolidate the owner's questionnaire and the remaining choices explicitly delegated to engineering. They extend the earlier…",
+      "headings": [],
+      "file": "pages/repository/docs/project/release-policies.json"
+    },
+    {
+      "id": "repository/docs/project/release-targets",
+      "kind": "repository",
+      "title": "Teluni Release Acceptance Targets",
+      "group": "Project guides",
+      "source": "docs/project/release-targets.md",
+      "summary": "Decided for qualification on 2026-10-18: these values consolidate owner answers and explicitly delegated choices. They are targets/limits for the future product, not…",
+      "headings": [],
+      "file": "pages/repository/docs/project/release-targets.json"
     },
     {
       "id": "repository/docs/project/risks",
@@ -1044,14 +1074,14 @@
       },
       { "file": "search/0001.json", "count": 113, "kinds": ["repository"] },
       { "file": "search/0002.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 173, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 131, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 97, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 80, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 92, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 21, "kinds": ["repository"] }
+      { "file": "search/0003.json", "count": 177, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 105, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 77, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 80, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 105, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 68, "kinds": ["repository"] }
     ],
-    "count": 1038
+    "count": 1068
   }
 }

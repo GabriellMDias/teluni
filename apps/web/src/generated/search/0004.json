@@ -4,6 +4,60 @@
     "title": "API Principles",
     "group": "API guides",
     "kind": "repository",
+    "heading": "Authentication",
+    "anchor": "authentication",
+    "text": "Authentication\nProtected operations derive identity and capabilities from the [trusted authentication boundary](../security/authentication.md) and enforce [authorization](../security/authorization.md) on the server. Caller-supplied roles, owner IDs, permissions, tenant IDs, feature flags, or UI visibility cannot grant access. A tenant path alone does not establish membership. Public operations must be explicitly public; administrative/debug capabilities require deliberate privilege, output, and environment controls.\nMake operation security requirements discoverable. Apply stronger controls where credentials, personal data, finances, or administration require them. Hidden resources may deliberately share not-found semantics with absent resources; preserve and test the disclosure policy. Keep bearer credentials out of URLs except for an explicitly designed protocol requiring a short-lived capability. Gateway authentication never replaces application authorization.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Pagination",
+    "anchor": "pagination",
+    "text": "Pagination\nPotentially growing collections must be bounded. Define default/maximum page sizes, deterministic ordering with a tie-breaker, empty results, supported filters, sorting, and search semantics. Apply authorization before pagination; counts, filters, and related-resource expansion must not reveal inaccessible data.\nChoose offset or cursor pagination according to dataset size, change frequency, query cost, and consumer needs. Cursors are opaque inputs, not authorization evidence; validate their scope and contents and protect sensitive state or integrity where needed. Document membership changes between pages instead of implying a snapshot guarantee.\nAllowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. Each module's implementation conventions own its concrete cursor and page-size choices.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Idempotency",
+    "anchor": "idempotency",
+    "text": "Idempotency\nFor state-changing operations, consider duplicate submission, concurrent execution, timeout ambiguity, and response loss. HTTP method names alone do not prove idempotency. Where supported, specify key location, scope, intent matching, reuse/different-payload behavior, retention, and replay result. Distinguish a replay from a conflicting new action.\nUpdates that must protect a previously observed state need a deliberate concurrency protocol, such as a version precondition. Stale writes should produce a stable conflict rather than silently overwrite newer state. For example, a module may require `Idempotency-Key` for creation and `expectedVersion` for edits/transitions, recording that protocol in its implementation conventions. Durable implementation requirements belong to [transactions](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md).\nErrors use the [public error contract](error-contract.md). Consumers branch on stable codes, never message text, and must not blindly retry timeouts or all `5xx` responses. Retry safety depends on operation semantics and whether the outcome is known.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Resource protection and operational behavior",
+    "anchor": "resource-protection-and-operational-behavior",
+    "text": "Resource protection and operational behavior\nBound request payloads, handler/dependency execution, and costly queries according to exposure. Technical rate limits protect resources; product quotas express entitlements and require separate semantics. Where clients need retry guidance, expose safe bounded metadata while keeping anti-abuse internals private. The [API runtime guide](../../apps/api/README.md#request-protection) describes the implemented process-local limiter and its deployment limits.\nCache policy must consider authentication, authorization, tenant scope, freshness, and privacy; protected results must not become public cache entries. Conditional requests and ETags are optional mechanisms, not foundation requirements. Health and metrics endpoints are operational contracts with appropriate exposure and safe output; they must not reveal secrets, raw configuration, or stack traces.\n[Observability](../reliability/observability.md) and [redaction](../security/telemetry-redaction.md) own telemetry rules. Use stable operation identities, route templates, method/status/duration, safe correlation, and bounded error categories. Do not log full requests/responses, raw URLs, credentials, or arbitrary exceptions. Propagate tracing through supported outbound and asynchronous boundaries without introducing high-cardinality labels.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Additional delivery modes",
+    "anchor": "additional-delivery-modes",
+    "text": "Additional delivery modes\nThese requirements apply **if the capability is introduced**; they do not imply implementations exist.\nCapability\nRequired design\nLong-running or asynchronous operation\nDistinguish accepted from completed; define status/result/failure retrieval and cancellation. Do not hold a request open indefinitely. Transport cancellation does not prove durable rollback.\nUpload/download\nDefine size/media limits, ownership, processing state, required scanning, and authorization. Delegated or pre-signed URLs need bounded scope/lifetime and must not be logged as harmless text. File content is excluded from telemetry.\nWebhook\nDefine schema, authentication, acknowledgement, retry/delivery behavior, and compatibility. Validate inbound signatures/input and handle replay, duplicates, and out-of-order delivery. Decouple long work where provider acknowledgement requires it.\nEvents\nAn event states that something happened; it is not interchangeable with an API command. Do not reuse response schemas automatically across independently evolving event contracts.\nWebSocket/streaming\nDefine authentication/reauthorization, message contracts, lifecycle, ordering, reconnection, backpressure, cancellation, and partial failure.\nGateway/BFF/GraphQL/RPC\nIntroduce only for demonstrated requirements. Preserve owned contracts and security; account for GraphQL complexity/N+1 and resolver authorization. A BFF must serve a distinct composition need. REST terminology is not a reason for unnecessary design constraints.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Compatibility and documentation",
+    "anchor": "compatibility-and-documentation",
+    "text": "Compatibility and documentation\nIdentify actual consumers and how independently they deploy. Follow [API versioning](versioning.md) for structural, semantic, authorization, error, ordering, retry, and side-effect changes. Prefer compatible evolution over new versions, and keep deprecated behavior functional until its removal conditions are satisfied. Internal consumers can have real compatibility commitments; mobile/desktop consumers can lag.\nGenerate reference facts from canonical contracts and maintain authored explanations for intent the schema cannot express. Use synthetic examples that conform to current contracts. The [Living Documentation Portal](../architecture/living-documentation.md) presents generated facts without becoming another source. A contributor should navigate operation → contract → application owner → authorization → implementation → tests without reverse engineering framework code.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
     "heading": "New API Operation Checklist",
     "anchor": "new-api-operation-checklist",
     "text": "New API Operation Checklist\nBefore adding or changing an operation:\nIdentify the capability, owner, actual consumers, and compatibility commitments; reuse existing patterns and semantic errors.\nDefine input/output field meaning, bounds, classification, omission/null behavior, stable operation identity, authentication, authorization, and expected failures.\nSpecify duplicate/concurrent/retry behavior, synchronous versus asynchronous completion, external effects, and pagination/query cost where applicable.\nImplement explicit mapping at the boundary and test validation, serialization, statuses/headers, authentication, denials, hidden resources, and relevant domain behavior through the real HTTP boundary. A policy unit test alone does not prove endpoint enforcement.\nTest security risks proportionally, including mass assignment, oversized inputs, restricted fields, and cross-tenant access where applicable. Preserve actual consumer compatibility commitments.\nRegenerate OpenAPI, SDK, and affected references; run [validation](../validation.md). Current drift checks prove alignment with current sources, not historical consumer compatibility. Review the semantic change as well as the generated diff.\n"
@@ -1024,158 +1078,5 @@
     "heading": "29. Optimize for Local Reasoning",
     "anchor": "29-optimize-for-local-reasoning",
     "text": "29. Optimize for Local Reasoning\nUse explicit interfaces, ownership, predictable placement, limited coupling, and local documentation so a contributor can safely change one area without loading the whole repository. This also reduces agent context ambiguity.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "30. Make Side Effects Visible",
-    "anchor": "30-make-side-effects-visible",
-    "text": "30. Make Side Effects Visible\nDatabase writes, external calls, events, notifications, file changes, cache invalidation, and jobs should be discoverable in the contract or implementation. Apparently pure operations must not hide unrelated effects.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "31. Idempotency Should Be Deliberate",
-    "anchor": "31-idempotency-should-be-deliberate",
-    "text": "31. Idempotency Should Be Deliberate\nRetryable operations must not duplicate meaningful effects. Where idempotency is required, define its scope and mechanism explicitly and test repeats and conflicts.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "32. Concurrency Must Be Considered Explicitly",
-    "anchor": "32-concurrency-must-be-considered-explicitly",
-    "text": "32. Concurrency Must Be Considered Explicitly\nShared-state mutations must assume concurrent execution. Choose constraints, transactions, optimistic versions, locks, keys, or serialization according to domain consistency needs, and test stale/conflicting cases.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "33. Data Integrity Belongs Close to the Data",
-    "anchor": "33-data-integrity-belongs-close-to-the-data",
-    "text": "33. Data Integrity Belongs Close to the Data\nProtect critical relational invariants with appropriate database constraints and transactions as well as application validation. Do not rely solely on application code for guarantees the database can enforce.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "34. Database Behavior Must Be Discoverable",
-    "anchor": "34-database-behavior-must-be-discoverable",
-    "text": "34. Database Behavior Must Be Discoverable\nDocument application-owned tables, columns, views, functions, triggers, constraints, and important indexes under [schema policy](../database/schema-documentation.md). Database-resident business logic needs explicit justification and visibility; generate structural references from canonical schema facts where practical.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "35. Backward Compatibility Must Be Evaluated",
-    "anchor": "35-backward-compatibility-must-be-evaluated",
-    "text": "35. Backward Compatibility Must Be Evaluated\nEvaluate actual consumers before changing APIs, schemas, messages, configuration, stored files, or generated SDKs. Plan breaking changes, migration, and deprecation when a released or independently evolving boundary requires them.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "36. Deployment Safety Takes Priority Over Elegance",
-    "anchor": "36-deployment-safety-takes-priority-over-elegance",
-    "text": "36. Deployment Safety Takes Priority Over Elegance\nUse temporary expand–migrate–switch–contract compatibility when a real deployment needs it; remove transitional code after migration. The cleanest final shape does not justify an unsafe rollout.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "37. Configuration Is Part of the Contract",
-    "anchor": "37-configuration-is-part-of-the-contract",
-    "text": "37. Configuration Is Part of the Contract\nConfiguration should be explicit, typed or validated, documented, and fail safely. Invalid required values fail early; secrets are handled separately from ordinary configuration.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "38. Environment Differences Must Be Intentional",
-    "anchor": "38-environment-differences-must-be-intentional",
-    "text": "38. Environment Differences Must Be Intentional\nDocument necessary development, test, staging, and production differences. Keep core behavior consistent where practical and exercise production-only behavior before production where feasible.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "39. Security Boundaries Must Be Explicit",
-    "anchor": "39-security-boundaries-must-be-explicit",
-    "text": "39. Security Boundaries Must Be Explicit\nAuthentication establishes the actor; authorization decides whether that actor may perform an operation. Enforce permissions at trusted application boundaries, never solely through client or UI visibility.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "40. Infrastructure Should Serve the Architecture",
-    "anchor": "40-infrastructure-should-serve-the-architecture",
-    "text": "40. Infrastructure Should Serve the Architecture\nIntroduce brokers, caches, orchestration, microservices, search, or extra databases only for concrete requirements and with their operational cost understood.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "41. Monolith First Unless Boundaries Require Otherwise",
-    "anchor": "41-monolith-first-unless-boundaries-require-otherwise",
-    "text": "41. Monolith First Unless Boundaries Require Otherwise\nPrefer logical modularity before distribution. Separate services only for justified scaling, isolation, deployment autonomy, security, ownership, or runtime needs.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "42. Generated Code Must Remain Replaceable",
-    "anchor": "42-generated-code-must-remain-replaceable",
-    "text": "42. Generated Code Must Remain Replaceable\nKnow every generated file's canonical input and regeneration process. Do not hand-edit derived output except at an explicit extension point; keep it reproducible and replaceable.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "43. Tooling Is Part of Developer Experience",
-    "anchor": "43-tooling-is-part-of-developer-experience",
-    "text": "43. Tooling Is Part of Developer Experience\nDesign commands, generators, setup, and diagnostics for deterministic behavior, clear names, actionable output, and little hidden state. Tooling is an internal product for humans and agents.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "44. AI Agents Must Operate Through Verifiable Feedback",
-    "anchor": "44-ai-agents-must-operate-through-verifiable-feedback",
-    "text": "44. AI Agents Must Operate Through Verifiable Feedback\nPair instructions with compiler, type, lint, architecture, test, schema, generation, and build feedback that can prove important changes valid. Increase mechanical coverage as real capabilities arrive.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "45. AI-Specific Architecture Must Also Benefit Humans",
-    "anchor": "45-ai-specific-architecture-must-also-benefit-humans",
-    "text": "45. AI-Specific Architecture Must Also Benefit Humans\nAgent-oriented structure should improve clarity, consistency, discoverability, automation, maintenance, or onboarding for people too. Do not optimize the repository for one AI tool's quirks.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "46. Important Decisions Must Preserve Rationale",
-    "anchor": "46-important-decisions-must-preserve-rationale",
-    "text": "46. Important Decisions Must Preserve Rationale\nFor consequential architecture, retain context, alternatives, choice, tradeoffs, and consequences in an ADR when the [authoring policy](../adr/authoring.md) calls for one. Distinguish deliberate constraints from accidents.\n"
   }
 ]

@@ -1,6 +1,6 @@
 # Teluni Product Architecture
 
-[Project documentation](README.md) · [MVP requirements](mvp.md) · [Foundation technology map](../architecture/technology-decisions.md)
+[Project documentation](README.md) · [Release requirements](mvp.md) · [Release policies](release-policies.md) · [Foundation technology map](../architecture/technology-decisions.md)
 
 ## Baseline and proposed topology
 
@@ -12,7 +12,7 @@
 
 | Component | Responsibility | Trust and persistence boundary |
 | --- | --- | --- |
-| Web panel | Companies, branches, members, devices, media, playlists, schedules, previews, publication, status, operational history; future layouts/campaigns | Untrusted client; generated SDK for API access; no server secrets or direct database/storage access |
+| Web panel | Companies, branches, members, devices, media, playlists, freeform visual composition, configurable catalogs/field bindings, regional schedules, previews, publication and observed operational state | Untrusted client; generated SDK for API access; no server secrets or direct database/storage access |
 | Backend | Authorization and tenant isolation, domain rules, metadata, media access, publication/sync, schedules, telemetry, audit; future integrations | Owns canonical server state and API contracts; one modular process initially; privileged migrations separate from runtime |
 | Android TV player | Pairing, local configuration, staging, integrity checks, scheduling, playback and bounded diagnostic reporting | Independently distributed untrusted client with its own revocable identity and durable local state; never direct database access |
 
@@ -27,11 +27,13 @@ All names/placements below are **proposed**, not existing modules. Follow [API m
 | `organizations` | Company (tenant), branch, membership, scoped role assignments and company settings | Supplies explicit ownership/membership checks; human identity verification remains an authentication boundary. First MVP slice |
 | `devices` | Device registration, enrollment session, device identity lifecycle, branch assignment and per-device settings | Uses organization scope; supplies permitted device/capability information. MVP |
 | `media` | Media metadata, validation lifecycle, storage objects, access and deletion/reference policy | Supplies authorized immutable asset descriptors to programming/publication. MVP |
-| `programming` | Playlists/items, schedules, default assignment, preview and deterministic schedule validation | References media and devices by owned contracts; owns scheduling semantics shared with player contract. MVP |
+| `programming` | Playlists/items, schedules, device/group assignments, default assignment, preview and deterministic schedule validation | References media and devices by owned contracts; owns scheduling semantics shared with player contract. MVP |
 | `publications` | Immutable publication snapshot/manifest, target desired version and device synchronization acknowledgements | Uses validated programming/media/device contracts; never reads another module's tables as a shortcut. MVP |
 | `monitoring` | Last contact, reported app/storage/sync health and sanitized diagnostic records | Consumes device-scoped reports; separates observation freshness from playback success. MVP |
 | Audit responsibility | Attributable security/publication/lifecycle events across modules | Each capability owns event meaning. Decide persistence/integrity/retention and whether a shared audit component is warranted before extraction; no mandatory generic audit package. MVP |
-| `layouts`, `catalog`, `campaigns` | Structured layouts, product/price facts, and promotional lifecycle respectively | Future Phase 3; expose explicit versioned data dependencies to publication |
+| `layouts` | Freeform composition/area authoring and its validated versioned representation | Initial release requirement FR-10; exact boundary/ownership with programming and player representation remain D-11. No module is implemented |
+| `catalog` | Company-owned typed field definitions, schema versions, records and scoped data/price overrides; reusable product or weekly-agenda configurations | FR-11; expose validated versioned data through public capabilities. Physical schema and publication collaboration remain technical review under proposed ADR-0023 |
+| `campaigns` | Promotional lifecycle beyond scheduled programming | Future Phase 3; expose explicit versioned data dependencies to publication |
 | Integration and commercial capabilities | External clients/webhooks/imports, fleet capabilities and subscription/entitlement meaning | Future Phase 4; do not introduce a shared catch-all module |
 
 Keep domain rules independent of Fastify, Prisma, filesystem, and providers. The composition root may wire module interfaces; cross-module operations must use explicit public application capabilities with no cycles or arbitrary table writes. Existing `ApiModule` does not automatically provide inter-module authorization or dependency injection. Confirm the narrow composition design when implementing the first collaboration; do not change foundation contracts to match this planning table alone.
@@ -47,14 +49,20 @@ This is a domain model for review, not a database schema, migration, wire contra
 | Branch | Belongs to one company; holds local business timezone/settings and assigned devices |
 | User / membership | A human identity can have explicitly authorized memberships; a membership binds a user to a company and permitted branch scope |
 | Device / enrollment session | A device belongs to one company and branch after pairing; enrollment is temporary and single-use; reassignment requires safe unlink/clear semantics |
+| Device group | Persistent company-owned programming target in the MVP; may span branches of that company within the caller's authorization. Each device belongs to zero or one programming group and follows it unless an explicit individual override replaces its complete programming |
 | Media asset / stored object | Tenant-owned metadata points to a validated immutable file version; storage location is not authorization |
 | Playlist / item | Company-owned ordered references to eligible media with duration semantics; edits produce draft changes |
-| Schedule / assignment | Associates eligible programming with a device and local-time rule; all references share tenant and permitted branch scope |
+| Screen composition / content area | FR-10 requires freeform configuration, independent areas with optional coordinated pages, regional schedules and concurrent video/audio. Portable representation, renderer and supported profiles remain technical work |
+| Catalog definition / field / record / binding | FR-11 requires user-defined typed catalogs beyond products, stable/versioned field meaning and authorized data bindings. Product-price and weekly-agenda views are configurations, not a fixed universal product schema |
+| Price override / publication intent | Designated monetary semantics permit company base/branch override and automatic publication of affected published bindings; ordinary unrelated drafts stay unpublished. Durable processing and exact price/representation contracts remain D-10/D-11 |
+| Schedule / assignment | Associates eligible programming with a device or group and local-time rule; all references share tenant and permitted branch scope |
 | Publication / manifest | Immutable validated snapshot of programming, assets and interpretation version; references remain resolvable through retention |
 | Device publication state | Separates desired, staged, active and last-reported versions per device; acknowledgement is not proof of continuous playback |
 | Device report / audit event | Observation belongs to a tenant/device; attributable action evidence has independent integrity and retention requirements |
 
-**Future:** a layout has versioned structured components/regions and reusable assets; a catalog product has description/images/category/availability and normal/promotional price facts, with combo support; a campaign connects promotional intent, validity and priority to programming/publications. A product-price update must eventually update dependent published content without manual artwork recreation. Decide controlled version propagation and caching before implementation; editing mutable data behind an immutable publication is not an implied solution.
+**Initial release requirements:** [release policies](release-policies.md) define the owner-approved freeform/hybrid regional behavior and configurable catalogs, including automatic versioned price publication. [Acceptance targets](release-targets.md) define the qualification envelope. [ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md) proposes the schema/composition/publication architecture and remains proposed, alongside ADR-0019. Serialization, renderer, physical storage, exact module collaboration and executable contracts are not selected or implemented by product-policy approval.
+
+**Further evolution unless separately approved:** richer external-data widgets, managed campaign engines, ERP/POS workflows and AI authoring. Configurable fields, product presets and weekly-agenda views are already initial requirements. Versioned textual layouts and automatic price publication must preserve snapshot consistency rather than mutate live data behind an issued publication. Custom catalogs do not imply arbitrary executable plugins or direct per-customer SQL/schema administration.
 
 Tenant IDs must participate in ownership validation for references and uniqueness. The physical enforcement choice (including compound constraints and possible row-level security) is [ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md), still proposed. IDs supplied by the caller never establish authority.
 
@@ -66,20 +74,20 @@ Tenant IDs must participate in ownership validation for references and uniquenes
 
 ## Pending decisions
 
-This table owns unresolved technical questions. ADR files own their proposal status/rationale; human actions own required owner input. No item is accepted just because it has an ID.
+This table owns unresolved technical design/verification questions. PH-09 has completed business-policy/target selection, with provenance in the release policies; it does not accept technical ADRs or supply hardware/operations evidence. No item is accepted merely because it has an ID.
 
 | ID | Pending question / candidate direction | Evidence required before dependent work |
 | --- | --- | --- |
 | D-01 | Tenant persistence isolation, constraints, module ownership and administrative scope; ADR-0018 proposed | Adversarial cross-tenant/reference tests and reviewed data-access design before first product migration |
 | D-02 | Human identity provider, enrollment/recovery, session/refresh/revocation and permission matrix | Standards-based provider evaluation compatible with accepted ADR-0012; no bespoke authentication. [PH-11](human-actions.md#ph-11) |
-| D-03 | Device credentials, pairing expiry/rate limiting, revocation, offline authorization duration, reassignment/erasure | Threat model and hardware lifecycle cases; owner's acceptable disconnected-revocation limit, PH-09 |
-| D-04 | Manifest format, integrity metadata, sync transport, atomic activation and backend/player support window; ADR-0019 proposed | Contract examples and failure/compatibility tests; no need to add push infrastructure before evidence |
-| D-05 | Media profiles/limits, validation/processing, private delivery and file retention | Pilot hardware codec/memory/storage tests, file-abuse review, reference/deletion model |
-| D-06 | Schedule conflicts/fallback, recurrence/time boundaries, duration rules, MVP device-group scope | Confirm candidate policies in MVP, PH-09; shared preview/player fixtures |
+| D-03 | Established credential/pairing mechanisms, revocation enforcement, trusted offline time and verifiable cleanup | Implement/verify selected AT-15/AT-16 and unlink/reassignment policies, threat model and PH-08 lifecycle cases; no unanswered PH-09 offline-duration choice |
+| D-04 | Manifest serialization/integrity, sync transport, durable atomic activation and protocol compatibility implementation; ADR-0019 proposed | Contract examples and failure/compatibility tests against AT-26; latest-authorized-compatible reconciliation and required schedule history. No push infrastructure is selected |
+| D-05 | Exact allowed media/codec/rendition profiles, parser/processing isolation and reference-safe garbage collection | Enforce selected ingestion/retention limits; PH-08 codec/memory/storage and file-abuse tests before support claims. Tool/provider choices remain unselected |
+| D-06 | Shared scheduling fixtures, timezone representation and regional/page state-machine implementation | Product calendar/conflict/coordination semantics are decided in release policies; verify date/DST/page/override/no-match and boundary cases rather than silently selecting different behavior |
 | D-07 | Android runtime/persistence, supported devices/orientations, restart/startup, packaging and updates; ADR-0020 proposed | PH-08 hardware list, unattended operation and power-cut tests; controlled installation and rollback design |
 | D-08 | Host/network exposure, HTTPS/proxy, storage, backups, restore/migration; ADR-0021 proposed | PH-10 inspection and recovery rehearsal; budget/availability targets; no presumed tunnel/provider guarantees |
-| D-09 | Audit persistence, heartbeat/offline thresholds, telemetry retention, alerting/support access | Scope/volume review and operator needs; apply inherited security/observability policies |
-| D-10 | Locale/timezone inheritance and numeric/money representation | Explicit override rules and cross-locale/timezone fixtures; no library selected by planning |
-| D-11 | Future layout schema and dynamic-data version propagation | Portable structured representation (JSON/XML or evaluated alternative), migration/validation policy, copy/import/export and rendering proofs; independent regions if retained |
+| D-09 | Audit persistence/integrity, telemetry enforcement, alerts and scoped support mechanisms | Apply selected AT-20/AT-24 report/freshness defaults; audit/legal retention remains PH-13. Review volume, access and observability evidence; do not infer alert channels or remote shell |
+| D-10 | Locale precedence, exact numeric/money representation and field/timezone library contracts | Business timezone/DST/price override rules and AT-16 are selected; implementation needs cross-locale/timezone/money fixtures. No conversion service or library selected |
+| D-11 | Versioned catalog/layout schemas, physical storage, editor/renderer and durable price-publication collaboration | Review proposed ADR-0023 with ADR-0019, implement FR-10/FR-11 policies and qualify AT-04 plus schema evolution, offline recovery and import security; PH-08/PJ-07 remain open |
 
 Keep the inherited [technology map](../architecture/technology-decisions.md) unchanged by these product proposals. Review/accept significant choices through [ADR authoring](../adr/authoring.md), then update the owning product specification before implementing them.

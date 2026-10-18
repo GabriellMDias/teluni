@@ -4,7 +4,7 @@
 
 ## Purpose and positioning
 
-**Decided:** Teluni is a multi-tenant digital signage SaaS for centralized management of visual content on televisions, monitors, and other display devices. It should combine simple operation, reliable continuous playback, flexible presentation, and eventually dynamic commercial content. Brazil is the initial market, with international commercialization anticipated.
+**Decided:** Teluni is a multi-tenant digital signage SaaS for centralized management of visual content on televisions, monitors, and other display devices. It should combine simple operation, reliable local playback, freeform simultaneous presentation and configurable data-driven content. Brazil is the initial market, with international commercialization anticipated. The owner selected initial capabilities for product quality rather than limiting them solely by the MVP label.
 
 | Locale | Intended slogan |
 | --- | --- |
@@ -40,9 +40,10 @@ The [security model](security-and-i18n.md#actors-and-authorization) defines prop
 1. A platform administrator establishes a customer company and its initial company administrator.
 2. A company administrator creates branches and delegates permitted operations to members.
 3. An authorized operator pairs a display using a temporary code shown by the player and assigns it to the correct branch.
-4. An authorized publisher uploads images/videos, composes and previews a playlist and schedule, and explicitly publishes it.
-5. The player stages a complete version and continues local playback through a network/server outage.
-6. A scoped operator sees last contact, synchronization progress, and actionable failure information without obtaining unrestricted remote access.
+4. An authorized publisher uploads media, configures typed catalogs/fields/records (for example products or a weekly agenda), composes regional content/schedules, previews and publishes.
+5. Authorized price saves automatically publish affected already-published data bindings, without releasing unrelated drafts or recreating artwork. Other draft edits retain explicit publication.
+6. The player stages complete consistent versions and continues local media/catalog rendering through the selected offline/clock envelope, with independent areas or optional coordinated pages.
+7. A scoped operator sees last contact, synchronization progress and actionable failures without unrestricted remote access. Actual player observation is distinct from server intent.
 
 Acceptance of these journeys is specified in [MVP requirements](mvp.md); the exact enrollment and permission policies remain review items there.
 
@@ -52,13 +53,15 @@ Acceptance of these journeys is specified in [MVP requirements](mvp.md); the exa
 | --- | --- | --- |
 | Centralized remote operation | Manage displays, reusable media, playlists, and scheduling from one panel | MVP acceptance |
 | Reliable presentation | Continuous local playback with controlled publication and recovery | Playback/sync acceptance |
+| Simultaneous presentation | Freeform regional content/schedules, optional page coordination, multiple videos/audio and isolated recovery on one TV | FR-10 acceptance and qualified device profile |
+| Configurable structured content | Users define catalog fields/records and bind products/prices, weekly agendas or other approved data into layouts; designated prices publish automatically | FR-11 acceptance, schema/reference safety and consistent publications |
 | Simple commercial use | A nontechnical pilot operator can complete the core journey | Pilot usability session |
 | Tenant and branch ownership | Support independent companies and authorized branch scopes | Security acceptance |
 | Operational visibility | Explain stale devices and synchronization failures safely | Monitoring acceptance |
 | Sustainable growth | Measure storage, traffic, processing, support, and capacity before expansion | Pilot operating review |
-| Extensibility | Add layouts, dynamic prices, integrations, and player platforms without coupling the core to one sector | Architecture review |
+| Extensibility | Extend presentation authoring, dynamic prices, integrations, and player platforms without coupling the core to one sector | Architecture review |
 
-Targets for task completion time, playback continuity, supported fleet size, and operating cost are **pending** pilot/hardware evidence; no SLA or unlimited capacity is promised.
+The [release targets](release-targets.md) select task-time, continuity, rendering, storage and reference-fleet goals under completed PH-09. Actual pilot/hardware/load results remain pending; no supported-device capacity, SLA, unlimited resources or operating-cost result is promised. [Release policies](release-policies.md) own the approved behaviors and owner/delegated decision provenance.
 
 ## Commercial hypotheses
 

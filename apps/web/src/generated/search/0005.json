@@ -4,6 +4,159 @@
     "title": "Architecture Principles",
     "group": "Architecture",
     "kind": "repository",
+    "heading": "30. Make Side Effects Visible",
+    "anchor": "30-make-side-effects-visible",
+    "text": "30. Make Side Effects Visible\nDatabase writes, external calls, events, notifications, file changes, cache invalidation, and jobs should be discoverable in the contract or implementation. Apparently pure operations must not hide unrelated effects.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "31. Idempotency Should Be Deliberate",
+    "anchor": "31-idempotency-should-be-deliberate",
+    "text": "31. Idempotency Should Be Deliberate\nRetryable operations must not duplicate meaningful effects. Where idempotency is required, define its scope and mechanism explicitly and test repeats and conflicts.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "32. Concurrency Must Be Considered Explicitly",
+    "anchor": "32-concurrency-must-be-considered-explicitly",
+    "text": "32. Concurrency Must Be Considered Explicitly\nShared-state mutations must assume concurrent execution. Choose constraints, transactions, optimistic versions, locks, keys, or serialization according to domain consistency needs, and test stale/conflicting cases.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "33. Data Integrity Belongs Close to the Data",
+    "anchor": "33-data-integrity-belongs-close-to-the-data",
+    "text": "33. Data Integrity Belongs Close to the Data\nProtect critical relational invariants with appropriate database constraints and transactions as well as application validation. Do not rely solely on application code for guarantees the database can enforce.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "34. Database Behavior Must Be Discoverable",
+    "anchor": "34-database-behavior-must-be-discoverable",
+    "text": "34. Database Behavior Must Be Discoverable\nDocument application-owned tables, columns, views, functions, triggers, constraints, and important indexes under [schema policy](../database/schema-documentation.md). Database-resident business logic needs explicit justification and visibility; generate structural references from canonical schema facts where practical.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "35. Backward Compatibility Must Be Evaluated",
+    "anchor": "35-backward-compatibility-must-be-evaluated",
+    "text": "35. Backward Compatibility Must Be Evaluated\nEvaluate actual consumers before changing APIs, schemas, messages, configuration, stored files, or generated SDKs. Plan breaking changes, migration, and deprecation when a released or independently evolving boundary requires them.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "36. Deployment Safety Takes Priority Over Elegance",
+    "anchor": "36-deployment-safety-takes-priority-over-elegance",
+    "text": "36. Deployment Safety Takes Priority Over Elegance\nUse temporary expand–migrate–switch–contract compatibility when a real deployment needs it; remove transitional code after migration. The cleanest final shape does not justify an unsafe rollout.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "37. Configuration Is Part of the Contract",
+    "anchor": "37-configuration-is-part-of-the-contract",
+    "text": "37. Configuration Is Part of the Contract\nConfiguration should be explicit, typed or validated, documented, and fail safely. Invalid required values fail early; secrets are handled separately from ordinary configuration.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "38. Environment Differences Must Be Intentional",
+    "anchor": "38-environment-differences-must-be-intentional",
+    "text": "38. Environment Differences Must Be Intentional\nDocument necessary development, test, staging, and production differences. Keep core behavior consistent where practical and exercise production-only behavior before production where feasible.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "39. Security Boundaries Must Be Explicit",
+    "anchor": "39-security-boundaries-must-be-explicit",
+    "text": "39. Security Boundaries Must Be Explicit\nAuthentication establishes the actor; authorization decides whether that actor may perform an operation. Enforce permissions at trusted application boundaries, never solely through client or UI visibility.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "40. Infrastructure Should Serve the Architecture",
+    "anchor": "40-infrastructure-should-serve-the-architecture",
+    "text": "40. Infrastructure Should Serve the Architecture\nIntroduce brokers, caches, orchestration, microservices, search, or extra databases only for concrete requirements and with their operational cost understood.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "41. Monolith First Unless Boundaries Require Otherwise",
+    "anchor": "41-monolith-first-unless-boundaries-require-otherwise",
+    "text": "41. Monolith First Unless Boundaries Require Otherwise\nPrefer logical modularity before distribution. Separate services only for justified scaling, isolation, deployment autonomy, security, ownership, or runtime needs.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "42. Generated Code Must Remain Replaceable",
+    "anchor": "42-generated-code-must-remain-replaceable",
+    "text": "42. Generated Code Must Remain Replaceable\nKnow every generated file's canonical input and regeneration process. Do not hand-edit derived output except at an explicit extension point; keep it reproducible and replaceable.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "43. Tooling Is Part of Developer Experience",
+    "anchor": "43-tooling-is-part-of-developer-experience",
+    "text": "43. Tooling Is Part of Developer Experience\nDesign commands, generators, setup, and diagnostics for deterministic behavior, clear names, actionable output, and little hidden state. Tooling is an internal product for humans and agents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "44. AI Agents Must Operate Through Verifiable Feedback",
+    "anchor": "44-ai-agents-must-operate-through-verifiable-feedback",
+    "text": "44. AI Agents Must Operate Through Verifiable Feedback\nPair instructions with compiler, type, lint, architecture, test, schema, generation, and build feedback that can prove important changes valid. Increase mechanical coverage as real capabilities arrive.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "45. AI-Specific Architecture Must Also Benefit Humans",
+    "anchor": "45-ai-specific-architecture-must-also-benefit-humans",
+    "text": "45. AI-Specific Architecture Must Also Benefit Humans\nAgent-oriented structure should improve clarity, consistency, discoverability, automation, maintenance, or onboarding for people too. Do not optimize the repository for one AI tool's quirks.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "46. Important Decisions Must Preserve Rationale",
+    "anchor": "46-important-decisions-must-preserve-rationale",
+    "text": "46. Important Decisions Must Preserve Rationale\nFor consequential architecture, retain context, alternatives, choice, tradeoffs, and consequences in an ADR when the [authoring policy](../adr/authoring.md) calls for one. Distinguish deliberate constraints from accidents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
     "heading": "47. Prefer Reversible Decisions Early",
     "anchor": "47-prefer-reversible-decisions-early",
     "text": "47. Prefer Reversible Decisions Early\nWhen evidence is incomplete, preserve flexibility with clear boundaries, explicit contracts, limited coupling, and documented decisions rather than speculative abstraction. Commit to specifics when requirements justify them.\n"
@@ -790,86 +943,5 @@
     "heading": "Locks and reservations",
     "anchor": "locks-and-reservations",
     "text": "Locks and reservations\nPessimistic row locks can serialize high-conflict short work. Cover the smallest meaningful resource, bound waits, and use deterministic multi-resource lock ordering to reduce deadlocks. Locks consume connections and can cause blocking/latency; measure their cost. Advisory locks require explicit ownership, timeout, and failure semantics.\nDistributed locks are not a default. First consider constraints, conditional writes, versions, row locks, queue ownership, or a single logical writer. Expiring leases can leave a stale worker running after another acquires the lease; high-risk protocols may need fencing tokens or equivalent enforcement. A lease alone does not prove exclusivity.\nBusiness reservations such as seat holds are durable domain state with expiry/renewal/release/claim races; do not implement minutes-long business holds as long-lived database locks. Concurrent numbering needs safe allocation, never `MAX(number) + 1`. Sequences may contain gaps; a gapless requirement is a stronger business decision with concurrency cost.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Deadlock Retry",
-    "anchor": "deadlock-retry",
-    "text": "Deadlock Retry\nDeadlocks and serialization failures are recognized conflict modes, not evidence of corruption. Repeated deadlocks or lock timeouts may indicate poor access ordering, contention, or defects and must remain observable. Distinguish lock contention from database unavailability and domain/constraint failures.\nRetry only classified transient failures for an operation safe to repeat, with bounded attempts/time and appropriate backoff/jitter based on evidence. Do not retry permanent constraint/query/schema failures blindly. Expected transient retries need useful telemetry without becoming duplicate incident reports.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Database Retry Boundary",
-    "anchor": "database-retry-boundary",
-    "text": "Database Retry Boundary\nRetry the complete logical transaction, including its reads and business assumptions, not only the last failed statement. Everything in that boundary can execute again. Inspect driver, repository, service, SDK, proxy, and caller policies to avoid multiplying retries; normally one layer owns retries for a failure.\nA timeout/cancellation or lost connection during commit may mean the operation committed and the response was lost. Propagate cancellation where supported and safe, clean up transactions reliably, and preserve unknown outcomes when relevant. Idempotency, state lookup, or reconciliation must resolve retry safety; a transient connection failure does not prove a write did not occur. Follow the owning module's recovery conventions for current behavior and [delivery retry rules](../architecture/delivery-and-side-effects.md) for broader workflows.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Authorization, audit, and derived reads",
-    "anchor": "authorization-audit-and-derived-reads",
-    "text": "Authorization, audit, and derived reads\nFor database-dependent authorization, define the consistency point between permission/ownership checks and the protected write. Immediate revocation requirements may affect transaction, token, and cache design; a distant precheck is insufficient when those semantics require freshness. Do not invent immediate revocation guarantees from short-lived tokens alone.\nWhen a required audit record and business change share a database boundary, they may need to commit atomically. External audit/event delivery requires durable intent and recovery; diagnostic logs are not authoritative business audit. Publish no event implying durable state before commit, and do not rely on unrecorded post-commit publication where delivery is required.\nRead replicas, caches, projections, and materialized views introduce staleness. Define whether an operation requires read-your-writes, its acceptable delay, canonical source, update/invalidation, repair, and failure behavior. “Eventually consistent” requires a process that actually repairs divergence. Cache stampede mitigations or single-writer/partitioned processing are optional responses to real load, not defaults; partition order does not imply global order.\nDatabase plus object storage needs partial-failure design such as temporary upload/finalization, orphan cleanup, and reconciliation. Distributed workflows must define convergence, compensation, or safe manual intervention rather than pretend to share one atomic commit. Do not claim exactly-once effects without end-to-end evidence.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Performance, observability, and repair",
-    "anchor": "performance-observability-and-repair",
-    "text": "Performance, observability, and repair\nBatch sizes affect transaction duration, lock scope, failure granularity, and memory. Large updates may need batching under [migration policy](migrations.md#backfills). Investigate hot rows/indexes, contention, and retry patterns with evidence before redesigning consistency.\nUse stable semantic operation names and bounded safe telemetry for latency, conflict/retry counts, lock waits, deadlocks, attempts, and final outcomes where useful. Trace meaningful latency/failure boundaries rather than every trivial query. Never dump rows or sensitive query values during conflict diagnostics; follow [redaction](../security/telemetry-redaction.md).\nRepair by retry, reconciliation, or intervention must be part of the design. Rare states requiring manual action must be detectable, diagnosable, and safe to repair through a concrete runbook. Separate high-risk audit requirements from diagnostic logging. Production signals can reveal duplicates, stuck work, and failed reconciliation that tests cannot exhaustively predict.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Testing and verification",
-    "anchor": "testing-and-verification",
-    "text": "Testing and verification\nUse real PostgreSQL for guarantees involving rollback, constraints, isolation, and locks. Sequential mocks cannot prove concurrent safety. Coordinate competing operations explicitly where practical rather than sleeping and hoping they overlap; avoid deadlock tests tied to undocumented scheduler timing.\nVerify relevant cases: mid-operation failure leaves no partial state; concurrent uniqueness/create claims produce one consistent result; stale versions conflict; competing transitions cannot both win; retry limits and complete-transaction restart behave safely; process interruption and response loss preserve documented recovery. The [delivery test requirements](../architecture/delivery-and-side-effects.md#verification) cover duplicate delivery, idempotency, external failure, and reconciliation when introduced. Testing and review remain necessary even where static checks can help.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "New Transaction Checklist",
-    "anchor": "new-transaction-checklist",
-    "text": "New Transaction Checklist\nBefore implementing or changing a state-changing operation:\nIdentify the invariant, owner, participating writes, concurrency sources, duplicate possibility, and applicable authorization/audit consistency.\nChoose constraints, atomic writes, versioning, isolation, locks, or explicit reservations proportionally; explain scope and maximum duration.\nDetermine conflict/error semantics, full retry boundary and owner, transient categories, attempt/time bounds, and safety of every repeated action.\nResolve halfway failure, external-success/database-failure, commit ambiguity, lost response, and crash windows without unsupported rollback or exactly-once claims.\nAdd deterministic integration evidence, safe operational signals, and recovery/repair guidance. Update the owning domain and generated contract/metadata when behavior changes.\n"
-  },
-  {
-    "id": "repository/docs/generated/api/errors",
-    "title": "API Error Registry",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "API Error Registry",
-    "anchor": "api-error-registry",
-    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Web Component Reference",
-    "anchor": "web-component-reference",
-    "text": "Web Component Reference\n[Living documentation](../../architecture/living-documentation.md) · [Component source](../../../apps/web/src/components.tsx)\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "ErrorNotice",
-    "anchor": "errornotice",
-    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\n"
   }
 ]

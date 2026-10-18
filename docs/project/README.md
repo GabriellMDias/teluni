@@ -8,7 +8,9 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | --- | --- |
 | What is Teluni, who uses it, and what is the commercial hypothesis? | [Product vision](product.md) |
 | What name/domains and visual identity are approved? | [Teluni brand identity](branding/README.md) |
-| What belongs in the MVP, and how will it be accepted? | [MVP requirements and acceptance](mvp.md) |
+| What belongs in the initial release, and how will it be accepted? | [Release requirements and acceptance](mvp.md) |
+| Which product policies were selected, including the PH-09 questionnaire and delegated choices? | [Release policies](release-policies.md) |
+| What numeric limits and qualification goals were selected, and which measurements remain pending? | [Release acceptance targets](release-targets.md) |
 | What are the proposed components, modules, entities, and unresolved technical choices? | [Product architecture](architecture.md) |
 | How must publication, local playback, and recovery behave? | [Offline playback and synchronization](playback-and-sync.md) |
 | How can the residential pilot operate and later move to another host? | [Deployment and migration planning](operations.md) |
@@ -26,7 +28,7 @@ The owning contributor updates each document with changes to its subject, links 
 | **Decided** | A product requirement or inherited accepted direction agreed for planning. It does not mean implemented. |
 | **Proposed** | A candidate solution or acceptance policy requiring evaluation/review. New ADRs remain `proposed` under the [ADR process](../adr/authoring.md). |
 | **Pending** | An unanswered choice or investigation; no default has been silently selected. |
-| **Future** | Outside the MVP and not approved for immediate implementation. |
+| **Future** | Outside the approved initial release and not authorized for immediate implementation. |
 | **Implemented** | Supported by repository code and verification evidence. |
 
 Task statuses (`pending`, `in progress`, `completed`, `blocked`, `changed`) have the separate meaning defined by the implementation plan. A completed documentation task establishes a specification, not a completed product capability.

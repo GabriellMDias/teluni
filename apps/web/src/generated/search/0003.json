@@ -1152,6 +1152,96 @@
     "text": "References\n[Canonical license](../../LICENSE)\n[README licensing scope](../../README.md#license)\n[Orion license decision](0016-license-the-orion-foundation-under-apache-2-0.md)\n[Product human actions](../project/human-actions.md#ph-06)\n"
   },
   {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "anchor": "adr-0023-propose-versioned-catalog-and-composition-publications",
+    "text": "ADR-0023: Propose Versioned Catalog and Composition Publications\n**Status:** proposed\n**Date:** 2026-10-18\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner requires freeform simultaneous content, regional schedules with optional page coordination, multiple videos/audio and configurable data catalogs beyond products, such as weekly agendas. Saving designated prices must automatically publish affected content, while other drafts remain private. Players must render locally through bounded outages and recover complete valid generations.\nThese approved product policies affect schema evolution, references, module ownership and backend/web/player contracts. They do not choose a physical schema, editor/renderer, serialization or queue provider. ADR-0019 proposes immutable publication generations; the expanded presentation/data boundary needs explicit design review before implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nPropose versioned declarative composition definitions and typed catalog definitions/records with stable field/binding identities. Customization is validated data rather than executable user code or direct database access. Catalog presets may express products/prices or agendas without making a product schema mandatory for every collection.\nCompose immutable publication snapshots from explicitly identified layout/schema/record/media revisions and the rules needed for offline evaluation. Published snapshots remain interpretable after draft schema evolution. A price save records durable intent and generates affected snapshots from published dependencies, excluding unrelated drafts; expose incomplete/retry states and prevent stale work from overwriting newer desired generations.\nKeep catalogs, layout authoring, programming and publication behind explicit module capabilities in the modular backend. No arbitrary cross-module table writes, circular imports or new generic shared framework are implied. Carry interoperable contracts to the native player rather than importing TypeScript application internals.\nBefore acceptance/implementation, review concrete schemas, module collaboration, import security, destructive field evolution, snapshot granularity, trusted time, rendering/media profiles and the failure/compatibility fixtures. Serialization, storage layout, libraries and processing/transport mechanisms remain intentionally unselected.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nUser-defined fields and freeform geometry need stable meaning across independent editor/player releases. A versioned declarative boundary makes validation, copying, private references and offline rendering reviewable. Immutable data snapshots preserve the existing consistency/activation direction while allowing automatic price updates without live mutation of an issued program.\nThis is reasoned architecture, not a measured renderer/storage evaluation. Owner approval of PH-09 policies does not accept the technical proposal or establish product availability.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Product-only fixed fields and opaque final artwork:** cannot satisfy configurable non-product catalogs, field-bound editing and independent regional presentation without rebuilding the model.\n**Read mutable live records while rendering an old publication:** makes ordinary playback depend on the server or mixes data/layout/schema revisions; obscures rollback and offline commercial validity.\n**Unversioned arbitrary catalog/layout objects:** initially flexible but leaves incompatible field changes, unsafe references and preview/player interpretation undefined. Extensibility still needs typed validation and compatibility rules.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nSupports sector-neutral catalogs, reusable textual layouts and controlled offline interpretation.\nKeeps ordinary drafts separate from explicit automatic price publication and preserves attributable generation history.\nMakes schema/reference/security and regional scheduling cases part of contract verification.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nRequires schema evolution/reference handling and qualified multi-area/video rendering across independent runtimes.\nPublication fan-out, processing and retained generations add storage/work and recovery obligations.\nDoes not remove real device limits, trusted-time uncertainty or the inability to erase an unreachable player instantly.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo product schema or deployment currently exists, so this proposal adds no migration or running component. Future implementations must keep retained snapshots readable, reconcile interrupted price/publication work and qualify protocol overlap, offline/power recovery and supported device profiles. Review proposed ADR-0019 alongside this record; neither supersedes an accepted foundation decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Release policies and PH-09 decision record](../project/release-policies.md)\n[Release acceptance targets](../project/release-targets.md)\n[Product architecture](../project/architecture.md)\n[Immutable publication proposal](0019-propose-immutable-publications-and-atomic-player-activation.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -1239,7 +1329,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nPropose Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nPropose Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nPropose a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nPropose a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nPropose Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nPropose Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nPropose a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nPropose a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nPropose Versioned Catalog and Composition Publications\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1501,59 +1591,5 @@
     "heading": "Identifiers",
     "anchor": "identifiers",
     "text": "Identifiers\nPublic identifiers represent stable resource identity. They may coincide with storage keys when that is an intentional contract, but must not expose sensitive structure or grant authority. Treat opaque identifiers as opaque. Client-generated IDs are allowed only when explicitly designed for an actual offline, distributed, or idempotency need. Changing storage must not accidentally change public identity.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Authentication",
-    "anchor": "authentication",
-    "text": "Authentication\nProtected operations derive identity and capabilities from the [trusted authentication boundary](../security/authentication.md) and enforce [authorization](../security/authorization.md) on the server. Caller-supplied roles, owner IDs, permissions, tenant IDs, feature flags, or UI visibility cannot grant access. A tenant path alone does not establish membership. Public operations must be explicitly public; administrative/debug capabilities require deliberate privilege, output, and environment controls.\nMake operation security requirements discoverable. Apply stronger controls where credentials, personal data, finances, or administration require them. Hidden resources may deliberately share not-found semantics with absent resources; preserve and test the disclosure policy. Keep bearer credentials out of URLs except for an explicitly designed protocol requiring a short-lived capability. Gateway authentication never replaces application authorization.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Pagination",
-    "anchor": "pagination",
-    "text": "Pagination\nPotentially growing collections must be bounded. Define default/maximum page sizes, deterministic ordering with a tie-breaker, empty results, supported filters, sorting, and search semantics. Apply authorization before pagination; counts, filters, and related-resource expansion must not reveal inaccessible data.\nChoose offset or cursor pagination according to dataset size, change frequency, query cost, and consumer needs. Cursors are opaque inputs, not authorization evidence; validate their scope and contents and protect sensitive state or integrity where needed. Document membership changes between pages instead of implying a snapshot guarantee.\nAllowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. Each module's implementation conventions own its concrete cursor and page-size choices.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Idempotency",
-    "anchor": "idempotency",
-    "text": "Idempotency\nFor state-changing operations, consider duplicate submission, concurrent execution, timeout ambiguity, and response loss. HTTP method names alone do not prove idempotency. Where supported, specify key location, scope, intent matching, reuse/different-payload behavior, retention, and replay result. Distinguish a replay from a conflicting new action.\nUpdates that must protect a previously observed state need a deliberate concurrency protocol, such as a version precondition. Stale writes should produce a stable conflict rather than silently overwrite newer state. For example, a module may require `Idempotency-Key` for creation and `expectedVersion` for edits/transitions, recording that protocol in its implementation conventions. Durable implementation requirements belong to [transactions](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md).\nErrors use the [public error contract](error-contract.md). Consumers branch on stable codes, never message text, and must not blindly retry timeouts or all `5xx` responses. Retry safety depends on operation semantics and whether the outcome is known.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Resource protection and operational behavior",
-    "anchor": "resource-protection-and-operational-behavior",
-    "text": "Resource protection and operational behavior\nBound request payloads, handler/dependency execution, and costly queries according to exposure. Technical rate limits protect resources; product quotas express entitlements and require separate semantics. Where clients need retry guidance, expose safe bounded metadata while keeping anti-abuse internals private. The [API runtime guide](../../apps/api/README.md#request-protection) describes the implemented process-local limiter and its deployment limits.\nCache policy must consider authentication, authorization, tenant scope, freshness, and privacy; protected results must not become public cache entries. Conditional requests and ETags are optional mechanisms, not foundation requirements. Health and metrics endpoints are operational contracts with appropriate exposure and safe output; they must not reveal secrets, raw configuration, or stack traces.\n[Observability](../reliability/observability.md) and [redaction](../security/telemetry-redaction.md) own telemetry rules. Use stable operation identities, route templates, method/status/duration, safe correlation, and bounded error categories. Do not log full requests/responses, raw URLs, credentials, or arbitrary exceptions. Propagate tracing through supported outbound and asynchronous boundaries without introducing high-cardinality labels.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Additional delivery modes",
-    "anchor": "additional-delivery-modes",
-    "text": "Additional delivery modes\nThese requirements apply **if the capability is introduced**; they do not imply implementations exist.\nCapability\nRequired design\nLong-running or asynchronous operation\nDistinguish accepted from completed; define status/result/failure retrieval and cancellation. Do not hold a request open indefinitely. Transport cancellation does not prove durable rollback.\nUpload/download\nDefine size/media limits, ownership, processing state, required scanning, and authorization. Delegated or pre-signed URLs need bounded scope/lifetime and must not be logged as harmless text. File content is excluded from telemetry.\nWebhook\nDefine schema, authentication, acknowledgement, retry/delivery behavior, and compatibility. Validate inbound signatures/input and handle replay, duplicates, and out-of-order delivery. Decouple long work where provider acknowledgement requires it.\nEvents\nAn event states that something happened; it is not interchangeable with an API command. Do not reuse response schemas automatically across independently evolving event contracts.\nWebSocket/streaming\nDefine authentication/reauthorization, message contracts, lifecycle, ordering, reconnection, backpressure, cancellation, and partial failure.\nGateway/BFF/GraphQL/RPC\nIntroduce only for demonstrated requirements. Preserve owned contracts and security; account for GraphQL complexity/N+1 and resolver authorization. A BFF must serve a distinct composition need. REST terminology is not a reason for unnecessary design constraints.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Compatibility and documentation",
-    "anchor": "compatibility-and-documentation",
-    "text": "Compatibility and documentation\nIdentify actual consumers and how independently they deploy. Follow [API versioning](versioning.md) for structural, semantic, authorization, error, ordering, retry, and side-effect changes. Prefer compatible evolution over new versions, and keep deprecated behavior functional until its removal conditions are satisfied. Internal consumers can have real compatibility commitments; mobile/desktop consumers can lag.\nGenerate reference facts from canonical contracts and maintain authored explanations for intent the schema cannot express. Use synthetic examples that conform to current contracts. The [Living Documentation Portal](../architecture/living-documentation.md) presents generated facts without becoming another source. A contributor should navigate operation → contract → application owner → authorization → implementation → tests without reverse engineering framework code.\n"
   }
 ]
