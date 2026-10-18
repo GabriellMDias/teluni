@@ -122,8 +122,8 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Dependency / trigger:** PJ-07 and the dependent Phase 2 slices; policy/target selection before implementation and acceptance claims.
 **Request and reason:** Consolidate the owner's questionnaire and explicitly delegated unanswered choices into [release policies](release-policies.md) and [acceptance targets](release-targets.md), including configurable catalogs beyond products, hybrid regions, automatic price publication, multi-video/audio, calendar/offline/retention rules and measurable qualification goals.
 **Configuration:** no runtime settings or schemas introduced; selected limits become canonical validated configuration/contracts only during implementation.
-**Verification:** All P01–P31 have a recorded owner or delegated disposition. AT-01–AT-26 name numeric limits/measurement boundaries and FR/NF evidence requirements. Technical design/ADR acceptance and physical measurements remain PJ-07, PH-08/PH-10 and implementation/qualification tasks; they are not silently marked passed.
-**Evidence / blocker:** 2026-10-18: owner supplied detailed questionnaire responses and explicitly authorized decisions for delegated or unanswered items. The [decision record](release-policies.md#ph-09-decision-record) preserves 21 direct answers and 10 delegated selections; the unfilled optional summary table does not override those answers. Product-policy/target selection is complete with no remaining PH-09 owner question. ADR-0023 remains proposed; hardware, deployment, identity, privacy and actual target results remain separately pending. PJ-22 tracks documentation validation, not product delivery.
+**Verification:** All P01–P31 have a recorded owner or delegated disposition. AT-01–AT-26 name numeric limits/measurement boundaries and FR/NF evidence requirements. Architecture ADRs are now owner-accepted; concrete technical design and physical measurements remain PJ-07, PH-08/PH-10 and implementation/qualification tasks, without being silently marked passed.
+**Evidence / blocker:** 2026-10-18: owner supplied detailed questionnaire responses and explicitly authorized decisions for delegated or unanswered items. The [decision record](release-policies.md#ph-09-decision-record) preserves 21 direct answers and 10 delegated selections; the unfilled optional summary table does not override those answers. Product-policy/target selection is complete with no remaining PH-09 owner question. ADR-0023 was drafted as proposed and accepted by the owner on 2026-10-18; hardware, deployment, actual identity implementation, privacy and target results remain separately pending. PJ-22 tracks documentation validation, not product delivery.
 
 ## PH-10
 
@@ -138,14 +138,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-11
 
-- [ ] **Choose the human identity provider and approve the initial permission/recovery policy.**
+- [x] **Choose the human identity provider and approve the initial permission/recovery policy.**
 
-**Status:** in progress. **Owner:** product owner with engineering/security review.
+**Status:** completed. **Owner:** product owner with engineering/security review.
 **Dependency / trigger:** PJ-07/PJ-03/PJ-24; identity and scoped access are initial-release requirements.
-**Request and reason:** All owner choices are recorded in [identity/access policies](identity-and-access.md), including the default matrix and IA-01–IA-16 allow/deny cases. Review [provider evidence and gaps](identity-provider-evaluation.md), pinned-version claim/session/assurance compatibility, and proposed ADR-0024/ADR-0025 before technical acceptance. Do not weaken ADR-0012 or infer provider interoperability from a valid-looking JWT.
-**Configuration:** existing `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL` are documented in the [API configuration reference](../generated/configuration/api.md). No provider/session-specific application keys or secret destinations are implemented. External identity, Google and mail provisioning are separate PH-15–PH-17.
-**Verification:** Owner policy selection is complete. The decision gate still requires a reviewed/accepted technical ADR and supported compatibility assessment; unresolved evidence remains explicit. Actual provider/token/session/revocation/recovery tests belong to PJ-24 and later acceptance, not this documentation task.
-**Evidence / blocker:** 2026-10-18: owner directly answered all 38 questions. Keycloak is the self-hosted candidate, Google the only external login, company activation public/automatic, and the responsible administrator approves additional administrators. P27=A rejects complete out-of-scope price changes; P37=A does not add a mandatory pre-pilot export/import proof. Official documentation supports configurable `at+jwt` and mapping primitives, but no pinned-provider integration or session/assurance qualification was run. ADR-0024/ADR-0025 remain proposed; therefore PH-11 is not completed. No owner questionnaire response remains missing. This does not block completion of the current documentation work.
+**Request and reason:** The owner selected all policies, approved the matrix and explicitly accepted the architectural ADRs. Keycloak, server-managed browser sessions and application-owned scoped profiles are accepted under ADR-0024/ADR-0025, preserving ADR-0012. The [provider evaluation](identity-provider-evaluation.md#pinned-source-assessment) records the reviewed version/source and mandatory integration controls.
+**Configuration:** existing `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL` remain the only implemented API token settings. No provider/session-specific product configuration or secret destination is implied. Identity, Google and mail provisioning remain PH-15–PH-17.
+**Verification:** All 38 direct owner choices, the default/custom scoped matrix and IA-01–IA-16 specified allow/deny cases are recorded in [identity/access](identity-and-access.md). The owner explicitly accepted ADR-0024/ADR-0025 on 2026-10-18. A pinned-source assessment of Keycloak 26.8.1 at `24ed1dadf3f246a555adb6d3d4a99e9b3003fb3b` establishes a viable mapping path; no actual provider login/token/session/revocation test is claimed.
+**Evidence / blocker:** 2026-10-18: after answering all 38 questions, the owner explicitly authorized acceptance of all pending Teluni ADRs. PH-11's provider/policy/architecture decision scope is complete, with no remaining owner decision. Concrete trusted principal/session/assurance integration, configured-version compatibility tests and all unperformed IA cases remain PJ-03/PJ-07/PJ-24; host/recovery, external inputs and commercial/privacy readiness remain PH-10/PH-12/PH-13/PH-15–PH-17. Completing this decision does not authorize or certify implementation, exposure or a real-customer release.
 
 ## PH-12
 
@@ -185,11 +185,11 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 - [ ] **Prepare controlled self-hosted identity resources and protected provisioning inputs.**
 
 **Status:** pending. **Owner:** project owner / identity and server administrator.
-**Dependency / trigger:** PH-10, PH-11 technical acceptance and PJ-24; before provider integration or real identity use.
+**Dependency / trigger:** PH-10, completed PH-11 architectural selection and the reviewed PJ-24 implementation design; before provider integration or real identity use.
 **Request and reason:** Confirm host capacity, a controlled HTTPS issuer address, restricted provider administration, persistent provider storage and protected signing/recovery material. Identify responsible administrators and safe recovery ownership without publishing personal account details. Prepare inputs only after the reviewed provider/version design; this action does not authorize deployment.
 **Configuration:** existing API token settings are `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL`; future provider/session settings must first have canonical schemas/documentation. Supply secret material only in an approved protected destination, never in this checklist or chat.
 **Verification:** Record non-secret environment/issuer ownership and controlled access; during authorized implementation verify pinned provider, human-only claim provisioning, key rotation, restricted management and isolated revocation-safe restore under PH-10/PJ-13.
-**Evidence / blocker:** 2026-10-18: self-hosting/Keycloak chosen as candidate, but host capacity, provider version, issuer control, secret destination and deployment are unverified. Foundation validation is not provisioning evidence.
+**Evidence / blocker:** 2026-10-18: self-hosting/Keycloak accepted by the owner; Keycloak 26.8.1 source was reviewed for compatibility, but host capacity, actual deployment version/image, issuer control, secret destination and deployment remain unverified. Foundation validation is not provisioning evidence.
 
 ## PH-16
 

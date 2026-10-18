@@ -1,12 +1,12 @@
 # Teluni Offline Playback and Synchronization
 
-[Requirements](mvp.md) · [Release policies](release-policies.md) · [Acceptance targets](release-targets.md) · [ADR-0019 proposal](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md)
+[Requirements](mvp.md) · [Release policies](release-policies.md) · [Acceptance targets](release-targets.md) · [ADR-0019 decision](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md)
 
-## Required guarantees and proposal boundary
+## Required guarantees and implementation boundary
 
 **Decided requirements:** local media and catalog rendering through the bounded offline envelope, integrity validation, complete-generation activation and last-valid recovery. Normal video playback does not stream repeatedly from the backend. Freeform composition, independently scheduled areas with optional page coordination, multiple videos/audio and typed custom catalogs must meet the same obligations.
 
-PH-09 has selected product behavior and numeric qualification targets. Protocol/schema serialization, integrity metadata/algorithms, local transactions/storage, processing/rendering libraries, transport and credential/trusted-time mechanisms remain engineering review under D-03/D-04/D-05/D-07/D-11. [ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md) proposes the versioned catalog/composition boundary; neither ADR is an implemented protocol or evidence of durability.
+PH-09 has selected product behavior and numeric qualification targets. Protocol/schema serialization, integrity metadata/algorithms, local transactions/storage, processing/rendering libraries, transport and credential/trusted-time mechanisms remain engineering review under D-03/D-04/D-05/D-07/D-11. [ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md) establishes the accepted versioned catalog/composition boundary; neither ADR is an implemented protocol or evidence of durability.
 
 ## Publication lifecycle
 

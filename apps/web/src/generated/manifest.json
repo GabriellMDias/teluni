@@ -287,40 +287,40 @@
     {
       "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
       "kind": "repository",
-      "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+      "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
       "group": "Decisions",
       "source": "docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend.md",
-      "summary": "Teluni requires independent customer companies with branches, memberships, media and devices. The derived repository has PostgreSQL infrastructure and composable API modules…",
+      "summary": "Acceptance scope: The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production…",
       "headings": [],
       "file": "pages/repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend.json"
     },
     {
       "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
       "kind": "repository",
-      "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+      "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
       "group": "Decisions",
       "source": "docs/adr/0019-propose-immutable-publications-and-atomic-player-activation.md",
-      "summary": "Teluni displays must continue through temporary backend/network outages. Videos must normally play locally. Partial downloads, concurrent publications and power loss must not…",
+      "summary": "Acceptance scope: The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production…",
       "headings": [],
       "file": "pages/repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation.json"
     },
     {
       "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
       "kind": "repository",
-      "title": "ADR-0020: Propose a Native Android TV Player",
+      "title": "ADR-0020: Adopt a Native Android TV Player",
       "group": "Decisions",
       "source": "docs/adr/0020-propose-a-native-android-tv-player.md",
-      "summary": "The intended first player is Android TV, with continuous image/video playback, local persistence, temporary-code pairing and offline recovery. Orion supplies TypeScript API/web…",
+      "summary": "Acceptance scope: The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production…",
       "headings": [],
       "file": "pages/repository/docs/adr/0020-propose-a-native-android-tv-player.json"
     },
     {
       "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
       "kind": "repository",
-      "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+      "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
       "group": "Decisions",
       "source": "docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md",
-      "summary": "The owner currently has no cloud-service budget and intends to evaluate a personal residential server for development and first pilots. Network exposure, CGNAT, domain,…",
+      "summary": "Acceptance scope: The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production…",
       "headings": [],
       "file": "pages/repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.json"
     },
@@ -337,30 +337,30 @@
     {
       "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
       "kind": "repository",
-      "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+      "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
       "group": "Decisions",
       "source": "docs/adr/0023-propose-versioned-catalog-and-composition-publications.md",
-      "summary": "The owner requires freeform simultaneous content, regional schedules with optional page coordination, multiple videos/audio and configurable data catalogs beyond products, such…",
+      "summary": "Acceptance scope: The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production…",
       "headings": [],
       "file": "pages/repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications.json"
     },
     {
       "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
       "kind": "repository",
-      "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+      "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
       "group": "Decisions",
       "source": "docs/adr/0024-propose-keycloak-and-server-managed-human-sessions.md",
-      "summary": "The owner answered PH-11's identity questionnaire, selecting self-hosted Keycloak as candidate, email/password with optional passkeys, Google as the only external login, and…",
+      "summary": "Acceptance scope: The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production…",
       "headings": [],
       "file": "pages/repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions.json"
     },
     {
       "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
       "kind": "repository",
-      "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+      "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
       "group": "Decisions",
       "source": "docs/adr/0025-propose-application-owned-scoped-access-profiles.md",
-      "summary": "PH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves…",
+      "summary": "Acceptance scope: The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production…",
       "headings": [],
       "file": "pages/repository/docs/adr/0025-propose-application-owned-scoped-access-profiles.json"
     },
@@ -740,7 +740,7 @@
       "title": "Teluni Identity Provider Evaluation",
       "group": "Project guides",
       "source": "docs/project/identity-provider-evaluation.md",
-      "summary": "On 2026-10-18, the owner selected self-hosting and Keycloak as the preferred candidate, conditional on host feasibility and compatibility. No recurring identity/email…",
+      "summary": "On 2026-10-18, the owner selected self-hosting and Keycloak, then explicitly approved all pending Teluni ADRs, including ADR-0024/ADR-0025. Host feasibility and actual…",
       "headings": [],
       "file": "pages/repository/docs/project/identity-provider-evaluation.json"
     },
@@ -1114,15 +1114,15 @@
       },
       { "file": "search/0001.json", "count": 113, "kinds": ["repository"] },
       { "file": "search/0002.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 182, "kinds": ["repository"] },
+      { "file": "search/0003.json", "count": 180, "kinds": ["repository"] },
       { "file": "search/0004.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 123, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 64, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 121, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 84, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 62, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 81, "kinds": ["repository"] },
       { "file": "search/0009.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 20, "kinds": ["repository"] }
+      { "file": "search/0010.json", "count": 35, "kinds": ["repository"] }
     ],
-    "count": 1106
+    "count": 1109
   }
 }

@@ -1,21 +1,21 @@
 # Teluni Deployment and Migration Planning
 
-[Project documentation](README.md) · [Risks](risks.md) · [ADR-0021 proposal](../adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)
+[Project documentation](README.md) · [Risks](risks.md) · [ADR-0021 decision](../adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)
 
 ## Constraints and current state
 
-**Decided constraint:** no present cloud-service budget. The owner intends to use a personal residential server for development, tests and potentially initial customers, moving to a VPS/cloud when revenue or operational need justifies it. **Proposed technology:** Debian Linux, Docker Compose, a reverse proxy with HTTPS, local persistent media, automated backups and suitable monitoring. None is a deployed Teluni environment or executable procedure in this repository.
+**Decided constraint:** no present cloud-service budget. The owner intends to use a personal residential server for development, tests and potentially initial customers, moving to a VPS/cloud when revenue or operational need justifies it. **Accepted initial architecture under ADR-0021:** Debian Linux, Docker Compose, a reverse proxy with HTTPS, local persistent media, automated backups and suitable monitoring. Real-customer use remains subject to PH-10 readiness gates. None is a deployed Teluni environment or executable procedure in this repository.
 
 Follow inherited [production access](../security/production-access.md), [secrets management](../security/secrets-management.md), [retention](../security/data-retention.md), [observability](../reliability/observability.md), [alerting](../reliability/alerting.md), and [runbook authoring](../runbooks/authoring.md). This plan does not grant production authority. Write tested deployment/recovery runbooks when the environment exists, rather than speculative commands now.
 
-## Proposed initial topology
+## Accepted initial topology and unverified readiness
 
 | Concern | Candidate responsibility | Validation required |
 | --- | --- | --- |
 | HTTPS ingress | Reverse proxy serves panel and routes API/private media access | Certificate issuance/renewal, domain ownership, proxy trust and origin/access policy |
 | Backend and web artifacts | Existing application builds in a simple single-host composition | Image/build/update procedure, readiness, startup ordering, restart and migration handling |
 | PostgreSQL | Persistent database on an internal container network with restricted runtime identity | No public listener; privileged migration credentials kept out of normal runtime; restore validation |
-| Human identity and browser sessions | Owner-selected self-hosted Keycloak candidate and proposed backend session boundary | PH-10/PH-15 capacity and restricted management; reviewed/pinned provider, persistent identity/session state, revocation-safe recovery; not deployed |
+| Human identity and browser sessions | Accepted self-hosted Keycloak and backend session direction | PH-10/PH-15 capacity and restricted management; reviewed/pinned provider, persistent identity/session state, revocation-safe recovery; not deployed |
 | Identity email and Google login | Verified sender and owner-controlled Google OAuth registration | PH-16/PH-17; safe configuration/callbacks, reliable delivery, protected secrets and independent recovery; no recurring procurement authorized |
 | Local media | Durable mounted storage outside disposable containers | Capacity, permissions, atomic/durable object lifecycle, reference reconciliation and private delivery |
 | Operations | Backups, redacted logs/metrics and disk/process/certificate checks | Independent backup destination, bounded retention and useful failure notifications |
@@ -42,7 +42,7 @@ Until verified, external exposure and real-customer operation are **pending**, e
 
 Keep environment-specific URLs, credentials and paths in validated environment configuration; use only implemented keys from the [configuration reference](../generated/configuration/api.md) today. Define and document new keys with their future canonical schemas when implemented. Do not embed the residential hostname/path in business entities, contracts or player binaries.
 
-**Proposed storage boundary:** the media capability owns object identity, integrity, metadata, authorized reads and lifecycle. Isolate the actual filesystem I/O behind a cohesive media-owned storage responsibility so a future S3-compatible implementation can preserve object semantics without rewriting domain rules. Avoid a general provider framework or mandatory S3 dependency now. Object-store replacement still needs verified access, integrity, migration and concurrency semantics; portability is not a free automatic migration.
+**Accepted storage boundary:** the media capability owns object identity, integrity, metadata, authorized reads and lifecycle. Isolate the actual filesystem I/O behind a cohesive media-owned storage responsibility so a future S3-compatible implementation can preserve object semantics without rewriting domain rules. Avoid a general provider framework or mandatory S3 dependency now. Object-store replacement still needs verified access, integrity, migration and concurrency semantics; portability is not a free automatic migration.
 
 Use durable logical object identifiers rather than storing temporary download credentials as business identity. External media endpoints are configurable. Authorized delivery may use an API or another reviewed access mechanism; public filesystem paths and unbounded permanent bearer URLs are not the default.
 

@@ -1,7 +1,9 @@
-# ADR-0024: Propose Keycloak and Server-Managed Human Sessions
+# ADR-0024: Adopt Keycloak and Server-Managed Human Sessions
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-18
+
+**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).
 
 ## Context
 
@@ -11,17 +13,17 @@ Accepted ADR-0012 governs the existing API's signed JWT access-token boundary. I
 
 ## Decision
 
-Propose Keycloak as the human identity provider, self-hosted subject to PH-10 feasibility, with a server-managed browser session integrated into the modular backend where appropriate. Use established OIDC Authorization Code with PKCE and maintained session/security components; keep provider credentials server-side and an opaque protected session cookie in the browser. Do not introduce a new microservice by default or an API-owned password/cryptographic implementation.
+Adopt Keycloak as the human identity provider, self-hosted subject to PH-10 feasibility, with a server-managed browser session integrated into the modular backend where appropriate. Use established OIDC Authorization Code with PKCE and maintained session/security components; keep provider credentials server-side and an opaque protected session cookie in the browser. Do not introduce a new microservice by default or an API-owned password/cryptographic implementation.
 
-Preserve ADR-0012's API boundary and stable application principal. A reviewed session boundary must obtain legitimate issuer access tokens and establish trusted session/assurance context; a cookie or caller-supplied MFA/session assertion cannot bypass the existing verifier. Define protected cookies, explicit CSRF protection, OIDC state/nonce/redirect validation, session fixation defenses, refresh rotation/replay/concurrency and local/global logout reconciliation before implementation. No session library, route, schema or provider version is selected by this proposal.
+Preserve ADR-0012's API boundary and stable application principal. A reviewed session boundary must obtain legitimate issuer access tokens and establish trusted session/assurance context; a cookie or caller-supplied MFA/session assertion cannot bypass the existing verifier. Define protected cookies, explicit CSRF protection, OIDC state/nonce/redirect validation, session fixation defenses, refresh rotation/replay/concurrency and local/global logout reconciliation before implementation. No session library, route, schema or deployment image is selected by this decision. The pinned Keycloak source assessment in the provider evaluation is review evidence, not an installed production version.
 
 Apply the owner's canonical identity policies, including strong/recent authentication, distinct platform accounts, recovery, inactivity/absolute expiry, session-count and 30-second revocation requirements. Current account/session/membership state must supplement JWT verification. Keep Google brokering/account linking and provider/email credentials at trusted boundaries. A human actor mapper must not accidentally make machine flows authenticate as humans.
 
-Before acceptance, review pinned-version compatibility, immutable principal mapping, every required token claim and trusted session/assurance linkage using the evidence/gaps in the provider evaluation. Where evidence is insufficient, retain an explicit qualification task; do not modify accepted checks to make a default provider token pass. Review deployment/recovery resources separately under PH-10/PH-15. This proposal neither supersedes ADR-0012 nor authorizes provisioning.
+The [pinned-source compatibility assessment](../project/identity-provider-evaluation.md#pinned-source-assessment) supports this architectural choice. Before integration readiness, implement and verify immutable principal mapping, every required token claim and trusted session/assurance linkage against the selected deployment version using the remaining qualification cases. Where evidence is insufficient, retain an explicit qualification task; do not modify accepted checks to make a default provider token pass. Review deployment/recovery resources separately under PH-10/PH-15. This decision neither supersedes ADR-0012 nor authorizes provisioning.
 
 ## Rationale
 
-The candidate matches the owner's control/budget direction and has relevant documented identity primitives. Server-managed sessions reduce browser exposure of provider tokens and permit accountable session lifecycle controls, at the cost of persistent state and CSRF/refresh coordination. A five-minute token alone cannot enforce the selected 30-second revocation bound. Local JWT verification can remain useful without pretending it provides a complete session or authorization system.
+The provider matches the owner's control/budget direction and has relevant documented identity primitives. Server-managed sessions reduce browser exposure of provider tokens and permit accountable session lifecycle controls, at the cost of persistent state and CSRF/refresh coordination. A five-minute token alone cannot enforce the selected 30-second revocation bound. Local JWT verification can remain useful without pretending it provides a complete session or authorization system.
 
 The documentation review establishes plausible compatibility, including Keycloak's configurable `at+jwt` header, not passed interoperability, recovery or capacity tests. Public signup still needs commercial/privacy and abuse readiness; choosing it does not authorize a free plan or immediate public exposure.
 
@@ -48,7 +50,7 @@ The documentation review establishes plausible compatibility, including Keycloak
 
 ### Operational or Migration Impact
 
-No runtime, dependency, API contract, migration or deployment changes accompany this proposal. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 technical acceptance remains open.
+No runtime, dependency, API contract, migration or deployment changes accompany this decision. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 decision acceptance is complete; PJ-24 retains every unperformed interoperability/session/assurance test.
 
 ## References
 

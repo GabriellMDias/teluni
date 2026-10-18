@@ -1,7 +1,9 @@
-# ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage
+# ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage
 
-**Status:** proposed
-**Date:** 2026-10-17
+**Status:** accepted
+**Date:** 2026-10-18
+
+**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).
 
 ## Context
 
@@ -9,7 +11,7 @@ The owner currently has no cloud-service budget and intends to evaluate a person
 
 ## Decision
 
-Propose an initial Debian host with Docker Compose, HTTPS reverse-proxy ingress, private PostgreSQL and media on durable mounted storage outside disposable containers. Keep environment-specific endpoints/configuration out of domain identity. Media storage remains a cohesive capability with replaceable filesystem I/O, allowing a later S3-compatible implementation when justified.
+Adopt an initial Debian host with Docker Compose, HTTPS reverse-proxy ingress, private PostgreSQL and media on durable mounted storage outside disposable containers. Keep environment-specific endpoints/configuration out of domain identity. Media storage remains a cohesive capability with replaceable filesystem I/O, allowing a later S3-compatible implementation when justified.
 
 Real-customer exposure is conditional on network/security review, owner-approved availability and recovery targets, off-host backup/restore proof and tested player behavior during outages. No tunnel, DNS, proxy, object-storage or cloud provider is selected or presumed to satisfy these gates.
 
@@ -36,7 +38,7 @@ One host and local media fit the stated budget and avoid premature distributed o
 
 ### Operational or Migration Impact
 
-Acceptance requires the host/network inventory, endpoint migration strategy and timed recovery rehearsal. Implementation must later supply tested deployment/recovery runbooks and release procedures. No container manifest or production change is introduced here.
+Real-customer deployment readiness under PH-10/PJ-13 requires the host/network inventory, endpoint migration strategy and timed recovery rehearsal. Implementation must later supply tested deployment/recovery runbooks and release procedures. No container manifest or production change is introduced here.
 
 ## References
 

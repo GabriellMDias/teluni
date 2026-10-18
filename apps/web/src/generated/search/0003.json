@@ -694,16 +694,16 @@
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
-    "anchor": "adr-0018-propose-tenant-owned-data-in-the-modular-backend",
-    "text": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend\n**Status:** proposed\n**Date:** 2026-10-17\n"
+    "heading": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "anchor": "adr-0018-adopt-tenant-owned-data-in-the-modular-backend",
+    "text": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
@@ -712,25 +712,25 @@
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nPropose one customer company as the tenant ownership boundary in a shared PostgreSQL database and schema. Model explicit tenant-scoped ownership and references, server-derived membership/branch authorization, and database constraints that prevent cross-tenant associations. Keep capabilities in the existing modular backend, with explicit application interfaces and owned tables; no microservice split is proposed.\nRow-level security is an additional option to evaluate, not assumed protection. Review its connection-pooling, runtime-role and migration implications before selecting it. Platform administration remains a separate scoped capability, not an implicit bypass for tenant data access.\n"
+    "text": "Decision\nAdopt one customer company as the tenant ownership boundary in a shared PostgreSQL database and schema. Model explicit tenant-scoped ownership and references, server-derived membership/branch authorization, and database constraints that prevent cross-tenant associations. Keep capabilities in the existing modular backend, with explicit application interfaces and owned tables; no microservice split is proposed.\nRow-level security is an additional option to evaluate, not assumed protection. Review its connection-pooling, runtime-role and migration implications before selecting it. Platform administration remains a separate scoped capability, not an implicit bypass for tenant data access.\n"
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
-    "text": "Rationale\nA shared deployment fits the initial cost and operational constraints. Explicit ownership allows branch scoping and future company scale without treating a branch as another tenant. It also places substantial responsibility on query/reference design, constraints and adversarial authorization tests; the proposal has not yet been proven by a schema or implementation.\n"
+    "text": "Rationale\nA shared deployment fits the initial cost and operational constraints. Explicit ownership allows branch scoping and future company scale without treating a branch as another tenant. It also places substantial responsibility on query/reference design, constraints and adversarial authorization tests; the accepted architecture has not yet been proven by a schema or implementation.\n"
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -739,7 +739,7 @@
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -748,7 +748,7 @@
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
@@ -757,7 +757,7 @@
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
@@ -766,16 +766,16 @@
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo tables or migrations are introduced by this proposal. Acceptance requires an ownership/constraint design, role matrix and cross-tenant tests, including the decision on row-level security. Later changing tenant partitioning may require a deliberate data migration.\n"
+    "text": "Operational or Migration Impact\nNo tables or migrations are introduced by this decision. Before dependent implementation/release, complete the ownership/constraint design and row-level-security evaluation and verify the selected role matrix with cross-tenant tests under PJ-03/PJ-07. Later changing tenant partitioning may require a deliberate data migration.\n"
   },
   {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Propose Tenant-Owned Data in the Modular Backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
     "kind": "repository",
     "heading": "References",
@@ -784,16 +784,16 @@
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
-    "anchor": "adr-0019-propose-immutable-publications-and-atomic-player-activation",
-    "text": "ADR-0019: Propose Immutable Publications and Atomic Player Activation\n**Status:** proposed\n**Date:** 2026-10-17\n"
+    "heading": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "anchor": "adr-0019-adopt-immutable-publications-and-atomic-player-activation",
+    "text": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
@@ -802,25 +802,25 @@
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nPropose immutable publication snapshots with versioned manifests that bind programming rules to verified asset versions. The player durably stages missing assets and switches its active generation only after the complete supported snapshot is ready, retaining a valid recovery generation. Separate desired, staged and reported-active versions and reconcile duplicate or lost acknowledgements.\nDefine protocol compatibility, integrity metadata, capacity/retention, scheduling expiry and offline authorization policy before implementation. No transport, storage library, cryptographic mechanism or manifest serialization format is selected by this record.\n"
+    "text": "Decision\nAdopt immutable publication snapshots with versioned manifests that bind programming rules to verified asset versions. The player durably stages missing assets and switches its active generation only after the complete supported snapshot is ready, retaining a valid recovery generation. Separate desired, staged and reported-active versions and reconcile duplicate or lost acknowledgements.\nDefine protocol compatibility, integrity metadata, capacity/retention, scheduling expiry and offline authorization policy before implementation. No transport, storage library, cryptographic mechanism or manifest serialization format is selected by this record.\n"
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
-    "text": "Rationale\nThe owner's requirement is consistent offline playback, not normal continuous server streaming. A generation boundary makes interruption and recovery behavior testable and avoids exposing partially updated programming. This is a design proposal, not evidence of crash-safe storage or hardware compatibility.\n"
+    "text": "Rationale\nThe owner's requirement is consistent offline playback, not normal continuous server streaming. A generation boundary makes interruption and recovery behavior testable and avoids exposing partially updated programming. Architectural acceptance is not evidence of crash-safe storage or hardware compatibility.\n"
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -829,7 +829,7 @@
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -838,7 +838,7 @@
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
@@ -847,7 +847,7 @@
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
@@ -856,16 +856,16 @@
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nAtomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Acceptance requires representative network/power-cut and stale/reordered message cases, not only unit tests.\n"
+    "text": "Operational or Migration Impact\nAtomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Player/release qualification under PJ-11/PJ-12/PJ-14 requires representative network/power-cut and stale/reordered message cases, not only unit tests.\n"
   },
   {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Propose Immutable Publications and Atomic Player Activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
     "heading": "References",
@@ -874,16 +874,16 @@
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR-0020: Propose a Native Android TV Player",
-    "anchor": "adr-0020-propose-a-native-android-tv-player",
-    "text": "ADR-0020: Propose a Native Android TV Player\n**Status:** proposed\n**Date:** 2026-10-17\n"
+    "heading": "ADR-0020: Adopt a Native Android TV Player",
+    "anchor": "adr-0020-adopt-a-native-android-tv-player",
+    "text": "ADR-0020: Adopt a Native Android TV Player\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
@@ -892,16 +892,16 @@
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nPropose an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.\nMinimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. This proposal does not imply every Android TV or Smart TV is supported.\n"
+    "text": "Decision\nAdopt an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.\nMinimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. Architecture acceptance does not imply every Android TV or Smart TV is supported.\n"
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
@@ -910,7 +910,7 @@
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -919,7 +919,7 @@
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -928,7 +928,7 @@
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
@@ -937,7 +937,7 @@
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
@@ -946,16 +946,16 @@
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nAcceptance requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.\n"
+    "text": "Operational or Migration Impact\nSupported-device/release qualification under PH-08/PJ-12/PJ-14 requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.\n"
   },
   {
     "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Propose a Native Android TV Player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
     "group": "Decisions",
     "kind": "repository",
     "heading": "References",
@@ -964,16 +964,16 @@
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
-    "anchor": "adr-0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "text": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage\n**Status:** proposed\n**Date:** 2026-10-17\n"
+    "heading": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
+    "anchor": "adr-0021-adopt-a-single-host-pilot-with-portable-persistent-storage",
+    "text": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
@@ -982,16 +982,16 @@
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nPropose an initial Debian host with Docker Compose, HTTPS reverse-proxy ingress, private PostgreSQL and media on durable mounted storage outside disposable containers. Keep environment-specific endpoints/configuration out of domain identity. Media storage remains a cohesive capability with replaceable filesystem I/O, allowing a later S3-compatible implementation when justified.\nReal-customer exposure is conditional on network/security review, owner-approved availability and recovery targets, off-host backup/restore proof and tested player behavior during outages. No tunnel, DNS, proxy, object-storage or cloud provider is selected or presumed to satisfy these gates.\n"
+    "text": "Decision\nAdopt an initial Debian host with Docker Compose, HTTPS reverse-proxy ingress, private PostgreSQL and media on durable mounted storage outside disposable containers. Keep environment-specific endpoints/configuration out of domain identity. Media storage remains a cohesive capability with replaceable filesystem I/O, allowing a later S3-compatible implementation when justified.\nReal-customer exposure is conditional on network/security review, owner-approved availability and recovery targets, off-host backup/restore proof and tested player behavior during outages. No tunnel, DNS, proxy, object-storage or cloud provider is selected or presumed to satisfy these gates.\n"
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
@@ -1000,7 +1000,7 @@
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -1009,7 +1009,7 @@
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -1018,7 +1018,7 @@
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
@@ -1027,7 +1027,7 @@
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
@@ -1036,16 +1036,16 @@
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nAcceptance requires the host/network inventory, endpoint migration strategy and timed recovery rehearsal. Implementation must later supply tested deployment/recovery runbooks and release procedures. No container manifest or production change is introduced here.\n"
+    "text": "Operational or Migration Impact\nReal-customer deployment readiness under PH-10/PJ-13 requires the host/network inventory, endpoint migration strategy and timed recovery rehearsal. Implementation must later supply tested deployment/recovery runbooks and release procedures. No container manifest or production change is introduced here.\n"
   },
   {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Propose a Single-Host Pilot with Portable Persistent Storage",
+    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
     "kind": "repository",
     "heading": "References",
@@ -1153,43 +1153,43 @@
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR-0023: Propose Versioned Catalog and Composition Publications",
-    "anchor": "adr-0023-propose-versioned-catalog-and-composition-publications",
-    "text": "ADR-0023: Propose Versioned Catalog and Composition Publications\n**Status:** proposed\n**Date:** 2026-10-18\n"
+    "heading": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "anchor": "adr-0023-adopt-versioned-catalog-and-composition-publications",
+    "text": "ADR-0023: Adopt Versioned Catalog and Composition Publications\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
     "anchor": "context",
-    "text": "Context\nThe owner requires freeform simultaneous content, regional schedules with optional page coordination, multiple videos/audio and configurable data catalogs beyond products, such as weekly agendas. Saving designated prices must automatically publish affected content, while other drafts remain private. Players must render locally through bounded outages and recover complete valid generations.\nThese approved product policies affect schema evolution, references, module ownership and backend/web/player contracts. They do not choose a physical schema, editor/renderer, serialization or queue provider. ADR-0019 proposes immutable publication generations; the expanded presentation/data boundary needs explicit design review before implementation.\n"
+    "text": "Context\nThe owner requires freeform simultaneous content, regional schedules with optional page coordination, multiple videos/audio and configurable data catalogs beyond products, such as weekly agendas. Saving designated prices must automatically publish affected content, while other drafts remain private. Players must render locally through bounded outages and recover complete valid generations.\nThese approved product policies affect schema evolution, references, module ownership and backend/web/player contracts. They do not choose a physical schema, editor/renderer, serialization or queue provider. ADR-0019 establishes immutable publication generations; the expanded presentation/data boundary needs explicit design review before implementation.\n"
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nPropose versioned declarative composition definitions and typed catalog definitions/records with stable field/binding identities. Customization is validated data rather than executable user code or direct database access. Catalog presets may express products/prices or agendas without making a product schema mandatory for every collection.\nCompose immutable publication snapshots from explicitly identified layout/schema/record/media revisions and the rules needed for offline evaluation. Published snapshots remain interpretable after draft schema evolution. A price save records durable intent and generates affected snapshots from published dependencies, excluding unrelated drafts; expose incomplete/retry states and prevent stale work from overwriting newer desired generations.\nKeep catalogs, layout authoring, programming and publication behind explicit module capabilities in the modular backend. No arbitrary cross-module table writes, circular imports or new generic shared framework are implied. Carry interoperable contracts to the native player rather than importing TypeScript application internals.\nBefore acceptance/implementation, review concrete schemas, module collaboration, import security, destructive field evolution, snapshot granularity, trusted time, rendering/media profiles and the failure/compatibility fixtures. Serialization, storage layout, libraries and processing/transport mechanisms remain intentionally unselected.\n"
+    "text": "Decision\nAdopt versioned declarative composition definitions and typed catalog definitions/records with stable field/binding identities. Customization is validated data rather than executable user code or direct database access. Catalog presets may express products/prices or agendas without making a product schema mandatory for every collection.\nCompose immutable publication snapshots from explicitly identified layout/schema/record/media revisions and the rules needed for offline evaluation. Published snapshots remain interpretable after draft schema evolution. A price save records durable intent and generates affected snapshots from published dependencies, excluding unrelated drafts; expose incomplete/retry states and prevent stale work from overwriting newer desired generations.\nKeep catalogs, layout authoring, programming and publication behind explicit module capabilities in the modular backend. No arbitrary cross-module table writes, circular imports or new generic shared framework are implied. Carry interoperable contracts to the native player rather than importing TypeScript application internals.\nBefore dependent implementation, review concrete schemas, module collaboration, import security, destructive field evolution, snapshot granularity, trusted time, rendering/media profiles and the failure/compatibility fixtures. Serialization, storage layout, libraries and processing/transport mechanisms remain intentionally unselected.\n"
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
-    "text": "Rationale\nUser-defined fields and freeform geometry need stable meaning across independent editor/player releases. A versioned declarative boundary makes validation, copying, private references and offline rendering reviewable. Immutable data snapshots preserve the existing consistency/activation direction while allowing automatic price updates without live mutation of an issued program.\nThis is reasoned architecture, not a measured renderer/storage evaluation. Owner approval of PH-09 policies does not accept the technical proposal or establish product availability.\n"
+    "text": "Rationale\nUser-defined fields and freeform geometry need stable meaning across independent editor/player releases. A versioned declarative boundary makes validation, copying, private references and offline rendering reviewable. Immutable data snapshots preserve the existing consistency/activation direction while allowing automatic price updates without live mutation of an issued program.\nThis is reasoned architecture, not a measured renderer/storage evaluation. PH-09 policy selection alone did not accept this ADR; explicit architectural approval is recorded above. Neither establishes product availability.\n"
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -1198,7 +1198,7 @@
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -1207,7 +1207,7 @@
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
@@ -1216,7 +1216,7 @@
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
@@ -1225,34 +1225,34 @@
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo product schema or deployment currently exists, so this proposal adds no migration or running component. Future implementations must keep retained snapshots readable, reconcile interrupted price/publication work and qualify protocol overlap, offline/power recovery and supported device profiles. Review proposed ADR-0019 alongside this record; neither supersedes an accepted foundation decision.\n"
+    "text": "Operational or Migration Impact\nNo product schema or deployment currently exists, so this decision adds no migration or running component. Future implementations must keep retained snapshots readable, reconcile interrupted price/publication work and qualify protocol overlap, offline/power recovery and supported device profiles. Apply accepted ADR-0019 alongside this record; neither supersedes an earlier foundation decision.\n"
   },
   {
     "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
-    "title": "ADR-0023: Propose Versioned Catalog and Composition Publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
     "group": "Decisions",
     "kind": "repository",
     "heading": "References",
     "anchor": "references",
-    "text": "References\n[Release policies and PH-09 decision record](../project/release-policies.md)\n[Release acceptance targets](../project/release-targets.md)\n[Product architecture](../project/architecture.md)\n[Immutable publication proposal](0019-propose-immutable-publications-and-atomic-player-activation.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+    "text": "References\n[Release policies and PH-09 decision record](../project/release-policies.md)\n[Release acceptance targets](../project/release-targets.md)\n[Product architecture](../project/architecture.md)\n[Immutable publication decision](0019-propose-immutable-publications-and-atomic-player-activation.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
-    "anchor": "adr-0024-propose-keycloak-and-server-managed-human-sessions",
-    "text": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions\n**Status:** proposed\n**Date:** 2026-10-18\n"
+    "heading": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "anchor": "adr-0024-adopt-keycloak-and-server-managed-human-sessions",
+    "text": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
@@ -1261,25 +1261,25 @@
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nPropose Keycloak as the human identity provider, self-hosted subject to PH-10 feasibility, with a server-managed browser session integrated into the modular backend where appropriate. Use established OIDC Authorization Code with PKCE and maintained session/security components; keep provider credentials server-side and an opaque protected session cookie in the browser. Do not introduce a new microservice by default or an API-owned password/cryptographic implementation.\nPreserve ADR-0012's API boundary and stable application principal. A reviewed session boundary must obtain legitimate issuer access tokens and establish trusted session/assurance context; a cookie or caller-supplied MFA/session assertion cannot bypass the existing verifier. Define protected cookies, explicit CSRF protection, OIDC state/nonce/redirect validation, session fixation defenses, refresh rotation/replay/concurrency and local/global logout reconciliation before implementation. No session library, route, schema or provider version is selected by this proposal.\nApply the owner's canonical identity policies, including strong/recent authentication, distinct platform accounts, recovery, inactivity/absolute expiry, session-count and 30-second revocation requirements. Current account/session/membership state must supplement JWT verification. Keep Google brokering/account linking and provider/email credentials at trusted boundaries. A human actor mapper must not accidentally make machine flows authenticate as humans.\nBefore acceptance, review pinned-version compatibility, immutable principal mapping, every required token claim and trusted session/assurance linkage using the evidence/gaps in the provider evaluation. Where evidence is insufficient, retain an explicit qualification task; do not modify accepted checks to make a default provider token pass. Review deployment/recovery resources separately under PH-10/PH-15. This proposal neither supersedes ADR-0012 nor authorizes provisioning.\n"
+    "text": "Decision\nAdopt Keycloak as the human identity provider, self-hosted subject to PH-10 feasibility, with a server-managed browser session integrated into the modular backend where appropriate. Use established OIDC Authorization Code with PKCE and maintained session/security components; keep provider credentials server-side and an opaque protected session cookie in the browser. Do not introduce a new microservice by default or an API-owned password/cryptographic implementation.\nPreserve ADR-0012's API boundary and stable application principal. A reviewed session boundary must obtain legitimate issuer access tokens and establish trusted session/assurance context; a cookie or caller-supplied MFA/session assertion cannot bypass the existing verifier. Define protected cookies, explicit CSRF protection, OIDC state/nonce/redirect validation, session fixation defenses, refresh rotation/replay/concurrency and local/global logout reconciliation before implementation. No session library, route, schema or deployment image is selected by this decision. The pinned Keycloak source assessment in the provider evaluation is review evidence, not an installed production version.\nApply the owner's canonical identity policies, including strong/recent authentication, distinct platform accounts, recovery, inactivity/absolute expiry, session-count and 30-second revocation requirements. Current account/session/membership state must supplement JWT verification. Keep Google brokering/account linking and provider/email credentials at trusted boundaries. A human actor mapper must not accidentally make machine flows authenticate as humans.\nThe [pinned-source compatibility assessment](../project/identity-provider-evaluation.md#pinned-source-assessment) supports this architectural choice. Before integration readiness, implement and verify immutable principal mapping, every required token claim and trusted session/assurance linkage against the selected deployment version using the remaining qualification cases. Where evidence is insufficient, retain an explicit qualification task; do not modify accepted checks to make a default provider token pass. Review deployment/recovery resources separately under PH-10/PH-15. This decision neither supersedes ADR-0012 nor authorizes provisioning.\n"
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
-    "text": "Rationale\nThe candidate matches the owner's control/budget direction and has relevant documented identity primitives. Server-managed sessions reduce browser exposure of provider tokens and permit accountable session lifecycle controls, at the cost of persistent state and CSRF/refresh coordination. A five-minute token alone cannot enforce the selected 30-second revocation bound. Local JWT verification can remain useful without pretending it provides a complete session or authorization system.\nThe documentation review establishes plausible compatibility, including Keycloak's configurable `at+jwt` header, not passed interoperability, recovery or capacity tests. Public signup still needs commercial/privacy and abuse readiness; choosing it does not authorize a free plan or immediate public exposure.\n"
+    "text": "Rationale\nThe provider matches the owner's control/budget direction and has relevant documented identity primitives. Server-managed sessions reduce browser exposure of provider tokens and permit accountable session lifecycle controls, at the cost of persistent state and CSRF/refresh coordination. A five-minute token alone cannot enforce the selected 30-second revocation bound. Local JWT verification can remain useful without pretending it provides a complete session or authorization system.\nThe documentation review establishes plausible compatibility, including Keycloak's configurable `at+jwt` header, not passed interoperability, recovery or capacity tests. Public signup still needs commercial/privacy and abuse readiness; choosing it does not authorize a free plan or immediate public exposure.\n"
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -1288,7 +1288,7 @@
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -1297,7 +1297,7 @@
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
@@ -1306,7 +1306,7 @@
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
@@ -1315,16 +1315,16 @@
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo runtime, dependency, API contract, migration or deployment changes accompany this proposal. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 technical acceptance remains open.\n"
+    "text": "Operational or Migration Impact\nNo runtime, dependency, API contract, migration or deployment changes accompany this decision. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 decision acceptance is complete; PJ-24 retains every unperformed interoperability/session/assurance test.\n"
   },
   {
     "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
     "group": "Decisions",
     "kind": "repository",
     "heading": "References",
@@ -1333,34 +1333,34 @@
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
-    "anchor": "adr-0025-propose-application-owned-scoped-access-profiles",
-    "text": "ADR-0025: Propose Application-Owned Scoped Access Profiles\n**Status:** proposed\n**Date:** 2026-10-18\n"
+    "heading": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "anchor": "adr-0025-adopt-application-owned-scoped-access-profiles",
+    "text": "ADR-0025: Adopt Application-Owned Scoped Access Profiles\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
     "anchor": "context",
-    "text": "Context\nPH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.\nThe foundation verifies human identity but has no product membership/permission implementation. ADR-0018 proposes tenant-owned modular data; its physical enforcement remains unaccepted. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.\n"
+    "text": "Context\nPH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.\nThe foundation verifies human identity but has no product membership/permission implementation. ADR-0018 establishes the accepted tenant-owned modular-data direction; its concrete constraints/enforcement remain design and implementation work. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.\n"
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nPropose application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.\nKeep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.\nEnforce resource ownership, operation, current state, assurance and scope on every protected entry point, including reads/collections, media, imports, bulk work and delayed effects. Revalidate sensitive effects and ensure the selected freshness bound. Grantors cannot delegate authority they lack, responsible-administrator approval cannot be bypassed, and local membership administration cannot reset global identities.\nAuthorize every published dependency/target affected by a price save before accepting the mutation; deny the entire out-of-scope mutation without partial publication or automatic approval fallback. Optional company approval policies distinguish a proposal from an effective saved price and prohibit self-approval where required. Pending protected work rechecks authority; an already-issued valid publication continues its delivery lifecycle unless explicitly revoked by the appropriate control.\nRoutine support uses the real support identity and a visible, expiring customer-authorized scope, read-only by default and separate write grants. No impersonation is selected. Emergency access requires a separately reviewed, exceptional controlled procedure; there is no standing unrestricted content-browsing right.\n"
+    "text": "Decision\nAdopt application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.\nKeep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.\nEnforce resource ownership, operation, current state, assurance and scope on every protected entry point, including reads/collections, media, imports, bulk work and delayed effects. Revalidate sensitive effects and ensure the selected freshness bound. Grantors cannot delegate authority they lack, responsible-administrator approval cannot be bypassed, and local membership administration cannot reset global identities.\nAuthorize every published dependency/target affected by a price save before accepting the mutation; deny the entire out-of-scope mutation without partial publication or automatic approval fallback. Optional company approval policies distinguish a proposal from an effective saved price and prohibit self-approval where required. Pending protected work rechecks authority; an already-issued valid publication continues its delivery lifecycle unless explicitly revoked by the appropriate control.\nRoutine support uses the real support identity and a visible, expiring customer-authorized scope, read-only by default and separate write grants. No impersonation is selected. Emergency access requires a separately reviewed, exceptional controlled procedure; there is no standing unrestricted content-browsing right.\n"
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
@@ -1369,7 +1369,7 @@
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -1378,7 +1378,7 @@
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -1387,7 +1387,7 @@
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
@@ -1396,7 +1396,7 @@
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
@@ -1405,21 +1405,21 @@
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo permission identifiers, schema, migration or running engine is created here. Acceptance needs reviewed capability ownership, consistency/enforcement design and IA-01–IA-16 cases, including two-company negative fixtures and trustworthy session/assurance context. Later renaming persisted grants or broadening presets is a compatibility/security change. Audit/privacy retention and host recovery remain separate gates.\n"
+    "text": "Operational or Migration Impact\nNo permission identifiers, schema, migration or running engine is created here. Implementation/release qualification under PJ-03/PJ-07/PJ-24 requires reviewed capability ownership, consistency/enforcement design and passing IA-01–IA-16 cases, including two-company negative fixtures and trustworthy session/assurance context. Later renaming persisted grants or broadening presets is a compatibility/security change. Audit/privacy retention and host recovery remain separate gates.\n"
   },
   {
     "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
     "group": "Decisions",
     "kind": "repository",
     "heading": "References",
     "anchor": "references",
-    "text": "References\n[Selected identity policy and permission matrix](../project/identity-and-access.md)\n[Tenant-owned data proposal](0018-propose-tenant-owned-data-in-the-modular-backend.md)\n[Human provider/session proposal](0024-propose-keycloak-and-server-managed-human-sessions.md)\n[Authorization policy](../security/authorization.md)\n[Release publication policies](../project/release-policies.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
+    "text": "References\n[Selected identity policy and permission matrix](../project/identity-and-access.md)\n[Tenant-owned data decision](0018-propose-tenant-owned-data-in-the-modular-backend.md)\n[Human provider/session decision](0024-propose-keycloak-and-server-managed-human-sessions.md)\n[Authorization policy](../security/authorization.md)\n[Release publication policies](../project/release-policies.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
   },
   {
     "id": "repository/docs/adr/AGENTS",
@@ -1509,7 +1509,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nPropose Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nPropose Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nPropose a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nPropose a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nPropose Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nPropose Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nPropose Application-Owned Scoped Access Profiles\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1618,23 +1618,5 @@
     "heading": "References",
     "anchor": "references",
     "text": "References\nInclude only useful references.\nLink relevant [current policies](../README.md), [related ADRs](README.md), design documents, and evidence. Use actual relative Markdown links to existing records; remove unused references.\nIf this ADR supersedes another accepted ADR, update that ADR to reference this one as its replacement.\n"
-  },
-  {
-    "id": "repository/docs/AGENTS",
-    "title": "Documentation Instructions",
-    "group": "Agent instructions",
-    "kind": "repository",
-    "heading": "Documentation Instructions",
-    "anchor": "documentation-instructions",
-    "text": "Documentation Instructions\nUse [the task index](README.md) to locate the owner of the information being changed. Read [contributing guidance](contributing.md) when creating, moving, or maintaining documentation.\nPreserve normative meaning, exceptions, and the distinction between requirements, examples, accepted decisions, and implementation availability. Check governing ADRs before treating a choice as unresolved.\nKeep one authoritative policy for each concern. Use links and scoped reading routes rather than copying policy into indexes or agent instructions.\nWhen moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.\nKeep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.\nUse only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Error Contract",
-    "anchor": "api-error-contract",
-    "text": "API Error Contract\n[Task index](../README.md) · [API principles](principles.md) · [Error handling](../architecture/error-handling.md) · [Compatibility](versioning.md)\nThis policy owns public failure semantics. The API's [shared error registry, envelope schema, and responder](../../apps/api/src/errors.ts) and each composed module's registered codes are canonical; the [public registry composition](../../apps/api/src/error-registry.ts) gives each code exactly one owner and rejects any duplicate, even an identical definition, and the [generated error reference](../generated/api/errors.md) lists implemented codes, messages, categories, HTTP statuses, and retry classifications. Module route contracts declare expected operation errors. Follow [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) when generating OpenAPI and SDK representations.\n"
   }
 ]

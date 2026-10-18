@@ -1,17 +1,19 @@
-# ADR-0025: Propose Application-Owned Scoped Access Profiles
+# ADR-0025: Adopt Application-Owned Scoped Access Profiles
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-18
+
+**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).
 
 ## Context
 
 PH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.
 
-The foundation verifies human identity but has no product membership/permission implementation. ADR-0018 proposes tenant-owned modular data; its physical enforcement remains unaccepted. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.
+The foundation verifies human identity but has no product membership/permission implementation. ADR-0018 establishes the accepted tenant-owned modular-data direction; its concrete constraints/enforcement remain design and implementation work. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.
 
 ## Decision
 
-Propose application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.
+Adopt application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.
 
 Keep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.
 
@@ -50,13 +52,13 @@ The owner approved policy and required allow/deny cases, not a database model or
 
 ### Operational or Migration Impact
 
-No permission identifiers, schema, migration or running engine is created here. Acceptance needs reviewed capability ownership, consistency/enforcement design and IA-01–IA-16 cases, including two-company negative fixtures and trustworthy session/assurance context. Later renaming persisted grants or broadening presets is a compatibility/security change. Audit/privacy retention and host recovery remain separate gates.
+No permission identifiers, schema, migration or running engine is created here. Implementation/release qualification under PJ-03/PJ-07/PJ-24 requires reviewed capability ownership, consistency/enforcement design and passing IA-01–IA-16 cases, including two-company negative fixtures and trustworthy session/assurance context. Later renaming persisted grants or broadening presets is a compatibility/security change. Audit/privacy retention and host recovery remain separate gates.
 
 ## References
 
 - [Selected identity policy and permission matrix](../project/identity-and-access.md)
-- [Tenant-owned data proposal](0018-propose-tenant-owned-data-in-the-modular-backend.md)
-- [Human provider/session proposal](0024-propose-keycloak-and-server-managed-human-sessions.md)
+- [Tenant-owned data decision](0018-propose-tenant-owned-data-in-the-modular-backend.md)
+- [Human provider/session decision](0024-propose-keycloak-and-server-managed-human-sessions.md)
 - [Authorization policy](../security/authorization.md)
 - [Release publication policies](../project/release-policies.md)
 - [Delivery and side effects](../architecture/delivery-and-side-effects.md)

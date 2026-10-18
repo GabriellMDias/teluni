@@ -1,7 +1,9 @@
-# ADR-0020: Propose a Native Android TV Player
+# ADR-0020: Adopt a Native Android TV Player
 
-**Status:** proposed
-**Date:** 2026-10-17
+**Status:** accepted
+**Date:** 2026-10-18
+
+**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).
 
 ## Context
 
@@ -9,9 +11,9 @@ The intended first player is Android TV, with continuous image/video playback, l
 
 ## Decision
 
-Propose an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.
+Adopt an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.
 
-Minimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. This proposal does not imply every Android TV or Smart TV is supported.
+Minimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. Architecture acceptance does not imply every Android TV or Smart TV is supported.
 
 ## Rationale
 
@@ -36,7 +38,7 @@ This is the owner's preferred initial direction and matches the requested native
 
 ### Operational or Migration Impact
 
-Acceptance requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.
+Supported-device/release qualification under PH-08/PJ-12/PJ-14 requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.
 
 ## References
 

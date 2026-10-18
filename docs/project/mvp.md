@@ -32,7 +32,7 @@ The numeric values, measurement boundaries and FR/NF mapping are in [release acc
 
 ## Proposed behavior requiring confirmation
 
-PH-09 has no outstanding owner questionnaire answer. Remaining work concerns technical review and other human actions: physical tenant enforcement; Keycloak compatibility, session/assurance integration and ADR acceptance (PH-11, with all owner policies/matrix already selected in [identity/access](identity-and-access.md)); external identity/Google/mail setup (PH-15–PH-17); manifest/layout/catalog schema, renderers, persistence, processing and credential/trusted-time mechanisms (PJ-07/D-01–D-11); real hardware qualification (PH-08); infrastructure/restore evidence (PH-10); and privacy/commercial review (PH-12/PH-13). New proposals use the ADR process; approved product policies are not proof that these mechanisms exist.
+PH-09 has no outstanding owner questionnaire answer. Remaining work concerns technical review and other human actions: physical tenant enforcement; actual Keycloak compatibility, session/assurance integration and scoped authorization verification (PJ-24; PH-11 decision selection and the [identity/access](identity-and-access.md) matrix are completed); external identity/Google/mail setup (PH-15–PH-17); manifest/layout/catalog schema, renderers, persistence, processing and credential/trusted-time mechanisms (PJ-07/D-01–D-11); real hardware qualification (PH-08); infrastructure/restore evidence (PH-10); and privacy/commercial review (PH-12/PH-13). The owner accepted ADR-0018–ADR-0021/ADR-0023–ADR-0025 on 2026-10-18; any significant new unresolved mechanism still uses the ADR process; approved product policies are not proof that these mechanisms exist.
 
 ## Nonfunctional requirements
 

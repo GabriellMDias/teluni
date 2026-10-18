@@ -45,7 +45,7 @@ The [security model](security-and-i18n.md#actors-and-authorization) routes to th
 6. The player stages complete consistent versions and continues local media/catalog rendering through the selected offline/clock envelope, with independent areas or optional coordinated pages.
 7. A scoped operator sees last contact, synchronization progress and actionable failures without unrestricted remote access. Actual player observation is distinct from server intent.
 
-Acceptance of these journeys is specified in [release requirements](mvp.md). The owner selected [human identity/access policies](identity-and-access.md), including public signup with automatic company activation, Google-only external login, multi-company memberships, a responsible administrator and customizable scoped profiles. Keycloak compatibility/ADR acceptance and external readiness remain pending; no signup/session flow is implemented.
+Acceptance of these journeys is specified in [release requirements](mvp.md). The owner selected [human identity/access policies](identity-and-access.md), including public signup with automatic company activation, Google-only external login, multi-company memberships, a responsible administrator and customizable scoped profiles. The owner accepted the architecture ADRs and completed PH-11 decision selection; actual Keycloak/session qualification and external readiness remain pending; no signup/session flow is implemented.
 
 ## Product objectives
 
@@ -69,4 +69,4 @@ The [release targets](release-targets.md) select task-time, continuity, renderin
 
 Prices, plans, storage/traffic/processing limits, support hours, installation fees, cancellation, costs, and partner/referral arrangements require [PH-12](human-actions.md#ph-12). The snack bar pilot should provide evidence of usability, reliability, support demand, willingness to pay, and actual costs. Automatic billing and payment-gateway integration are **future**, not MVP prerequisites. International currencies and presentation follow the [localization requirements](security-and-i18n.md#internationalization).
 
-There is currently no cloud-service budget. Residential hosting is an entry proposal with explicit [operational gates and risks](operations.md), not a commitment to production availability.
+There is currently no cloud-service budget. Residential hosting is the accepted entry architecture with explicit [operational gates and risks](operations.md), not a commitment to production availability.
