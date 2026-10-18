@@ -5,6 +5,32 @@ import { identityErrors } from "../identity/public.js";
 // the shared denial for tenant-scoped capabilities; modules that use the
 // organizations capability answer with it through their own responders.
 export const organizationErrors = defineErrors({
+  MEMBERSHIP_REMOVED: {
+    status: 409,
+    message: "This membership was removed and cannot be reactivated.",
+    category: "conflict",
+    retryable: false,
+  },
+  RESPONSIBLE_ADMINISTRATOR_PROTECTED: {
+    status: 409,
+    message:
+      "Transfer responsibility before suspending or removing the responsible administrator.",
+    category: "conflict",
+    retryable: false,
+  },
+  LAST_ADMINISTRATOR_REQUIRED: {
+    status: 409,
+    message: "The company must retain an active administrator.",
+    category: "conflict",
+    retryable: false,
+  },
+  RESPONSIBLE_APPROVAL_REQUIRED: {
+    status: 403,
+    message:
+      "Only the responsible administrator can reactivate an administrator.",
+    category: "authorization",
+    retryable: false,
+  },
   PERMISSION_DENIED: {
     status: 403,
     message: "You do not have permission to perform this action.",

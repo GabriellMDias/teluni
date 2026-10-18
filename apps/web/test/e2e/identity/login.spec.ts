@@ -32,7 +32,10 @@ test("signs in through Keycloak, manages sessions and signs out", async ({
   await afterNavigation(
     page.getByText("Entre para ver suas sessões."),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Entrar", exact: true }).last().click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "Entrar", exact: true })
+    .click();
   await afterNavigation(page).toHaveURL(
     /\/realms\/teluni\/protocol\/openid-connect\/auth/,
   );

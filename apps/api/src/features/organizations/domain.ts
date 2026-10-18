@@ -6,6 +6,7 @@ export type AccessRole =
   "COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR";
 export type CompanyStatus = "ACTIVE" | "SUSPENDED";
 export type BranchStatus = "ACTIVE" | "ARCHIVED";
+export type MembershipStatus = "ACTIVE" | "SUSPENDED" | "REMOVED";
 export type Locale = "pt-BR" | "en-US";
 
 /** Stable business capabilities; persisted grants store roles, not these names. */
@@ -14,6 +15,7 @@ export type Capability =
   | "company.settings.manage"
   | "branches.view"
   | "branches.manage"
+  | "members.manage"
   | "audit.view";
 
 type Preset = Readonly<{
@@ -31,6 +33,7 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "company.settings.manage",
       "branches.view",
       "branches.manage",
+      "members.manage",
       "audit.view",
     ]),
     requiresStrongAuthentication: true,
@@ -155,7 +158,12 @@ export type OrganizationFailureCode =
   | "RESOURCE_VERSION_CONFLICT"
   | "IDEMPOTENCY_KEY_REUSED"
   | "BRANCH_NAME_IN_USE"
-  | "BRANCH_ARCHIVED";
+  | "BRANCH_ARCHIVED"
+  | "MEMBERSHIP_REMOVED"
+  | "RESPONSIBLE_ADMINISTRATOR_PROTECTED"
+  | "LAST_ADMINISTRATOR_REQUIRED"
+  | "RESPONSIBLE_APPROVAL_REQUIRED"
+  | "RECENT_AUTHENTICATION_REQUIRED";
 
 export class OrganizationFailure extends Error {
   readonly code: OrganizationFailureCode;

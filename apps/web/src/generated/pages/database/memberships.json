@@ -4,7 +4,7 @@
   "description": "A principal's membership in one company; access comes only from its unexpired grants.",
   "owner": "Organizations",
   "classification": "CONFIDENTIAL",
-  "lifecycle": "Created ACTIVE; suspension and removal are states that deny access while retaining attribution.",
+  "lifecycle": "Created ACTIVE; company administrators may suspend, reactivate or terminally remove membership with an observed version. Responsibility and the last active administrator are protected. Historical attribution is retained; no runtime deletion.",
   "columns": [
     {
       "Column": "id",

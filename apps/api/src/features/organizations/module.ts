@@ -1,5 +1,5 @@
 import type { ApiModule } from "../../module.js";
-import type { HumanSessionPort } from "../identity/public.js";
+import type { HumanProfilePort, HumanSessionPort } from "../identity/public.js";
 import { organizationOperations } from "./contracts.js";
 import { organizationErrors } from "./errors.js";
 import { PrismaOrganizationRepository } from "./prisma-repository.js";
@@ -13,6 +13,7 @@ import { OrganizationService } from "./service.js";
  */
 export function createOrganizationsModule(options: {
   sessions: HumanSessionPort;
+  profiles: HumanProfilePort;
   rateLimit?: { max: number; timeWindow: number };
 }): { module: ApiModule; companies: CompanyAccessPort } {
   let service: OrganizationService | undefined;
@@ -33,6 +34,7 @@ export function createOrganizationsModule(options: {
       // Activation guarantees the database and the identity module.
       const active = new OrganizationService(
         new PrismaOrganizationRepository(database!),
+        options.profiles,
       );
       service = active;
       return {

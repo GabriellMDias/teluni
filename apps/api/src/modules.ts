@@ -8,6 +8,7 @@ import { createOrganizationsModule } from "./features/organizations/module.js";
 const identity = createIdentityModule();
 const organizations = createOrganizationsModule({
   sessions: identity.sessions,
+  profiles: identity.profiles,
 });
 
 export const apiModules: readonly ApiModule[] = [

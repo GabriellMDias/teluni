@@ -82,6 +82,21 @@ type SealedTokens = {
 const leaseWaitMs = 3000;
 const leasePollMs = 100;
 
+function presentationText(
+  value: string | undefined,
+  maxLength: number,
+): string | null {
+  const text = value?.trim();
+  return text &&
+    text.length <= maxLength &&
+    [...text].every(
+      (character) =>
+        character.codePointAt(0)! >= 32 && character.codePointAt(0)! !== 127,
+    )
+    ? text
+    : null;
+}
+
 export class IdentityService {
   readonly #repository: PrismaIdentityRepository;
   readonly #provider: IdentityProvider;
@@ -245,12 +260,16 @@ export class IdentityService {
     const state = await this.#repository.createSession({
       id,
       principalId: principal.id,
+      profile: {
+        displayName: presentationText(claims.displayName, 200),
+        email: presentationText(claims.email, 320),
+      },
       tokenHash: hashSecret(sessionToken),
       providerSessionId: claims.providerSessionId,
       assuranceLevel: claims.assuranceLevel,
       authenticatedAt: claims.authenticatedAt,
       strongAuthenticatedAt: strong ? claims.authenticatedAt : null,
-      // No memberships exist yet, so the strict administrative bound applies.
+      // Per-membership idle limits remain pending; use the stricter bound.
       idleTimeoutSeconds: sessionPolicy.administrativeIdleSeconds,
       providerTokens: this.#seal(id, tokens),
       accessTokenLifetimeSeconds: tokens.expiresInSeconds,

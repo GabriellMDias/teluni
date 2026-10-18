@@ -20,6 +20,8 @@ model Principal {
   status     PrincipalStatus @default(ACTIVE)
   createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   disabledAt DateTime?       @map("disabled_at") @db.Timestamptz(3)
+  displayName String?        @map("display_name") @db.VarChar(200)
+  verifiedEmail String?      @map("verified_email") @db.VarChar(320)
   sessions   HumanSession[]
   // Back-relations Prisma requires for downstream modules' references; they
   // grant no access and are never traversed across the module boundary.

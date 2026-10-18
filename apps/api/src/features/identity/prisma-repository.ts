@@ -1,5 +1,6 @@
 import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import type { HumanProfile } from "./public.js";
 import {
   sessionPolicy,
   type RevocationReason,
@@ -49,6 +50,7 @@ export type NewSession = Readonly<{
   idleTimeoutSeconds: number;
   providerTokens: Buffer;
   accessTokenLifetimeSeconds: number;
+  profile: { displayName: string | null; email: string | null };
 }>;
 
 type SessionRow = {
@@ -178,6 +180,9 @@ export class PrismaIdentityRepository {
   async createSession(input: NewSession): Promise<SessionState> {
     return this.#db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM principals WHERE id = ${input.principalId}::uuid FOR UPDATE`;
+      await tx.$executeRaw`UPDATE principals
+        SET display_name = ${input.profile.displayName}, verified_email = ${input.profile.email}
+        WHERE id = ${input.principalId}::uuid`;
       const [{ count }] = await tx.$queryRaw<{ count: number }[]>`
         SELECT count(*)::int AS count FROM human_sessions
         WHERE principal_id = ${input.principalId}::uuid AND state = 'ACTIVE'
@@ -197,6 +202,29 @@ export class PrismaIdentityRepository {
           now() + make_interval(secs => ${Math.max(input.accessTokenLifetimeSeconds - 5, 0)}::double precision))`;
       return state;
     });
+  }
+
+  async readProfiles(
+    principalIds: readonly string[],
+  ): Promise<readonly HumanProfile[]> {
+    const ids = [...new Set(principalIds)];
+    if (ids.length > 100)
+      throw new Error("Profile lookup exceeds the authorized page size");
+    if (ids.length === 0) return [];
+    const rows = await this.#db.$queryRaw<
+      {
+        id: string;
+        display_name: string | null;
+        verified_email: string | null;
+      }[]
+    >`
+      SELECT id, display_name, verified_email FROM principals
+      WHERE id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})`;
+    return rows.map((row) => ({
+      principalId: row.id,
+      displayName: row.display_name,
+      email: row.verified_email,
+    }));
   }
 
   async #select(where: Prisma.Sql): Promise<StoredSession[]> {

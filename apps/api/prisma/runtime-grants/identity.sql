@@ -3,7 +3,7 @@
 -- runtime role after migrations. No runtime DELETE exists except for expired
 -- logout-token replay records.
 GRANT SELECT, INSERT ON principals TO orion_runtime;
-GRANT UPDATE (status, disabled_at) ON principals TO orion_runtime;
+GRANT UPDATE (status, disabled_at, display_name, verified_email) ON principals TO orion_runtime;
 GRANT SELECT, INSERT ON human_sessions TO orion_runtime;
 GRANT UPDATE (state, idle_timeout_seconds, last_activity_at, provider_tokens, access_token_expires_at, provider_checked_at, refresh_lease_until, revoked_at, revocation_reason) ON human_sessions TO orion_runtime;
 GRANT SELECT, INSERT ON oidc_login_attempts TO orion_runtime;

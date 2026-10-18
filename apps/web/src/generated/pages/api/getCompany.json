@@ -119,6 +119,7 @@
                         },
                         { "type": "string", "const": "branches.view" },
                         { "type": "string", "const": "branches.manage" },
+                        { "type": "string", "const": "members.manage" },
                         { "type": "string", "const": "audit.view" }
                       ]
                     }
@@ -134,6 +135,7 @@
                         },
                         { "type": "string", "const": "branches.view" },
                         { "type": "string", "const": "branches.manage" },
+                        { "type": "string", "const": "members.manage" },
                         { "type": "string", "const": "audit.view" }
                       ]
                     }
@@ -220,6 +222,7 @@
                     { "type": "string", "const": "company.settings.manage" },
                     { "type": "string", "const": "branches.view" },
                     { "type": "string", "const": "branches.manage" },
+                    { "type": "string", "const": "members.manage" },
                     { "type": "string", "const": "audit.view" }
                   ]
                 }
@@ -232,6 +235,7 @@
                     { "type": "string", "const": "company.settings.manage" },
                     { "type": "string", "const": "branches.view" },
                     { "type": "string", "const": "branches.manage" },
+                    { "type": "string", "const": "members.manage" },
                     { "type": "string", "const": "audit.view" }
                   ]
                 }
@@ -293,12 +297,12 @@
         { "name": "access.responsible", "type": "boolean", "required": true },
         {
           "name": "access.capabilities",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"audit.view\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"audit.view\"",
           "required": true
         },
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"audit.view\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"audit.view\"",
           "required": true
         }
       ]

@@ -32,6 +32,16 @@
           "classification": "INTERNAL",
           "nullMeaning": "The principal is active.",
           "unit": "UTC instant, millisecond precision"
+        },
+        "display_name": {
+          "description": "Presentation name from the last verified login; never used as identity or authorization evidence.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No bounded display name has been obtained from a verified login."
+        },
+        "verified_email": {
+          "description": "Presentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No bounded verified email snapshot has been obtained."
         }
       },
       "objects": {
@@ -39,7 +49,9 @@
         "principals_issuer_subject_key": "One application principal per provider identity; concurrent first logins converge on one row.",
         "principals_issuer_nonblank": "Issuer is an absolute HTTP(S) URL without whitespace.",
         "principals_subject_nonblank": "Provider subject cannot be blank.",
-        "principals_disabled_state": "A disablement instant exists exactly for disabled principals."
+        "principals_disabled_state": "A disablement instant exists exactly for disabled principals.",
+        "principals_display_name_nonblank": "A presentation name, when present, cannot be blank.",
+        "principals_verified_email_nonblank": "A verified-login email snapshot, when present, cannot be blank."
       }
     },
     "human_sessions": {

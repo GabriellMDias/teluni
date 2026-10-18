@@ -28,6 +28,7 @@ import {
   type Company,
 } from "./api.js";
 import { organizationMessages, timeZoneChoices } from "./messages.js";
+import { CompanyMembers } from "./members.js";
 
 export function useOrganizationMessages() {
   const locale = useMemo(browserLocale, []);
@@ -725,7 +726,7 @@ export function CompanyPage({
 }: {
   companyId: string;
   cursor?: string;
-  view?: "settings" | "history";
+  view?: "settings" | "history" | "members";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -815,6 +816,16 @@ export function CompanyPage({
             {t.settingsTitle}
           </Link>
         )}
+        {access.capabilities.includes("members.manage") && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "members" }}
+            aria-current={view === "members" ? "page" : undefined}
+          >
+            {t.membersTitle}
+          </Link>
+        )}
         {access.capabilities.includes("audit.view") && (
           <Link
             to="/companies/$companyId"
@@ -826,7 +837,21 @@ export function CompanyPage({
           </Link>
         )}
       </nav>
-      {view === "settings" ? (
+      {view === "members" ? (
+        access.capabilities.includes("members.manage") ? (
+          <CompanyMembers
+            companyId={companyId}
+            principalId={session.data.principalId}
+            cursor={cursor}
+            returnTo={returnTo}
+            t={t}
+          />
+        ) : (
+          <p role="alert" className="notice notice-error">
+            {t.errors.PERMISSION_DENIED}
+          </p>
+        )
+      ) : view === "settings" ? (
         access.capabilities.includes("company.settings.manage") ? (
           <CompanySettings company={company.data.company} />
         ) : (

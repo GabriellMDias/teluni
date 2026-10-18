@@ -5,7 +5,7 @@ import { identityOperations } from "./contracts.js";
 import { identityErrors } from "./errors.js";
 import { PrismaIdentityRepository } from "./prisma-repository.js";
 import { createKeycloakProvider, type IdentityProvider } from "./provider.js";
-import type { HumanSessionPort } from "./public.js";
+import type { HumanProfilePort, HumanSessionPort } from "./public.js";
 import { registerIdentityRoutes, sessionRequestFrom } from "./routes.js";
 import { SessionKeyRing } from "./session-crypto.js";
 import { IdentityService } from "./service.js";
@@ -20,9 +20,17 @@ export function createIdentityModule(
     provider?: IdentityProvider;
     rateLimit?: { max: number; timeWindow: number };
   } = {},
-): { module: ApiModule; sessions: HumanSessionPort } {
+): {
+  module: ApiModule;
+  sessions: HumanSessionPort;
+  profiles: HumanProfilePort;
+} {
   let active:
-    | { service: IdentityService; names: ReturnType<typeof cookieNames> }
+    | {
+        service: IdentityService;
+        repository: PrismaIdentityRepository;
+        names: ReturnType<typeof cookieNames>;
+      }
     | undefined;
   let log: Logger | undefined;
   const sessions: HumanSessionPort = {
@@ -51,8 +59,9 @@ export function createIdentityModule(
     activate: ({ database, verifier, humanIdentity }) => {
       // Activation guarantees every declared requirement is configured.
       const settings = humanIdentity!;
+      const repository = new PrismaIdentityRepository(database!);
       const service = new IdentityService({
-        repository: new PrismaIdentityRepository(database!),
+        repository,
         provider: options.provider ?? createKeycloakProvider(settings),
         verifier: verifier!,
         keys: new SessionKeyRing(settings.sessionKeys),
@@ -65,6 +74,7 @@ export function createIdentityModule(
       });
       active = {
         service,
+        repository,
         names: cookieNames(settings.publicOrigin.startsWith("https:")),
       };
       return {
@@ -79,5 +89,11 @@ export function createIdentityModule(
       };
     },
   };
-  return { module, sessions };
+  const profiles: HumanProfilePort = {
+    getMany(principalIds) {
+      if (!active) throw new Error("The identity module is not active");
+      return active.repository.readProfiles(principalIds);
+    },
+  };
+  return { module, sessions, profiles };
 }

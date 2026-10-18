@@ -228,6 +228,23 @@
       "file": "pages/api/listCompanyAuditEvents.json"
     },
     {
+      "id": "api/listCompanyMembers",
+      "kind": "api",
+      "title": "listCompanyMembers",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/members",
+      "method": "GET",
+      "path": "/companies/{companyId}/members",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listCompanyMembers.json"
+    },
+    {
       "id": "api/listSessions",
       "kind": "api",
       "title": "listSessions",
@@ -365,6 +382,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/updateCompany.json"
+    },
+    {
+      "id": "api/updateCompanyMemberStatus",
+      "kind": "api",
+      "title": "updateCompanyMemberStatus",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/members/{membershipId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/members/{membershipId}",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateCompanyMemberStatus.json"
     },
     {
       "id": "database/backchannel_logout_replays",
@@ -1580,24 +1615,25 @@
   "search": {
     "shards": [
       { "file": "search/0000.json", "count": 17, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 17, "kinds": ["api", "database"] },
+      { "file": "search/0001.json", "count": 14, "kinds": ["api"] },
       {
         "file": "search/0002.json",
-        "count": 73,
-        "kinds": ["component", "database", "repository"]
+        "count": 45,
+        "kinds": ["api", "component", "database", "repository"]
       },
-      { "file": "search/0003.json", "count": 110, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 124, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 175, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 114, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 128, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 90, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 57, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 74, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 69, "kinds": ["repository"] }
+      { "file": "search/0003.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 117, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 147, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 151, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 136, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 89, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 56, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 99, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 95, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 14, "kinds": ["repository"] }
     ],
-    "count": 1216
+    "count": 1220
   }
 }

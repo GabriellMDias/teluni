@@ -28,13 +28,15 @@ const companyRoute = createRoute({
   path: "/companies/$companyId",
   validateSearch: (
     search: Record<string, unknown>,
-  ): { cursor?: string; view?: "settings" | "history" } => ({
+  ): { cursor?: string; view?: "settings" | "history" | "members" } => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
     search.cursor.length <= 1024
       ? { cursor: search.cursor }
       : {}),
-    ...(search.view === "settings" || search.view === "history"
+    ...(search.view === "settings" ||
+    search.view === "history" ||
+    search.view === "members"
       ? { view: search.view }
       : {}),
   }),

@@ -7,6 +7,7 @@ GRANT UPDATE (display_name, status, default_locale, time_zone, version, updated_
 GRANT SELECT, INSERT ON branches TO orion_runtime;
 GRANT UPDATE (name, time_zone, status, version, updated_at) ON branches TO orion_runtime;
 GRANT SELECT, INSERT ON memberships TO orion_runtime;
+GRANT UPDATE (status, version, updated_at) ON memberships TO orion_runtime;
 GRANT SELECT, INSERT ON company_responsibilities TO orion_runtime;
 GRANT SELECT, INSERT ON membership_grants TO orion_runtime;
 GRANT SELECT, INSERT ON membership_grant_branches TO orion_runtime;

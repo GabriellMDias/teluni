@@ -8,7 +8,11 @@ import {
   type HumanSessionPort,
 } from "../identity/public.js";
 import { organizationOperations } from "./contracts.js";
-import { OrganizationFailure, type Locale } from "./domain.js";
+import {
+  OrganizationFailure,
+  type Locale,
+  type MembershipStatus,
+} from "./domain.js";
 import { respond } from "./errors.js";
 import type { BranchRecord, CompanyRecord } from "./prisma-repository.js";
 import type { OrganizationService } from "./service.js";
@@ -91,6 +95,7 @@ export function registerOrganizationRoutes(
           const params = (request.params ?? {}) as {
             companyId?: string;
             branchId?: string;
+            membershipId?: string;
           };
           const body = (request.body ?? {}) as Record<string, unknown>;
           const query = (request.query ?? {}) as {
@@ -101,6 +106,22 @@ export function registerOrganizationRoutes(
           const branchId = params.branchId ?? "";
           try {
             switch (operation.operationId) {
+              case "listCompanyMembers":
+                return reply.send(
+                  await service.listMembers(context, companyId, {
+                    limit: query.limit ?? 50,
+                    ...(query.cursor ? { cursor: query.cursor } : {}),
+                  }),
+                );
+              case "updateCompanyMemberStatus":
+                await service.updateMemberStatus(
+                  context,
+                  companyId,
+                  params.membershipId ?? "",
+                  body.expectedVersion as number,
+                  body.status as MembershipStatus,
+                );
+                return reply.code(204).send();
               case "createCompany": {
                 const created = await service.createCompany(
                   context,

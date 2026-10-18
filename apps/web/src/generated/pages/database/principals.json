@@ -65,6 +65,26 @@
       "Meaning": "PostgreSQL-clock instant of global disablement.",
       "Null meaning": "The principal is active.",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "display_name",
+      "PostgreSQL type": "character varying(200)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Presentation name from the last verified login; never used as identity or authorization evidence.",
+      "Null meaning": "No bounded display name has been obtained from a verified login.",
+      "Unit": "—"
+    },
+    {
+      "Column": "verified_email",
+      "PostgreSQL type": "character varying(320)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Presentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations.",
+      "Null meaning": "No bounded verified email snapshot has been obtained.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -72,6 +92,11 @@
       "Object": "principals_disabled_state",
       "Physical definition": "CHECK (((status = 'DISABLED'::\"PrincipalStatus\") = (disabled_at IS NOT NULL)))",
       "Purpose": "A disablement instant exists exactly for disabled principals."
+    },
+    {
+      "Object": "principals_display_name_nonblank",
+      "Physical definition": "CHECK (((display_name IS NULL) OR (btrim((display_name)::text) <> ''::text)))",
+      "Purpose": "A presentation name, when present, cannot be blank."
     },
     {
       "Object": "principals_issuer_nonblank",
@@ -87,6 +112,11 @@
       "Object": "principals_subject_nonblank",
       "Physical definition": "CHECK (((subject)::text ~ '[^[:space:]]'::text))",
       "Purpose": "Provider subject cannot be blank."
+    },
+    {
+      "Object": "principals_verified_email_nonblank",
+      "Physical definition": "CHECK (((verified_email IS NULL) OR (btrim((verified_email)::text) <> ''::text)))",
+      "Purpose": "A verified-login email snapshot, when present, cannot be blank."
     },
     {
       "Object": "principals_issuer_subject_key",

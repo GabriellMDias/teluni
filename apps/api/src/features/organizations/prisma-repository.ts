@@ -8,6 +8,7 @@ import {
   type CompanyStatus,
   type Grant,
   type Locale,
+  type MembershipStatus,
 } from "./domain.js";
 
 export type CompanyRecord = Readonly<{
@@ -51,6 +52,15 @@ export type ResolvedMembership = Readonly<{
 }>;
 
 export type Actor = Readonly<{ principalId: string; membershipId: string }>;
+
+export type MemberRecord = Readonly<{
+  id: string;
+  principalId: string;
+  status: MembershipStatus;
+  version: number;
+  responsible: boolean;
+  roles: AccessRole[];
+}>;
 
 type CompanyRow = {
   id: string;
@@ -118,6 +128,140 @@ export class PrismaOrganizationRepository {
 
   constructor(database: Database) {
     this.#db = database;
+  }
+
+  async listMembers(
+    companyId: string,
+    options: { limit: number; after?: string },
+  ): Promise<MemberRecord[]> {
+    const after = options.after
+      ? Prisma.sql`AND m.id > ${options.after}::uuid`
+      : Prisma.empty;
+    const rows = await this.#db.$queryRaw<
+      {
+        id: string;
+        principal_id: string;
+        status: MembershipStatus;
+        version: number;
+        responsible: boolean;
+        roles: AccessRole[];
+      }[]
+    >`
+      SELECT m.id, m.principal_id, m.status::text AS status, m.version,
+        COALESCE(r.membership_id = m.id, false) AS responsible,
+        COALESCE(array_agg(DISTINCT g.role::text) FILTER (WHERE g.id IS NOT NULL), '{}') AS roles
+      FROM memberships m
+      LEFT JOIN company_responsibilities r ON r.company_id = m.company_id
+      LEFT JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
+        AND g.revoked_at IS NULL AND g.starts_at <= statement_timestamp()
+        AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())
+      WHERE m.company_id = ${companyId}::uuid ${after}
+      GROUP BY m.id, r.membership_id ORDER BY m.id LIMIT ${options.limit}`;
+    return rows.map((row) => ({
+      id: row.id,
+      principalId: row.principal_id,
+      status: row.status,
+      version: row.version,
+      responsible: row.responsible,
+      roles: [...row.roles].sort(),
+    }));
+  }
+
+  /** Company-first locking is mandatory for every authority-changing writer. */
+  async updateMemberStatus(
+    actor: Actor,
+    companyId: string,
+    memberId: string,
+    expectedVersion: number,
+    status: MembershipStatus,
+    strongAuthenticatedAt: Date | null,
+  ): Promise<void> {
+    await this.#db.$transaction(async (tx) => {
+      const [company] = await tx.$queryRaw<{ status: CompanyStatus }[]>`
+        SELECT status::text AS status FROM companies WHERE id = ${companyId}::uuid FOR UPDATE`;
+      // Lock both memberships in a deterministic order. Recheck after waiting,
+      // rather than trusting the service's earlier access snapshot.
+      const members = await tx.$queryRaw<
+        {
+          id: string;
+          principal_id: string;
+          status: MembershipStatus;
+          version: number;
+        }[]
+      >`
+        SELECT id, principal_id, status::text AS status, version FROM memberships
+        WHERE company_id = ${companyId}::uuid AND id IN (${actor.membershipId}::uuid, ${memberId}::uuid)
+        ORDER BY id FOR UPDATE`;
+      const currentActor = members.find(
+        (member) => member.id === actor.membershipId,
+      );
+      if (
+        !company ||
+        !currentActor ||
+        currentActor.principal_id !== actor.principalId ||
+        currentActor.status !== "ACTIVE"
+      )
+        throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      if (company.status !== "ACTIVE")
+        throw new OrganizationFailure("COMPANY_SUSPENDED");
+      const adminGrants = await tx.$queryRaw<{ membership_id: string }[]>`
+        SELECT membership_id FROM membership_grants WHERE company_id = ${companyId}::uuid
+          AND role = 'COMPANY_ADMINISTRATOR' AND scope = 'COMPANY'
+          AND revoked_at IS NULL AND starts_at <= statement_timestamp()
+          AND (expires_at IS NULL OR expires_at > statement_timestamp())`;
+      const administrators = new Set(
+        adminGrants.map((grant) => grant.membership_id),
+      );
+      if (!administrators.has(actor.membershipId))
+        throw new OrganizationFailure("PERMISSION_DENIED");
+      const target = members.find((member) => member.id === memberId);
+      if (!target) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      if (target.version !== expectedVersion)
+        throw new OrganizationFailure("RESOURCE_VERSION_CONFLICT");
+      if (target.status === "REMOVED")
+        throw new OrganizationFailure("MEMBERSHIP_REMOVED");
+      if (target.status === status) return;
+      const [responsibility] = await tx.$queryRaw<{ membership_id: string }[]>`
+        SELECT membership_id FROM company_responsibilities WHERE company_id = ${companyId}::uuid`;
+      if (status !== "ACTIVE" && responsibility?.membership_id === memberId)
+        throw new OrganizationFailure("RESPONSIBLE_ADMINISTRATOR_PROTECTED");
+      const [restoringAdministrator] = await tx.$queryRaw<
+        { present: boolean }[]
+      >`
+        SELECT EXISTS (SELECT 1 FROM membership_grants
+          WHERE company_id = ${companyId}::uuid AND membership_id = ${memberId}::uuid
+            AND role = 'COMPANY_ADMINISTRATOR' AND revoked_at IS NULL
+            AND (expires_at IS NULL OR expires_at > statement_timestamp())) AS present`;
+      if (status === "ACTIVE" && restoringAdministrator?.present) {
+        if (responsibility?.membership_id !== actor.membershipId)
+          throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
+        const [assurance] = await tx.$queryRaw<{ recent: boolean }[]>`
+          SELECT (${strongAuthenticatedAt}::timestamptz IS NOT NULL AND
+            ${strongAuthenticatedAt}::timestamptz >= statement_timestamp() - interval '5 minutes') AS recent`;
+        if (!assurance?.recent)
+          throw new OrganizationFailure("RECENT_AUTHENTICATION_REQUIRED");
+      }
+      if (status !== "ACTIVE" && administrators.has(memberId)) {
+        const [remaining] = await tx.$queryRaw<{ count: number }[]>`
+          SELECT count(DISTINCT m.id)::int AS count FROM memberships m
+          JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
+          WHERE m.company_id = ${companyId}::uuid AND m.status = 'ACTIVE' AND m.id <> ${memberId}::uuid
+            AND g.role = 'COMPANY_ADMINISTRATOR' AND g.scope = 'COMPANY'
+            AND g.revoked_at IS NULL AND g.starts_at <= statement_timestamp()
+            AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())`;
+        if (!remaining || remaining.count === 0)
+          throw new OrganizationFailure("LAST_ADMINISTRATOR_REQUIRED");
+      }
+      await tx.$executeRaw`UPDATE memberships SET status = ${status}::"MembershipStatus", version = version + 1,
+        updated_at = GREATEST(statement_timestamp(), updated_at + interval '1 millisecond')
+        WHERE company_id = ${companyId}::uuid AND id = ${memberId}::uuid AND version = ${expectedVersion}`;
+      await this.#audit(tx, companyId, actor, {
+        action: "membership.status_changed",
+        targetType: "membership",
+        targetId: memberId,
+        details: { previousStatus: target.status, status },
+      });
+    });
   }
 
   /** The principal's active membership and effective grants, or null. */

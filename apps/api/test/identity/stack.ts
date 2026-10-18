@@ -7,7 +7,10 @@ import { createApp } from "../../src/app.js";
 import { createAccessTokenVerifier } from "../../src/authentication.js";
 import { createDatabase, type Database } from "../../src/database.js";
 import { createIdentityModule } from "../../src/features/identity/module.js";
-import type { HumanSessionPort } from "../../src/features/identity/public.js";
+import type {
+  HumanProfilePort,
+  HumanSessionPort,
+} from "../../src/features/identity/public.js";
 import {
   activateModules,
   type HumanIdentitySettings,
@@ -31,6 +34,7 @@ export type IdentityStack = Readonly<{
   admin: KeycloakAdmin;
   issuer: string;
   sessions: HumanSessionPort;
+  profiles: HumanProfilePort;
   /** Superuser access for arranging and inspecting state. */
   sql: pg.Client;
   database: Database;
@@ -121,6 +125,7 @@ export async function withIdentityStack<T>(
           admin,
           issuer,
           sessions: identity.sessions,
+          profiles: identity.profiles,
           sql,
           database,
         });

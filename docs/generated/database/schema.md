@@ -20,15 +20,19 @@ Lifecycle: Created at first verified login; never deleted by the runtime. Disabl
 | `status` | `"PrincipalStatus"` | no | `'ACTIVE'::"PrincipalStatus"` | INTERNAL | ACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound. | — | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of principal provisioning. | — | UTC instant, millisecond precision |
 | `disabled_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant of global disablement. | The principal is active. | UTC instant, millisecond precision |
+| `display_name` | `character varying(200)` | yes | — | CONFIDENTIAL | Presentation name from the last verified login; never used as identity or authorization evidence. | No bounded display name has been obtained from a verified login. | — |
+| `verified_email` | `character varying(320)` | yes | — | CONFIDENTIAL | Presentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations. | No bounded verified email snapshot has been obtained. | — |
 
 ### Constraints and indexes
 
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `principals_disabled_state` | `CHECK (((status = 'DISABLED'::"PrincipalStatus") = (disabled_at IS NOT NULL)))` | A disablement instant exists exactly for disabled principals. |
+| `principals_display_name_nonblank` | `CHECK (((display_name IS NULL) OR (btrim((display_name)::text) <> ''::text)))` | A presentation name, when present, cannot be blank. |
 | `principals_issuer_nonblank` | `CHECK (((issuer)::text ~ '^https?://[^[:space:]]+$'::text))` | Issuer is an absolute HTTP(S) URL without whitespace. |
 | `principals_pkey` | `PRIMARY KEY (id)` | Unique immutable application principal identity. |
 | `principals_subject_nonblank` | `CHECK (((subject)::text ~ '[^[:space:]]'::text))` | Provider subject cannot be blank. |
+| `principals_verified_email_nonblank` | `CHECK (((verified_email IS NULL) OR (btrim((verified_email)::text) <> ''::text)))` | A verified-login email snapshot, when present, cannot be blank. |
 | `principals_issuer_subject_key` | `CREATE UNIQUE INDEX principals_issuer_subject_key ON public.principals USING btree (issuer, subject)` | One application principal per provider identity; concurrent first logins converge on one row. |
 
 ## human_sessions
@@ -203,7 +207,7 @@ A principal's membership in one company; access comes only from its unexpired gr
 
 Owner: Organizations. Classification: CONFIDENTIAL.
 
-Lifecycle: Created ACTIVE; suspension and removal are states that deny access while retaining attribution.
+Lifecycle: Created ACTIVE; company administrators may suspend, reactivate or terminally remove membership with an observed version. Responsibility and the last active administrator are protected. Historical attribution is retained; no runtime deletion.
 
 | Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
 | --- | --- | --- | --- | --- | --- | --- | --- |

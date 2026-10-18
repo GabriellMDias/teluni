@@ -20,6 +20,7 @@ const capability = Type.Union([
   Type.Literal("company.settings.manage"),
   Type.Literal("branches.view"),
   Type.Literal("branches.manage"),
+  Type.Literal("members.manage"),
   Type.Literal("audit.view"),
 ]);
 const limit = Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }));
@@ -30,6 +31,36 @@ const companyParams = Type.Object(
 );
 const branchParams = Type.Object(
   { companyId: uuid, branchId: uuid },
+  { additionalProperties: false },
+);
+const memberParams = Type.Object(
+  { companyId: uuid, membershipId: uuid },
+  { additionalProperties: false },
+);
+const membershipStatus = Type.Union([
+  Type.Literal("ACTIVE"),
+  Type.Literal("SUSPENDED"),
+  Type.Literal("REMOVED"),
+]);
+const memberPageSchema = Type.Object(
+  {
+    items: Type.Array(
+      Type.Object(
+        {
+          id: uuid,
+          principalId: uuid,
+          status: membershipStatus,
+          version,
+          responsible: Type.Boolean(),
+          roles: Type.Array(role),
+          displayName: Type.Union([Type.String(), Type.Null()]),
+          email: Type.Union([Type.String(), Type.Null()]),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    nextCursor: Type.Union([Type.String(), Type.Null()]),
+  },
   { additionalProperties: false },
 );
 
@@ -160,6 +191,51 @@ const creationKey = Type.Object({
 });
 
 export const organizationOperations = [
+  {
+    method: "GET",
+    url: "/companies/:companyId/members",
+    operationId: "listCompanyMembers",
+    access: "session",
+    description:
+      "List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration and two-step verification. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page.",
+    schema: {
+      params: companyParams,
+      querystring: Type.Object(
+        { limit, cursor },
+        { additionalProperties: false },
+      ),
+      response: { 200: memberPageSchema, ...common },
+    },
+    expectedErrors: [
+      ...scoped,
+      "PERMISSION_DENIED",
+      "STRONG_AUTHENTICATION_REQUIRED",
+    ],
+  },
+  {
+    method: "PATCH",
+    url: "/companies/:companyId/members/:membershipId",
+    operationId: "updateCompanyMemberStatus",
+    access: "session",
+    description:
+      "Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with strong authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change.",
+    schema: {
+      params: memberParams,
+      body: Type.Object(
+        { expectedVersion: version, status: membershipStatus },
+        { additionalProperties: false },
+      ),
+      response: { 204: Type.Null(), ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "MEMBERSHIP_REMOVED",
+      "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
+      "LAST_ADMINISTRATOR_REQUIRED",
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+      "RECENT_AUTHENTICATION_REQUIRED",
+    ],
+  },
   {
     method: "POST",
     url: "/companies",

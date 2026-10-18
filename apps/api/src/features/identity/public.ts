@@ -22,3 +22,15 @@ export type HumanSessionPort = Readonly<{
     request: Readonly<{ method: string; headers: IncomingHttpHeaders }>,
   ): Promise<HumanContext>;
 }>;
+
+/** Presentation snapshots from the last verified login, never authority. */
+export type HumanProfile = Readonly<{
+  principalId: string;
+  displayName: string | null;
+  email: string | null;
+}>;
+
+/** Callers must first authorize every principal through their own resources. */
+export type HumanProfilePort = Readonly<{
+  getMany(principalIds: readonly string[]): Promise<readonly HumanProfile[]>;
+}>;

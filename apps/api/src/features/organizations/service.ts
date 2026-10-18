@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { HumanContext } from "../identity/public.js";
+import type { HumanContext, HumanProfilePort } from "../identity/public.js";
 import {
   branchReach,
   companyAccess,
@@ -14,6 +14,7 @@ import {
   type Capability,
   type CompanyAccess,
   type Locale,
+  type MembershipStatus,
 } from "./domain.js";
 import type {
   AuditRecord,
@@ -27,6 +28,7 @@ const capabilities: readonly Capability[] = [
   "company.settings.manage",
   "branches.view",
   "branches.manage",
+  "members.manage",
   "audit.view",
 ];
 
@@ -59,7 +61,7 @@ function decodeCursor(
   binding: {
     company: string;
     principal: string;
-    kind: "companies" | "branches" | "audit";
+    kind: "companies" | "branches" | "audit" | "members";
     scope: string;
   },
 ): Cursor | undefined {
@@ -87,13 +89,15 @@ function decodeCursor(
         );
       if (
         validId &&
-        (binding.kind === "branches"
-          ? (cursor.s === "ACTIVE" || cursor.s === "ARCHIVED") &&
-            typeof cursor.n === "string" &&
-            cursor.n.length > 0 &&
-            cursor.n.length <= 120
-          : typeof cursor.t === "string" &&
-            new Date(cursor.t).toISOString() === cursor.t)
+        (binding.kind === "members"
+          ? true
+          : binding.kind === "branches"
+            ? (cursor.s === "ACTIVE" || cursor.s === "ARCHIVED") &&
+              typeof cursor.n === "string" &&
+              cursor.n.length > 0 &&
+              cursor.n.length <= 120
+            : typeof cursor.t === "string" &&
+              new Date(cursor.t).toISOString() === cursor.t)
       )
         return cursor;
     }
@@ -118,9 +122,78 @@ function validTimeZone(value: string): string {
 /** Application operations; every one resolves current access first. */
 export class OrganizationService {
   readonly #repository: PrismaOrganizationRepository;
+  readonly #profiles: HumanProfilePort;
 
-  constructor(repository: PrismaOrganizationRepository) {
+  constructor(
+    repository: PrismaOrganizationRepository,
+    profiles: HumanProfilePort,
+  ) {
     this.#repository = repository;
+    this.#profiles = profiles;
+  }
+
+  async listMembers(
+    context: HumanContext,
+    companyId: string,
+    options: { limit: number; cursor?: string },
+  ) {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    const cursor = decodeCursor(options.cursor, {
+      company: companyId,
+      principal: context.principalId,
+      kind: "members",
+      scope: "company",
+    });
+    const rows = await this.#repository.listMembers(companyId, {
+      limit: options.limit + 1,
+      ...(cursor ? { after: cursor.i } : {}),
+    });
+    const items = rows.slice(0, options.limit);
+    // Only IDs selected through this company's authorized membership page may
+    // cross into identity's presentation port; there is no global directory API.
+    const profiles = new Map(
+      (
+        await this.#profiles.getMany(items.map((member) => member.principalId))
+      ).map((profile) => [profile.principalId, profile]),
+    );
+    const last = items.at(-1);
+    return {
+      items: items.map((member) => ({
+        ...member,
+        displayName: profiles.get(member.principalId)?.displayName ?? null,
+        email: profiles.get(member.principalId)?.email ?? null,
+      })),
+      nextCursor:
+        rows.length > options.limit && last
+          ? encodeCursor({
+              c: companyId,
+              p: context.principalId,
+              k: "members",
+              r: "company",
+              i: last.id,
+            })
+          : null,
+    };
+  }
+
+  async updateMemberStatus(
+    context: HumanContext,
+    companyId: string,
+    memberId: string,
+    expectedVersion: number,
+    status: MembershipStatus,
+  ) {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    await this.#repository.updateMemberStatus(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      memberId,
+      expectedVersion,
+      status,
+      context.strongAuthenticatedAt,
+    );
   }
 
   /** Resolves current access, hiding companies the principal is not in. */

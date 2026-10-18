@@ -1,5 +1,257 @@
 [
   {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Enforcement",
+    "anchor": "enforcement",
+    "text": "Enforcement\n[Dependency rules](dependency-rules.md#mechanical-enforcement) identify the implemented import checks and their limits. Runtime code must not depend on repository tooling; tooling may inspect application/package sources. Public package boundaries, domain/data ownership, and shared meaning still require review where no mechanical rule exists. Extend enforcement with real new boundaries rather than describing future checks as available.\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Technology Decision Map",
+    "anchor": "technology-decision-map",
+    "text": "Technology Decision Map\nThis is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. Every record listed below currently states `accepted`, with ADR-0014 partly superseded by ADR-0017; workspace tooling, the API runtime with composable modules and PostgreSQL support, generated SDK, web shell, documentation portal, and project-derivation tooling exist. Consult [validation availability](../validation.md) before running commands.\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Selected directions",
+    "anchor": "selected-directions",
+    "text": "Selected directions\nGoverning decision\nDirection\nImportant scope\nCurrent policy\n[ADR-0001](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nTypeScript 6.x; Node.js 24 LTS initial baseline; ESM\nPrimary, not exclusive; exact compatible versions belong in tooling.\n[Policy](principles.md)\n[ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md)\npnpm and pnpm workspaces\nShared lockfile, workspace protocol, catalogs when useful; no dedicated task runner initially.\n[Policy](repository-structure.md)\n[ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md)\ntsc, ESLint/typescript-eslint, Prettier, dependency-cruiser\nNon-mutating canonical validation and separate formatting command are implemented for current tooling.\n[Policy](../validation.md)\n[ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md)\nFastify; Pino for HTTP runtime logging\nTransport/infrastructure adapters do not define business-domain boundaries.\n[Policy](application-boundaries.md)\n[ADR-0005](../adr/0005-select-postgresql-as-the-primary-database.md)\nPostgreSQL\npgvector is preferred when a suitable vector workload requires it, not enabled by default; AI access remains authorized through application capabilities.\n[Policy](../database/principles.md)\n[ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md)\nPrisma ORM 7, Prisma Client, Prisma Migrate\nParameterized SQL/TypedSQL and custom migrations remain available; complete physical schema comes from migrated PostgreSQL.\n[Policy](../database/migrations.md)\n[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nHTTP/JSON, TypeBox 1.x, generated OpenAPI 3.1.x initially, openapi-typescript and openapi-fetch\nWire contracts, stable operation IDs, and TypeBox bootstrap configuration; client response revalidation is not automatic.\n[Policy](../api/principles.md)\n[ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md)\nReact 19.x, React Compiler when compatible, Vite 8.x, TanStack Router and Query\nClient-first SPA; URL, server, and local UI state have distinct owners; server rendering is requirement-driven.\n[Policy](application-boundaries.md)\n[ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md)\nVitest, Testcontainers, Vitest Browser Mode with Playwright, Playwright Test\nReal migrated PostgreSQL; browser fidelity where relevant; no initial global coverage threshold.\n[Policy](testing-strategy.md)\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nOpenTelemetry traces/metrics, Pino logs, W3C Trace Context, OTLP\nCollector preferred when justified, not mandatory; no global backend/vendor or baseline browser instrumentation.\n[Policy](../reliability/observability.md)\n[ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nGitHub Actions and Renovate; available GitHub security capabilities\nSame validation as local development; immutable action pins; automerge off initially; CI does not select CD.\n[Policy](continuous-integration.md)\n[ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nLocally verified JWT bearer access tokens for the first API\nProvider-independent issuer/audience/JWKS verification and stable application principal mapping; the foundation record does not select a concrete provider; accepted Teluni ADR-0024 does.\n[Policy](../security/authentication.md)\n[ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\n`AGENTS.md` hierarchy as the only agent instruction source\nTool-specific files are thin discovery adapters only; currently a Gemini CLI setting.\n[Policy](agent-instructions.md)\n[ADR-0014](../adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nProjects derived from Orion by Git ancestry with `.orion/project.json` provenance\nFetch-only `orion-upstream`, reviewed upgrade merges, immutable commits instead of a release scheme.\n[Policy](../project-derivation.md)\n[ADR-0017](../adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nDerived projects start from a clean baseline\n`.orion/derivation.json` separates shared, foundation-only, and project-owned content; initialization removes the reference implementation and foundation history and applies the project identity.\n[Policy](../project-derivation.md)\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Accepted Teluni product directions",
+    "anchor": "accepted-teluni-product-directions",
+    "text": "Accepted Teluni product directions\nThe owner explicitly accepted the seven pending product ADRs on 2026-10-18. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).\nGoverning decision\nAccepted direction\nCurrent policy / remaining gate\n[ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md)\nShared PostgreSQL database/schema with explicit tenant ownership, scoped references and modular backend\n[Architecture](../project/architecture.md); concrete constraints, additional RLS evaluation and cross-tenant tests pending\n[ADR-0019](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md)\nImmutable versioned publications and complete durable player activation/recovery\n[Playback/sync](../project/playback-and-sync.md); protocol and failure/power qualification pending\n[ADR-0020](../adr/0020-propose-a-native-android-tv-player.md)\nIndependent native Kotlin/Media3 Android TV player with durable local state\n[Architecture](../project/architecture.md); supported hardware, packaging, persistence and recovery tests pending\n[ADR-0021](../adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nInitial Debian/Compose host, HTTPS, private PostgreSQL and portable persistent media\n[Operations](../project/operations.md); host/network/backup/restore and real-customer readiness pending\n[ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md)\nVersioned declarative composition and typed catalogs in immutable publications\n[Release policies](../project/release-policies.md); concrete schemas, rendering/storage and qualified interoperability pending\n[ADR-0024](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md)\nSelf-hosted Keycloak and server-managed human browser sessions, preserving ADR-0012\n[Identity/access](../project/identity-and-access.md); pinned-source assessment supports selection, actual provider/session integration pending\n[ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md)\nApplication-owned scoped standard/custom profiles and attributable consent-based support\n[Identity/access](../project/identity-and-access.md); concrete authorization/session contracts and all IA cases pending\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Deliberately unresolved or conditional choices",
+    "anchor": "deliberately-unresolved-or-conditional-choices",
+    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\nUI/design systems, styling, accessibility primitives, charts, grids, and forms depend on product needs. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012; Teluni accepts Keycloak and server-managed sessions through ADR-0024, while concrete session/refresh/revocation implementation and qualification remain pending. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements.\nMobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery are product/deployment decisions. Teluni has accepted its Android and initial Compose directions above; detailed tooling and operational readiness are not thereby supplied. Testcontainers does not select an application deployment platform.\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Testing Strategy",
+    "anchor": "testing-strategy",
+    "text": "Testing Strategy\n[Documentation index](../README.md) · [Validation commands](../validation.md) · [Local setup](../setup.md)\nTests protect behavior, contracts, invariants, security, and architectural boundaries. Ask which important defect a test would detect, then choose the cheapest reliable boundary. [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) owns the accepted tools and rationale; [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) owns CI policy. These tools and the suites below are implemented.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Test Categories",
+    "anchor": "test-categories",
+    "text": "Test Categories\nBoundary/risk\nExecution and existing location\nPure domain, parser, client logic\nVitest in Node; API tests under `apps/api/test/`, web API tests under `apps/web/test/`.\nAPI transport/application\nFastify request injection with real owned behavior; real sockets when listener, network, or process lifecycle is the subject.\nPostgreSQL persistence/transactions\nVitest with Testcontainers and committed migrations; API integration/failure tests use the migrated-database helper.\nBrowser components\nVitest Browser Mode with Playwright, `apps/web/test/*.browser.test.tsx`; Windows uses installed Edge, other environments use Chromium.\nFull user journeys\nPlaywright Test, `apps/web/test/e2e/`; the real built API and web app for the shell and portal, plus migrated PostgreSQL and synthetic signed identities in module journeys under `test/e2e/<module>/`.\nEmitted runtime\nAPI process and feature smoke scripts verify startup/lifecycle and the real feature flow.\nStructure and generation\nType/lint/import checks, documentation links/metadata, environment example, release-history checks, API/SDK/portal freshness.\nCoverage, performance/load/stress, mutation testing, additional browser matrices, external provider sandboxes, and deployment smoke/monitoring are introduced only when their risk or product requirement exists. Performance tests need measurable targets; stable microbenchmarks can inform critical algorithms but do not replace realistic system measurements. Chromium is the routine E2E baseline; browser support must not be guessed globally. V8 is the selected Vitest coverage provider when coverage becomes useful, with no initial global coverage threshold.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Test Selection",
+    "anchor": "test-selection",
+    "text": "Test Selection\nPrefer focused tests for local rules, real integration for infrastructure semantics, browser component tests for browser behavior, and a small set of representative critical E2E success/failure journeys. A rigid numerical pyramid is not required. Do not use a browser for a pure calculation, a mock for a database constraint, or a full stack for a component interaction a smaller test can prove.\nA unit is a cohesive responsibility, not necessarily one function/class/file. Test stable public behavior; avoid private-helper choreography, framework-dependent domain code, test-only production APIs, and interfaces created only to make everything mockable. Explicit dependencies improve testability when they reflect real architecture.\nBefore changing behavior, inspect existing tests and contracts, identify failure risks and missing coverage, and select meaningful layers. Fixes should reproduce the defect with a test that fails before and passes after where practical; otherwise document the reason and verification. Low-impact prose/formatting changes need appropriate checks, not ceremonial behavior tests. Security, data loss, financial impact, irreversibility, compatibility, and rollout complexity warrant stronger complementary evidence.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Real Database Tests",
+    "anchor": "real-database-tests",
+    "text": "Real Database Tests\nUse PostgreSQL when correctness depends on constraints, SQL/types, indexes, ORM mapping, locking, transactions, or custom migrations. SQLite, mocked Prisma, or an in-memory repository cannot prove those semantics. Create isolated disposable infrastructure using committed migrations; never rely on a manually maintained shared database or silently skip core checks when the container runtime is unavailable.\nCurrent helpers own disposable PostgreSQL and separate migration/runtime roles. Preserve reliable isolation when reordering, selecting, or parallelizing tests. Rollback wrappers can hide commits, multiple connections, background work, and transaction boundaries; use them only when suitable. Choose reset/schema/database/unique-data strategies by correctness first, then measured cost.\nMigration validation covers fresh creation and, when an actual supported release exists, upgrade from that exact baseline with representative permitted data and supported old/new application combinations. A fresh database is not upgrade proof. [Migration policy](../database/migrations.md) governs verified unreleased history versus immutable released history; [release evolution](../database/release-evolution.md) owns the procedure.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Contracts and Failure Behavior",
+    "anchor": "contracts-and-failure-behavior",
+    "text": "Contracts and Failure Behavior\nValidate requests/responses/errors/serialization against canonical contracts rather than independently copied expectations. Exercise the actual API transport for routing, validation, identity, headers, status, and safe serialization; reserve network-level execution for behavior that needs it. Contract compatibility must reflect real independently evolving consumers.\nImportant tests include atomic rollback, concurrent writes/stale versions, repeat idempotency, duplicate/reordered delivery, transient/permanent retry classification, attempt bounds, timeout/unknown outcomes, final failure, partial effects, and failed compensation where applicable. Use controlled time to avoid waiting production timeout durations. Follow [delivery](delivery-and-side-effects.md), [error](error-handling.md), [configuration](configuration.md), and [transaction](../database/transactions-and-concurrency.md) policies for their detailed guarantees.\nGenerated artifacts need deterministic generation, freshness, and consumer compatibility checks at their source/generation boundaries. Never hand-edit outputs or blindly accept changed golden files. Small meaningful snapshots can help; large DOM/response snapshots should not replace focused assertions. Visual screenshot checks are useful only when visual stability matters and fonts/platform/animation/timing are controlled.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Security Tests",
+    "anchor": "security-tests",
+    "text": "Security Tests\nTest denied behavior, not just successful access: anonymous/invalid/expired/wrong-signature or audience credentials, insufficient capability, wrong owner/tenant, forbidden fields, revoked access, and webhook signatures where those models exist. Tests must follow the actual [authentication](../security/authentication.md) and [authorization](../security/authorization.md) contracts, without inventing unimplemented revocation or tenancy behavior.\nVerify that secrets/restricted fields do not reach responses, logs, traces, reports, or client builds. Missing credentials and insecure defaults must fail safely. Redaction tests need positive correlation assertions and negative sensitive-data assertions. Current source/generation checks and bundle markers are useful controls, not proofs of all security semantics.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Client and Observability Tests",
+    "anchor": "client-and-observability-tests",
+    "text": "Client and Observability Tests\nClient tests own presentation, interaction, navigation/state, API failures, and accessibility rather than repeating every backend invariant. Prefer real browsers when semantics matter; jsdom is not the browser-fidelity default. Use locators, readiness signals, and automatic waiting instead of arbitrary sleeps. Automated accessibility tests supplement human review.\nTest telemetry when it protects production behavior: request/trace propagation, safe unexpected-error reporting, bounded labels, release context where available, and redaction. Mobile device/offline/permission/storage tests, desktop OS/update tests, and worker delivery tests become relevant only when those capabilities exist.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Determinism, Doubles, and Data",
+    "anchor": "determinism-doubles-and-data",
+    "text": "Determinism, Doubles, and Data\nTests establish their own minimal synthetic state and must not depend on order, unrelated machine environment, locale/timezone, current wall clock, unseeded relevant randomness, uncontrolled internet, or shared mutable rows/files/caches. Control or make irrelevant time/randomness and use collision-safe identifiers. State cleanup must work under failure and parallel execution; all tests have appropriate bounded timeouts.\nFactories should expose the fields that explain the behavior, especially ownership/permissions, and must not become a hidden application layer. Large shared development seeds are not test fixtures. Never use production database dumps or credentials as ordinary fixtures. Use clearly synthetic static secrets unless testing credential detection itself; ephemeral signed test identities remain isolated. Production-derived data needs explicit classification handling and meaningful protection against re-identification; synthetic data remains preferred.\nMocks/fakes isolate external responsibilities such as clocks/providers when the integration itself is outside scope. They must respect the real capability contract and should not make impossible states appear valid except for deliberate failure injection. Mocking every internal class tests choreography. Official provider sandbox suites, when needed, must be isolated, credential-safe, clearly categorized, and separated from uncontrolled dependencies in the ordinary loop; document emulator fidelity limits.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Test Maintenance and Diagnostics",
+    "anchor": "test-maintenance-and-diagnostics",
+    "text": "Test Maintenance and Diagnostics\nName tests for behavior, arrange clear inputs/action/outcomes, and assert the actual result/effect/error code. One coherent behavior can need several assertions. A test should fail for a meaningful defect, remain understandable, and add distinct confidence; some cross-layer overlap is justified for critical guarantees.\nFlakiness is a defect. Retries may diagnose environmental instability but must not conceal it. A temporary quarantine needs owner, reason, tracking issue, and removal condition. Skips must be explicit; core correctness cannot disappear because infrastructure is missing. Remove tests only when the protected behavior deliberately changes/disappears, stronger coverage replaces them, or they test obsolete implementation details. Never weaken valid tests to make a change pass.\nTreat a failure as evidence: investigate implementation, expectation, intentional contract change, or environment, and reproduce CI locally when possible. Diagnostics should show behavior, expected/actual result, and safe identifiers without noisy dumps. Reports, screenshots, traces, source maps, and logs follow classification/access/retention rules. Current CI does not upload diagnostic artifacts; future uploads need bounded retention.\nKeep tests near the owning feature/application; system journeys may have dedicated suites. Shared test infrastructure must have genuine reuse. Document complex suite prerequisites, commands, debugging, and limitations; avoid a speculative taxonomy or orchestrator. Measure/optimize slow suites when feedback cost becomes material, without sacrificing isolation or correctness. Any future affected-test selection must preserve complete dependency coverage rather than trading correctness for speed.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Canonical Test Commands",
+    "anchor": "canonical-test-commands",
+    "text": "Canonical Test Commands\n[Validation](../validation.md) owns the available script list and prerequisites; [setup](../setup.md) owns reproducible installation/browser/container preparation. Iterate with the relevant owning package command, then run the repository-required `pnpm validate` gate before substantial completion. CI calls the same gate. Runtime tests do not replace TypeScript, architectural checks, or generated-source validation.\nThe repository gate includes API tests, web Node/browser tests, emitted builds/smokes, and full E2E. Release-history tests intentionally use Node's built-in runner for isolated tooling. No generic root `test:integration` or coverage command should be assumed. Report missing prerequisites, failed checks, and unrun remote checks honestly.\nCoverage percentages and branch coverage can reveal missing paths but cannot prove assertions, authorization, or concurrency correct. Use risk-based review instead of arbitrary targets. A complete change preserves meaningful tests, contracts, architecture, and the broader [completion criteria](../contributing.md#change-workflow).\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Initial Testing Policy",
+    "anchor": "initial-testing-policy",
+    "text": "Initial Testing Policy\nThe implemented baseline above remains the default for new features. Additional suites must serve actual risk; load/stress tests run only in isolated authorized environments, never as accidental production traffic. Never run destructive integration suites against production data. Any production test must be narrowly scoped and safe, such as an authorized synthetic health check. Production synthetic monitoring and deployment validation require separate operational design and authority; this testing strategy does not start deployment work.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Versioning and Compatibility",
+    "anchor": "versioning-and-compatibility",
+    "text": "Versioning and Compatibility\n[Documentation index](../README.md) · [API versioning](../api/versioning.md) · [Database release evolution](../database/release-evolution.md)\nCompatibility protects consumers that cannot change atomically. This page owns cross-boundary evolution; API, database, configuration, and security policies own their specific contracts. Prefer compatible evolution over reflexively adding versions or preserving obsolete internal interfaces forever. Significant support/versioning strategies require an ADR; ordinary compatible changes do not.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Compatibility Boundary",
+    "anchor": "compatibility-boundary",
+    "text": "Compatibility Boundary\nIdentify the producer, consumer, canonical contract, independent deployment/distribution, persisted-state lifetime, release status, support window, and rollback requirements. Internal monorepo code can often change atomically; installed clients, queued jobs, durable database state, published SDKs, external automation, and independently managed configuration cannot necessarily do so.\nCompatibility includes structure, meaning, behavior, wire serialization, source compilation, security, and operational assumptions such as capacity or startup requirements. An additive field can still break a strict consumer; an unchanged string type can conceal changed meaning. Binary compatibility becomes relevant only if compiled/native artifacts are distributed.\nDefine the required combinations explicitly: new provider with old consumer, old reader with new data, and both directions during overlap where necessary. No universal compatibility matrix or global system version is required. Application release, API version, database migration state, SDK/package version, and configuration schema version serve different purposes; a release can identify a compatible set without changing all their versions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Released vs Unreleased Behavior",
+    "anchor": "released-vs-unreleased-behavior",
+    "text": "Released vs Unreleased Behavior\n“Released” includes behavior deployed, persisted, published, installed, queued, or consumed independently, not only public release. Verified unreleased contracts may be refined when no durable consumer depends on them. Git preserves development history; ADRs preserve decisions; migration history preserves durable database transitions. Released contracts may evolve compatibly, but released migrations retain their distinct immutability requirements.\nCurrent API, SDK, and web code evolve together. The [release registry](../../apps/api/prisma/release-history.json) records durable database releases; absence of an entry is not proof that no persistent environment exists. Verify release status before editing migration history. [Release evolution](../database/release-evolution.md) owns the evidence and upgrade procedure. No published SDK versioning scheme, released API baseline, client-support period, or production rollback window is implied by current scripts.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Expand–Migrate–Contract",
+    "anchor": "expandmigratecontract",
+    "text": "Expand–Migrate–Contract\nFor changes that cannot occur atomically:\n**Expand:** introduce compatible fields, schema capabilities, accepted payloads, configuration, or infrastructure while existing consumers still work.\n**Migrate:** update readers/writers/consumers, backfill durable data, and switch traffic or activation in a safe order.\n**Contract:** remove old behavior only after supported consumers, retained data, and rollback obligations no longer need it.\nSpecify the application/schema/configuration/infrastructure state at each step. Rolling/canary deployment creates mixed versions; blue-green can shorten but does not eliminate compatibility during shared data use, traffic switches, or rollback. Feature flags may separate activation from deployment but do not solve incompatible data formats.\nTemporary adapters, dual reads/writes, legacy config fallbacks, and feature flags need identifiable ownership, purpose, tests, tracking, and removal conditions. Define the canonical representation, failure handling, and reconciliation for dual writes. Fallback reads must not conceal an incomplete migration indefinitely. Preserve durable meaning; compatibility is never a justification for silent data loss.\nChoose and document rollback or forward recovery for a significant transition. Application rollback does not undo a schema migration or recover dropped data. Do not contract schema/configuration while a supported rollback application still needs it. Before activating a new writer, ask whether old readers can understand its output; delaying new writes may be necessary even when new readers understand old data.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Persisted Data Compatibility",
+    "anchor": "persisted-data-compatibility",
+    "text": "Persisted Data Compatibility\nDatabase enums/JSON, cached documents, events, job payloads, sessions, stored files, and encrypted serialization can outlive the code that wrote them. Determine which old shapes actually exist, where they live, their retention/replay lifetime, which versions read them, whether they can be migrated/rebuilt, and how both read/write directions are tested.\nExplicit payload versions are useful when incompatible shapes coexist and parsing needs identification; do not add them to every record preemptively. Shape detection may suffice for simple transitions. Defaults must accurately represent historical meaning, not merely make deserialization succeed. Preserve unknown values or reject unsupported shapes explicitly instead of mapping them to an incorrect known state.\nEvents need an owned type, schema, meaning, producer, and consumers. Prefer compatible evolution when consumers permit it; a different business fact deserves a semantic new event type rather than a misleading version of the old one. Queues, logs, dead letters, archives, and replay extend compatibility obligations; long-lived retries may span several releases. Consumers may ignore additive unknown fields only where the contract permits, never required semantics.\nCaches may be migrated, safely invalidated, or assigned new key namespaces; old namespaces must expire/be removed. Search indexes are derived state and may use reindexing, dual indexes, or alias switches instead of indefinite legacy support. Prefer mature standard serialization formats; custom binary formats need a concrete benefit and explicit compatibility design.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Other Compatibility Surfaces",
+    "anchor": "other-compatibility-surfaces",
+    "text": "Other Compatibility Surfaces\nSurface\nRequired considerations\nPackages and SDK\nInternal atomic changes usually need no compatibility layer. Independently published packages need a deliberate distribution/version policy and intentional exports. SDK programming API compatibility and SDK-to-server compatibility are distinct; generated public interfaces can become commitments even though output is rebuildable.\nAPIs and public errors\nFollow [API versioning](../api/versioning.md). Consumer-visible errors, ordering, defaults, authorization, pagination, idempotency, and side effects can break without a schema diff.\nConfiguration\nNew required keys may need provisioning before code. Renames need deterministic old/new precedence; removal must preserve rollback. Follow [configuration policy](configuration.md).\nCredentials and identity\nIssuer, audience, claim, algorithm, key, token-lifetime, and session-format changes affect existing clients/sessions. Rotation may sign with new keys while accepting previous keys temporarily under security policy. Mass logout must be deliberate.\nAuthorization/classification\nPersisted permission identifiers may need migration. Review both tighter and looser access; apply stricter current data classification to telemetry, exports, analytics, access, and retention. Required security corrections can override compatibility, with impact managed explicitly.\nCLIs and scripts\nPublic command names, arguments, output, and exit codes can be contracts. Internal scripts within one revision may evolve atomically; external CI/operations consumers may not.\nInfrastructure/providers\nCoordinate resources and permissions before dependent consumers and remove them after migration. Provider API versions are dependencies, not this API's versions; test upgrades and track deprecation deadlines near the integration.\nToolchain/dependencies\nRuntime/compiler upgrades can affect output, library compatibility, and behavior. Use repository pins, lockfile, and frozen installation; assess actual breaking impact rather than trusting labels or allowing uncontrolled upgrades.\nGenerated references\nCanonical contract semantics govern compatibility, not incidental formatting. If external automation consumes a machine-readable artifact, its intended schema becomes explicit.\nSecurity takes priority over retaining vulnerable behavior. Safe release metadata should support correlation without conflating release identity with API/schema versions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Deprecation and Removal",
+    "anchor": "deprecation-and-removal",
+    "text": "Deprecation and Removal\nDeprecation needs a replacement, migration path, support/removal condition, and owner. Remove compatibility complexity once the real consumer is gone, not just because current source no longer uses it. Check installed clients, external users, queued/persisted historical shapes, and rollback; source search alone may be insufficient.\nUse safe runtime usage evidence when available. Telemetry can correlate release, operation, bounded contract/error category, migration, and configuration changes; it must not create unbounded labels for arbitrary consumer/payload identities. Alerts should reflect impact from unsupported clients or deployment ordering failures. Document supported versions only where support exists; metadata such as introduced/deprecated/replacement belongs in canonical contracts only when useful, never a parallel manually duplicated manifest.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Compatibility Testing",
+    "anchor": "compatibility-testing",
+    "text": "Compatibility Testing\nTest actual supported combinations at their boundary: old request/new server, new application/transitional schema, old reader/new message, new worker/retained old job, active/deprecated configuration, or rollback application/current schema. Do not maintain arbitrary historical combinations. Use the real release baseline for migrations; fresh-install checks alone do not prove upgrade safety.\nReleased fixtures/baselines are immutable evidence, not snapshots to silently rewrite when tests fail. Add distinct historical shapes when necessary. Structural API comparisons, canonical event/schema checks, and property-based serializer tests can help where justified; semantic review remains required.\n`pnpm release:check` and its tests protect recorded migration/release history. Current API/SDK/reference freshness checks detect drift from current sources, not released-consumer compatibility. Dedicated historical API diffing, event versioning, and package-publication compatibility tooling are not selected merely by this policy.\nFail before unsafe work when a dependency/schema is unsupported and expose stable safe diagnostics. Prefer capability detection when the real dependency is a capability; numeric comparisons are appropriate only with precise version semantics. Accept supported old forms during transition, then reject removed forms explicitly rather than failing later with unrelated SQL/property errors.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Breaking Change Checklist",
+    "anchor": "breaking-change-checklist",
+    "text": "Breaking Change Checklist\nBefore completing a compatibility-sensitive change, establish:\nConsumers, release evidence, independence, persistence/replay lifetime, and required direction/window.\nStructural, semantic, behavioral, operational, and security impact; whether atomic or additive evolution is possible.\nOrdered application, schema, configuration, infrastructure, credential, and message states, including new-writer/old-reader safety.\nRollback or forward-recovery expectations and any urgent security override.\nCanonical transition state, tests for supported combinations, safe usage evidence, and completion criteria.\nOwnership and removal conditions for every temporary compatibility path.\nDo not introduce `v2`, a package major, or a payload schema version merely to avoid this analysis. Compatibility exists to protect real consumers while keeping the foundation maintainable.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contributing and Documentation",
+    "anchor": "contributing-and-documentation",
+    "text": "Contributing and Documentation\nUse the [task index](README.md) to locate the policy relevant to a change. This guide owns the contributor workflow and documentation-maintenance rules; it does not replace the architectural policies or [accepted decisions](adr/README.md).\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Change workflow",
+    "anchor": "change-workflow",
+    "text": "Change workflow\nInspect relevant implementation, documentation, tests, and applicable local `AGENTS.md` files. Search for existing implementations and public APIs before creating equivalents.\nIdentify the smallest coherent change that follows existing patterns and architectural boundaries. Preserve unrelated code and avoid unnecessary refactoring. State assumptions that cannot be verified; do not invent repository behavior or domain rules.\nBefore introducing an abstraction, service, package, dependency, or cross-layer relationship, check existing equivalents, boundaries, and ADRs. Shared code must represent shared meaning, not merely similar code. Record genuinely significant architectural decisions through the [ADR process](adr/authoring.md).\nImplement the change, add or update behavior tests, update affected documentation, and regenerate derived artifacts from their canonical sources.\nRun the available [validation](validation.md), review the final diff, and report unavailable checks or remaining failures explicitly. Do not declare success while concealing known validation errors.\nKeep pull requests as coherent units of work. Follow-up changes for the same phase or objective should normally reuse its open PR and branch instead of creating a new PR for each small documentation or status update.\nPrefer the least irreversible solution when an architectural choice is uncertain. Identify conflicts with established architecture rather than bypassing them. Prefer mechanical enforcement where practical; never weaken typing, tests, validation, security, or observability to make a change pass.\nBefore adding a dependency, check repository and standard-platform capabilities. Consider maintenance, security, licensing, runtime/bundle cost, and ecosystem maturity. Avoid competing libraries for the same responsibility without a documented reason. Foundational dependencies may require an ADR.\nBehavior changes require appropriate verification. Use the lowest-cost test that reliably protects behavior, with broader integration coverage at boundaries. Bug fixes should include a regression test whenever practical; otherwise document why and how the fix was verified. Do not delete, disable, or weaken a valid test merely because it fails. See [testing strategy](architecture/testing-strategy.md).\nCompletion requires, as applicable: correct implementation, respected boundaries, passing tests/types/static analysis, current generated artifacts and documentation, preserved observability, satisfied security requirements, and no unrelated changes. Passing tests do not excuse architectural violations; correct code with stale documentation is incomplete.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Documentation ownership",
+    "anchor": "documentation-ownership",
+    "text": "Documentation ownership\nInformation\nAuthoritative location\nCurrent architectural policy and intended behavior\nRelevant policy under `docs/`\nArchitectural decision history and rationale\n[ADRs](adr/README.md)\nCurrent executable operational procedure\n[Runbooks](runbooks/README.md)\nDevelopment history\nGit\nReleased database transitions\n[Migration history](database/migrations.md)\nExternally relevant release history\nChangelog when releases exist\nStructural reference\nGenerated from canonical schemas, contracts, or metadata\nDomain meaning\nNear the owning domain; `docs/domains/` when cross-file explanation is needed\nApplication/package-specific knowledge\nNear the owning application or package\nExecution status and outstanding work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nDecisions or access requiring a human\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nRepository identity, Orion provenance, and the derivation contract\n[`.orion/project.json`](../.orion/project.json) and [`.orion/derivation.json`](../.orion/derivation.json), under [project derivation](project-derivation.md)\nThe maintainer of the owning code or policy is responsible for keeping its documentation current in the same change. This is responsibility by repository boundary, not an invented team or approval hierarchy. Indexes route readers; they do not own copies of another document's rules. Root `AGENTS.md` owns global invariants and task routes; nested instructions add only distinct local obligations. They apply to every contributor and agent; tool-specific files may only adapt discovery under [agent instructions](architecture/agent-instructions.md). Application/package READMEs explain local responsibility and usage, with links to shared setup and policy.\nPrefer the narrowest authoritative location. Do not create empty documentation directories, speculative runbooks, or placeholder applications to match an illustrative tree. `docs/domains/` and `docs/generated/` should appear only when real content exists. Technology-specific documentation is appropriate after the technology exists or has been selected.\nPackages should document responsibility, public API, dependency constraints, and important assumptions when these cannot be safely inferred from code or contracts. Domain documentation may explain terminology, invariants, ownership, workflows, state transitions, side effects, and failure semantics. Repository-wide policy must not become a dumping ground for one feature or provider integration.\n"
+  },
+  {
     "id": "repository/docs/contributing",
     "title": "Contributing and Documentation",
     "group": "Project guides",
@@ -465,7 +717,7 @@
     "kind": "repository",
     "heading": "API Error Registry",
     "anchor": "api-error-registry",
-    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`CSRF_VALIDATION_FAILED`\n403\nauthentication\nno\nThe request could not be verified as coming from the Teluni panel. Reload the page and try again.\n`STRONG_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires two-step verification. Confirm your identity and try again.\n`RECENT_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires a recent two-step verification. Confirm your identity and try again.\n`SESSION_LIMIT_REACHED`\n409\nconflict\nno\nYou already have the maximum number of active sessions. End one of them to continue.\n`PERMISSION_DENIED`\n403\nauthorization\nno\nYou do not have permission to perform this action.\n`COMPANY_SUSPENDED`\n403\nauthorization\nno\nThis company is suspended. Contact Teluni support.\n`RESOURCE_VERSION_CONFLICT`\n409\nconflict\nno\nThe resource changed; reload it before trying again.\n`IDEMPOTENCY_KEY_REUSED`\n409\nconflict\nno\nThe creation key was used for different content.\n`BRANCH_NAME_IN_USE`\n409\nconflict\nno\nAnother active branch of this company already uses that name.\n`BRANCH_ARCHIVED`\n409\nconflict\nno\nThe branch is archived and cannot be changed.\n"
+    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`CSRF_VALIDATION_FAILED`\n403\nauthentication\nno\nThe request could not be verified as coming from the Teluni panel. Reload the page and try again.\n`STRONG_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires two-step verification. Confirm your identity and try again.\n`RECENT_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires a recent two-step verification. Confirm your identity and try again.\n`SESSION_LIMIT_REACHED`\n409\nconflict\nno\nYou already have the maximum number of active sessions. End one of them to continue.\n`MEMBERSHIP_REMOVED`\n409\nconflict\nno\nThis membership was removed and cannot be reactivated.\n`RESPONSIBLE_ADMINISTRATOR_PROTECTED`\n409\nconflict\nno\nTransfer responsibility before suspending or removing the responsible administrator.\n`LAST_ADMINISTRATOR_REQUIRED`\n409\nconflict\nno\nThe company must retain an active administrator.\n`RESPONSIBLE_APPROVAL_REQUIRED`\n403\nauthorization\nno\nOnly the responsible administrator can reactivate an administrator.\n`PERMISSION_DENIED`\n403\nauthorization\nno\nYou do not have permission to perform this action.\n`COMPANY_SUSPENDED`\n403\nauthorization\nno\nThis company is suspended. Contact Teluni support.\n`RESOURCE_VERSION_CONFLICT`\n409\nconflict\nno\nThe resource changed; reload it before trying again.\n`IDEMPOTENCY_KEY_REUSED`\n409\nconflict\nno\nThe creation key was used for different content.\n`BRANCH_NAME_IN_USE`\n409\nconflict\nno\nAnother active branch of this company already uses that name.\n`BRANCH_ARCHIVED`\n409\nconflict\nno\nThe branch is archived and cannot be changed.\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -537,7 +789,7 @@
     "kind": "repository",
     "heading": "principals",
     "anchor": "principals",
-    "text": "principals\nProvider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.\nOwner: Identity. Classification: CONFIDENTIAL.\nLifecycle: Created at first verified login; never deleted by the runtime. Disablement is a state change. Retention and erasure follow PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nApplication-generated immutable principal UUID, written to the provider's administrator-only attribute and asserted by access tokens as orion_principal_id.\n—\n—\n`issuer`\n`character varying(512)`\nno\n—\nINTERNAL\nExact OIDC issuer that authenticated this principal; together with subject it is the provider association.\n—\n—\n`subject`\n`character varying(255)`\nno\n—\nCONFIDENTIAL\nProvider-assigned stable subject identifier at the issuer; never used as the application identity.\n—\n—\n`status`\n`\"PrincipalStatus\"`\nno\n`'ACTIVE'::\"PrincipalStatus\"`\nINTERNAL\nACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of principal provisioning.\n—\nUTC instant, millisecond precision\n`disabled_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant of global disablement.\nThe principal is active.\nUTC instant, millisecond precision\n"
+    "text": "principals\nProvider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.\nOwner: Identity. Classification: CONFIDENTIAL.\nLifecycle: Created at first verified login; never deleted by the runtime. Disablement is a state change. Retention and erasure follow PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nApplication-generated immutable principal UUID, written to the provider's administrator-only attribute and asserted by access tokens as orion_principal_id.\n—\n—\n`issuer`\n`character varying(512)`\nno\n—\nINTERNAL\nExact OIDC issuer that authenticated this principal; together with subject it is the provider association.\n—\n—\n`subject`\n`character varying(255)`\nno\n—\nCONFIDENTIAL\nProvider-assigned stable subject identifier at the issuer; never used as the application identity.\n—\n—\n`status`\n`\"PrincipalStatus\"`\nno\n`'ACTIVE'::\"PrincipalStatus\"`\nINTERNAL\nACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of principal provisioning.\n—\nUTC instant, millisecond precision\n`disabled_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant of global disablement.\nThe principal is active.\nUTC instant, millisecond precision\n`display_name`\n`character varying(200)`\nyes\n—\nCONFIDENTIAL\nPresentation name from the last verified login; never used as identity or authorization evidence.\nNo bounded display name has been obtained from a verified login.\n—\n`verified_email`\n`character varying(320)`\nyes\n—\nCONFIDENTIAL\nPresentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations.\nNo bounded verified email snapshot has been obtained.\n—\n"
   },
   {
     "id": "repository/docs/generated/database/schema",
@@ -546,267 +798,6 @@
     "kind": "repository",
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`principals_disabled_state`\n`CHECK (((status = 'DISABLED'::\"PrincipalStatus\") = (disabled_at IS NOT NULL)))`\nA disablement instant exists exactly for disabled principals.\n`principals_issuer_nonblank`\n`CHECK (((issuer)::text ~ '^https?://[^[:space:]]+$'::text))`\nIssuer is an absolute HTTP(S) URL without whitespace.\n`principals_pkey`\n`PRIMARY KEY (id)`\nUnique immutable application principal identity.\n`principals_subject_nonblank`\n`CHECK (((subject)::text ~ '[^[:space:]]'::text))`\nProvider subject cannot be blank.\n`principals_issuer_subject_key`\n`CREATE UNIQUE INDEX principals_issuer_subject_key ON public.principals USING btree (issuer, subject)`\nOne application principal per provider identity; concurrent first logins converge on one row.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "human_sessions",
-    "anchor": "human_sessions",
-    "text": "human_sessions\nServer-managed browser session: an opaque cookie credential's hash, its bounds and assurance, and the sealed provider tokens obtained for it.\nOwner: Identity. Classification: RESTRICTED.\nLifecycle: Created at login as ACTIVE, or PENDING_LIMIT when the principal already has five active sessions; REVOKED rows are retained without deletion until a retention rule is approved under PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nBackend-generated session UUID, shown to its owner for session management and bound into sealed tokens and CSRF tokens.\n—\n—\n`principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPrincipal that authenticated this session.\n—\n—\n`token_hash`\n`bytea`\nno\n—\nRESTRICTED\nSHA-256 of the 32-byte random cookie credential; the recoverable credential is never stored.\n—\n—\n`state`\n`\"HumanSessionState\"`\nno\n—\nINTERNAL\nPENDING_LIMIT may only list and end sessions; ACTIVE may call protected operations; REVOKED is terminal.\n—\n—\n`provider_session_id`\n`character varying(255)`\nyes\n—\nCONFIDENTIAL\nProvider session identifier (OIDC sid) used to apply back-channel logout.\nThe provider did not report a session identifier.\n—\n`assurance_level`\n`character varying(64)`\nno\n—\nINTERNAL\nAuthentication context class (acr) asserted by the ID token verified at login.\n—\n—\n`authenticated_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nProvider-reported instant of the user's authentication (auth_time) for this session.\n—\nUTC instant, millisecond precision\n`strong_authenticated_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant of the latest strong authentication verified for this session, used for recent-authentication checks.\nNo strong authentication has been verified for this session.\nUTC instant, millisecond precision\n`idle_timeout_seconds`\n`integer`\nno\n—\nINTERNAL\nInactivity bound applied to this session: 1800 for administrative contexts or principals without memberships, 7200 for operator-only access.\n—\nseconds\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the session was created.\n—\nUTC instant, millisecond precision\n`last_activity_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest recorded human activity; background requests do not advance it, and writes are throttled to 15 seconds.\n—\nUTC instant, millisecond precision\n`absolute_expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the session is invalid regardless of activity, at most 12 hours after creation.\n—\nUTC instant, millisecond precision\n`provider_tokens`\n`bytea`\nno\n—\nRESTRICTED\nProvider access, refresh and ID tokens sealed with AES-256-GCM under the session key ring and bound to the session ID.\n—\n—\n`access_token_expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nDatabase-clock estimate of the sealed access token's expiry, five seconds earlier than the provider's lifetime.\n—\nUTC instant, millisecond precision\n`provider_checked_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nLatest instant the provider confirmed the session through introspection, refresh or login.\n—\nUTC instant, millisecond precision\n`refresh_lease_until`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nEnd of the single-flight lease held by the request refreshing provider tokens.\nNo refresh is in progress.\nUTC instant, millisecond precision\n`revoked_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the session was revoked.\nThe session has not been revoked.\nUTC instant, millisecond precision\n`revocation_reason`\n`character varying(32)`\nyes\n—\nINTERNAL\nWhy the session ended: logout, user termination, expiry, replacement, provider logout or inactivity, refresh rejection, principal disablement or principal mismatch.\nThe session has not been revoked.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-1",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`human_sessions_absolute_after_creation`\n`CHECK (((absolute_expires_at > created_at) AND (absolute_expires_at <= (created_at + '12:00:00'::interval))))`\nAbsolute expiry follows creation by at most the selected 12-hour maximum.\n`human_sessions_idle_bounds`\n`CHECK (((idle_timeout_seconds >= 60) AND (idle_timeout_seconds <= 7200)))`\nInactivity bound stays between one minute and the two-hour operator maximum.\n`human_sessions_pkey`\n`PRIMARY KEY (id)`\nUnique session identity.\n`human_sessions_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA session belongs to an existing principal; principals cannot be deleted while sessions exist.\n`human_sessions_revocation_reason_known`\n`CHECK (((revocation_reason IS NULL) OR ((revocation_reason)::text = ANY ((ARRAY['LOGOUT'::character varying, 'TERMINATED_BY_USER'::character varying, 'EXPIRED'::character varying, 'REPLACED'::character varying, 'PROVIDER_LOGOUT'::character varying, 'PROVIDER_INACTIVE'::character varying, 'REFRESH_REJECTED'::character varying, 'PRINCIPAL_DISABLED'::character varying, 'PRINCIPAL_MISMATCH'::character varying])::text[]))))`\nRevocation reason is one of the documented values.\n`human_sessions_revocation_state`\n`CHECK (((state = 'REVOKED'::\"HumanSessionState\") = ((revoked_at IS NOT NULL) AND (revocation_reason IS NOT NULL))))`\nRevocation instant and reason exist exactly for revoked sessions.\n`human_sessions_token_hash_sha256`\n`CHECK ((octet_length(token_hash) = 32))`\nCredential hash is exactly one SHA-256 digest.\n`human_sessions_principal_state_idx`\n`CREATE INDEX human_sessions_principal_state_idx ON public.human_sessions USING btree (principal_id, state)`\nSupports counting and listing a principal's sessions by state.\n`human_sessions_provider_session_idx`\n`CREATE INDEX human_sessions_provider_session_idx ON public.human_sessions USING btree (provider_session_id)`\nSupports back-channel logout by provider session identifier.\n`human_sessions_token_hash_key`\n`CREATE UNIQUE INDEX human_sessions_token_hash_key ON public.human_sessions USING btree (token_hash)`\nOne session per cookie credential; supports lookup by credential hash.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "oidc_login_attempts",
-    "anchor": "oidc_login_attempts",
-    "text": "oidc_login_attempts\nSingle-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.\nOwner: Identity. Classification: RESTRICTED.\nLifecycle: Created when a login starts, consumed once by the callback and expired after 10 minutes; expired rows are retained until a cleanup rule is approved.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated attempt UUID that binds the sealed secrets.\n—\n—\n`handle_hash`\n`bytea`\nno\n—\nRESTRICTED\nSHA-256 of the random login-attempt cookie value.\n—\n—\n`state`\n`character varying(128)`\nno\n—\nINTERNAL\nOIDC state value expected back at the callback.\n—\n—\n`secrets`\n`bytea`\nno\n—\nRESTRICTED\nPKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID.\n—\n—\n`return_to`\n`character varying(2048)`\nno\n—\nINTERNAL\nValidated same-origin relative path to open after a successful login.\n—\n—\n`requested_assurance`\n`character varying(64)`\nyes\n—\nINTERNAL\nAuthentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.\nA standard login without a requested level.\n—\n`max_age_seconds`\n`integer`\nyes\n—\nINTERNAL\nMaximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.\nNo maximum age was requested.\nseconds\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the login started.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the callback can no longer consume the attempt.\n—\nUTC instant, millisecond precision\n`consumed_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant the callback consumed the attempt; a second use is rejected.\nThe attempt has not been used.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-2",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`oidc_login_attempts_expiry_bounds`\n`CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))`\nAn attempt expires after creation and within 10 minutes.\n`oidc_login_attempts_handle_sha256`\n`CHECK ((octet_length(handle_hash) = 32))`\nHandle hash is exactly one SHA-256 digest.\n`oidc_login_attempts_max_age_bounds`\n`CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))`\nRequested maximum authentication age cannot be negative.\n`oidc_login_attempts_pkey`\n`PRIMARY KEY (id)`\nUnique attempt identity.\n`oidc_login_attempts_return_relative`\n`CHECK (((return_to)::text ~ '^/'::text))`\nReturn path is relative to the panel origin.\n`oidc_login_attempts_state_nonblank`\n`CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))`\nState uses the base64url alphabet and cannot be blank.\n`oidc_login_attempts_handle_hash_key`\n`CREATE UNIQUE INDEX oidc_login_attempts_handle_hash_key ON public.oidc_login_attempts USING btree (handle_hash)`\nOne attempt per browser handle; supports consumption by handle.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "backchannel_logout_replays",
-    "anchor": "backchannel_logout_replays",
-    "text": "backchannel_logout_replays\nIdentifiers of accepted provider logout tokens, kept to reject a replayed token.\nOwner: Identity. Classification: INTERNAL.\nLifecycle: Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti`\n`character varying(255)`\nno\n—\nINTERNAL\nUnique identifier (jti) of an accepted logout token.\n—\n—\n`received_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the token was accepted.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the token would fail the five-minute age check, so its record is no longer needed.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-3",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "companies",
-    "anchor": "companies",
-    "text": "companies\nCustomer company: the tenant that owns branches, memberships, content, devices and publications.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE by its first responsible administrator; suspension is a state. No runtime deletion; erasure and retention follow PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable company UUID; the tenant identifier and public resource ID.\n—\n—\n`display_name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nCompany name shown to its members.\n—\n—\n`status`\n`\"CompanyStatus\"`\nno\n`'ACTIVE'::\"CompanyStatus\"`\nINTERNAL\nACTIVE companies allow protected operations; SUSPENDED denies them to members.\n—\n—\n`default_locale`\n`character varying(10)`\nno\n—\nINTERNAL\nDefault interface locale for the company: pt-BR or en-US.\n—\n—\n`time_zone`\n`character varying(64)`\nno\n—\nINTERNAL\nDefault IANA time zone for new branches; business time never uses the host time zone.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token incremented once per successful settings change.\n—\nsuccessful writes\n`created_by_principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPrincipal who created the company and became its first responsible administrator.\n—\n—\n`creation_key`\n`character varying(200)`\nno\n—\nINTERNAL\nCreator-supplied idempotency key, unique per creator, that makes company creation safely repeatable.\n—\n—\n`creation_fingerprint`\n`character(64)`\nno\n—\nCONFIDENTIAL\nImmutable SHA-256 fingerprint of the normalized original creation inputs; retries compare it rather than mutable company settings. Not exposed in the API.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest settings change; not audit history.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-4",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`companies_created_by_principal_id_fkey`\n`FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe creator is an existing principal.\n`companies_creation_fingerprint_format`\n`CHECK ((creation_fingerprint ~ '^[0-9a-f]{64}$'::text))`\nCreation fingerprints are lowercase SHA-256 hex values.\n`companies_creation_key_format`\n`CHECK (((creation_key)::text ~ '^[A-Za-z0-9._~-]+$'::text))`\nCreation keys use the documented opaque ASCII alphabet.\n`companies_default_locale_supported`\n`CHECK (((default_locale)::text = ANY ((ARRAY['pt-BR'::character varying, 'en-US'::character varying])::text[])))`\nOnly the supported interface locales.\n`companies_display_name_nonblank`\n`CHECK (((display_name)::text ~ '[^[:space:]]'::text))`\nCompany name cannot be blank.\n`companies_pkey`\n`PRIMARY KEY (id)`\nUnique immutable company identity.\n`companies_time_zone_nonblank`\n`CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))`\nTime zone has the IANA identifier shape; the API validates it against the runtime's zone database.\n`companies_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`companies_creator_key_unique`\n`CREATE UNIQUE INDEX companies_creator_key_unique ON public.companies USING btree (created_by_principal_id, creation_key)`\nOne company per creator and creation key, including racing retries.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "branches",
-    "anchor": "branches",
-    "text": "branches\nBranch of a company: a location with its own business time zone, assigned members and, later, devices.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; archived rather than deleted so references remain valid.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable branch UUID; public resource ID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nOwning company; immutable (tenant key).\n—\n—\n`name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nBranch name, unique among the company's active branches regardless of case.\n—\n—\n`time_zone`\n`character varying(64)`\nno\n—\nINTERNAL\nIANA time zone for the branch's local business time.\n—\n—\n`status`\n`\"BranchStatus\"`\nno\n`'ACTIVE'::\"BranchStatus\"`\nINTERNAL\nACTIVE branches are usable; ARCHIVED branches are retained for references.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token incremented once per successful change.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change; not audit history.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-5",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA branch belongs to an existing company.\n`branches_name_nonblank`\n`CHECK (((name)::text ~ '[^[:space:]]'::text))`\nBranch name cannot be blank.\n`branches_pkey`\n`PRIMARY KEY (id)`\nUnique branch identity.\n`branches_time_zone_nonblank`\n`CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))`\nTime zone has the IANA identifier shape.\n`branches_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`branches_company_active_name_unique`\n`CREATE UNIQUE INDEX branches_company_active_name_unique ON public.branches USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"BranchStatus\")`\nActive branch names are unique within a company, ignoring case, including racing creations.\n`branches_company_id_id_key`\n`CREATE UNIQUE INDEX branches_company_id_id_key ON public.branches USING btree (company_id, id)`\nTenant key that tenant references target.\n`branches_company_status_name_idx`\n`CREATE INDEX branches_company_status_name_idx ON public.branches USING btree (company_id, status, name)`\nSupports listing a company's branches by state and name.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "memberships",
-    "anchor": "memberships",
-    "text": "memberships\nA principal's membership in one company; access comes only from its unexpired grants.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; suspension and removal are states that deny access while retaining attribution.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated membership UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany of the membership; immutable (tenant key).\n—\n—\n`principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nMember principal; a principal may hold memberships in several companies that never see each other.\n—\n—\n`status`\n`\"MembershipStatus\"`\nno\n`'ACTIVE'::\"MembershipStatus\"`\nINTERNAL\nOnly ACTIVE memberships grant access.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token for membership changes.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-6",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`memberships_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA membership belongs to an existing company.\n`memberships_pkey`\n`PRIMARY KEY (id)`\nUnique membership identity.\n`memberships_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe member is an existing principal.\n`memberships_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`memberships_company_id_id_key`\n`CREATE UNIQUE INDEX memberships_company_id_id_key ON public.memberships USING btree (company_id, id)`\nTenant key that tenant references target.\n`memberships_company_principal_key`\n`CREATE UNIQUE INDEX memberships_company_principal_key ON public.memberships USING btree (company_id, principal_id)`\nAt most one membership per principal and company.\n`memberships_principal_status_idx`\n`CREATE INDEX memberships_principal_status_idx ON public.memberships USING btree (principal_id, status)`\nSupports listing a principal's companies.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "company_responsibilities",
-    "anchor": "company_responsibilities",
-    "text": "company_responsibilities\nThe company's designated responsible administrator, who approves additional administrators (P10).\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created with the company; transfer is a later attributable operation.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany whose responsibility this row records; one row per company.\n—\n—\n`membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership of the responsible administrator in the same company.\n—\n—\n`assigned_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the assignment.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-7",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`company_responsibilities_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nResponsibility belongs to an existing company.\n`company_responsibilities_company_id_membership_id_fkey`\n`FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe responsible membership belongs to the same company.\n`company_responsibilities_pkey`\n`PRIMARY KEY (company_id)`\nExactly one responsible administrator per company.\n`company_responsibilities_membership_key`\n`CREATE UNIQUE INDEX company_responsibilities_membership_key ON public.company_responsibilities USING btree (company_id, membership_id)`\nSupports the composite reference to the responsible membership.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "membership_grants",
-    "anchor": "membership_grants",
-    "text": "membership_grants\nA standard role granted to a membership over the whole company or explicit branches; grants combine additively.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Effective from starts_at until expires_at or revoked_at; retained after expiry for attribution.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated grant UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany of the grant; immutable (tenant key).\n—\n—\n`membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that holds the grant.\n—\n—\n`role`\n`\"AccessRole\"`\nno\n—\nINTERNAL\nStandard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application.\n—\n—\n`scope`\n`\"GrantScope\"`\nno\n—\nINTERNAL\nCOMPANY covers every branch, including future ones; BRANCHES covers only the listed branches.\n—\n—\n`starts_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nInstant the grant becomes effective.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant a temporary grant stops being effective; no automatic renewal.\nThe grant does not expire.\nUTC instant, millisecond precision\n`granted_by_membership_id`\n`uuid`\nyes\n—\nINTERNAL\nMembership that granted it, for attribution.\nGranted by company creation.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`revoked_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant the grant was revoked.\nThe grant has not been revoked.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-8",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`membership_grants_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA grant belongs to an existing company.\n`membership_grants_company_id_granted_by_membership_id_fkey`\n`FOREIGN KEY (company_id, granted_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe grantor, when present, is a membership of the same company.\n`membership_grants_company_id_membership_id_fkey`\n`FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe holder is a membership of the same company.\n`membership_grants_company_role_scope`\n`CHECK (((role <> 'COMPANY_ADMINISTRATOR'::\"AccessRole\") OR (scope = 'COMPANY'::\"GrantScope\")))`\nCompany administration is always company-wide.\n`membership_grants_expiry_after_start`\n`CHECK (((expires_at IS NULL) OR (expires_at > starts_at)))`\nA temporary grant expires after it starts.\n`membership_grants_pkey`\n`PRIMARY KEY (id)`\nUnique grant identity.\n`membership_grants_company_id_id_key`\n`CREATE UNIQUE INDEX membership_grants_company_id_id_key ON public.membership_grants USING btree (company_id, id)`\nTenant key that branch scopes target.\n`membership_grants_membership_idx`\n`CREATE INDEX membership_grants_membership_idx ON public.membership_grants USING btree (company_id, membership_id)`\nSupports resolving a membership's grants.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "membership_grant_branches",
-    "anchor": "membership_grant_branches",
-    "text": "membership_grant_branches\nExplicit branches covered by a BRANCHES-scoped grant; new branches never join silently.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Written with the grant; retained while the grant exists.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany shared by the grant and the branch.\n—\n—\n`grant_id`\n`uuid`\nno\n—\nINTERNAL\nGrant whose scope includes the branch.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch covered by the grant.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-9",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`membership_grant_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company; mixed-company scopes are unrepresentable.\n`membership_grant_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe scope belongs to an existing company.\n`membership_grant_branches_company_id_grant_id_fkey`\n`FOREIGN KEY (company_id, grant_id) REFERENCES membership_grants(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe grant belongs to the same company.\n`membership_grant_branches_pkey`\n`PRIMARY KEY (grant_id, branch_id)`\nA branch appears at most once in a grant's scope.\n`membership_grant_branches_branch_idx`\n`CREATE INDEX membership_grant_branches_branch_idx ON public.membership_grant_branches USING btree (company_id, branch_id)`\nSupports finding the grants that cover a branch.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "organization_audit_events",
-    "anchor": "organization_audit_events",
-    "text": "organization_audit_events\nAppend-only attributable record of company, branch, membership and grant changes, written in the same transaction as each change.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Never updated or deleted by the runtime; retention follows PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated event UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany whose change the event records.\n—\n—\n`occurred_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the change.\n—\nUTC instant, millisecond precision\n`actor_principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPrincipal who performed the change.\n—\n—\n`actor_membership_id`\n`uuid`\nyes\n—\nINTERNAL\nActor's membership in the company.\nThe actor had no membership yet, as when creating the company.\n—\n`action`\n`character varying(64)`\nno\n—\nINTERNAL\nStable dotted action identifier, such as company.created or branch.archived.\n—\n—\n`target_type`\n`character varying(32)`\nno\n—\nINTERNAL\nKind of changed resource, such as company or branch.\n—\n—\n`target_id`\n`uuid`\nno\n—\nINTERNAL\nIdentifier of the changed resource.\n—\n—\n`details`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nAllowlisted non-secret change details: changed field names and, for branch events, the branch name at the time of the event. Never secrets or full payloads.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-10",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`organization_audit_events_action_format`\n`CHECK (((action)::text ~ '^[a-z]+(\\.[a-z_]+)+$'::text))`\nActions use the stable dotted identifier format.\n`organization_audit_events_actor_principal_id_fkey`\n`FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe actor is an existing principal.\n`organization_audit_events_company_id_actor_membership_id_fkey`\n`FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe actor membership, when present, belongs to the same company.\n`organization_audit_events_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn event belongs to an existing company.\n`organization_audit_events_details_object`\n`CHECK ((jsonb_typeof(details) = 'object'::text))`\nDetails are always a JSON object.\n`organization_audit_events_pkey`\n`PRIMARY KEY (id)`\nUnique event identity.\n`organization_audit_events_target_type_format`\n`CHECK (((target_type)::text ~ '^[a-z_]+$'::text))`\nTarget types use lowercase identifiers.\n`organization_audit_events_company_id_id_key`\n`CREATE UNIQUE INDEX organization_audit_events_company_id_id_key ON public.organization_audit_events USING btree (company_id, id)`\nTenant key for future references to events.\n`organization_audit_events_company_time_idx`\n`CREATE INDEX organization_audit_events_company_time_idx ON public.organization_audit_events USING btree (company_id, occurred_at DESC, id DESC)`\nSupports company-scoped newest-first audit pagination.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Database enums",
-    "anchor": "database-enums",
-    "text": "Database enums\nEnum\nValues\nMeaning\n`AccessRole`\nCOMPANY_ADMINISTRATOR, BRANCH_MANAGER, OPERATOR\nStandard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR.\n`BranchStatus`\nACTIVE, ARCHIVED\nBranch state: ACTIVE or ARCHIVED.\n`CompanyStatus`\nACTIVE, SUSPENDED\nCompany state: ACTIVE or SUSPENDED.\n`GrantScope`\nCOMPANY, BRANCHES\nGrant scope: COMPANY or explicit BRANCHES.\n`HumanSessionState`\nPENDING_LIMIT, ACTIVE, REVOKED\nServer-managed session state: PENDING_LIMIT, ACTIVE or REVOKED.\n`MembershipStatus`\nACTIVE, SUSPENDED, REMOVED\nMembership state: ACTIVE, SUSPENDED or REMOVED.\n`PrincipalStatus`\nACTIVE, DISABLED\nGlobal principal state: ACTIVE or DISABLED.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Start and Upgrade a Project from Orion",
-    "anchor": "start-and-upgrade-a-project-from-orion",
-    "text": "Start and Upgrade a Project from Orion\n[Repository README](../README.md) · [Development setup](setup.md) · [Validation](validation.md) · [Foundation versioning](versioning.md) · [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) · [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nThis is the practical reference for turning a revision of Orion into a new, independent project and for keeping that project's foundation current: what to decide and provide, how to run the initialization, what the new repository contains, what to do next, and how provenance and foundation upgrades work. [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) records the ancestry and provenance decision; [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) records the clean-baseline contract. The commands exist in every Orion checkout; the canonical Orion repository itself is never initialized as a project.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Model",
-    "anchor": "model",
-    "text": "Model\nThe canonical `GabriellMDias/Orion` repository is the upstream development foundation. A derived project is an independent Git repository with its own `origin`, branches, pull requests, CI history, human actions, product decisions, and releases. It starts from a clean clone of Orion and keeps Orion's commit history, so Git can compute what changed upstream and merge it later, but its first commit removes Orion's own reference implementation and development history and gives the repository the project's identity.\nConcern\nMechanism\nIdentity and provenance\n[`.orion/project.json`](../.orion/project.json), validated by `pnpm orion:check`\nClean-baseline contract\n[`.orion/derivation.json`](../.orion/derivation.json): foundation-only paths, project-owned files and their templates, and the foundation workspace package scope\nImmutable starting point\n`foundation.initializedFromCommit`: the published Orion commit the project was initialized from; never changes\nCurrent foundation\n`foundation.baselineCommit`: the newest Orion commit integrated and validated through a reviewed merge\nCanonical upstream\nLocal remote `orion-upstream`: fetch-only (its push URL is disabled), fetches no tags, and is tracked by no local branch\nProduct repository\nRecorded as `repository.url`; each clone's `origin` is that repository or a fork or mirror of it, never the foundation ([remote rules](#remote-rules))\nIn the Orion repository the manifest has `\"kind\": \"foundation\"` and only describes Orion. A derived project's manifest (schema version 2) has `\"kind\": \"project\"` and additionally records its npm `packageScope` and its foundation ancestry. The Living Documentation Portal links source files to the manifest's repository.\nA derived project inherits [Apache-2.0-licensed Orion source](../LICENSE). The project remains responsible for licensing its independently created product code and for applicable obligations of inherited and third-party material; Orion's license does not choose the project's overall license.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Before you start",
-    "anchor": "before-you-start",
-    "text": "Before you start\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "What you decide and provide",
-    "anchor": "what-you-decide-and-provide",
-    "text": "What you decide and provide\nOnly the first two inputs are required. Product decisions such as scope, license, identity provider, deployment, and branding are not needed to initialize; the new project's plan and human actions track them afterward.\nInput\nOption\nHow the project uses it\nRules\nProject name\n`--name`, required\nManifest `name`, README and documentation titles, browser title, web shell, portal, OpenAPI title (`<name> API`), plan, human actions, and the initialization commit message\n1–80 letters, digits, spaces, dots, underscores, or hyphens, starting with a letter or digit; accented letters are allowed\nProduct repository\n`--repository`, required\nRecorded, normalized, as `repository.url`; configured as `origin`\nHTTPS, SSH, or scp-like URL of the repository the project will publish to; it need not exist yet. It must not embed credentials, use a non-default SSH port (supply its HTTPS URL instead), or identify Orion ([repository identities](#remote-rules))\nPackage scope\n`--package-scope`, optional\nWorkspace packages `@<scope>/api`, `@<scope>/web`, and `@<scope>/sdk`, the root package `<scope>`, and the telemetry service name `<scope>-api`\nDefaults to the name in lowercase, without accents, with other characters replaced by hyphens (`Pedido Fácil` → `@pedido-facil`). Otherwise `@` and 1–50 lowercase letters, digits, or hyphens, starting with a letter or digit, and not the foundation scope `@orion`\nOrion revision\noptional\nBecomes `foundation.initializedFromCommit` and the first `foundation.baselineCommit`\nDefaults to the latest commit on Orion's `main`. Any commit on `main` that contains `.orion/derivation.json` may be chosen; [stable tags](versioning.md) name released points. A revision from before the clean-baseline contract runs its own older initialization and produces that revision's layout instead\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Prerequisites",
-    "anchor": "prerequisites",
-    "text": "Prerequisites\nGit with `user.name` and `user.email` configured, Node.js 24.13.0, and pnpm 11.25.0.\nA running Testcontainers-compatible container runtime: initialization regenerates the database reference from a migrated PostgreSQL.\nPlaywright Chromium for the browser tests in `pnpm validate` ([setup](setup.md#prepare-a-clean-checkout)).\nA fresh, full clone of Orion that contains no other work. Shallow clones cannot preserve Orion's ancestry.\nPermission to create the product repository before publishing. Initialization never contacts the product repository: it creates no repositories and pushes nothing.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Start a new project",
-    "anchor": "start-a-new-project",
-    "text": "Start a new project\nClone Orion and install its dependencies. To start from an older published Orion revision, run `git reset --hard <commit>` on `main` before initializing.\ngit clone https://github.com/GabriellMDias/Orion.git acme-ledger\ncd acme-ledger\npnpm install --frozen-lockfile\n\nRun a dry run. It checks every precondition and lists the actions without changing anything.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git\n\nInitialize. Add `--package-scope @acme` to choose a scope other than the default.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git --apply\n\nVerify the result. `pnpm orion:status` shows the identity, package scope, and recorded Orion commits; the last commit is `Initialize Acme Ledger from Orion <commit>` on top of Orion's history.\npnpm orion:status\ngit log --oneline -2\npnpm validate\n\nCreate an empty repository at the URL you supplied, without a generated README, license, or ignore file (project human action PH-01), and publish:\ngit push -u origin main\n\nInitialization refuses, without changing anything, when:\nthe checkout is not the repository root, is shallow, or has uncommitted or untracked changes (ignored files such as `node_modules/` and `.env.local` are allowed);\nthe manifest already describes a project, `docs/project/` exists, or an `orion-upstream` remote exists;\n`main` is not checked out, any configured `origin` URL does not identify the canonical Orion repository, or `HEAD` has commits that are not on `origin/main`;\nthe project name is invalid, the package scope is not a valid npm scope or equals the foundation scope, the repository URL embeds credentials, uses a non-default SSH port (see [repository identities](#remote-rules)), or identifies the Orion repository;\nthe derivation contract is invalid or a template is missing;\nthe migration release registry records durable releases, which would describe another deployment;\nGit has no committer identity.\nWith `--apply`, it:\nwrites the project manifest;\nremoves every foundation-only path;\nrenders the project-owned files with the project name, repository, package scope, date, and Orion baseline;\nrenames the workspace package scope in package manifests, `pnpm-lock.yaml`, and source, and names the root package after the scope (authored Markdown and ADRs are not rewritten);\nregenerates workspace links, the Prisma client, API and database references, SDK types, and portal data;\ncommits `Initialize <name> from Orion <commit>` on top of Orion's history, renames `origin` to the protected `orion-upstream`, and adds the project repository as `origin`.\nIt never creates remote repositories or pushes. If a step before the commit fails, it restores the clean checkout; run `pnpm install --frozen-lockfile` before retrying.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "What carries over, what is removed, and what is adapted",
-    "anchor": "what-carries-over-what-is-removed-and-what-is-adapted",
-    "text": "What carries over, what is removed, and what is adapted\nOutcome\nContent\nPreserved from the foundation\nArchitecture, principles, policies, accepted ADRs, setup and validation guides, runbook guidance, and this guide; the validation gate, agent instructions, CI workflow, and Renovate configuration; the API runtime (configuration, telemetry, health, error registry, module contract, PostgreSQL client, optional JWT verification); the web shell and Living Documentation Portal; the SDK package; the derivation tooling and contract; Orion's full Git history\nRemoved as foundation-only\nOrion's Approval Request reference implementation: its API feature, Prisma models, migration, metadata, runtime grants, smoke, tests, web module, browser tests and journeys, and domain documentation. Orion's own implementation plan, human actions, and acceptance and release history\nAdapted or created for the project\nThe manifest (`kind: project`, name, package scope, provenance); `README.md`; the API and web composition files, which compose no modules; a neutral brand mark and touch icon; the project's plan and human actions in `docs/project/`; workspace package names, the lockfile, and imports; generated OpenAPI, SDK types, configuration, error, and database references, and portal data; the remotes `origin` and `orion-upstream`\nKept as the foundation's technical namespace\n`ORION_*` configuration names, `orion_*` token claims and database role names, the `Orion required gate` check name, the `.orion/` directory, the `orion:*` commands, and the `orion-upstream` remote. Renaming them would touch shared files throughout the repository and conflict on every upgrade; the check name is also referenced by branch protection. Accepted ADRs keep their original wording\nThe [content ownership](#content-ownership) contract defines these categories precisely and how each behaves during upgrades.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "A newly derived project",
-    "anchor": "a-newly-derived-project",
-    "text": "A newly derived project\nImmediately after initialization the repository contains:\nArea\nState\nIdentity\n`README.md`, `<title>`, the web shell, the portal, the OpenAPI title (`<name> API`), and the telemetry service name (from `@<scope>/api`) use the project name; workspace packages are `@<scope>/api`, `@<scope>/web`, and `@<scope>/sdk`; the brand mark is a neutral placeholder\nAPI\nThe shared runtime with health endpoints, configuration, telemetry, error registry, module contract, PostgreSQL client, and optional JWT verification; `apps/api/src/modules.ts` composes no modules\nDatabase\nThe Prisma schema folder with only shared configuration, no migrations, no metadata or grants, an empty release registry, and a generated database reference stating that no application tables exist\nWeb\nThe shell, home page, and Living Documentation Portal; `apps/web/src/modules.tsx` mounts no module routes\nDocumentation\nShared architecture, policies, ADRs, setup, validation, runbook guidance, this guide, and the project's README, plan (PJ-01 to PJ-05), and human actions (PH-01 to PH-06); no Orion plan, human actions, acceptance report, or reference-feature documentation\nTooling and CI\nUnchanged validation gate, agent instructions, CI workflow, Renovate configuration, and derivation commands\nProvenance\nOrion's full history plus the initialization commit; `foundation.initializedFromCommit` and `foundation.baselineCommit` both name the Orion commit; `orion-upstream` fetch-only; `origin` the project repository\nWorktree\nClean; nothing is pushed until you publish\n`pnpm validate` passes in this state, including the shell and portal browser journeys.\n"
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`principals_disabled_state`\n`CHECK (((status = 'DISABLED'::\"PrincipalStatus\") = (disabled_at IS NOT NULL)))`\nA disablement instant exists exactly for disabled principals.\n`principals_display_name_nonblank`\n`CHECK (((display_name IS NULL) OR (btrim((display_name)::text) <> ''::text)))`\nA presentation name, when present, cannot be blank.\n`principals_issuer_nonblank`\n`CHECK (((issuer)::text ~ '^https?://[^[:space:]]+$'::text))`\nIssuer is an absolute HTTP(S) URL without whitespace.\n`principals_pkey`\n`PRIMARY KEY (id)`\nUnique immutable application principal identity.\n`principals_subject_nonblank`\n`CHECK (((subject)::text ~ '[^[:space:]]'::text))`\nProvider subject cannot be blank.\n`principals_verified_email_nonblank`\n`CHECK (((verified_email IS NULL) OR (btrim((verified_email)::text) <> ''::text)))`\nA verified-login email snapshot, when present, cannot be blank.\n`principals_issuer_subject_key`\n`CREATE UNIQUE INDEX principals_issuer_subject_key ON public.principals USING btree (issuer, subject)`\nOne application principal per provider identity; concurrent first logins converge on one row.\n"
   }
 ]

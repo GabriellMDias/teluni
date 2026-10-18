@@ -11,6 +11,10 @@ export const organizationErrorCodes: ReadonlySet<string> = new Set([
   "IDEMPOTENCY_KEY_REUSED",
   "BRANCH_NAME_IN_USE",
   "BRANCH_ARCHIVED",
+  "MEMBERSHIP_REMOVED",
+  "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
+  "LAST_ADMINISTRATOR_REQUIRED",
+  "RESPONSIBLE_APPROVAL_REQUIRED",
 ]);
 
 type CompanyWithAccess =
@@ -25,6 +29,8 @@ export type Branch =
   paths["/companies/{companyId}/branches"]["post"]["responses"][201]["content"]["application/json"];
 export type AuditEvent =
   paths["/companies/{companyId}/audit-events"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
+export type Member =
+  paths["/companies/{companyId}/members"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
 
 export const companiesKey = ["organizations", "companies"] as const;
 export const companyKey = (id: string) =>
@@ -32,8 +38,34 @@ export const companyKey = (id: string) =>
 export const branchesKey = (id: string) =>
   ["organizations", "branches", id] as const;
 export const auditKey = (id: string) => ["organizations", "audit", id] as const;
+export const membersKey = (id: string) =>
+  ["organizations", "members", id] as const;
 
 const client = sessionApiClient;
+
+export async function listMembers(companyId: string, cursor?: string) {
+  return unwrap(
+    await client().GET("/companies/{companyId}/members", {
+      params: { path: { companyId }, query: cursor ? { cursor } : {} },
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function updateMemberStatus(
+  companyId: string,
+  memberId: string,
+  input: { expectedVersion: number; status: Member["status"] },
+): Promise<void> {
+  const result = await client().PATCH(
+    "/companies/{companyId}/members/{membershipId}",
+    {
+      params: { path: { companyId, membershipId: memberId } },
+      body: input,
+    },
+  );
+  if (!result.response.ok) unwrap(result, organizationErrorCodes);
+}
 
 export async function listCompanies(cursor?: string) {
   return unwrap(

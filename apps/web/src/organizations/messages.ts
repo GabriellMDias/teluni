@@ -49,6 +49,34 @@ const ptBR = {
   pageEmpty:
     "Não há mais empresas nesta página. Volte à primeira página para atualizar a lista.",
   settingsTitle: "Configurações da empresa",
+  membersTitle: "Membros",
+  membersLead:
+    "Gerencie o acesso a esta empresa. Os dados de contato são atualizados no último acesso de cada pessoa.",
+  membersEmpty: "Nenhum membro nesta página.",
+  memberYou: "Você",
+  memberUnknown: "Nome indisponível",
+  memberReference: "Referência do membro",
+  memberNoRoles: "Sem papéis em vigor",
+  memberSuspend: "Suspender",
+  memberReactivate: "Reativar",
+  memberRemove: "Remover acesso",
+  memberConfirm: "Confirmar alteração",
+  memberReauthenticate: "Confirmar identidade novamente",
+  memberResponsibleProtected:
+    "Responsável pela empresa. Transfira a responsabilidade antes de suspender ou remover este acesso.",
+  memberStatuses: {
+    ACTIVE: "Ativo",
+    SUSPENDED: "Suspenso",
+    REMOVED: "Removido",
+  },
+  memberConfirmations: {
+    ACTIVE:
+      "A reativação restaura os papéis ainda válidos deste membro nesta empresa.",
+    SUSPENDED:
+      "A suspensão interrompe o acesso deste membro a esta empresa até uma reativação.",
+    REMOVED:
+      "A remoção encerra o acesso deste membro a esta empresa e preserva o histórico. Esta ação não pode ser desfeita neste painel.",
+  },
   editSettings: "Editar configurações",
   settingsSaved: "Configurações salvas.",
   saving: "Salvando…",
@@ -60,6 +88,7 @@ const ptBR = {
   historyMember: "Por outro membro",
   historyUnknown: "Organização alterada",
   historyActions: {
+    "membership.status_changed": "Acesso de membro alterado",
     "company.created": "Empresa criada",
     "company.updated": "Configurações da empresa alteradas",
     "branch.created": "Filial criada",
@@ -76,6 +105,13 @@ const ptBR = {
   reload: "Recarregar",
   backToCompanies: "Voltar para empresas",
   errors: {
+    MEMBERSHIP_REMOVED: "Este acesso foi removido e não pode ser reativado.",
+    RESPONSIBLE_ADMINISTRATOR_PROTECTED:
+      "Transfira a responsabilidade antes de suspender ou remover o responsável.",
+    LAST_ADMINISTRATOR_REQUIRED:
+      "A empresa precisa manter um administrador ativo.",
+    RESPONSIBLE_APPROVAL_REQUIRED:
+      "Somente o responsável pela empresa pode reativar um administrador.",
     AUTHENTICATION_REQUIRED: "Sua sessão terminou. Entre novamente.",
     PERMISSION_DENIED: "Você não tem permissão para esta ação.",
     COMPANY_SUSPENDED:
@@ -154,6 +190,34 @@ const enUS: OrganizationMessages = {
   pageEmpty:
     "There are no more companies on this page. Return to the first page to refresh the list.",
   settingsTitle: "Company settings",
+  membersTitle: "Members",
+  membersLead:
+    "Manage access to this company. Contact details are updated at each person's last sign-in.",
+  membersEmpty: "No members on this page.",
+  memberYou: "You",
+  memberUnknown: "Name unavailable",
+  memberReference: "Member reference",
+  memberNoRoles: "No current roles",
+  memberSuspend: "Suspend",
+  memberReactivate: "Reactivate",
+  memberRemove: "Remove access",
+  memberConfirm: "Confirm change",
+  memberReauthenticate: "Confirm identity again",
+  memberResponsibleProtected:
+    "Responsible for the company. Transfer responsibility before suspending or removing this access.",
+  memberStatuses: {
+    ACTIVE: "Active",
+    SUSPENDED: "Suspended",
+    REMOVED: "Removed",
+  },
+  memberConfirmations: {
+    ACTIVE:
+      "Reactivation restores this member's still-valid roles in this company.",
+    SUSPENDED:
+      "Suspension stops this member's access to this company until reactivation.",
+    REMOVED:
+      "Removal ends this member's access to this company and preserves history. This action cannot be undone in this panel.",
+  },
   editSettings: "Edit settings",
   settingsSaved: "Settings saved.",
   saving: "Saving…",
@@ -164,6 +228,7 @@ const enUS: OrganizationMessages = {
   historyMember: "By another member",
   historyUnknown: "Organization updated",
   historyActions: {
+    "membership.status_changed": "Member access changed",
     "company.created": "Company created",
     "company.updated": "Company settings changed",
     "branch.created": "Branch created",
@@ -180,6 +245,14 @@ const enUS: OrganizationMessages = {
   reload: "Reload",
   backToCompanies: "Back to companies",
   errors: {
+    MEMBERSHIP_REMOVED:
+      "This membership was removed and cannot be reactivated.",
+    RESPONSIBLE_ADMINISTRATOR_PROTECTED:
+      "Transfer responsibility before suspending or removing the responsible administrator.",
+    LAST_ADMINISTRATOR_REQUIRED:
+      "The company must retain an active administrator.",
+    RESPONSIBLE_APPROVAL_REQUIRED:
+      "Only the responsible administrator can reactivate an administrator.",
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You do not have permission for this action.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",

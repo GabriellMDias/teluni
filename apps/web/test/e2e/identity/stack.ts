@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
 import { resolve } from "node:path";
+import pg from "pg";
 import {
   freePort,
   startApi,
@@ -81,6 +82,9 @@ export type IdentityStack = Stoppable & {
   apiUrl: string;
   mailUrl: string;
   user: { email: string; password: string };
+  member: { email: string; password: string };
+  /** Superuser fixture arrangement only, never an application credential. */
+  sql: pg.Client;
 };
 
 export async function startIdentityStack(): Promise<IdentityStack> {
@@ -89,16 +93,23 @@ export async function startIdentityStack(): Promise<IdentityStack> {
     password: `Synthetic-${randomBytes(9).toString("base64url")}`,
   };
   const resources: (Stoppable | undefined)[] = [];
+  const member = {
+    email: `member-${randomBytes(4).toString("hex")}@example.test`,
+    password: `Synthetic-${randomBytes(9).toString("base64url")}`,
+  };
   try {
     const database = await startDatabase();
     resources.push(database);
+    const sql = new pg.Client({ connectionString: database.migrationUrl });
+    await sql.connect();
+    resources.unshift({ stop: () => sql.end() });
     const webPort = await freePort();
     const apiPort = await freePort();
     const publicOrigin = `http://127.0.0.1:${webPort}`;
     const identity = await startLocalIdentity({
       publicOrigin,
       apiPort,
-      users: [user],
+      users: [user, member],
     });
     resources.unshift(identity);
     const sessionKeys = `e2e:${randomBytes(32).toString("base64url")}`;
@@ -107,6 +118,7 @@ export async function startIdentityStack(): Promise<IdentityStack> {
       identity.provisionerClientSecret,
       sessionKeys,
       user.password,
+      member.password,
     ];
     const api = await startApi({
       port: apiPort,
@@ -133,6 +145,8 @@ export async function startIdentityStack(): Promise<IdentityStack> {
       apiUrl: api.url,
       mailUrl: identity.mailUrl,
       user,
+      member,
+      sql,
       stop: () => stopAll(resources),
     };
   } catch (error) {

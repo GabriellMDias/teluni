@@ -68,6 +68,14 @@ describe("identity module against real Keycloak and PostgreSQL", () => {
       person.credentials,
       "/companies?view=all",
     );
+    const current = await summary(browser);
+    expect(await stack.profiles.getMany([current.body.principalId])).toEqual([
+      {
+        principalId: current.body.principalId,
+        displayName: "Synthetic User",
+        email: person.credentials.username,
+      },
+    ]);
     expect(finished.status).toBe(303);
     expect(finished.headers.get("location")).toBe("/companies?view=all");
     expect(finished.headers.get("cache-control")).toBe("no-store");
@@ -98,11 +106,27 @@ describe("identity module against real Keycloak and PostgreSQL", () => {
     expect(attributes.orion_principal_id).toEqual([first.body.principalId]);
 
     // A later login, even in another browser, reuses the same principal.
+    expect(
+      (
+        await stack.admin.request(
+          "PUT",
+          `/realms/${realm}/users/${person.userId}`,
+          { firstName: "Updated", lastName: "User" },
+        )
+      ).status,
+    ).toBe(204);
     const second = new PanelBrowser(stack);
     await second.login(person.credentials);
     expect((await summary(second)).body.principalId).toBe(
       first.body.principalId,
     );
+    expect(await stack.profiles.getMany([first.body.principalId])).toEqual([
+      {
+        principalId: first.body.principalId,
+        displayName: "Updated User",
+        email: person.credentials.username,
+      },
+    ]);
     // Stored state never contains the recoverable cookie credential.
     const stored = await stack.sql.query<{ token_hash: Buffer }>(
       "SELECT token_hash FROM human_sessions WHERE id = $1",

@@ -45,8 +45,14 @@ const sessions: HumanSessionPort = {
       sessionId: randomUUID(),
       assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
       authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date() : null,
-      strongAuthenticationAgeSeconds: strong ? 1 : null,
+      strongAuthenticatedAt: strong
+        ? new Date(
+            Date.now() - Number(headers["x-test-strong-age"] ?? 1) * 1000,
+          )
+        : null,
+      strongAuthenticationAgeSeconds: strong
+        ? Number(headers["x-test-strong-age"] ?? 1)
+        : null,
       scopes: new Set(),
     });
   },
@@ -77,6 +83,19 @@ beforeAll(async () => {
     database = createDatabase(runtimeUrl);
     const organizations = createOrganizationsModule({
       sessions,
+      profiles: {
+        getMany: (ids) =>
+          Promise.resolve(
+            ids.map((id) => ({
+              principalId: id,
+              displayName:
+                Object.entries(people).find(
+                  ([, principal]) => principal === id,
+                )?.[0] ?? null,
+              email: null,
+            })),
+          ),
+      },
       rateLimit: { max: 10_000, timeWindow: 60_000 },
     });
     const modules = activateModules(
@@ -123,9 +142,12 @@ async function call(
   });
   return {
     status: response.statusCode,
-    body: response.json<
-      Record<string, unknown> & { error?: { code: string } }
-    >(),
+    body:
+      response.statusCode === 204
+        ? {}
+        : response.json<
+            Record<string, unknown> & { error?: { code: string } }
+          >(),
   };
 }
 
@@ -192,6 +214,24 @@ async function auditCount(companyId: string) {
   return rows[0].count;
 }
 
+/** Fixture only: invitations are a separate product increment. */
+async function addCompanyMember(
+  person: Person,
+  companyId: string,
+  role: "COMPANY_ADMINISTRATOR" | "OPERATOR" = "OPERATOR",
+) {
+  const id = randomUUID();
+  await sql.query(
+    "INSERT INTO memberships (id, company_id, principal_id) VALUES ($1, $2, $3)",
+    [id, companyId, people[person]],
+  );
+  await sql.query(
+    "INSERT INTO membership_grants (id, company_id, membership_id, role, scope) VALUES ($1, $2, $3, $4, 'COMPANY')",
+    [randomUUID(), companyId, id, role],
+  );
+  return id;
+}
+
 describe("organizations: two-company isolation", () => {
   let companyA: string;
   let companyB: string;
@@ -243,6 +283,7 @@ describe("organizations: two-company isolation", () => {
         "company.settings.manage",
         "branches.view",
         "branches.manage",
+        "members.manage",
         "audit.view",
       ],
     });
@@ -600,6 +641,283 @@ describe("organizations: two-company isolation", () => {
     } finally {
       await single.$disconnect();
     }
+  });
+
+  it("lists only authorized company members with caller- and collection-bound pagination", async () => {
+    const first = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/members?limit=2`,
+      { strong: true },
+    );
+    expect(first.status).toBe(200);
+    const ids = (first.body.items as { principalId: string }[]).map(
+      (member) => member.principalId,
+    );
+    expect(ids).not.toContain(people.bAdmin);
+    expect(ids).not.toContain(people.outsider);
+    expect(first.body.items).toHaveLength(2);
+    const next = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/members?limit=100&cursor=${first.body.nextCursor as string}`,
+      { strong: true },
+    );
+    expect(next.status).toBe(200);
+    const all = [
+      ...(first.body.items as { id: string; displayName: string }[]),
+      ...(next.body.items as { id: string; displayName: string }[]),
+    ];
+    expect(all.length).toBeGreaterThan(2);
+    expect(new Set(all.map((member) => member.id)).size).toBe(all.length);
+    expect(all.every((member) => member.displayName !== null)).toBe(true);
+    const wrong = await call(
+      "bAdmin",
+      "GET",
+      `/companies/${companyB}/members?cursor=${first.body.nextCursor as string}`,
+      { strong: true },
+    );
+    expect(code(wrong)).toBe("VALIDATION_FAILED");
+    const crossList = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/audit-events?cursor=${first.body.nextCursor as string}`,
+      { strong: true },
+    );
+    expect(code(crossList)).toBe("VALIDATION_FAILED");
+    for (const [person, strong, expected] of [
+      ["aOperator", false, "PERMISSION_DENIED"],
+      ["aManager", true, "PERMISSION_DENIED"],
+      ["outsider", true, "RESOURCE_NOT_FOUND"],
+      ["aAdmin", false, "STRONG_AUTHENTICATION_REQUIRED"],
+    ] as const) {
+      expect(
+        code(
+          await call(person, "GET", `/companies/${companyA}/members`, {
+            strong,
+          }),
+        ),
+      ).toBe(expected);
+    }
+  });
+
+  it("changes only local membership access, preserves responsibility and keeps removal terminal", async () => {
+    const company = await createCompany("aAdmin", "Member lifecycle");
+    const member = await addCompanyMember("multi", company);
+    const list = await call("aAdmin", "GET", `/companies/${company}/members`, {
+      strong: true,
+    });
+    const responsible = (
+      list.body.items as { id: string; responsible: boolean }[]
+    ).find((item) => item.responsible)!;
+    const change = (id: string, version: number, status: string) =>
+      call("aAdmin", "PATCH", `/companies/${company}/members/${id}`, {
+        strong: true,
+        body: { expectedVersion: version, status },
+      });
+    for (const status of ["SUSPENDED", "REMOVED"])
+      expect(code(await change(responsible.id, 1, status))).toBe(
+        "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
+      );
+    expect((await change(member, 1, "SUSPENDED")).status).toBe(204);
+    expect(code(await call("multi", "GET", `/companies/${company}`))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    expect(
+      (await call("multi", "GET", `/companies/${companyB}`, { strong: true }))
+        .status,
+    ).toBe(200);
+    expect(code(await change(member, 1, "ACTIVE"))).toBe(
+      "RESOURCE_VERSION_CONFLICT",
+    );
+    expect((await change(member, 2, "ACTIVE")).status).toBe(204);
+    expect((await call("multi", "GET", `/companies/${company}`)).status).toBe(
+      200,
+    );
+    const beforeNoop = await auditCount(company);
+    expect((await change(member, 3, "ACTIVE")).status).toBe(204);
+    expect(await auditCount(company)).toBe(beforeNoop);
+    expect((await change(member, 3, "REMOVED")).status).toBe(204);
+    expect(code(await change(member, 4, "ACTIVE"))).toBe("MEMBERSHIP_REMOVED");
+    const foreignMember = await sql.query<{ id: string }>(
+      "SELECT id FROM memberships WHERE company_id = $1 LIMIT 1",
+      [companyB],
+    );
+    expect(code(await change(foreignMember.rows[0].id, 1, "SUSPENDED"))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    const audit = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/audit-events`,
+      { strong: true },
+    );
+    expect(
+      (audit.body.items as { action: string; details: object }[])
+        .filter((item) => item.action === "membership.status_changed")
+        .map((item) => item.details),
+    ).toEqual([
+      { previousStatus: "ACTIVE", status: "REMOVED" },
+      { previousStatus: "SUSPENDED", status: "ACTIVE" },
+      { previousStatus: "ACTIVE", status: "SUSPENDED" },
+    ]);
+  });
+
+  it("requires responsible approval and recent assurance to restore an administrator, including a future grant", async () => {
+    const company = await createCompany("aAdmin", "Administrator restoration");
+    const admin = await addCompanyMember(
+      "multi",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    await addCompanyMember("bAdmin", company, "COMPANY_ADMINISTRATOR");
+    const update = (person: Person, version: number, status: string, age = 1) =>
+      call(person, "PATCH", `/companies/${company}/members/${admin}`, {
+        strong: true,
+        headers: { "x-test-strong-age": String(age) },
+        body: { expectedVersion: version, status },
+      });
+    expect((await update("aAdmin", 1, "SUSPENDED")).status).toBe(204);
+    expect(code(await update("bAdmin", 2, "ACTIVE"))).toBe(
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+    );
+    expect(code(await update("aAdmin", 2, "ACTIVE", 301))).toBe(
+      "RECENT_AUTHENTICATION_REQUIRED",
+    );
+    expect((await update("aAdmin", 2, "ACTIVE")).status).toBe(204);
+    expect((await update("aAdmin", 3, "SUSPENDED")).status).toBe(204);
+    await sql.query(
+      "UPDATE membership_grants SET starts_at = now() + interval '1 hour' WHERE membership_id = $1",
+      [admin],
+    );
+    expect(code(await update("bAdmin", 4, "ACTIVE"))).toBe(
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+    );
+    expect((await update("aAdmin", 4, "ACTIVE")).status).toBe(204);
+  });
+
+  it("retains the last effective administrator even when the responsible grant is unavailable", async () => {
+    const company = await createCompany("aAdmin", "Last administrator");
+    const admin = await addCompanyMember(
+      "multi",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    await sql.query(
+      "UPDATE membership_grants SET revoked_at = now() WHERE company_id = $1 AND membership_id <> $2",
+      [company, admin],
+    );
+    const before = await auditCount(company);
+    const result = await call(
+      "multi",
+      "PATCH",
+      `/companies/${company}/members/${admin}`,
+      { strong: true, body: { expectedVersion: 1, status: "REMOVED" } },
+    );
+    expect(code(result)).toBe("LAST_ADMINISTRATOR_REQUIRED");
+    expect(await auditCount(company)).toBe(before);
+  });
+
+  it("serializes competing member changes and rolls back when the audit insert fails", async () => {
+    const company = await createCompany(
+      "aAdmin",
+      "Concurrent membership changes",
+    );
+    const member = await addCompanyMember("multi", company);
+    const update = (version: number, status: string) =>
+      call("aAdmin", "PATCH", `/companies/${company}/members/${member}`, {
+        strong: true,
+        body: { expectedVersion: version, status },
+      });
+    const before = await auditCount(company);
+    const results = await Promise.all([
+      update(1, "SUSPENDED"),
+      update(1, "REMOVED"),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([204, 409]);
+    expect(await auditCount(company)).toBe(before + 1);
+    const rollbackTarget = await addCompanyMember("outsider", company);
+    await sql.query(
+      "REVOKE INSERT ON organization_audit_events FROM orion_runtime",
+    );
+    try {
+      const result = await call(
+        "aAdmin",
+        "PATCH",
+        `/companies/${company}/members/${rollbackTarget}`,
+        { strong: true, body: { expectedVersion: 1, status: "REMOVED" } },
+      );
+      expect(result.status).toBe(500);
+    } finally {
+      await sql.query(
+        "GRANT INSERT ON organization_audit_events TO orion_runtime",
+      );
+    }
+    expect(
+      (
+        await sql.query(
+          "SELECT status, version FROM memberships WHERE id = $1",
+          [rollbackTarget],
+        )
+      ).rows,
+    ).toEqual([{ status: "ACTIVE", version: 1 }]);
+    expect(await auditCount(company)).toBe(before + 1);
+  });
+
+  it("rechecks an actor removed while the transaction waits for the company lock", async () => {
+    const company = await createCompany("aAdmin", "Revocation race");
+    const actor = await addCompanyMember(
+      "multi",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    const target = await addCompanyMember("outsider", company);
+    const before = await auditCount(company);
+    await sql.query("BEGIN");
+    let pending: ReturnType<typeof call> | undefined;
+    try {
+      const { rows } = await sql.query<{ pid: number }>(
+        "SELECT pg_backend_pid() AS pid FROM companies WHERE id = $1 FOR UPDATE",
+        [company],
+      );
+      pending = call(
+        "multi",
+        "PATCH",
+        `/companies/${company}/members/${target}`,
+        { strong: true, body: { expectedVersion: 1, status: "REMOVED" } },
+      );
+      const deadline = Date.now() + 5000;
+      for (;;) {
+        const blocked = await sql.query<{ waiting: boolean }>(
+          "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))) AS waiting",
+          [rows[0].pid],
+        );
+        if (blocked.rows[0].waiting) break;
+        if (Date.now() > deadline)
+          throw new Error(
+            "The membership writer did not wait for the company lock",
+          );
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+      await sql.query(
+        "UPDATE memberships SET status = 'REMOVED' WHERE id = $1",
+        [actor],
+      );
+      await sql.query("COMMIT");
+      expect(code(await pending)).toBe("RESOURCE_NOT_FOUND");
+    } finally {
+      await sql.query("ROLLBACK");
+      await pending;
+    }
+    expect(
+      (
+        await sql.query(
+          "SELECT status, version FROM memberships WHERE id = $1",
+          [target],
+        )
+      ).rows,
+    ).toEqual([{ status: "ACTIVE", version: 1 }]);
+    expect(await auditCount(company)).toBe(before);
   });
 
   it("paginates more than 200 companies with stable boundaries and current membership predicates", async () => {

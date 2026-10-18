@@ -21,6 +21,8 @@ export type LoginClaims = Readonly<{
   issuer: string;
   subject: string;
   emailVerified: boolean;
+  email?: string;
+  displayName?: string;
   providerSessionId: string | null;
   assuranceLevel: string;
   authenticatedAt: Date;
@@ -267,6 +269,10 @@ export function createKeycloakProvider(
           issuer: claims.iss,
           subject: claims.sub,
           emailVerified: claims.email_verified === true,
+          ...(typeof claims.email === "string" ? { email: claims.email } : {}),
+          ...(typeof claims.name === "string"
+            ? { displayName: claims.name }
+            : {}),
           providerSessionId: typeof claims.sid === "string" ? claims.sid : null,
           assuranceLevel: typeof claims.acr === "string" ? claims.acr : "",
           authenticatedAt: new Date(authTime * 1000),

@@ -1,11 +1,14 @@
 import AxeBuilder from "@axe-core/playwright";
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { enrollAuthenticator, enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
 // Company and branch administration through the real sign-in, two-step
 // verification and session boundary. Copy is Portuguese.
-test.use({ locale: "pt-BR" });
+// Bounded actions fail at the missing element instead of consuming the whole
+// journey's budget.
+test.use({ locale: "pt-BR", actionTimeout: 20_000, navigationTimeout: 30_000 });
 test.describe.configure({ mode: "serial", timeout: 120_000 });
 const afterNavigation = expect.configure({ timeout: 20_000 });
 
@@ -20,12 +23,16 @@ test.afterAll(async () => {
 
 test("creates a company, verifies in two steps and manages branches, settings and history", async ({
   page,
+  browser,
 }) => {
   await page.goto(`${stack.webUrl}/companies`);
   await afterNavigation(
     page.getByText("Entre para ver suas empresas."),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Entrar", exact: true }).last().click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "Entrar", exact: true })
+    .click();
   await enterCredentials(page, stack.user);
   await afterNavigation(page).toHaveURL(`${stack.webUrl}/companies`);
   await afterNavigation(
@@ -123,6 +130,121 @@ test("creates a company, verifies in two steps and manages branches, settings an
   ).toBe(true);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
+  const memberContext = await browser.newContext({ locale: "pt-BR" });
+  memberContext.setDefaultTimeout(20_000);
+  try {
+    const memberPage = await memberContext.newPage();
+    await memberPage.goto(`${stack.webUrl}/companies`);
+    await memberPage
+      .getByRole("main")
+      .getByRole("link", { name: "Entrar", exact: true })
+      .click();
+    await enterCredentials(memberPage, stack.member);
+    await afterNavigation(
+      memberPage.getByLabel("Nome da empresa"),
+    ).toBeVisible();
+    await memberPage.getByLabel("Nome da empresa").fill("Empresa independente");
+    await memberPage
+      .getByRole("button", { name: "Criar empresa", exact: true })
+      .click();
+    await afterNavigation(memberPage).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
+    const independentId = new URL(memberPage.url()).pathname.split("/").at(-1)!;
+    const sessionResponse = await memberPage.request.get(
+      `${stack.webUrl}/api/auth/session`,
+    );
+    const { principalId } = (await sessionResponse.json()) as {
+      principalId: string;
+    };
+    const companyId = new URL(companyUrl).pathname.split("/").at(-1)!;
+    // Fixture arrangement only: invitation delivery/acceptance is not provided
+    // by this increment. Every action below goes through the real session API.
+    const membershipId = randomUUID();
+    await stack.sql.query(
+      "INSERT INTO memberships (id, company_id, principal_id) VALUES ($1, $2, $3)",
+      [membershipId, companyId, principalId],
+    );
+    await stack.sql.query(
+      "INSERT INTO membership_grants (id, company_id, membership_id, role, scope) VALUES ($1, $2, $3, 'OPERATOR', 'COMPANY')",
+      [randomUUID(), companyId, membershipId],
+    );
+    await memberPage.goto(`${companyUrl}?view=members`);
+    await afterNavigation(memberPage.getByRole("alert")).toContainText(
+      "Você não tem permissão",
+    );
+    expect(
+      (
+        await memberPage.request.get(
+          `${stack.webUrl}/api/companies/${companyId}/members`,
+        )
+      ).status(),
+    ).toBe(403);
+
+    await page.getByRole("link", { name: "Membros", exact: true }).click();
+    const memberRow = page
+      .locator(".branch-list > li")
+      .filter({ hasText: stack.member.email });
+    await afterNavigation(memberRow).toBeVisible();
+    await expect(
+      page.getByText("Responsável pela empresa. Transfira", { exact: false }),
+    ).toBeVisible();
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await memberRow.getByRole("button", { name: /^Suspender:/ }).click();
+    await memberRow
+      .getByRole("button", { name: "Confirmar alteração", exact: true })
+      .click();
+    await expect(
+      memberRow.getByRole("button", { name: /^Reativar:/ }),
+    ).toBeVisible();
+    expect(
+      (
+        await memberPage.request.get(
+          `${stack.webUrl}/api/companies/${companyId}`,
+        )
+      ).status(),
+    ).toBe(404);
+    const ownCompanies = (await (
+      await memberPage.request.get(`${stack.webUrl}/api/companies`)
+    ).json()) as { items: { id: string }[] };
+    expect(ownCompanies.items.map((item) => item.id)).toEqual([independentId]);
+
+    await memberRow.getByRole("button", { name: /^Reativar:/ }).click();
+    await memberRow
+      .getByRole("button", { name: "Confirmar alteração", exact: true })
+      .click();
+    await expect(
+      memberRow.getByRole("button", { name: /^Suspender:/ }),
+    ).toBeVisible();
+    expect(
+      (
+        await memberPage.request.get(
+          `${stack.webUrl}/api/companies/${companyId}`,
+        )
+      ).status(),
+    ).toBe(200);
+    await memberRow.getByRole("button", { name: /^Remover acesso:/ }).click();
+    await expect(
+      memberRow.getByText("Esta ação não pode ser desfeita", { exact: false }),
+    ).toBeVisible();
+    await memberRow
+      .getByRole("button", { name: "Confirmar alteração", exact: true })
+      .click();
+    await expect(
+      memberRow.getByText("Removido", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      memberRow.getByRole("button", { name: /^Reativar:/ }),
+    ).toHaveCount(0);
+    expect(
+      (
+        await memberPage.request.get(
+          `${stack.webUrl}/api/companies/${companyId}`,
+        )
+      ).status(),
+    ).toBe(404);
+  } finally {
+    await memberContext.close();
+  }
+
   await page.getByRole("link", { name: "Suas empresas" }).click();
   await expect(
     page.getByRole("link", { name: "Lanchonete Central Renovada" }),
@@ -135,7 +257,10 @@ test("does not reveal a company the person does not belong to", async ({
 }) => {
   const foreign = `${stack.webUrl}/companies/00000000-0000-4000-8000-000000000000`;
   await page.goto(foreign);
-  await page.getByRole("link", { name: "Entrar", exact: true }).last().click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "Entrar", exact: true })
+    .click();
   await enterCredentials(page, stack.user);
   await afterNavigation(page).toHaveURL(foreign);
   await afterNavigation(page.getByRole("alert")).toContainText(
@@ -152,8 +277,8 @@ test("shows the company workflow in English", async ({ browser }) => {
       page.getByRole("heading", { name: "Your companies" }),
     ).toBeVisible();
     await page
+      .getByRole("main")
       .getByRole("link", { name: "Sign in", exact: true })
-      .last()
       .click();
     await enterCredentials(page, stack.user);
     await afterNavigation(
