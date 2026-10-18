@@ -14,7 +14,8 @@ export const identityErrorCodes: ReadonlySet<string> = new Set([
 // The session's CSRF token lives only in memory and only for unsafe requests.
 let csrfToken: string | null = null;
 
-function client() {
+/** SDK client that sends the session cookie and, on unsafe methods, the CSRF token. */
+export function sessionApiClient() {
   return createApiClient(loadClientConfig().apiBaseUrl, () => null, {
     getCsrfToken: () => csrfToken,
   });
@@ -43,7 +44,7 @@ export type SessionItem = Readonly<{
 export async function fetchSession(
   options: { background?: boolean } = {},
 ): Promise<CurrentSession | null> {
-  const result = await client().GET("/auth/session", {
+  const result = await sessionApiClient().GET("/auth/session", {
     headers: options.background ? { "x-teluni-activity": "background" } : {},
   });
   if (result.response.status === 401) {
@@ -65,7 +66,10 @@ export const sessionQuery = queryOptions({
 });
 
 export async function listSessions(): Promise<readonly SessionItem[]> {
-  return unwrap(await client().GET("/auth/sessions"), identityErrorCodes).items;
+  return unwrap(
+    await sessionApiClient().GET("/auth/sessions"),
+    identityErrorCodes,
+  ).items;
 }
 
 function expectNoContent(result: {
@@ -79,18 +83,22 @@ function expectNoContent(result: {
 }
 
 export async function logout(): Promise<void> {
-  expectNoContent(await client().POST("/auth/logout"));
+  expectNoContent(await sessionApiClient().POST("/auth/logout"));
   csrfToken = null;
 }
 
 export async function terminateSession(id: string): Promise<void> {
   expectNoContent(
-    await client().DELETE("/auth/sessions/{id}", { params: { path: { id } } }),
+    await sessionApiClient().DELETE("/auth/sessions/{id}", {
+      params: { path: { id } },
+    }),
   );
 }
 
 export async function terminateAllSessions(): Promise<void> {
-  expectNoContent(await client().POST("/auth/sessions/terminate-all"));
+  expectNoContent(
+    await sessionApiClient().POST("/auth/sessions/terminate-all"),
+  );
   csrfToken = null;
 }
 

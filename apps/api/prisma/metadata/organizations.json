@@ -1,0 +1,354 @@
+{
+  "tables": {
+    "companies": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Customer company: the tenant that owns branches, memberships, content, devices and publications.",
+      "lifecycle": "Created ACTIVE by its first responsible administrator; suspension is a state. No runtime deletion; erasure and retention follow PH-13.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable company UUID; the tenant identifier and public resource ID.",
+          "classification": "INTERNAL"
+        },
+        "display_name": {
+          "description": "Company name shown to its members.",
+          "classification": "CONFIDENTIAL"
+        },
+        "status": {
+          "description": "ACTIVE companies allow protected operations; SUSPENDED denies them to members.",
+          "classification": "INTERNAL"
+        },
+        "default_locale": {
+          "description": "Default interface locale for the company: pt-BR or en-US.",
+          "classification": "INTERNAL"
+        },
+        "time_zone": {
+          "description": "Default IANA time zone for new branches; business time never uses the host time zone.",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency token incremented once per successful settings change.",
+          "classification": "INTERNAL",
+          "unit": "successful writes"
+        },
+        "created_by_principal_id": {
+          "description": "Principal who created the company and became its first responsible administrator.",
+          "classification": "CONFIDENTIAL"
+        },
+        "creation_key": {
+          "description": "Creator-supplied idempotency key, unique per creator, that makes company creation safely repeatable.",
+          "classification": "INTERNAL"
+        },
+        "creation_fingerprint": {
+          "description": "Immutable SHA-256 fingerprint of the normalized original creation inputs; retries compare it rather than mutable company settings. Not exposed in the API.",
+          "classification": "CONFIDENTIAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock creation instant.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the latest settings change; not audit history.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "companies_pkey": "Unique immutable company identity.",
+        "companies_created_by_principal_id_fkey": "The creator is an existing principal.",
+        "companies_creator_key_unique": "One company per creator and creation key, including racing retries.",
+        "companies_display_name_nonblank": "Company name cannot be blank.",
+        "companies_default_locale_supported": "Only the supported interface locales.",
+        "companies_time_zone_nonblank": "Time zone has the IANA identifier shape; the API validates it against the runtime's zone database.",
+        "companies_version_positive": "Rejects invalid concurrency versions.",
+        "companies_creation_key_format": "Creation keys use the documented opaque ASCII alphabet.",
+        "companies_creation_fingerprint_format": "Creation fingerprints are lowercase SHA-256 hex values."
+      }
+    },
+    "branches": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Branch of a company: a location with its own business time zone, assigned members and, later, devices.",
+      "lifecycle": "Created ACTIVE; archived rather than deleted so references remain valid.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable branch UUID; public resource ID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Owning company; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "name": {
+          "description": "Branch name, unique among the company's active branches regardless of case.",
+          "classification": "CONFIDENTIAL"
+        },
+        "time_zone": {
+          "description": "IANA time zone for the branch's local business time.",
+          "classification": "INTERNAL"
+        },
+        "status": {
+          "description": "ACTIVE branches are usable; ARCHIVED branches are retained for references.",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency token incremented once per successful change.",
+          "classification": "INTERNAL",
+          "unit": "successful writes"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock creation instant.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the latest change; not audit history.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "branches_pkey": "Unique branch identity.",
+        "branches_company_id_fkey": "A branch belongs to an existing company.",
+        "branches_company_id_id_key": "Tenant key that tenant references target.",
+        "branches_company_status_name_idx": "Supports listing a company's branches by state and name.",
+        "branches_company_active_name_unique": "Active branch names are unique within a company, ignoring case, including racing creations.",
+        "branches_name_nonblank": "Branch name cannot be blank.",
+        "branches_time_zone_nonblank": "Time zone has the IANA identifier shape.",
+        "branches_version_positive": "Rejects invalid concurrency versions."
+      }
+    },
+    "memberships": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "A principal's membership in one company; access comes only from its unexpired grants.",
+      "lifecycle": "Created ACTIVE; suspension and removal are states that deny access while retaining attribution.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated membership UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company of the membership; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "principal_id": {
+          "description": "Member principal; a principal may hold memberships in several companies that never see each other.",
+          "classification": "CONFIDENTIAL"
+        },
+        "status": {
+          "description": "Only ACTIVE memberships grant access.",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency token for membership changes.",
+          "classification": "INTERNAL",
+          "unit": "successful writes"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock creation instant.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the latest change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "memberships_pkey": "Unique membership identity.",
+        "memberships_company_id_fkey": "A membership belongs to an existing company.",
+        "memberships_principal_id_fkey": "The member is an existing principal.",
+        "memberships_company_id_id_key": "Tenant key that tenant references target.",
+        "memberships_company_principal_key": "At most one membership per principal and company.",
+        "memberships_principal_status_idx": "Supports listing a principal's companies.",
+        "memberships_version_positive": "Rejects invalid concurrency versions."
+      }
+    },
+    "company_responsibilities": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "The company's designated responsible administrator, who approves additional administrators (P10).",
+      "lifecycle": "Created with the company; transfer is a later attributable operation.",
+      "columns": {
+        "company_id": {
+          "description": "Company whose responsibility this row records; one row per company.",
+          "classification": "INTERNAL"
+        },
+        "membership_id": {
+          "description": "Membership of the responsible administrator in the same company.",
+          "classification": "INTERNAL"
+        },
+        "assigned_at": {
+          "description": "PostgreSQL-clock instant of the assignment.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "company_responsibilities_pkey": "Exactly one responsible administrator per company.",
+        "company_responsibilities_company_id_fkey": "Responsibility belongs to an existing company.",
+        "company_responsibilities_company_id_membership_id_fkey": "The responsible membership belongs to the same company.",
+        "company_responsibilities_membership_key": "Supports the composite reference to the responsible membership."
+      }
+    },
+    "membership_grants": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
+      "lifecycle": "Effective from starts_at until expires_at or revoked_at; retained after expiry for attribution.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated grant UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company of the grant; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "membership_id": {
+          "description": "Membership that holds the grant.",
+          "classification": "INTERNAL"
+        },
+        "role": {
+          "description": "Standard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application.",
+          "classification": "INTERNAL"
+        },
+        "scope": {
+          "description": "COMPANY covers every branch, including future ones; BRANCHES covers only the listed branches.",
+          "classification": "INTERNAL"
+        },
+        "starts_at": {
+          "description": "Instant the grant becomes effective.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "expires_at": {
+          "description": "Instant a temporary grant stops being effective; no automatic renewal.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The grant does not expire.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "granted_by_membership_id": {
+          "description": "Membership that granted it, for attribution.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Granted by company creation."
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock creation instant.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "revoked_at": {
+          "description": "Instant the grant was revoked.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The grant has not been revoked.",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "membership_grants_pkey": "Unique grant identity.",
+        "membership_grants_company_id_fkey": "A grant belongs to an existing company.",
+        "membership_grants_company_id_membership_id_fkey": "The holder is a membership of the same company.",
+        "membership_grants_company_id_granted_by_membership_id_fkey": "The grantor, when present, is a membership of the same company.",
+        "membership_grants_company_id_id_key": "Tenant key that branch scopes target.",
+        "membership_grants_membership_idx": "Supports resolving a membership's grants.",
+        "membership_grants_expiry_after_start": "A temporary grant expires after it starts.",
+        "membership_grants_company_role_scope": "Company administration is always company-wide."
+      }
+    },
+    "membership_grant_branches": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Explicit branches covered by a BRANCHES-scoped grant; new branches never join silently.",
+      "lifecycle": "Written with the grant; retained while the grant exists.",
+      "columns": {
+        "company_id": {
+          "description": "Company shared by the grant and the branch.",
+          "classification": "INTERNAL"
+        },
+        "grant_id": {
+          "description": "Grant whose scope includes the branch.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch covered by the grant.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "membership_grant_branches_pkey": "A branch appears at most once in a grant's scope.",
+        "membership_grant_branches_company_id_fkey": "The scope belongs to an existing company.",
+        "membership_grant_branches_company_id_grant_id_fkey": "The grant belongs to the same company.",
+        "membership_grant_branches_company_id_branch_id_fkey": "The branch belongs to the same company; mixed-company scopes are unrepresentable.",
+        "membership_grant_branches_branch_idx": "Supports finding the grants that cover a branch."
+      }
+    },
+    "organization_audit_events": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Append-only attributable record of company, branch, membership and grant changes, written in the same transaction as each change.",
+      "lifecycle": "Never updated or deleted by the runtime; retention follows PH-13.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated event UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company whose change the event records.",
+          "classification": "INTERNAL"
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant of the change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "actor_principal_id": {
+          "description": "Principal who performed the change.",
+          "classification": "CONFIDENTIAL"
+        },
+        "actor_membership_id": {
+          "description": "Actor's membership in the company.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The actor had no membership yet, as when creating the company."
+        },
+        "action": {
+          "description": "Stable dotted action identifier, such as company.created or branch.archived.",
+          "classification": "INTERNAL"
+        },
+        "target_type": {
+          "description": "Kind of changed resource, such as company or branch.",
+          "classification": "INTERNAL"
+        },
+        "target_id": {
+          "description": "Identifier of the changed resource.",
+          "classification": "INTERNAL"
+        },
+        "details": {
+          "description": "Allowlisted non-secret change details, such as changed field names; never secrets or full payloads.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "organization_audit_events_pkey": "Unique event identity.",
+        "organization_audit_events_company_id_fkey": "An event belongs to an existing company.",
+        "organization_audit_events_actor_principal_id_fkey": "The actor is an existing principal.",
+        "organization_audit_events_company_id_actor_membership_id_fkey": "The actor membership, when present, belongs to the same company.",
+        "organization_audit_events_company_id_id_key": "Tenant key for future references to events.",
+        "organization_audit_events_company_time_idx": "Supports company-scoped newest-first audit pagination.",
+        "organization_audit_events_action_format": "Actions use the stable dotted identifier format.",
+        "organization_audit_events_target_type_format": "Target types use lowercase identifiers.",
+        "organization_audit_events_details_object": "Details are always a JSON object."
+      }
+    }
+  },
+  "enums": {
+    "CompanyStatus": "Company state: ACTIVE or SUSPENDED.",
+    "BranchStatus": "Branch state: ACTIVE or ARCHIVED.",
+    "MembershipStatus": "Membership state: ACTIVE, SUSPENDED or REMOVED.",
+    "AccessRole": "Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR.",
+    "GrantScope": "Grant scope: COMPANY or explicit BRANCHES."
+  }
+}

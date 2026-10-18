@@ -16,3 +16,9 @@
 | `STRONG_AUTHENTICATION_REQUIRED` | 403 | authentication | no | This action requires two-step verification. Confirm your identity and try again. |
 | `RECENT_AUTHENTICATION_REQUIRED` | 403 | authentication | no | This action requires a recent two-step verification. Confirm your identity and try again. |
 | `SESSION_LIMIT_REACHED` | 409 | conflict | no | You already have the maximum number of active sessions. End one of them to continue. |
+| `PERMISSION_DENIED` | 403 | authorization | no | You do not have permission to perform this action. |
+| `COMPANY_SUSPENDED` | 403 | authorization | no | This company is suspended. Contact Teluni support. |
+| `RESOURCE_VERSION_CONFLICT` | 409 | conflict | no | The resource changed; reload it before trying again. |
+| `IDEMPOTENCY_KEY_REUSED` | 409 | conflict | no | The creation key was used for different content. |
+| `BRANCH_NAME_IN_USE` | 409 | conflict | no | Another active branch of this company already uses that name. |
+| `BRANCH_ARCHIVED` | 409 | conflict | no | The branch is archived and cannot be changed. |

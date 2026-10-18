@@ -1,0 +1,157 @@
+// Organizations module: companies (tenants), branches, memberships, standard
+// role grants, the responsible administrator and organization audit. Tenant
+// rules follow docs/project/tenant-data-design.md: every tenant-owned table
+// has a (company_id, id) key and tenant references are composite.
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum BranchStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum AccessRole {
+  COMPANY_ADMINISTRATOR
+  BRANCH_MANAGER
+  OPERATOR
+}
+
+enum GrantScope {
+  COMPANY
+  BRANCHES
+}
+
+model Company {
+  id                   String                   @id @db.Uuid
+  displayName          String                   @map("display_name") @db.VarChar(120)
+  status               CompanyStatus            @default(ACTIVE)
+  defaultLocale        String                   @map("default_locale") @db.VarChar(10)
+  timeZone             String                   @map("time_zone") @db.VarChar(64)
+  version              Int                      @default(1)
+  createdByPrincipalId String                   @map("created_by_principal_id") @db.Uuid
+  creationKey          String                   @map("creation_key") @db.VarChar(200)
+  creationFingerprint  String                   @map("creation_fingerprint") @db.Char(64)
+  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  createdBy            Principal                @relation("CompanyCreator", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branches             Branch[]
+  memberships          Membership[]
+  responsibility       CompanyResponsibility?
+  grants               MembershipGrant[]
+  grantBranches        MembershipGrantBranch[]
+  auditEvents          OrganizationAuditEvent[]
+
+  @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
+  @@map("companies")
+}
+
+model Branch {
+  id            String                  @id @db.Uuid
+  companyId     String                  @map("company_id") @db.Uuid
+  name          String                  @db.VarChar(120)
+  timeZone      String                  @map("time_zone") @db.VarChar(64)
+  status        BranchStatus            @default(ACTIVE)
+  version       Int                     @default(1)
+  createdAt     DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime                @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company       Company                 @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grantBranches MembershipGrantBranch[]
+
+  @@unique([companyId, id], map: "branches_company_id_id_key")
+  @@index([companyId, status, name], map: "branches_company_status_name_idx")
+  @@map("branches")
+}
+
+model Membership {
+  id                 String                   @id @db.Uuid
+  companyId          String                   @map("company_id") @db.Uuid
+  principalId        String                   @map("principal_id") @db.Uuid
+  status             MembershipStatus         @default(ACTIVE)
+  version            Int                      @default(1)
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company            Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  principal          Principal                @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  responsibility     CompanyResponsibility?
+  grants             MembershipGrant[]        @relation("GrantHolder")
+  grantedGrants      MembershipGrant[]        @relation("GrantGrantor")
+  auditEvents        OrganizationAuditEvent[]
+
+  @@unique([companyId, id], map: "memberships_company_id_id_key")
+  @@unique([companyId, principalId], map: "memberships_company_principal_key")
+  @@index([principalId, status], map: "memberships_principal_status_idx")
+  @@map("memberships")
+}
+
+model CompanyResponsibility {
+  companyId    String     @id @map("company_id") @db.Uuid
+  membershipId String     @map("membership_id") @db.Uuid
+  assignedAt   DateTime   @default(now()) @map("assigned_at") @db.Timestamptz(3)
+  company      Company    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  membership   Membership @relation(fields: [companyId, membershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, membershipId], map: "company_responsibilities_membership_key")
+  @@map("company_responsibilities")
+}
+
+model MembershipGrant {
+  id                    String                  @id @db.Uuid
+  companyId             String                  @map("company_id") @db.Uuid
+  membershipId          String                  @map("membership_id") @db.Uuid
+  role                  AccessRole
+  scope                 GrantScope
+  startsAt              DateTime                @default(now()) @map("starts_at") @db.Timestamptz(3)
+  expiresAt             DateTime?               @map("expires_at") @db.Timestamptz(3)
+  grantedByMembershipId String?                 @map("granted_by_membership_id") @db.Uuid
+  createdAt             DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  revokedAt             DateTime?               @map("revoked_at") @db.Timestamptz(3)
+  company               Company                 @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  membership            Membership              @relation("GrantHolder", fields: [companyId, membershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  grantedBy             Membership?             @relation("GrantGrantor", fields: [companyId, grantedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branches              MembershipGrantBranch[]
+
+  @@unique([companyId, id], map: "membership_grants_company_id_id_key")
+  @@index([companyId, membershipId], map: "membership_grants_membership_idx")
+  @@map("membership_grants")
+}
+
+model MembershipGrantBranch {
+  companyId String          @map("company_id") @db.Uuid
+  grantId   String          @map("grant_id") @db.Uuid
+  branchId  String          @map("branch_id") @db.Uuid
+  company   Company         @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grant     MembershipGrant @relation(fields: [companyId, grantId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branch    Branch          @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([grantId, branchId], map: "membership_grant_branches_pkey")
+  @@index([companyId, branchId], map: "membership_grant_branches_branch_idx")
+  @@map("membership_grant_branches")
+}
+
+model OrganizationAuditEvent {
+  id                String      @id @db.Uuid
+  companyId         String      @map("company_id") @db.Uuid
+  occurredAt        DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String      @map("actor_principal_id") @db.Uuid
+  actorMembershipId String?     @map("actor_membership_id") @db.Uuid
+  action            String      @db.VarChar(64)
+  targetType        String      @map("target_type") @db.VarChar(32)
+  targetId          String      @map("target_id") @db.Uuid
+  details           Json        @default("{}")
+  company           Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Principal   @relation("AuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorMembership   Membership? @relation(fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "organization_audit_events_company_id_id_key")
+  @@index([companyId, occurredAt(sort: Desc), id(sort: Desc)], map: "organization_audit_events_company_time_idx")
+  @@map("organization_audit_events")
+}

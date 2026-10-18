@@ -1,0 +1,525 @@
+import { useMemo, useState, type FormEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ApiFailure } from "../api-client.js";
+import { loginHref, sessionQuery } from "../identity/api.js";
+import { browserLocale, type Locale } from "../locale.js";
+import {
+  archiveBranch,
+  branchesKey,
+  companiesKey,
+  companyKey,
+  createBranch,
+  createCompany,
+  describe,
+  getCompany,
+  listBranches,
+  listCompanies,
+  renameBranch,
+  type Branch,
+} from "./api.js";
+import { organizationMessages, timeZoneChoices } from "./messages.js";
+
+export function useOrganizationMessages() {
+  const locale = useMemo(browserLocale, []);
+  return { locale, t: organizationMessages[locale] };
+}
+
+function Failure({
+  error,
+  operation,
+  onReload,
+}: {
+  error: unknown;
+  operation: "read" | "write";
+  onReload?: () => void;
+}) {
+  const { t } = useOrganizationMessages();
+  return (
+    <div role="alert" className="notice notice-error">
+      {describe(error, t, operation)}
+      {onReload && (
+        <button type="button" onClick={onReload}>
+          {t.reload}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SignInPrompt({ returnTo }: { returnTo: string }) {
+  const { t } = useOrganizationMessages();
+  return (
+    <>
+      <p>{t.signInRequired}</p>
+      <a className="button-link button-primary" href={loginHref(returnTo)}>
+        {t.signIn}
+      </a>
+    </>
+  );
+}
+
+function StepUpPrompt({ returnTo }: { returnTo: string }) {
+  const { t } = useOrganizationMessages();
+  return (
+    <div role="status" className="notice notice-error">
+      {t.stepUpNotice}
+      <a
+        className="button-link button-primary"
+        href={loginHref(returnTo, "strong")}
+      >
+        {t.stepUpButton}
+      </a>
+    </div>
+  );
+}
+
+function zoneChoices(): string[] {
+  const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return timeZoneChoices.includes(own)
+    ? [...timeZoneChoices]
+    : [own, ...timeZoneChoices];
+}
+
+function CreateCompanyForm() {
+  const { locale, t } = useOrganizationMessages();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const zones = useMemo(zoneChoices, []);
+  const [displayName, setDisplayName] = useState("");
+  const [timeZone, setTimeZone] = useState(zones[0]);
+  const [defaultLocale, setDefaultLocale] = useState<Locale>(locale);
+  // Kept until success so a retry after an unknown outcome replays safely.
+  const [key, setKey] = useState(() => crypto.randomUUID());
+  const create = useMutation({
+    mutationFn: () =>
+      createCompany({ displayName, defaultLocale, timeZone }, key),
+    onSuccess: async ({ company }) => {
+      setKey(crypto.randomUUID());
+      await queryClient.invalidateQueries({ queryKey: companiesKey });
+      await navigate({
+        to: "/companies/$companyId",
+        params: { companyId: company.id },
+      });
+    },
+  });
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    create.mutate();
+  }
+  const unknown =
+    create.error &&
+    (!(create.error instanceof ApiFailure) || create.error.status >= 500);
+  return (
+    <form
+      className="form-stack"
+      onSubmit={submit}
+      aria-labelledby="create-company-title"
+    >
+      <h2 id="create-company-title">{t.createTitle}</h2>
+      <label htmlFor="company-name">{t.fieldCompanyName}</label>
+      <input
+        id="company-name"
+        required
+        maxLength={120}
+        value={displayName}
+        onChange={(event) => setDisplayName(event.target.value)}
+      />
+      <label htmlFor="company-time-zone">{t.fieldTimeZone}</label>
+      <select
+        id="company-time-zone"
+        value={timeZone}
+        onChange={(event) => setTimeZone(event.target.value)}
+      >
+        {zones.map((zone) => (
+          <option key={zone} value={zone}>
+            {zone}
+          </option>
+        ))}
+      </select>
+      <label htmlFor="company-locale">{t.fieldLocale}</label>
+      <select
+        id="company-locale"
+        value={defaultLocale}
+        onChange={(event) => setDefaultLocale(event.target.value as Locale)}
+      >
+        {(["pt-BR", "en-US"] as const).map((value) => (
+          <option key={value} value={value}>
+            {t.localeNames[value]}
+          </option>
+        ))}
+      </select>
+      {create.error &&
+        (unknown ? (
+          <div role="alert" className="notice notice-error">
+            {t.unknownCreate}
+          </div>
+        ) : (
+          <Failure error={create.error} operation="write" />
+        ))}
+      <button
+        type="submit"
+        className="button-primary"
+        disabled={create.isPending}
+      >
+        {create.isPending ? t.creating : t.createCompany}
+      </button>
+    </form>
+  );
+}
+
+export function CompaniesPage() {
+  const { locale, t } = useOrganizationMessages();
+  const session = useQuery(sessionQuery);
+  const companies = useQuery({
+    queryKey: companiesKey,
+    queryFn: listCompanies,
+    enabled: Boolean(session.data),
+  });
+  return (
+    <section
+      className="panel organization-panel"
+      aria-labelledby="companies-title"
+      lang={locale}
+    >
+      <p className="eyebrow">{t.companiesEyebrow}</p>
+      <h1 id="companies-title">{t.companiesTitle}</h1>
+      {session.isPending ? (
+        <p>{t.loading}</p>
+      ) : session.isError ? (
+        <Failure
+          error={session.error}
+          operation="read"
+          onReload={() => void session.refetch()}
+        />
+      ) : !session.data ? (
+        <SignInPrompt returnTo="/companies" />
+      ) : (
+        <>
+          <p>{t.companiesLead}</p>
+          {companies.isPending ? (
+            <p>{t.loading}</p>
+          ) : companies.isError ? (
+            <Failure
+              error={companies.error}
+              operation="read"
+              onReload={() => void companies.refetch()}
+            />
+          ) : companies.data.length === 0 ? (
+            <p className="empty-state">{t.companiesEmpty}</p>
+          ) : (
+            <ul className="organization-list">
+              {companies.data.map((company) => (
+                <li key={company.id}>
+                  <Link
+                    to="/companies/$companyId"
+                    params={{ companyId: company.id }}
+                  >
+                    {company.displayName}
+                  </Link>
+                  <span className="hint">
+                    {company.roles.map((role) => t.roles[role]).join(", ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <CreateCompanyForm />
+        </>
+      )}
+    </section>
+  );
+}
+
+function BranchRow({
+  companyId,
+  branch,
+  manage,
+}: {
+  companyId: string;
+  branch: Branch;
+  manage: boolean;
+}) {
+  const { t } = useOrganizationMessages();
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(branch.name);
+  const [editingVersion, setEditingVersion] = useState(branch.version);
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: branchesKey(companyId) });
+  const rename = useMutation({
+    mutationFn: () =>
+      renameBranch(companyId, { ...branch, version: editingVersion }, name),
+    onSuccess: async () => {
+      setEditing(false);
+      await refresh();
+    },
+  });
+  const archive = useMutation({
+    mutationFn: () => archiveBranch(companyId, branch),
+    onSuccess: refresh,
+  });
+  const error = rename.error ?? archive.error;
+  async function reload() {
+    await refresh();
+    setEditing(false);
+    rename.reset();
+    archive.reset();
+  }
+  return (
+    <li className="branch-item">
+      {editing ? (
+        <form
+          className="branch-edit"
+          onSubmit={(event) => {
+            event.preventDefault();
+            rename.mutate();
+          }}
+        >
+          <label htmlFor={`branch-name-${branch.id}`}>
+            {t.fieldBranchName}
+          </label>
+          <input
+            id={`branch-name-${branch.id}`}
+            required
+            maxLength={120}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <button
+            type="submit"
+            className="button-primary"
+            disabled={rename.isPending}
+          >
+            {t.save}
+          </button>
+          <button type="button" onClick={() => setEditing(false)}>
+            {t.cancel}
+          </button>
+        </form>
+      ) : (
+        <div>
+          <strong>{branch.name}</strong>{" "}
+          <span className="hint">
+            {branch.status === "ACTIVE" ? t.statusActive : t.statusArchived} ·{" "}
+            {branch.timeZone}
+          </span>
+        </div>
+      )}
+      {manage && branch.status === "ACTIVE" && !editing && (
+        <div className="action-group">
+          <button
+            type="button"
+            aria-label={`${t.rename}: ${branch.name}`}
+            onClick={() => {
+              setName(branch.name);
+              setEditingVersion(branch.version);
+              rename.reset();
+              setEditing(true);
+            }}
+          >
+            {t.rename}
+          </button>
+          <button
+            type="button"
+            aria-label={`${t.archive}: ${branch.name}`}
+            onClick={() => archive.mutate()}
+            disabled={archive.isPending}
+          >
+            {t.archive}
+          </button>
+        </div>
+      )}
+      {error && (
+        <Failure
+          error={error}
+          operation="write"
+          onReload={() => void reload()}
+        />
+      )}
+    </li>
+  );
+}
+
+function Branches({
+  companyId,
+  manage,
+  cursor,
+}: {
+  companyId: string;
+  manage: boolean;
+  cursor?: string;
+}) {
+  const { t } = useOrganizationMessages();
+  const queryClient = useQueryClient();
+  const [name, setName] = useState("");
+  const branches = useQuery({
+    queryKey: [...branchesKey(companyId), { cursor }],
+    queryFn: () => listBranches(companyId, cursor),
+  });
+  const add = useMutation({
+    mutationFn: () => createBranch(companyId, name),
+    onSuccess: async () => {
+      setName("");
+      await queryClient.invalidateQueries({ queryKey: branchesKey(companyId) });
+    },
+  });
+  const items = branches.data?.items ?? [];
+  return (
+    <section aria-labelledby="branches-title">
+      <h2 id="branches-title">{t.branchesTitle}</h2>
+      {branches.isPending ? (
+        <p>{t.loading}</p>
+      ) : branches.isError ? (
+        <Failure
+          error={branches.error}
+          operation="read"
+          onReload={() => void branches.refetch()}
+        />
+      ) : items.length === 0 ? (
+        <p className="empty-state">{t.branchesEmpty}</p>
+      ) : (
+        <ul className="branch-list">
+          {items.map((branch) => (
+            <BranchRow
+              key={branch.id}
+              companyId={companyId}
+              branch={branch}
+              manage={manage}
+            />
+          ))}
+        </ul>
+      )}
+      <nav className="pagination" aria-label={t.branchesTitle}>
+        {cursor && (
+          <Link to="/companies/$companyId" params={{ companyId }} search={{}}>
+            {t.firstPage}
+          </Link>
+        )}
+        {branches.data?.nextCursor && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ cursor: branches.data.nextCursor }}
+          >
+            {t.nextPage}
+          </Link>
+        )}
+      </nav>
+      {manage && (
+        <form
+          className="form-stack branch-create"
+          onSubmit={(event) => {
+            event.preventDefault();
+            add.mutate();
+          }}
+        >
+          <label htmlFor="new-branch-name">{t.fieldBranchName}</label>
+          <input
+            id="new-branch-name"
+            required
+            maxLength={120}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          {add.error && (
+            <Failure
+              error={add.error}
+              operation="write"
+              onReload={() =>
+                void queryClient.invalidateQueries({
+                  queryKey: branchesKey(companyId),
+                })
+              }
+            />
+          )}
+          <button
+            type="submit"
+            className="button-primary"
+            disabled={add.isPending}
+          >
+            {add.isPending ? t.adding : t.addBranch}
+          </button>
+        </form>
+      )}
+    </section>
+  );
+}
+
+export function CompanyPage({
+  companyId,
+  cursor,
+}: {
+  companyId: string;
+  cursor?: string;
+}) {
+  const { locale, t } = useOrganizationMessages();
+  const session = useQuery(sessionQuery);
+  const company = useQuery({
+    queryKey: companyKey(companyId),
+    queryFn: () => getCompany(companyId),
+    enabled: Boolean(session.data),
+  });
+  const returnTo = `/companies/${companyId}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`;
+  if (session.isPending) return <p>{t.loading}</p>;
+  if (session.isError)
+    return (
+      <section className="panel organization-panel" lang={locale}>
+        <Failure
+          error={session.error}
+          operation="read"
+          onReload={() => void session.refetch()}
+        />
+      </section>
+    );
+  if (!session.data)
+    return (
+      <section className="panel organization-panel" lang={locale}>
+        <SignInPrompt returnTo={returnTo} />
+      </section>
+    );
+  if (company.isPending) return <p>{t.loading}</p>;
+  if (company.isError)
+    return (
+      <section className="panel organization-panel" lang={locale}>
+        {company.error instanceof ApiFailure &&
+        company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
+          <StepUpPrompt returnTo={returnTo} />
+        ) : (
+          <Failure
+            error={company.error}
+            operation="read"
+            onReload={() => void company.refetch()}
+          />
+        )}
+        <Link to="/companies">{t.backToCompanies}</Link>
+      </section>
+    );
+  const { access } = company.data;
+  const needsStepUp = access.capabilitiesAfterStrongAuthentication.length > 0;
+  const canView = access.capabilities.includes("branches.view");
+  return (
+    <section
+      className="panel organization-panel"
+      aria-labelledby="company-title"
+      lang={locale}
+    >
+      <p className="eyebrow">
+        <Link to="/companies">{t.companiesTitle}</Link>
+      </p>
+      <h1 id="company-title">{company.data.company.displayName}</h1>
+      <p className="hint">
+        {t.yourAccess}: {access.roles.map((role) => t.roles[role]).join(", ")}
+        {access.responsible ? ` · ${t.responsible}` : ""}
+      </p>
+      {needsStepUp && <StepUpPrompt returnTo={returnTo} />}
+      {canView && (
+        <Branches
+          companyId={companyId}
+          cursor={cursor}
+          manage={access.capabilities.includes("branches.manage")}
+        />
+      )}
+    </section>
+  );
+}

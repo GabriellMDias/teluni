@@ -1,0 +1,62 @@
+{
+  "kind": "database",
+  "name": "company_responsibilities",
+  "description": "The company's designated responsible administrator, who approves additional administrators (P10).",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created with the company; transfer is a later attributable operation.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company whose responsibility this row records; one row per company.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership of the responsible administrator in the same company.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "assigned_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the assignment.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "company_responsibilities_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "Responsibility belongs to an existing company."
+    },
+    {
+      "Object": "company_responsibilities_company_id_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The responsible membership belongs to the same company."
+    },
+    {
+      "Object": "company_responsibilities_pkey",
+      "Physical definition": "PRIMARY KEY (company_id)",
+      "Purpose": "Exactly one responsible administrator per company."
+    },
+    {
+      "Object": "company_responsibilities_membership_key",
+      "Physical definition": "CREATE UNIQUE INDEX company_responsibilities_membership_key ON public.company_responsibilities USING btree (company_id, membership_id)",
+      "Purpose": "Supports the composite reference to the responsible membership."
+    }
+  ]
+}

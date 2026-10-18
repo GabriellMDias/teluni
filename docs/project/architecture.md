@@ -4,11 +4,11 @@
 
 ## Baseline and accepted architecture directions
 
-**Implemented foundation:** Node.js/TypeScript ESM, Fastify, PostgreSQL/Prisma infrastructure, TypeBox/OpenAPI and generated TypeScript SDK, React/Vite with TanStack Router/Query, Pino/OpenTelemetry, local validation and CI configuration. [Actual product composition is empty](README.md#verified-baseline). Installed versions are owned by package manifests/lockfile, not this proposal. No running service/library is added by this document. [PH-11 policies](identity-and-access.md) and accepted ADR-0024/ADR-0025 select Keycloak, server-managed sessions and application-owned scoped access. PH-11 decision selection is completed; all these product capabilities remain unimplemented.
+**Implemented foundation:** Node.js/TypeScript ESM, Fastify, PostgreSQL/Prisma infrastructure, TypeBox/OpenAPI and generated TypeScript SDK, React/Vite with TanStack Router/Query, Pino/OpenTelemetry, local validation and CI configuration. [Current product composition](README.md#verified-baseline) includes identity and the first organizations increment in the API and web application. Installed versions are owned by package manifests/lockfile. [PH-11 policies](identity-and-access.md) and accepted ADR-0024/ADR-0025 select Keycloak, server-managed sessions and application-owned scoped access. [D-01](tenant-data-design.md#implementation-status) and [D-02](identity-session-design.md#implementation-status) record verified local capabilities and remaining work; real-environment provisioning is pending.
 
 **Decided constraints:** use Orion's boundaries; keep a modular backend; support tenants from the first product slice; treat clients and uploaded files as untrusted; avoid premature microservices and distributed infrastructure.
 
-**Accepted component direction, not implemented:** three product components: an administration web panel, the backend, and a native Android TV player. The initial deployment would serve the panel/API and private media over HTTPS, with PostgreSQL and local persistent media storage on one managed host. The player downloads authorized publications and plays locally. This is a logical topology, not deployed infrastructure.
+**Accepted component direction, partially implemented:** three product components: an administration web panel, the backend, and a native Android TV player. The panel and API provide the identity/organization increments; the player remains unimplemented. The initial deployment would serve the panel/API and private media over HTTPS, with PostgreSQL and local persistent media storage on one managed host. The player downloads authorized publications and plays locally. This is a logical topology, not deployed infrastructure.
 
 | Component | Responsibility | Trust and persistence boundary |
 | --- | --- | --- |
@@ -20,10 +20,11 @@ Kotlin, Android Media3/ExoPlayer, and durable local persistence are **accepted a
 
 ## Suggested modules and ownership
 
-All names/placements below are **proposed**, not existing modules. Follow [API module](../../apps/api/README.md#modules), [web module](../../apps/web/README.md#modules), and [dependency rules](../architecture/dependency-rules.md); group by business responsibility rather than one service per entity.
+The `identity` module and an initial `organizations` increment exist. The remaining boundaries and unimplemented capabilities below are **proposed**. Follow [API module](../../apps/api/README.md#modules), [web module](../../apps/web/README.md#modules), and [dependency rules](../architecture/dependency-rules.md); group by business responsibility rather than one service per entity.
 
 | Module | Owned meaning and entities | Allowed collaboration and phase |
 | --- | --- | --- |
+| `identity` | Application principals, provider login, server-managed sessions and assurance | Supplies the trusted human-session boundary to organizations; [D-02 status](identity-session-design.md#implementation-status) records the remaining identity workflows |
 | `organizations` | Company (tenant), branch, membership, responsible-administrator relationship, scoped standard/custom profiles, expiring grants and company settings | Supplies explicit current ownership/membership/capability checks under PH-11 policies; provider/session/assurance verification remains a trusted boundary. First release slice; accepted ADR-0025 |
 | `devices` | Device registration, enrollment session, device identity lifecycle, branch assignment and per-device settings | Uses organization scope; supplies permitted device/capability information. MVP |
 | `media` | Media metadata, validation lifecycle, storage objects, access and deletion/reference policy | Supplies authorized immutable asset descriptors to programming/publication. MVP |

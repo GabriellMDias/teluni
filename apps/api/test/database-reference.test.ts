@@ -67,6 +67,48 @@ it("checks authored schema drift and refuses undocumented PostgreSQL object kind
         expect(reference).toContain("PRIMARY KEY (id)");
         expect(reference.match(/`reference_fixture_pkey`/g)).toHaveLength(1);
 
+        // A foreign key's conindid points at its referenced unique index.
+        // That standalone index must still appear in the physical reference.
+        await client.query(
+          "CREATE UNIQUE INDEX reference_fixture_title_unique ON reference_fixture (title)",
+        );
+        await client.query(
+          "ALTER TABLE reference_fixture ADD CONSTRAINT reference_fixture_note_fkey FOREIGN KEY (note) REFERENCES reference_fixture (title)",
+        );
+        await writeFile(
+          join(metadata, "zz-reference-fixture.json"),
+          JSON.stringify({
+            ...fixtureMetadata,
+            tables: {
+              reference_fixture: {
+                ...fixtureMetadata.tables.reference_fixture,
+                objects: {
+                  ...fixtureMetadata.tables.reference_fixture.objects,
+                  reference_fixture_title_unique:
+                    "Standalone referenced unique index.",
+                  reference_fixture_note_fkey: "Synthetic self-reference.",
+                },
+              },
+            },
+          }),
+        );
+        const withReference = await generateDatabaseReference(
+          migrationUrl,
+          metadata,
+        );
+        expect(
+          withReference.match(/`reference_fixture_title_unique`/g),
+        ).toHaveLength(1);
+        expect(withReference).toContain("FOREIGN KEY (note)");
+        await client.query(
+          "ALTER TABLE reference_fixture DROP CONSTRAINT reference_fixture_note_fkey",
+        );
+        await client.query("DROP INDEX reference_fixture_title_unique");
+        await writeFile(
+          join(metadata, "zz-reference-fixture.json"),
+          JSON.stringify(fixtureMetadata),
+        );
+
         await client.query(
           "ALTER TABLE reference_fixture ADD COLUMN undocumented text",
         );

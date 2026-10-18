@@ -21,6 +21,11 @@ model Principal {
   createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   disabledAt DateTime?       @map("disabled_at") @db.Timestamptz(3)
   sessions   HumanSession[]
+  // Back-relations Prisma requires for downstream modules' references; they
+  // grant no access and are never traversed across the module boundary.
+  memberships      Membership[]
+  createdCompanies Company[]                @relation("CompanyCreator")
+  auditEvents      OrganizationAuditEvent[] @relation("AuditActor")
 
   @@unique([issuer, subject], map: "principals_issuer_subject_key")
   @@map("principals")

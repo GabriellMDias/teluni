@@ -129,9 +129,227 @@ Lifecycle: Inserted when a logout token is accepted; rows past expires_at may be
 | `backchannel_logout_replays_expiry_after_receipt` | `CHECK ((expires_at > received_at))` | A replay record expires after it was received. |
 | `backchannel_logout_replays_pkey` | `PRIMARY KEY (jti)` | Each logout token is accepted at most once. |
 
+## companies
+
+Customer company: the tenant that owns branches, memberships, content, devices and publications.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Created ACTIVE by its first responsible administrator; suspension is a state. No runtime deletion; erasure and retention follow PH-13.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable company UUID; the tenant identifier and public resource ID. | — | — |
+| `display_name` | `character varying(120)` | no | — | CONFIDENTIAL | Company name shown to its members. | — | — |
+| `status` | `"CompanyStatus"` | no | `'ACTIVE'::"CompanyStatus"` | INTERNAL | ACTIVE companies allow protected operations; SUSPENDED denies them to members. | — | — |
+| `default_locale` | `character varying(10)` | no | — | INTERNAL | Default interface locale for the company: pt-BR or en-US. | — | — |
+| `time_zone` | `character varying(64)` | no | — | INTERNAL | Default IANA time zone for new branches; business time never uses the host time zone. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful settings change. | — | successful writes |
+| `created_by_principal_id` | `uuid` | no | — | CONFIDENTIAL | Principal who created the company and became its first responsible administrator. | — | — |
+| `creation_key` | `character varying(200)` | no | — | INTERNAL | Creator-supplied idempotency key, unique per creator, that makes company creation safely repeatable. | — | — |
+| `creation_fingerprint` | `character(64)` | no | — | CONFIDENTIAL | Immutable SHA-256 fingerprint of the normalized original creation inputs; retries compare it rather than mutable company settings. Not exposed in the API. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest settings change; not audit history. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `companies_created_by_principal_id_fkey` | `FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The creator is an existing principal. |
+| `companies_creation_fingerprint_format` | `CHECK ((creation_fingerprint ~ '^[0-9a-f]{64}$'::text))` | Creation fingerprints are lowercase SHA-256 hex values. |
+| `companies_creation_key_format` | `CHECK (((creation_key)::text ~ '^[A-Za-z0-9._~-]+$'::text))` | Creation keys use the documented opaque ASCII alphabet. |
+| `companies_default_locale_supported` | `CHECK (((default_locale)::text = ANY ((ARRAY['pt-BR'::character varying, 'en-US'::character varying])::text[])))` | Only the supported interface locales. |
+| `companies_display_name_nonblank` | `CHECK (((display_name)::text ~ '[^[:space:]]'::text))` | Company name cannot be blank. |
+| `companies_pkey` | `PRIMARY KEY (id)` | Unique immutable company identity. |
+| `companies_time_zone_nonblank` | `CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))` | Time zone has the IANA identifier shape; the API validates it against the runtime's zone database. |
+| `companies_version_positive` | `CHECK ((version > 0))` | Rejects invalid concurrency versions. |
+| `companies_creator_key_unique` | `CREATE UNIQUE INDEX companies_creator_key_unique ON public.companies USING btree (created_by_principal_id, creation_key)` | One company per creator and creation key, including racing retries. |
+
+## branches
+
+Branch of a company: a location with its own business time zone, assigned members and, later, devices.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Created ACTIVE; archived rather than deleted so references remain valid.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable branch UUID; public resource ID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Owning company; immutable (tenant key). | — | — |
+| `name` | `character varying(120)` | no | — | CONFIDENTIAL | Branch name, unique among the company's active branches regardless of case. | — | — |
+| `time_zone` | `character varying(64)` | no | — | INTERNAL | IANA time zone for the branch's local business time. | — | — |
+| `status` | `"BranchStatus"` | no | `'ACTIVE'::"BranchStatus"` | INTERNAL | ACTIVE branches are usable; ARCHIVED branches are retained for references. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change; not audit history. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `branches_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A branch belongs to an existing company. |
+| `branches_name_nonblank` | `CHECK (((name)::text ~ '[^[:space:]]'::text))` | Branch name cannot be blank. |
+| `branches_pkey` | `PRIMARY KEY (id)` | Unique branch identity. |
+| `branches_time_zone_nonblank` | `CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))` | Time zone has the IANA identifier shape. |
+| `branches_version_positive` | `CHECK ((version > 0))` | Rejects invalid concurrency versions. |
+| `branches_company_active_name_unique` | `CREATE UNIQUE INDEX branches_company_active_name_unique ON public.branches USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::"BranchStatus")` | Active branch names are unique within a company, ignoring case, including racing creations. |
+| `branches_company_id_id_key` | `CREATE UNIQUE INDEX branches_company_id_id_key ON public.branches USING btree (company_id, id)` | Tenant key that tenant references target. |
+| `branches_company_status_name_idx` | `CREATE INDEX branches_company_status_name_idx ON public.branches USING btree (company_id, status, name)` | Supports listing a company's branches by state and name. |
+
+## memberships
+
+A principal's membership in one company; access comes only from its unexpired grants.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Created ACTIVE; suspension and removal are states that deny access while retaining attribution.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated membership UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company of the membership; immutable (tenant key). | — | — |
+| `principal_id` | `uuid` | no | — | CONFIDENTIAL | Member principal; a principal may hold memberships in several companies that never see each other. | — | — |
+| `status` | `"MembershipStatus"` | no | `'ACTIVE'::"MembershipStatus"` | INTERNAL | Only ACTIVE memberships grant access. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token for membership changes. | — | successful writes |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `memberships_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A membership belongs to an existing company. |
+| `memberships_pkey` | `PRIMARY KEY (id)` | Unique membership identity. |
+| `memberships_principal_id_fkey` | `FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The member is an existing principal. |
+| `memberships_version_positive` | `CHECK ((version > 0))` | Rejects invalid concurrency versions. |
+| `memberships_company_id_id_key` | `CREATE UNIQUE INDEX memberships_company_id_id_key ON public.memberships USING btree (company_id, id)` | Tenant key that tenant references target. |
+| `memberships_company_principal_key` | `CREATE UNIQUE INDEX memberships_company_principal_key ON public.memberships USING btree (company_id, principal_id)` | At most one membership per principal and company. |
+| `memberships_principal_status_idx` | `CREATE INDEX memberships_principal_status_idx ON public.memberships USING btree (principal_id, status)` | Supports listing a principal's companies. |
+
+## company_responsibilities
+
+The company's designated responsible administrator, who approves additional administrators (P10).
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Created with the company; transfer is a later attributable operation.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company whose responsibility this row records; one row per company. | — | — |
+| `membership_id` | `uuid` | no | — | INTERNAL | Membership of the responsible administrator in the same company. | — | — |
+| `assigned_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the assignment. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `company_responsibilities_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | Responsibility belongs to an existing company. |
+| `company_responsibilities_company_id_membership_id_fkey` | `FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The responsible membership belongs to the same company. |
+| `company_responsibilities_pkey` | `PRIMARY KEY (company_id)` | Exactly one responsible administrator per company. |
+| `company_responsibilities_membership_key` | `CREATE UNIQUE INDEX company_responsibilities_membership_key ON public.company_responsibilities USING btree (company_id, membership_id)` | Supports the composite reference to the responsible membership. |
+
+## membership_grants
+
+A standard role granted to a membership over the whole company or explicit branches; grants combine additively.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Effective from starts_at until expires_at or revoked_at; retained after expiry for attribution.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated grant UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company of the grant; immutable (tenant key). | — | — |
+| `membership_id` | `uuid` | no | — | INTERNAL | Membership that holds the grant. | — | — |
+| `role` | `"AccessRole"` | no | — | INTERNAL | Standard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application. | — | — |
+| `scope` | `"GrantScope"` | no | — | INTERNAL | COMPANY covers every branch, including future ones; BRANCHES covers only the listed branches. | — | — |
+| `starts_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | Instant the grant becomes effective. | — | UTC instant, millisecond precision |
+| `expires_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant a temporary grant stops being effective; no automatic renewal. | The grant does not expire. | UTC instant, millisecond precision |
+| `granted_by_membership_id` | `uuid` | yes | — | INTERNAL | Membership that granted it, for attribution. | Granted by company creation. | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
+| `revoked_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the grant was revoked. | The grant has not been revoked. | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `membership_grants_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A grant belongs to an existing company. |
+| `membership_grants_company_id_granted_by_membership_id_fkey` | `FOREIGN KEY (company_id, granted_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The grantor, when present, is a membership of the same company. |
+| `membership_grants_company_id_membership_id_fkey` | `FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The holder is a membership of the same company. |
+| `membership_grants_company_role_scope` | `CHECK (((role <> 'COMPANY_ADMINISTRATOR'::"AccessRole") OR (scope = 'COMPANY'::"GrantScope")))` | Company administration is always company-wide. |
+| `membership_grants_expiry_after_start` | `CHECK (((expires_at IS NULL) OR (expires_at > starts_at)))` | A temporary grant expires after it starts. |
+| `membership_grants_pkey` | `PRIMARY KEY (id)` | Unique grant identity. |
+| `membership_grants_company_id_id_key` | `CREATE UNIQUE INDEX membership_grants_company_id_id_key ON public.membership_grants USING btree (company_id, id)` | Tenant key that branch scopes target. |
+| `membership_grants_membership_idx` | `CREATE INDEX membership_grants_membership_idx ON public.membership_grants USING btree (company_id, membership_id)` | Supports resolving a membership's grants. |
+
+## membership_grant_branches
+
+Explicit branches covered by a BRANCHES-scoped grant; new branches never join silently.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Written with the grant; retained while the grant exists.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company shared by the grant and the branch. | — | — |
+| `grant_id` | `uuid` | no | — | INTERNAL | Grant whose scope includes the branch. | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch covered by the grant. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `membership_grant_branches_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company; mixed-company scopes are unrepresentable. |
+| `membership_grant_branches_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The scope belongs to an existing company. |
+| `membership_grant_branches_company_id_grant_id_fkey` | `FOREIGN KEY (company_id, grant_id) REFERENCES membership_grants(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The grant belongs to the same company. |
+| `membership_grant_branches_pkey` | `PRIMARY KEY (grant_id, branch_id)` | A branch appears at most once in a grant's scope. |
+| `membership_grant_branches_branch_idx` | `CREATE INDEX membership_grant_branches_branch_idx ON public.membership_grant_branches USING btree (company_id, branch_id)` | Supports finding the grants that cover a branch. |
+
+## organization_audit_events
+
+Append-only attributable record of company, branch, membership and grant changes, written in the same transaction as each change.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Never updated or deleted by the runtime; retention follows PH-13.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company whose change the event records. | — | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
+| `actor_principal_id` | `uuid` | no | — | CONFIDENTIAL | Principal who performed the change. | — | — |
+| `actor_membership_id` | `uuid` | yes | — | INTERNAL | Actor's membership in the company. | The actor had no membership yet, as when creating the company. | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | Stable dotted action identifier, such as company.created or branch.archived. | — | — |
+| `target_type` | `character varying(32)` | no | — | INTERNAL | Kind of changed resource, such as company or branch. | — | — |
+| `target_id` | `uuid` | no | — | INTERNAL | Identifier of the changed resource. | — | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Allowlisted non-secret change details, such as changed field names; never secrets or full payloads. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `organization_audit_events_action_format` | `CHECK (((action)::text ~ '^[a-z]+(\.[a-z_]+)+$'::text))` | Actions use the stable dotted identifier format. |
+| `organization_audit_events_actor_principal_id_fkey` | `FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The actor is an existing principal. |
+| `organization_audit_events_company_id_actor_membership_id_fkey` | `FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The actor membership, when present, belongs to the same company. |
+| `organization_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
+| `organization_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are always a JSON object. |
+| `organization_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
+| `organization_audit_events_target_type_format` | `CHECK (((target_type)::text ~ '^[a-z_]+$'::text))` | Target types use lowercase identifiers. |
+| `organization_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX organization_audit_events_company_id_id_key ON public.organization_audit_events USING btree (company_id, id)` | Tenant key for future references to events. |
+| `organization_audit_events_company_time_idx` | `CREATE INDEX organization_audit_events_company_time_idx ON public.organization_audit_events USING btree (company_id, occurred_at DESC, id DESC)` | Supports company-scoped newest-first audit pagination. |
+
 ## Database enums
 
 | Enum | Values | Meaning |
 | --- | --- | --- |
+| `AccessRole` | COMPANY_ADMINISTRATOR, BRANCH_MANAGER, OPERATOR | Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR. |
+| `BranchStatus` | ACTIVE, ARCHIVED | Branch state: ACTIVE or ARCHIVED. |
+| `CompanyStatus` | ACTIVE, SUSPENDED | Company state: ACTIVE or SUSPENDED. |
+| `GrantScope` | COMPANY, BRANCHES | Grant scope: COMPANY or explicit BRANCHES. |
 | `HumanSessionState` | PENDING_LIMIT, ACTIVE, REVOKED | Server-managed session state: PENDING_LIMIT, ACTIVE or REVOKED. |
+| `MembershipStatus` | ACTIVE, SUSPENDED, REMOVED | Membership state: ACTIVE, SUSPENDED or REMOVED. |
 | `PrincipalStatus` | ACTIVE, DISABLED | Global principal state: ACTIVE or DISABLED. |

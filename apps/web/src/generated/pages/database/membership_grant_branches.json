@@ -1,0 +1,67 @@
+{
+  "kind": "database",
+  "name": "membership_grant_branches",
+  "description": "Explicit branches covered by a BRANCHES-scoped grant; new branches never join silently.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Written with the grant; retained while the grant exists.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company shared by the grant and the branch.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "grant_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Grant whose scope includes the branch.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch covered by the grant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "membership_grant_branches_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The branch belongs to the same company; mixed-company scopes are unrepresentable."
+    },
+    {
+      "Object": "membership_grant_branches_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The scope belongs to an existing company."
+    },
+    {
+      "Object": "membership_grant_branches_company_id_grant_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, grant_id) REFERENCES membership_grants(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The grant belongs to the same company."
+    },
+    {
+      "Object": "membership_grant_branches_pkey",
+      "Physical definition": "PRIMARY KEY (grant_id, branch_id)",
+      "Purpose": "A branch appears at most once in a grant's scope."
+    },
+    {
+      "Object": "membership_grant_branches_branch_idx",
+      "Physical definition": "CREATE INDEX membership_grant_branches_branch_idx ON public.membership_grant_branches USING btree (company_id, branch_id)",
+      "Purpose": "Supports finding the grants that cover a branch."
+    }
+  ]
+}

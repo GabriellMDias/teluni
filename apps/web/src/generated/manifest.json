@@ -4,6 +4,24 @@
   "api": { "title": "Teluni API", "version": "1.0.0" },
   "entries": [
     {
+      "id": "api/archiveBranch",
+      "kind": "api",
+      "title": "archiveBranch",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/branches/{branchId}/archive",
+      "method": "POST",
+      "path": "/companies/{companyId}/branches/{branchId}/archive",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/archiveBranch.json"
+    },
+    {
       "id": "api/completeLogin",
       "kind": "api",
       "title": "completeLogin",
@@ -19,6 +37,76 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/completeLogin.json"
+    },
+    {
+      "id": "api/createBranch",
+      "kind": "api",
+      "title": "createBranch",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/branches",
+      "method": "POST",
+      "path": "/companies/{companyId}/branches",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createBranch.json"
+    },
+    {
+      "id": "api/createCompany",
+      "kind": "api",
+      "title": "createCompany",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies",
+      "method": "POST",
+      "path": "/companies",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createCompany.json"
+    },
+    {
+      "id": "api/getBranch",
+      "kind": "api",
+      "title": "getBranch",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/branches/{branchId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/branches/{branchId}",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getBranch.json"
+    },
+    {
+      "id": "api/getCompany",
+      "kind": "api",
+      "title": "getCompany",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}",
+      "method": "GET",
+      "path": "/companies/{companyId}",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getCompany.json"
     },
     {
       "id": "api/getLiveness",
@@ -87,6 +175,57 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getStartupHealth.json"
+    },
+    {
+      "id": "api/listBranches",
+      "kind": "api",
+      "title": "listBranches",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/branches",
+      "method": "GET",
+      "path": "/companies/{companyId}/branches",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listBranches.json"
+    },
+    {
+      "id": "api/listCompanies",
+      "kind": "api",
+      "title": "listCompanies",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies",
+      "method": "GET",
+      "path": "/companies",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listCompanies.json"
+    },
+    {
+      "id": "api/listCompanyAuditEvents",
+      "kind": "api",
+      "title": "listCompanyAuditEvents",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/audit-events",
+      "method": "GET",
+      "path": "/companies/{companyId}/audit-events",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listCompanyAuditEvents.json"
     },
     {
       "id": "api/listSessions",
@@ -192,6 +331,42 @@
       "file": "pages/api/terminateSession.json"
     },
     {
+      "id": "api/updateBranch",
+      "kind": "api",
+      "title": "updateBranch",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/branches/{branchId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/branches/{branchId}",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateBranch.json"
+    },
+    {
+      "id": "api/updateCompany",
+      "kind": "api",
+      "title": "updateCompany",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateCompany.json"
+    },
+    {
       "id": "database/backchannel_logout_replays",
       "kind": "database",
       "title": "backchannel_logout_replays",
@@ -200,6 +375,36 @@
       "summary": "Identifiers of accepted provider logout tokens, kept to reject a replayed token.",
       "headings": [],
       "file": "pages/database/backchannel_logout_replays.json"
+    },
+    {
+      "id": "database/branches",
+      "kind": "database",
+      "title": "branches",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Branch of a company: a location with its own business time zone, assigned members and, later, devices.",
+      "headings": [],
+      "file": "pages/database/branches.json"
+    },
+    {
+      "id": "database/companies",
+      "kind": "database",
+      "title": "companies",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Customer company: the tenant that owns branches, memberships, content, devices and publications.",
+      "headings": [],
+      "file": "pages/database/companies.json"
+    },
+    {
+      "id": "database/company_responsibilities",
+      "kind": "database",
+      "title": "company_responsibilities",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The company's designated responsible administrator, who approves additional administrators (P10).",
+      "headings": [],
+      "file": "pages/database/company_responsibilities.json"
     },
     {
       "id": "database/human_sessions",
@@ -212,6 +417,36 @@
       "file": "pages/database/human_sessions.json"
     },
     {
+      "id": "database/membership_grant_branches",
+      "kind": "database",
+      "title": "membership_grant_branches",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Explicit branches covered by a BRANCHES-scoped grant; new branches never join silently.",
+      "headings": [],
+      "file": "pages/database/membership_grant_branches.json"
+    },
+    {
+      "id": "database/membership_grants",
+      "kind": "database",
+      "title": "membership_grants",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
+      "headings": [],
+      "file": "pages/database/membership_grants.json"
+    },
+    {
+      "id": "database/memberships",
+      "kind": "database",
+      "title": "memberships",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A principal's membership in one company; access comes only from its unexpired grants.",
+      "headings": [],
+      "file": "pages/database/memberships.json"
+    },
+    {
       "id": "database/oidc_login_attempts",
       "kind": "database",
       "title": "oidc_login_attempts",
@@ -220,6 +455,16 @@
       "summary": "Single-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.",
       "headings": [],
       "file": "pages/database/oidc_login_attempts.json"
+    },
+    {
+      "id": "database/organization_audit_events",
+      "kind": "database",
+      "title": "organization_audit_events",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Append-only attributable record of company, branch, membership and grant changes, written in the same transaction as each change.",
+      "headings": [],
+      "file": "pages/database/organization_audit_events.json"
     },
     {
       "id": "database/principals",
@@ -280,6 +525,16 @@
       "summary": "This module owns application principals, server-managed human sessions and the session boundary other modules use. Read the identity and session design and the identity…",
       "headings": [],
       "file": "pages/repository/apps/api/src/features/identity/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/organizations/AGENTS",
+      "kind": "repository",
+      "title": "Organizations Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/organizations/AGENTS.md",
+      "summary": "This module owns companies (tenants), branches, memberships, standard role grants, the responsible administrator and organization audit. Read the tenant data design and the…",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/organizations/AGENTS.json"
     },
     {
       "id": "repository/apps/web/AGENTS",
@@ -1324,23 +1579,25 @@
   ],
   "search": {
     "shards": [
+      { "file": "search/0000.json", "count": 17, "kinds": ["api"] },
+      { "file": "search/0001.json", "count": 17, "kinds": ["api", "database"] },
       {
-        "file": "search/0000.json",
-        "count": 40,
-        "kinds": ["api", "component", "database", "repository"]
+        "file": "search/0002.json",
+        "count": 74,
+        "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0001.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0002.json", "count": 116, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 143, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 157, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 136, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 91, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 53, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 86, "kinds": ["repository"] }
+      { "file": "search/0003.json", "count": 110, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 124, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 175, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 115, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 127, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 90, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 62, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 57, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 105, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 69, "kinds": ["repository"] }
     ],
-    "count": 1171
+    "count": 1216
   }
 }

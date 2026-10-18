@@ -1,5 +1,9 @@
 import type { ComponentType } from "react";
 import { identityRoutes, IdentityNavigation } from "./identity/routes.js";
+import {
+  organizationRoutes,
+  OrganizationsNavigation,
+} from "./organizations/routes.js";
 import { coreRoutes, rootRoute } from "./shell.js";
 
 // Composition owned by this repository. Mount each web module's route tree
@@ -7,6 +11,10 @@ import { coreRoutes, rootRoute } from "./shell.js";
 export const routeTree = rootRoute.addChildren([
   ...coreRoutes,
   ...identityRoutes,
+  ...organizationRoutes,
 ]);
 
-export const moduleNavigation: readonly ComponentType[] = [IdentityNavigation];
+export const moduleNavigation: readonly ComponentType[] = [
+  OrganizationsNavigation,
+  IdentityNavigation,
+];

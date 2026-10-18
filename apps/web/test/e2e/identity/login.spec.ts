@@ -1,6 +1,6 @@
-import { createHmac } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { enrollAuthenticator, enterCredentials } from "./provider.ts";
 import { startIdentityStack, type IdentityStack } from "./stack.ts";
 
 // Browser journeys through the real Keycloak pages and the API session
@@ -21,9 +21,7 @@ test.afterAll(async () => {
 });
 
 async function signInAtProvider(page: Page) {
-  await page.locator("#username").fill(stack.user.email);
-  await page.locator("#password").fill(stack.user.password);
-  await page.locator("#kc-login").click();
+  await enterCredentials(page, stack.user);
 }
 
 test("signs in through Keycloak, manages sessions and signs out", async ({
@@ -84,19 +82,6 @@ test("ending the current session from the list signs the browser out", async ({
   await expect(page.getByText("Entre para ver suas sessões.")).toBeVisible();
 });
 
-/** RFC 6238 code for the secret Keycloak shows during enrollment. */
-function totp(secret: string): string {
-  const message = Buffer.alloc(8);
-  message.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000)));
-  const digest = createHmac("sha1", Buffer.from(secret, "utf8"))
-    .update(message)
-    .digest();
-  const offset = digest[digest.length - 1] & 0x0f;
-  return ((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000)
-    .toString()
-    .padStart(6, "0");
-}
-
 test("enables two-step verification from the sessions page", async ({
   page,
 }) => {
@@ -111,10 +96,7 @@ test("enables two-step verification from the sessions page", async ({
   ).toBeVisible();
   await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
   // Keycloak asks this user to register an authenticator app.
-  const secret = await page.locator("#totpSecret").inputValue();
-  expect(secret).not.toBe("");
-  await page.locator("#totp").fill(totp(secret));
-  await page.locator("#saveTOTPBtn").click();
+  expect(await enrollAuthenticator(page)).not.toBe("");
   await afterNavigation(page).toHaveURL(`${stack.webUrl}/account/sessions`);
   await expect(
     page.getByText("Esta sessão foi verificada em duas etapas em", {

@@ -3,7 +3,9 @@
 // No i18n library is selected yet (D-10); this typed catalog keeps the
 // boundary explicit for the initial pt-BR and en-US locales.
 
-export type Locale = "pt-BR" | "en-US";
+import type { Locale } from "../locale.js";
+
+export { browserLocale, preferredLocale, type Locale } from "../locale.js";
 
 export type LoginErrorReason =
   | "login_failed"
@@ -163,19 +165,3 @@ export const identityMessages: Readonly<Record<Locale, IdentityMessages>> = {
   "pt-BR": ptBR,
   "en-US": enUS,
 };
-
-/** Brazil is the initial market: Portuguese unless the browser prefers English. */
-export function preferredLocale(languages: readonly string[]): Locale {
-  for (const language of languages) {
-    const normalized = language.toLowerCase();
-    if (normalized.startsWith("pt")) return "pt-BR";
-    if (normalized.startsWith("en")) return "en-US";
-  }
-  return "pt-BR";
-}
-
-export function browserLocale(): Locale {
-  return preferredLocale(
-    typeof navigator === "undefined" ? [] : navigator.languages,
-  );
-}

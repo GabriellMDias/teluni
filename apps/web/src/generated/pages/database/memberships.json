@@ -1,0 +1,117 @@
+{
+  "kind": "database",
+  "name": "memberships",
+  "description": "A principal's membership in one company; access comes only from its unexpired grants.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created ACTIVE; suspension and removal are states that deny access while retaining attribution.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated membership UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company of the membership; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Member principal; a principal may hold memberships in several companies that never see each other.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"MembershipStatus\"",
+      "Nullable": "no",
+      "Default": "'ACTIVE'::\"MembershipStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "Only ACTIVE memberships grant access.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency token for membership changes.",
+      "Null meaning": "—",
+      "Unit": "successful writes"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the latest change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "memberships_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A membership belongs to an existing company."
+    },
+    {
+      "Object": "memberships_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique membership identity."
+    },
+    {
+      "Object": "memberships_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The member is an existing principal."
+    },
+    {
+      "Object": "memberships_version_positive",
+      "Physical definition": "CHECK ((version > 0))",
+      "Purpose": "Rejects invalid concurrency versions."
+    },
+    {
+      "Object": "memberships_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX memberships_company_id_id_key ON public.memberships USING btree (company_id, id)",
+      "Purpose": "Tenant key that tenant references target."
+    },
+    {
+      "Object": "memberships_company_principal_key",
+      "Physical definition": "CREATE UNIQUE INDEX memberships_company_principal_key ON public.memberships USING btree (company_id, principal_id)",
+      "Purpose": "At most one membership per principal and company."
+    },
+    {
+      "Object": "memberships_principal_status_idx",
+      "Physical definition": "CREATE INDEX memberships_principal_status_idx ON public.memberships USING btree (principal_id, status)",
+      "Purpose": "Supports listing a principal's companies."
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "kind": "database",
+  "name": "membership_grants",
+  "description": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Effective from starts_at until expires_at or revoked_at; retained after expiry for attribution.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated grant UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company of the grant; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that holds the grant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "role",
+      "PostgreSQL type": "\"AccessRole\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Standard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "scope",
+      "PostgreSQL type": "\"GrantScope\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "COMPANY covers every branch, including future ones; BRANCHES covers only the listed branches.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "starts_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the grant becomes effective.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant a temporary grant stops being effective; no automatic renewal.",
+      "Null meaning": "The grant does not expire.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "granted_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that granted it, for attribution.",
+      "Null meaning": "Granted by company creation.",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "revoked_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the grant was revoked.",
+      "Null meaning": "The grant has not been revoked.",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "membership_grants_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A grant belongs to an existing company."
+    },
+    {
+      "Object": "membership_grants_company_id_granted_by_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, granted_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The grantor, when present, is a membership of the same company."
+    },
+    {
+      "Object": "membership_grants_company_id_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The holder is a membership of the same company."
+    },
+    {
+      "Object": "membership_grants_company_role_scope",
+      "Physical definition": "CHECK (((role <> 'COMPANY_ADMINISTRATOR'::\"AccessRole\") OR (scope = 'COMPANY'::\"GrantScope\")))",
+      "Purpose": "Company administration is always company-wide."
+    },
+    {
+      "Object": "membership_grants_expiry_after_start",
+      "Physical definition": "CHECK (((expires_at IS NULL) OR (expires_at > starts_at)))",
+      "Purpose": "A temporary grant expires after it starts."
+    },
+    {
+      "Object": "membership_grants_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique grant identity."
+    },
+    {
+      "Object": "membership_grants_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX membership_grants_company_id_id_key ON public.membership_grants USING btree (company_id, id)",
+      "Purpose": "Tenant key that branch scopes target."
+    },
+    {
+      "Object": "membership_grants_membership_idx",
+      "Physical definition": "CREATE INDEX membership_grants_membership_idx ON public.membership_grants USING btree (company_id, membership_id)",
+      "Purpose": "Supports resolving a membership's grants."
+    }
+  ]
+}
