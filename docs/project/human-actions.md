@@ -140,12 +140,12 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 - [ ] **Choose the human identity provider and approve the initial permission/recovery policy.**
 
-**Status:** pending. **Owner:** product owner with engineering/security review.
-**Dependency / trigger:** PJ-07/PJ-03; authentication is a stated MVP requirement.
-**Request and reason:** Evaluate established identity solutions compatible with accepted ADR-0012 against budget, enrollment, recovery, session/refresh/revocation, administration and portability. Approve the proposed [actor scope](security-and-i18n.md#actors-and-authorization) and how company administrators are established. Do not invent a proprietary auth or crypto system.
-**Configuration:** existing issuer/audience/JWKS settings are documented in the [API configuration reference](../generated/configuration/api.md); provider-specific secrets and destinations are not yet selected.
-**Verification:** Proposed provider ADR reviewed/accepted, attributable enrollment and allowed/denied role cases specified, then token/session/revocation tests in implementation.
-**Evidence / blocker:** Foundation JWT verification exists; no provider or product session/membership implementation selected. A future prerequisite, not a blocker to completing documentation.
+**Status:** in progress. **Owner:** product owner with engineering/security review.
+**Dependency / trigger:** PJ-07/PJ-03/PJ-24; identity and scoped access are initial-release requirements.
+**Request and reason:** All owner choices are recorded in [identity/access policies](identity-and-access.md), including the default matrix and IA-01–IA-16 allow/deny cases. Review [provider evidence and gaps](identity-provider-evaluation.md), pinned-version claim/session/assurance compatibility, and proposed ADR-0024/ADR-0025 before technical acceptance. Do not weaken ADR-0012 or infer provider interoperability from a valid-looking JWT.
+**Configuration:** existing `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL` are documented in the [API configuration reference](../generated/configuration/api.md). No provider/session-specific application keys or secret destinations are implemented. External identity, Google and mail provisioning are separate PH-15–PH-17.
+**Verification:** Owner policy selection is complete. The decision gate still requires a reviewed/accepted technical ADR and supported compatibility assessment; unresolved evidence remains explicit. Actual provider/token/session/revocation/recovery tests belong to PJ-24 and later acceptance, not this documentation task.
+**Evidence / blocker:** 2026-10-18: owner directly answered all 38 questions. Keycloak is the self-hosted candidate, Google the only external login, company activation public/automatic, and the responsible administrator approves additional administrators. P27=A rejects complete out-of-scope price changes; P37=A does not add a mandatory pre-pilot export/import proof. Official documentation supports configurable `at+jwt` and mapping primitives, but no pinned-provider integration or session/assurance qualification was run. ADR-0024/ADR-0025 remain proposed; therefore PH-11 is not completed. No owner questionnaire response remains missing. This does not block completion of the current documentation work.
 
 ## PH-12
 
@@ -153,7 +153,7 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 **Status:** pending. **Owner:** project owner.
 **Dependency / trigger:** PJ-14 pilot terms; PJ-16 commercial expansion.
-**Request and reason:** Validate per-screen/company pricing, storage/traffic/processing limits, support, installation, cancellation, operating cost and partnerships/referrals. BRL 79.90/month for two screens is exploratory only. Automatic billing remains outside the mandatory MVP.
+**Request and reason:** Validate per-screen/company pricing, storage/traffic/processing limits, support, installation, cancellation, operating cost and partnerships/referrals. PH-11 selects public signup with automatic company activation: approve eligibility/entitlements, initial quotas and any trial/free/paid conditions before opening it; no commercial defaults are inferred from identity verification. BRL 79.90/month for two screens is exploratory only. Automatic billing remains outside the mandatory MVP.
 **Configuration:** none; no plan IDs, prices, gateway or entitlements implemented.
 **Verification:** Record approved pilot terms and measured cost/support evidence; later approve plan limits and commercial policies before implementing subscription enforcement.
 **Evidence / blocker:** Recurring SaaS is intended; no definitive pricing or paid infrastructure/provider budget established.
@@ -163,7 +163,7 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 - [ ] **Define customer data responsibilities and privacy/retention obligations before collecting pilot data.**
 
 **Status:** pending. **Owner:** project owner with qualified legal/privacy input when needed.
-**Dependency / trigger:** PJ-13/PJ-14 before real customer/personal data; international expansion when triggered.
+**Dependency / trigger:** PJ-13/PJ-14 before real customer/personal data or public signup; international expansion when triggered.
 **Request and reason:** Review the [initial data inventory](security-and-i18n.md#initial-data-inventory), intended content restrictions, notices/terms, customer/operator responsibilities, lawful purposes, retention/deletion/export, backup reconciliation and incident contact. Determine applicable LGPD and other jurisdictional obligations against actual operation; the product documentation is not compliance certification.
 **Configuration:** no legal/privacy settings implemented; do not put customer records or private advice in public examples.
 **Verification:** Approved obligations and retention/deletion/access procedures linked to implementation and restore acceptance; no sensitive clinic/patient dataset required for signage.
@@ -179,6 +179,39 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Configuration:** none.
 **Verification:** Any added notices identify confirmed holders and preserve applicable inherited/third-party notices; distribution metadata matches the owner-approved attribution.
 **Evidence / blocker:** No holder-specific notice supplied or added in this task. Root `LICENSE` and Orion provenance remain intact.
+
+## PH-15
+
+- [ ] **Prepare controlled self-hosted identity resources and protected provisioning inputs.**
+
+**Status:** pending. **Owner:** project owner / identity and server administrator.
+**Dependency / trigger:** PH-10, PH-11 technical acceptance and PJ-24; before provider integration or real identity use.
+**Request and reason:** Confirm host capacity, a controlled HTTPS issuer address, restricted provider administration, persistent provider storage and protected signing/recovery material. Identify responsible administrators and safe recovery ownership without publishing personal account details. Prepare inputs only after the reviewed provider/version design; this action does not authorize deployment.
+**Configuration:** existing API token settings are `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL`; future provider/session settings must first have canonical schemas/documentation. Supply secret material only in an approved protected destination, never in this checklist or chat.
+**Verification:** Record non-secret environment/issuer ownership and controlled access; during authorized implementation verify pinned provider, human-only claim provisioning, key rotation, restricted management and isolated revocation-safe restore under PH-10/PJ-13.
+**Evidence / blocker:** 2026-10-18: self-hosting/Keycloak chosen as candidate, but host capacity, provider version, issuer control, secret destination and deployment are unverified. Foundation validation is not provisioning evidence.
+
+## PH-16
+
+- [ ] **Provide owner-controlled Google OAuth registration for the selected external login.**
+
+**Status:** pending. **Owner:** project owner / Google application administrator.
+**Dependency / trigger:** PH-07 controlled domain, PH-11 reviewed callback/provider design and PH-15; before enabling Google login in PJ-24.
+**Request and reason:** Register/control the Google application and required consent/branding configuration for the actual environment. Approve exact reviewed callback origins/redirects and required identity attributes/scopes; keep environments separate. Microsoft is not selected. Do not invent callback URLs before implementation defines them or register an application in this documentation task.
+**Configuration:** no Google-specific application keys are implemented. Store any future client secret in the approved protected destination; record only safe ownership/environment evidence.
+**Verification:** Authorized implementation verifies the controlled callback, correct audience/environment, account linking without email-only merging and non-bypassable administrative assurance. Provider account actions are not implied by answering the questionnaire.
+**Evidence / blocker:** 2026-10-18: P05=B selects Google only; no Google registration, credentials, consent setup or callback test is verified.
+
+## PH-17
+
+- [ ] **Establish a verified transactional-email path for identity invitations and recovery.**
+
+**Status:** pending. **Owner:** project owner / domain and mail administrator.
+**Dependency / trigger:** PH-07 domain control, PH-10 hosting, PH-11 flow review and PH-13 notices; before public signup or real invitations/recovery in PJ-24.
+**Request and reason:** Identify a reliable sender/delivery service compatible with the no-recurring-procurement constraint, confirm sender/domain control and applicable limits/terms, and prepare protected mail credentials. Review required DNS authentication, deliverability, abuse response and sender continuity; do not assume residential SMTP or an unspecified free service is adequate. If no suitable path exists, record the budget/readiness blocker rather than bypassing verification/recovery.
+**Configuration:** no mail-specific application keys are implemented; future credentials go only in the approved protected store. Do not publish credentials, reset links or private recipient records.
+**Verification:** Authorized implementation tests delivery/failure/retry and invitation/reset expiry/single-use behavior with synthetic addresses under actual approved sender configuration. DNS/service/account facts need owner evidence; documentation is not delivery proof.
+**Evidence / blocker:** 2026-10-18: P03=A confirms no recurring identity/email procurement now. No existing sender, delivery service, DNS configuration or successful delivery is established.
 
 ## New action template
 

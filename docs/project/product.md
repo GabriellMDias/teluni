@@ -35,9 +35,9 @@ These are target use cases, not implemented integrations or an invitation to pro
 
 ## Actors and core journeys
 
-The [security model](security-and-i18n.md#actors-and-authorization) defines proposed privileges. The product journeys are:
+The [security model](security-and-i18n.md#actors-and-authorization) routes to the selected human access policies and their pending technical enforcement. The product journeys are:
 
-1. A platform administrator establishes a customer company and its initial company administrator.
+1. A verified eligible registrant creates a new company through public automatic activation and becomes its responsible administrator, subject to commercial/privacy/abuse readiness. The platform retains a controlled assisted-enrollment path without claiming existing companies by name or domain.
 2. A company administrator creates branches and delegates permitted operations to members.
 3. An authorized operator pairs a display using a temporary code shown by the player and assigns it to the correct branch.
 4. An authorized publisher uploads media, configures typed catalogs/fields/records (for example products or a weekly agenda), composes regional content/schedules, previews and publishes.
@@ -45,7 +45,7 @@ The [security model](security-and-i18n.md#actors-and-authorization) defines prop
 6. The player stages complete consistent versions and continues local media/catalog rendering through the selected offline/clock envelope, with independent areas or optional coordinated pages.
 7. A scoped operator sees last contact, synchronization progress and actionable failures without unrestricted remote access. Actual player observation is distinct from server intent.
 
-Acceptance of these journeys is specified in [MVP requirements](mvp.md); the exact enrollment and permission policies remain review items there.
+Acceptance of these journeys is specified in [release requirements](mvp.md). The owner selected [human identity/access policies](identity-and-access.md), including public signup with automatic company activation, Google-only external login, multi-company memberships, a responsible administrator and customizable scoped profiles. Keycloak compatibility/ADR acceptance and external readiness remain pending; no signup/session flow is implemented.
 
 ## Product objectives
 

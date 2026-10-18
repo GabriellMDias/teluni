@@ -4,7 +4,7 @@
 
 ## Baseline and proposed topology
 
-**Implemented foundation:** Node.js/TypeScript ESM, Fastify, PostgreSQL/Prisma infrastructure, TypeBox/OpenAPI and generated TypeScript SDK, React/Vite with TanStack Router/Query, Pino/OpenTelemetry, local validation and CI configuration. [Actual product composition is empty](README.md#verified-baseline). Installed versions are owned by package manifests/lockfile, not this proposal. No new service/library is selected by this document.
+**Implemented foundation:** Node.js/TypeScript ESM, Fastify, PostgreSQL/Prisma infrastructure, TypeBox/OpenAPI and generated TypeScript SDK, React/Vite with TanStack Router/Query, Pino/OpenTelemetry, local validation and CI configuration. [Actual product composition is empty](README.md#verified-baseline). Installed versions are owned by package manifests/lockfile, not this proposal. No running service/library is added by this document. [PH-11 policies](identity-and-access.md) select Keycloak as the human identity candidate; the session/access architecture remains proposed and unimplemented.
 
 **Decided constraints:** use Orion's boundaries; keep a modular backend; support tenants from the first product slice; treat clients and uploaded files as untrusted; avoid premature microservices and distributed infrastructure.
 
@@ -24,7 +24,7 @@ All names/placements below are **proposed**, not existing modules. Follow [API m
 
 | Module | Owned meaning and entities | Allowed collaboration and phase |
 | --- | --- | --- |
-| `organizations` | Company (tenant), branch, membership, scoped role assignments and company settings | Supplies explicit ownership/membership checks; human identity verification remains an authentication boundary. First MVP slice |
+| `organizations` | Company (tenant), branch, membership, responsible-administrator relationship, scoped standard/custom profiles, expiring grants and company settings | Supplies explicit current ownership/membership/capability checks under PH-11 policies; provider/session/assurance verification remains a trusted boundary. First release slice; proposed ADR-0025 |
 | `devices` | Device registration, enrollment session, device identity lifecycle, branch assignment and per-device settings | Uses organization scope; supplies permitted device/capability information. MVP |
 | `media` | Media metadata, validation lifecycle, storage objects, access and deletion/reference policy | Supplies authorized immutable asset descriptors to programming/publication. MVP |
 | `programming` | Playlists/items, schedules, device/group assignments, default assignment, preview and deterministic schedule validation | References media and devices by owned contracts; owns scheduling semantics shared with player contract. MVP |
@@ -47,7 +47,7 @@ This is a domain model for review, not a database schema, migration, wire contra
 | Platform | Operates customer companies; platform operational authority is distinct from tenant membership |
 | Company | Tenant ownership boundary for branches, members, media, programming, devices and publications |
 | Branch | Belongs to one company; holds local business timezone/settings and assigned devices |
-| User / membership | A human identity can have explicitly authorized memberships; a membership binds a user to a company and permitted branch scope |
+| User / membership / profile / grant | One stable human identity can hold independent company memberships and additive explicit branch/capability grants; temporary grants expire, suspension denies, and a designated responsible company administrator approves other administrators. Policies are selected; schema/enforcement remain proposed |
 | Device / enrollment session | A device belongs to one company and branch after pairing; enrollment is temporary and single-use; reassignment requires safe unlink/clear semantics |
 | Device group | Persistent company-owned programming target in the MVP; may span branches of that company within the caller's authorization. Each device belongs to zero or one programming group and follows it unless an explicit individual override replaces its complete programming |
 | Media asset / stored object | Tenant-owned metadata points to a validated immutable file version; storage location is not authorization |
@@ -74,12 +74,12 @@ Tenant IDs must participate in ownership validation for references and uniquenes
 
 ## Pending decisions
 
-This table owns unresolved technical design/verification questions. PH-09 has completed business-policy/target selection, with provenance in the release policies; it does not accept technical ADRs or supply hardware/operations evidence. No item is accepted merely because it has an ID.
+This table owns unresolved technical design/verification questions. PH-11 owner identity/access policies are selected; provider/session compatibility and ADR acceptance remain D-02. PH-09 has completed business-policy/target selection, with provenance in the release policies; it does not accept technical ADRs or supply hardware/operations evidence. No item is accepted merely because it has an ID.
 
 | ID | Pending question / candidate direction | Evidence required before dependent work |
 | --- | --- | --- |
 | D-01 | Tenant persistence isolation, constraints, module ownership and administrative scope; ADR-0018 proposed | Adversarial cross-tenant/reference tests and reviewed data-access design before first product migration |
-| D-02 | Human identity provider, enrollment/recovery, session/refresh/revocation and permission matrix | Standards-based provider evaluation compatible with accepted ADR-0012; no bespoke authentication. [PH-11](human-actions.md#ph-11) |
+| D-02 | Qualify Keycloak, immutable claim mapping, server-managed session/assurance integration and application-owned scoped profiles; proposed ADR-0024/ADR-0025 | All 38 owner policy answers and the matrix are selected in [identity/access](identity-and-access.md). [Provider evidence/gaps](identity-provider-evaluation.md), pinned-version compatibility and ADR acceptance remain PH-11/PJ-07; external setup PH-15–PH-17. Preserve accepted ADR-0012; no bespoke authentication |
 | D-03 | Established credential/pairing mechanisms, revocation enforcement, trusted offline time and verifiable cleanup | Implement/verify selected AT-15/AT-16 and unlink/reassignment policies, threat model and PH-08 lifecycle cases; no unanswered PH-09 offline-duration choice |
 | D-04 | Manifest serialization/integrity, sync transport, durable atomic activation and protocol compatibility implementation; ADR-0019 proposed | Contract examples and failure/compatibility tests against AT-26; latest-authorized-compatible reconciliation and required schedule history. No push infrastructure is selected |
 | D-05 | Exact allowed media/codec/rendition profiles, parser/processing isolation and reference-safe garbage collection | Enforce selected ingestion/retention limits; PH-08 codec/memory/storage and file-abuse tests before support claims. Tool/provider choices remain unselected |

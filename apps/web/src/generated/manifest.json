@@ -345,6 +345,26 @@
       "file": "pages/repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications.json"
     },
     {
+      "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+      "kind": "repository",
+      "title": "ADR-0024: Propose Keycloak and Server-Managed Human Sessions",
+      "group": "Decisions",
+      "source": "docs/adr/0024-propose-keycloak-and-server-managed-human-sessions.md",
+      "summary": "The owner answered PH-11's identity questionnaire, selecting self-hosted Keycloak as candidate, email/password with optional passkeys, Google as the only external login, and…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions.json"
+    },
+    {
+      "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+      "kind": "repository",
+      "title": "ADR-0025: Propose Application-Owned Scoped Access Profiles",
+      "group": "Decisions",
+      "source": "docs/adr/0025-propose-application-owned-scoped-access-profiles.md",
+      "summary": "PH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0025-propose-application-owned-scoped-access-profiles.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -703,6 +723,26 @@
       "summary": "This checklist records Teluni's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external…",
       "headings": [],
       "file": "pages/repository/docs/project/human-actions.json"
+    },
+    {
+      "id": "repository/docs/project/identity-and-access",
+      "kind": "repository",
+      "title": "Teluni Human Identity and Access Policies",
+      "group": "Project guides",
+      "source": "docs/project/identity-and-access.md",
+      "summary": "Decided product policies, 2026-10-18: the owner answered all 38 PH-11 questions directly. This document owns human enrollment, authentication assurance, recovery, sessions,…",
+      "headings": [],
+      "file": "pages/repository/docs/project/identity-and-access.json"
+    },
+    {
+      "id": "repository/docs/project/identity-provider-evaluation",
+      "kind": "repository",
+      "title": "Teluni Identity Provider Evaluation",
+      "group": "Project guides",
+      "source": "docs/project/identity-provider-evaluation.md",
+      "summary": "On 2026-10-18, the owner selected self-hosting and Keycloak as the preferred candidate, conditional on host feasibility and compatibility. No recurring identity/email…",
+      "headings": [],
+      "file": "pages/repository/docs/project/identity-provider-evaluation.json"
     },
     {
       "id": "repository/docs/project/implementation-plan",
@@ -1074,14 +1114,15 @@
       },
       { "file": "search/0001.json", "count": 113, "kinds": ["repository"] },
       { "file": "search/0002.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 177, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 120, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 77, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 80, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 68, "kinds": ["repository"] }
+      { "file": "search/0003.json", "count": 182, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 123, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 64, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 20, "kinds": ["repository"] }
     ],
-    "count": 1068
+    "count": 1106
   }
 }

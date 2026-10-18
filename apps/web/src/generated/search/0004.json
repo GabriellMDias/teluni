@@ -1,5 +1,140 @@
 [
   {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Error Envelope",
+    "anchor": "error-envelope",
+    "text": "Error Envelope\nThe implemented API envelope has a top-level `error` object with required `code`, `message`, and `requestId`, plus optional `traceId` and `errorId`. The schema prohibits additional fields. A synthetic example is:\n{\n  \"error\": {\n    \"code\": \"RESOURCE_VERSION_CONFLICT\",\n    \"message\": \"The request changed; reload it before trying again.\",\n    \"requestId\": \"req_00000000-0000-4000-8000-000000000001\"\n  }\n}\n\nThe runtime generates fresh request IDs, adds trace correlation when available, and assigns unexpected failures an error occurrence ID. These are opaque support references, not credentials; knowing one must not grant telemetry access. See [request handling](../../apps/api/src/app.ts) for construction and reporting.\nThe current envelope has **no field-level `details` or retry object**. Registry `retryable` metadata is documentation/classification, not a serialized promise that any write is safe to repeat. Rate limiting uses the HTTP `Retry-After` header. The extension rules below apply when consumers need additional structured information; do not implement hypothetical fields merely because examples in a policy mention them.\n[Health probes](../../apps/api/src/health-contracts.ts) use their own documented status response, including when unavailable; do not confuse a probe status with an application error envelope.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Error Code Format",
+    "anchor": "error-code-format",
+    "text": "Error Code Format\nPublic codes use stable semantic `UPPER_SNAKE_CASE` names. Clients branch on codes and deliberately defined structured fields, never on message text or internal exception classes. Messages are safe human explanations and may change for clarity or product localization without changing the code's meaning. Canonical repository descriptions remain English.\nInfrastructure identifiers such as SQLSTATE, ORM codes, provider exceptions, filesystem paths, or runtime class names are not public semantics. Map failures to the condition consumers need to understand. Reuse an existing code for the same meaning; do not create a code for every code path, collapse materially different consumer actions into one generic code, or reuse a retired code for a new meaning.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Error Code Ownership",
+    "anchor": "error-code-ownership",
+    "text": "Error Code Ownership\nThe feature/application owner defines business failures; the API boundary owns cross-cutting public mappings. The registry provides one canonical definition, and operation metadata refers to it. The registry enumerates stable public conditions, not every possible database/network/library exception. Do not maintain an independent manual registry in prose or generated clients.\nFor a new code, determine its semantic owner, expected/unexpected category, public disclosure safety, consumer action, status mapping, retry implications, optional details, and compatibility impact. Update canonical code, operation declarations, tests, and generated references together. Each module's implementation conventions explain its authorization-sensitive classification order.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Validation Errors",
+    "anchor": "validation-errors",
+    "text": "Validation Errors\nThe implemented validation response is `400 VALIDATION_FAILED` with the common envelope. Do not expose validator exceptions or echo submitted values. Structural validation is distinct from a valid request that conflicts with current domain state.\nIf field-level details become useful, add an explicit bounded schema to the canonical contract. Identify fields using a stable public request-path convention, never internal database/ORM paths; use stable reason codes where clients need to act and safe human text for explanation. Define multiple-failure bounds and unknown-field behavior. Returning every issue in an attacker-controlled payload must not create an unbounded response.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Mapping and disclosure",
+    "anchor": "mapping-and-disclosure",
+    "text": "Mapping and disclosure\nHTTP status conveys broad protocol meaning; public codes convey application semantics. The [generated registry](../generated/api/errors.md) is the current status mapping. Validation uses `400`, authentication `401`, permission denial `403`, absent/hidden resources `404`, state/version conflicts `409`, rate limiting `429`, unexpected failures `500`, and service unavailability `503` where declared.\nAuthentication and authorization failures follow their [security policies](../security/authentication.md). Avoid account enumeration and disclosure of hidden resource existence, cross-tenant data, claims, or policy internals. An absent and inaccessible resource may deliberately share `404`; test that behavior.\nExpected domain conflicts, stale versions, and incompatible idempotency-key reuse are explicit outcomes. Distinguish safe replay from a conflicting new intent. They should not become internal incidents simply because code represents them as exceptions.\nTranslate known database constraints at the persistence/application boundary according to business meaning. Unexpected database failures stay unexpected; do not disguise every exception as invalid user input.\nTranslate provider business rejection separately from dependency unavailability, configuration failure, or unknown outcome. Expose vendor-specific distinctions only when consumers need them, never raw provider content.\nUse a safe generic error for unexpected failures. Never serialize arbitrary exceptions, stack traces, SQL, secret values, internal paths/hostnames, or diagnostic dumps. Do not return ordinary API failures as hidden error objects inside `200` responses.\nPublic status is not internal severity: expected denials may matter to security monitoring, and a transient dependency failure may be operationally serious. [Error reporting](../reliability/error-reporting.md) owns that distinction.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Unknown Outcome",
+    "anchor": "unknown-outcome",
+    "text": "Unknown Outcome\nA timeout, disconnect, or commit error may leave the caller uncertain whether a write or external effect occurred. Retryability cannot be inferred from HTTP status or transient infrastructure failure alone. Define whether the operation is known not to have occurred, safely replayable, or requires state reconciliation. Introduce a distinct public unknown-outcome code only when consumers need different handling.\nA public retry hint, if introduced, must be machine-readable, bounded, and accurate for the operation. Rate-limit guidance must not disclose anti-abuse internals. Never imply a non-idempotent write is safe to repeat merely because the registry classifies a failure as transient. Each module's recovery conventions own its create replay and mutation reconciliation behavior.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Details and additional delivery modes",
+    "anchor": "details-and-additional-delivery-modes",
+    "text": "Details and additional delivery modes\nEvery public details object needs a typed schema and a consumer purpose. Include only information safe for that caller; omit record dumps, protected resource/tenant identifiers, authorization evaluation, credentials, and provider payloads. Cross-cutting correlation/retry metadata should remain distinguishable from domain details. Once consumed, field meaning and shape are compatibility-sensitive.\nWhen additional modes are introduced:\nMode\nError requirement\nWebhook or upload\nFollow the operation/provider contract while minimizing signature-validation or scanning details. Bound and classify upload failures explicitly.\nAsynchronous work\nA successful acceptance response does not guarantee eventual success. Externally visible job status maps worker failures to stable public semantics, never worker exceptions.\nBatch/partial success\nDefine atomic versus partial processing and item identity in an operation-specific result. Do not ambiguously overload the ordinary single-error envelope.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Diagnostics and consumer behavior",
+    "anchor": "diagnostics-and-consumer-behavior",
+    "text": "Diagnostics and consumer behavior\nReport an unexpected occurrence once at its authoritative boundary. Preserve useful internal causal evidence only within [redaction rules](../security/telemetry-redaction.md); preservation never authorizes raw exception-message or stack export. The current runtime records allowlisted diagnostic fields rather than arbitrary error content. Expected validation, business, and access failures may contribute to safe metrics/security/audit signals without becoming unexpected incidents.\nClients and SDKs must preserve structured error semantics and correlation, and provide a safe fallback for unknown codes. Application consumers should not depend on framework-specific transport exceptions for business meaning. Product code decides whether to display safe server copy or localized client text; it must not parse that copy. The current thin SDK exposes generated response/error typing without adding a separate error-class hierarchy.\nCode meaning, status mappings, details, categories where consumed, and retry behavior require [compatibility review](versioning.md). Adding a code can break exhaustive consumers; renaming/removing a code or changing meaning is potentially breaking. Optional details are only additive if actual clients tolerate them.\n"
+  },
+  {
+    "id": "repository/docs/api/error-contract",
+    "title": "API Error Contract",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Change and verification checklist",
+    "anchor": "change-and-verification-checklist",
+    "text": "Change and verification checklist\nInspect the registry, similar conditions, owning operation, actual consumers, authorization/disclosure policy, and compatibility commitments.\nDefine the safe semantic mapping and outcome/retry behavior. Add details only when needed, with explicit schema and size limits.\nVerify the real transport envelope, status, code, safe message, correlation, hidden-resource handling, and relevant failure paths. Test absent/invalid/expired credentials and other lifecycle states only where that mechanism exists.\nInject unexpected failures and assert that secrets, SQL, provider data, input values, stacks, and internal paths do not escape. Verify one appropriate diagnostic event and safe retry metadata if present.\nRegenerate and check the registry/OpenAPI/SDK references through [validation](../validation.md). Preserve current checks for registered unique codes, operation declarations, and freshness; extend checks for any new detail schemas or released compatibility obligations.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "API Principles",
+    "anchor": "api-principles",
+    "text": "API Principles\n[Task index](../README.md) · [Error contract](error-contract.md) · [Compatibility](versioning.md) · [Validation](../validation.md)\nThis policy owns API boundary design. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) selects Fastify; [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable TypeBox wire contracts, generated OpenAPI, and the thin TypeScript SDK. These are implemented. Module-specific behavior belongs to each module's business specification and implementation conventions; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows a complete example.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Locate the authoritative source",
+    "anchor": "locate-the-authoritative-source",
+    "text": "Locate the authoritative source\nTask\nStart here\nChange an operation, request, response, or expected error\nThe owning [module](../../apps/api/README.md#modules)'s TypeBox contracts, then its application operation and tests\nInspect health contracts\n[Health schemas](../../apps/api/src/health-contracts.ts) and [health policy](../reliability/health-checks.md)\nInspect the interoperable API\n[Generated OpenAPI](../generated/api/openapi.json); author changes in executable contracts\nChange a public error\n[Error registry and envelope](../../apps/api/src/errors.ts) and [error policy](error-contract.md)\nChange a consumer\n[SDK public surface](../../packages/sdk/README.md) and [web guide](../../apps/web/README.md)\nRegenerate derived artifacts\n[Artifact workflow](../architecture/backend-execution-and-generated-artifacts.md)\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Ownership and transport boundaries",
+    "anchor": "ownership-and-transport-boundaries",
+    "text": "Ownership and transport boundaries\nAn API exposes an owned application capability, not an arbitrary database table. Each operation needs a clear domain owner, consumer, and canonical contract. Resources and explicit commands are both appropriate when they express real behavior; do not generate CRUD or generic updates for every persisted entity.\nTransport adapters own routing, request validation, authentication integration, safe request context, protocol/error mapping, and response serialization. Application operations and domain rules should not depend on HTTP objects, headers, status codes, or framework APIs unless the behavior itself is transport-specific. Pass only the trusted context an operation needs.\nPersistence records, domain entities, API payloads, events, and UI models have distinct responsibilities. Reuse a representation only when its semantics genuinely match. Explicitly map allowed inputs and outputs: never pass an untrusted body directly to persistence or serialize internal objects merely because they are available. This prevents mass assignment and accidental disclosure while allowing internal refactoring without consumer breakage.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Canonical API Contract",
+    "anchor": "canonical-api-contract",
+    "text": "Canonical API Contract\nMaintain wire-oriented TypeBox schemas and route metadata as the authored source. Fastify uses them for validation and serialization; generated OpenAPI 3.1 describes the interoperable boundary; `openapi-typescript` and `openapi-fetch` provide the default typed client. Every exposed operation must have a stable, unique `operationId`.\nDefine request/response shapes, constraints, authentication, expected errors, and non-structural semantics deliberately before exposing behavior. Do not separately maintain equivalent runtime validators, TypeScript interfaces, OpenAPI schemas, SDK types, or reference tables. Generated artifacts are reproducible representations and must not be hand-edited. Ordinary internal types need not become TypeBox schemas.\nThe API owns its contracts. Extract a shared contract package only for genuine shared ownership. Such a package must not depend on persistence, backend framework implementation, server secrets, or UI code. First-party consumers use the generated SDK and must not import server implementations or database types. The SDK may provide transport, types, credential hooks, and error decoding; it must not own backend business authorization or persistence. Successful-response runtime revalidation is not automatic; introduce it only for a demonstrated trust or reliability requirement.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Validation",
+    "anchor": "validation",
+    "text": "Validation\nTreat bodies, query/path parameters, headers, cookies, uploads, webhooks, and client identifiers as untrusted. Validate structural input at the trusted boundary before application logic relies on it. Structural validation, domain validity, authentication, and authorization remain separate checks.\nFor each field, define meaning, required/optional status, omission versus explicit `null`, type, format, bounds, allowed values, classification, and exposure. Normalize only when domain semantics require it; do not silently modify user content for convenience. Unknown-field behavior must be deliberate and compatible with the consumer contract. Separate create, replacement, partial-update, summary, detail, and privileged schemas where their semantics differ instead of building one universally optional model.\nUse meaningful text and numeric limits based on product needs and resource cost. Bounded states should use explicit enums; consider extensibility under [versioning](versioning.md). Distinguish instants, calendar dates, local times, time zones, and durations. Money requires currency, units, and precision; exact financial amounts must not rely on ambiguous floating-point representations. Use clear English names and canonical descriptions, positive boolean semantics where practical, and established domain terminology. Product localization does not change machine identifiers.\n"
+  },
+  {
+    "id": "repository/docs/api/principles",
+    "title": "API Principles",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Identifiers",
+    "anchor": "identifiers",
+    "text": "Identifiers\nPublic identifiers represent stable resource identity. They may coincide with storage keys when that is an intentional contract, but must not expose sensitive structure or grant authority. Treat opaque identifiers as opaque. Client-generated IDs are allowed only when explicitly designed for an actual offline, distributed, or idempotency need. Changing storage must not accidentally change public identity.\n"
+  },
+  {
     "id": "repository/docs/api/principles",
     "title": "API Principles",
     "group": "API guides",
@@ -790,293 +925,5 @@
     "heading": "Scaling and maintenance",
     "anchor": "scaling-and-maintenance",
     "text": "Scaling and maintenance\nRendering, search, catalog navigation, and API execution have separate modules. Adding a document requires no JSX page or navigation registration. Only live examples need explicit component-owned renderers, so arbitrary metadata cannot instantiate executable UI. Generated operation pages include their referenced schema closure rather than every unrelated schema.\nFull-text search runs in a dedicated worker after an explicit query. It processes bounded shards, retains a bounded ranked result set, and terminates obsolete searches. Overlapping chunks preserve terms at boundaries; streamed section matching combines terms across chunks and shards without retaining a complete section or returning duplicates. Initial navigation does not load the search corpus or render all document bodies. Results link to matching headings and can be narrowed by kind. Catalog pagination bounds both folders and documents; outlines are local to the open page.\nThe catalog still grows with entry count; search and static asset volume grow with indexed content. This is a static local foundation, not a promise of constant-time search over unlimited content. Measure generated sizes, worker latency, build time, and browser memory for the real project. Very large deployments may need further catalog partitioning or a deliberate indexed search service; preserve canonical inputs, local privacy expectations, deterministic artifacts, and a no-service reading path when making that decision. Do not load every detail into one bundle or add an external index merely because more files exist.\n"
-  },
-  {
-    "id": "repository/docs/architecture/living-documentation",
-    "title": "Living Documentation",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Change and verification workflow",
-    "anchor": "change-and-verification-workflow",
-    "text": "Change and verification workflow\nEdit the owning Markdown, contract, schema, or component metadata. Regenerate upstream API/database/SDK references when their sources change.\nRun `pnpm docs:references:write`, including after ordinary authored documentation changes. Review generated differences, links, sensitive content, and obsolete output removal.\nRun `pnpm docs:references:test`, `pnpm docs:check`, `pnpm docs:references:check`, relevant unit/browser checks, and the full `pnpm validate` gate. Generator tests protect publication boundaries; browser tests cover routes, search, exploration, synthetic previews, and automated accessibility checks plus keyboard/mobile behavior.\nFor substantial generation/build changes, verify frozen installation, regeneration with no diff, build, and a real browser in a clean checkout without a local environment file or existing generated cache. Remote CI runs the same full gate; record actual results separately from local evidence.\nSee [setup](../setup.md#living-documentation-portal) for commands and [validation](../validation.md) for available checks. The portal does not select providers or deploy infrastructure.\nThe [manual checklist](../validation.md#living-documentation-manual-browser-checks) is the guide for human-observed acceptance after material UI changes. Keep human-observed acceptance distinct from the automated browser suites in the normal repository gate.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Architecture Principles",
-    "anchor": "architecture-principles",
-    "text": "Architecture Principles\n[Documentation index](../README.md) · [Living documentation](living-documentation.md) · [Validation](../validation.md)\nThese are durable principles for humans and AI agents. Current policies own detailed rules; [ADRs](../adr/README.md) preserve significant choices and rationale. Make a conflict explicit and use the [decision priority](#decision-priority) and [exceptions](#exceptions) below rather than silently bypassing a principle.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Read for this change",
-    "anchor": "read-for-this-change",
-    "text": "Read for this change\n[Decision Priority](#decision-priority) and [Exceptions](#exceptions) govern tradeoffs.\n[6. Domain Rules Must Have a Clear Home](#6-domain-rules-must-have-a-clear-home), [8. Shared Code Must Represent Shared Meaning](#8-shared-code-must-represent-shared-meaning), and [13. Release History Must Be Intentional](#13-release-history-must-be-intentional) often determine placement and change scope.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "1. The Repository Is the Source of Truth",
-    "anchor": "1-the-repository-is-the-source-of-truth",
-    "text": "1. The Repository Is the Source of Truth\nThe repository must contain or link the source, contracts, schemas, tests, architecture, operations, security requirements, telemetry conventions, and decisions needed to understand, build, validate, operate, and evolve the system. Important knowledge must not live only in memory, private conversations, external tools, or undocumented habits. Change the repository when that knowledge changes.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "2. One Concept Should Have One Canonical Source",
-    "anchor": "2-one-concept-should-have-one-canonical-source",
-    "text": "2. One Concept Should Have One Canonical Source\nDo not maintain the same fact independently in multiple places. Derive API documentation and clients from executable contracts, database references from the migrated schema plus semantic metadata, configuration references from schemas, and component documentation from component-owned source/examples. Generated artifacts must be reproducible, never independent authorities. [Living documentation](living-documentation.md) defines the human and AI-readable representations.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "3. Architecture Must Be Explicit",
-    "anchor": "3-architecture-must-be-explicit",
-    "text": "3. Architecture Must Be Explicit\nSignificant applications, packages, modules, and layers need clear responsibility, dependencies, contracts, side effects, data source, and documentation. Boundaries should be understandable without reconstructing them from implementation details.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "4. Architecture Should Be Mechanically Enforced",
-    "anchor": "4-architecture-should-be-mechanically-enforced",
-    "text": "4. Architecture Should Be Mechanically Enforced\nEnforce important boundaries with types, schemas, package/import rules, static checks, tests, builds, and CI where practical. Prose and agent instructions explain rules but should not be their only protection.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "5. Prefer Explicit Contracts",
-    "anchor": "5-prefer-explicit-contracts",
-    "text": "5. Prefer Explicit Contracts\nCommunication across application, package, module, client/server, and asynchronous boundaries needs contracts clear enough that consumers do not depend on internals. Type, validate, version, document, test, and expose them in machine-readable form where appropriate; avoid independent consumer copies.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "6. Domain Rules Must Have a Clear Home",
-    "anchor": "6-domain-rules-must-have-a-clear-home",
-    "text": "6. Domain Rules Must Have a Clear Home\nBusiness behavior needs an identifiable canonical implementation and documentation when meaning is not evident from code. Do not scatter rules across controllers, UI, persistence adapters, triggers, jobs, and integrations. Keep platform concerns out of domain behavior when the separation has real value.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "7. Dependencies Must Point Toward Stable Responsibilities",
-    "anchor": "7-dependencies-must-point-toward-stable-responsibilities",
-    "text": "7. Dependencies Must Point Toward Stable Responsibilities\nInfrastructure and volatile details should depend on stable contracts and domain concepts, not define core business behavior. Protect meaningful replacement boundaries without adding abstraction for its own sake.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "8. Shared Code Must Represent Shared Meaning",
-    "anchor": "8-shared-code-must-represent-shared-meaning",
-    "text": "8. Shared Code Must Represent Shared Meaning\nShare contracts, schemas, behavior, clients, primitives, or utilities only when consumers actually share their meaning and responsibility. Similar-looking implementations alone do not justify coupling; some duplication is cheaper than a speculative common package.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "9. Applications Must Remain Independently Understandable",
-    "anchor": "9-applications-must-remain-independently-understandable",
-    "text": "9. Applications Must Remain Independently Understandable\nEach application's purpose, entry points, dependencies, configuration, integrations, operational behavior, and documentation should be discoverable locally. Shared packages should improve consistency without hiding ownership.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "10. Prefer Vertical Completeness",
-    "anchor": "10-prefer-vertical-completeness",
-    "text": "10. Prefer Vertical Completeness\nImplement and validate a feature across every layer it actually touches—data, application/domain behavior, contract, API, client, UI, tests, telemetry, and documentation—as one coherent behavior. Not every feature needs every layer.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "11. Documentation Is Part of the System",
-    "anchor": "11-documentation-is-part-of-the-system",
-    "text": "11. Documentation Is Part of the System\nDocument intent, business rules, rationale, invariants, constraints, side effects, failures, procedures, integrations, and security behavior that code cannot safely explain alone. Do not restate obvious code. Code and documentation evolve together; incorrect documentation makes a change incomplete.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "12. Current Documentation Describes Current Truth",
-    "anchor": "12-current-documentation-describes-current-truth",
-    "text": "12. Current Documentation Describes Current Truth\nCurrent policy describes current behavior and direction, without obsolete development states. Git owns development history; migrations own released database transitions; a changelog owns externally relevant released changes; ADRs own significant decision history.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "13. Release History Must Be Intentional",
-    "anchor": "13-release-history-must-be-intentional",
-    "text": "13. Release History Must Be Intentional\nUnreleased experiments may be refined; released artifacts describe meaningful transitions and must not be rewritten when doing so could invalidate deployed systems or persistent environments. This applies especially to migrations, compatibility guarantees, changelogs, and generated release artifacts. Safety outranks migration-count elegance.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "14. Make Invalid States Difficult to Represent",
-    "anchor": "14-make-invalid-states-difficult-to-represent",
-    "text": "14. Make Invalid States Difficult to Represent\nUse constrained types, validated schemas, explicit state machines, domain rules, and database constraints at appropriate boundaries so invalid states are prevented where practical, not merely discovered later.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "15. External Input Is Untrusted",
-    "anchor": "15-external-input-is-untrusted",
-    "text": "15. External Input Is Untrusted\nValidate HTTP/client input, files, webhooks, external responses, messages, environment variables, CLI arguments, and imported data at the trust boundary. Client validation improves UX but never replaces server enforcement.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "16. Errors Are Part of the Contract",
-    "anchor": "16-errors-are-part-of-the-contract",
-    "text": "16. Errors Are Part of the Contract\nRepresent expected domain, validation, authentication, and authorization failures explicitly. Keep unexpected failures observable and correlated; consumers should not parse arbitrary messages, and users must not receive internal implementation details.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "17. Production Behavior Must Be Observable",
-    "anchor": "17-production-behavior-must-be-observable",
-    "text": "17. Production Behavior Must Be Observable\nProduction-relevant operations need sufficient safe logs, traces, metrics, error reports, and correlation/release context to investigate failures without relying solely on user reports. Observability remains subject to privacy and security policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "18. Logs Must Be Structured",
-    "anchor": "18-logs-must-be-structured",
-    "text": "18. Logs Must Be Structured\nPrefer structured operational events with stable event, request/trace, operation, result, duration, and error-code fields when relevant. Human-readable messages can supplement, not replace, useful dimensions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "19. Sensitive Information Must Not Become Telemetry",
-    "anchor": "19-sensitive-information-must-not-become-telemetry",
-    "text": "19. Sensitive Information Must Not Become Telemetry\nNever intentionally log passwords, tokens, API keys, private keys, payment credentials, or cryptographic secrets. Collect other personal or sensitive data only when justified by classification, retention, and redaction policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "20. Failures Must Be Actionable",
-    "anchor": "20-failures-must-be-actionable",
-    "text": "20. Failures Must Be Actionable\nDevelopment-tool failures should identify the violated rule, relevant location, and next step where practical. Diagnostics are part of the human and agent development interface.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "21. Tests Protect Behavior",
-    "anchor": "21-tests-protect-behavior",
-    "text": "21. Tests Protect Behavior\nProtect business rules, contracts, architectural invariants, and observable behavior without excessive coupling to implementation details. Use the lowest-cost test that reliably checks a rule and broader tests for boundaries, databases, integrations, workflows, and infrastructure.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "22. Bugs Should Improve the System",
-    "anchor": "22-bugs-should-improve-the-system",
-    "text": "22. Bugs Should Improve the System\nFix the symptom and examine why existing invariants, tests, telemetry, documentation, or boundaries missed it. Add a regression test when practical and strengthen the appropriate control.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "23. Prefer Deterministic Development Workflows",
-    "anchor": "23-prefer-deterministic-development-workflows",
-    "text": "23. Prefer Deterministic Development Workflows\nSetup, development, validation, tests, generation, database work, and builds need canonical reproducible commands. Contributors should not rely on undocumented sequences or hidden machine state; [setup](../setup.md) owns the local path.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "24. Automation Must Be Reproducible",
-    "anchor": "24-automation-must-be-reproducible",
-    "text": "24. Automation Must Be Reproducible\nMake generated outputs, builds, migrations, and checks consistent across environments where practical, with explicit inputs and configuration. CI should exercise the same fundamental workflow as local development.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "25. Defaults Should Be Safe",
-    "anchor": "25-defaults-should-be-safe",
-    "text": "25. Defaults Should Be Safe\nThe ordinary path should preserve secure configuration, validated boundaries, explicit errors, safe telemetry, database integrity, and secret handling without special contributor knowledge.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "26. Prefer Boring Solutions for Solved Problems",
-    "anchor": "26-prefer-boring-solutions-for-solved-problems",
-    "text": "26. Prefer Boring Solutions for Solved Problems\nUse mature, maintainable, observable, documented, and automatable technology for routine infrastructure. New complexity requires a concrete engineering or product benefit.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "27. Avoid Premature Abstraction",
-    "anchor": "27-avoid-premature-abstraction",
-    "text": "27. Avoid Premature Abstraction\nAdd an abstraction when evidence shows a repeated concept or meaningful boundary and it reduces reasoning cost. Prefer clear concrete code over a speculative framework.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "28. Prefer Small, Cohesive Units",
-    "anchor": "28-prefer-small-cohesive-units",
-    "text": "28. Prefer Small, Cohesive Units\nKeep modules, packages, services, components, and functions focused. Split by responsibility, not arbitrary size; many tiny layers can obscure ownership as much as one oversized unit.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "29. Optimize for Local Reasoning",
-    "anchor": "29-optimize-for-local-reasoning",
-    "text": "29. Optimize for Local Reasoning\nUse explicit interfaces, ownership, predictable placement, limited coupling, and local documentation so a contributor can safely change one area without loading the whole repository. This also reduces agent context ambiguity.\n"
   }
 ]

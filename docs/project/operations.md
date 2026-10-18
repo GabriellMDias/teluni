@@ -15,6 +15,8 @@ Follow inherited [production access](../security/production-access.md), [secrets
 | HTTPS ingress | Reverse proxy serves panel and routes API/private media access | Certificate issuance/renewal, domain ownership, proxy trust and origin/access policy |
 | Backend and web artifacts | Existing application builds in a simple single-host composition | Image/build/update procedure, readiness, startup ordering, restart and migration handling |
 | PostgreSQL | Persistent database on an internal container network with restricted runtime identity | No public listener; privileged migration credentials kept out of normal runtime; restore validation |
+| Human identity and browser sessions | Owner-selected self-hosted Keycloak candidate and proposed backend session boundary | PH-10/PH-15 capacity and restricted management; reviewed/pinned provider, persistent identity/session state, revocation-safe recovery; not deployed |
+| Identity email and Google login | Verified sender and owner-controlled Google OAuth registration | PH-16/PH-17; safe configuration/callbacks, reliable delivery, protected secrets and independent recovery; no recurring procurement authorized |
 | Local media | Durable mounted storage outside disposable containers | Capacity, permissions, atomic/durable object lifecycle, reference reconciliation and private delivery |
 | Operations | Backups, redacted logs/metrics and disk/process/certificate checks | Independent backup destination, bounded retention and useful failure notifications |
 
@@ -46,7 +48,7 @@ Use durable logical object identifiers rather than storing temporary download cr
 
 ## Backup and restore requirements
 
-Backups must cover PostgreSQL, media and the non-secret configuration/release metadata needed to reconstruct operation. Protect and recover secrets through a separate controlled process. A database-only backup is insufficient if it points to unavailable media.
+Backups must cover PostgreSQL, media, future provider identity state and the non-secret configuration/release metadata needed to reconstruct operation. Review future session persistence separately: restoring old sessions must never resurrect revoked access; session invalidation/reauthentication may be necessary. Provider signing material and authentication recovery require a protected, separately controlled recovery path, not plaintext configuration exports. Protect and recover secrets through a separate controlled process. A database-only backup is insufficient if it points to unavailable media.
 
 Choose a consistency method for the database-plus-files set, backup schedule, off-host destination, encryption/key recovery, retention, capacity and success/failure reporting. A second directory on the same disk does not cover loss of the host. Local budget constraints do not eliminate the need to resolve off-host recovery before accepting private customer data.
 
