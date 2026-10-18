@@ -18,6 +18,8 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | What must tenancy, identity, data protection, and localization protect? | [Security and internationalization](security-and-i18n.md) |
 | Which human login, recovery, session and permission policies did the owner select? | [Human identity and access](identity-and-access.md) |
 | What evidence supports the accepted identity provider, and what remains unqualified? | [Identity-provider evaluation](identity-provider-evaluation.md) |
+| How will tenant-owned data be constrained and scoped in persistence (proposed D-01)? | [Tenant data ownership and access design](tenant-data-design.md) |
+| How will Keycloak, principals, browser sessions and assurance integrate with the API (proposed D-02)? | [Human identity and session integration design](identity-session-design.md) |
 | What could prevent delivery or safe operation? | [Risks and dependencies](risks.md) |
 | What is the phase sequence and current execution state? | [Implementation plan](implementation-plan.md) |
 | Which decisions or external prerequisites need a human? | [Human actions](human-actions.md) |
