@@ -4,6 +4,15 @@
     "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a primary programming language and runtime before repository tooling, backend infrastructure, shared contracts, validation workflows, and application foundations can be implemented consistently.\nThe choice affects more than the backend. Orion is intended to be a reusable engineering foundation for future projects and may contain backend applications, web applications, shared packages, contracts, engineering tooling, and eventually other application types.\nProjects built on Orion may vary substantially in size, lifetime, and operational requirements. The foundation must remain appropriate for small and simple applications while also providing sufficient architectural headroom for large, long-lived business systems with significant codebases, data volumes, integration surfaces, concurrent usage, and operational complexity.\nThe selected primary language and runtime should therefore support both low initial complexity and incremental growth. A project should not be forced to replace its primary technology solely because its codebase, workload, or user base grows. At the same time, Orion should not introduce distributed-system complexity or specialized technologies before concrete requirements justify them.\nThe primary language and runtime should support the following priorities:\nstrong static analysis and type safety;\nexplicit and machine-readable contracts;\neffective tooling and automation;\nmaintainable monorepo workflows;\nmature production use;\nbroad testing and observability support;\npredictable dependency management;\ngood interoperability with web technologies;\nhorizontal scalability for common application workloads;\nsupport for long-lived and evolving codebases;\nlow unnecessary context switching between repository areas;\neffective use by both human contributors and AI agents;\nreasonable reversibility when specialized requirements justify another technology.\nUsing a common language across multiple repository areas can reduce the number of independent toolchains and conventions contributors must understand. However, a common language must not erase architectural boundaries or cause persistence models, domain models, API contracts, and UI models to become interchangeable.\nOrion also requires runtime validation at trust boundaries. TypeScript's static types are erased at runtime and therefore cannot, by themselves, validate external input, configuration, API payloads, persisted data, or responses from external systems.\nThe primary language is not required to be the only language used by Orion. Specialized components may use another language or runtime when their requirements justify the additional operational and architectural cost.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
     "text": "Decision\nOrion will use **TypeScript as its primary programming language** and **Node.js as its primary server-side and engineering-tooling runtime**.\nNew first-party TypeScript code will use **ECMAScript Modules (ESM)** as the default module system.\nThe repository will use a supported **Node.js LTS release line** for production applications, CI, local development, and engineering tooling unless a narrower context explicitly requires otherwise.\nAt the time of this decision, the initial baseline is:\nTypeScript 6.x\nNode.js 24 LTS\nECMAScript Modules\n\nExact patch versions and compatible toolchain versions will be pinned mechanically by repository tooling rather than by this ADR.\nTypeScript will be used with strict static checking as a repository default. Exceptions must be explicit and justified by a concrete compatibility or implementation requirement.\nTypeScript types alone will not be treated as sufficient validation for untrusted or external data. Runtime validation mechanisms will be selected separately for trust boundaries such as APIs, configuration, external integrations, and other inputs.\nUsing TypeScript across repository areas does not authorize arbitrary sharing of implementation models.\nIn particular:\npersistence records\n    !=\ndomain entities\n    !=\nAPI contracts\n    !=\nUI models\n\nShared packages must continue to represent genuine shared responsibilities and must obey Orion's dependency and application-boundary rules.\nApplications built on Orion should favor architectures that can scale incrementally without requiring premature distribution. Node.js applications may scale horizontally where appropriate, while specialized workloads may be separated when their technical or operational characteristics justify doing so.\nOther languages and runtimes may be introduced when a concrete requirement materially justifies them. Such adoption must not occur solely for preference or novelty and may require a separate ADR when it has architectural consequences.\n"
@@ -916,32 +925,5 @@
     "heading": "Drizzle ORM",
     "anchor": "drizzle-orm",
     "text": "Drizzle ORM\nDrizzle provides a strongly typed TypeScript-oriented persistence model with close alignment to SQL and PostgreSQL.\nIts schema model, migration tooling, SQL visibility, and support for PostgreSQL-specific capabilities make it a strong candidate for Orion.\nIt also provides particularly direct ergonomics for some PostgreSQL extensions and specialized data types.\nDrizzle was not selected because Prisma provides a stronger overall fit for Orion's current priorities around integrated tooling, concise schema readability, generated client ergonomics, introspection, migration workflow, and existing maintainer experience.\nThe difference is not based on Drizzle being unsuitable for large systems.\nDrizzle would be a technically valid persistence strategy.\nPrisma was selected because its complete development workflow currently provides greater value for Orion while explicit SQL remains available for cases where Prisma's abstraction is insufficient.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Kysely",
-    "anchor": "kysely",
-    "text": "Kysely\nKysely provides a type-safe SQL query builder with a design that remains close to SQL.\nIt gives applications substantial control over queries and is particularly attractive for systems that prefer SQL-centric persistence with minimal ORM abstraction.\nIt was not selected because Orion would need to assemble more of the surrounding schema-definition, migration, introspection, and developer-tooling workflow independently.\nKysely's lower abstraction level is valuable for SQL-heavy systems but does not provide enough additional value to outweigh Prisma's more integrated persistence workflow as Orion's default.\nKysely-like SQL-oriented access patterns remain conceptually available through TypedSQL or explicit SQL when specialized queries require them.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "SQL-Only Database Access",
-    "anchor": "sql-only-database-access",
-    "text": "SQL-Only Database Access\nOrion could use PostgreSQL directly through a low-level driver and maintain all schema and query behavior in SQL.\nThis would maximize visibility into database behavior and minimize ORM abstraction.\nIt was not selected because it would require substantially more manual TypeScript typing, persistence plumbing, migration conventions, and tooling for common application operations.\nFor applications that span a wide range of sizes, the additional implementation burden is not justified when Prisma can cover common persistence operations while preserving explicit SQL for specialized cases.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Prisma Schema as the Complete Database Source of Truth",
-    "anchor": "prisma-schema-as-the-complete-database-source-of-truth",
-    "text": "Prisma Schema as the Complete Database Source of Truth\nOrion could treat `schema.prisma` as the complete canonical definition of the database.\nThis would provide a particularly simple source-of-truth model.\nIt was not selected because Orion explicitly permits PostgreSQL capabilities that may not be completely representable by the selected Prisma version.\nTreating the Prisma schema as complete physical truth could cause extensions, specialized constraints, indexes, views, triggers, custom types, or other migration-defined structures to disappear from database documentation or architectural understanding.\nOrion therefore distinguishes between the authored Prisma model and the complete migrated PostgreSQL schema.\n"
   }
 ]

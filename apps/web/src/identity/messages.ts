@@ -10,6 +10,7 @@ export type LoginErrorReason =
   | "login_expired"
   | "email_unverified"
   | "account_unavailable"
+  | "assurance_not_met"
   | "provider_unavailable";
 
 export const loginErrorReasons: readonly LoginErrorReason[] = [
@@ -17,6 +18,7 @@ export const loginErrorReasons: readonly LoginErrorReason[] = [
   "login_expired",
   "email_unverified",
   "account_unavailable",
+  "assurance_not_met",
   "provider_unavailable",
 ];
 
@@ -41,6 +43,8 @@ const ptBR = {
     email_unverified: "Confirme seu e-mail antes de entrar.",
     account_unavailable:
       "Esta conta não pode entrar no momento. Fale com o suporte se o problema continuar.",
+    assurance_not_met:
+      "A verificação em duas etapas não foi concluída. Tente novamente para continuar.",
     provider_unavailable:
       "O serviço de acesso está indisponível. Tente novamente em instantes.",
   } satisfies Record<LoginErrorReason, string>,
@@ -60,6 +64,13 @@ const ptBR = {
   endAllSessions: "Encerrar todas as sessões",
   endAllHint:
     "Encerra também esta sessão e as sessões abertas em outros dispositivos.",
+  twoStepTitle: "Verificação em duas etapas",
+  twoStepMissing:
+    "Esta sessão não usou verificação em duas etapas. Administradores, gerentes e quem publica conteúdo precisam dela.",
+  twoStepDone: "Esta sessão foi verificada em duas etapas em",
+  twoStepButton: "Verificar em duas etapas",
+  twoStepHint:
+    "Na primeira vez você cadastrará um aplicativo autenticador, como Google Authenticator ou Microsoft Authenticator.",
   loading: "Carregando…",
   reload: "Recarregar",
   errors: {
@@ -69,6 +80,8 @@ const ptBR = {
     signedOut: "Sua sessão terminou. Entre novamente.",
     csrf: "Não foi possível verificar a solicitação. Recarregue a página e tente de novo.",
     limit: "Encerre outra sessão para continuar nesta.",
+    strong: "Esta ação exige verificação em duas etapas.",
+    recent: "Esta ação exige uma verificação em duas etapas recente.",
     notFound: "Essa sessão não existe mais.",
     rateLimited: "Muitas solicitações. Aguarde um momento e tente de novo.",
     unknownWrite:
@@ -100,6 +113,8 @@ const enUS: IdentityMessages = {
     email_unverified: "Confirm your email address before signing in.",
     account_unavailable:
       "This account cannot sign in right now. Contact support if this continues.",
+    assurance_not_met:
+      "Two-step verification was not completed. Try again to continue.",
     provider_unavailable:
       "The sign-in service is unavailable. Try again in a moment.",
   },
@@ -118,6 +133,13 @@ const enUS: IdentityMessages = {
   endSession: "End",
   endAllSessions: "End all sessions",
   endAllHint: "Also ends this session and sessions open on other devices.",
+  twoStepTitle: "Two-step verification",
+  twoStepMissing:
+    "This session did not use two-step verification. Administrators, managers and people who publish content need it.",
+  twoStepDone: "This session was verified in two steps at",
+  twoStepButton: "Verify in two steps",
+  twoStepHint:
+    "The first time, you will register an authenticator app such as Google Authenticator or Microsoft Authenticator.",
   loading: "Loading…",
   reload: "Reload",
   errors: {
@@ -127,6 +149,8 @@ const enUS: IdentityMessages = {
     signedOut: "Your session ended. Sign in again.",
     csrf: "The request could not be verified. Reload the page and try again.",
     limit: "End another session to continue in this one.",
+    strong: "This action requires two-step verification.",
+    recent: "This action requires a recent two-step verification.",
     notFound: "That session no longer exists.",
     rateLimited: "Too many requests. Wait a moment and try again.",
     unknownWrite:

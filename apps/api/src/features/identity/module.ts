@@ -37,6 +37,7 @@ export function createIdentityModule(
         assuranceLevel: context.assuranceLevel,
         authenticatedAt: context.authenticatedAt,
         strongAuthenticatedAt: context.strongAuthenticatedAt,
+        strongAuthenticationAgeSeconds: context.strongAuthenticationAgeSeconds,
         scopes: context.scopes,
       };
     },

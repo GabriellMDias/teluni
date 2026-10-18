@@ -175,6 +175,17 @@
           "description": "Validated same-origin relative path to open after a successful login.",
           "classification": "INTERNAL"
         },
+        "requested_assurance": {
+          "description": "Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.",
+          "classification": "INTERNAL",
+          "nullMeaning": "A standard login without a requested level."
+        },
+        "max_age_seconds": {
+          "description": "Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No maximum age was requested.",
+          "unit": "seconds"
+        },
         "created_at": {
           "description": "PostgreSQL-clock instant the login started.",
           "classification": "INTERNAL",
@@ -198,7 +209,8 @@
         "oidc_login_attempts_handle_sha256": "Handle hash is exactly one SHA-256 digest.",
         "oidc_login_attempts_state_nonblank": "State uses the base64url alphabet and cannot be blank.",
         "oidc_login_attempts_return_relative": "Return path is relative to the panel origin.",
-        "oidc_login_attempts_expiry_bounds": "An attempt expires after creation and within 10 minutes."
+        "oidc_login_attempts_expiry_bounds": "An attempt expires after creation and within 10 minutes.",
+        "oidc_login_attempts_max_age_bounds": "Requested maximum authentication age cannot be negative."
       }
     },
     "backchannel_logout_replays": {

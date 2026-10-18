@@ -54,3 +54,12 @@
   font-size: 0.9rem;
   padding: 0;
 }
+.two-step {
+  border-top: 1px solid #d7e0e7;
+  border-bottom: 1px solid #d7e0e7;
+  margin: 1.2rem 0;
+  padding: 0.6rem 0 1rem;
+}
+.two-step h2 {
+  font-size: 1.05rem;
+}

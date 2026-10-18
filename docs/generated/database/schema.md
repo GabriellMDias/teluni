@@ -90,6 +90,8 @@ Lifecycle: Created when a login starts, consumed once by the callback and expire
 | `state` | `character varying(128)` | no | — | INTERNAL | OIDC state value expected back at the callback. | — | — |
 | `secrets` | `bytea` | no | — | RESTRICTED | PKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID. | — | — |
 | `return_to` | `character varying(2048)` | no | — | INTERNAL | Validated same-origin relative path to open after a successful login. | — | — |
+| `requested_assurance` | `character varying(64)` | yes | — | INTERNAL | Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up. | A standard login without a requested level. | — |
+| `max_age_seconds` | `integer` | yes | — | INTERNAL | Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks. | No maximum age was requested. | seconds |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the login started. | — | UTC instant, millisecond precision |
 | `expires_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Instant after which the callback can no longer consume the attempt. | — | UTC instant, millisecond precision |
 | `consumed_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the callback consumed the attempt; a second use is rejected. | The attempt has not been used. | UTC instant, millisecond precision |
@@ -100,6 +102,7 @@ Lifecycle: Created when a login starts, consumed once by the callback and expire
 | --- | --- | --- |
 | `oidc_login_attempts_expiry_bounds` | `CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))` | An attempt expires after creation and within 10 minutes. |
 | `oidc_login_attempts_handle_sha256` | `CHECK ((octet_length(handle_hash) = 32))` | Handle hash is exactly one SHA-256 digest. |
+| `oidc_login_attempts_max_age_bounds` | `CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))` | Requested maximum authentication age cannot be negative. |
 | `oidc_login_attempts_pkey` | `PRIMARY KEY (id)` | Unique attempt identity. |
 | `oidc_login_attempts_return_relative` | `CHECK (((return_to)::text ~ '^/'::text))` | Return path is relative to the panel origin. |
 | `oidc_login_attempts_state_nonblank` | `CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))` | State uses the base64url alphabet and cannot be blank. |

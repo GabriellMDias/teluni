@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { startIdentityStack, type IdentityStack } from "./stack.ts";
@@ -5,6 +6,9 @@ import { startIdentityStack, type IdentityStack } from "./stack.ts";
 // Browser journeys through the real Keycloak pages and the API session
 // boundary. Copy is Portuguese, the initial market's default locale.
 test.use({ locale: "pt-BR" });
+// Pages reached by a full navigation through the provider can be the first
+// requests a freshly started dev server compiles; allow for that cold start.
+const afterNavigation = expect.configure({ timeout: 20_000 });
 test.describe.configure({ mode: "serial", timeout: 120_000 });
 
 let stack: IdentityStack;
@@ -27,18 +31,20 @@ test("signs in through Keycloak, manages sessions and signs out", async ({
   context,
 }) => {
   await page.goto(`${stack.webUrl}/account/sessions`);
-  await expect(page.getByText("Entre para ver suas sessões.")).toBeVisible();
+  await afterNavigation(
+    page.getByText("Entre para ver suas sessões."),
+  ).toBeVisible();
   await page.getByRole("link", { name: "Entrar", exact: true }).last().click();
-  await expect(page).toHaveURL(
+  await afterNavigation(page).toHaveURL(
     /\/realms\/teluni\/protocol\/openid-connect\/auth/,
   );
   await signInAtProvider(page);
 
-  await expect(page).toHaveURL(`${stack.webUrl}/account/sessions`);
-  await expect(
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/account/sessions`);
+  await afterNavigation(
     page.getByRole("heading", { name: "Suas sessões" }),
   ).toBeVisible();
-  await expect(page.getByText("Esta sessão")).toBeVisible();
+  await expect(page.getByText("Esta sessão", { exact: true })).toBeVisible();
   const [cookie] = (await context.cookies(stack.webUrl)).filter(
     (item) => item.name === "teluni_session",
   );
@@ -51,7 +57,7 @@ test("signs in through Keycloak, manages sessions and signs out", async ({
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
   await page.getByRole("button", { name: "Sair" }).click();
-  await expect(page).toHaveURL(`${stack.webUrl}/sign-in`);
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/sign-in`);
   await expect(
     page.getByRole("heading", { name: "Entrar no Teluni" }),
   ).toBeVisible();
@@ -70,19 +76,61 @@ test("ending the current session from the list signs the browser out", async ({
   await page.goto(`${stack.webUrl}/sign-in`);
   await page.getByRole("link", { name: "Entrar com segurança" }).click();
   await signInAtProvider(page);
-  await expect(page).toHaveURL(`${stack.webUrl}/`);
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/`);
   await page.getByRole("link", { name: "Sessões" }).first().click();
   await page.getByRole("button", { name: /^Encerrar: Esta sessão/ }).click();
-  await expect(page).toHaveURL(`${stack.webUrl}/sign-in`);
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/sign-in`);
   await page.goto(`${stack.webUrl}/account/sessions`);
   await expect(page.getByText("Entre para ver suas sessões.")).toBeVisible();
+});
+
+/** RFC 6238 code for the secret Keycloak shows during enrollment. */
+function totp(secret: string): string {
+  const message = Buffer.alloc(8);
+  message.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000)));
+  const digest = createHmac("sha1", Buffer.from(secret, "utf8"))
+    .update(message)
+    .digest();
+  const offset = digest[digest.length - 1] & 0x0f;
+  return ((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000)
+    .toString()
+    .padStart(6, "0");
+}
+
+test("enables two-step verification from the sessions page", async ({
+  page,
+}) => {
+  await page.goto(`${stack.webUrl}/sign-in?returnTo=%2Faccount%2Fsessions`);
+  await page.getByRole("link", { name: "Entrar com segurança" }).click();
+  await signInAtProvider(page);
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/account/sessions`);
+  await expect(
+    page.getByText("Esta sessão não usou verificação em duas etapas.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
+  // Keycloak asks this user to register an authenticator app.
+  const secret = await page.locator("#totpSecret").inputValue();
+  expect(secret).not.toBe("");
+  await page.locator("#totp").fill(totp(secret));
+  await page.locator("#saveTOTPBtn").click();
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/account/sessions`);
+  await expect(
+    page.getByText("Esta sessão foi verificada em duas etapas em", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
 test("reports a stale or forged callback with localized guidance", async ({
   page,
 }) => {
   await page.goto(`${stack.webUrl}/api/auth/callback?state=forged&code=forged`);
-  await expect(page).toHaveURL(`${stack.webUrl}/sign-in?error=login_expired`);
+  await afterNavigation(page).toHaveURL(
+    `${stack.webUrl}/sign-in?error=login_expired`,
+  );
   await expect(page.getByRole("alert")).toHaveText(
     "A tentativa de entrada expirou ou já foi usada. Comece de novo.",
   );

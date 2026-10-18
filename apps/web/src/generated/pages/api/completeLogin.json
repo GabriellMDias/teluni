@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "completeLogin",
   "summary": "",
-  "description": "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable or provider_unavailable.",
+  "description": "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
   "security": [],
   "components": {},
   "method": "GET",

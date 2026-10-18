@@ -19,6 +19,7 @@ import {
   CookieJar,
   createSyntheticUser,
   signInAtProvider,
+  SyntheticAuthenticator,
 } from "./keycloak-browser.js";
 
 export const realm = "teluni";
@@ -172,12 +173,16 @@ export class PanelBrowser {
   }
 
   /** Starts a login and returns the provider's redirect back to the callback. */
+  /** Synthetic authenticator app used when the provider asks for OTP. */
+  readonly authenticator = new SyntheticAuthenticator();
+
   async beginLogin(
     credentials: { username: string; password: string },
     returnTo = "/",
+    assurance?: "strong" | "recent",
   ): Promise<URL> {
     const start = await this.request(
-      `/auth/login?returnTo=${encodeURIComponent(returnTo)}`,
+      `/auth/login?returnTo=${encodeURIComponent(returnTo)}${assurance ? `&assurance=${assurance}` : ""}`,
     );
     if (start.status !== 303)
       throw new Error(`Login start returned ${start.status}`);
@@ -185,6 +190,7 @@ export class PanelBrowser {
       start.headers.get("location")!,
       credentials,
       this.provider,
+      this.authenticator,
     );
   }
 
@@ -195,9 +201,10 @@ export class PanelBrowser {
   async login(
     credentials: { username: string; password: string },
     returnTo = "/",
+    assurance?: "strong" | "recent",
   ): Promise<Response> {
     const finished = await this.finishLogin(
-      await this.beginLogin(credentials, returnTo),
+      await this.beginLogin(credentials, returnTo, assurance),
     );
     const summary = await this.request("/auth/session");
     if (summary.status === 200)

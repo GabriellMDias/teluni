@@ -74,6 +74,7 @@ export interface IdentityProvider {
   newChallenge(): Promise<LoginChallenge & { codeChallenge: string }>;
   authorizationUrl(
     challenge: LoginChallenge & { codeChallenge: string },
+    request?: { acrValues?: string; maxAgeSeconds?: number },
   ): Promise<URL>;
   completeLogin(
     callback: URL,
@@ -228,8 +229,12 @@ export function createKeycloakProvider(
         codeChallenge: await oidc.calculatePKCECodeChallenge(codeVerifier),
       };
     },
-    async authorizationUrl(challenge) {
+    async authorizationUrl(challenge, request = {}) {
       return oidc.buildAuthorizationUrl(await webConfig(), {
+        ...(request.acrValues ? { acr_values: request.acrValues } : {}),
+        ...(request.maxAgeSeconds === undefined
+          ? {}
+          : { max_age: String(request.maxAgeSeconds) }),
         redirect_uri: redirectUri,
         scope: "openid",
         response_type: "code",

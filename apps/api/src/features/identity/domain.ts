@@ -23,6 +23,18 @@ export const sessionPolicy = Object.freeze({
   loginAttemptSeconds: 10 * 60,
 });
 
+/** Authentication context classes the realm maps to levels of authentication. */
+export const assuranceLevels = Object.freeze({
+  standard: "teluni-aal1",
+  strong: "teluni-aal2",
+});
+
+/** P14: sensitive operations need strong authentication this recent. */
+export const recentStrongAuthenticationSeconds = 5 * 60;
+
+/** What a login asks the provider for: a strong level, optionally recent. */
+export type RequestedAssurance = "strong" | "recent";
+
 export type SessionState = "PENDING_LIMIT" | "ACTIVE" | "REVOKED";
 
 export const revocationReasons = [
@@ -44,6 +56,7 @@ export type LoginFailureReason =
   | "login_expired"
   | "email_unverified"
   | "account_unavailable"
+  | "assurance_not_met"
   | "provider_unavailable";
 
 export class LoginFailure extends Error {
@@ -59,6 +72,8 @@ export type SessionFailureCode =
   | "AUTHENTICATION_REQUIRED"
   | "CSRF_VALIDATION_FAILED"
   | "SESSION_LIMIT_REACHED"
+  | "STRONG_AUTHENTICATION_REQUIRED"
+  | "RECENT_AUTHENTICATION_REQUIRED"
   | "RESOURCE_NOT_FOUND"
   | "SERVICE_UNAVAILABLE";
 
@@ -78,8 +93,28 @@ export type HumanContext = Readonly<{
   assuranceLevel: string;
   authenticatedAt: Date;
   strongAuthenticatedAt: Date | null;
+  /** Database-clock age of the latest strong authentication. */
+  strongAuthenticationAgeSeconds: number | null;
   scopes: ReadonlySet<string>;
 }>;
+
+/**
+ * Requires a strongly authenticated session (P12) and, for sensitive
+ * operations, one no older than five minutes (P14). Throws a SessionFailure
+ * the API answers with 403 and no state change.
+ */
+export function requireStrongAuthentication(
+  context: HumanContext,
+  options: { recent?: boolean } = {},
+): void {
+  if (context.strongAuthenticationAgeSeconds === null)
+    throw new SessionFailure("STRONG_AUTHENTICATION_REQUIRED");
+  if (
+    options.recent &&
+    context.strongAuthenticationAgeSeconds > recentStrongAuthenticationSeconds
+  )
+    throw new SessionFailure("RECENT_AUTHENTICATION_REQUIRED");
+}
 
 const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 export function isUnsafeMethod(method: string): boolean {

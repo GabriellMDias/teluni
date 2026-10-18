@@ -1,12 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { AccessTokenVerifier } from "../../authentication.js";
 import {
+  assuranceLevels,
   isUnsafeMethod,
   LoginFailure,
+  recentStrongAuthenticationSeconds,
   safeReturnPath,
   SessionFailure,
   sessionPolicy,
   type HumanContext,
+  type RequestedAssurance,
   type RevocationReason,
 } from "./domain.js";
 import type {
@@ -57,6 +60,7 @@ export type SessionSummary = Readonly<{
   expiresAt: Date;
   assuranceLevel: string;
   authenticatedAt: Date;
+  strongAuthenticatedAt: Date | null;
   csrfToken: string;
 }>;
 
@@ -109,7 +113,12 @@ export class IdentityService {
   /** Starts an authorization-code login; the handle goes into the login-attempt cookie. */
   async startLogin(
     returnTo: string | undefined,
+    assurance?: RequestedAssurance,
   ): Promise<{ redirectTo: URL; loginHandle: string }> {
+    // Step-up asks for the strong level; "recent" also forces a new
+    // authentication so the strong factor is at most five minutes old.
+    const requestedAssurance = assurance ? assuranceLevels.strong : null;
+    const maxAgeSeconds = assurance === "recent" ? 0 : null;
     const challenge = await this.#unavailableAs503(() =>
       this.#provider.newChallenge(),
     );
@@ -127,9 +136,14 @@ export class IdentityService {
         `login:${id}`,
       ),
       returnTo: safeReturnPath(returnTo),
+      requestedAssurance,
+      maxAgeSeconds,
     });
     const redirectTo = await this.#unavailableAs503(() =>
-      this.#provider.authorizationUrl(challenge),
+      this.#provider.authorizationUrl(challenge, {
+        ...(requestedAssurance ? { acrValues: requestedAssurance } : {}),
+        ...(maxAgeSeconds === null ? {} : { maxAgeSeconds }),
+      }),
     );
     return { redirectTo, loginHandle };
   }
@@ -171,6 +185,20 @@ export class IdentityService {
     const { claims } = login;
     let { tokens } = login;
     if (!claims.emailVerified) throw new LoginFailure("email_unverified");
+    const strong = claims.assuranceLevel === assuranceLevels.strong;
+    // The provider may answer a step-up request with a lower level; the
+    // application never treats that as strong authentication.
+    if (
+      attempt.requestedAssurance &&
+      claims.assuranceLevel !== attempt.requestedAssurance
+    )
+      throw new LoginFailure("assurance_not_met");
+    if (
+      attempt.maxAgeSeconds !== null &&
+      Date.now() - claims.authenticatedAt.getTime() >
+        (attempt.maxAgeSeconds + recentStrongAuthenticationSeconds) * 1000
+    )
+      throw new LoginFailure("assurance_not_met");
 
     const principal = await this.#repository.findOrCreatePrincipal(
       claims.issuer,
@@ -221,7 +249,7 @@ export class IdentityService {
       providerSessionId: claims.providerSessionId,
       assuranceLevel: claims.assuranceLevel,
       authenticatedAt: claims.authenticatedAt,
-      strongAuthenticatedAt: null,
+      strongAuthenticatedAt: strong ? claims.authenticatedAt : null,
       // No memberships exist yet, so the strict administrative bound applies.
       idleTimeoutSeconds: sessionPolicy.administrativeIdleSeconds,
       providerTokens: this.#seal(id, tokens),
@@ -293,6 +321,7 @@ export class IdentityService {
       assuranceLevel: session.assuranceLevel,
       authenticatedAt: session.authenticatedAt,
       strongAuthenticatedAt: session.strongAuthenticatedAt,
+      strongAuthenticationAgeSeconds: session.strongAuthenticationAgeSeconds,
       scopes: verified.scopes,
       pending,
     };
@@ -311,6 +340,7 @@ export class IdentityService {
       expiresAt: session.expiresAt,
       assuranceLevel: context.assuranceLevel,
       authenticatedAt: context.authenticatedAt,
+      strongAuthenticatedAt: context.strongAuthenticatedAt,
       csrfToken: this.#keys.csrfToken(context.sessionId),
     };
   }

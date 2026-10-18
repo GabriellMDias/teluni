@@ -4,6 +4,69 @@
     "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "anchor": "adr-0016-license-the-orion-foundation-under-apache-20",
+    "text": "ADR-0016: License the Orion Foundation under Apache-2.0\n**Status:** accepted\n**Date:** 2026-09-30\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion is a public reusable development foundation intended for independent projects, including commercial and proprietary products. Its source had no explicit repository license through the `v1.0.0` foundation snapshot. The owner has now selected a distribution license for Orion source before the real GitHub-backed project derivation exercise. This is a durable repository-wide permission decision; it does not select a derived project's overall license or change third-party dependency rights.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nDistribute Orion's repository source under the unmodified Apache License, Version 2.0. The root `LICENSE` file contains the canonical terms, and the root README links to it. Do not retroactively change the existing `v1.0.0` tag. Orion's independently developed future revisions inherit this repository license unless a separately authorized decision changes it. Derived projects must make their own decisions for independently created product code and comply with licenses applicable to inherited and third-party material.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThe owner explicitly selected Apache-2.0 for broad reuse, modification, and distribution of the foundation, including use in independent commercial projects. A standard license file makes those permissions and obligations discoverable without custom terms, package publication metadata, or changes to derivation provenance. The existing `v1.0.0` tag remains an immutable record of the pre-license snapshot.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Leave the repository without an explicit license",
+    "anchor": "leave-the-repository-without-an-explicit-license",
+    "text": "Leave the repository without an explicit license\nThis was the previous state. It leaves reuse and distribution permissions unclear for the intended audience, so it does not meet the owner's distribution objective.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nOrion source has a clear, standard distribution license.\nDerived projects can identify the terms of inherited Orion material without changing SHA-based provenance or upgrade mechanics.\n"
@@ -1348,32 +1411,5 @@
     "heading": "Deprecation",
     "anchor": "deprecation",
     "text": "Deprecation\nDeprecation means an element remains functional but should no longer be adopted. Record the element, replacement, reason, affected consumers, migration instructions, support commitment, and removal condition or date. Mark canonical metadata and generated docs/SDK annotations where the tooling supports it. A changelog communicates relevant released changes but does not replace current contract documentation.\nRetirement requires evidence that supported consumers have migrated or that the agreed support condition has expired. Observe usage where practical with safe bounded operation/version/client-class dimensions; do not log payloads solely to discover deprecated fields. A contract with no remaining consumers need not endure a ceremonial delay. Security/correctness can require urgent retirement, with its impact recorded explicitly.\nKeep tests for deprecated behavior until retirement. Update SDKs, examples, recommended-version guidance, and migration documentation together. Retain retired consumer documentation when support or investigation obligations require it, clearly separated from current guidance.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "New versions and routing",
-    "anchor": "new-versions-and-routing",
-    "text": "New versions and routing\nBefore creating a version, establish:\nThe incompatible meaning and why additive evolution or in-place deprecation is insufficient.\nThe actual consumers requiring the old contract and the smallest understandable version boundary.\nDeterministic selection/routing, explicit unsupported-version behavior, and any cache implications.\nShared application logic versus justified semantic differences in boundary adapters.\nA support/retirement commitment, migration guide, documentation and SDK strategy, usage visibility, security maintenance, and test matrix.\nPath, header, media-type, date-based, whole-API, and per-capability schemes are alternatives, not selected defaults. Avoid per-endpoint version combinations without a real benefit. Explicit version selection is preferable when an implicit default could change consumer meaning. A mutable `latest` alias is not a stable long-term contract; retired/unsupported versions must fail predictably instead of silently receiving an incompatible newer version.\nAPI contract versions are independent of application releases, SDK package versions, and database migration identifiers. A new backend or SDK release does not automatically require a new API version. Conversely, a breaking SDK public API may require its own package compatibility change even when the server contract stays stable.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Mechanical Enforcement",
-    "anchor": "mechanical-enforcement",
-    "text": "Mechanical Enforcement\n`pnpm references:check` verifies generated OpenAPI and SDK alignment with current executable sources; it does **not** prove compatibility with historical consumers. Current server/browser tests protect the implemented contract. Follow [release and evolution](../database/release-evolution.md#review-api-and-temporary-compatibility) when a real external or independently deployed consumer activates historical obligations.\nRetain the actual released contract as a comparison baseline when needed. Structural comparison should detect removed operations, required fields, types, enum/union changes, and response changes. It complements semantic review of defaults, permissions, errors, ordering, side effects, and retry behavior. A historical snapshot is evidence, not a replacement authoring source.\nProtect real promises with contract/consumer tests; test old requests, deprecated responses/errors, version routing, unknown-value fallback, and generated-client behavior as applicable. Do not invent unsupported release combinations or update a historical fixture merely to hide a failure. Consumer-driven tests, deprecation telemetry, baseline format, and routing tooling should be added when actual topology benefits from them.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Change checklist",
-    "anchor": "change-checklist",
-    "text": "Change checklist\nBefore handing off a compatibility-sensitive change, verify the actual consumer inventory, assess every applicable surface in the breaking-change table, prefer compatible alternatives, define any migration/removal conditions, preserve security across supported versions, and update canonical contracts, generated references, consumers, and tests. Document unavailable historical checks without implying that current-source validation proves them.\n"
   }
 ]

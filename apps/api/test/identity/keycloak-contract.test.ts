@@ -10,7 +10,12 @@ import {
   webClientId,
 } from "../../scripts/identity-realm.js";
 import { withKeycloak, type KeycloakAdmin } from "../../scripts/keycloak.js";
-import { createSyntheticUser, signInAtProvider } from "./keycloak-browser.js";
+import {
+  CookieJar,
+  createSyntheticUser,
+  signInAtProvider,
+  SyntheticAuthenticator,
+} from "./keycloak-browser.js";
 
 // Qualifies the pinned Keycloak build against the realm contract and the
 // unchanged ADR-0012 verifier, independently of the API's identity module.
@@ -59,7 +64,15 @@ afterAll(async () => {
   await stopped;
 }, 60_000);
 
-async function browserLogin(email: string) {
+async function browserLogin(
+  email: string,
+  options: {
+    acrValues?: string;
+    maxAge?: number;
+    jar?: CookieJar;
+    authenticator?: SyntheticAuthenticator;
+  } = {},
+) {
   const codeVerifier = oidc.randomPKCECodeVerifier();
   const state = oidc.randomState();
   const nonce = oidc.randomNonce();
@@ -70,11 +83,17 @@ async function browserLogin(email: string) {
     code_challenge_method: "S256",
     state,
     nonce,
+    ...(options.acrValues ? { acr_values: options.acrValues } : {}),
+    ...(options.maxAge === undefined
+      ? {}
+      : { max_age: String(options.maxAge) }),
   });
-  const callback = await signInAtProvider(url.href, {
-    username: email,
-    password,
-  });
+  const callback = await signInAtProvider(
+    url.href,
+    { username: email, password },
+    options.jar,
+    options.authenticator,
+  );
   return oidc.authorizationCodeGrant(web, callback, {
     pkceCodeVerifier: codeVerifier,
     expectedState: state,
@@ -280,4 +299,53 @@ describe("pinned Keycloak realm contract", () => {
       (await oidc.tokenIntrospection(web, tokens.access_token)).active,
     ).toBe(false);
   }, 60_000);
+
+  it("reports standard logins as teluni-aal1", async () => {
+    const email = `standard-${randomUUID()}@example.test`;
+    await createSyntheticUser(admin, realm, { email, password });
+    const tokens = await browserLogin(email);
+    expect(tokens.claims()?.acr).toBe("teluni-aal1");
+  }, 60_000);
+
+  it("enrolls and then requires OTP for teluni-aal2, without silently upgrading a standard session", async () => {
+    const email = `strong-${randomUUID()}@example.test`;
+    await createSyntheticUser(admin, realm, { email, password });
+    const authenticator = new SyntheticAuthenticator();
+    const jar = new CookieJar();
+    // A standard SSO session exists first.
+    expect((await browserLogin(email, { jar })).claims()?.acr).toBe(
+      "teluni-aal1",
+    );
+    // Requesting the strong level cannot reuse it: the user must enroll OTP.
+    const strong = await browserLogin(email, {
+      jar,
+      acrValues: "teluni-aal2",
+      authenticator,
+    });
+    expect(authenticator.secret).toBeTruthy();
+    const strongClaims = strong.claims()!;
+    expect(strongClaims.acr).toBe("teluni-aal2");
+    expect(typeof strongClaims.auth_time).toBe("number");
+
+    // A fresh browser asks for the password and the enrolled code.
+    const fresh = await browserLogin(email, {
+      jar: new CookieJar(),
+      acrValues: "teluni-aal2",
+      authenticator,
+    });
+    expect(fresh.claims()?.acr).toBe("teluni-aal2");
+
+    // max_age=0 forces a new authentication with a newer auth_time.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    const recent = await browserLogin(email, {
+      jar,
+      acrValues: "teluni-aal2",
+      maxAge: 0,
+      authenticator,
+    });
+    expect(recent.claims()?.acr).toBe("teluni-aal2");
+    expect(Number(recent.claims()?.auth_time)).toBeGreaterThan(
+      Number(strongClaims.auth_time),
+    );
+  }, 180_000);
 });

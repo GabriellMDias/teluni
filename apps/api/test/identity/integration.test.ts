@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { SessionFailure } from "../../src/features/identity/public.js";
+import {
+  requireStrongAuthentication,
+  SessionFailure,
+} from "../../src/features/identity/public.js";
 import {
   PanelBrowser,
   realm,
@@ -430,4 +433,60 @@ describe("identity module against real Keycloak and PostgreSQL", () => {
       expect(rows[0].return_to).toBe("/");
     }
   });
+
+  it("marks only stepped-up sessions as strongly and recently authenticated", async () => {
+    const person = await syntheticPerson(stack);
+    const browser = new PanelBrowser(stack);
+    await browser.login(person.credentials);
+    const standard = await summary(browser);
+    expect(standard.body).toMatchObject({ strongAuthenticatedAt: null });
+    const context = () =>
+      stack.sessions.authenticate({
+        method: "GET",
+        headers: { cookie: browser.api.header() },
+      });
+    const standardContext = await context();
+    expect(() => requireStrongAuthentication(standardContext)).toThrow(
+      expect.objectContaining({ code: "STRONG_AUTHENTICATION_REQUIRED" }),
+    );
+
+    // Step-up enrolls the synthetic authenticator and replaces the session.
+    const stepped = await browser.login(
+      person.credentials,
+      "/account/sessions",
+      "strong",
+    );
+    expect(stepped.headers.get("location")).toBe("/account/sessions");
+    expect(browser.authenticator.secret).toBeTruthy();
+    const strong = await summary(browser);
+    expect(strong.body.sessionId).not.toBe(standard.body.sessionId);
+    expect(strong.body.principalId).toBe(standard.body.principalId);
+    const strongContext = await context();
+    expect(() =>
+      requireStrongAuthentication(strongContext, { recent: true }),
+    ).not.toThrow();
+    const { rows } = await stack.sql.query<{ revocation_reason: string }>(
+      "SELECT revocation_reason FROM human_sessions WHERE id = $1",
+      [standard.body.sessionId],
+    );
+    expect(rows[0].revocation_reason).toBe("REPLACED");
+
+    // Six minutes later the session stays strong but is no longer recent.
+    await stack.sql.query(
+      "UPDATE human_sessions SET strong_authenticated_at = now() - interval '6 minutes' WHERE id = $1",
+      [strong.body.sessionId],
+    );
+    const aged = await context();
+    expect(() => requireStrongAuthentication(aged)).not.toThrow();
+    expect(() => requireStrongAuthentication(aged, { recent: true })).toThrow(
+      expect.objectContaining({ code: "RECENT_AUTHENTICATION_REQUIRED" }),
+    );
+
+    // A recent step-up asks for the password and code again.
+    await browser.login(person.credentials, "/", "recent");
+    const renewed = await context();
+    expect(() =>
+      requireStrongAuthentication(renewed, { recent: true }),
+    ).not.toThrow();
+  }, 180_000);
 });

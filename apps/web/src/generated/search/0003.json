@@ -4,6 +4,42 @@
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Metrics",
+    "anchor": "metrics",
+    "text": "Metrics\nOpenTelemetry will provide Orion's metrics API and SDK model.\nMetrics may describe technical or operational behavior including:\nrequest counts;\nrequest duration;\nactive operations;\nerror counts;\nqueue depth when applicable;\nprocessing duration;\ndependency latency;\nruntime behavior;\nresource usage where appropriately instrumented;\napplication-specific operational signals.\nCustom metrics must have deliberate semantics.\nMetric definitions should include, where applicable:\nstable name;\ndescription;\nunit;\ninstrument type;\nbounded attributes.\nMetric names must not be created casually for short-term debugging when logs or traces are a better fit.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Metric cardinality",
+    "anchor": "metric-cardinality",
+    "text": "Metric cardinality\nMetric attributes must remain **bounded and low-cardinality**.\nHigh-cardinality identifiers must not normally be used as metric attributes.\nExamples of inappropriate metric dimensions include:\nuser_id\ncustomer_id\norder_id\ninvoice_id\nemail\ntrace_id\nrequest_id\narbitrary raw URL\n\nAppropriate HTTP dimensions may include bounded values such as:\nHTTP method\nnormalized route\nstatus code or status class\nservice identity\ndeployment environment\n\nHigh-cardinality operational detail belongs in traces or structured logs when its collection is appropriate and permitted.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Business metrics versus business state",
+    "anchor": "business-metrics-versus-business-state",
+    "text": "Business metrics versus business state\nObservability metrics are not authoritative business records.\nFor example, an `orders.created` metric may be useful operationally, but it must not become the authoritative record of how many orders the business created.\nMetrics may be:\nsampled;\naggregated;\ntemporarily unavailable;\nretained for limited periods;\ntransformed by telemetry infrastructure.\nAuthoritative business state remains in the application's persistent data model.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Structured logging",
+    "anchor": "structured-logging",
+    "text": "Structured logging\nPino will remain Orion's default structured application logger.\nProduction-oriented logs must use structured JSON.\nHuman-readable pretty output may be enabled for local development where useful.\nApplication logs should prefer structured fields over encoding all machine-relevant context exclusively inside message strings.\nFor example, a record may contain:\nevent\nrequest_id\ntrace_id\nspan_id\nentity identifiers when permitted\nerror metadata\nstructured operation attributes\nmessage\n\nThe textual message is intended primarily for human readability.\nStructured fields provide machine-queryable context.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Log correlation",
     "anchor": "log-correlation",
     "text": "Log correlation\nPino logs emitted while an OpenTelemetry span is active should include trace correlation metadata.\nThe standard correlation fields will be:\ntrace_id\nspan_id\n\nand, when useful:\ntrace_flags\n\nThis allows an operator to navigate conceptually from:\nlog\n    ↓\ntrace_id\n    ↓\ndistributed trace\n    ↓\nrequest\n    ↓\napplication operation\n    ↓\ndatabase / integration\n\nTrace correlation should be provided through instrumentation or centralized logging configuration rather than manually added at every call site.\n"
@@ -1249,68 +1285,5 @@
     "heading": "References",
     "anchor": "references",
     "text": "References\n[Orion foundation versioning](../versioning.md)\n[Project derivation](../project-derivation.md)\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "anchor": "adr-0016-license-the-orion-foundation-under-apache-20",
-    "text": "ADR-0016: License the Orion Foundation under Apache-2.0\n**Status:** accepted\n**Date:** 2026-09-30\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion is a public reusable development foundation intended for independent projects, including commercial and proprietary products. Its source had no explicit repository license through the `v1.0.0` foundation snapshot. The owner has now selected a distribution license for Orion source before the real GitHub-backed project derivation exercise. This is a durable repository-wide permission decision; it does not select a derived project's overall license or change third-party dependency rights.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nDistribute Orion's repository source under the unmodified Apache License, Version 2.0. The root `LICENSE` file contains the canonical terms, and the root README links to it. Do not retroactively change the existing `v1.0.0` tag. Orion's independently developed future revisions inherit this repository license unless a separately authorized decision changes it. Derived projects must make their own decisions for independently created product code and comply with licenses applicable to inherited and third-party material.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe owner explicitly selected Apache-2.0 for broad reuse, modification, and distribution of the foundation, including use in independent commercial projects. A standard license file makes those permissions and obligations discoverable without custom terms, package publication metadata, or changes to derivation provenance. The existing `v1.0.0` tag remains an immutable record of the pre-license snapshot.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Leave the repository without an explicit license",
-    "anchor": "leave-the-repository-without-an-explicit-license",
-    "text": "Leave the repository without an explicit license\nThis was the previous state. It leaves reuse and distribution permissions unclear for the intended audience, so it does not meet the owner's distribution objective.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
   }
 ]

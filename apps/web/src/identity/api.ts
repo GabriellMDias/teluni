@@ -7,6 +7,8 @@ import { loadClientConfig } from "../config.js";
 export const identityErrorCodes: ReadonlySet<string> = new Set([
   "CSRF_VALIDATION_FAILED",
   "SESSION_LIMIT_REACHED",
+  "STRONG_AUTHENTICATION_REQUIRED",
+  "RECENT_AUTHENTICATION_REQUIRED",
 ]);
 
 // The session's CSRF token lives only in memory and only for unsafe requests.
@@ -25,6 +27,7 @@ export type CurrentSession = Readonly<{
   expiresAt: string;
   assuranceLevel: string;
   authenticatedAt: string;
+  strongAuthenticatedAt: string | null;
 }>;
 
 export type SessionItem = Readonly<{
@@ -91,7 +94,14 @@ export async function terminateAllSessions(): Promise<void> {
   csrfToken = null;
 }
 
-/** Login is a full browser navigation to the API, never a fetch. */
-export function loginHref(returnTo: string): string {
-  return `${loadClientConfig().apiBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+/**
+ * Login is a full browser navigation to the API, never a fetch. `strong`
+ * requests two-step verification; `recent` also forces a new authentication
+ * for operations that need one within five minutes.
+ */
+export function loginHref(
+  returnTo: string,
+  assurance?: "strong" | "recent",
+): string {
+  return `${loadClientConfig().apiBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}${assurance ? `&assurance=${assurance}` : ""}`;
 }

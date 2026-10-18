@@ -13,4 +13,6 @@
 | `INTERNAL_ERROR` | 500 | internal | no | An unexpected error occurred. |
 | `SERVICE_UNAVAILABLE` | 503 | availability | yes | The service is unavailable. |
 | `CSRF_VALIDATION_FAILED` | 403 | authentication | no | The request could not be verified as coming from the Teluni panel. Reload the page and try again. |
+| `STRONG_AUTHENTICATION_REQUIRED` | 403 | authentication | no | This action requires two-step verification. Confirm your identity and try again. |
+| `RECENT_AUTHENTICATION_REQUIRED` | 403 | authentication | no | This action requires a recent two-step verification. Confirm your identity and try again. |
 | `SESSION_LIMIT_REACHED` | 409 | conflict | no | You already have the maximum number of active sessions. End one of them to continue. |

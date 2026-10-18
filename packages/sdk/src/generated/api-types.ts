@@ -62,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. */
+        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. */
         get: operations["startLogin"];
         put?: never;
         post?: never;
@@ -79,7 +79,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable or provider_unavailable. */
+        /** @description Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable. */
         get: operations["completeLogin"];
         put?: never;
         post?: never;
@@ -306,6 +306,7 @@ export interface operations {
         parameters: {
             query?: {
                 returnTo?: string;
+                assurance?: "strong" | "recent";
             };
             header?: never;
             path?: never;
@@ -481,6 +482,7 @@ export interface operations {
                         assuranceLevel: string;
                         /** Format: date-time */
                         authenticatedAt: string;
+                        strongAuthenticatedAt: string | null;
                         csrfToken: string;
                     };
                 };

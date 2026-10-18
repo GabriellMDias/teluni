@@ -3,7 +3,11 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { HumanContext } from "./domain.js";
 
-export { SessionFailure, type HumanContext } from "./domain.js";
+export {
+  requireStrongAuthentication,
+  SessionFailure,
+  type HumanContext,
+} from "./domain.js";
 export type { SessionFailureCode } from "./domain.js";
 export { identityErrors } from "./errors.js";
 

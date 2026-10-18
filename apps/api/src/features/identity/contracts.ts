@@ -20,6 +20,7 @@ export const sessionSummarySchema = Type.Object(
     expiresAt: instant,
     assuranceLevel: Type.String({ maxLength: 64 }),
     authenticatedAt: instant,
+    strongAuthenticatedAt: Type.Union([instant, Type.Null()]),
     csrfToken: Type.String({ minLength: 1 }),
   },
   { additionalProperties: false },
@@ -76,10 +77,15 @@ export const identityOperations = [
     operationId: "startLogin",
     access: "public",
     description:
-      "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /.",
+      "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met.",
     schema: {
       querystring: Type.Object(
-        { returnTo: Type.Optional(Type.String({ maxLength: 2048 })) },
+        {
+          returnTo: Type.Optional(Type.String({ maxLength: 2048 })),
+          assurance: Type.Optional(
+            Type.Union([Type.Literal("strong"), Type.Literal("recent")]),
+          ),
+        },
         { additionalProperties: false },
       ),
       response: { 303: Type.Null(), 400: errorEnvelopeSchema, ...failures },
@@ -96,7 +102,7 @@ export const identityOperations = [
     operationId: "completeLogin",
     access: "public",
     description:
-      "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable or provider_unavailable.",
+      "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
     schema: {
       querystring: Type.Object(
         {

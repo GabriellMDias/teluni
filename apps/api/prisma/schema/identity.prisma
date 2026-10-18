@@ -59,6 +59,8 @@ model OidcLoginAttempt {
   state      String    @db.VarChar(128)
   secrets    Bytes
   returnTo   String    @map("return_to") @db.VarChar(2048)
+  requestedAssurance String? @map("requested_assurance") @db.VarChar(64)
+  maxAgeSeconds      Int?    @map("max_age_seconds")
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
   consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)

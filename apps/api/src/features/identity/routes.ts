@@ -108,9 +108,12 @@ export function registerIdentityRoutes(
       url: login.url,
       schema: login.schema,
       handler: async (request, reply) => {
-        const { returnTo } = request.query as { returnTo?: string };
+        const { returnTo, assurance } = request.query as {
+          returnTo?: string;
+          assurance?: "strong" | "recent";
+        };
         try {
-          const started = await service.startLogin(returnTo);
+          const started = await service.startLogin(returnTo, assurance);
           reply.setCookie(names.login, started.loginHandle, {
             ...loginCookie,
             maxAge: 600,
@@ -162,6 +165,8 @@ export function registerIdentityRoutes(
             ...summary,
             expiresAt: summary.expiresAt.toISOString(),
             authenticatedAt: summary.authenticatedAt.toISOString(),
+            strongAuthenticatedAt:
+              summary.strongAuthenticatedAt?.toISOString() ?? null,
           });
         } catch (error) {
           return fail(reply, error, request.id);

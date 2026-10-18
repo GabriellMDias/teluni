@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/api/versioning",
+    "title": "API Versioning",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "New versions and routing",
+    "anchor": "new-versions-and-routing",
+    "text": "New versions and routing\nBefore creating a version, establish:\nThe incompatible meaning and why additive evolution or in-place deprecation is insufficient.\nThe actual consumers requiring the old contract and the smallest understandable version boundary.\nDeterministic selection/routing, explicit unsupported-version behavior, and any cache implications.\nShared application logic versus justified semantic differences in boundary adapters.\nA support/retirement commitment, migration guide, documentation and SDK strategy, usage visibility, security maintenance, and test matrix.\nPath, header, media-type, date-based, whole-API, and per-capability schemes are alternatives, not selected defaults. Avoid per-endpoint version combinations without a real benefit. Explicit version selection is preferable when an implicit default could change consumer meaning. A mutable `latest` alias is not a stable long-term contract; retired/unsupported versions must fail predictably instead of silently receiving an incompatible newer version.\nAPI contract versions are independent of application releases, SDK package versions, and database migration identifiers. A new backend or SDK release does not automatically require a new API version. Conversely, a breaking SDK public API may require its own package compatibility change even when the server contract stays stable.\n"
+  },
+  {
+    "id": "repository/docs/api/versioning",
+    "title": "API Versioning",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Mechanical Enforcement",
+    "anchor": "mechanical-enforcement",
+    "text": "Mechanical Enforcement\n`pnpm references:check` verifies generated OpenAPI and SDK alignment with current executable sources; it does **not** prove compatibility with historical consumers. Current server/browser tests protect the implemented contract. Follow [release and evolution](../database/release-evolution.md#review-api-and-temporary-compatibility) when a real external or independently deployed consumer activates historical obligations.\nRetain the actual released contract as a comparison baseline when needed. Structural comparison should detect removed operations, required fields, types, enum/union changes, and response changes. It complements semantic review of defaults, permissions, errors, ordering, side effects, and retry behavior. A historical snapshot is evidence, not a replacement authoring source.\nProtect real promises with contract/consumer tests; test old requests, deprecated responses/errors, version routing, unknown-value fallback, and generated-client behavior as applicable. Do not invent unsupported release combinations or update a historical fixture merely to hide a failure. Consumer-driven tests, deprecation telemetry, baseline format, and routing tooling should be added when actual topology benefits from them.\n"
+  },
+  {
+    "id": "repository/docs/api/versioning",
+    "title": "API Versioning",
+    "group": "API guides",
+    "kind": "repository",
+    "heading": "Change checklist",
+    "anchor": "change-checklist",
+    "text": "Change checklist\nBefore handing off a compatibility-sensitive change, verify the actual consumer inventory, assess every applicable surface in the breaking-change table, prefer compatible alternatives, define any migration/removal conditions, preserve security across supported versions, and update canonical contracts, generated references, consumers, and tests. Document unavailable historical checks without implying that current-source validation proves them.\n"
+  },
+  {
     "id": "repository/docs/architecture/agent-instructions",
     "title": "Agent Instructions and Tool Compatibility",
     "group": "Architecture",
@@ -1195,32 +1222,5 @@
     "heading": "Creating a New Application",
     "anchor": "creating-a-new-application",
     "text": "Creating a New Application\nEstablish the concrete runtime/delivery need, why an existing application cannot own it, public contracts, dependencies, data ownership, configuration, observability, failure modes, and deployment/distribution expectations. A significant new boundary normally requires an ADR. Prefer logical modularity before physical distribution; code size alone does not justify another runtime.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "packages/",
-    "anchor": "packages",
-    "text": "`packages/`\nPackages define cohesive shared responsibilities, intentional public APIs, allowed consumers/dependencies, private implementation, and runtime/platform compatibility. Consume a package through its public exports rather than arbitrary internal paths. Packages must not depend on applications. Avoid both one package per small utility and broad `common`, `shared`, or `utils` dumping grounds.\nThe SDK is currently the only shared package. Extract other capabilities only when ownership or reuse warrants it:\nResponsibility\nConstraint if extracted\nDomain concepts and business behavior\nPlatform-independent where useful; no unnecessary HTTP, UI, database, telemetry-vendor, or filesystem dependency. A domain package is not mandatory for application-local business logic.\nCommunication contracts\nCanonical wire schemas, identifiers, errors, or events; internal models do not automatically become public contracts.\nDatabase infrastructure\nSchema, migrations, client setup, metadata, or shared persistence primitives; sharing infrastructure does not grant unrestricted table access.\nObservability\nConsistent logging, context, propagation, metrics, reporting, and redaction semantics; isolate vendors only where that provides a meaningful boundary.\nConfiguration\nShared validation/loading primitives; application-specific configuration remains owned by its application.\nTesting\nGenuinely reusable fixtures, factories, assertions, or infrastructure; behavior tests remain near their owner.\nUI\nShared design tokens or components only where runtime, interaction, and accessibility semantics are compatible; do not force cross-platform component reuse.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Creating a New Package",
-    "anchor": "creating-a-new-package",
-    "text": "Creating a New Package\nFirst search existing owners. Explain the cohesive responsibility, actual consumers, public API, allowed dependency directions, platform constraints, and architectural benefit. A second consumer alone does not justify extraction: consumers must share meaning, not just similar code. Prefer simple local duplication over an abstraction with conflicting responsibilities. A package should make ownership and the dependency graph clearer.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Feature Organization",
-    "anchor": "feature-organization",
-    "text": "Feature Organization\nKeep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.\nTests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.\n"
   }
 ]

@@ -57,6 +57,26 @@
       "Unit": "—"
     },
     {
+      "Column": "requested_assurance",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.",
+      "Null meaning": "A standard login without a requested level.",
+      "Unit": "—"
+    },
+    {
+      "Column": "max_age_seconds",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.",
+      "Null meaning": "No maximum age was requested.",
+      "Unit": "seconds"
+    },
+    {
       "Column": "created_at",
       "PostgreSQL type": "timestamp(3) with time zone",
       "Nullable": "no",
@@ -97,6 +117,11 @@
       "Object": "oidc_login_attempts_handle_sha256",
       "Physical definition": "CHECK ((octet_length(handle_hash) = 32))",
       "Purpose": "Handle hash is exactly one SHA-256 digest."
+    },
+    {
+      "Object": "oidc_login_attempts_max_age_bounds",
+      "Physical definition": "CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))",
+      "Purpose": "Requested maximum authentication age cannot be negative."
     },
     {
       "Object": "oidc_login_attempts_pkey",

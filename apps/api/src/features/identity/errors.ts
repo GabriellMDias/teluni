@@ -11,6 +11,20 @@ export const identityErrors = defineErrors({
     category: "authentication",
     retryable: false,
   },
+  STRONG_AUTHENTICATION_REQUIRED: {
+    status: 403,
+    message:
+      "This action requires two-step verification. Confirm your identity and try again.",
+    category: "authentication",
+    retryable: false,
+  },
+  RECENT_AUTHENTICATION_REQUIRED: {
+    status: 403,
+    message:
+      "This action requires a recent two-step verification. Confirm your identity and try again.",
+    category: "authentication",
+    retryable: false,
+  },
   SESSION_LIMIT_REACHED: {
     status: 409,
     message:

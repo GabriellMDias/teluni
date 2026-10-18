@@ -4,6 +4,33 @@
     "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Kysely",
+    "anchor": "kysely",
+    "text": "Kysely\nKysely provides a type-safe SQL query builder with a design that remains close to SQL.\nIt gives applications substantial control over queries and is particularly attractive for systems that prefer SQL-centric persistence with minimal ORM abstraction.\nIt was not selected because Orion would need to assemble more of the surrounding schema-definition, migration, introspection, and developer-tooling workflow independently.\nKysely's lower abstraction level is valuable for SQL-heavy systems but does not provide enough additional value to outweigh Prisma's more integrated persistence workflow as Orion's default.\nKysely-like SQL-oriented access patterns remain conceptually available through TypedSQL or explicit SQL when specialized queries require them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "SQL-Only Database Access",
+    "anchor": "sql-only-database-access",
+    "text": "SQL-Only Database Access\nOrion could use PostgreSQL directly through a low-level driver and maintain all schema and query behavior in SQL.\nThis would maximize visibility into database behavior and minimize ORM abstraction.\nIt was not selected because it would require substantially more manual TypeScript typing, persistence plumbing, migration conventions, and tooling for common application operations.\nFor applications that span a wide range of sizes, the additional implementation burden is not justified when Prisma can cover common persistence operations while preserving explicit SQL for specialized cases.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Prisma Schema as the Complete Database Source of Truth",
+    "anchor": "prisma-schema-as-the-complete-database-source-of-truth",
+    "text": "Prisma Schema as the Complete Database Source of Truth\nOrion could treat `schema.prisma` as the complete canonical definition of the database.\nThis would provide a particularly simple source-of-truth model.\nIt was not selected because Orion explicitly permits PostgreSQL capabilities that may not be completely representable by the selected Prisma version.\nTreating the Prisma schema as complete physical truth could cause extensions, specialized constraints, indexes, views, triggers, custom types, or other migration-defined structures to disappear from database documentation or architectural understanding.\nOrion therefore distinguishes between the authored Prisma model and the complete migrated PostgreSQL schema.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "db push as the Normal Development Workflow",
     "anchor": "db-push-as-the-normal-development-workflow",
     "text": "`db push` as the Normal Development Workflow\nPrisma can synchronize schema changes directly to a database without maintaining normal migration history.\nThis can make early prototyping fast.\nIt was not selected as Orion's canonical workflow because Orion requires database transitions to become explicit, reviewable, reproducible migration artifacts.\nUsing versioned migrations from ordinary development onward also reduces differences between development and durable deployment workflows.\n`db push` remains available only for intentionally disposable contexts.\n"
@@ -1015,41 +1042,5 @@
     "heading": "Trace sampling",
     "anchor": "trace-sampling",
     "text": "Trace sampling\nTrace sampling must be configurable by deployment.\nOrion will not define one universal production sampling percentage.\nAppropriate sampling depends on factors including:\ntraffic volume;\nobservability cost;\nbackend capabilities;\nincident-response requirements;\nregulatory constraints;\nperformance overhead.\nDevelopment environments may normally retain all traces when useful.\nProduction environments may reduce trace volume through appropriate sampling strategies.\nSampling should preserve upstream trace decisions where required for coherent distributed tracing.\nMore advanced strategies, including collector-side or tail-based sampling, may be introduced by deployment infrastructure without forcing business code to change.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Metrics",
-    "anchor": "metrics",
-    "text": "Metrics\nOpenTelemetry will provide Orion's metrics API and SDK model.\nMetrics may describe technical or operational behavior including:\nrequest counts;\nrequest duration;\nactive operations;\nerror counts;\nqueue depth when applicable;\nprocessing duration;\ndependency latency;\nruntime behavior;\nresource usage where appropriately instrumented;\napplication-specific operational signals.\nCustom metrics must have deliberate semantics.\nMetric definitions should include, where applicable:\nstable name;\ndescription;\nunit;\ninstrument type;\nbounded attributes.\nMetric names must not be created casually for short-term debugging when logs or traces are a better fit.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Metric cardinality",
-    "anchor": "metric-cardinality",
-    "text": "Metric cardinality\nMetric attributes must remain **bounded and low-cardinality**.\nHigh-cardinality identifiers must not normally be used as metric attributes.\nExamples of inappropriate metric dimensions include:\nuser_id\ncustomer_id\norder_id\ninvoice_id\nemail\ntrace_id\nrequest_id\narbitrary raw URL\n\nAppropriate HTTP dimensions may include bounded values such as:\nHTTP method\nnormalized route\nstatus code or status class\nservice identity\ndeployment environment\n\nHigh-cardinality operational detail belongs in traces or structured logs when its collection is appropriate and permitted.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Business metrics versus business state",
-    "anchor": "business-metrics-versus-business-state",
-    "text": "Business metrics versus business state\nObservability metrics are not authoritative business records.\nFor example, an `orders.created` metric may be useful operationally, but it must not become the authoritative record of how many orders the business created.\nMetrics may be:\nsampled;\naggregated;\ntemporarily unavailable;\nretained for limited periods;\ntransformed by telemetry infrastructure.\nAuthoritative business state remains in the application's persistent data model.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Structured logging",
-    "anchor": "structured-logging",
-    "text": "Structured logging\nPino will remain Orion's default structured application logger.\nProduction-oriented logs must use structured JSON.\nHuman-readable pretty output may be enabled for local development where useful.\nApplication logs should prefer structured fields over encoding all machine-relevant context exclusively inside message strings.\nFor example, a record may contain:\nevent\nrequest_id\ntrace_id\nspan_id\nentity identifiers when permitted\nerror metadata\nstructured operation attributes\nmessage\n\nThe textual message is intended primarily for human readability.\nStructured fields provide machine-queryable context.\n"
   }
 ]

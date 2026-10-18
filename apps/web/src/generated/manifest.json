@@ -1326,20 +1326,20 @@
     "shards": [
       {
         "file": "search/0000.json",
-        "count": 41,
+        "count": 40,
         "kinds": ["api", "component", "database", "repository"]
       },
-      { "file": "search/0001.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0002.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 146, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 153, "kinds": ["repository"] },
+      { "file": "search/0001.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0002.json", "count": 116, "kinds": ["repository"] },
+      { "file": "search/0003.json", "count": 143, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 157, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 136, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 91, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 55, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 53, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 75, "kinds": ["repository"] },
       { "file": "search/0010.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 83, "kinds": ["repository"] }
+      { "file": "search/0011.json", "count": 86, "kinds": ["repository"] }
     ],
     "count": 1171
   }

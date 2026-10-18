@@ -19,6 +19,10 @@ export function describeFailure(
       return t.errors.csrf;
     case "SESSION_LIMIT_REACHED":
       return t.errors.limit;
+    case "STRONG_AUTHENTICATION_REQUIRED":
+      return t.errors.strong;
+    case "RECENT_AUTHENTICATION_REQUIRED":
+      return t.errors.recent;
     case "RESOURCE_NOT_FOUND":
       return t.errors.notFound;
     case "RATE_LIMITED":

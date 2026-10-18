@@ -193,7 +193,7 @@
     "/auth/login": {
       "get": {
         "operationId": "startLogin",
-        "description": "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /.",
+        "description": "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met.",
         "tags": ["Identity"],
         "parameters": [
           {
@@ -203,6 +203,23 @@
             "schema": {
               "type": "string",
               "maxLength": 2048
+            }
+          },
+          {
+            "name": "assurance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "strong"
+                },
+                {
+                  "type": "string",
+                  "const": "recent"
+                }
+              ]
             }
           }
         ],
@@ -386,7 +403,7 @@
     "/auth/callback": {
       "get": {
         "operationId": "completeLogin",
-        "description": "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable or provider_unavailable.",
+        "description": "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
         "tags": ["Identity"],
         "parameters": [
           {
@@ -574,6 +591,7 @@
                     "expiresAt",
                     "assuranceLevel",
                     "authenticatedAt",
+                    "strongAuthenticatedAt",
                     "csrfToken"
                   ],
                   "properties": {
@@ -608,6 +626,17 @@
                     "authenticatedAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "strongAuthenticatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "csrfToken": {
                       "type": "string",

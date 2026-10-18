@@ -4,6 +4,33 @@
     "title": "Repository Structure",
     "group": "Architecture",
     "kind": "repository",
+    "heading": "packages/",
+    "anchor": "packages",
+    "text": "`packages/`\nPackages define cohesive shared responsibilities, intentional public APIs, allowed consumers/dependencies, private implementation, and runtime/platform compatibility. Consume a package through its public exports rather than arbitrary internal paths. Packages must not depend on applications. Avoid both one package per small utility and broad `common`, `shared`, or `utils` dumping grounds.\nThe SDK is currently the only shared package. Extract other capabilities only when ownership or reuse warrants it:\nResponsibility\nConstraint if extracted\nDomain concepts and business behavior\nPlatform-independent where useful; no unnecessary HTTP, UI, database, telemetry-vendor, or filesystem dependency. A domain package is not mandatory for application-local business logic.\nCommunication contracts\nCanonical wire schemas, identifiers, errors, or events; internal models do not automatically become public contracts.\nDatabase infrastructure\nSchema, migrations, client setup, metadata, or shared persistence primitives; sharing infrastructure does not grant unrestricted table access.\nObservability\nConsistent logging, context, propagation, metrics, reporting, and redaction semantics; isolate vendors only where that provides a meaningful boundary.\nConfiguration\nShared validation/loading primitives; application-specific configuration remains owned by its application.\nTesting\nGenuinely reusable fixtures, factories, assertions, or infrastructure; behavior tests remain near their owner.\nUI\nShared design tokens or components only where runtime, interaction, and accessibility semantics are compatible; do not force cross-platform component reuse.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Creating a New Package",
+    "anchor": "creating-a-new-package",
+    "text": "Creating a New Package\nFirst search existing owners. Explain the cohesive responsibility, actual consumers, public API, allowed dependency directions, platform constraints, and architectural benefit. A second consumer alone does not justify extraction: consumers must share meaning, not just similar code. Prefer simple local duplication over an abstraction with conflicting responsibilities. A package should make ownership and the dependency graph clearer.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Feature Organization",
+    "anchor": "feature-organization",
+    "text": "Feature Organization\nKeep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.\nTests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
     "heading": "Documentation and Generated Artifacts",
     "anchor": "documentation-and-generated-artifacts",
     "text": "Documentation and Generated Artifacts\n[Contributing](../contributing.md#documentation-ownership) owns documentation placement and canonical-source rules. Repository policy lives under `docs/`; application/package knowledge belongs near its owner. Documentation may reference implementation, but ordinary application behavior must not depend on parsing human-authored policy. If behavior needs machine-readable rules, give those rules a canonical machine-readable source. Documentation-as-product content, such as the portal, is an intentional exception.\nGenerated code and references must be distinguishable from authored files, reproducible, and linked to their source/generator. Current locations and handling are defined by [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage) and [living documentation](living-documentation.md). Generated clients are consumers of contracts, never their authority. Reviewed SQL migrations follow their separate release-history rules.\n"
@@ -735,7 +762,7 @@
     "kind": "repository",
     "heading": "API Error Registry",
     "anchor": "api-error-registry",
-    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`CSRF_VALIDATION_FAILED`\n403\nauthentication\nno\nThe request could not be verified as coming from the Teluni panel. Reload the page and try again.\n`SESSION_LIMIT_REACHED`\n409\nconflict\nno\nYou already have the maximum number of active sessions. End one of them to continue.\n"
+    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`CSRF_VALIDATION_FAILED`\n403\nauthentication\nno\nThe request could not be verified as coming from the Teluni panel. Reload the page and try again.\n`STRONG_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires two-step verification. Confirm your identity and try again.\n`RECENT_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires a recent two-step verification. Confirm your identity and try again.\n`SESSION_LIMIT_REACHED`\n409\nconflict\nno\nYou already have the maximum number of active sessions. End one of them to continue.\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -790,32 +817,5 @@
     "heading": "API Configuration Reference",
     "anchor": "api-configuration-reference",
     "text": "API Configuration Reference\n[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)\nNo values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. API modules that require the database, bearer authentication or human identity stay unmounted until those settings exist, and production startup fails instead.\nEnvironment variable\nType\nRequired\nDefault\nVisibility\nClassification\nSecret\nPurpose\n`ORION_ENV`\ndevelopment | test | production\nyes\n—\nserver\nINTERNAL\nno\nRuntime environment.\n`ORION_RELEASE_ID`\nartifact identifier, 1..128 ASCII letters/digits/._-\nno\n`local`\nserver\nINTERNAL\nno\nActual artifact revision for correlated logs and traces; local for unversioned development.\n`ORION_API_HOST`\nnonempty string\nno\n`127.0.0.1`\nserver\nINTERNAL\nno\nListen address; loopback by default.\n`ORION_API_PORT`\ninteger 0..65535\nno\n`3000`\nserver\nINTERNAL\nno\nListen port; zero selects an ephemeral port.\n`ORION_LOG_LEVEL`\nPino level\nno\n`info`\nserver\nINTERNAL\nno\nStructured log threshold.\n`ORION_SHUTDOWN_TIMEOUT_MS`\ninteger 100..30000\nno\n`5000`\nserver\nINTERNAL\nno\nTotal graceful shutdown deadline.\n`ORION_OTLP_ENDPOINT`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nOptional OTLP HTTP collector base URL.\n`ORION_TRACE_SAMPLE_RATIO`\nnumber 0..1\nno\n`1`\nserver\nINTERNAL\nno\nTrace sampling probability.\n`ORION_DATABASE_URL`\nPostgreSQL URL\nno\n—\nserver\nRESTRICTED\nyes\nRuntime PostgreSQL credential; enables the database for modules that require it and adds it to readiness.\n`ORION_TOKEN_ISSUER`\nissuer URL\nno\n—\nserver\nINTERNAL\nno\nExpected access-token issuer; configure with audience and JWKS URL to enable bearer authentication.\n`ORION_TOKEN_AUDIENCE`\nnonempty string\nno\n—\nserver\nINTERNAL\nno\nExpected API access-token audience.\n`ORION_TOKEN_JWKS_URL`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nTrusted issuer public-key endpoint.\n`TELUNI_PUBLIC_ORIGIN`\norigin URL (scheme, host, optional port)\nno\n—\nserver\nINTERNAL\nno\nBrowser-visible panel origin for OIDC callbacks, cookie security and CSRF origin checks; HTTPS outside loopback development.\n`TELUNI_OIDC_CLIENT_ID`\nclient identifier\nno\n—\nserver\nINTERNAL\nno\nConfidential human-login OIDC client used by the server-managed session boundary.\n`TELUNI_OIDC_CLIENT_SECRET`\nsecret string, at least 16 characters\nno\n—\nserver\nRESTRICTED\nyes\nCredential of the human-login OIDC client.\n`TELUNI_IDENTITY_PROVISIONER_CLIENT_ID`\nclient identifier\nno\n—\nserver\nINTERNAL\nno\nService-account client that writes the administrator-only application principal attribute.\n`TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET`\nsecret string, at least 16 characters\nno\n—\nserver\nRESTRICTED\nyes\nCredential of the principal provisioner service account.\n`TELUNI_SESSION_KEYS`\ncomma-separated id:base64url 32-byte keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring for provider-token encryption and CSRF tokens; the first key protects new values, all keys remain readable during rotation.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Database Reference",
-    "anchor": "database-reference",
-    "text": "Database Reference\n[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "principals",
-    "anchor": "principals",
-    "text": "principals\nProvider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.\nOwner: Identity. Classification: CONFIDENTIAL.\nLifecycle: Created at first verified login; never deleted by the runtime. Disablement is a state change. Retention and erasure follow PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nApplication-generated immutable principal UUID, written to the provider's administrator-only attribute and asserted by access tokens as orion_principal_id.\n—\n—\n`issuer`\n`character varying(512)`\nno\n—\nINTERNAL\nExact OIDC issuer that authenticated this principal; together with subject it is the provider association.\n—\n—\n`subject`\n`character varying(255)`\nno\n—\nCONFIDENTIAL\nProvider-assigned stable subject identifier at the issuer; never used as the application identity.\n—\n—\n`status`\n`\"PrincipalStatus\"`\nno\n`'ACTIVE'::\"PrincipalStatus\"`\nINTERNAL\nACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of principal provisioning.\n—\nUTC instant, millisecond precision\n`disabled_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant of global disablement.\nThe principal is active.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`principals_disabled_state`\n`CHECK (((status = 'DISABLED'::\"PrincipalStatus\") = (disabled_at IS NOT NULL)))`\nA disablement instant exists exactly for disabled principals.\n`principals_issuer_nonblank`\n`CHECK (((issuer)::text ~ '^https?://[^[:space:]]+$'::text))`\nIssuer is an absolute HTTP(S) URL without whitespace.\n`principals_pkey`\n`PRIMARY KEY (id)`\nUnique immutable application principal identity.\n`principals_subject_nonblank`\n`CHECK (((subject)::text ~ '[^[:space:]]'::text))`\nProvider subject cannot be blank.\n`principals_issuer_subject_key`\n`CREATE UNIQUE INDEX principals_issuer_subject_key ON public.principals USING btree (issuer, subject)`\nOne application principal per provider identity; concurrent first logins converge on one row.\n"
   }
 ]

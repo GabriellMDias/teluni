@@ -177,6 +177,26 @@ export function SessionsPage() {
       <p className="eyebrow">{t.sessionsEyebrow}</p>
       <h1 id="sessions-title">{t.sessionsTitle}</h1>
       <p>{t.sessionsLead}</p>
+      <section className="two-step" aria-labelledby="two-step-title">
+        <h2 id="two-step-title">{t.twoStepTitle}</h2>
+        {session.data.strongAuthenticatedAt ? (
+          <p>
+            {t.twoStepDone}{" "}
+            {format.format(new Date(session.data.strongAuthenticatedAt))}.
+          </p>
+        ) : (
+          <>
+            <p>{t.twoStepMissing}</p>
+            <a
+              className="button-link button-primary"
+              href={loginHref("/account/sessions", "strong")}
+            >
+              {t.twoStepButton}
+            </a>
+            <p className="hint">{t.twoStepHint}</p>
+          </>
+        )}
+      </section>
       {session.data.state === "PENDING_LIMIT" && (
         <div role="status" className="notice notice-error">
           {t.sessionsPending}
