@@ -1,7 +1,9 @@
-# ADR-0018: Propose Tenant-Owned Data in the Modular Backend
+# ADR-0018: Adopt Tenant-Owned Data in the Modular Backend
 
-**Status:** proposed
-**Date:** 2026-10-17
+**Status:** accepted
+**Date:** 2026-10-18
+
+**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).
 
 ## Context
 
@@ -9,13 +11,13 @@ Teluni requires independent customer companies with branches, memberships, media
 
 ## Decision
 
-Propose one customer company as the tenant ownership boundary in a shared PostgreSQL database and schema. Model explicit tenant-scoped ownership and references, server-derived membership/branch authorization, and database constraints that prevent cross-tenant associations. Keep capabilities in the existing modular backend, with explicit application interfaces and owned tables; no microservice split is proposed.
+Adopt one customer company as the tenant ownership boundary in a shared PostgreSQL database and schema. Model explicit tenant-scoped ownership and references, server-derived membership/branch authorization, and database constraints that prevent cross-tenant associations. Keep capabilities in the existing modular backend, with explicit application interfaces and owned tables; no microservice split is proposed.
 
 Row-level security is an additional option to evaluate, not assumed protection. Review its connection-pooling, runtime-role and migration implications before selecting it. Platform administration remains a separate scoped capability, not an implicit bypass for tenant data access.
 
 ## Rationale
 
-A shared deployment fits the initial cost and operational constraints. Explicit ownership allows branch scoping and future company scale without treating a branch as another tenant. It also places substantial responsibility on query/reference design, constraints and adversarial authorization tests; the proposal has not yet been proven by a schema or implementation.
+A shared deployment fits the initial cost and operational constraints. Explicit ownership allows branch scoping and future company scale without treating a branch as another tenant. It also places substantial responsibility on query/reference design, constraints and adversarial authorization tests; the accepted architecture has not yet been proven by a schema or implementation.
 
 ## Alternatives Considered
 
@@ -36,7 +38,7 @@ A shared deployment fits the initial cost and operational constraints. Explicit 
 
 ### Operational or Migration Impact
 
-No tables or migrations are introduced by this proposal. Acceptance requires an ownership/constraint design, role matrix and cross-tenant tests, including the decision on row-level security. Later changing tenant partitioning may require a deliberate data migration.
+No tables or migrations are introduced by this decision. Before dependent implementation/release, complete the ownership/constraint design and row-level-security evaluation and verify the selected role matrix with cross-tenant tests under PJ-03/PJ-07. Later changing tenant partitioning may require a deliberate data migration.
 
 ## References
 

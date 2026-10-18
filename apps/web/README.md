@@ -25,7 +25,9 @@ Use the shared [`ErrorNotice`](src/components.tsx) and [`api-client.ts`](src/api
 
 The display name comes from `.orion/project.json` at build time: page titles, the shell brand, and the portal show the repository's own name. The [brand mark](src/assets/brand-mark.svg) and its derived [touch icon](src/assets/brand-touch-icon.png) belong to the repository. The Orion foundation uses the Orion mark; project initialization replaces both files with a neutral placeholder for the project to redesign.
 
-The shell, documentation navigation, and browser favicon consume the SVG directly. Only the Apple touch icon uses a derived 180×180 PNG on a light neutral background. After editing the SVG, run `pnpm -C apps/web identity:write` to regenerate that raster through the [export script](scripts/generate-touch-icon.mjs), using the Playwright Chromium installation described in [setup](../../docs/setup.md#prepare-a-clean-checkout). Commit both files, then rebuild. Do not edit the PNG independently. Adjacent live text names the decorative mark for accessibility.
+The shell, documentation navigation, and browser favicon consume the SVG directly. Only the Apple touch icon uses a derived 180×180 PNG on the approved `#F8FAFC` light background. After editing the SVG, run `pnpm -C apps/web identity:write` to regenerate that raster through the [export script](scripts/generate-touch-icon.mjs), using the Playwright Chromium installation described in [setup](../../docs/setup.md#prepare-a-clean-checkout). Commit both files, then rebuild. Do not edit the PNG independently. Adjacent live text names the decorative mark for accessibility.
+
+Teluni uses the owner-approved [Connected Tiles identity](../../docs/project/branding/README.md): the selected symbol, a locally served Plus Jakarta Sans variable font with its OFL notice, titlecase live brand text, and blue/teal/navy palette. The runtime SVG is canonical, and `identity:write` derives its touch PNG. The branding guide owns the single identity kit and remaining domain/trademark evidence.
 
 ## Run the application
 

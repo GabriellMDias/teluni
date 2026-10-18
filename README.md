@@ -4,21 +4,21 @@ Teluni is a planned multi-tenant digital signage SaaS built on the [Orion](https
 
 **Every screen. One place.** · **Todas as suas telas. Um só lugar.**
 
-Start with the [product documentation](docs/project/README.md) for the vision, MVP acceptance criteria, proposed architecture, risks and delivery phases. Teluni is the intended identity; trademark/domain verification and commercial pricing remain pending.
+Start with the [product documentation](docs/project/README.md) for the vision, initial release policies/acceptance targets, accepted architecture directions, pending detailed design, risks and delivery phases. The name Teluni and principal domain `teluni.app` are approved; [branding](docs/project/branding/README.md) records the defensive `teluni.com.br` option, current exclusion of `teluni.com`, and the approved Connected Tiles identity. Domain registration/control evidence and trademark outcome remain pending. The owner approved [initial commercial policies](docs/project/commercial-policies.md) and validation prices; actual customer acceptance, costs, capacity and billing readiness remain unverified.
 
 ## Current state
 
-This repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It contains the foundation's architecture, policies, accepted ADRs, tooling, validation gate, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal), and no product modules yet: the API serves only health endpoints, and the web application shows its shell and the portal. A concrete authentication provider and production environment have not been selected.
+This repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It contains the foundation's architecture, policies, accepted ADRs, tooling, validation gate, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal), and no product modules yet: the API serves only health endpoints, and the web application shows its shell and the portal. The owner accepted self-hosted Keycloak, server-managed human sessions and the [identity/access policies](docs/project/identity-and-access.md). PH-11 decision selection is complete; provider/session implementation, runtime compatibility tests, provisioning and production-environment qualification remain pending.
 
 The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.
 
-The initial product brief is documented. Tenant workflows, media/programming/publication modules, the Android TV player, and production deployment remain unimplemented. The [product architecture](docs/project/architecture.md) and ADR-0018 through ADR-0021 are proposals for review; this documentation does not authorize their implementation.
+The initial product brief is documented. Tenant workflows, media/programming/publication modules, the Android TV player, and production deployment remain unimplemented. The owner accepted the [product architecture directions](docs/project/architecture.md) in ADR-0018–ADR-0021 and ADR-0023–ADR-0025 on 2026-10-18. Their detailed design and mandatory implementation/readiness checks remain pending; accepting these ADRs does not authorize implementation or deployment.
 
 ## Start here
 
 | Task | Entry point |
 | --- | --- |
-| Understand Teluni's product, MVP, proposed modules, risks and roadmap | [Product documentation](docs/project/README.md) |
+| Understand Teluni's product, release policies/targets, proposed modules, risks and roadmap | [Product documentation](docs/project/README.md) |
 | Find the policy for a change | [Documentation task index](docs/README.md) |
 | Understand contributor and agent obligations | [Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md) |
 | Understand architecture and code placement | [Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md) |

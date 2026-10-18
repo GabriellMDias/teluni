@@ -94,36 +94,36 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-07
 
-- [ ] **Verify the intended Teluni name, domains and visual identity before public launch.**
+- [ ] **Verify Teluni's domain/trademark evidence and visual identity before public launch.**
 
-**Status:** pending. **Owner:** project owner, with specialist input where needed.
+**Status:** in progress. **Owner:** project owner, with specialist input where needed.
 **Dependency / trigger:** PJ-04 and PJ-14; before external brand commitments.
-**Request and reason:** Confirm trademark/domain viability and ownership, then provide/approve the visual identity. The intended name and slogans are recorded in [product vision](product.md); they are not registration or availability evidence.
+**Request and reason:** The owner approved the [Connected Tiles identity](branding/README.md) and authorized project integration. Teluni and `teluni.app` are approved; `teluni.com.br` remains the secondary/defensive Brazil option (reported available), and unavailable/premium `teluni.com` remains outside the current budget/scope. Record registration/control and final trademark evidence only when supplied or verified.
 **Configuration:** none; do not publish registrar credentials.
-**Verification:** Record dated non-secret ownership/clearance evidence and approved identity assets; later verify the web/player use them.
-**Evidence / blocker:** No availability/registration or final assets verified. Does not block the documentation stage.
+**Verification:** Preserve owner-approved Connected Tiles assets and verify the integrated shell, portal, SVG favicon, derived touch icon and local font. Record dated non-secret domain-control/registration and trademark outcomes before claiming them; player/store exports are conditional on the future Android application.
+**Evidence / blocker:** 2026-10-17: owner explicitly selected Connected Tiles and requested its integration. PJ-04 completed the runtime SVG, derived touch icon, locally served font and shell/portal colors. Desktop/mobile inspection and full local `pnpm validate` passed, including 16 E2E tests; the [branding guide](branding/README.md#approved-name-and-domain-direction) and its review evidence record the approved integration. No further visual-direction choice is pending. Domain registration/control and trademark outcomes remain unverified, so PH-07 is not complete.
 
 ## PH-08
 
 - [ ] **Confirm the pilot participant, physical devices and supported hardware envelope.**
 
 **Status:** pending. **Owner:** project owner and candidate pilot operator.
-**Dependency / trigger:** PJ-07, PJ-08, PJ-09, PJ-12 and PJ-14; before hardware-specific commitments and pilot acceptance.
-**Request and reason:** Confirm the snack bar's participation and core workflow, screen/device quantity and models, Android versions, connection/storage conditions, orientations and installation/update access. A candidate customer is not a confirmed pilot or a tested hardware profile.
+**Dependency / trigger:** PJ-07, PJ-08, PJ-09, PJ-12, PJ-20 and PJ-14; before hardware-specific commitments and pilot acceptance.
+**Request and reason:** Confirm the snack bar's participation and core workflow, screen/device quantity and models, Android versions, connection/storage conditions, orientations and installation/update access. Qualify AT-04 and the selected startup/power/offline/timing targets with the FR-10 video/audio and FR-11 generic-catalog profiles; policy approval is not physical support evidence. A candidate customer is not a confirmed pilot or a tested hardware profile.
 **Configuration:** none yet; record model/capability facts without private access details.
 **Verification:** Approved hardware/support matrix and operator workflow, available test devices, and recorded playback/reboot/codec tests during implementation.
 **Evidence / blocker:** Owner identified a potential snack bar pilot; hardware, participation and capacity remain unverified.
 
 ## PH-09
 
-- [ ] **Agree MVP policy boundaries and measurable acceptance targets.**
+- [x] **Agree product policy boundaries and measurable release acceptance targets.**
 
-**Status:** pending. **Owner:** product owner with engineering input.
-**Dependency / trigger:** PJ-07 and the dependent Phase 2 slices; before claiming FR/NF acceptance or real pilot readiness.
-**Request and reason:** Review the [proposed MVP policies](mvp.md#proposed-behavior-requiring-confirmation): direct device assignment versus groups, schedule conflict/default/expiry behavior, duration rules, deletion/reference retention and safe unlink/offline revocation. Set the offline duration/clock limits, storage reserve, upload/media bounds, boot/recovery expectations, fleet/concurrency and usability targets with hardware evidence. These tradeoffs affect visible commercial content and cannot be selected from a generic engineering foundation.
-**Configuration:** none; future defaults/limits must be defined with canonical schemas when implemented.
-**Verification:** Record decisions and numeric acceptance targets in their owning specifications, with tests mapped to FR/NF IDs and review of dependent ADRs.
-**Evidence / blocker:** Candidate choices are prepared in MVP/playback docs; no numeric reliability/capacity guarantee is approved. Documentation work can finish independently.
+**Status:** completed. **Owner:** product owner with delegated engineering decisions.
+**Dependency / trigger:** PJ-07 and the dependent Phase 2 slices; policy/target selection before implementation and acceptance claims.
+**Request and reason:** Consolidate the owner's questionnaire and explicitly delegated unanswered choices into [release policies](release-policies.md) and [acceptance targets](release-targets.md), including configurable catalogs beyond products, hybrid regions, automatic price publication, multi-video/audio, calendar/offline/retention rules and measurable qualification goals.
+**Configuration:** no runtime settings or schemas introduced; selected limits become canonical validated configuration/contracts only during implementation.
+**Verification:** All P01–P31 have a recorded owner or delegated disposition. AT-01–AT-26 name numeric limits/measurement boundaries and FR/NF evidence requirements. Architecture ADRs are now owner-accepted; concrete technical design and physical measurements remain PJ-07, PH-08/PH-10 and implementation/qualification tasks, without being silently marked passed.
+**Evidence / blocker:** 2026-10-18: owner supplied detailed questionnaire responses and explicitly authorized decisions for delegated or unanswered items. The [decision record](release-policies.md#ph-09-decision-record) preserves 21 direct answers and 10 delegated selections; the unfilled optional summary table does not override those answers. Product-policy/target selection is complete with no remaining PH-09 owner question. ADR-0023 was drafted as proposed and accepted by the owner on 2026-10-18; hardware, deployment, actual identity implementation, privacy and target results remain separately pending. PJ-22 tracks documentation validation, not product delivery.
 
 ## PH-10
 
@@ -138,32 +138,32 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-11
 
-- [ ] **Choose the human identity provider and approve the initial permission/recovery policy.**
+- [x] **Choose the human identity provider and approve the initial permission/recovery policy.**
 
-**Status:** pending. **Owner:** product owner with engineering/security review.
-**Dependency / trigger:** PJ-07/PJ-03; authentication is a stated MVP requirement.
-**Request and reason:** Evaluate established identity solutions compatible with accepted ADR-0012 against budget, enrollment, recovery, session/refresh/revocation, administration and portability. Approve the proposed [actor scope](security-and-i18n.md#actors-and-authorization) and how company administrators are established. Do not invent a proprietary auth or crypto system.
-**Configuration:** existing issuer/audience/JWKS settings are documented in the [API configuration reference](../generated/configuration/api.md); provider-specific secrets and destinations are not yet selected.
-**Verification:** Proposed provider ADR reviewed/accepted, attributable enrollment and allowed/denied role cases specified, then token/session/revocation tests in implementation.
-**Evidence / blocker:** Foundation JWT verification exists; no provider or product session/membership implementation selected. A future prerequisite, not a blocker to completing documentation.
+**Status:** completed. **Owner:** product owner with engineering/security review.
+**Dependency / trigger:** PJ-07/PJ-03/PJ-24; identity and scoped access are initial-release requirements.
+**Request and reason:** The owner selected all policies, approved the matrix and explicitly accepted the architectural ADRs. Keycloak, server-managed browser sessions and application-owned scoped profiles are accepted under ADR-0024/ADR-0025, preserving ADR-0012. The [provider evaluation](identity-provider-evaluation.md#pinned-source-assessment) records the reviewed version/source and mandatory integration controls.
+**Configuration:** existing `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL` remain the only implemented API token settings. No provider/session-specific product configuration or secret destination is implied. Identity, Google and mail provisioning remain PH-15–PH-17.
+**Verification:** All 38 direct owner choices, the default/custom scoped matrix and IA-01–IA-16 specified allow/deny cases are recorded in [identity/access](identity-and-access.md). The owner explicitly accepted ADR-0024/ADR-0025 on 2026-10-18. A pinned-source assessment of Keycloak 26.8.1 at `24ed1dadf3f246a555adb6d3d4a99e9b3003fb3b` establishes a viable mapping path; no actual provider login/token/session/revocation test is claimed.
+**Evidence / blocker:** 2026-10-18: after answering all 38 questions, the owner explicitly authorized acceptance of all pending Teluni ADRs. PH-11's provider/policy/architecture decision scope is complete, with no remaining owner decision. Concrete trusted principal/session/assurance integration, configured-version compatibility tests and all unperformed IA cases remain PJ-03/PJ-07/PJ-24; host/recovery, external inputs and commercial/privacy readiness remain PH-10/PH-12/PH-13/PH-15–PH-17. Completing this decision does not authorize or certify implementation, exposure or a real-customer release.
 
 ## PH-12
 
-- [ ] **Validate pilot commercial terms, costs and eventual plans before offering subscriptions.**
+- [x] **Approve the initial pilot, subscription and commercial-access policies.**
 
-**Status:** pending. **Owner:** project owner.
-**Dependency / trigger:** PJ-14 pilot terms; PJ-16 commercial expansion.
-**Request and reason:** Validate per-screen/company pricing, storage/traffic/processing limits, support, installation, cancellation, operating cost and partnerships/referrals. BRL 79.90/month for two screens is exploratory only. Automatic billing remains outside the mandatory MVP.
-**Configuration:** none; no plan IDs, prices, gateway or entitlements implemented.
-**Verification:** Record approved pilot terms and measured cost/support evidence; later approve plan limits and commercial policies before implementing subscription enforcement.
-**Evidence / blocker:** Recurring SaaS is intended; no definitive pricing or paid infrastructure/provider budget established.
+**Status:** completed. **Owner:** project owner.
+**Dependency / trigger:** PJ-14 pilot planning, PJ-27 basic commercial access and PJ-16 later expansion.
+**Request and reason:** All 38 questionnaire recommendations are approved in [commercial policies](commercial-policies.md), including conditional support and delegated resource dimensioning. Initial validation prices are BRL 79.90/month/company for two licenses plus BRL 29.90/additional license, with a 30-day first accompanied pilot and 14-day public trial. No published offer or proven margin is inferred.
+**Configuration:** none; no plan IDs, entitlements, quotas, gateway, bank destination or payment implementation is introduced. Numerical paid resource examples remain a proposed qualification baseline under P16=C, not approved production capacity.
+**Verification:** Owner explicitly instructed proceeding with every suggestion and closing PH-12 on 2026-10-18. The canonical decision record covers P01–P38, including P10=B, P16=C/delegation, P32=B and conditional P23/P24. CP-01–CP-12 specify future verification without claiming execution. Conditional availability and the cost worksheet remain unknown.
+**Evidence / blocker:** 2026-10-18: owner commercial-policy selection is complete. **Explicit scope split:** the original action combined owner decisions with real commercial evidence; the latter is preserved in pending PH-18 (pilot/customer acceptance, measured cost/support, capacity-qualified offer) and PH-19 (billing/fiscal readiness), linked to PJ-14/PJ-27. No customer agreement, cost measurement, real support window or fiscal capability was supplied. This completion closes decisions only and does not authorize charging, public admission, procurement, implementation or production claims.
 
 ## PH-13
 
 - [ ] **Define customer data responsibilities and privacy/retention obligations before collecting pilot data.**
 
 **Status:** pending. **Owner:** project owner with qualified legal/privacy input when needed.
-**Dependency / trigger:** PJ-13/PJ-14 before real customer/personal data; international expansion when triggered.
+**Dependency / trigger:** PJ-13/PJ-14 before real customer/personal data or public signup; international expansion when triggered.
 **Request and reason:** Review the [initial data inventory](security-and-i18n.md#initial-data-inventory), intended content restrictions, notices/terms, customer/operator responsibilities, lawful purposes, retention/deletion/export, backup reconciliation and incident contact. Determine applicable LGPD and other jurisdictional obligations against actual operation; the product documentation is not compliance certification.
 **Configuration:** no legal/privacy settings implemented; do not put customer records or private advice in public examples.
 **Verification:** Approved obligations and retention/deletion/access procedures linked to implementation and restore acceptance; no sensitive clinic/patient dataset required for signage.
@@ -179,6 +179,61 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Configuration:** none.
 **Verification:** Any added notices identify confirmed holders and preserve applicable inherited/third-party notices; distribution metadata matches the owner-approved attribution.
 **Evidence / blocker:** No holder-specific notice supplied or added in this task. Root `LICENSE` and Orion provenance remain intact.
+
+## PH-15
+
+- [ ] **Prepare controlled self-hosted identity resources and protected provisioning inputs.**
+
+**Status:** pending. **Owner:** project owner / identity and server administrator.
+**Dependency / trigger:** PH-10, completed PH-11 architectural selection and the reviewed PJ-24 implementation design; before provider integration or real identity use.
+**Request and reason:** Confirm host capacity, a controlled HTTPS issuer address, restricted provider administration, persistent provider storage and protected signing/recovery material. Identify responsible administrators and safe recovery ownership without publishing personal account details. Prepare inputs only after the reviewed provider/version design; this action does not authorize deployment.
+**Configuration:** existing API token settings are `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL`; future provider/session settings must first have canonical schemas/documentation. Supply secret material only in an approved protected destination, never in this checklist or chat.
+**Verification:** Record non-secret environment/issuer ownership and controlled access; during authorized implementation verify pinned provider, human-only claim provisioning, key rotation, restricted management and isolated revocation-safe restore under PH-10/PJ-13.
+**Evidence / blocker:** 2026-10-18: self-hosting/Keycloak accepted by the owner; Keycloak 26.8.1 source was reviewed for compatibility, but host capacity, actual deployment version/image, issuer control, secret destination and deployment remain unverified. Foundation validation is not provisioning evidence.
+
+## PH-16
+
+- [ ] **Provide owner-controlled Google OAuth registration for the selected external login.**
+
+**Status:** pending. **Owner:** project owner / Google application administrator.
+**Dependency / trigger:** PH-07 controlled domain, PH-11 reviewed callback/provider design and PH-15; before enabling Google login in PJ-24.
+**Request and reason:** Register/control the Google application and required consent/branding configuration for the actual environment. Approve exact reviewed callback origins/redirects and required identity attributes/scopes; keep environments separate. Microsoft is not selected. Do not invent callback URLs before implementation defines them or register an application in this documentation task.
+**Configuration:** no Google-specific application keys are implemented. Store any future client secret in the approved protected destination; record only safe ownership/environment evidence.
+**Verification:** Authorized implementation verifies the controlled callback, correct audience/environment, account linking without email-only merging and non-bypassable administrative assurance. Provider account actions are not implied by answering the questionnaire.
+**Evidence / blocker:** 2026-10-18: P05=B selects Google only; no Google registration, credentials, consent setup or callback test is verified.
+
+## PH-17
+
+- [ ] **Establish a verified transactional-email path for identity invitations and recovery.**
+
+**Status:** pending. **Owner:** project owner / domain and mail administrator.
+**Dependency / trigger:** PH-07 domain control, PH-10 hosting, PH-11 flow review and PH-13 notices; before public signup or real invitations/recovery in PJ-24.
+**Request and reason:** Identify a reliable sender/delivery service compatible with the no-recurring-procurement constraint, confirm sender/domain control and applicable limits/terms, and prepare protected mail credentials. Review required DNS authentication, deliverability, abuse response and sender continuity; do not assume residential SMTP or an unspecified free service is adequate. If no suitable path exists, record the budget/readiness blocker rather than bypassing verification/recovery.
+**Configuration:** no mail-specific application keys are implemented; future credentials go only in the approved protected store. Do not publish credentials, reset links or private recipient records.
+**Verification:** Authorized implementation tests delivery/failure/retry and invitation/reset expiry/single-use behavior with synthetic addresses under actual approved sender configuration. DNS/service/account facts need owner evidence; documentation is not delivery proof.
+**Evidence / blocker:** 2026-10-18: P03=A confirms no recurring identity/email procurement now. No existing sender, delivery service, DNS configuration or successful delivery is established.
+
+## PH-18
+
+- [ ] **Verify pilot commercial acceptance, real costs/support coverage and qualified offer limits.**
+
+**Status:** pending. **Owner:** project owner and pilot operator, with engineering/operations measurement.
+**Dependency / trigger:** PJ-14/PJ-27 and PH-08/PH-10. Customer agreement and a safe bounded budget precede the pilot; measured outcomes, offer capacity and coverage precede applicable paid/public commitments.
+**Request and reason:** This retains the empirical portion of PH-12's original verification scope. Confirm the customer's actual acceptance of proposed pilot/conversion conditions separately from Teluni owner approval. Record real support channels/coverage/calendar, physical capacity and original/rendition/history/backup demand, transfers/conversion, onboarding/support hours, identity/mail/network/energy and payment/fiscal costs. Qualify numerical commercial quotas before advertising/enforcing them; distinguish measured, estimated, assumed and unknown inputs.
+**Configuration:** none implemented. Record safe facts/results and evidence references; no customer personal records, private support contacts, bank details or secrets in public documentation.
+**Verification:** Attributable customer agreement before entry; pilot measurements and host/admission evidence; a reviewed offer whose price/usage/support commitments fit the recorded cost/capacity analysis. Compare the selected 70% contribution goal using the stated BRL 50/hour analytical assumption or a justified revised value, without claiming profitability from arithmetic. Support hours/WhatsApp are offered only with verified coverage. Measured data may require a new owner-approved price/limit change before offers; PH-12 is not an instruction to ignore contradictory evidence.
+**Evidence / blocker:** 2026-10-18: all questionnaire suggestions approved, but none of the 12 cost/fact worksheet categories was supplied as measured evidence. Paid quota numbers remain a proposed qualification baseline; real support availability and customer acceptance remain unknown. Do not mark this passed through foundation tests or a policy approval.
+
+## PH-19
+
+- [ ] **Confirm the billing issuer, fiscal process and reviewed commercial documents before charging.**
+
+**Status:** pending. **Owner:** project owner with qualified fiscal/legal input appropriate to the actual operation.
+**Dependency / trigger:** P36/completed PH-12, PH-13 and PJ-27; before the first paid offer/charge and applicable public contracting.
+**Request and reason:** Establish who supplies the SaaS, the applicable registration/fiscal/documentation process, recording and reconciliation responsibilities, reviewed subscription/cancellation/refund terms and an appropriate protected destination for financial records. The selected manual Pix/transfer method does not establish fiscal readiness. No legal holder, tax regime/rate, account or ability to issue fiscal documents is inferred from the repository or GitHub identity.
+**Configuration:** none implemented; no payment/tax/provider keys or bank destination are selected. Supply financial identifiers/credentials only through appropriate protected channels, not this checklist or chat.
+**Verification:** Record safe confirmation of the qualified review, responsible issuer/process and usable billing/documentation workflow; distinguish settlement, receipt and applicable fiscal documentation. Confirm final conditions against the approved commercial policy and PH-13, including cancellation/refund/retention obligations. No tax or legal compliance certification is produced by documentation validation.
+**Evidence / blocker:** 2026-10-18: P36=A approved professional preparation before charging; actual formalization, fiscal process and reviewed documents remain unknown. No charge, invoice, contract or registration action was performed.
 
 ## New action template
 

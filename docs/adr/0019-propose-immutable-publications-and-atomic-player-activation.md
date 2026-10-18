@@ -1,7 +1,9 @@
-# ADR-0019: Propose Immutable Publications and Atomic Player Activation
+# ADR-0019: Adopt Immutable Publications and Atomic Player Activation
 
-**Status:** proposed
-**Date:** 2026-10-17
+**Status:** accepted
+**Date:** 2026-10-18
+
+**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).
 
 ## Context
 
@@ -9,13 +11,13 @@ Teluni displays must continue through temporary backend/network outages. Videos 
 
 ## Decision
 
-Propose immutable publication snapshots with versioned manifests that bind programming rules to verified asset versions. The player durably stages missing assets and switches its active generation only after the complete supported snapshot is ready, retaining a valid recovery generation. Separate desired, staged and reported-active versions and reconcile duplicate or lost acknowledgements.
+Adopt immutable publication snapshots with versioned manifests that bind programming rules to verified asset versions. The player durably stages missing assets and switches its active generation only after the complete supported snapshot is ready, retaining a valid recovery generation. Separate desired, staged and reported-active versions and reconcile duplicate or lost acknowledgements.
 
 Define protocol compatibility, integrity metadata, capacity/retention, scheduling expiry and offline authorization policy before implementation. No transport, storage library, cryptographic mechanism or manifest serialization format is selected by this record.
 
 ## Rationale
 
-The owner's requirement is consistent offline playback, not normal continuous server streaming. A generation boundary makes interruption and recovery behavior testable and avoids exposing partially updated programming. This is a design proposal, not evidence of crash-safe storage or hardware compatibility.
+The owner's requirement is consistent offline playback, not normal continuous server streaming. A generation boundary makes interruption and recovery behavior testable and avoids exposing partially updated programming. Architectural acceptance is not evidence of crash-safe storage or hardware compatibility.
 
 ## Alternatives Considered
 
@@ -36,7 +38,7 @@ The owner's requirement is consistent offline playback, not normal continuous se
 
 ### Operational or Migration Impact
 
-Atomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Acceptance requires representative network/power-cut and stale/reordered message cases, not only unit tests.
+Atomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Player/release qualification under PJ-11/PJ-12/PJ-14 requires representative network/power-cut and stale/reordered message cases, not only unit tests.
 
 ## References
 

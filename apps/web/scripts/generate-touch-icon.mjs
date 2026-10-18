@@ -16,7 +16,7 @@ try {
     deviceScaleFactor: 1,
   });
   await page.setContent(
-    `<style>body{margin:0;background:#f7f9fa}svg{display:block;width:180px;height:180px}</style>${svg}`,
+    `<style>body{margin:0;background:#f8fafc}svg{display:block;width:180px;height:180px}</style>${svg}`,
   );
   const png = await page.screenshot({ type: "png" });
   await writeFile(destination, png);
