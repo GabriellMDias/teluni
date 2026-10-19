@@ -34,6 +34,7 @@ const ptBR = {
     "Seu papel nesta empresa exige verificação em duas etapas antes de administrar.",
   stepUpButton: "Verificar em duas etapas",
   branchesTitle: "Filiais",
+  screensTitle: "Telas",
   branchesEmpty: "Nenhuma filial ainda.",
   fieldBranchName: "Nome da filial",
   addBranch: "Adicionar filial",
@@ -100,6 +101,8 @@ const ptBR = {
     "branches.view": "Ver filiais",
     "invitations.manage": "Convidar pessoas",
     "audit.view": "Ver o histórico de alterações",
+    "devices.view": "Ver telas",
+    "devices.manage": "Parear e gerenciar telas",
   } satisfies Record<DelegableCapability, string>,
   profilesTitle: "Perfis de acesso",
   profilesLead:
@@ -109,7 +112,7 @@ const ptBR = {
   profileName: "Nome do perfil",
   profileCapabilities: "Permissões",
   profileCapabilitiesHint:
-    "Convidar pessoas e ver o histórico exigem verificação em duas etapas de quem recebe o perfil.",
+    "Convidar pessoas, ver o histórico e gerenciar telas exigem verificação em duas etapas de quem recebe o perfil.",
   profileCreate: "Criar perfil",
   profileEdit: "Editar perfil",
   profileHolders: "Quem tem este perfil",
@@ -275,6 +278,8 @@ const ptBR = {
       "Os dados mudaram enquanto você editava. Recarregue antes de tentar de novo.",
     BRANCH_NAME_IN_USE: "Já existe uma filial ativa com esse nome.",
     BRANCH_ARCHIVED: "Esta filial está arquivada e não pode ser alterada.",
+    BRANCH_IN_USE:
+      "Esta filial ainda tem telas pareadas. Mova ou desvincule as telas antes de arquivá-la.",
     IDEMPOTENCY_KEY_REUSED:
       "Os dados da criação mudaram. Recarregue a página antes de criar de novo.",
     VALIDATION_FAILED: "Confira os campos e tente de novo.",
@@ -332,6 +337,7 @@ const enUS: OrganizationMessages = {
     "Your role in this company requires two-step verification before administering it.",
   stepUpButton: "Verify in two steps",
   branchesTitle: "Branches",
+  screensTitle: "Screens",
   branchesEmpty: "No branches yet.",
   fieldBranchName: "Branch name",
   addBranch: "Add branch",
@@ -398,6 +404,8 @@ const enUS: OrganizationMessages = {
     "branches.view": "View branches",
     "invitations.manage": "Invite people",
     "audit.view": "View the change history",
+    "devices.view": "View screens",
+    "devices.manage": "Pair and manage screens",
   },
   profilesTitle: "Access profiles",
   profilesLead:
@@ -407,7 +415,7 @@ const enUS: OrganizationMessages = {
   profileName: "Profile name",
   profileCapabilities: "Permissions",
   profileCapabilitiesHint:
-    "Inviting people and viewing the history require two-step verification from whoever holds the profile.",
+    "Inviting people, viewing the history and managing screens require two-step verification from whoever holds the profile.",
   profileCreate: "Create profile",
   profileEdit: "Edit profile",
   profileHolders: "Who holds this profile",
@@ -567,6 +575,8 @@ const enUS: OrganizationMessages = {
       "The data changed while you were editing. Reload before trying again.",
     BRANCH_NAME_IN_USE: "Another active branch already uses that name.",
     BRANCH_ARCHIVED: "This branch is archived and cannot change.",
+    BRANCH_IN_USE:
+      "This branch still has paired screens. Move or unlink them before archiving it.",
     IDEMPOTENCY_KEY_REUSED:
       "The creation details changed. Reload the page before creating again.",
     VALIDATION_FAILED: "Check the fields and try again.",

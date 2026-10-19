@@ -74,6 +74,7 @@ type State = Record<
   | "PROVISIONER_CLIENT_SECRET"
   | "SESSION_KEY"
   | "MAIL_KEY"
+  | "DEVICE_CODE_KEY"
   | "DEVELOPER_PASSWORD",
   string
 >;
@@ -112,6 +113,8 @@ async function readState(): Promise<State> {
     PROVISIONER_CLIENT_SECRET: current.PROVISIONER_CLIENT_SECRET ?? secret(),
     SESSION_KEY: current.SESSION_KEY ?? randomBytes(32).toString("base64url"),
     MAIL_KEY: current.MAIL_KEY ?? randomBytes(32).toString("base64url"),
+    DEVICE_CODE_KEY:
+      current.DEVICE_CODE_KEY ?? randomBytes(32).toString("base64url"),
     DEVELOPER_PASSWORD: current.DEVELOPER_PASSWORD ?? `Teluni-dev-${secret(9)}`,
   };
   await writeFile(
@@ -320,6 +323,7 @@ async function up(): Promise<void> {
       "TELUNI_MAIL_SMTP_SECURITY=none",
       "TELUNI_MAIL_FROM=no-reply@teluni.test",
       `TELUNI_MAIL_KEYS=dev:${state.MAIL_KEY}`,
+      `TELUNI_DEVICE_CODE_KEYS=dev:${state.DEVICE_CODE_KEY}`,
       "",
     ].join("\n"),
     { mode: 0o600 },

@@ -107,7 +107,9 @@
                   "anyOf": [
                     { "type": "string", "const": "branches.view" },
                     { "type": "string", "const": "invitations.manage" },
-                    { "type": "string", "const": "audit.view" }
+                    { "type": "string", "const": "audit.view" },
+                    { "type": "string", "const": "devices.view" },
+                    { "type": "string", "const": "devices.manage" }
                   ]
                 }
               },
@@ -157,7 +159,9 @@
               "anyOf": [
                 { "type": "string", "const": "branches.view" },
                 { "type": "string", "const": "invitations.manage" },
-                { "type": "string", "const": "audit.view" }
+                { "type": "string", "const": "audit.view" },
+                { "type": "string", "const": "devices.view" },
+                { "type": "string", "const": "devices.manage" }
               ]
             }
           },
@@ -188,7 +192,7 @@
         },
         {
           "name": "capabilities",
-          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\"",
+          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
           "required": true
         },
         {

@@ -114,6 +114,13 @@ export const organizationErrors = defineErrors({
     category: "conflict",
     retryable: false,
   },
+  BRANCH_IN_USE: {
+    status: 409,
+    message:
+      "The branch still has active resources, such as paired screens. Move or unlink them before archiving it.",
+    category: "conflict",
+    retryable: false,
+  },
 });
 
 // Public conditions owned by the invitations module of this feature.

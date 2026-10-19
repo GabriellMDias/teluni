@@ -23,11 +23,15 @@ const capability = Type.Union([
   Type.Literal("members.manage"),
   Type.Literal("invitations.manage"),
   Type.Literal("audit.view"),
+  Type.Literal("devices.view"),
+  Type.Literal("devices.manage"),
 ]);
 const delegableCapability = Type.Union([
   Type.Literal("branches.view"),
   Type.Literal("invitations.manage"),
   Type.Literal("audit.view"),
+  Type.Literal("devices.view"),
+  Type.Literal("devices.manage"),
 ]);
 const limit = Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }));
 const cursor = Type.Optional(Type.String({ minLength: 1, maxLength: 1024 }));
@@ -114,7 +118,7 @@ const profileDetailSchema = Type.Object(
 );
 const profileCapabilities = Type.Array(delegableCapability, {
   minItems: 1,
-  maxItems: 3,
+  maxItems: 5,
   uniqueItems: true,
 });
 export const transferSchema = Type.Object(
@@ -604,7 +608,7 @@ export const organizationOperations = [
     operationId: "archiveBranch",
     access: "session",
     description:
-      "Archive a branch with the observed version, keeping it for references. Requires company administration and two-step verification.",
+      "Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration and two-step verification.",
     schema: {
       params: branchParams,
       body: Type.Object(
@@ -613,7 +617,7 @@ export const organizationOperations = [
       ),
       response: { 200: branchSchema, ...common },
     },
-    expectedErrors: [...mutation, "BRANCH_ARCHIVED"],
+    expectedErrors: [...mutation, "BRANCH_ARCHIVED", "BRANCH_IN_USE"],
   },
   {
     method: "GET",
@@ -669,7 +673,7 @@ export const organizationOperations = [
     operationId: "createAccessProfile",
     access: "session",
     description:
-      "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
+      "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
     schema: {
       params: companyParams,
       body: Type.Object(

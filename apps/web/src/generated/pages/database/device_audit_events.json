@@ -1,0 +1,137 @@
+{
+  "kind": "database",
+  "name": "device_audit_events",
+  "description": "Append-only device lifecycle audit: pairing, renaming, rotation, moves, unlinking, erasure confirmation and recorded resets.",
+  "owner": "Devices",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted in the transaction of the change it records; never updated or deleted by the runtime. Retention follows PH-13.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated event UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company the event belongs to; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "device_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Device the event is about.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "actor_principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Person who made the change.",
+      "Null meaning": "The device itself confirmed its erasure.",
+      "Unit": "—"
+    },
+    {
+      "Column": "actor_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership through which the person acted.",
+      "Null meaning": "The device itself confirmed its erasure.",
+      "Unit": "—"
+    },
+    {
+      "Column": "action",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Event name, such as device.paired or device.unlinked.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "details",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "INTERNAL",
+      "Meaning": "Allowlisted details such as branch IDs and rotations; never codes, hashes or network addresses.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "device_audit_events_actor_pair",
+      "Physical definition": "CHECK (((actor_principal_id IS NULL) = (actor_membership_id IS NULL)))",
+      "Purpose": "A person and their membership are recorded together or not at all."
+    },
+    {
+      "Object": "device_audit_events_actor_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The actor is an existing principal."
+    },
+    {
+      "Object": "device_audit_events_company_id_actor_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The acting membership belongs to the same company."
+    },
+    {
+      "Object": "device_audit_events_company_id_device_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The device belongs to the same company."
+    },
+    {
+      "Object": "device_audit_events_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An event belongs to an existing company."
+    },
+    {
+      "Object": "device_audit_events_details_object",
+      "Physical definition": "CHECK ((jsonb_typeof(details) = 'object'::text))",
+      "Purpose": "Details are a JSON object."
+    },
+    {
+      "Object": "device_audit_events_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique event identity."
+    },
+    {
+      "Object": "device_audit_events_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX device_audit_events_company_id_id_key ON public.device_audit_events USING btree (company_id, id)",
+      "Purpose": "Tenant key of device audit events."
+    },
+    {
+      "Object": "device_audit_events_device_time_idx",
+      "Physical definition": "CREATE INDEX device_audit_events_device_time_idx ON public.device_audit_events USING btree (company_id, device_id, occurred_at DESC, id DESC)",
+      "Purpose": "Lists a device's events newest first."
+    }
+  ]
+}

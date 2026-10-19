@@ -273,4 +273,18 @@ describe("transactional mail configuration", () => {
       }).mailSmtpSecurity,
     ).toBe("tls");
   });
+
+  it("keeps device code keys optional and rejects malformed rings", () => {
+    expect(parseServerConfig(identity).deviceCodeKeys).toBeUndefined();
+    expect(
+      parseServerConfig({
+        ...identity,
+        TELUNI_DEVICE_CODE_KEYS: `d2:${key},d1:${Buffer.alloc(32, 2).toString("base64url")}`,
+      }).deviceCodeKeys,
+    ).toBeDefined();
+    for (const value of ["d1:short", `d1:${key},d1:${key}`, "no-id"])
+      expect(() =>
+        parseServerConfig({ ...identity, TELUNI_DEVICE_CODE_KEYS: value }),
+      ).toThrow("Invalid API configuration");
+  });
 });

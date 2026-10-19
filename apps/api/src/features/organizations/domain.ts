@@ -17,7 +17,9 @@ export type Capability =
   | "branches.manage"
   | "members.manage"
   | "invitations.manage"
-  | "audit.view";
+  | "audit.view"
+  | "devices.view"
+  | "devices.manage";
 
 type Preset = Readonly<{
   capabilities: ReadonlySet<Capability>;
@@ -26,7 +28,8 @@ type Preset = Readonly<{
 }>;
 
 // Only the capabilities implemented so far are listed; the matrix's other
-// rows (content, devices, publication, export) arrive with their modules.
+// rows (content, publication, export) arrive with their modules. Operators
+// pair devices only through an additional grant (an access profile).
 export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
   COMPANY_ADMINISTRATOR: {
     capabilities: new Set([
@@ -37,6 +40,8 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "members.manage",
       "invitations.manage",
       "audit.view",
+      "devices.view",
+      "devices.manage",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -46,11 +51,13 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "branches.view",
       "invitations.manage",
       "audit.view",
+      "devices.view",
+      "devices.manage",
     ]),
     requiresStrongAuthentication: true,
   },
   OPERATOR: {
-    capabilities: new Set(["company.view", "branches.view"]),
+    capabilities: new Set(["company.view", "branches.view", "devices.view"]),
     requiresStrongAuthentication: false,
   },
 };
@@ -65,6 +72,8 @@ export const delegableCapabilities: readonly Capability[] = [
   "branches.view",
   "invitations.manage",
   "audit.view",
+  "devices.view",
+  "devices.manage",
 ];
 
 /**
@@ -78,6 +87,7 @@ const strongCapabilities: ReadonlySet<Capability> = new Set([
   "members.manage",
   "invitations.manage",
   "audit.view",
+  "devices.manage",
 ]);
 
 /** What a grant confers: a standard role or a company's access profile. */
@@ -243,6 +253,7 @@ export type OrganizationFailureCode =
   | "PROFILE_ARCHIVED"
   | "PROFILE_IN_USE"
   | "PROFILE_LIMIT_REACHED"
+  | "BRANCH_IN_USE"
   | "MEMBERSHIP_REMOVED"
   | "RESPONSIBLE_ADMINISTRATOR_PROTECTED"
   | "LAST_ADMINISTRATOR_REQUIRED"

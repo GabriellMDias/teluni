@@ -3,7 +3,6 @@ import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type { MailOutboxPort } from "../mail/public.js";
 import {
-  companyAccess,
   invitationAddressRetentionDays,
   invitationDays,
   invitationDecision,
@@ -13,20 +12,16 @@ import {
   type InvitationVisibility,
   OrganizationFailure,
   type AccessRole,
-  type CompanyAccess,
   type CompanyStatus,
   type GrantScopeName,
   type Locale,
   type MembershipStatus,
 } from "./domain.js";
 import {
-  grantAccessColumns,
-  grantAccessJoins,
-  grantsFromRows,
+  accessOf,
   requireRecent,
   writeAudit,
   type Actor,
-  type GrantAccessRow,
 } from "./prisma-repository.js";
 
 export type InvitationStatus =
@@ -822,38 +817,6 @@ export class PrismaInvitationRepository {
         VALUES (${companyId}::uuid, ${id}::uuid, ${branchId}::uuid)`;
     return { id, expiresAt: timing.expires };
   }
-}
-
-/** Effective access of a membership, read inside the caller's transaction. */
-async function accessOf(
-  tx: Prisma.TransactionClient,
-  companyId: string,
-  membershipId: string,
-  principalId: string,
-  strong: boolean,
-): Promise<CompanyAccess> {
-  const rows = await tx.$queryRaw<
-    ({ company_status: CompanyStatus; responsible: boolean } & GrantAccessRow)[]
-  >`
-    SELECT c.status::text AS company_status,
-      COALESCE(r.membership_id = m.id, false) AS responsible, ${grantAccessColumns}
-    FROM memberships m
-    JOIN companies c ON c.id = m.company_id
-    LEFT JOIN company_responsibilities r ON r.company_id = m.company_id
-    LEFT JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
-      AND g.revoked_at IS NULL AND g.starts_at <= statement_timestamp()
-      AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())
-    ${grantAccessJoins}
-    WHERE m.company_id = ${companyId}::uuid AND m.id = ${membershipId}::uuid`;
-  return companyAccess({
-    companyId,
-    companyStatus: rows[0]?.company_status ?? "SUSPENDED",
-    membershipId,
-    principalId,
-    responsible: rows[0]?.responsible ?? false,
-    grants: grantsFromRows(rows),
-    strong,
-  });
 }
 
 async function hasIdenticalGrant(

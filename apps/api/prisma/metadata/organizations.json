@@ -213,7 +213,7 @@
           "classification": "CONFIDENTIAL"
         },
         "capabilities": {
-          "description": "Delegable capability names (branches.view, invitations.manage, audit.view); company administration is never delegable through a profile.",
+          "description": "Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile.",
           "classification": "INTERNAL"
         },
         "status": {

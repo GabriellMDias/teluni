@@ -20,7 +20,7 @@ CREATE TABLE "access_profiles" (
   CONSTRAINT "access_profiles_name_nonblank" CHECK (btrim("name") <> ''),
   CONSTRAINT "access_profiles_delegable_capabilities" CHECK (
     cardinality("capabilities") >= 1
-    AND "capabilities" <@ ARRAY['branches.view', 'invitations.manage', 'audit.view']::TEXT[]
+    AND "capabilities" <@ ARRAY['branches.view', 'invitations.manage', 'audit.view', 'devices.view', 'devices.manage']::TEXT[]
   ),
   CONSTRAINT "access_profiles_version_positive" CHECK ("version" >= 1)
 );

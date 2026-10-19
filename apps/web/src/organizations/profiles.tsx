@@ -21,6 +21,8 @@ export const delegableCapabilities: readonly DelegableCapability[] = [
   "branches.view",
   "invitations.manage",
   "audit.view",
+  "devices.view",
+  "devices.manage",
 ];
 
 function CapabilityFields({

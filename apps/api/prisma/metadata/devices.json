@@ -1,0 +1,278 @@
+{
+  "tables": {
+    "device_enrollments": {
+      "owner": "Devices",
+      "classification": "RESTRICTED",
+      "description": "A screen's request to be paired: the hash of the credential the player generated, the HMAC of the short code it shows and its report. Platform-scoped until a member claims the code.",
+      "lifecycle": "Created PENDING with a ten-minute validity; becomes CLAIMED when a member pairs the code, which creates the device. Expiry is read lazily. Unclaimed rows are deleted one day after expiry and claimed rows 30 days after the claim (provisional until PH-13).",
+      "columns": {
+        "id": {
+          "description": "Backend-generated enrollment UUID the player polls.",
+          "classification": "INTERNAL"
+        },
+        "credential_hash": {
+          "description": "SHA-256 of the 256-bit credential the player generated; the credential itself never reaches the server before it is used.",
+          "classification": "RESTRICTED"
+        },
+        "code_hmac": {
+          "description": "HMAC-SHA-256 of the normalized eight-character code under the device code key ring; the code itself is never stored.",
+          "classification": "RESTRICTED"
+        },
+        "code_key_id": {
+          "description": "Identifier of the code key ring entry that computed code_hmac.",
+          "classification": "INTERNAL"
+        },
+        "report": {
+          "description": "The player's report of its application, model, display and supported rotations, as sent at enrollment.",
+          "classification": "CONFIDENTIAL"
+        },
+        "status": {
+          "description": "PENDING until a member claims the code, then CLAIMED.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the enrollment started.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "expires_at": {
+          "description": "Instant after which the code can no longer be claimed.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "last_polled_at": {
+          "description": "Latest accepted status poll, which bounds polling to once per interval.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The player has not polled yet.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "claimed_at": {
+          "description": "PostgreSQL-clock instant a member claimed the code.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The enrollment was not claimed.",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "device_enrollments_pkey": "Unique enrollment identity.",
+        "device_enrollments_credential_key": "One credential hash binds at most one enrollment.",
+        "device_enrollments_code_key": "Live codes never collide; a colliding new code is regenerated.",
+        "device_enrollments_status_expiry_idx": "Counts live pending enrollments and finds expired ones to purge.",
+        "device_enrollments_credential_hash_length": "The stored credential hash is a SHA-256 digest.",
+        "device_enrollments_code_hmac_length": "The stored code HMAC is a SHA-256 digest.",
+        "device_enrollments_report_object": "The report is a JSON object.",
+        "device_enrollments_expiry_after_creation": "An enrollment expires after it started.",
+        "device_enrollments_claim_state": "A claim instant exists exactly for claimed enrollments."
+      }
+    },
+    "devices": {
+      "owner": "Devices",
+      "classification": "CONFIDENTIAL",
+      "description": "A paired screen: its identity in one company and branch, configuration, credential hash and unlink/erasure state.",
+      "lifecycle": "Created ACTIVE when a member claims an enrollment. Renamed, rotated and moved within the company with optimistic versions. Unlinking makes it REVOKED with erasure PENDING, irreversibly; the screen confirms erasure (CONFIRMED, credential hash deleted) or a member records a controlled reset (RESET_RECORDED). Rows are kept with the company; no runtime deletion.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable device UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the device; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch the screen is assigned to within its company.",
+          "classification": "INTERNAL"
+        },
+        "enrollment_id": {
+          "description": "Enrollment the device was claimed from; a plain identifier because enrollments are purged.",
+          "classification": "INTERNAL"
+        },
+        "name": {
+          "description": "Trimmed screen name shown to members.",
+          "classification": "CONFIDENTIAL"
+        },
+        "rotation": {
+          "description": "Configured clockwise rotation in degrees: 0 and 180 horizontal, 90 and 270 vertical; one the screen reported as supported.",
+          "classification": "INTERNAL",
+          "unit": "degrees"
+        },
+        "status": {
+          "description": "ACTIVE screens use every device operation; REVOKED screens can only learn they must clear and confirm it.",
+          "classification": "INTERNAL"
+        },
+        "erasure": {
+          "description": "NONE while active; PENDING after unlink; CONFIRMED by the screen or RESET_RECORDED by a member.",
+          "classification": "INTERNAL"
+        },
+        "credential_hash": {
+          "description": "SHA-256 of the screen's current credential.",
+          "classification": "RESTRICTED",
+          "nullMeaning": "Erasure was confirmed, so the credential no longer authenticates."
+        },
+        "next_credential_hash": {
+          "description": "SHA-256 of a rotated credential that replaces the current one on first use.",
+          "classification": "RESTRICTED",
+          "nullMeaning": "No rotation is pending."
+        },
+        "report": {
+          "description": "The screen's latest report of its application, model, display and supported rotations; a device statement, not a qualified profile.",
+          "classification": "CONFIDENTIAL"
+        },
+        "last_seen_at": {
+          "description": "Latest authenticated device request, written at most once per minute.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The screen has not called since pairing.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "paired_by_membership_id": {
+          "description": "Membership that claimed the code.",
+          "classification": "INTERNAL"
+        },
+        "paired_at": {
+          "description": "PostgreSQL-clock instant the device was paired.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "revoked_at": {
+          "description": "PostgreSQL-clock instant the device was unlinked.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The device is active.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "erasure_recorded_at": {
+          "description": "Instant the erasure was confirmed by the screen or the reset was recorded.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No erasure outcome is recorded.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "version": {
+          "description": "Optimistic concurrency token incremented once per successful change.",
+          "classification": "INTERNAL",
+          "unit": "successful writes"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the latest change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "devices_pkey": "Unique device identity.",
+        "devices_company_id_fkey": "A device belongs to an existing company.",
+        "devices_company_id_branch_id_fkey": "The device's branch belongs to the same company.",
+        "devices_company_id_paired_by_membership_id_fkey": "The pairing membership belongs to the same company.",
+        "devices_company_id_id_key": "Tenant key for references to devices.",
+        "devices_enrollment_key": "An enrollment creates at most one device and finds it when the player polls.",
+        "devices_credential_key": "Finds a device by credential hash; credentials never collide.",
+        "devices_next_credential_key": "Finds a device by its rotated credential; credentials never collide.",
+        "devices_company_branch_status_idx": "Lists a branch's devices and finds active devices before a branch is archived.",
+        "devices_company_paired_idx": "Lists a company's devices newest pairing first with stable keyset pagination.",
+        "devices_name_trimmed": "Names are stored trimmed and nonempty.",
+        "devices_rotation_valid": "Rotation is a quarter turn.",
+        "devices_credential_hash_length": "The stored credential hash is a SHA-256 digest.",
+        "devices_next_credential_hash_length": "The stored rotated credential hash is a SHA-256 digest.",
+        "devices_next_credential_distinct": "A rotation names a different credential.",
+        "devices_report_object": "The report is a JSON object.",
+        "devices_version_positive": "Versions start at one.",
+        "devices_active_state": "Exactly the active devices have no erasure state.",
+        "devices_active_credential": "An active device always has a credential.",
+        "devices_revocation_state": "A revocation instant exists exactly for revoked devices.",
+        "devices_rotation_pending_only_active": "Only active devices can have a pending credential rotation.",
+        "devices_confirmed_without_credential": "A confirmed erasure leaves no credential hash.",
+        "devices_erasure_recorded_state": "An erasure instant exists exactly for confirmed or recorded erasures."
+      }
+    },
+    "device_claim_failures": {
+      "owner": "Devices",
+      "classification": "INTERNAL",
+      "description": "Counter rows for failed pairing-code claims, which bound guessing per person and per company.",
+      "lifecycle": "Inserted on each failed claim; counted over 15 minutes and deleted one day later.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated failure UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company the failed claim targeted; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "principal_id": {
+          "description": "Person who attempted the claim.",
+          "classification": "INTERNAL"
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant of the failure.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "device_claim_failures_pkey": "Unique failure identity.",
+        "device_claim_failures_company_id_fkey": "A failure belongs to an existing company.",
+        "device_claim_failures_principal_id_fkey": "A failure belongs to an existing principal.",
+        "device_claim_failures_company_id_id_key": "Tenant key of failure rows.",
+        "device_claim_failures_principal_time_idx": "Counts a person's recent failures.",
+        "device_claim_failures_company_time_idx": "Counts a company's recent failures."
+      }
+    },
+    "device_audit_events": {
+      "owner": "Devices",
+      "classification": "CONFIDENTIAL",
+      "description": "Append-only device lifecycle audit: pairing, renaming, rotation, moves, unlinking, erasure confirmation and recorded resets.",
+      "lifecycle": "Inserted in the transaction of the change it records; never updated or deleted by the runtime. Retention follows PH-13.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated event UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company the event belongs to; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "device_id": {
+          "description": "Device the event is about.",
+          "classification": "INTERNAL"
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant of the change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "actor_principal_id": {
+          "description": "Person who made the change.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The device itself confirmed its erasure."
+        },
+        "actor_membership_id": {
+          "description": "Membership through which the person acted.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The device itself confirmed its erasure."
+        },
+        "action": {
+          "description": "Event name, such as device.paired or device.unlinked.",
+          "classification": "INTERNAL"
+        },
+        "details": {
+          "description": "Allowlisted details such as branch IDs and rotations; never codes, hashes or network addresses.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "device_audit_events_pkey": "Unique event identity.",
+        "device_audit_events_company_id_fkey": "An event belongs to an existing company.",
+        "device_audit_events_company_id_device_id_fkey": "The device belongs to the same company.",
+        "device_audit_events_actor_principal_id_fkey": "The actor is an existing principal.",
+        "device_audit_events_company_id_actor_membership_id_fkey": "The acting membership belongs to the same company.",
+        "device_audit_events_company_id_id_key": "Tenant key of device audit events.",
+        "device_audit_events_device_time_idx": "Lists a device's events newest first.",
+        "device_audit_events_details_object": "Details are a JSON object.",
+        "device_audit_events_actor_pair": "A person and their membership are recorded together or not at all."
+      }
+    }
+  },
+  "enums": {
+    "DeviceEnrollmentStatus": "Enrollment state: PENDING or CLAIMED.",
+    "DeviceStatus": "Device state: ACTIVE or REVOKED.",
+    "DeviceErasure": "Erasure state of a device: NONE, PENDING, CONFIRMED or RESET_RECORDED."
+  }
+}

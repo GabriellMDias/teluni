@@ -54,6 +54,8 @@ const capabilities: readonly Capability[] = [
   "members.manage",
   "invitations.manage",
   "audit.view",
+  "devices.view",
+  "devices.manage",
 ];
 
 export type AccessSummary = Readonly<{

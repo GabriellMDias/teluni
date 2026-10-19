@@ -2,7 +2,10 @@ import type { ApiModule } from "../../module.js";
 import type { HumanProfilePort, HumanSessionPort } from "../identity/public.js";
 import { organizationOperations } from "./contracts.js";
 import { organizationErrors } from "./errors.js";
-import { PrismaOrganizationRepository } from "./prisma-repository.js";
+import {
+  PrismaOrganizationRepository,
+  type BranchArchiveGuard,
+} from "./prisma-repository.js";
 import { PrismaProfileRepository } from "./profile-repository.js";
 import type { CompanyAccessPort } from "./public.js";
 import { registerOrganizationRoutes } from "./routes.js";
@@ -18,10 +21,32 @@ export function createOrganizationsModule(options: {
   rateLimit?: { max: number; timeWindow: number };
 }): { module: ApiModule; companies: CompanyAccessPort } {
   let service: OrganizationService | undefined;
+  let repository: PrismaOrganizationRepository | undefined;
+  const guards: BranchArchiveGuard[] = [];
   const companies: CompanyAccessPort = {
     resolve(context, companyId) {
       if (!service) throw new Error("The organizations module is not active");
       return service.access(context, companyId);
+    },
+    lockForWrite(tx, context, companyId, branchIds) {
+      if (!repository)
+        throw new Error("The organizations module is not active");
+      return repository.lockForWrite(
+        tx,
+        context.principalId,
+        context.strongAuthenticationAgeSeconds !== null,
+        companyId,
+        branchIds,
+      );
+    },
+    describe(companyId, branchIds) {
+      if (!repository)
+        throw new Error("The organizations module is not active");
+      return repository.describe(companyId, branchIds);
+    },
+    guardBranchArchive(guard) {
+      guards.push(guard);
+      repository?.addBranchArchiveGuard(guard);
     },
   };
   const module: ApiModule = {
@@ -33,8 +58,10 @@ export function createOrganizationsModule(options: {
     errors: organizationErrors,
     activate: ({ database }) => {
       // Activation guarantees the database and the identity module.
+      repository = new PrismaOrganizationRepository(database!);
+      for (const guard of guards) repository.addBranchArchiveGuard(guard);
       const active = new OrganizationService(
-        new PrismaOrganizationRepository(database!),
+        repository,
         new PrismaProfileRepository(database!),
         options.profiles,
       );

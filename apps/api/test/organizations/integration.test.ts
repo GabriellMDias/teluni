@@ -287,6 +287,8 @@ describe("organizations: two-company isolation", () => {
         "members.manage",
         "invitations.manage",
         "audit.view",
+        "devices.view",
+        "devices.manage",
       ],
     });
     const companyId = (first.body.company as { id: string }).id;

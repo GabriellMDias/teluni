@@ -32,16 +32,17 @@ export type ApiOperation = Readonly<{
   /**
    * Authentication the operation requires. `public` operations accept
    * anonymous callers; `session` operations require the server-managed human
-   * session cookie. Omitted, a module requiring `authentication` uses bearer
-   * tokens.
+   * session cookie; `device` operations require a screen's device credential
+   * as a bearer token (ADR-0027). Omitted, a module requiring
+   * `authentication` uses bearer tokens.
    */
-  access?: "public" | "session";
+  access?: "public" | "session" | "device";
   /** Request body media type; JSON unless a protocol requires a form. */
   bodyContentType?: "application/json" | "application/x-www-form-urlencoded";
 }>;
 
 export type ModuleRequirement =
-  "database" | "authentication" | "humanIdentity" | "mail";
+  "database" | "authentication" | "humanIdentity" | "mail" | "deviceEnrollment";
 
 /** Validated settings of the server-managed human session boundary. */
 export type HumanIdentitySettings = Readonly<{
@@ -71,11 +72,18 @@ export type MailSettings = Readonly<{
   keys: readonly Readonly<{ id: string; key: Buffer }>[];
 }>;
 
+/** Validated settings of screen enrollment (ADR-0027). */
+export type DeviceEnrollmentSettings = Readonly<{
+  /** Key ring of the pairing-code HMAC; the first key protects new codes. */
+  codeKeys: readonly Readonly<{ id: string; key: Buffer }>[];
+}>;
+
 export type ModuleResources = Readonly<{
   database?: Database;
   verifier?: AccessTokenVerifier;
   humanIdentity?: HumanIdentitySettings;
   mail?: MailSettings;
+  deviceEnrollment?: DeviceEnrollmentSettings;
 }>;
 
 /** A module whose dependencies are satisfied and whose routes can mount. */
@@ -118,6 +126,7 @@ export function activateModules(
     authentication: resources.verifier !== undefined,
     humanIdentity: resources.humanIdentity !== undefined,
     mail: resources.mail !== undefined,
+    deviceEnrollment: resources.deviceEnrollment !== undefined,
   };
   const active: RegisteredModule[] = [];
   const activated = new Set<string>();

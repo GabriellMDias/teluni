@@ -4,7 +4,7 @@
 
 [Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)
 
-No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. API modules that require the database, bearer authentication or human identity stay unmounted until those settings exist, and production startup fails instead.
+No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. The devices module additionally requires `TELUNI_DEVICE_CODE_KEYS`. API modules that require the database, bearer authentication, human identity, mail or device code keys stay unmounted until those settings exist, and production startup fails instead.
 
 | Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -33,3 +33,4 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `TELUNI_MAIL_SMTP_PASSWORD` | secret string, 1..512 characters | no | — | server | RESTRICTED | yes | SMTP authentication credential of the mail relay. |
 | `TELUNI_MAIL_FROM` | email address | no | — | server | INTERNAL | no | Sender address of transactional email; its domain must be authorized for the relay. |
 | `TELUNI_MAIL_KEYS` | comma-separated id:base64url 32-byte keys, newest first | no | — | server | RESTRICTED | yes | Key ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values. |
+| `TELUNI_DEVICE_CODE_KEYS` | comma-separated id:base64url 32-byte keys, newest first | no | — | server | RESTRICTED | yes | Key ring for the HMAC that stores screen pairing codes; the first key protects new codes, all keys remain readable during rotation. Enables the devices module. |

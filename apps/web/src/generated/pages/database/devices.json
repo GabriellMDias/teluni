@@ -1,0 +1,307 @@
+{
+  "kind": "database",
+  "name": "devices",
+  "description": "A paired screen: its identity in one company and branch, configuration, credential hash and unlink/erasure state.",
+  "owner": "Devices",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created ACTIVE when a member claims an enrollment. Renamed, rotated and moved within the company with optimistic versions. Unlinking makes it REVOKED with erasure PENDING, irreversibly; the screen confirms erasure (CONFIRMED, credential hash deleted) or a member records a controlled reset (RESET_RECORDED). Rows are kept with the company; no runtime deletion.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable device UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the device; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch the screen is assigned to within its company.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "enrollment_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Enrollment the device was claimed from; a plain identifier because enrollments are purged.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Trimmed screen name shown to members.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "rotation",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Configured clockwise rotation in degrees: 0 and 180 horizontal, 90 and 270 vertical; one the screen reported as supported.",
+      "Null meaning": "—",
+      "Unit": "degrees"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"DeviceStatus\"",
+      "Nullable": "no",
+      "Default": "'ACTIVE'::\"DeviceStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "ACTIVE screens use every device operation; REVOKED screens can only learn they must clear and confirm it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "erasure",
+      "PostgreSQL type": "\"DeviceErasure\"",
+      "Nullable": "no",
+      "Default": "'NONE'::\"DeviceErasure\"",
+      "Classification": "INTERNAL",
+      "Meaning": "NONE while active; PENDING after unlink; CONFIRMED by the screen or RESET_RECORDED by a member.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "credential_hash",
+      "PostgreSQL type": "bytea",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 of the screen's current credential.",
+      "Null meaning": "Erasure was confirmed, so the credential no longer authenticates.",
+      "Unit": "—"
+    },
+    {
+      "Column": "next_credential_hash",
+      "PostgreSQL type": "bytea",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 of a rotated credential that replaces the current one on first use.",
+      "Null meaning": "No rotation is pending.",
+      "Unit": "—"
+    },
+    {
+      "Column": "report",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "The screen's latest report of its application, model, display and supported rotations; a device statement, not a qualified profile.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "last_seen_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Latest authenticated device request, written at most once per minute.",
+      "Null meaning": "The screen has not called since pairing.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "paired_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that claimed the code.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "paired_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the device was paired.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "revoked_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the device was unlinked.",
+      "Null meaning": "The device is active.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "erasure_recorded_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the erasure was confirmed by the screen or the reset was recorded.",
+      "Null meaning": "No erasure outcome is recorded.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency token incremented once per successful change.",
+      "Null meaning": "—",
+      "Unit": "successful writes"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the latest change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "devices_active_credential",
+      "Physical definition": "CHECK (((status <> 'ACTIVE'::\"DeviceStatus\") OR (credential_hash IS NOT NULL)))",
+      "Purpose": "An active device always has a credential."
+    },
+    {
+      "Object": "devices_active_state",
+      "Physical definition": "CHECK (((status = 'ACTIVE'::\"DeviceStatus\") = (erasure = 'NONE'::\"DeviceErasure\")))",
+      "Purpose": "Exactly the active devices have no erasure state."
+    },
+    {
+      "Object": "devices_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The device's branch belongs to the same company."
+    },
+    {
+      "Object": "devices_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A device belongs to an existing company."
+    },
+    {
+      "Object": "devices_company_id_paired_by_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, paired_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The pairing membership belongs to the same company."
+    },
+    {
+      "Object": "devices_confirmed_without_credential",
+      "Physical definition": "CHECK (((erasure <> 'CONFIRMED'::\"DeviceErasure\") OR (credential_hash IS NULL)))",
+      "Purpose": "A confirmed erasure leaves no credential hash."
+    },
+    {
+      "Object": "devices_credential_hash_length",
+      "Physical definition": "CHECK (((credential_hash IS NULL) OR (octet_length(credential_hash) = 32)))",
+      "Purpose": "The stored credential hash is a SHA-256 digest."
+    },
+    {
+      "Object": "devices_erasure_recorded_state",
+      "Physical definition": "CHECK (((erasure = ANY (ARRAY['CONFIRMED'::\"DeviceErasure\", 'RESET_RECORDED'::\"DeviceErasure\"])) = (erasure_recorded_at IS NOT NULL)))",
+      "Purpose": "An erasure instant exists exactly for confirmed or recorded erasures."
+    },
+    {
+      "Object": "devices_name_trimmed",
+      "Physical definition": "CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))",
+      "Purpose": "Names are stored trimmed and nonempty."
+    },
+    {
+      "Object": "devices_next_credential_distinct",
+      "Physical definition": "CHECK (((next_credential_hash IS NULL) OR (next_credential_hash <> credential_hash)))",
+      "Purpose": "A rotation names a different credential."
+    },
+    {
+      "Object": "devices_next_credential_hash_length",
+      "Physical definition": "CHECK (((next_credential_hash IS NULL) OR (octet_length(next_credential_hash) = 32)))",
+      "Purpose": "The stored rotated credential hash is a SHA-256 digest."
+    },
+    {
+      "Object": "devices_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique device identity."
+    },
+    {
+      "Object": "devices_report_object",
+      "Physical definition": "CHECK ((jsonb_typeof(report) = 'object'::text))",
+      "Purpose": "The report is a JSON object."
+    },
+    {
+      "Object": "devices_revocation_state",
+      "Physical definition": "CHECK (((status = 'REVOKED'::\"DeviceStatus\") = (revoked_at IS NOT NULL)))",
+      "Purpose": "A revocation instant exists exactly for revoked devices."
+    },
+    {
+      "Object": "devices_rotation_pending_only_active",
+      "Physical definition": "CHECK (((status = 'ACTIVE'::\"DeviceStatus\") OR (next_credential_hash IS NULL)))",
+      "Purpose": "Only active devices can have a pending credential rotation."
+    },
+    {
+      "Object": "devices_rotation_valid",
+      "Physical definition": "CHECK ((rotation = ANY (ARRAY[0, 90, 180, 270])))",
+      "Purpose": "Rotation is a quarter turn."
+    },
+    {
+      "Object": "devices_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at one."
+    },
+    {
+      "Object": "devices_company_branch_status_idx",
+      "Physical definition": "CREATE INDEX devices_company_branch_status_idx ON public.devices USING btree (company_id, branch_id, status)",
+      "Purpose": "Lists a branch's devices and finds active devices before a branch is archived."
+    },
+    {
+      "Object": "devices_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX devices_company_id_id_key ON public.devices USING btree (company_id, id)",
+      "Purpose": "Tenant key for references to devices."
+    },
+    {
+      "Object": "devices_company_paired_idx",
+      "Physical definition": "CREATE INDEX devices_company_paired_idx ON public.devices USING btree (company_id, paired_at DESC, id DESC)",
+      "Purpose": "Lists a company's devices newest pairing first with stable keyset pagination."
+    },
+    {
+      "Object": "devices_credential_key",
+      "Physical definition": "CREATE UNIQUE INDEX devices_credential_key ON public.devices USING btree (credential_hash)",
+      "Purpose": "Finds a device by credential hash; credentials never collide."
+    },
+    {
+      "Object": "devices_enrollment_key",
+      "Physical definition": "CREATE UNIQUE INDEX devices_enrollment_key ON public.devices USING btree (enrollment_id)",
+      "Purpose": "An enrollment creates at most one device and finds it when the player polls."
+    },
+    {
+      "Object": "devices_next_credential_key",
+      "Physical definition": "CREATE UNIQUE INDEX devices_next_credential_key ON public.devices USING btree (next_credential_hash)",
+      "Purpose": "Finds a device by its rotated credential; credentials never collide."
+    }
+  ]
+}

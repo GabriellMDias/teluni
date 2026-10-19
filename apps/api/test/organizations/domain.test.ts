@@ -196,6 +196,25 @@ describe("organization access decisions", () => {
       branches: ["north"],
     });
     expect(invitationVisibility(access([auditor], true))).toBeNull();
+    // An operator's additional grant to pair screens needs two steps; viewing
+    // screens does not.
+    const screens: Grant = {
+      profileId: "screens",
+      profileName: "Screens",
+      capabilities: new Set(["devices.view", "devices.manage"]),
+      scope: "BRANCHES",
+      branchIds: new Set(["north"]),
+    };
+    expect(decide(access([screens]), "devices.view", "north")).toBe("allow");
+    expect(decide(access([screens]), "devices.manage", "north")).toBe(
+      "strong_required",
+    );
+    expect(decide(access([screens], true), "devices.manage", "north")).toBe(
+      "allow",
+    );
+    expect(decide(access([screens], true), "devices.manage", "south")).toBe(
+      "deny",
+    );
     for (const capability of [
       "members.manage",
       "branches.manage",
@@ -205,10 +224,9 @@ describe("organization access decisions", () => {
   });
 
   it("accepts only delegable, distinct profile capabilities in a stable order", () => {
-    expect(profileCapabilities(["audit.view", "branches.view"])).toEqual([
-      "branches.view",
-      "audit.view",
-    ]);
+    expect(
+      profileCapabilities(["devices.manage", "audit.view", "branches.view"]),
+    ).toEqual(["branches.view", "audit.view", "devices.manage"]);
     for (const requested of [
       [],
       ["members.manage"],
