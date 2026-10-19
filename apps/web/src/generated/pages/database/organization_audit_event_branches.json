@@ -1,0 +1,67 @@
+{
+  "kind": "database",
+  "name": "organization_audit_event_branches",
+  "description": "Branches an organization audit event concerns; branch managers read only events whose branches all lie within their own branches.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Written with the event; never updated or deleted by the runtime. An event without rows is a company-level operation.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company shared by the event and the branch.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "event_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Audit event that concerns the branch.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch the event concerns.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "organization_audit_event_branches_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The branch belongs to the same company; mixed-company audit scopes are unrepresentable."
+    },
+    {
+      "Object": "organization_audit_event_branches_company_id_event_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, event_id) REFERENCES organization_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The event belongs to the same company."
+    },
+    {
+      "Object": "organization_audit_event_branches_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The row belongs to an existing company."
+    },
+    {
+      "Object": "organization_audit_event_branches_pkey",
+      "Physical definition": "PRIMARY KEY (event_id, branch_id)",
+      "Purpose": "A branch appears at most once per event."
+    },
+    {
+      "Object": "organization_audit_event_branches_branch_idx",
+      "Physical definition": "CREATE INDEX organization_audit_event_branches_branch_idx ON public.organization_audit_event_branches USING btree (company_id, branch_id)",
+      "Purpose": "Supports finding the events that concern a branch."
+    }
+  ]
+}

@@ -386,6 +386,30 @@ Lifecycle: Never updated or deleted by the runtime; retention follows PH-13.
 | `organization_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX organization_audit_events_company_id_id_key ON public.organization_audit_events USING btree (company_id, id)` | Tenant key for future references to events. |
 | `organization_audit_events_company_time_idx` | `CREATE INDEX organization_audit_events_company_time_idx ON public.organization_audit_events USING btree (company_id, occurred_at DESC, id DESC)` | Supports company-scoped newest-first audit pagination. |
 
+## organization_audit_event_branches
+
+Branches an organization audit event concerns; branch managers read only events whose branches all lie within their own branches.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Written with the event; never updated or deleted by the runtime. An event without rows is a company-level operation.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company shared by the event and the branch. | — | — |
+| `event_id` | `uuid` | no | — | INTERNAL | Audit event that concerns the branch. | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch the event concerns. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `organization_audit_event_branches_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company; mixed-company audit scopes are unrepresentable. |
+| `organization_audit_event_branches_company_id_event_id_fkey` | `FOREIGN KEY (company_id, event_id) REFERENCES organization_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The event belongs to the same company. |
+| `organization_audit_event_branches_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The row belongs to an existing company. |
+| `organization_audit_event_branches_pkey` | `PRIMARY KEY (event_id, branch_id)` | A branch appears at most once per event. |
+| `organization_audit_event_branches_branch_idx` | `CREATE INDEX organization_audit_event_branches_branch_idx ON public.organization_audit_event_branches USING btree (company_id, branch_id)` | Supports finding the events that concern a branch. |
+
 ## responsibility_transfers
 
 A responsible administrator's proposal to hand company responsibility to another active administrator; it takes effect only when that successor accepts.

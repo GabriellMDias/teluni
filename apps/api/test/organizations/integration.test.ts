@@ -532,11 +532,159 @@ describe("organizations: two-company isolation", () => {
     ).toBe("PERMISSION_DENIED");
     expect(
       code(
-        await call("aManager", "GET", `/companies/${companyA}/audit-events`, {
+        await call("aOperator", "GET", `/companies/${companyA}/audit-events`),
+      ),
+    ).toBe("PERMISSION_DENIED");
+  });
+
+  it("shows branch managers only the audit of operations confined to their branches", async () => {
+    const company = await createCompany("aAdmin", "Branch audit");
+    const north = await createBranch("aAdmin", company, "Norte");
+    const south = await createBranch("aAdmin", company, "Sul");
+    await grantBranches("aManager", company, "BRANCH_MANAGER", [north.id]);
+    const member = await addCompanyMember("multi", company);
+    const grant = async (branchIds: string[]) => {
+      const created = await call(
+        "aAdmin",
+        "POST",
+        `/companies/${company}/members/${member}/grants`,
+        {
+          strong: true,
+          body: { role: "OPERATOR", scope: "BRANCHES", branchIds },
+        },
+      );
+      expect(created.status).toBe(201);
+      return created.body.id as string;
+    };
+    const northGrant = await grant([north.id]);
+    await grant([north.id, south.id]);
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "POST",
+          `/companies/${company}/members/${member}/grants/${northGrant}/revoke`,
+          { strong: true },
+        )
+      ).status,
+    ).toBe(204);
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "PATCH",
+          `/companies/${company}/branches/${south.id}`,
+          {
+            strong: true,
+            body: { expectedVersion: south.version, name: "Sul 2" },
+          },
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await call("aAdmin", "PATCH", `/companies/${company}`, {
+          strong: true,
+          body: { expectedVersion: 1, displayName: "Branch audit 2" },
+        })
+      ).status,
+    ).toBe(200);
+
+    const events = (body: Record<string, unknown>) =>
+      (body.items as { action: string; targetId: string }[]).map(
+        (item) => `${item.action}:${item.targetId}`,
+      );
+    const full = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/audit-events`,
+      {
+        strong: true,
+      },
+    );
+    expect(full.status).toBe(200);
+    expect(events(full.body)).toHaveLength(8);
+
+    const managed = await call(
+      "aManager",
+      "GET",
+      `/companies/${company}/audit-events`,
+      { strong: true },
+    );
+    expect(managed.status).toBe(200);
+    expect(events(managed.body)).toEqual([
+      `grant.revoked:${member}`,
+      `grant.created:${member}`,
+      `branch.created:${north.id}`,
+    ]);
+
+    // Pages keep the branch predicate and their cursors are bound to it.
+    const first = await call(
+      "aManager",
+      "GET",
+      `/companies/${company}/audit-events?limit=2`,
+      { strong: true },
+    );
+    expect(events(first.body)).toEqual(events(managed.body).slice(0, 2));
+    const second = await call(
+      "aManager",
+      "GET",
+      `/companies/${company}/audit-events?limit=2&cursor=${first.body.nextCursor as string}`,
+      { strong: true },
+    );
+    expect(events(second.body)).toEqual(events(managed.body).slice(2));
+    expect(second.body.nextCursor).toBeNull();
+    const adminPage = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/audit-events?limit=1`,
+      { strong: true },
+    );
+    expect(
+      code(
+        await call(
+          "aManager",
+          "GET",
+          `/companies/${company}/audit-events?cursor=${adminPage.body.nextCursor as string}`,
+          { strong: true },
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+
+    expect(
+      code(await call("aManager", "GET", `/companies/${company}/audit-events`)),
+    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
+    expect(
+      code(await call("multi", "GET", `/companies/${company}/audit-events`)),
+    ).toBe("PERMISSION_DENIED");
+    expect(
+      code(
+        await call("aManager", "GET", `/companies/${companyB}/audit-events`, {
           strong: true,
         }),
       ),
-    ).toBe("PERMISSION_DENIED");
+    ).toBe("RESOURCE_NOT_FOUND");
+
+    // The branch rows are tenant-bound and append-only for the runtime role.
+    const { rows } = await sql.query<{ id: string }>(
+      "SELECT id FROM organization_audit_events WHERE company_id = $1 LIMIT 1",
+      [company],
+    );
+    await expect(
+      runtime.query(
+        "INSERT INTO organization_audit_event_branches (company_id, event_id, branch_id) VALUES ($1, $2, $3)",
+        [company, rows[0].id, b1.id],
+      ),
+    ).rejects.toMatchObject({ code: "23503" });
+    await expect(
+      runtime.query("DELETE FROM organization_audit_event_branches"),
+    ).rejects.toMatchObject({ code: "42501" });
+    await expect(
+      runtime.query(
+        "UPDATE organization_audit_event_branches SET branch_id = $1",
+        [south.id],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
   });
 
   it("protects versions, active names and archived branches, auditing only committed changes", async () => {

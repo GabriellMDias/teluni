@@ -65,6 +65,7 @@ model Company {
   grants                  MembershipGrant[]
   grantBranches           MembershipGrantBranch[]
   auditEvents             OrganizationAuditEvent[]
+  auditEventBranches      OrganizationAuditEventBranch[]
   responsibilityTransfers ResponsibilityTransfer[]
   invitations             CompanyInvitation[]
   invitationBranches      CompanyInvitationBranch[]
@@ -85,6 +86,7 @@ model Branch {
   company            Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   grantBranches      MembershipGrantBranch[]
   invitationBranches CompanyInvitationBranch[]
+  auditEventBranches OrganizationAuditEventBranch[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
   @@index([companyId, status, name], map: "branches_company_status_name_idx")
@@ -175,10 +177,24 @@ model OrganizationAuditEvent {
   company           Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   actor             Principal   @relation("AuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   actorMembership   Membership? @relation(fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branches          OrganizationAuditEventBranch[]
 
   @@unique([companyId, id], map: "organization_audit_events_company_id_id_key")
   @@index([companyId, occurredAt(sort: Desc), id(sort: Desc)], map: "organization_audit_events_company_time_idx")
   @@map("organization_audit_events")
+}
+
+model OrganizationAuditEventBranch {
+  companyId String                 @map("company_id") @db.Uuid
+  eventId   String                 @map("event_id") @db.Uuid
+  branchId  String                 @map("branch_id") @db.Uuid
+  company   Company                @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  event     OrganizationAuditEvent @relation(fields: [companyId, eventId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branch    Branch                 @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([eventId, branchId], map: "organization_audit_event_branches_pkey")
+  @@index([companyId, branchId], map: "organization_audit_event_branches_branch_idx")
+  @@map("organization_audit_event_branches")
 }
 
 model ResponsibilityTransfer {

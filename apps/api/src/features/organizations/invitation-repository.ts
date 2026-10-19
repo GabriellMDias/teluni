@@ -180,6 +180,7 @@ export class PrismaInvitationRepository {
           grantExpiresAt: request.grantExpiresAt?.toISOString() ?? null,
           expiresAt: created.expiresAt.toISOString(),
         },
+        branchIds: request.branchIds,
       });
       return created.id;
     });
@@ -249,6 +250,7 @@ export class PrismaInvitationRepository {
           branchCount: request.branchIds.length,
           expiresAt: created.expiresAt.toISOString(),
         },
+        branchIds: request.branchIds,
       });
       return created.id;
     });
@@ -278,11 +280,15 @@ export class PrismaInvitationRepository {
         UPDATE company_invitations SET status = 'REVOKED', decided_at = statement_timestamp()
         WHERE company_id = ${companyId}::uuid AND id = ${invitationId}::uuid`;
       if (current.message_id) await this.#outbox.cancel(tx, current.message_id);
+      const branches = await tx.$queryRaw<{ branch_id: string }[]>`
+        SELECT branch_id FROM company_invitation_branches
+        WHERE company_id = ${companyId}::uuid AND invitation_id = ${invitationId}::uuid`;
       await writeAudit(tx, companyId, actor, {
         action: "invitation.revoked",
         targetType: "invitation",
         targetId: invitationId,
         details: { invitationId, role: current.role, scope: current.scope },
+        branchIds: branches.map((row) => row.branch_id),
       });
     });
   }
@@ -514,6 +520,7 @@ export class PrismaInvitationRepository {
             scope: invitation.scope,
             branchCount: branchIds.length,
           },
+          branchIds,
         },
       );
       return { companyId, membershipId, replayed: false };

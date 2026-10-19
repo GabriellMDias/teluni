@@ -4,6 +4,33 @@
     "title": "ADR-0002: Select pnpm for Package and Workspace Management",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Dedicated Monorepo Task Runner from the Beginning",
+    "anchor": "dedicated-monorepo-task-runner-from-the-beginning",
+    "text": "Dedicated Monorepo Task Runner from the Beginning\nTools such as Turborepo and Nx can provide dependency-aware task execution, caching, affected-project analysis, and CI optimizations beyond basic workspace execution.\nThese capabilities may become valuable as Orion grows.\nThey were not selected for the initial repository foundation because Orion does not yet have enough projects or expensive tasks to demonstrate a need for advanced task orchestration.\nIntroducing one now would add another configuration and execution layer before its benefits could be measured against actual repository behavior.\nThe decision is therefore deferred rather than rejected.\nA dedicated task runner should be reconsidered when repository scale or CI performance provides evidence that pnpm's native task execution is no longer sufficient.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion uses one package manager for TypeScript and Node.js applications, packages, and engineering tooling.\nApplications and shared packages participate in a common workspace and dependency graph.\nA shared lockfile provides deterministic dependency resolution across the monorepo.\nFirst-party package relationships can be expressed explicitly with the `workspace:` protocol.\nPackages are encouraged to declare the dependencies they actually use.\nDependency versions can be coordinated centrally with catalogs when doing so provides genuine value.\nLocal development and CI can use the same package-management behavior.\npnpm provides native mechanisms for selecting and executing commands across workspace packages.\nOrion avoids introducing a separate task-orchestration abstraction before it solves a demonstrated problem.\nThe repository retains a straightforward migration path to Turborepo, Nx, or another task runner if future scale justifies one.\nPackage management and advanced task orchestration remain separate architectural concerns.\nStable repository-level commands can hide future changes to the underlying orchestration mechanism from contributors and AI agents where practical.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nContributors and execution environments must have the repository-selected pnpm version available rather than relying only on npm bundled with Node.js.\npnpm's dependency layout and workspace semantics require contributors to understand some pnpm-specific behavior.\nSome packages or tools that implicitly assume traditional npm dependency layouts may require compatibility configuration.\nA single workspace lockfile can produce larger lockfile changes as the repository grows.\nCatalogs, workspace protocols, filtering, and other pnpm-specific capabilities increase coupling to pnpm if used extensively.\nWithout a dedicated task runner, Orion initially does not receive advanced computation caching, automatic affected-project analysis, remote caching, or distributed task execution.\nRepository-wide validation may perform more work than necessary as the monorepo grows until task orchestration is reconsidered.\nTask dependencies must initially remain simple enough to be managed without a dedicated task graph.\n"
@@ -952,32 +979,5 @@
     "heading": "Configuration metadata and documentation",
     "anchor": "configuration-metadata-and-documentation",
     "text": "Configuration metadata and documentation\nConfiguration schemas may include metadata required to generate configuration reference documentation.\nSuch metadata may describe:\nlogical configuration name;\ntype;\nrequired or optional status;\nsafe default;\ndescription;\nclassification or sensitivity;\napplicable environment constraints.\nThe intended model is:\nconfiguration schema\n    ↓\nruntime validation\n    +\nTypeScript types\n    +\ngenerated configuration reference\n\nGenerated configuration documentation must never contain actual secret values.\nA schema may document that a secret or restricted configuration entry exists, but secret values must not be emitted into:\ndocumentation;\nlogs;\ntraces;\nmetrics;\nerror reports;\nfixtures;\ngenerated examples containing real credentials.\nExisting Orion data-classification and secrets-management policies remain authoritative.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nHTTP with JSON and OpenAPI provides the strongest general-purpose boundary for Orion's expected application portfolio.\nIt is language-independent, broadly supported by infrastructure and tooling, understandable by both humans and machines, and suitable for first-party clients, third-party integrations, mobile applications, automation, and AI tooling.\nThis is particularly important because Orion is intended as a reusable engineering foundation rather than a single TypeScript full-stack application.\nA TypeScript-only RPC model could provide superior local developer ergonomics for some applications but would reduce the independence of the external contract.\nOpenAPI preserves the ability to evolve backend implementation choices without requiring consumers to share Orion's internal programming language or framework.\nOrion does not require strict REST semantics because business applications contain meaningful operations that do not always map naturally to generic CRUD updates.\nAllowing both resource-oriented and explicit operation-oriented endpoints keeps API contracts aligned with application behavior rather than forcing artificial resource modeling.\nTypeBox is selected because Orion's contract architecture treats JSON Schema compatibility as a first-class requirement.\nTypeBox creates runtime JSON Schema representations while also providing static TypeScript inference.\nThis directly supports Orion's preferred model:\none executable schema\n    ↓\nmultiple derived representations\n\nrather than maintaining separate:\nTypeScript DTO\nvalidation schema\nJSON Schema\nOpenAPI schema\nclient type\n\nfor the same wire contract.\nTypeBox also aligns directly with Fastify's JSON Schema validation and serialization model.\nThis reduces translation layers between the authored contract and the infrastructure that enforces it.\nThe selection does not imply that TypeBox should replace normal TypeScript types inside domain and application code.\nIts value is greatest at boundaries requiring runtime validation and machine-readable schema representation.\nOpenAPI is generated rather than authored independently because Orion prefers derived representations whenever they can be reliably produced from canonical machine-readable sources.\nMaintaining handwritten OpenAPI beside separately maintained runtime schemas would create two sources of truth that could drift.\nOpenAPI also provides a stable language-independent layer for generated clients.\nThis allows Orion's server and first-party TypeScript applications to remain contractually separated even when they live in the same repository.\n`openapi-typescript` and `openapi-fetch` are selected for the initial TypeScript client path because they preserve this separation with relatively little generated or runtime code.\nThe approach avoids prematurely coupling the SDK layer to frontend state-management libraries or framework-specific code generators.\nRicher SDK generators may become useful later, but their additional code generation should solve a demonstrated need.\nThe same schema system is used for bootstrap configuration because configuration is another runtime trust boundary.\nIntroducing a second schema library only for environment parsing would increase repository complexity without a clear architectural benefit.\nRestricting `process.env` access to the configuration boundary also improves discoverability and predictability.\nInstead of every component independently interpreting external strings, configuration is parsed once into an explicit typed object before the application is composed.\nFail-fast startup behavior ensures configuration problems are detected before the application begins processing traffic or background work.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "tRPC as the Primary API Contract",
-    "anchor": "trpc-as-the-primary-api-contract",
-    "text": "tRPC as the Primary API Contract\ntRPC provides excellent TypeScript developer experience and end-to-end type inference without traditional code generation.\nIt is particularly effective when server and consumers are all TypeScript applications that intentionally share the same type system.\nIt was not selected as Orion's primary API strategy because Orion must support consumers that may not use TypeScript and because the external contract should remain independent from backend implementation types.\nThe primary interoperability boundary would become more TypeScript-specific than Orion's long-term goals justify.\ntRPC may still be introduced for a scoped internal TypeScript-only boundary when the coupling is intentional and provides a concrete benefit.\n"
   }
 ]

@@ -636,10 +636,13 @@ function CompanySettings({ company }: { company: Company }) {
 function CompanyHistory({
   companyId,
   principalId,
+  administrator,
   cursor,
 }: {
   companyId: string;
   principalId: string;
+  /** Administrators read every event; branch managers only their branches'. */
+  administrator: boolean;
   cursor?: string;
 }) {
   const { locale, t } = useOrganizationMessages();
@@ -650,7 +653,7 @@ function CompanyHistory({
   return (
     <section aria-labelledby="company-history-title">
       <h2 id="company-history-title">{t.historyTitle}</h2>
-      <p>{t.historyLead}</p>
+      <p>{administrator ? t.historyLead : t.historyLeadBranches}</p>
       {events.isPending ? (
         <p>{t.loading}</p>
       ) : events.isError ? (
@@ -909,6 +912,7 @@ export function CompanyPage({
           <CompanyHistory
             companyId={companyId}
             principalId={session.data.principalId}
+            administrator={access.capabilities.includes("members.manage")}
             cursor={cursor}
           />
         ) : (

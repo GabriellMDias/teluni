@@ -5,6 +5,7 @@ import {
   OrganizationFailure,
   responsibilityTransferDays,
   type AccessRole,
+  type AuditVisibility,
   type GrantScopeName,
   type BranchStatus,
   type CompanyStatus,
@@ -222,14 +223,21 @@ export async function writeAudit(
     targetType: string;
     targetId: string;
     details: Record<string, unknown>;
+    /** Branches the event concerns; none makes it a company-level event. */
+    branchIds?: readonly string[];
   },
 ): Promise<void> {
+  const id = randomUUID();
   await tx.$executeRaw`
     INSERT INTO organization_audit_events (id, company_id, actor_principal_id,
       actor_membership_id, action, target_type, target_id, details)
-    VALUES (${randomUUID()}::uuid, ${companyId}::uuid, ${actor.principalId}::uuid,
+    VALUES (${id}::uuid, ${companyId}::uuid, ${actor.principalId}::uuid,
       ${actor.membershipId}::uuid, ${event.action}, ${event.targetType},
       ${event.targetId}::uuid, ${JSON.stringify(event.details)}::jsonb)`;
+  for (const branchId of new Set(event.branchIds ?? []))
+    await tx.$executeRaw`
+      INSERT INTO organization_audit_event_branches (company_id, event_id, branch_id)
+      VALUES (${companyId}::uuid, ${id}::uuid, ${branchId}::uuid)`;
 }
 
 /**
@@ -434,6 +442,7 @@ export class PrismaOrganizationRepository {
           branchCount: input.branchIds.length,
           expiresAt: input.expiresAt?.toISOString() ?? null,
         },
+        branchIds: input.branchIds,
       });
       const created = (await this.#grantsOf(companyId, [memberId], tx))
         .get(memberId)
@@ -491,11 +500,15 @@ export class PrismaOrganizationRepository {
       await tx.$executeRaw`
         UPDATE membership_grants SET revoked_at = statement_timestamp()
         WHERE company_id = ${companyId}::uuid AND id = ${grantId}::uuid AND revoked_at IS NULL`;
+      const branches = await tx.$queryRaw<{ branch_id: string }[]>`
+        SELECT branch_id FROM membership_grant_branches
+        WHERE company_id = ${companyId}::uuid AND grant_id = ${grantId}::uuid`;
       await writeAudit(tx, companyId, actor, {
         action: "grant.revoked",
         targetType: "membership",
         targetId: memberId,
         details: { grantId, role: grant.role, scope: grant.scope },
+        branchIds: branches.map((row) => row.branch_id),
       });
     });
   }
@@ -1052,6 +1065,7 @@ export class PrismaOrganizationRepository {
           targetType: "branch",
           targetId: id,
           details: { branchName: row.name },
+          branchIds: [id],
         });
         return branch(row);
       });
@@ -1099,6 +1113,7 @@ export class PrismaOrganizationRepository {
           details: changes.archive
             ? { branchName: row.name }
             : { branchName: row.name, fields: Object.keys(changes).sort() },
+          branchIds: [branchId],
         });
         return branch(row);
       });
@@ -1111,11 +1126,29 @@ export class PrismaOrganizationRepository {
 
   async listAuditEvents(
     companyId: string,
+    visibility: AuditVisibility,
     options: { limit: number; before?: { occurredAt: Date; id: string } },
   ): Promise<AuditRecord[]> {
     const before = options.before
       ? Prisma.sql`(occurred_at, id) < (${options.before.occurredAt}, ${options.before.id}::uuid)`
       : Prisma.sql`TRUE`;
+    // Branch visibility is part of the query, before ordering and the limit.
+    const visible =
+      visibility.kind === "all"
+        ? Prisma.sql`TRUE`
+        : Prisma.sql`EXISTS (SELECT 1 FROM organization_audit_event_branches eb
+              WHERE eb.company_id = e.company_id AND eb.event_id = e.id)
+            AND ${
+              visibility.branches === "all"
+                ? Prisma.sql`TRUE`
+                : Prisma.sql`NOT EXISTS (SELECT 1 FROM organization_audit_event_branches eb
+                    WHERE eb.company_id = e.company_id AND eb.event_id = e.id
+                      AND eb.branch_id NOT IN (${Prisma.join(
+                        visibility.branches.map(
+                          (id) => Prisma.sql`${id}::uuid`,
+                        ),
+                      )}))`
+            }`;
     const rows = await this.#db.$queryRaw<
       {
         id: string;
@@ -1128,8 +1161,8 @@ export class PrismaOrganizationRepository {
       }[]
     >`
       SELECT id, occurred_at, actor_principal_id, action, target_type, target_id, details
-      FROM organization_audit_events
-      WHERE company_id = ${companyId}::uuid AND ${before}
+      FROM organization_audit_events e
+      WHERE company_id = ${companyId}::uuid AND ${before} AND ${visible}
       ORDER BY occurred_at DESC, id DESC
       LIMIT ${options.limit}`;
     return rows.map((row) => ({

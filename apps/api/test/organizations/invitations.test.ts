@@ -486,6 +486,23 @@ describe("company invitations", () => {
       `/companies/${company}/invitations`,
     );
     expect(managerList.body.items).toHaveLength(1);
+    // Their audit history likewise holds only the operations on their branch.
+    const managerAudit = await call(
+      "manager",
+      "GET",
+      `/companies/${company}/audit-events`,
+    );
+    expect(
+      (managerAudit.body.items as { action: string; targetId: string }[]).map(
+        (item) => [item.action, item.targetId],
+      ),
+    ).toEqual([
+      [
+        "invitation.created",
+        (managerList.body.items as { id: string }[])[0].id,
+      ],
+      ["branch.created", north],
+    ]);
     const ownerList = await call(
       "owner",
       "GET",

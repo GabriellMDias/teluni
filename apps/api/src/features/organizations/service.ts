@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { HumanContext, HumanProfilePort } from "../identity/public.js";
 import {
+  auditVisibility,
   branchReach,
   companyAccess,
   decide,
@@ -615,19 +616,41 @@ export class OrganizationService {
     options: { limit: number; cursor?: string },
   ): Promise<{ items: AuditRecord[]; nextCursor: string | null }> {
     const access = await this.access(context, companyId);
-    requireCapability(access, "audit.view");
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    const visibility = auditVisibility(access);
+    if (!visibility)
+      throw new OrganizationFailure(
+        !access.strong &&
+          reachableWithStrongAuthentication(access, "audit.view")
+          ? "STRONG_AUTHENTICATION_REQUIRED"
+          : "PERMISSION_DENIED",
+      );
+    // A cursor is valid only for the scope that produced it.
+    const scope =
+      visibility.kind === "all"
+        ? "company"
+        : `branches:${branchScope(
+            visibility.branches === "all"
+              ? "all"
+              : new Set(visibility.branches),
+          )}`;
     const cursor = decodeCursor(options.cursor, {
       company: companyId,
       principal: context.principalId,
       kind: "audit",
-      scope: "company",
+      scope,
     });
-    const items = await this.#repository.listAuditEvents(companyId, {
-      limit: options.limit + 1,
-      ...(cursor
-        ? { before: { occurredAt: new Date(cursor.t), id: cursor.i } }
-        : {}),
-    });
+    const items = await this.#repository.listAuditEvents(
+      companyId,
+      visibility,
+      {
+        limit: options.limit + 1,
+        ...(cursor
+          ? { before: { occurredAt: new Date(cursor.t), id: cursor.i } }
+          : {}),
+      },
+    );
     const page = items.slice(0, options.limit);
     const last = page.at(-1);
     return {
@@ -638,7 +661,7 @@ export class OrganizationService {
               c: companyId,
               p: context.principalId,
               k: "audit",
-              r: "company",
+              r: scope,
               t: last.occurredAt.toISOString(),
               i: last.id,
             })

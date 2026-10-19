@@ -45,6 +45,7 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "company.view",
       "branches.view",
       "invitations.manage",
+      "audit.view",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -317,5 +318,24 @@ export function invitationVisibility(
   const reach = branchReach(access, "invitations.manage");
   if (reach === "all") return { kind: "operators", branches: "all" };
   if (reach.size > 0) return { kind: "operators", branches: [...reach].sort() };
+  return null;
+}
+
+/** Which organization audit events a caller may read. */
+export type AuditVisibility =
+  { kind: "all" } | { kind: "branches"; branches: "all" | readonly string[] };
+
+/**
+ * Company administrators read every event. Branch managers read only the
+ * operations of their own branches: events that concern at least one branch
+ * and only branches they manage, so company-level events and events that
+ * also reach other branches stay hidden. Returns null without any usable
+ * audit capability.
+ */
+export function auditVisibility(access: CompanyAccess): AuditVisibility | null {
+  if (decide(access, "members.manage") === "allow") return { kind: "all" };
+  const reach = branchReach(access, "audit.view");
+  if (reach === "all") return { kind: "branches", branches: "all" };
+  if (reach.size > 0) return { kind: "branches", branches: [...reach].sort() };
   return null;
 }

@@ -4,6 +4,33 @@
     "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nHTTP with JSON and OpenAPI provides the strongest general-purpose boundary for Orion's expected application portfolio.\nIt is language-independent, broadly supported by infrastructure and tooling, understandable by both humans and machines, and suitable for first-party clients, third-party integrations, mobile applications, automation, and AI tooling.\nThis is particularly important because Orion is intended as a reusable engineering foundation rather than a single TypeScript full-stack application.\nA TypeScript-only RPC model could provide superior local developer ergonomics for some applications but would reduce the independence of the external contract.\nOpenAPI preserves the ability to evolve backend implementation choices without requiring consumers to share Orion's internal programming language or framework.\nOrion does not require strict REST semantics because business applications contain meaningful operations that do not always map naturally to generic CRUD updates.\nAllowing both resource-oriented and explicit operation-oriented endpoints keeps API contracts aligned with application behavior rather than forcing artificial resource modeling.\nTypeBox is selected because Orion's contract architecture treats JSON Schema compatibility as a first-class requirement.\nTypeBox creates runtime JSON Schema representations while also providing static TypeScript inference.\nThis directly supports Orion's preferred model:\none executable schema\n    ↓\nmultiple derived representations\n\nrather than maintaining separate:\nTypeScript DTO\nvalidation schema\nJSON Schema\nOpenAPI schema\nclient type\n\nfor the same wire contract.\nTypeBox also aligns directly with Fastify's JSON Schema validation and serialization model.\nThis reduces translation layers between the authored contract and the infrastructure that enforces it.\nThe selection does not imply that TypeBox should replace normal TypeScript types inside domain and application code.\nIts value is greatest at boundaries requiring runtime validation and machine-readable schema representation.\nOpenAPI is generated rather than authored independently because Orion prefers derived representations whenever they can be reliably produced from canonical machine-readable sources.\nMaintaining handwritten OpenAPI beside separately maintained runtime schemas would create two sources of truth that could drift.\nOpenAPI also provides a stable language-independent layer for generated clients.\nThis allows Orion's server and first-party TypeScript applications to remain contractually separated even when they live in the same repository.\n`openapi-typescript` and `openapi-fetch` are selected for the initial TypeScript client path because they preserve this separation with relatively little generated or runtime code.\nThe approach avoids prematurely coupling the SDK layer to frontend state-management libraries or framework-specific code generators.\nRicher SDK generators may become useful later, but their additional code generation should solve a demonstrated need.\nThe same schema system is used for bootstrap configuration because configuration is another runtime trust boundary.\nIntroducing a second schema library only for environment parsing would increase repository complexity without a clear architectural benefit.\nRestricting `process.env` access to the configuration boundary also improves discoverability and predictability.\nInstead of every component independently interpreting external strings, configuration is parsed once into an explicit typed object before the application is composed.\nFail-fast startup behavior ensures configuration problems are detected before the application begins processing traffic or background work.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "tRPC as the Primary API Contract",
+    "anchor": "trpc-as-the-primary-api-contract",
+    "text": "tRPC as the Primary API Contract\ntRPC provides excellent TypeScript developer experience and end-to-end type inference without traditional code generation.\nIt is particularly effective when server and consumers are all TypeScript applications that intentionally share the same type system.\nIt was not selected as Orion's primary API strategy because Orion must support consumers that may not use TypeScript and because the external contract should remain independent from backend implementation types.\nThe primary interoperability boundary would become more TypeScript-specific than Orion's long-term goals justify.\ntRPC may still be introduced for a scoped internal TypeScript-only boundary when the coupling is intentional and provides a concrete benefit.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "GraphQL",
     "anchor": "graphql",
     "text": "GraphQL\nGraphQL provides a strongly typed schema and allows clients to select the precise shape of data they require.\nIt can provide substantial value for systems with many clients requiring flexible traversal of highly connected data.\nIt was not selected as Orion's default because this flexibility introduces additional concerns around query complexity, resolver performance, N+1 access patterns, authorization granularity, caching, cost control, and operational observability.\nOrion does not currently have a concrete requirement that justifies introducing those concerns as part of the default foundation.\nGraphQL may be introduced later when demonstrated client-query requirements make its additional complexity worthwhile.\n"
@@ -1051,41 +1078,5 @@
     "heading": "Logs as Business Audit History",
     "anchor": "logs-as-business-audit-history",
     "text": "Logs as Business Audit History\nOrion could use structured application logs to answer business audit questions.\nThis appears simple because many relevant operations already produce logs.\nIt was not selected because operational logs generally do not provide the persistence, integrity, authorization, retention, or domain guarantees required for authoritative audit history.\nAudit history remains a separate application responsibility.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Browser OpenTelemetry Instrumentation as a Baseline",
-    "anchor": "browser-opentelemetry-instrumentation-as-a-baseline",
-    "text": "Browser OpenTelemetry Instrumentation as a Baseline\nOrion could instrument React applications with OpenTelemetry from the beginning to create end-to-end traces from browser interactions to database queries.\nThis could provide useful distributed diagnostics.\nIt was not selected as part of the initial baseline because browser observability has different operational, privacy, performance, and maturity considerations from server-side instrumentation.\nFrontend observability will be introduced when real application requirements justify it.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion receives a vendor-neutral observability foundation.\nTraces and metrics use one broadly interoperable telemetry standard.\nPino remains a focused and mature structured logging implementation.\nLogs can be correlated with distributed traces through `trace_id` and `span_id`.\nIndependent request IDs remain available for straightforward request correlation.\nFastify and Prisma can participate in distributed traces through supported instrumentation.\nStandard trace propagation allows future distributed services to preserve causal traces.\nOTLP reduces coupling between applications and observability backends.\nThe OpenTelemetry Collector can centralize production telemetry concerns when needed.\nApplications can change observability vendors without rewriting domain or application behavior.\nProduction logs are machine-readable structured JSON.\nRedaction requirements reduce accidental secret and sensitive-data exposure.\nMetric-cardinality rules reduce observability-system reliability and cost risks.\nSampling remains tunable according to real deployment characteristics.\nError-reporting providers can be introduced without becoming global foundation dependencies.\nOperational telemetry remains clearly distinct from authoritative audit history.\nBrowser observability can evolve independently when real requirements become known.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nThe observability stack contains multiple complementary technologies rather than one unified telemetry API.\nContributors must understand the distinction between logs, traces, metrics, and audit records.\nOpenTelemetry instrumentation adds runtime and configuration overhead.\nTracing can increase CPU, memory, network, and storage consumption.\nExcessive spans can increase telemetry cost and reduce signal quality.\nMetrics require disciplined attribute design to avoid cardinality problems.\nTrace/log correlation depends on correctly propagated asynchronous context.\nA production Collector introduces another infrastructure component when deployed.\nVendor neutrality does not eliminate backend-specific configuration in deployment infrastructure.\nDirect stdout logging relies on the execution environment to collect and persist logs appropriately.\nRedaction configuration requires maintenance as request structures and integrations evolve.\nBrowser observability is not solved by the initial foundation.\nDedicated business audit requirements will require separate application design.\n"
   }
 ]

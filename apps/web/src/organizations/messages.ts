@@ -164,6 +164,8 @@ const ptBR = {
   historyEmpty: "Nenhuma alteração registrada.",
   historyLead:
     "Alterações na empresa e nas filiais, das mais recentes para as mais antigas.",
+  historyLeadBranches:
+    "Alterações que envolvem apenas as filiais que você gerencia, das mais recentes para as mais antigas.",
   historyYou: "Por você",
   historyMember: "Por outro membro",
   historyUnknown: "Organização alterada",
@@ -411,6 +413,8 @@ const enUS: OrganizationMessages = {
   historyTitle: "Change history",
   historyEmpty: "No changes recorded.",
   historyLead: "Changes to the company and branches, from newest to oldest.",
+  historyLeadBranches:
+    "Changes that involve only the branches you manage, from newest to oldest.",
   historyYou: "By you",
   historyMember: "By another member",
   historyUnknown: "Organization updated",

@@ -343,6 +343,33 @@
         "organization_audit_events_details_object": "Details are always a JSON object."
       }
     },
+    "organization_audit_event_branches": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Branches an organization audit event concerns; branch managers read only events whose branches all lie within their own branches.",
+      "lifecycle": "Written with the event; never updated or deleted by the runtime. An event without rows is a company-level operation.",
+      "columns": {
+        "company_id": {
+          "description": "Company shared by the event and the branch.",
+          "classification": "INTERNAL"
+        },
+        "event_id": {
+          "description": "Audit event that concerns the branch.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch the event concerns.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "organization_audit_event_branches_pkey": "A branch appears at most once per event.",
+        "organization_audit_event_branches_company_id_fkey": "The row belongs to an existing company.",
+        "organization_audit_event_branches_company_id_event_id_fkey": "The event belongs to the same company.",
+        "organization_audit_event_branches_company_id_branch_id_fkey": "The branch belongs to the same company; mixed-company audit scopes are unrepresentable.",
+        "organization_audit_event_branches_branch_idx": "Supports finding the events that concern a branch."
+      }
+    },
     "responsibility_transfers": {
       "owner": "Organizations",
       "classification": "CONFIDENTIAL",

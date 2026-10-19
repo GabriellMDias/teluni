@@ -15,6 +15,7 @@ GRANT SELECT, INSERT ON membership_grants TO orion_runtime;
 GRANT UPDATE (revoked_at) ON membership_grants TO orion_runtime;
 GRANT SELECT, INSERT ON membership_grant_branches TO orion_runtime;
 GRANT SELECT, INSERT ON organization_audit_events TO orion_runtime;
+GRANT SELECT, INSERT ON organization_audit_event_branches TO orion_runtime;
 GRANT SELECT, INSERT ON responsibility_transfers TO orion_runtime;
 GRANT UPDATE (status, decided_at) ON responsibility_transfers TO orion_runtime;
 GRANT SELECT, INSERT ON company_invitations TO orion_runtime;

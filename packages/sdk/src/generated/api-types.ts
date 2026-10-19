@@ -406,7 +406,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the company's organization audit events, newest first. Requires company administration and two-step verification. */
+        /** @description List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch. Requires two-step verification. */
         get: operations["listCompanyAuditEvents"];
         put?: never;
         post?: never;

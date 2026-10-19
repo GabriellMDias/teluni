@@ -4,6 +4,42 @@
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Browser OpenTelemetry Instrumentation as a Baseline",
+    "anchor": "browser-opentelemetry-instrumentation-as-a-baseline",
+    "text": "Browser OpenTelemetry Instrumentation as a Baseline\nOrion could instrument React applications with OpenTelemetry from the beginning to create end-to-end traces from browser interactions to database queries.\nThis could provide useful distributed diagnostics.\nIt was not selected as part of the initial baseline because browser observability has different operational, privacy, performance, and maturity considerations from server-side instrumentation.\nFrontend observability will be introduced when real application requirements justify it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion receives a vendor-neutral observability foundation.\nTraces and metrics use one broadly interoperable telemetry standard.\nPino remains a focused and mature structured logging implementation.\nLogs can be correlated with distributed traces through `trace_id` and `span_id`.\nIndependent request IDs remain available for straightforward request correlation.\nFastify and Prisma can participate in distributed traces through supported instrumentation.\nStandard trace propagation allows future distributed services to preserve causal traces.\nOTLP reduces coupling between applications and observability backends.\nThe OpenTelemetry Collector can centralize production telemetry concerns when needed.\nApplications can change observability vendors without rewriting domain or application behavior.\nProduction logs are machine-readable structured JSON.\nRedaction requirements reduce accidental secret and sensitive-data exposure.\nMetric-cardinality rules reduce observability-system reliability and cost risks.\nSampling remains tunable according to real deployment characteristics.\nError-reporting providers can be introduced without becoming global foundation dependencies.\nOperational telemetry remains clearly distinct from authoritative audit history.\nBrowser observability can evolve independently when real requirements become known.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe observability stack contains multiple complementary technologies rather than one unified telemetry API.\nContributors must understand the distinction between logs, traces, metrics, and audit records.\nOpenTelemetry instrumentation adds runtime and configuration overhead.\nTracing can increase CPU, memory, network, and storage consumption.\nExcessive spans can increase telemetry cost and reduce signal quality.\nMetrics require disciplined attribute design to avoid cardinality problems.\nTrace/log correlation depends on correctly propagated asynchronous context.\nA production Collector introduces another infrastructure component when deployed.\nVendor neutrality does not eliminate backend-specific configuration in deployment infrastructure.\nDirect stdout logging relies on the execution environment to collect and persist logs appropriately.\nRedaction configuration requires maintenance as request structures and integrations evolve.\nBrowser observability is not solved by the initial foundation.\nDedicated business audit requirements will require separate application design.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
     "text": "Operational or Migration Impact\nOrion already selected Pino as the Fastify runtime logger, so structured logging implementation does not require replacement.\nThe initial observability implementation should introduce OpenTelemetry before instrumented infrastructure is initialized.\nServer bootstrap should follow an ordering compatible with:\nconfiguration\n    ↓\nobservability initialization\n    ↓\ninstrumentation registration\n    ↓\nPrisma / Fastify / HTTP infrastructure\n    ↓\napplication composition\n\nFastify instrumentation should use `@fastify/otel`.\nPrisma tracing should use the supported Prisma OpenTelemetry instrumentation compatible with the repository's selected Prisma version.\nHTTP instrumentation must support distributed context propagation for inbound and outbound calls.\nPino tracing correlation should inject active `trace_id` and `span_id` values centrally rather than requiring manual fields at each logging call.\nPino configuration must establish production JSON logging and centralized redaction.\nThe initial server-side telemetry export should support OTLP through configuration.\nProduction deployments may send OTLP either:\napplication\n    → Collector\n    → backend\n\nor, for simpler environments:\napplication\n    → compatible backend\n\nwithout changing domain or application code.\nTelemetry resource identity must be configured explicitly for each executable service.\nSampling must be externally configurable and must not require source-code changes.\nGraceful shutdown should attempt to flush buffered telemetry before process termination when practical.\nNo OpenTelemetry Logs SDK integration, browser instrumentation, observability vendor, or external error-reporting provider is required by the initial Orion implementation.\nRepository validation should verify observability configuration and architecture where such verification can be performed mechanically.\nOperational dashboards, alert thresholds, telemetry retention, and backend-specific infrastructure remain deployment concerns and may be documented by application-specific runbooks.\nRoutine compatible upgrades to OpenTelemetry, Pino, Fastify instrumentation, Prisma instrumentation, or OTLP exporters do not require a new ADR when the responsibilities established here remain unchanged.\nSelecting a particular observability backend for one deployment does not supersede this ADR.\nReplacing OpenTelemetry as the observability standard, replacing Pino as the logging strategy, or materially changing the responsibility boundaries defined here would require an ADR that supersedes this decision.\n"
@@ -1366,68 +1402,5 @@
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nEnables local replay through outages and explicit recovery/failure acceptance tests.\nSeparates publication intent from device observations without assuming exactly-once delivery.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nStaging plus recovery versions consume additional storage and need safe garbage collection.\nCached content cannot be immediately recalled from unreachable devices; expiry/revocation rules need explicit review.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nAtomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Player/release qualification under PJ-11/PJ-12/PJ-14 requires representative network/power-cut and stale/reordered message cases, not only unit tests.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0020: Adopt a Native Android TV Player",
-    "anchor": "adr-0020-adopt-a-native-android-tv-player",
-    "text": "ADR-0020: Adopt a Native Android TV Player\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe intended first player is Android TV, with continuous image/video playback, local persistence, temporary-code pairing and offline recovery. Orion supplies TypeScript API/web foundations but deliberately does not select a mobile/native stack. No Android application or hardware validation exists in Teluni.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.\nMinimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. Architecture acceptance does not imply every Android TV or Smart TV is supported.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
-    "title": "ADR-0020: Adopt a Native Android TV Player",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThis is the owner's preferred initial direction and matches the requested native device lifecycle and local-playback responsibilities. There are no completed benchmarks or device tests establishing that it meets the reliability envelope. A separate runtime is justified by installation and hardware lifecycle, while backend distribution is not.\n"
   }
 ]

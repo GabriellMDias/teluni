@@ -1014,6 +1014,51 @@ test("names the role of grant history events", async () => {
     .toBeVisible();
 });
 
+test("offers branch managers the history of their own branches", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              {
+                id: "branch-event",
+                action: "branch.created",
+                actorPrincipalId: "another-person",
+                occurredAt: "2026-10-18T12:00:00.000Z",
+                targetType: "branch",
+                details: { branchName: "Norte" },
+              },
+            ],
+            nextCursor: null,
+          },
+        }
+      : {
+          body: {
+            ...memberCompany,
+            access: {
+              roles: ["BRANCH_MANAGER"],
+              responsible: false,
+              capabilities: [
+                "company.view",
+                "branches.view",
+                "invitations.manage",
+                "audit.view",
+              ],
+              capabilitiesAfterStrongAuthentication: [],
+            },
+          },
+        },
+  );
+  const { screen } = await open(`${companyPath}?view=history`);
+  await expect
+    .element(screen.getByRole("link", { name: t.historyTitle }))
+    .toBeVisible();
+  await expect.element(screen.getByText(t.historyLeadBranches)).toBeVisible();
+  await expect
+    .element(screen.getByText(`${t.fieldBranchName}: Norte`))
+    .toBeVisible();
+});
+
 const invitationAccess = {
   ...memberAccess,
   capabilities: [...memberAccess.capabilities, "invitations.manage"],

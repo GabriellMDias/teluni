@@ -704,6 +704,16 @@
       "file": "pages/database/oidc_login_attempts.json"
     },
     {
+      "id": "database/organization_audit_event_branches",
+      "kind": "database",
+      "title": "organization_audit_event_branches",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Branches an organization audit event concerns; branch managers read only events whose branches all lie within their own branches.",
+      "headings": [],
+      "file": "pages/database/organization_audit_event_branches.json"
+    },
+    {
       "id": "database/organization_audit_events",
       "kind": "database",
       "title": "organization_audit_events",
@@ -1882,22 +1892,22 @@
       { "file": "search/0003.json", "count": 17, "kinds": ["api", "database"] },
       {
         "file": "search/0004.json",
-        "count": 61,
+        "count": 59,
         "kinds": ["component", "database", "repository"]
       },
       { "file": "search/0005.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 121, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 159, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 138, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 156, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 142, "kinds": ["repository"] },
       { "file": "search/0009.json", "count": 132, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 88, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 59, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 87, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 61, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 60, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 71, "kinds": ["repository"] },
       { "file": "search/0015.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 55, "kinds": ["repository"] }
+      { "file": "search/0016.json", "count": 60, "kinds": ["repository"] }
     ],
-    "count": 1287
+    "count": 1290
   }
 }

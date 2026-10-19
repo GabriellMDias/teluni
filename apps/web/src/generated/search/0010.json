@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Deliberately unresolved or conditional choices",
+    "anchor": "deliberately-unresolved-or-conditional-choices",
+    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\nUI/design systems, styling, accessibility primitives, charts, grids, and forms depend on product needs. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012; Teluni accepts Keycloak and server-managed sessions through ADR-0024, while concrete session/refresh/revocation implementation and qualification remain pending. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements. Teluni's transactional email uses the PostgreSQL outbox, in-process dispatcher and SMTP relay accepted in ADR-0026; that does not make them a general job or messaging platform.\nMobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery are product/deployment decisions. Teluni has accepted its Android and initial Compose directions above; detailed tooling and operational readiness are not thereby supplied. Testcontainers does not select an application deployment platform.\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Testing Strategy",
+    "anchor": "testing-strategy",
+    "text": "Testing Strategy\n[Documentation index](../README.md) · [Validation commands](../validation.md) · [Local setup](../setup.md)\nTests protect behavior, contracts, invariants, security, and architectural boundaries. Ask which important defect a test would detect, then choose the cheapest reliable boundary. [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) owns the accepted tools and rationale; [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) owns CI policy. These tools and the suites below are implemented.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Test Categories",
+    "anchor": "test-categories",
+    "text": "Test Categories\nBoundary/risk\nExecution and existing location\nPure domain, parser, client logic\nVitest in Node; API tests under `apps/api/test/`, web API tests under `apps/web/test/`.\nAPI transport/application\nFastify request injection with real owned behavior; real sockets when listener, network, or process lifecycle is the subject.\nPostgreSQL persistence/transactions\nVitest with Testcontainers and committed migrations; API integration/failure tests use the migrated-database helper.\nBrowser components\nVitest Browser Mode with Playwright, `apps/web/test/*.browser.test.tsx`; Windows uses installed Edge, other environments use Chromium.\nFull user journeys\nPlaywright Test, `apps/web/test/e2e/`; the real built API and web app for the shell and portal, plus migrated PostgreSQL and synthetic signed identities in module journeys under `test/e2e/<module>/`.\nEmitted runtime\nAPI process and feature smoke scripts verify startup/lifecycle and the real feature flow.\nStructure and generation\nType/lint/import checks, documentation links/metadata, environment example, release-history checks, API/SDK/portal freshness.\nCoverage, performance/load/stress, mutation testing, additional browser matrices, external provider sandboxes, and deployment smoke/monitoring are introduced only when their risk or product requirement exists. Performance tests need measurable targets; stable microbenchmarks can inform critical algorithms but do not replace realistic system measurements. Chromium is the routine E2E baseline; browser support must not be guessed globally. V8 is the selected Vitest coverage provider when coverage becomes useful, with no initial global coverage threshold.\n"
+  },
+  {
     "id": "repository/docs/architecture/testing-strategy",
     "title": "Testing Strategy",
     "group": "Architecture",
@@ -754,41 +781,5 @@
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-1",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`human_sessions_absolute_after_creation`\n`CHECK (((absolute_expires_at > created_at) AND (absolute_expires_at <= (created_at + '12:00:00'::interval))))`\nAbsolute expiry follows creation by at most the selected 12-hour maximum.\n`human_sessions_idle_bounds`\n`CHECK (((idle_timeout_seconds >= 60) AND (idle_timeout_seconds <= 7200)))`\nInactivity bound stays between one minute and the two-hour operator maximum.\n`human_sessions_pkey`\n`PRIMARY KEY (id)`\nUnique session identity.\n`human_sessions_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA session belongs to an existing principal; principals cannot be deleted while sessions exist.\n`human_sessions_revocation_reason_known`\n`CHECK (((revocation_reason IS NULL) OR ((revocation_reason)::text = ANY ((ARRAY['LOGOUT'::character varying, 'TERMINATED_BY_USER'::character varying, 'EXPIRED'::character varying, 'REPLACED'::character varying, 'PROVIDER_LOGOUT'::character varying, 'PROVIDER_INACTIVE'::character varying, 'REFRESH_REJECTED'::character varying, 'PRINCIPAL_DISABLED'::character varying, 'PRINCIPAL_MISMATCH'::character varying])::text[]))))`\nRevocation reason is one of the documented values.\n`human_sessions_revocation_state`\n`CHECK (((state = 'REVOKED'::\"HumanSessionState\") = ((revoked_at IS NOT NULL) AND (revocation_reason IS NOT NULL))))`\nRevocation instant and reason exist exactly for revoked sessions.\n`human_sessions_token_hash_sha256`\n`CHECK ((octet_length(token_hash) = 32))`\nCredential hash is exactly one SHA-256 digest.\n`human_sessions_principal_state_idx`\n`CREATE INDEX human_sessions_principal_state_idx ON public.human_sessions USING btree (principal_id, state)`\nSupports counting and listing a principal's sessions by state.\n`human_sessions_provider_session_idx`\n`CREATE INDEX human_sessions_provider_session_idx ON public.human_sessions USING btree (provider_session_id)`\nSupports back-channel logout by provider session identifier.\n`human_sessions_token_hash_key`\n`CREATE UNIQUE INDEX human_sessions_token_hash_key ON public.human_sessions USING btree (token_hash)`\nOne session per cookie credential; supports lookup by credential hash.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "oidc_login_attempts",
-    "anchor": "oidc_login_attempts",
-    "text": "oidc_login_attempts\nSingle-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.\nOwner: Identity. Classification: RESTRICTED.\nLifecycle: Created when a login starts, consumed once by the callback and expired after 10 minutes; expired rows are retained until a cleanup rule is approved.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated attempt UUID that binds the sealed secrets.\n—\n—\n`handle_hash`\n`bytea`\nno\n—\nRESTRICTED\nSHA-256 of the random login-attempt cookie value.\n—\n—\n`state`\n`character varying(128)`\nno\n—\nINTERNAL\nOIDC state value expected back at the callback.\n—\n—\n`secrets`\n`bytea`\nno\n—\nRESTRICTED\nPKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID.\n—\n—\n`return_to`\n`character varying(2048)`\nno\n—\nINTERNAL\nValidated same-origin relative path to open after a successful login.\n—\n—\n`requested_assurance`\n`character varying(64)`\nyes\n—\nINTERNAL\nAuthentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.\nA standard login without a requested level.\n—\n`max_age_seconds`\n`integer`\nyes\n—\nINTERNAL\nMaximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.\nNo maximum age was requested.\nseconds\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the login started.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the callback can no longer consume the attempt.\n—\nUTC instant, millisecond precision\n`consumed_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant the callback consumed the attempt; a second use is rejected.\nThe attempt has not been used.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-2",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`oidc_login_attempts_expiry_bounds`\n`CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))`\nAn attempt expires after creation and within 10 minutes.\n`oidc_login_attempts_handle_sha256`\n`CHECK ((octet_length(handle_hash) = 32))`\nHandle hash is exactly one SHA-256 digest.\n`oidc_login_attempts_max_age_bounds`\n`CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))`\nRequested maximum authentication age cannot be negative.\n`oidc_login_attempts_pkey`\n`PRIMARY KEY (id)`\nUnique attempt identity.\n`oidc_login_attempts_return_relative`\n`CHECK (((return_to)::text ~ '^/'::text))`\nReturn path is relative to the panel origin.\n`oidc_login_attempts_state_nonblank`\n`CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))`\nState uses the base64url alphabet and cannot be blank.\n`oidc_login_attempts_handle_hash_key`\n`CREATE UNIQUE INDEX oidc_login_attempts_handle_hash_key ON public.oidc_login_attempts USING btree (handle_hash)`\nOne attempt per browser handle; supports consumption by handle.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "backchannel_logout_replays",
-    "anchor": "backchannel_logout_replays",
-    "text": "backchannel_logout_replays\nIdentifiers of accepted provider logout tokens, kept to reject a replayed token.\nOwner: Identity. Classification: INTERNAL.\nLifecycle: Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti`\n`character varying(255)`\nno\n—\nINTERNAL\nUnique identifier (jti) of an accepted logout token.\n—\n—\n`received_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the token was accepted.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the token would fail the five-minute age check, so its record is no longer needed.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-3",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
   }
 ]

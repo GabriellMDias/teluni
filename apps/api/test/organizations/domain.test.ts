@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderInvitationEmail } from "../../src/features/organizations/invitation-email.js";
 import {
+  auditVisibility,
   branchReach,
   companyAccess,
   decide,
@@ -149,6 +150,26 @@ describe("organization access decisions", () => {
       branches: ["north"],
     });
     expect(invitationVisibility(access([operator], true))).toBeNull();
+  });
+
+  it("limits branch managers' audit to their branches and hides it from operators", () => {
+    const admin: Grant = { role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" };
+    expect(auditVisibility(access([admin], true))).toEqual({ kind: "all" });
+    expect(auditVisibility(access([manager, operator], true))).toEqual({
+      kind: "branches",
+      branches: ["north"],
+    });
+    expect(
+      auditVisibility(
+        access([{ role: "BRANCH_MANAGER", scope: "COMPANY" }], true),
+      ),
+    ).toEqual({ kind: "branches", branches: "all" });
+    // Without strong authentication or as an operator, nothing is visible.
+    expect(auditVisibility(access([admin]))).toBeNull();
+    expect(auditVisibility(access([manager]))).toBeNull();
+    expect(auditVisibility(access([operator], true))).toBeNull();
+    // A branch grant never turns into company-level audit access.
+    expect(decide(access([manager], true), "audit.view")).toBe("deny");
   });
 
   it("renders the invitation email with escaped names and one panel link", () => {
