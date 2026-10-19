@@ -24,7 +24,7 @@ This is a navigation summary, not an independent technology specification. Each 
 
 ## Accepted Teluni product directions
 
-The owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. ADR-0027 was accepted on 2026-10-19 under PH-22. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).
+The owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. ADR-0027 was accepted on 2026-10-19 under PH-22 and ADR-0028 the same day under PH-23. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).
 
 | Governing decision | Accepted direction | Current policy / remaining gate |
 | --- | --- | --- |
@@ -37,6 +37,7 @@ The owner explicitly accepted the seven pending product ADRs on 2026-10-18, and 
 | [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) | Application-owned scoped standard/custom profiles and attributable consent-based support | [Identity/access](../project/identity-and-access.md); concrete authorization/session contracts and all IA cases pending |
 | [ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) | Transactional email through a PostgreSQL outbox, an in-process dispatcher and a provider-neutral SMTP relay (`nodemailer`), at least once | [Invitation and email delivery design](../project/invitation-delivery-design.md); accepted 2026-10-18 under PH-21; real sender/provider PH-17 and retention PH-13 pending |
 | [ADR-0027](../adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md) | Code-based device enrollment shaped like RFC 8628 and device-generated bearer credentials stored only as hashes, separate from human sessions | [Device enrollment design](../project/device-enrollment-design.md); accepted 2026-10-19 under PH-22; Android player PJ-12 and hardware PH-08 pending |
+| [ADR-0028](../adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md) | Immutable per-company content-addressed media objects on the media volume, parsed and converted only by FFmpeg in isolated child processes under a PostgreSQL-leased processor | [Media library design](../project/media-library-design.md); accepted 2026-10-19 under PH-23; device profiles PH-08, production image PJ-13 and malware scanning PH-13 pending |
 
 ## Deliberately unresolved or conditional choices
 

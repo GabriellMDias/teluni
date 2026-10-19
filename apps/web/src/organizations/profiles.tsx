@@ -23,6 +23,9 @@ export const delegableCapabilities: readonly DelegableCapability[] = [
   "audit.view",
   "devices.view",
   "devices.manage",
+  "media.view",
+  "media.upload",
+  "media.archive",
 ];
 
 function CapabilityFields({

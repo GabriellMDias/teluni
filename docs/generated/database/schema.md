@@ -324,6 +324,141 @@ Lifecycle: Created PENDING by a producer; becomes SENT when the relay accepts it
 | `outbound_emails_finalized_idx` | `CREATE INDEX outbound_emails_finalized_idx ON public.outbound_emails USING btree (finalized_at) WHERE (status <> 'PENDING'::"OutboundEmailStatus")` | Finds final messages whose retention period has ended. |
 | `outbound_emails_producer_idx` | `CREATE INDEX outbound_emails_producer_idx ON public.outbound_emails USING btree (producer, producer_reference)` | Finds a producer's messages to report delivery state or cancel them. |
 
+## media_objects
+
+One stored file of a company on the media volume, named by the SHA-256 of its bytes: an original upload, a display rendition or a thumbnail. Identical bytes are stored once per company and never shared across companies.
+
+Owner: Media. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted when a file is published into the volume, under this row's lock, before the referencing asset commits. Deleted by purge, with the file, once no asset of the company references it. Rows never change.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the object; part of the key so objects never cross tenants. | — | — |
+| `sha256` | `bytea` | no | — | CONFIDENTIAL | SHA-256 of the object's bytes; with the company it names the file on the media volume. | — | — |
+| `byte_size` | `bigint` | no | — | INTERNAL | Size of the stored file. | — | bytes |
+| `content_type` | `character varying(64)` | no | — | INTERNAL | Server-determined media type of the stored file, sent when it is delivered. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the object was first stored. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `media_objects_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An object belongs to an existing company. |
+| `media_objects_pkey` | `PRIMARY KEY (company_id, sha256)` | One row per company and content hash. |
+| `media_objects_sha256_length` | `CHECK ((octet_length(sha256) = 32))` | The key is a SHA-256 digest. |
+| `media_objects_size_positive` | `CHECK ((byte_size > 0))` | Stored files are never empty. |
+
+## media_assets
+
+A media item of a company: one uploaded image or video, its owning scope (the company or one branch), name and tags, inspected facts and the objects derived from it.
+
+Owner: Media. Classification: CONFIDENTIAL.
+
+Lifecycle: Created UPLOADING; a complete upload makes it PROCESSING; the processor makes it READY or REJECTED (final) or, after repeated internal failures, FAILED. READY and ARCHIVED alternate; deleting an ARCHIVED item without protected references makes it DELETED with a 30-day purge_after, from which it can return to ARCHIVED; purge or discarding an unusable upload makes it PURGED, clearing object references. Rows are kept for audit; no runtime deletion. See docs/project/media-library-design.md.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable media item UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the item; immutable (tenant key). | — | — |
+| `branch_id` | `uuid` | yes | — | INTERNAL | Branch that owns the item; immutable. | The item belongs to the whole company and every member who may view media sees it. | — |
+| `name` | `character varying(120)` | no | — | CONFIDENTIAL | Display name chosen by members, the uploaded file name by default; never used as a path. | — | — |
+| `tags` | `text[]` | yes | `ARRAY[]::text[]` | CONFIDENTIAL | Lower-case organization labels, at most ten, sorted. | Never null; an empty array means no tags. | — |
+| `kind` | `"MediaKind"` | no | — | INTERNAL | IMAGE or VIDEO, fixed by the declared type. | — | — |
+| `status` | `"MediaStatus"` | no | `'UPLOADING'::"MediaStatus"` | INTERNAL | Lifecycle state; see the table lifecycle. | — | — |
+| `rejection_reason` | `character varying(40)` | yes | — | INTERNAL | Why inspection or conversion rejected the file, from a closed set of MEDIA_* reason codes. | The item was not rejected. | — |
+| `declared_content_type` | `character varying(64)` | no | — | INTERNAL | Media type the uploader declared; it only admits the upload, the file signature decides. | — | — |
+| `declared_size` | `bigint` | no | — | INTERNAL | Exact size the uploader declared; the upload must deliver exactly this many bytes. | — | bytes |
+| `original_sha256` | `bytea` | yes | — | CONFIDENTIAL | Hash of the stored original upload. | No complete upload is stored (still uploading, rejected or purged). | — |
+| `display_sha256` | `bytea` | yes | — | CONFIDENTIAL | Hash of the display rendition that playlists and publications use. | The item has no usable rendition (not ready, rejected, failed or purged). | — |
+| `thumbnail_sha256` | `bytea` | yes | — | CONFIDENTIAL | Hash of the panel thumbnail. | The item has no usable rendition (not ready, rejected, failed or purged). | — |
+| `width` | `integer` | yes | — | CONFIDENTIAL | Displayed width of the display rendition after orientation. | Not inspected yet, or rejected. | pixels |
+| `height` | `integer` | yes | — | CONFIDENTIAL | Displayed height of the display rendition after orientation. | Not inspected yet, or rejected. | pixels |
+| `duration_ms` | `integer` | yes | — | CONFIDENTIAL | Duration of a video. | An image, or a video not inspected yet. | milliseconds |
+| `has_audio` | `boolean` | yes | — | CONFIDENTIAL | Whether the video's display rendition carries an audio track. | An image, or a video not inspected yet. | — |
+| `processing_stage` | `character varying(16)` | yes | — | INTERNAL | Current processing step: probing, converting or verifying. | Not being processed. | — |
+| `processing_progress` | `integer` | yes | — | INTERNAL | Conversion progress reported by FFmpeg, written at most every two seconds. | Not converting or progress unknown. | percent |
+| `processing_attempts` | `integer` | no | `0` | INTERNAL | Processing attempts started; internal failures retry up to three attempts. | — | attempts |
+| `lease_until` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant until which one processor owns the item's processing. | No processor holds the item. | UTC instant, millisecond precision |
+| `next_attempt_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Earliest instant the processor may claim the item. | Not waiting for processing. | UTC instant, millisecond precision |
+| `created_by_membership_id` | `uuid` | no | — | INTERNAL | Membership that created the item; historical attribution, not authority. | — | — |
+| `created_by_principal_id` | `uuid` | no | — | INTERNAL | Principal that created the item, for per-person upload limits. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the item was created. | — | UTC instant, millisecond precision |
+| `uploaded_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the complete file was received. | No complete upload yet. | UTC instant, millisecond precision |
+| `ready_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the item first became usable. | Never became ready. | UTC instant, millisecond precision |
+| `archived_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant of the latest archive. | Never archived, or restored since. | UTC instant, millisecond precision |
+| `deleted_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the item was moved to the trash. | Not in the trash. | UTC instant, millisecond precision |
+| `purge_after` | `timestamp(3) with time zone` | yes | — | INTERNAL | Earliest instant the purge may remove a deleted item. | Not in the trash. | UTC instant, millisecond precision |
+| `purged_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the item's files were removed. | Not purged. | UTC instant, millisecond precision |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful member change. | — | successful writes |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `media_assets_attempts_nonnegative` | `CHECK ((processing_attempts >= 0))` | Attempt counts never go below zero. |
+| `media_assets_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The owning branch belongs to the same company. |
+| `media_assets_company_id_created_by_membership_id_fkey` | `FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The creating membership belongs to the same company. |
+| `media_assets_company_id_display_sha256_fkey` | `FOREIGN KEY (company_id, display_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT` | The display rendition is an object of the same company. |
+| `media_assets_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An item belongs to an existing company. |
+| `media_assets_company_id_original_sha256_fkey` | `FOREIGN KEY (company_id, original_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT` | The original is an object of the same company. |
+| `media_assets_company_id_thumbnail_sha256_fkey` | `FOREIGN KEY (company_id, thumbnail_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT` | The thumbnail is an object of the same company. |
+| `media_assets_created_by_principal_id_fkey` | `FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The creator is a known principal. |
+| `media_assets_declared_size_positive` | `CHECK ((declared_size > 0))` | A declared size is positive. |
+| `media_assets_dimensions_positive` | `CHECK ((((width IS NULL) OR (width > 0)) AND ((height IS NULL) OR (height > 0))))` | Dimensions are positive. |
+| `media_assets_hash_lengths` | `CHECK ((((original_sha256 IS NULL) OR (octet_length(original_sha256) = 32)) AND ((display_sha256 IS NULL) OR (octet_length(display_sha256) = 32)) AND ((thumbnail_sha256 IS NULL) OR (octet_length(thumbnail_sha256) = 32))))` | Object references are SHA-256 digests. |
+| `media_assets_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are stored trimmed and nonempty. |
+| `media_assets_pkey` | `PRIMARY KEY (id)` | Unique media item identity. |
+| `media_assets_progress_range` | `CHECK (((processing_progress IS NULL) OR ((processing_progress >= 0) AND (processing_progress <= 100))))` | Progress is a percentage. |
+| `media_assets_purged_state` | `CHECK (((status = 'PURGED'::"MediaStatus") = (purged_at IS NOT NULL)))` | A purge instant is recorded exactly for purged items. |
+| `media_assets_rejection_state` | `CHECK (((status = 'REJECTED'::"MediaStatus") = (rejection_reason IS NOT NULL)))` | A rejection reason exists exactly for rejected items. |
+| `media_assets_tags_bounded` | `CHECK (((tags IS NOT NULL) AND (cardinality(tags) <= 10)))` | Tags are present and at most ten. |
+| `media_assets_trash_state` | `CHECK (((status = 'DELETED'::"MediaStatus") = (purge_after IS NOT NULL)))` | A purge instant exists exactly for items in the trash. |
+| `media_assets_unusable_without_renditions` | `CHECK (((status <> ALL (ARRAY['UPLOADING'::"MediaStatus", 'REJECTED'::"MediaStatus", 'FAILED'::"MediaStatus", 'PURGED'::"MediaStatus"])) OR ((display_sha256 IS NULL) AND (thumbnail_sha256 IS NULL))))` | Items that are not usable hold no renditions. |
+| `media_assets_usable_objects` | `CHECK (((status <> ALL (ARRAY['READY'::"MediaStatus", 'ARCHIVED'::"MediaStatus", 'DELETED'::"MediaStatus"])) OR ((original_sha256 IS NOT NULL) AND (display_sha256 IS NOT NULL) AND (thumbnail_sha256 IS NOT NULL) AND (width IS NOT NULL) AND (height IS NOT NULL) AND (ready_at IS NOT NULL))))` | Ready, archived and deleted items keep all their objects and facts. |
+| `media_assets_version_positive` | `CHECK ((version >= 1))` | Versions start at one. |
+| `media_assets_video_duration` | `CHECK (((duration_ms IS NULL) OR ((kind = 'VIDEO'::"MediaKind") AND (duration_ms > 0))))` | Only videos have a positive duration. |
+| `media_assets_company_created_idx` | `CREATE INDEX media_assets_company_created_idx ON public.media_assets USING btree (company_id, created_at DESC, id DESC)` | Lists a company's items newest first with stable keyset pagination. |
+| `media_assets_company_id_id_key` | `CREATE UNIQUE INDEX media_assets_company_id_id_key ON public.media_assets USING btree (company_id, id)` | Tenant key for references to media items. |
+| `media_assets_company_status_idx` | `CREATE INDEX media_assets_company_status_idx ON public.media_assets USING btree (company_id, status)` | Counts a company's open uploads and processing items for abuse limits. |
+| `media_assets_display_idx` | `CREATE INDEX media_assets_display_idx ON public.media_assets USING btree (company_id, display_sha256)` | Finds whether another item still references an object before it is deleted. |
+| `media_assets_original_idx` | `CREATE INDEX media_assets_original_idx ON public.media_assets USING btree (company_id, original_sha256)` | Finds whether another item still references an object before it is deleted. |
+| `media_assets_processing_idx` | `CREATE INDEX media_assets_processing_idx ON public.media_assets USING btree (status, next_attempt_at)` | Finds items due for processing and expired uploads and trash. |
+| `media_assets_thumbnail_idx` | `CREATE INDEX media_assets_thumbnail_idx ON public.media_assets USING btree (company_id, thumbnail_sha256)` | Finds whether another item still references an object before it is deleted. |
+
+## media_audit_events
+
+Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.
+
+Owner: Media. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the item. | — | — |
+| `asset_id` | `uuid` | no | — | INTERNAL | Media item the event concerns. | — | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
+| `actor_principal_id` | `uuid` | yes | — | INTERNAL | Principal that made the change. | The processor or maintenance made the change. | — |
+| `actor_membership_id` | `uuid` | yes | — | INTERNAL | Membership through which the change was made. | The processor or maintenance made the change. | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | Event name such as media.uploaded, media.ready, media.archived or media.purged. | — | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Allowlisted IDs, kinds, sizes, states and reason codes; never names of other items, hashes or paths. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `media_audit_events_actor_principal_id_fkey` | `FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The actor is a known principal. |
+| `media_audit_events_company_id_actor_membership_id_fkey` | `FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The acting membership belongs to the same company. |
+| `media_audit_events_company_id_asset_id_fkey` | `FOREIGN KEY (company_id, asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The item belongs to the same company. |
+| `media_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
+| `media_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
+| `media_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
+| `media_audit_events_asset_time_idx` | `CREATE INDEX media_audit_events_asset_time_idx ON public.media_audit_events USING btree (company_id, asset_id, occurred_at DESC, id DESC)` | Reads an item's history newest first. |
+| `media_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX media_audit_events_company_id_id_key ON public.media_audit_events USING btree (company_id, id)` | Tenant key for events. |
+
 ## companies
 
 Customer company: the tenant that owns branches, memberships, content, devices and publications.
@@ -458,7 +593,7 @@ Lifecycle: Created ACTIVE; edited with expected versions, so every holder's acce
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable profile UUID; public resource ID. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Owning company; immutable (tenant key). | — | — |
 | `name` | `character varying(120)` | no | — | CONFIDENTIAL | Profile name, unique among the company's active profiles regardless of case. | — | — |
-| `capabilities` | `text[]` | no | — | INTERNAL | Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile. | — | — |
+| `capabilities` | `text[]` | no | — | INTERNAL | Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive); company administration is never delegable through a profile. | — | — |
 | `status` | `"AccessProfileStatus"` | no | `'ACTIVE'::"AccessProfileStatus"` | INTERNAL | ACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution. | — | — |
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
@@ -469,7 +604,7 @@ Lifecycle: Created ACTIVE; edited with expected versions, so every holder's acce
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `access_profiles_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A profile belongs to an existing company. |
-| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text])))` | A profile names at least one capability, all of them delegable. |
+| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text])))` | A profile names at least one capability, all of them delegable. |
 | `access_profiles_name_nonblank` | `CHECK ((btrim((name)::text) <> ''::text))` | Profile name cannot be blank. |
 | `access_profiles_pkey` | `PRIMARY KEY (id)` | Unique profile identity. |
 | `access_profiles_version_positive` | `CHECK ((version >= 1))` | Rejects invalid concurrency versions. |
@@ -717,6 +852,8 @@ Lifecycle: Created with its invitation and never changed.
 | `GrantScope` | COMPANY, BRANCHES | Grant scope: COMPANY or explicit BRANCHES. |
 | `HumanSessionState` | PENDING_LIMIT, ACTIVE, REVOKED | Server-managed session state: PENDING_LIMIT, ACTIVE or REVOKED. |
 | `InvitationStatus` | PENDING, ACCEPTED, REVOKED, REPLACED, EXPIRED | Invitation state: PENDING, ACCEPTED, REVOKED, REPLACED or EXPIRED. |
+| `MediaKind` | IMAGE, VIDEO | Kind of media item: IMAGE or VIDEO. |
+| `MediaStatus` | UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED, PURGED | Lifecycle state of a media item: UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED or PURGED. |
 | `MembershipStatus` | ACTIVE, SUSPENDED, REMOVED | Membership state: ACTIVE, SUSPENDED or REMOVED. |
 | `OutboundEmailStatus` | PENDING, SENT, FAILED, CANCELLED | Outbound email state: PENDING, SENT, FAILED or CANCELLED. |
 | `PrincipalStatus` | ACTIVE, DISABLED | Global principal state: ACTIVE or DISABLED. |

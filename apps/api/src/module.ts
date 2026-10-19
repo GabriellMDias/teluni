@@ -37,12 +37,25 @@ export type ApiOperation = Readonly<{
    * `authentication` uses bearer tokens.
    */
   access?: "public" | "session" | "device";
-  /** Request body media type; JSON unless a protocol requires a form. */
-  bodyContentType?: "application/json" | "application/x-www-form-urlencoded";
+  /** Request body media type; JSON unless a protocol requires a form or bytes. */
+  bodyContentType?:
+    | "application/json"
+    | "application/x-www-form-urlencoded"
+    | "application/octet-stream";
+  /**
+   * Media type of successful responses that carry bytes instead of JSON,
+   * such as a media file; their schema describes a binary string.
+   */
+  binaryResponse?: true;
 }>;
 
 export type ModuleRequirement =
-  "database" | "authentication" | "humanIdentity" | "mail" | "deviceEnrollment";
+  | "database"
+  | "authentication"
+  | "humanIdentity"
+  | "mail"
+  | "deviceEnrollment"
+  | "mediaStorage";
 
 /** Validated settings of the server-managed human session boundary. */
 export type HumanIdentitySettings = Readonly<{
@@ -78,18 +91,36 @@ export type DeviceEnrollmentSettings = Readonly<{
   codeKeys: readonly Readonly<{ id: string; key: Buffer }>[];
 }>;
 
+/** Validated settings of the media volume and its tools (ADR-0028). */
+export type MediaStorageSettings = Readonly<{
+  environment: "development" | "test" | "production";
+  /** Absolute directory on durable storage holding objects and work files. */
+  root: string;
+  ffmpegPath: string;
+  ffprobePath: string;
+  /** Processing jobs run at once by this process. */
+  concurrency: number;
+}>;
+
 export type ModuleResources = Readonly<{
   database?: Database;
   verifier?: AccessTokenVerifier;
   humanIdentity?: HumanIdentitySettings;
   mail?: MailSettings;
   deviceEnrollment?: DeviceEnrollmentSettings;
+  mediaStorage?: MediaStorageSettings;
 }>;
 
 /** A module whose dependencies are satisfied and whose routes can mount. */
 export type RegisteredModule = Readonly<{
   name: string;
   register(app: AppInstance): void;
+  /**
+   * Longest time one of the module's routes may take to receive its
+   * request, for streamed uploads. Those routes set `config.longRequest`;
+   * every other route keeps the standard 30 seconds.
+   */
+  requestTimeoutMs?: number;
 }>;
 
 /**
@@ -127,6 +158,7 @@ export function activateModules(
     humanIdentity: resources.humanIdentity !== undefined,
     mail: resources.mail !== undefined,
     deviceEnrollment: resources.deviceEnrollment !== undefined,
+    mediaStorage: resources.mediaStorage !== undefined,
   };
   const active: RegisteredModule[] = [];
   const activated = new Set<string>();

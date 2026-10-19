@@ -27,7 +27,7 @@ type Schema = Record<string, unknown>;
 function asSchema(value: object): Schema {
   return value as Schema;
 }
-function response(schema: unknown, status: string) {
+function response(schema: unknown, status: string, binary = false) {
   // A `Type.Null()` response has no body, such as a redirect or 204.
   const empty =
     typeof schema === "object" &&
@@ -54,7 +54,15 @@ function response(schema: unknown, status: string) {
             },
           }
         : {}),
-    ...(empty ? {} : { content: { "application/json": { schema } } }),
+    ...(empty
+      ? {}
+      : {
+          content: {
+            [binary ? "application/octet-stream" : "application/json"]: {
+              schema,
+            },
+          },
+        }),
   };
 }
 
@@ -128,7 +136,11 @@ export async function generateOpenApi(
     const responses = Object.fromEntries(
       Object.entries(schema.response).map(([code, value]) => [
         code,
-        response(value, code),
+        response(
+          value,
+          code,
+          operation.binaryResponse === true && /^2/.test(code),
+        ),
       ]),
     );
     if (operation.expectedErrors) {

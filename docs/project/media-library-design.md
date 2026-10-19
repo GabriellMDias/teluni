@@ -4,7 +4,7 @@
 
 ## Status and scope
 
-**Proposed detailed design for D-05, 2026-10-19, for owner review under [PH-23](human-actions.md#ph-23).** The owner asked for development to continue autonomously on 2026-10-19; the media library is the next item of the plan (PJ-09), which depends on a reviewed D-05. The [decisions for review](#decisions-for-review) are security, storage and processing choices with long-lived consequences, so they are presented for explicit approval. The implementation in the same pull request follows the recommended option of each decision and stays unmerged until the owner decides.
+**Approved detailed design for D-05, 2026-10-19.** The owner approved all nine [decisions for review](#decisions-for-review) as proposed under [PH-23](human-actions.md#ph-23), including ADR-0028, after asking for development to continue autonomously. Approval authorizes implementation of PJ-09 in local and CI environments with generated fixtures.
 
 In scope: tenant-owned media assets and their branch scope, upload, trustworthy inspection and validation against AT-02/AT-03, the playback rendition profile and conversion (FR-04), processing isolation, private storage and delivery to the panel, archive, trash and reference-safe purge (AT-17), permissions, abuse limits, audit, data, contracts, panel workflow and verification.
 
@@ -99,10 +99,10 @@ This profile is the conservative reference that Android TV hardware decoders com
 
 - **Rename and tags.** `media.upload` on the asset's scope and the expected version, in any state but `DELETED` and `PURGED`.
 - **Archive and restore.** `media.archive` on the scope. An archived asset disappears from selection lists and keeps working wherever it is already used.
-- **Delete.** Only from `ARCHIVED`, with `media.delete` (administrators) and a confirmation naming the asset. The server asks every registered reference guard whether a protected reference exists (drafts, active, staged or recovery generations, protected publications); if one does, it answers `MEDIA_IN_USE` with the number of references the caller may see and the kinds of the others, and nothing changes. Otherwise the asset becomes `DELETED` with `purge_after` 30 days later (AT-17), hidden from everyone but administrators' trash view.
+- **Delete.** Only from `ARCHIVED`, with `media.delete` (administrators) and a confirmation naming the asset. The server asks every registered reference guard whether a protected reference exists (drafts, active, staged or recovery generations, protected publications); if one does, it answers `MEDIA_IN_USE` and nothing changes. Listing the references the caller may see arrives with the first referencing module (PJ-10), which owns their names. Otherwise the asset becomes `DELETED` with `purge_after` 30 days later (AT-17), hidden from everyone but administrators' trash view.
 - **Restore from trash.** `media.delete` before `purge_after`; the asset returns to `ARCHIVED`.
 - **Purge.** Maintenance takes `DELETED` assets past `purge_after`, asks the reference guards again, and only when nothing protects the asset marks it `PURGED`, clears its object references and deletes each object no other asset of the company references. A protected asset stays `DELETED` and is retried; retention expiry alone never deletes media, as the release policies require. The `PURGED` row keeps the ID, name and dates for audit; its bytes are gone.
-- **Discard.** An asset in `UPLOADING`, `REJECTED` or `FAILED` was never usable, so a person with `media.upload` on its scope can discard it immediately; its row is deleted with its files.
+- **Discard.** An asset in `UPLOADING`, `REJECTED` or `FAILED` was never usable, so a person with `media.upload` on its scope can discard it immediately; it becomes `PURGED` and its files are deleted.
 
 **Reference port.** The media module exposes `registerReferenceGuard(kind, guard)` on its public port. A guard runs in the deleting or purging transaction after the asset row is locked and returns the references it knows, each with the branch it belongs to, so the media module can disclose only what the caller may see. Programming (PJ-10), publications (PJ-11), compositions (PJ-20) and catalogs (PJ-21) register their guards when they exist. Selecting media for a new reference goes through the port's `requireSelectable`, which accepts only `READY` assets the caller may use.
 
@@ -136,9 +136,9 @@ All tables belong to the media module, with Prisma models in `prisma/schema/medi
 
 | Table | Contents | Notes |
 | --- | --- | --- |
-| `media_objects` | `(company_id, sha256)` key, byte size, content type, created time | One row per stored file per company; locked during publication and purge |
+| `media_objects` | `(company_id, sha256)` key, byte size, content type, created time | One row per stored file per company; publication and purge serialize on a transaction-scoped advisory lock per object |
 | `media_assets` | `(company_id, id)`, optional composite `(company_id, branch_id)` reference, name, tags, kind, status, rejection reason, declared type and size, original/display/thumbnail object hashes (composite references to `media_objects`), inspected facts, processing stage/progress/attempts/lease, created-by membership, created/ready/archived/deleted/purge-after/purged times, version | Composite tenant references; runtime role never updates `company_id` or `branch_id` |
-| `media_audit_events` | Company, actor, action, target asset, allowlisted details | Append-only; `media.uploaded`, `media.ready`, `media.rejected`, `media.renamed`, `media.tagged`, `media.archived`, `media.restored`, `media.deleted`, `media.trash_restored`, `media.purged`, `media.discarded`. Details hold IDs, kinds, sizes and reason codes, never file names of other assets, hashes or paths |
+| `media_audit_events` | Company, actor, action, target asset, allowlisted details | Append-only; `media.created`, `media.uploaded`, `media.ready`, `media.failed`, `media.rejected`, `media.renamed`, `media.tagged`, `media.archived`, `media.restored`, `media.deleted`, `media.trash_restored`, `media.purged`, `media.discarded`. Details hold IDs, kinds, sizes and reason codes, never file names of other assets, hashes or paths |
 
 Names, tags, inspected facts and the stored bytes are `CONFIDENTIAL`. The original file name is used as the default name only; it is not stored separately.
 
@@ -164,9 +164,20 @@ A **Media** view per company (pt-BR "Mídia") shows a grid of thumbnails with na
 2. Delete to trash, restore from trash, purge, reference port and guards, discard, maintenance (expired uploads, work files, orphan objects) and the trash view.
 3. Explicit sharing with selected branches, storage accounting per company for PJ-27 and the end-to-end journey hardening.
 
+## Implementation status
+
+Implemented in [PJ-09](implementation-plan.md#current-work) on 2026-10-19, increments 1 and 2:
+
+- The [`media` API module](../../apps/api/src/features/media/AGENTS.md), its reviewed migration (which also lets profiles delegate the media capabilities), runtime grants and schema metadata, the binary upload and content operations in the [OpenAPI document](../generated/api/openapi.json), and the `TELUNI_MEDIA_` settings. Without `TELUNI_MEDIA_STORAGE_PATH` the module stays unmounted.
+- `media.view`, `media.upload`, `media.archive` and `media.delete` in the standard roles and as delegable profile capabilities (except `media.delete`).
+- The in-process processor with leases, FFmpeg isolation and renditions; delete to trash, restore, discard, purge with reference guards and object sharing, and maintenance of expired uploads, work files and orphan objects. Programming and publications register their guards in PJ-10 and PJ-11.
+- The [two-company integration suite](../../apps/api/test/media/integration.test.ts) processes generated fixtures with real FFmpeg against PostgreSQL as the runtime role, and [domain tests](../../apps/api/test/media/domain.test.ts) cover the bounds and the playback-profile decision.
+
+Pending: increment 3 (explicit sharing with selected branches and storage accounting for PJ-27), a processing-timeout fixture, and the panel **Mídia** pages.
+
 ## Decisions for review
 
-Each item is proposed for the owner's explicit decision under [PH-23](human-actions.md#ph-23):
+The owner approved each item as proposed on 2026-10-19 under [PH-23](human-actions.md#ph-23):
 
 1. **Storage (ADR-0028).** Media on a configured local directory behind a media-owned object interface; immutable objects named by SHA-256 per company, deduplicated only within a company; atomic publish by rename under a database lock; the database is the authority; a free-space reserve of max(2 GiB, 10%).
 2. **Processing tool and isolation (ADR-0028).** FFmpeg 6.1 or later as an external executable for probing, image and video renditions, run as child processes with no shell, a scrubbed environment, file-only protocol, forced demuxers, timeouts and optional `prlimit`; no image library inside the API process; an in-process PostgreSQL-leased processor with concurrency 1 by default.

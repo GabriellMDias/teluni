@@ -80,9 +80,18 @@ try {
   const deviceEnrollment = config.deviceCodeKeys
     ? { codeKeys: parseKeyRing(config.deviceCodeKeys, "device code keys") }
     : undefined;
+  const mediaStorage = config.mediaStoragePath
+    ? {
+        environment: config.environment,
+        root: config.mediaStoragePath,
+        ffmpegPath: config.mediaFfmpegPath,
+        ffprobePath: config.mediaFfprobePath,
+        concurrency: config.mediaProcessingConcurrency,
+      }
+    : undefined;
   const modules = activateModules(
     apiModules,
-    { database, verifier, humanIdentity, mail, deviceEnrollment },
+    { database, verifier, humanIdentity, mail, deviceEnrollment, mediaStorage },
     config.environment,
   );
   const { app, lifecycle } = createApp(logger, undefined, {

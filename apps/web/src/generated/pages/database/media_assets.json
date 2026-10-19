@@ -1,0 +1,487 @@
+{
+  "kind": "database",
+  "name": "media_assets",
+  "description": "A media item of a company: one uploaded image or video, its owning scope (the company or one branch), name and tags, inspected facts and the objects derived from it.",
+  "owner": "Media",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created UPLOADING; a complete upload makes it PROCESSING; the processor makes it READY or REJECTED (final) or, after repeated internal failures, FAILED. READY and ARCHIVED alternate; deleting an ARCHIVED item without protected references makes it DELETED with a 30-day purge_after, from which it can return to ARCHIVED; purge or discarding an unusable upload makes it PURGED, clearing object references. Rows are kept for audit; no runtime deletion. See docs/project/media-library-design.md.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable media item UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the item; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch that owns the item; immutable.",
+      "Null meaning": "The item belongs to the whole company and every member who may view media sees it.",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display name chosen by members, the uploaded file name by default; never used as a path.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "tags",
+      "PostgreSQL type": "text[]",
+      "Nullable": "yes",
+      "Default": "ARRAY[]::text[]",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Lower-case organization labels, at most ten, sorted.",
+      "Null meaning": "Never null; an empty array means no tags.",
+      "Unit": "—"
+    },
+    {
+      "Column": "kind",
+      "PostgreSQL type": "\"MediaKind\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "IMAGE or VIDEO, fixed by the declared type.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"MediaStatus\"",
+      "Nullable": "no",
+      "Default": "'UPLOADING'::\"MediaStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "Lifecycle state; see the table lifecycle.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "rejection_reason",
+      "PostgreSQL type": "character varying(40)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Why inspection or conversion rejected the file, from a closed set of MEDIA_* reason codes.",
+      "Null meaning": "The item was not rejected.",
+      "Unit": "—"
+    },
+    {
+      "Column": "declared_content_type",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Media type the uploader declared; it only admits the upload, the file signature decides.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "declared_size",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Exact size the uploader declared; the upload must deliver exactly this many bytes.",
+      "Null meaning": "—",
+      "Unit": "bytes"
+    },
+    {
+      "Column": "original_sha256",
+      "PostgreSQL type": "bytea",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Hash of the stored original upload.",
+      "Null meaning": "No complete upload is stored (still uploading, rejected or purged).",
+      "Unit": "—"
+    },
+    {
+      "Column": "display_sha256",
+      "PostgreSQL type": "bytea",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Hash of the display rendition that playlists and publications use.",
+      "Null meaning": "The item has no usable rendition (not ready, rejected, failed or purged).",
+      "Unit": "—"
+    },
+    {
+      "Column": "thumbnail_sha256",
+      "PostgreSQL type": "bytea",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Hash of the panel thumbnail.",
+      "Null meaning": "The item has no usable rendition (not ready, rejected, failed or purged).",
+      "Unit": "—"
+    },
+    {
+      "Column": "width",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Displayed width of the display rendition after orientation.",
+      "Null meaning": "Not inspected yet, or rejected.",
+      "Unit": "pixels"
+    },
+    {
+      "Column": "height",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Displayed height of the display rendition after orientation.",
+      "Null meaning": "Not inspected yet, or rejected.",
+      "Unit": "pixels"
+    },
+    {
+      "Column": "duration_ms",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Duration of a video.",
+      "Null meaning": "An image, or a video not inspected yet.",
+      "Unit": "milliseconds"
+    },
+    {
+      "Column": "has_audio",
+      "PostgreSQL type": "boolean",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Whether the video's display rendition carries an audio track.",
+      "Null meaning": "An image, or a video not inspected yet.",
+      "Unit": "—"
+    },
+    {
+      "Column": "processing_stage",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Current processing step: probing, converting or verifying.",
+      "Null meaning": "Not being processed.",
+      "Unit": "—"
+    },
+    {
+      "Column": "processing_progress",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Conversion progress reported by FFmpeg, written at most every two seconds.",
+      "Null meaning": "Not converting or progress unknown.",
+      "Unit": "percent"
+    },
+    {
+      "Column": "processing_attempts",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "INTERNAL",
+      "Meaning": "Processing attempts started; internal failures retry up to three attempts.",
+      "Null meaning": "—",
+      "Unit": "attempts"
+    },
+    {
+      "Column": "lease_until",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant until which one processor owns the item's processing.",
+      "Null meaning": "No processor holds the item.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "next_attempt_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Earliest instant the processor may claim the item.",
+      "Null meaning": "Not waiting for processing.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "created_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that created the item; historical attribution, not authority.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_by_principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Principal that created the item, for per-person upload limits.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the item was created.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "uploaded_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the complete file was received.",
+      "Null meaning": "No complete upload yet.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "ready_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the item first became usable.",
+      "Null meaning": "Never became ready.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "archived_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant of the latest archive.",
+      "Null meaning": "Never archived, or restored since.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "deleted_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the item was moved to the trash.",
+      "Null meaning": "Not in the trash.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "purge_after",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Earliest instant the purge may remove a deleted item.",
+      "Null meaning": "Not in the trash.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "purged_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant the item's files were removed.",
+      "Null meaning": "Not purged.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency token incremented once per successful member change.",
+      "Null meaning": "—",
+      "Unit": "successful writes"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the latest change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "media_assets_attempts_nonnegative",
+      "Physical definition": "CHECK ((processing_attempts >= 0))",
+      "Purpose": "Attempt counts never go below zero."
+    },
+    {
+      "Object": "media_assets_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The owning branch belongs to the same company."
+    },
+    {
+      "Object": "media_assets_company_id_created_by_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The creating membership belongs to the same company."
+    },
+    {
+      "Object": "media_assets_company_id_display_sha256_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, display_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The display rendition is an object of the same company."
+    },
+    {
+      "Object": "media_assets_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An item belongs to an existing company."
+    },
+    {
+      "Object": "media_assets_company_id_original_sha256_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, original_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The original is an object of the same company."
+    },
+    {
+      "Object": "media_assets_company_id_thumbnail_sha256_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, thumbnail_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The thumbnail is an object of the same company."
+    },
+    {
+      "Object": "media_assets_created_by_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The creator is a known principal."
+    },
+    {
+      "Object": "media_assets_declared_size_positive",
+      "Physical definition": "CHECK ((declared_size > 0))",
+      "Purpose": "A declared size is positive."
+    },
+    {
+      "Object": "media_assets_dimensions_positive",
+      "Physical definition": "CHECK ((((width IS NULL) OR (width > 0)) AND ((height IS NULL) OR (height > 0))))",
+      "Purpose": "Dimensions are positive."
+    },
+    {
+      "Object": "media_assets_hash_lengths",
+      "Physical definition": "CHECK ((((original_sha256 IS NULL) OR (octet_length(original_sha256) = 32)) AND ((display_sha256 IS NULL) OR (octet_length(display_sha256) = 32)) AND ((thumbnail_sha256 IS NULL) OR (octet_length(thumbnail_sha256) = 32))))",
+      "Purpose": "Object references are SHA-256 digests."
+    },
+    {
+      "Object": "media_assets_name_trimmed",
+      "Physical definition": "CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))",
+      "Purpose": "Names are stored trimmed and nonempty."
+    },
+    {
+      "Object": "media_assets_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique media item identity."
+    },
+    {
+      "Object": "media_assets_progress_range",
+      "Physical definition": "CHECK (((processing_progress IS NULL) OR ((processing_progress >= 0) AND (processing_progress <= 100))))",
+      "Purpose": "Progress is a percentage."
+    },
+    {
+      "Object": "media_assets_purged_state",
+      "Physical definition": "CHECK (((status = 'PURGED'::\"MediaStatus\") = (purged_at IS NOT NULL)))",
+      "Purpose": "A purge instant is recorded exactly for purged items."
+    },
+    {
+      "Object": "media_assets_rejection_state",
+      "Physical definition": "CHECK (((status = 'REJECTED'::\"MediaStatus\") = (rejection_reason IS NOT NULL)))",
+      "Purpose": "A rejection reason exists exactly for rejected items."
+    },
+    {
+      "Object": "media_assets_tags_bounded",
+      "Physical definition": "CHECK (((tags IS NOT NULL) AND (cardinality(tags) <= 10)))",
+      "Purpose": "Tags are present and at most ten."
+    },
+    {
+      "Object": "media_assets_trash_state",
+      "Physical definition": "CHECK (((status = 'DELETED'::\"MediaStatus\") = (purge_after IS NOT NULL)))",
+      "Purpose": "A purge instant exists exactly for items in the trash."
+    },
+    {
+      "Object": "media_assets_unusable_without_renditions",
+      "Physical definition": "CHECK (((status <> ALL (ARRAY['UPLOADING'::\"MediaStatus\", 'REJECTED'::\"MediaStatus\", 'FAILED'::\"MediaStatus\", 'PURGED'::\"MediaStatus\"])) OR ((display_sha256 IS NULL) AND (thumbnail_sha256 IS NULL))))",
+      "Purpose": "Items that are not usable hold no renditions."
+    },
+    {
+      "Object": "media_assets_usable_objects",
+      "Physical definition": "CHECK (((status <> ALL (ARRAY['READY'::\"MediaStatus\", 'ARCHIVED'::\"MediaStatus\", 'DELETED'::\"MediaStatus\"])) OR ((original_sha256 IS NOT NULL) AND (display_sha256 IS NOT NULL) AND (thumbnail_sha256 IS NOT NULL) AND (width IS NOT NULL) AND (height IS NOT NULL) AND (ready_at IS NOT NULL))))",
+      "Purpose": "Ready, archived and deleted items keep all their objects and facts."
+    },
+    {
+      "Object": "media_assets_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at one."
+    },
+    {
+      "Object": "media_assets_video_duration",
+      "Physical definition": "CHECK (((duration_ms IS NULL) OR ((kind = 'VIDEO'::\"MediaKind\") AND (duration_ms > 0))))",
+      "Purpose": "Only videos have a positive duration."
+    },
+    {
+      "Object": "media_assets_company_created_idx",
+      "Physical definition": "CREATE INDEX media_assets_company_created_idx ON public.media_assets USING btree (company_id, created_at DESC, id DESC)",
+      "Purpose": "Lists a company's items newest first with stable keyset pagination."
+    },
+    {
+      "Object": "media_assets_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX media_assets_company_id_id_key ON public.media_assets USING btree (company_id, id)",
+      "Purpose": "Tenant key for references to media items."
+    },
+    {
+      "Object": "media_assets_company_status_idx",
+      "Physical definition": "CREATE INDEX media_assets_company_status_idx ON public.media_assets USING btree (company_id, status)",
+      "Purpose": "Counts a company's open uploads and processing items for abuse limits."
+    },
+    {
+      "Object": "media_assets_display_idx",
+      "Physical definition": "CREATE INDEX media_assets_display_idx ON public.media_assets USING btree (company_id, display_sha256)",
+      "Purpose": "Finds whether another item still references an object before it is deleted."
+    },
+    {
+      "Object": "media_assets_original_idx",
+      "Physical definition": "CREATE INDEX media_assets_original_idx ON public.media_assets USING btree (company_id, original_sha256)",
+      "Purpose": "Finds whether another item still references an object before it is deleted."
+    },
+    {
+      "Object": "media_assets_processing_idx",
+      "Physical definition": "CREATE INDEX media_assets_processing_idx ON public.media_assets USING btree (status, next_attempt_at)",
+      "Purpose": "Finds items due for processing and expired uploads and trash."
+    },
+    {
+      "Object": "media_assets_thumbnail_idx",
+      "Physical definition": "CREATE INDEX media_assets_thumbnail_idx ON public.media_assets USING btree (company_id, thumbnail_sha256)",
+      "Purpose": "Finds whether another item still references an object before it is deleted."
+    }
+  ]
+}

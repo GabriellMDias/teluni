@@ -103,6 +103,9 @@ const ptBR = {
     "audit.view": "Ver o histórico de alterações",
     "devices.view": "Ver telas",
     "devices.manage": "Parear e gerenciar telas",
+    "media.view": "Ver e usar mídia",
+    "media.upload": "Enviar e editar mídia",
+    "media.archive": "Arquivar e restaurar mídia",
   } satisfies Record<DelegableCapability, string>,
   profilesTitle: "Perfis de acesso",
   profilesLead:
@@ -406,6 +409,9 @@ const enUS: OrganizationMessages = {
     "audit.view": "View the change history",
     "devices.view": "View screens",
     "devices.manage": "Pair and manage screens",
+    "media.view": "View and use media",
+    "media.upload": "Upload and edit media",
+    "media.archive": "Archive and restore media",
   },
   profilesTitle: "Access profiles",
   profilesLead:

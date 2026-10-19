@@ -1,7 +1,9 @@
 # ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-19
+
+**Acceptance scope:** The owner explicitly approved this decision and the nine decisions of the media library design on 2026-10-19 under PH-23. Acceptance establishes the direction for local and CI implementation of PJ-09 with generated fixtures, not device profile qualification (PH-08), the production image (PJ-13) or malware scanning (PH-13).
 
 ## Context
 
@@ -14,13 +16,13 @@ This record decides where media bytes live, how they are named and published, an
 Teluni will store media as immutable content-addressed objects on a local volume and process it only with FFmpeg in isolated child processes:
 
 - The media module owns an object interface (`put`, `open` with an optional byte range, `delete`, `list`) implemented over a configured directory on durable storage. Each object is named by the SHA-256 of its bytes inside its company and is never modified; identical bytes are stored once per company and never shared across companies.
-- Objects are written to a work directory on the same filesystem, flushed, and published by an atomic rename while a PostgreSQL row lock on the object is held, before the referencing asset commits. PostgreSQL is the authority for which objects exist and who may read them; paths never leave the module.
+- Objects are written to a work directory on the same filesystem, flushed, and published by an atomic rename while a transaction-scoped PostgreSQL advisory lock on the object is held, before the referencing asset commits. PostgreSQL is the authority for which objects exist and who may read them; paths never leave the module.
 - Untrusted files are parsed and converted only by the FFmpeg executables (`ffprobe`, `ffmpeg`, version 6.1 or later), run without a shell, with a scrubbed environment, a forced demuxer, the file protocol only, bounded output and timeouts, and resource limits where the host offers them. No media parser or image library runs inside the API process.
 - Work is queued in PostgreSQL and claimed by an in-process processor with leases, so several API processes can share it and interrupted work resumes.
 
 ## Rationale
 
-Content addressing makes objects immutable, integrity checkable and deduplicated, which publications (ADR-0019) need for manifests and the player's shared-file accounting (AT-05). Publishing by rename under a row lock gives a simple crash rule: a file may exist without a reference and is swept, but a reference never exists without its file. Per-company naming keeps tenants independent at the cost of storing a file twice when two companies upload it.
+Content addressing makes objects immutable, integrity checkable and deduplicated, which publications (ADR-0019) need for manifests and the player's shared-file accounting (AT-05). Publishing by rename under the object lock gives a simple crash rule: a file may exist without a reference and is swept, but a reference never exists without its file. Per-company naming keeps tenants independent at the cost of storing a file twice when two companies upload it.
 
 FFmpeg is the established tool for both inspection and conversion of every format the release needs, including EXIF orientation and metadata removal for images, so one external tool covers both kinds instead of FFmpeg plus an in-process image library. Running it as a separate executable keeps memory-safety defects in parsers out of the API process and lets timeouts and limits kill a hostile file. It also keeps Teluni's Apache-2.0 code separate from FFmpeg's GPL build. The trade-off is CPU-heavy work on the API host and a binary dependency that every environment must provide.
 

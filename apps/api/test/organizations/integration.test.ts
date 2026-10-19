@@ -289,6 +289,10 @@ describe("organizations: two-company isolation", () => {
         "audit.view",
         "devices.view",
         "devices.manage",
+        "media.view",
+        "media.upload",
+        "media.archive",
+        "media.delete",
       ],
     });
     const companyId = (first.body.company as { id: string }).id;
@@ -2383,10 +2387,15 @@ describe("tenant schema structure", () => {
         reference.columns[0],
         `${reference.name} must carry the owning tenant`,
       ).toBe("company_id");
+      // Media objects are content-addressed: their tenant key is the hash.
       expect(
         reference.target_columns,
         `${reference.name} must target the tenant key`,
-      ).toEqual(["company_id", "id"]);
+      ).toEqual(
+        reference.target === "media_objects"
+          ? ["company_id", "sha256"]
+          : ["company_id", "id"],
+      );
     }
   });
 });

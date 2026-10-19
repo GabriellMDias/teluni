@@ -93,6 +93,24 @@
       "file": "pages/api/archiveBranch.json"
     },
     {
+      "id": "api/archiveMedia",
+      "kind": "api",
+      "title": "archiveMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/media/{assetId}/archive",
+      "method": "POST",
+      "path": "/companies/{companyId}/media/{assetId}/archive",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/archiveMedia.json"
+    },
+    {
       "id": "api/closeResponsibilityTransfer",
       "kind": "api",
       "title": "closeResponsibilityTransfer",
@@ -216,6 +234,60 @@
       "file": "pages/api/createInvitation.json"
     },
     {
+      "id": "api/createMedia",
+      "kind": "api",
+      "title": "createMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/media",
+      "method": "POST",
+      "path": "/companies/{companyId}/media",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createMedia.json"
+    },
+    {
+      "id": "api/deleteMedia",
+      "kind": "api",
+      "title": "deleteMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/media/{assetId}/delete",
+      "method": "POST",
+      "path": "/companies/{companyId}/media/{assetId}/delete",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteMedia.json"
+    },
+    {
+      "id": "api/discardMedia",
+      "kind": "api",
+      "title": "discardMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/media/{assetId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/media/{assetId}",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/discardMedia.json"
+    },
+    {
       "id": "api/getAccessProfile",
       "kind": "api",
       "title": "getAccessProfile",
@@ -333,6 +405,40 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getLiveness.json"
+    },
+    {
+      "id": "api/getMedia",
+      "kind": "api",
+      "title": "getMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/media/{assetId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/media/{assetId}",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getMedia.json"
+    },
+    {
+      "id": "api/getMediaContent",
+      "kind": "api",
+      "title": "getMediaContent",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/media/{assetId}/content",
+      "method": "GET",
+      "path": "/companies/{companyId}/media/{assetId}/content",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getMediaContent.json"
     },
     {
       "id": "api/getReadiness",
@@ -505,6 +611,23 @@
       "file": "pages/api/listInvitations.json"
     },
     {
+      "id": "api/listMedia",
+      "kind": "api",
+      "title": "listMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/media",
+      "method": "GET",
+      "path": "/companies/{companyId}/media",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listMedia.json"
+    },
+    {
       "id": "api/listSessions",
       "kind": "api",
       "title": "listSessions",
@@ -662,6 +785,42 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/resendInvitation.json"
+    },
+    {
+      "id": "api/restoreDeletedMedia",
+      "kind": "api",
+      "title": "restoreDeletedMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/media/{assetId}/restore-deleted",
+      "method": "POST",
+      "path": "/companies/{companyId}/media/{assetId}/restore-deleted",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/restoreDeletedMedia.json"
+    },
+    {
+      "id": "api/restoreMedia",
+      "kind": "api",
+      "title": "restoreMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/media/{assetId}/restore",
+      "method": "POST",
+      "path": "/companies/{companyId}/media/{assetId}/restore",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/restoreMedia.json"
     },
     {
       "id": "api/revokeInvitation",
@@ -911,6 +1070,42 @@
       "file": "pages/api/updateDeviceReport.json"
     },
     {
+      "id": "api/updateMedia",
+      "kind": "api",
+      "title": "updateMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/media/{assetId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/media/{assetId}",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateMedia.json"
+    },
+    {
+      "id": "api/uploadMediaContent",
+      "kind": "api",
+      "title": "uploadMediaContent",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/media/{assetId}/content",
+      "method": "PUT",
+      "path": "/companies/{companyId}/media/{assetId}/content",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/uploadMediaContent.json"
+    },
+    {
       "id": "database/access_profiles",
       "kind": "database",
       "title": "access_profiles",
@@ -1029,6 +1224,36 @@
       "summary": "Server-managed browser session: an opaque cookie credential's hash, its bounds and assurance, and the sealed provider tokens obtained for it.",
       "headings": [],
       "file": "pages/database/human_sessions.json"
+    },
+    {
+      "id": "database/media_assets",
+      "kind": "database",
+      "title": "media_assets",
+      "group": "Media",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A media item of a company: one uploaded image or video, its owning scope (the company or one branch), name and tags, inspected facts and the objects derived from it.",
+      "headings": [],
+      "file": "pages/database/media_assets.json"
+    },
+    {
+      "id": "database/media_audit_events",
+      "kind": "database",
+      "title": "media_audit_events",
+      "group": "Media",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.",
+      "headings": [],
+      "file": "pages/database/media_audit_events.json"
+    },
+    {
+      "id": "database/media_objects",
+      "kind": "database",
+      "title": "media_objects",
+      "group": "Media",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One stored file of a company on the media volume, named by the SHA-256 of its bytes: an original upload, a display rendition or a thumbnail. Identical bytes are stored once per company and never shared across companies.",
+      "headings": [],
+      "file": "pages/database/media_objects.json"
     },
     {
       "id": "database/membership_grant_branches",
@@ -1189,6 +1414,16 @@
       "summary": "This module owns the transactional outbound-email outbox, its dispatcher and the SMTP adapter (ADR-0026). Read the delivery section of the invitation and email delivery design…",
       "headings": [],
       "file": "pages/repository/apps/api/src/features/mail/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/media/AGENTS",
+      "kind": "repository",
+      "title": "Media Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/media/AGENTS.md",
+      "summary": "This module owns the company media library: images and videos, their processing into playback renditions, storage and lifecycle under ADR-0028 and the media library design.…",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/media/AGENTS.json"
     },
     {
       "id": "repository/apps/api/src/features/organizations/AGENTS",
@@ -1496,7 +1731,7 @@
       "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
       "group": "Decisions",
       "source": "docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md",
-      "summary": "Teluni stores private customer images and videos, validates them against the selected ingestion bounds and turns them into renditions that Android TV screens can play offline…",
+      "summary": "Acceptance scope: The owner explicitly approved this decision and the nine decisions of the media library design on 2026-10-19 under PH-23. Acceptance establishes the direction…",
       "headings": [],
       "file": "pages/repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.json"
     },
@@ -1936,7 +2171,7 @@
       "title": "Teluni Media Library Design",
       "group": "Project guides",
       "source": "docs/project/media-library-design.md",
-      "summary": "Proposed detailed design for D-05, 2026-10-19, for owner review under PH-23. The owner asked for development to continue autonomously on 2026-10-19; the media library is the…",
+      "summary": "Approved detailed design for D-05, 2026-10-19. The owner approved all nine decisions for review as proposed under PH-23, including ADR-0028, after asking for development to…",
       "headings": [],
       "file": "pages/repository/docs/project/media-library-design.json"
     },
@@ -2304,31 +2539,34 @@
   "search": {
     "shards": [
       { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 16, "kinds": ["api"] },
-      { "file": "search/0003.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0001.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 15, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0006.json", "count": 21, "kinds": ["api", "database"] },
+      { "file": "search/0006.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0007.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0008.json", "count": 18, "kinds": ["api", "database"] },
       {
-        "file": "search/0007.json",
-        "count": 69,
+        "file": "search/0009.json",
+        "count": 45,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0008.json", "count": 110, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 119, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 170, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 139, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 135, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 47, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 74, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 48, "kinds": ["repository"] }
+      { "file": "search/0010.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 113, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 138, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 176, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 121, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 62, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 65, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 54, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0021.json", "count": 101, "kinds": ["repository"] },
+      { "file": "search/0022.json", "count": 92, "kinds": ["repository"] },
+      { "file": "search/0023.json", "count": 7, "kinds": ["repository"] }
     ],
-    "count": 1408
+    "count": 1442
   }
 }

@@ -84,7 +84,10 @@
                           { "type": "string", "const": "invitations.manage" },
                           { "type": "string", "const": "audit.view" },
                           { "type": "string", "const": "devices.view" },
-                          { "type": "string", "const": "devices.manage" }
+                          { "type": "string", "const": "devices.manage" },
+                          { "type": "string", "const": "media.view" },
+                          { "type": "string", "const": "media.upload" },
+                          { "type": "string", "const": "media.archive" }
                         ]
                       }
                     },
@@ -146,7 +149,10 @@
                       { "type": "string", "const": "invitations.manage" },
                       { "type": "string", "const": "audit.view" },
                       { "type": "string", "const": "devices.view" },
-                      { "type": "string", "const": "devices.manage" }
+                      { "type": "string", "const": "devices.manage" },
+                      { "type": "string", "const": "media.view" },
+                      { "type": "string", "const": "media.upload" },
+                      { "type": "string", "const": "media.archive" }
                     ]
                   }
                 },
@@ -182,7 +188,7 @@
         },
         {
           "name": "items[].capabilities",
-          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
+          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\"",
           "required": true
         },
         {

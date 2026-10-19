@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { copyFile, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
 import pg from "pg";
@@ -35,6 +35,8 @@ const repositoryRoot = resolve(import.meta.dirname, "../../..");
 const appRoot = resolve(import.meta.dirname, "..");
 const envFile = resolve(repositoryRoot, ".env.local");
 const stateFile = resolve(repositoryRoot, ".env.dev-services");
+// Media objects live on the host so FFmpeg in the API process reads them.
+const mediaDirectory = resolve(repositoryRoot, ".dev-media");
 
 const postgresImage = "postgres:16";
 const realm = "teluni";
@@ -293,6 +295,7 @@ async function up(): Promise<void> {
 
   const issuer = `${keycloakUrl}/realms/${realm}`;
   const runtimeUrl = `postgresql://orion_runtime:${encodeURIComponent(state.RUNTIME_PASSWORD)}@127.0.0.1:${ports.postgres}/teluni`;
+  await mkdir(mediaDirectory, { recursive: true, mode: 0o700 });
   try {
     await copyFile(envFile, `${envFile}.before-dev-services`);
   } catch {
@@ -324,6 +327,7 @@ async function up(): Promise<void> {
       "TELUNI_MAIL_FROM=no-reply@teluni.test",
       `TELUNI_MAIL_KEYS=dev:${state.MAIL_KEY}`,
       `TELUNI_DEVICE_CODE_KEYS=dev:${state.DEVICE_CODE_KEY}`,
+      `TELUNI_MEDIA_STORAGE_PATH=${mediaDirectory}`,
       "",
     ].join("\n"),
     { mode: 0o600 },
@@ -357,6 +361,7 @@ async function reset(): Promise<void> {
   for (const name of Object.values(volumes))
     if (await exists("volume", name)) await docker("volume", "rm", name);
   if (await exists("network", network)) await docker("network", "rm", network);
+  await rm(mediaDirectory, { recursive: true, force: true });
   process.stdout.write(
     "Teluni development services and their data were removed. The next `up` starts empty.\n",
   );

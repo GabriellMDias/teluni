@@ -426,7 +426,7 @@ export interface paths {
         /** @description List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification. */
         get: operations["listAccessProfiles"];
         put?: never;
-        /** @description Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification. */
+        /** @description Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification. */
         post: operations["createAccessProfile"];
         delete?: never;
         options?: never;
@@ -738,6 +738,129 @@ export interface paths {
         put?: never;
         /** @description Record, for an unlinked screen whose erasure is pending, that it was reset locally. The record stays distinct from an erasure the screen confirmed. */
         post: operations["recordDeviceReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The company's media items the caller may view, newest first: company-wide items and items of granted branches. The library view shows uploads in progress, ready, rejected and failed items; archived shows archived items; trash (company deletion authority only) shows deleted items until their purge; selectable shows ready items only. Filter by kind, scope (company or a branch), tag and name text. Cursors are bound to the company, caller, visible scope and filters. */
+        get: operations["listMedia"];
+        put?: never;
+        /** @description Admit an upload before sending its bytes: a name, the owning branch (null for the whole company, which needs company-wide upload authority), the declared type and exact size. Images may have up to 20 MiB and videos up to 1 GiB. The item starts UPLOADING; send the file with uploadMediaContent within one hour. */
+        post: operations["createMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/media/{assetId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Stream a variant of a media item: the thumbnail, the display rendition that screens play, or the original upload (which needs upload authority on the item). Supports a single byte range and revalidation with the strong ETag. Responses are private and sandboxed. */
+        get: operations["getMediaContent"];
+        /** @description Stream the file of an item in UPLOADING as application/octet-stream, with a Content-Length equal to the declared size. A shorter or longer body, or a broken connection, answers MEDIA_UPLOAD_INCOMPLETE and the same request can be repeated. A complete upload moves the item to PROCESSING, where the server inspects and converts it. */
+        put: operations["uploadMediaContent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/media/{assetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One media item the caller may view, with its processing state while it is prepared. Items outside the caller's branches answer RESOURCE_NOT_FOUND. */
+        get: operations["getMedia"];
+        put?: never;
+        post?: never;
+        /** @description Discard an item that never became usable (still uploading, rejected or failed); its files are deleted at once. */
+        delete: operations["discardMedia"];
+        options?: never;
+        head?: never;
+        /** @description Rename or retag a media item with the observed version. Tags are stored trimmed, lower-case and sorted, at most ten. */
+        patch: operations["updateMedia"];
+        trace?: never;
+    };
+    "/companies/{companyId}/media/{assetId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Archive a ready item: it leaves selection lists and keeps working wherever it is already used. */
+        post: operations["archiveMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/media/{assetId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Return an archived item to the library. */
+        post: operations["restoreMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/media/{assetId}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Move an archived item to the trash, where it stays restorable for 30 days before its files are purged. Items still protected by programming or publications answer MEDIA_IN_USE and nothing changes. Company administrators only. */
+        post: operations["deleteMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/media/{assetId}/restore-deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Take an item out of the trash before its purge; it returns archived. Company administrators only. */
+        post: operations["restoreDeletedMedia"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3161,8 +3284,8 @@ export interface operations {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             profiles: string[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -3202,8 +3325,8 @@ export interface operations {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             profiles: string[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -3394,8 +3517,8 @@ export interface operations {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             profiles: string[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -4817,7 +4940,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive")[];
                             status: "ACTIVE" | "ARCHIVED";
                             version: number;
                             /** Format: date-time */
@@ -4983,7 +5106,7 @@ export interface operations {
             content: {
                 "application/json": {
                     name: string;
-                    capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                    capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive")[];
                 };
             };
         };
@@ -4997,7 +5120,7 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive")[];
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
                         /** Format: date-time */
@@ -5171,7 +5294,7 @@ export interface operations {
                         profile: {
                             id: string;
                             name: string;
-                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive")[];
                             status: "ACTIVE" | "ARCHIVED";
                             version: number;
                             /** Format: date-time */
@@ -5353,7 +5476,7 @@ export interface operations {
                 "application/json": {
                     expectedVersion: number;
                     name?: string;
-                    capabilities?: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                    capabilities?: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive")[];
                 };
             };
         };
@@ -5367,7 +5490,7 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive")[];
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
                         /** Format: date-time */
@@ -5546,7 +5669,7 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive")[];
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
                         /** Format: date-time */
@@ -8991,6 +9114,2125 @@ export interface operations {
                         pairedAt: string;
                         revokedAt: string | null;
                         erasureRecordedAt: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listMedia: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                view?: "library" | "archived" | "trash" | "selectable";
+                kind?: "IMAGE" | "VIDEO";
+                scope?: string;
+                tag?: string;
+                text?: string;
+            };
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            tags: string[];
+                            kind: "IMAGE" | "VIDEO";
+                            status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                            rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                            branch: {
+                                id: string;
+                                name: string;
+                            } | null;
+                            declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                            declaredSize: number;
+                            width: number | null;
+                            height: number | null;
+                            durationMs: number | null;
+                            hasAudio: boolean | null;
+                            processing: {
+                                stage: "queued" | "probing" | "converting" | "verifying";
+                                progress: number | null;
+                            } | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            readyAt: string | null;
+                            archivedAt: string | null;
+                            deletedAt: string | null;
+                            purgeAfter: string | null;
+                            version: number;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    branchId: string | null;
+                    contentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                    size: number;
+                    tags?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getMediaContent: {
+        parameters: {
+            query: {
+                variant: "thumbnail" | "display" | "original";
+            };
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Response */
+            206: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Response */
+            304: {
+                headers: {
+                    /** @description Destination of the browser redirect. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            416: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    uploadMediaContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    discardMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    name?: string;
+                    tags?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    archiveMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    restoreMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    deleteMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    restoreDeletedMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                assetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        tags: string[];
+                        kind: "IMAGE" | "VIDEO";
+                        status: "UPLOADING" | "PROCESSING" | "READY" | "REJECTED" | "FAILED" | "ARCHIVED" | "DELETED";
+                        rejectionReason: ("MEDIA_TYPE_MISMATCH" | "MEDIA_TYPE_UNSUPPORTED" | "MEDIA_TOO_LARGE" | "MEDIA_DIMENSIONS_EXCEEDED" | "MEDIA_DURATION_EXCEEDED" | "MEDIA_UNREADABLE" | "MEDIA_CONVERSION_FAILED") | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        declaredContentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4" | "video/quicktime" | "video/x-m4v" | "video/webm" | "video/x-matroska";
+                        declaredSize: number;
+                        width: number | null;
+                        height: number | null;
+                        durationMs: number | null;
+                        hasAudio: boolean | null;
+                        processing: {
+                            stage: "queued" | "probing" | "converting" | "verifying";
+                            progress: number | null;
+                        } | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        readyAt: string | null;
+                        archivedAt: string | null;
+                        deletedAt: string | null;
+                        purgeAfter: string | null;
                         version: number;
                     };
                 };

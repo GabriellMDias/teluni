@@ -199,7 +199,11 @@
                         { "type": "string", "const": "invitations.manage" },
                         { "type": "string", "const": "audit.view" },
                         { "type": "string", "const": "devices.view" },
-                        { "type": "string", "const": "devices.manage" }
+                        { "type": "string", "const": "devices.manage" },
+                        { "type": "string", "const": "media.view" },
+                        { "type": "string", "const": "media.upload" },
+                        { "type": "string", "const": "media.archive" },
+                        { "type": "string", "const": "media.delete" }
                       ]
                     }
                   },
@@ -218,7 +222,11 @@
                         { "type": "string", "const": "invitations.manage" },
                         { "type": "string", "const": "audit.view" },
                         { "type": "string", "const": "devices.view" },
-                        { "type": "string", "const": "devices.manage" }
+                        { "type": "string", "const": "devices.manage" },
+                        { "type": "string", "const": "media.view" },
+                        { "type": "string", "const": "media.upload" },
+                        { "type": "string", "const": "media.archive" },
+                        { "type": "string", "const": "media.delete" }
                       ]
                     }
                   }
@@ -365,7 +373,11 @@
                     { "type": "string", "const": "invitations.manage" },
                     { "type": "string", "const": "audit.view" },
                     { "type": "string", "const": "devices.view" },
-                    { "type": "string", "const": "devices.manage" }
+                    { "type": "string", "const": "devices.manage" },
+                    { "type": "string", "const": "media.view" },
+                    { "type": "string", "const": "media.upload" },
+                    { "type": "string", "const": "media.archive" },
+                    { "type": "string", "const": "media.delete" }
                   ]
                 }
               },
@@ -381,7 +393,11 @@
                     { "type": "string", "const": "invitations.manage" },
                     { "type": "string", "const": "audit.view" },
                     { "type": "string", "const": "devices.view" },
-                    { "type": "string", "const": "devices.manage" }
+                    { "type": "string", "const": "devices.manage" },
+                    { "type": "string", "const": "media.view" },
+                    { "type": "string", "const": "media.upload" },
+                    { "type": "string", "const": "media.archive" },
+                    { "type": "string", "const": "media.delete" }
                   ]
                 }
               }
@@ -494,12 +510,12 @@
         { "name": "access.responsible", "type": "boolean", "required": true },
         {
           "name": "access.capabilities",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\"",
           "required": true
         },
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\"",
           "required": true
         },
         {
@@ -609,7 +625,11 @@
                         { "type": "string", "const": "invitations.manage" },
                         { "type": "string", "const": "audit.view" },
                         { "type": "string", "const": "devices.view" },
-                        { "type": "string", "const": "devices.manage" }
+                        { "type": "string", "const": "devices.manage" },
+                        { "type": "string", "const": "media.view" },
+                        { "type": "string", "const": "media.upload" },
+                        { "type": "string", "const": "media.archive" },
+                        { "type": "string", "const": "media.delete" }
                       ]
                     }
                   },
@@ -628,7 +648,11 @@
                         { "type": "string", "const": "invitations.manage" },
                         { "type": "string", "const": "audit.view" },
                         { "type": "string", "const": "devices.view" },
-                        { "type": "string", "const": "devices.manage" }
+                        { "type": "string", "const": "devices.manage" },
+                        { "type": "string", "const": "media.view" },
+                        { "type": "string", "const": "media.upload" },
+                        { "type": "string", "const": "media.archive" },
+                        { "type": "string", "const": "media.delete" }
                       ]
                     }
                   }
@@ -775,7 +799,11 @@
                     { "type": "string", "const": "invitations.manage" },
                     { "type": "string", "const": "audit.view" },
                     { "type": "string", "const": "devices.view" },
-                    { "type": "string", "const": "devices.manage" }
+                    { "type": "string", "const": "devices.manage" },
+                    { "type": "string", "const": "media.view" },
+                    { "type": "string", "const": "media.upload" },
+                    { "type": "string", "const": "media.archive" },
+                    { "type": "string", "const": "media.delete" }
                   ]
                 }
               },
@@ -791,7 +819,11 @@
                     { "type": "string", "const": "invitations.manage" },
                     { "type": "string", "const": "audit.view" },
                     { "type": "string", "const": "devices.view" },
-                    { "type": "string", "const": "devices.manage" }
+                    { "type": "string", "const": "devices.manage" },
+                    { "type": "string", "const": "media.view" },
+                    { "type": "string", "const": "media.upload" },
+                    { "type": "string", "const": "media.archive" },
+                    { "type": "string", "const": "media.delete" }
                   ]
                 }
               }
@@ -904,12 +936,12 @@
         { "name": "access.responsible", "type": "boolean", "required": true },
         {
           "name": "access.capabilities",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\"",
           "required": true
         },
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\"",
           "required": true
         },
         {
