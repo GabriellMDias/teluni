@@ -111,6 +111,7 @@ const ptBR = {
     "programming.view": "Ver programações",
     "programming.edit": "Montar playlists e programações",
     "programming.assign": "Escolher a programação das telas",
+    "publications.publish": "Publicar programações nas telas",
   } satisfies Record<DelegableCapability, string>,
   profilesTitle: "Perfis de acesso",
   profilesLead:
@@ -422,6 +423,7 @@ const enUS: OrganizationMessages = {
     "programming.view": "View programming",
     "programming.edit": "Build playlists and programming",
     "programming.assign": "Choose the screens' programming",
+    "publications.publish": "Publish programming to screens",
   },
   profilesTitle: "Access profiles",
   profilesLead:

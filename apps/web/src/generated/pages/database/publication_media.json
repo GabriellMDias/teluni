@@ -1,0 +1,102 @@
+{
+  "kind": "database",
+  "name": "publication_media",
+  "description": "Each media item of a retained publication with the display rendition delivered to screens; the publication media guard keeps these items from being deleted or purged.",
+  "owner": "Publications",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted with its publication; never updated. Deleted when the publication is pruned or deleted.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the publication; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication that references the media item.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "media_asset_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Referenced media item.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "sha256",
+      "PostgreSQL type": "bytea",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "SHA-256 of the display rendition the manifest names.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "byte_size",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Size of the display rendition.",
+      "Null meaning": "—",
+      "Unit": "bytes"
+    },
+    {
+      "Column": "content_type",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Media type of the display rendition.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "publication_media_company_id_media_asset_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The media item belongs to the same company."
+    },
+    {
+      "Object": "publication_media_company_id_publication_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The publication belongs to the same company; rows go with it."
+    },
+    {
+      "Object": "publication_media_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, publication_id, media_asset_id)",
+      "Purpose": "One row per media item and publication."
+    },
+    {
+      "Object": "publication_media_sha256",
+      "Physical definition": "CHECK ((octet_length(sha256) = 32))",
+      "Purpose": "The rendition digest is a 32-byte SHA-256."
+    },
+    {
+      "Object": "publication_media_size",
+      "Physical definition": "CHECK ((byte_size > 0))",
+      "Purpose": "Renditions are not empty."
+    },
+    {
+      "Object": "publication_media_asset_idx",
+      "Physical definition": "CREATE INDEX publication_media_asset_idx ON public.publication_media USING btree (company_id, media_asset_id)",
+      "Purpose": "Finds the retained publications that protect a media item."
+    }
+  ]
+}

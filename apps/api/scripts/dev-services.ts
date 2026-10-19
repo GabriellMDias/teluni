@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
@@ -77,6 +77,7 @@ type State = Record<
   | "SESSION_KEY"
   | "MAIL_KEY"
   | "DEVICE_CODE_KEY"
+  | "SYNC_SIGNING_KEY"
   | "DEVELOPER_PASSWORD",
   string
 >;
@@ -117,6 +118,11 @@ async function readState(): Promise<State> {
     MAIL_KEY: current.MAIL_KEY ?? randomBytes(32).toString("base64url"),
     DEVICE_CODE_KEY:
       current.DEVICE_CODE_KEY ?? randomBytes(32).toString("base64url"),
+    SYNC_SIGNING_KEY:
+      current.SYNC_SIGNING_KEY ??
+      generateKeyPairSync("ec", { namedCurve: "P-256" })
+        .privateKey.export({ format: "der", type: "pkcs8" })
+        .toString("base64url"),
     DEVELOPER_PASSWORD: current.DEVELOPER_PASSWORD ?? `Teluni-dev-${secret(9)}`,
   };
   await writeFile(
@@ -327,6 +333,7 @@ async function up(): Promise<void> {
       "TELUNI_MAIL_FROM=no-reply@teluni.test",
       `TELUNI_MAIL_KEYS=dev:${state.MAIL_KEY}`,
       `TELUNI_DEVICE_CODE_KEYS=dev:${state.DEVICE_CODE_KEY}`,
+      `TELUNI_SYNC_SIGNING_KEYS=dev:${state.SYNC_SIGNING_KEY}`,
       `TELUNI_MEDIA_STORAGE_PATH=${mediaDirectory}`,
       "",
     ].join("\n"),

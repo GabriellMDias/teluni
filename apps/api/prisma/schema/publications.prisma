@@ -1,0 +1,129 @@
+// Publications module: immutable generations of programs with their exact
+// manifests, what each screen reports about synchronizing them, and their
+// audit. Rules follow docs/project/publication-sync-design.md and ADR-0030;
+// tenant-owned tables keep a (company_id, ...) key and composite tenant
+// references. Reported publication IDs are untrusted and carry no
+// references.
+
+model Publication {
+  id                      String                @id @db.Uuid
+  companyId               String                @map("company_id") @db.Uuid
+  programId               String                @map("program_id") @db.Uuid
+  branchIds               String[]              @default([]) @map("branch_ids") @db.Uuid
+  generation              Int
+  protocol                Int                   @db.SmallInt
+  contentSha256           Bytes                 @map("content_sha256")
+  manifest                Bytes?
+  manifestSha256          Bytes                 @map("manifest_sha256")
+  manifestSize            Int                   @map("manifest_size")
+  ruleCount               Int                   @map("rule_count")
+  playlistCount           Int                   @map("playlist_count")
+  itemCount               Int                   @map("item_count")
+  mediaCount              Int                   @map("media_count")
+  mediaBytes              BigInt                @map("media_bytes")
+  restoredFromGeneration  Int?                  @map("restored_from_generation")
+  publishedByPrincipalId  String                @map("published_by_principal_id") @db.Uuid
+  publishedByMembershipId String                @map("published_by_membership_id") @db.Uuid
+  publishedAt             DateTime              @default(now()) @map("published_at") @db.Timestamptz(3)
+  supersededAt            DateTime?             @map("superseded_at") @db.Timestamptz(3)
+  prunedAt                DateTime?             @map("pruned_at") @db.Timestamptz(3)
+  company                 Company               @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  program                 Program               @relation(fields: [companyId, programId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  publishedBy             Principal             @relation("PublicationPublisher", fields: [publishedByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  publishedByMembership   Membership            @relation("PublicationPublisherMembership", fields: [companyId, publishedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  playlists               PublicationPlaylist[]
+  media                   PublicationMedia[]
+
+  @@unique([companyId, id], map: "publications_company_id_id_key")
+  @@unique([companyId, programId, generation], map: "publications_generation_key")
+  @@index([companyId, publishedAt], map: "publications_company_published_idx")
+  @@map("publications")
+}
+
+model PublicationPlaylist {
+  companyId     String      @map("company_id") @db.Uuid
+  publicationId String      @map("publication_id") @db.Uuid
+  playlistId    String      @map("playlist_id") @db.Uuid
+  branchId      String?     @map("branch_id") @db.Uuid
+  publication   Publication @relation(fields: [companyId, publicationId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  branch        Branch?     @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, publicationId, playlistId], map: "publication_playlists_pkey")
+  @@map("publication_playlists")
+}
+
+model PublicationMedia {
+  companyId     String      @map("company_id") @db.Uuid
+  publicationId String      @map("publication_id") @db.Uuid
+  mediaAssetId  String      @map("media_asset_id") @db.Uuid
+  sha256        Bytes
+  byteSize      BigInt      @map("byte_size")
+  contentType   String      @map("content_type") @db.VarChar(64)
+  publication   Publication @relation(fields: [companyId, publicationId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  mediaAsset    MediaAsset  @relation(fields: [companyId, mediaAssetId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, publicationId, mediaAssetId], map: "publication_media_pkey")
+  @@index([companyId, mediaAssetId], map: "publication_media_asset_idx")
+  @@map("publication_media")
+}
+
+model PublicationDeviceState {
+  companyId             String    @map("company_id") @db.Uuid
+  deviceId              String    @map("device_id") @db.Uuid
+  receivedAt            DateTime  @map("received_at") @db.Timestamptz(3)
+  protocol              Int       @db.SmallInt
+  appVersion            String    @map("app_version") @db.VarChar(64)
+  desiredPublicationId  String?   @map("desired_publication_id") @db.Uuid
+  activePublicationId   String?   @map("active_publication_id") @db.Uuid
+  activeSince           DateTime? @map("active_since") @db.Timestamptz(3)
+  recoveryPublicationId String?   @map("recovery_publication_id") @db.Uuid
+  stagingPublicationId  String?   @map("staging_publication_id") @db.Uuid
+  stagingState          String?   @map("staging_state") @db.VarChar(16)
+  stagingFailure        String?   @map("staging_failure") @db.VarChar(32)
+  stagingBytesDone      BigInt?   @map("staging_bytes_done")
+  stagingBytesTotal     BigInt?   @map("staging_bytes_total")
+  playback              String    @db.VarChar(32)
+  storageFreeBytes      BigInt?   @map("storage_free_bytes")
+  storageTotalBytes     BigInt?   @map("storage_total_bytes")
+  deviceTime            DateTime? @map("device_time") @db.Timestamptz(3)
+  device                Device    @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, deviceId], map: "publication_device_states_pkey")
+  @@map("publication_device_states")
+}
+
+model PublicationDeviceEvent {
+  id            String   @id @db.Uuid
+  companyId     String   @map("company_id") @db.Uuid
+  deviceId      String   @map("device_id") @db.Uuid
+  occurredAt    DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  kind          String   @db.VarChar(32)
+  publicationId String?  @map("publication_id") @db.Uuid
+  detail        String?  @db.VarChar(32)
+  device        Device   @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "publication_device_events_company_id_id_key")
+  @@index([companyId, deviceId, occurredAt(sort: Desc), id(sort: Desc)], map: "publication_device_events_device_idx")
+  @@index([occurredAt], map: "publication_device_events_occurred_idx")
+  @@map("publication_device_events")
+}
+
+model PublicationAuditEvent {
+  id                String     @id @db.Uuid
+  companyId         String     @map("company_id") @db.Uuid
+  subjectType       String     @map("subject_type") @db.VarChar(16)
+  subjectId         String     @map("subject_id") @db.Uuid
+  branchIds         String[]   @default([]) @map("branch_ids") @db.Uuid
+  occurredAt        DateTime   @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String     @map("actor_principal_id") @db.Uuid
+  actorMembershipId String     @map("actor_membership_id") @db.Uuid
+  action            String     @db.VarChar(64)
+  details           Json       @default("{}")
+  company           Company    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Principal  @relation("PublicationAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorMembership   Membership @relation("PublicationAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "publication_audit_events_company_id_id_key")
+  @@index([companyId, subjectId, occurredAt(sort: Desc), id(sort: Desc)], map: "publication_audit_events_subject_idx")
+  @@map("publication_audit_events")
+}

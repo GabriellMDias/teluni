@@ -42,6 +42,20 @@ export function createDevicesModule(options: {
         timeZone: row.timeZone,
       }));
     },
+    async authenticate(authorization) {
+      if (!service) throw new Error("The devices module is not active");
+      const { identity } = await service.authenticate(authorization);
+      const self = await service.self(identity);
+      return {
+        deviceId: identity.id,
+        companyId: identity.companyId,
+        branchId: identity.branchId,
+        status: self.status,
+        timeZone: self.timeZone,
+        authorizedUntil: self.authorizedUntil,
+        serverTime: self.serverTime,
+      };
+    },
   };
   const module: ApiModule = {
     name: "devices",

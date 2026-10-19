@@ -35,49 +35,51 @@ model MediaObject {
 }
 
 model MediaAsset {
-  id                    String            @id @db.Uuid
-  companyId             String            @map("company_id") @db.Uuid
-  branchId              String?           @map("branch_id") @db.Uuid
-  name                  String            @db.VarChar(120)
-  tags                  String[]          @default([])
+  id                    String             @id @db.Uuid
+  companyId             String             @map("company_id") @db.Uuid
+  branchId              String?            @map("branch_id") @db.Uuid
+  name                  String             @db.VarChar(120)
+  tags                  String[]           @default([])
   kind                  MediaKind
-  status                MediaStatus       @default(UPLOADING)
-  rejectionReason       String?           @map("rejection_reason") @db.VarChar(40)
-  declaredContentType   String            @map("declared_content_type") @db.VarChar(64)
-  declaredSize          BigInt            @map("declared_size")
-  originalSha256        Bytes?            @map("original_sha256")
-  displaySha256         Bytes?            @map("display_sha256")
-  thumbnailSha256       Bytes?            @map("thumbnail_sha256")
+  status                MediaStatus        @default(UPLOADING)
+  rejectionReason       String?            @map("rejection_reason") @db.VarChar(40)
+  declaredContentType   String             @map("declared_content_type") @db.VarChar(64)
+  declaredSize          BigInt             @map("declared_size")
+  originalSha256        Bytes?             @map("original_sha256")
+  displaySha256         Bytes?             @map("display_sha256")
+  thumbnailSha256       Bytes?             @map("thumbnail_sha256")
   width                 Int?
   height                Int?
-  durationMs            Int?              @map("duration_ms")
-  hasAudio              Boolean?          @map("has_audio")
-  processingStage       String?           @map("processing_stage") @db.VarChar(16)
-  processingProgress    Int?              @map("processing_progress")
-  processingAttempts    Int               @default(0) @map("processing_attempts")
-  leaseUntil            DateTime?         @map("lease_until") @db.Timestamptz(3)
-  nextAttemptAt         DateTime?         @map("next_attempt_at") @db.Timestamptz(3)
-  createdByMembershipId String            @map("created_by_membership_id") @db.Uuid
-  createdByPrincipalId  String            @map("created_by_principal_id") @db.Uuid
-  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  uploadedAt            DateTime?         @map("uploaded_at") @db.Timestamptz(3)
-  readyAt               DateTime?         @map("ready_at") @db.Timestamptz(3)
-  archivedAt            DateTime?         @map("archived_at") @db.Timestamptz(3)
-  deletedAt             DateTime?         @map("deleted_at") @db.Timestamptz(3)
-  purgeAfter            DateTime?         @map("purge_after") @db.Timestamptz(3)
-  purgedAt              DateTime?         @map("purged_at") @db.Timestamptz(3)
-  version               Int               @default(1)
-  updatedAt             DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company               Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  branch                Branch?           @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
-  createdBy             Membership        @relation("MediaCreator", fields: [companyId, createdByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
-  creator               Principal         @relation("MediaCreatorPrincipal", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  original              MediaObject?      @relation("MediaOriginal", fields: [companyId, originalSha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
-  display               MediaObject?      @relation("MediaDisplay", fields: [companyId, displaySha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
-  thumbnail             MediaObject?      @relation("MediaThumbnail", fields: [companyId, thumbnailSha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
+  durationMs            Int?               @map("duration_ms")
+  hasAudio              Boolean?           @map("has_audio")
+  processingStage       String?            @map("processing_stage") @db.VarChar(16)
+  processingProgress    Int?               @map("processing_progress")
+  processingAttempts    Int                @default(0) @map("processing_attempts")
+  leaseUntil            DateTime?          @map("lease_until") @db.Timestamptz(3)
+  nextAttemptAt         DateTime?          @map("next_attempt_at") @db.Timestamptz(3)
+  createdByMembershipId String             @map("created_by_membership_id") @db.Uuid
+  createdByPrincipalId  String             @map("created_by_principal_id") @db.Uuid
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  uploadedAt            DateTime?          @map("uploaded_at") @db.Timestamptz(3)
+  readyAt               DateTime?          @map("ready_at") @db.Timestamptz(3)
+  archivedAt            DateTime?          @map("archived_at") @db.Timestamptz(3)
+  deletedAt             DateTime?          @map("deleted_at") @db.Timestamptz(3)
+  purgeAfter            DateTime?          @map("purge_after") @db.Timestamptz(3)
+  purgedAt              DateTime?          @map("purged_at") @db.Timestamptz(3)
+  version               Int                @default(1)
+  updatedAt             DateTime           @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company               Company            @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch                Branch?            @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy             Membership         @relation("MediaCreator", fields: [companyId, createdByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  creator               Principal          @relation("MediaCreatorPrincipal", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  original              MediaObject?       @relation("MediaOriginal", fields: [companyId, originalSha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
+  display               MediaObject?       @relation("MediaDisplay", fields: [companyId, displaySha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
+  thumbnail             MediaObject?       @relation("MediaThumbnail", fields: [companyId, thumbnailSha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
   auditEvents           MediaAuditEvent[]
-  // Back-relation of the programming module; never traversed across modules.
+  // Back-relations of the programming and publications modules; never
+  // traversed across modules.
   playlistItems         PlaylistItem[]
+  publicationMedia      PublicationMedia[]
 
   @@unique([companyId, id], map: "media_assets_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "media_assets_company_created_idx")

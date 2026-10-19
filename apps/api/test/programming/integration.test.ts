@@ -97,7 +97,7 @@ beforeAll(async () => {
       limits,
       manual: true,
     });
-    const programming = createProgrammingModule({
+    const { module: programming } = createProgrammingModule({
       sessions,
       companies: organizations.companies,
       devices: devices.devices,

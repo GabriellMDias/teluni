@@ -1,0 +1,1088 @@
+{
+  "kind": "api",
+  "operationId": "publishGroup",
+  "summary": "",
+  "description": "Publish the current draft of a group's program, which needs the capability on every branch of its span as its next generation, with the content digest from the check. A different digest answers RESOURCE_VERSION_CONFLICT; content equal to the latest publication returns it with created false. Problems answer PUBLICATION_INVALID. Needs publications.publish.",
+  "security": [{ "sessionCookie": [] }],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-teluni_session",
+        "description": "Opaque server-managed human session. Loopback development uses teluni_session. Unsafe methods also require the session CSRF token in X-CSRF-Token and a matching Origin."
+      }
+    }
+  },
+  "method": "POST",
+  "path": "/companies/{companyId}/programming/groups/{groupId}/publications",
+  "tags": ["Publications"],
+  "authentication": "Session cookie",
+  "parameters": [
+    {
+      "name": "companyId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    },
+    {
+      "name": "groupId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    }
+  ],
+  "request": {
+    "required": true,
+    "description": "",
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "required": ["contentDigest"],
+          "properties": {
+            "contentDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "required": ["contentDigest"],
+      "properties": {
+        "contentDigest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "fields": [
+      {
+        "name": "contentDigest",
+        "type": "string (pattern ^[0-9a-f]{64}$)",
+        "required": true
+      }
+    ]
+  },
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["publication", "created"],
+            "properties": {
+              "publication": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "generation",
+                  "protocol",
+                  "publishedAt",
+                  "publishedBy",
+                  "restoredFromGeneration",
+                  "counts",
+                  "manifestSha256",
+                  "state",
+                  "supersededAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "generation": { "type": "integer", "minimum": 1 },
+                  "protocol": { "type": "integer", "minimum": 1 },
+                  "publishedAt": { "type": "string", "format": "date-time" },
+                  "publishedBy": {
+                    "type": "object",
+                    "required": ["membershipId", "isCaller"],
+                    "properties": {
+                      "membershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "isCaller": { "type": "boolean" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "restoredFromGeneration": {
+                    "anyOf": [
+                      { "type": "integer", "minimum": 1 },
+                      { "type": "null" }
+                    ]
+                  },
+                  "counts": {
+                    "type": "object",
+                    "required": [
+                      "rules",
+                      "playlists",
+                      "items",
+                      "media",
+                      "mediaBytes"
+                    ],
+                    "properties": {
+                      "rules": { "type": "integer", "minimum": 0 },
+                      "playlists": { "type": "integer", "minimum": 0 },
+                      "items": { "type": "integer", "minimum": 0 },
+                      "media": { "type": "integer", "minimum": 0 },
+                      "mediaBytes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "manifestSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "state": {
+                    "anyOf": [
+                      { "type": "string", "const": "current" },
+                      { "type": "string", "const": "retained" },
+                      { "type": "string", "const": "pruned" }
+                    ]
+                  },
+                  "supersededAt": {
+                    "anyOf": [
+                      { "type": "string", "format": "date-time" },
+                      { "type": "null" }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "created": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["publication", "created"],
+        "properties": {
+          "publication": {
+            "type": "object",
+            "required": [
+              "id",
+              "generation",
+              "protocol",
+              "publishedAt",
+              "publishedBy",
+              "restoredFromGeneration",
+              "counts",
+              "manifestSha256",
+              "state",
+              "supersededAt"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+              },
+              "generation": { "type": "integer", "minimum": 1 },
+              "protocol": { "type": "integer", "minimum": 1 },
+              "publishedAt": { "type": "string", "format": "date-time" },
+              "publishedBy": {
+                "type": "object",
+                "required": ["membershipId", "isCaller"],
+                "properties": {
+                  "membershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "isCaller": { "type": "boolean" }
+                },
+                "additionalProperties": false
+              },
+              "restoredFromGeneration": {
+                "anyOf": [
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "null" }
+                ]
+              },
+              "counts": {
+                "type": "object",
+                "required": [
+                  "rules",
+                  "playlists",
+                  "items",
+                  "media",
+                  "mediaBytes"
+                ],
+                "properties": {
+                  "rules": { "type": "integer", "minimum": 0 },
+                  "playlists": { "type": "integer", "minimum": 0 },
+                  "items": { "type": "integer", "minimum": 0 },
+                  "media": { "type": "integer", "minimum": 0 },
+                  "mediaBytes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false
+              },
+              "manifestSha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "state": {
+                "anyOf": [
+                  { "type": "string", "const": "current" },
+                  { "type": "string", "const": "retained" },
+                  { "type": "string", "const": "pruned" }
+                ]
+              },
+              "supersededAt": {
+                "anyOf": [
+                  { "type": "string", "format": "date-time" },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "created": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "publication", "type": "object", "required": true },
+        {
+          "name": "publication.id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "publication.generation",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "publication.protocol",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "publication.publishedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "publication.publishedBy",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "publication.publishedBy.membershipId",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "publication.publishedBy.isCaller",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "publication.restoredFromGeneration",
+          "type": "integer (minimum 1) | null",
+          "required": true
+        },
+        { "name": "publication.counts", "type": "object", "required": true },
+        {
+          "name": "publication.counts.rules",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.playlists",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.items",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.media",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.mediaBytes",
+          "type": "integer (minimum 0, maximum 9007199254740991)",
+          "required": true
+        },
+        {
+          "name": "publication.manifestSha256",
+          "type": "string (pattern ^[0-9a-f]{64}$)",
+          "required": true
+        },
+        {
+          "name": "publication.state",
+          "type": "\"current\" | \"retained\" | \"pruned\"",
+          "required": true
+        },
+        {
+          "name": "publication.supersededAt",
+          "type": "string (date-time) | null",
+          "required": true
+        },
+        { "name": "created", "type": "boolean", "required": true }
+      ]
+    },
+    {
+      "status": "201",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["publication", "created"],
+            "properties": {
+              "publication": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "generation",
+                  "protocol",
+                  "publishedAt",
+                  "publishedBy",
+                  "restoredFromGeneration",
+                  "counts",
+                  "manifestSha256",
+                  "state",
+                  "supersededAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "generation": { "type": "integer", "minimum": 1 },
+                  "protocol": { "type": "integer", "minimum": 1 },
+                  "publishedAt": { "type": "string", "format": "date-time" },
+                  "publishedBy": {
+                    "type": "object",
+                    "required": ["membershipId", "isCaller"],
+                    "properties": {
+                      "membershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "isCaller": { "type": "boolean" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "restoredFromGeneration": {
+                    "anyOf": [
+                      { "type": "integer", "minimum": 1 },
+                      { "type": "null" }
+                    ]
+                  },
+                  "counts": {
+                    "type": "object",
+                    "required": [
+                      "rules",
+                      "playlists",
+                      "items",
+                      "media",
+                      "mediaBytes"
+                    ],
+                    "properties": {
+                      "rules": { "type": "integer", "minimum": 0 },
+                      "playlists": { "type": "integer", "minimum": 0 },
+                      "items": { "type": "integer", "minimum": 0 },
+                      "media": { "type": "integer", "minimum": 0 },
+                      "mediaBytes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "manifestSha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "state": {
+                    "anyOf": [
+                      { "type": "string", "const": "current" },
+                      { "type": "string", "const": "retained" },
+                      { "type": "string", "const": "pruned" }
+                    ]
+                  },
+                  "supersededAt": {
+                    "anyOf": [
+                      { "type": "string", "format": "date-time" },
+                      { "type": "null" }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "created": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["publication", "created"],
+        "properties": {
+          "publication": {
+            "type": "object",
+            "required": [
+              "id",
+              "generation",
+              "protocol",
+              "publishedAt",
+              "publishedBy",
+              "restoredFromGeneration",
+              "counts",
+              "manifestSha256",
+              "state",
+              "supersededAt"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+              },
+              "generation": { "type": "integer", "minimum": 1 },
+              "protocol": { "type": "integer", "minimum": 1 },
+              "publishedAt": { "type": "string", "format": "date-time" },
+              "publishedBy": {
+                "type": "object",
+                "required": ["membershipId", "isCaller"],
+                "properties": {
+                  "membershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "isCaller": { "type": "boolean" }
+                },
+                "additionalProperties": false
+              },
+              "restoredFromGeneration": {
+                "anyOf": [
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "null" }
+                ]
+              },
+              "counts": {
+                "type": "object",
+                "required": [
+                  "rules",
+                  "playlists",
+                  "items",
+                  "media",
+                  "mediaBytes"
+                ],
+                "properties": {
+                  "rules": { "type": "integer", "minimum": 0 },
+                  "playlists": { "type": "integer", "minimum": 0 },
+                  "items": { "type": "integer", "minimum": 0 },
+                  "media": { "type": "integer", "minimum": 0 },
+                  "mediaBytes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false
+              },
+              "manifestSha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "state": {
+                "anyOf": [
+                  { "type": "string", "const": "current" },
+                  { "type": "string", "const": "retained" },
+                  { "type": "string", "const": "pruned" }
+                ]
+              },
+              "supersededAt": {
+                "anyOf": [
+                  { "type": "string", "format": "date-time" },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "created": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "publication", "type": "object", "required": true },
+        {
+          "name": "publication.id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "publication.generation",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "publication.protocol",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "publication.publishedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "publication.publishedBy",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "publication.publishedBy.membershipId",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "publication.publishedBy.isCaller",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "publication.restoredFromGeneration",
+          "type": "integer (minimum 1) | null",
+          "required": true
+        },
+        { "name": "publication.counts", "type": "object", "required": true },
+        {
+          "name": "publication.counts.rules",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.playlists",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.items",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.media",
+          "type": "integer (minimum 0)",
+          "required": true
+        },
+        {
+          "name": "publication.counts.mediaBytes",
+          "type": "integer (minimum 0, maximum 9007199254740991)",
+          "required": true
+        },
+        {
+          "name": "publication.manifestSha256",
+          "type": "string (pattern ^[0-9a-f]{64}$)",
+          "required": true
+        },
+        {
+          "name": "publication.state",
+          "type": "\"current\" | \"retained\" | \"pruned\"",
+          "required": true
+        },
+        {
+          "name": "publication.supersededAt",
+          "type": "string (date-time) | null",
+          "required": true
+        },
+        { "name": "created", "type": "boolean", "required": true }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

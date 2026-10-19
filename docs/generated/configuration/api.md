@@ -4,7 +4,7 @@
 
 [Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)
 
-No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. The devices module additionally requires `TELUNI_DEVICE_CODE_KEYS`. API modules that require the database, bearer authentication, human identity, mail or device code keys stay unmounted until those settings exist, and production startup fails instead.
+No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. The devices module additionally requires `TELUNI_DEVICE_CODE_KEYS`, the media module `TELUNI_MEDIA_STORAGE_PATH` and the publications module `TELUNI_SYNC_SIGNING_KEYS`. API modules that require the database, bearer authentication, human identity, mail, device code keys, media storage or signing keys stay unmounted until those settings exist, and production startup fails instead.
 
 | Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -38,3 +38,4 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `TELUNI_MEDIA_FFMPEG_PATH` | executable name or path | no | `ffmpeg` | server | INTERNAL | no | FFmpeg 6.1 or later executable that converts media in isolated child processes. |
 | `TELUNI_MEDIA_FFPROBE_PATH` | executable name or path | no | `ffprobe` | server | INTERNAL | no | ffprobe 6.1 or later executable that inspects uploaded media in isolated child processes. |
 | `TELUNI_MEDIA_PROCESSING_CONCURRENCY` | integer 1..4 | no | `1` | server | INTERNAL | no | Media processing jobs this API process runs at once. |
+| `TELUNI_SYNC_SIGNING_KEYS` | comma-separated id:base64url PKCS#8 DER EC P-256 private keys, newest first | no | — | server | RESTRICTED | yes | Key ring that signs screen authorization statements (ADR-0030); the first key signs, and every key's public half stays available to screens during rotation. Enables the publications module. |

@@ -1,0 +1,112 @@
+{
+  "kind": "database",
+  "name": "publication_device_events",
+  "description": "Transitions in screens' synchronization reports: a newly desired publication delivered, an activation, a failed staging attempt or a playback change (AT-20).",
+  "owner": "Publications",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted when a report changes; never updated. Deleted by maintenance 30 days after it occurred.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated event UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the screen; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "device_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Screen the transition belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the transition was received.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "kind",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "DESIRED_DELIVERED, ACTIVATED, STAGING_FAILED or PLAYBACK_CHANGED.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication the transition concerns, as delivered or reported.",
+      "Null meaning": "The transition concerns no publication, such as a playback change or an unpublished source.",
+      "Unit": "—"
+    },
+    {
+      "Column": "detail",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Failure code or playback condition.",
+      "Null meaning": "The kind needs no detail.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "publication_device_events_company_id_device_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The screen belongs to the same company."
+    },
+    {
+      "Object": "publication_device_events_kind",
+      "Physical definition": "CHECK (((kind)::text = ANY ((ARRAY['DESIRED_DELIVERED'::character varying, 'ACTIVATED'::character varying, 'STAGING_FAILED'::character varying, 'PLAYBACK_CHANGED'::character varying])::text[])))",
+      "Purpose": "Kinds come from a closed set."
+    },
+    {
+      "Object": "publication_device_events_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique event identity."
+    },
+    {
+      "Object": "publication_device_events_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX publication_device_events_company_id_id_key ON public.publication_device_events USING btree (company_id, id)",
+      "Purpose": "Tenant key for events."
+    },
+    {
+      "Object": "publication_device_events_device_idx",
+      "Physical definition": "CREATE INDEX publication_device_events_device_idx ON public.publication_device_events USING btree (company_id, device_id, occurred_at DESC, id DESC)",
+      "Purpose": "Reads a screen's recent transitions newest first."
+    },
+    {
+      "Object": "publication_device_events_occurred_idx",
+      "Physical definition": "CREATE INDEX publication_device_events_occurred_idx ON public.publication_device_events USING btree (occurred_at)",
+      "Purpose": "Finds transitions past their retention."
+    }
+  ]
+}

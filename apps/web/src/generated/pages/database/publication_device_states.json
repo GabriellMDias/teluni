@@ -1,0 +1,227 @@
+{
+  "kind": "database",
+  "name": "publication_device_states",
+  "description": "The latest synchronization report of each screen as the screen stated it, with the time the server received it and the desired publication it answered. Reported publication IDs are untrusted.",
+  "owner": "Publications",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted at a screen's first synchronization and overwritten by each later report. Kept with the device record.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the screen; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "device_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Screen that reported.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "received_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the last report was received; the panel's connection state derives from it (AT-24).",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "protocol",
+      "PostgreSQL type": "smallint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Protocol agreed for the last exchange.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "app_version",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Player version the screen reported.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "desired_publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication the server answered as desired.",
+      "Null meaning": "The screen's source had no publication.",
+      "Unit": "—"
+    },
+    {
+      "Column": "active_publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication the screen reported active.",
+      "Null meaning": "The screen reported no active publication.",
+      "Unit": "—"
+    },
+    {
+      "Column": "active_since",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Activation time the screen reported, by its own clock.",
+      "Null meaning": "The screen reported no active publication.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "recovery_publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Previous valid publication the screen reported keeping.",
+      "Null meaning": "The screen reported none.",
+      "Unit": "—"
+    },
+    {
+      "Column": "staging_publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication the screen reported staging.",
+      "Null meaning": "The screen reported no staging attempt.",
+      "Unit": "—"
+    },
+    {
+      "Column": "staging_state",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "DOWNLOADING, VERIFYING, READY or FAILED.",
+      "Null meaning": "No staging attempt.",
+      "Unit": "—"
+    },
+    {
+      "Column": "staging_failure",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Reported failure code of a failed staging attempt.",
+      "Null meaning": "The attempt has not failed.",
+      "Unit": "—"
+    },
+    {
+      "Column": "staging_bytes_done",
+      "PostgreSQL type": "bigint",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Bytes the screen reported as downloaded for the attempt.",
+      "Null meaning": "No staging attempt.",
+      "Unit": "bytes"
+    },
+    {
+      "Column": "staging_bytes_total",
+      "PostgreSQL type": "bigint",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Bytes the attempt needs, as the screen reported.",
+      "Null meaning": "No staging attempt.",
+      "Unit": "bytes"
+    },
+    {
+      "Column": "playback",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Reported playback condition: PLAYING, NEUTRAL, AUTHORIZATION_EXPIRED, CLOCK_UNTRUSTED, DEGRADED or SETUP.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "storage_free_bytes",
+      "PostgreSQL type": "bigint",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Free storage the screen reported.",
+      "Null meaning": "Not reported.",
+      "Unit": "bytes"
+    },
+    {
+      "Column": "storage_total_bytes",
+      "PostgreSQL type": "bigint",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Total storage the screen reported.",
+      "Null meaning": "Not reported.",
+      "Unit": "bytes"
+    },
+    {
+      "Column": "device_time",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "The screen's clock reading when it reported.",
+      "Null meaning": "Not reported.",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "publication_device_states_company_id_device_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The screen belongs to the same company."
+    },
+    {
+      "Object": "publication_device_states_failure",
+      "Physical definition": "CHECK (((staging_failure IS NULL) OR ((staging_failure)::text = ANY ((ARRAY['STORAGE_FULL'::character varying, 'DOWNLOAD_FAILED'::character varying, 'INTEGRITY_FAILED'::character varying, 'INVALID_MANIFEST'::character varying, 'INCOMPATIBLE'::character varying])::text[]))))",
+      "Purpose": "Failure codes come from a closed set."
+    },
+    {
+      "Object": "publication_device_states_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, device_id)",
+      "Purpose": "One state per screen."
+    },
+    {
+      "Object": "publication_device_states_playback",
+      "Physical definition": "CHECK (((playback)::text = ANY ((ARRAY['PLAYING'::character varying, 'NEUTRAL'::character varying, 'AUTHORIZATION_EXPIRED'::character varying, 'CLOCK_UNTRUSTED'::character varying, 'DEGRADED'::character varying, 'SETUP'::character varying])::text[])))",
+      "Purpose": "Playback conditions come from a closed set."
+    },
+    {
+      "Object": "publication_device_states_protocol",
+      "Physical definition": "CHECK ((protocol >= 1))",
+      "Purpose": "Protocols start at 1."
+    },
+    {
+      "Object": "publication_device_states_staging",
+      "Physical definition": "CHECK ((((staging_publication_id IS NULL) AND (staging_state IS NULL) AND (staging_failure IS NULL) AND (staging_bytes_done IS NULL) AND (staging_bytes_total IS NULL)) OR ((staging_publication_id IS NOT NULL) AND ((staging_state)::text = ANY ((ARRAY['DOWNLOADING'::character varying, 'VERIFYING'::character varying, 'READY'::character varying, 'FAILED'::character varying])::text[])) AND ((staging_failure IS NULL) = ((staging_state)::text <> 'FAILED'::text)) AND (staging_bytes_done >= 0) AND (staging_bytes_total >= 0))))",
+      "Purpose": "A staging attempt has a publication, a known state, a failure only when failed, and byte counts."
+    },
+    {
+      "Object": "publication_device_states_storage",
+      "Physical definition": "CHECK ((((storage_free_bytes IS NULL) = (storage_total_bytes IS NULL)) AND ((storage_free_bytes IS NULL) OR ((storage_free_bytes >= 0) AND (storage_free_bytes <= storage_total_bytes)))))",
+      "Purpose": "Storage is reported as a pair with free space within the total."
+    }
+  ]
+}

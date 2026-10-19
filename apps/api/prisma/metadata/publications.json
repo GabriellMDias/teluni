@@ -1,0 +1,413 @@
+{
+  "tables": {
+    "publications": {
+      "owner": "Publications",
+      "classification": "CONFIDENTIAL",
+      "description": "One immutable generation of a program (a group's or a screen's): its exact manifest bytes, their SHA-256, a digest of its content and counts, its publisher and time.",
+      "lifecycle": "Inserted when a person publishes or restores; never edited. Superseded when the next generation of its program is published; pruned (manifest cleared, media references deleted) by maintenance once it is neither the latest, nor reported in use by a screen within seven days, nor within 90 days of being superseded (AT-18). Deleted only with its program. See docs/project/publication-sync-design.md.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable publication UUID, also in the manifest.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the publication; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "program_id": {
+          "description": "Program this publication is a generation of; immutable.",
+          "classification": "INTERNAL"
+        },
+        "branch_ids": {
+          "description": "Branches the program concerned when it was published (a group's explicit span or the screen's branch), so the media guard discloses only references the caller may see; empty for a whole-company group.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Never null; an empty array means the program reached the whole company."
+        },
+        "generation": {
+          "description": "Generation number within the program, from 1, increasing.",
+          "classification": "INTERNAL"
+        },
+        "protocol": {
+          "description": "Synchronization protocol the manifest is serialized in.",
+          "classification": "INTERNAL"
+        },
+        "content_sha256": {
+          "description": "SHA-256 of the canonical outputs, playlists and media, equal for equal content; republishing unchanged content returns the latest publication.",
+          "classification": "INTERNAL"
+        },
+        "manifest": {
+          "description": "Exact UTF-8 JSON bytes served to screens, with schedules and media identifiers.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The publication was pruned and can no longer be delivered or restored."
+        },
+        "manifest_sha256": {
+          "description": "SHA-256 of the manifest bytes, which authorization statements name.",
+          "classification": "INTERNAL"
+        },
+        "manifest_size": {
+          "description": "Length of the manifest.",
+          "classification": "INTERNAL",
+          "unit": "bytes"
+        },
+        "rule_count": {
+          "description": "Schedule rules across outputs.",
+          "classification": "INTERNAL"
+        },
+        "playlist_count": {
+          "description": "Distinct playlists copied.",
+          "classification": "INTERNAL"
+        },
+        "item_count": {
+          "description": "Playlist items across copied playlists.",
+          "classification": "INTERNAL"
+        },
+        "media_count": {
+          "description": "Distinct media items referenced.",
+          "classification": "INTERNAL"
+        },
+        "media_bytes": {
+          "description": "Total size of the referenced display renditions.",
+          "classification": "INTERNAL",
+          "unit": "bytes"
+        },
+        "restored_from_generation": {
+          "description": "Generation whose content this publication restored.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Published from the program's draft."
+        },
+        "published_by_principal_id": {
+          "description": "Principal that published.",
+          "classification": "INTERNAL"
+        },
+        "published_by_membership_id": {
+          "description": "Membership through which the publication was made.",
+          "classification": "INTERNAL"
+        },
+        "published_at": {
+          "description": "PostgreSQL-clock instant of publication.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "superseded_at": {
+          "description": "PostgreSQL-clock instant the next generation was published.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision",
+          "nullMeaning": "This is the program's latest publication."
+        },
+        "pruned_at": {
+          "description": "PostgreSQL-clock instant maintenance pruned the publication.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision",
+          "nullMeaning": "The publication is retained."
+        }
+      },
+      "objects": {
+        "publications_pkey": "Unique publication identity.",
+        "publications_company_id_id_key": "Tenant key for publications.",
+        "publications_generation_key": "One publication per program and generation.",
+        "publications_company_published_idx": "Counts a company's recent publications for the publish limits.",
+        "publications_company_id_fkey": "A publication belongs to an existing company.",
+        "publications_company_id_program_id_fkey": "The program belongs to the same company; deleting a group's program deletes its publications.",
+        "publications_published_by_principal_id_fkey": "The publisher is a known principal.",
+        "publications_company_id_published_by_membership_id_fkey": "The publishing membership belongs to the same company.",
+        "publications_branch_ids_present": "The branch list is present and bounded.",
+        "publications_generation_positive": "Generations start at 1.",
+        "publications_protocol_known": "Only protocol 1 exists.",
+        "publications_digests": "Digests are 32-byte SHA-256 values.",
+        "publications_manifest_until_pruned": "The manifest is kept exactly until the publication is pruned.",
+        "publications_manifest_size": "The recorded size matches the stored manifest.",
+        "publications_counts": "Counts are not negative and stay within the snapshot limits.",
+        "publications_restored_from": "A restore names an earlier generation.",
+        "publications_pruned_after_superseded": "Only a superseded publication can be pruned."
+      }
+    },
+    "publication_playlists": {
+      "owner": "Publications",
+      "classification": "INTERNAL",
+      "description": "Each playlist copied into a publication, with the branch that owned it when it was published, so a restore can check the program's current reach.",
+      "lifecycle": "Inserted with its publication; never updated. Deleted with its publication.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the publication; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "publication_id": {
+          "description": "Publication that copied the playlist.",
+          "classification": "INTERNAL"
+        },
+        "playlist_id": {
+          "description": "Copied playlist; not a foreign key, so the copy outlives the playlist.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch that owned the playlist when it was published.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The playlist belonged to the whole company."
+        }
+      },
+      "objects": {
+        "publication_playlists_pkey": "One row per playlist and publication.",
+        "publication_playlists_company_id_publication_id_fkey": "The publication belongs to the same company; rows go with it.",
+        "publication_playlists_company_id_branch_id_fkey": "The owning branch belongs to the same company."
+      }
+    },
+    "publication_media": {
+      "owner": "Publications",
+      "classification": "INTERNAL",
+      "description": "Each media item of a retained publication with the display rendition delivered to screens; the publication media guard keeps these items from being deleted or purged.",
+      "lifecycle": "Inserted with its publication; never updated. Deleted when the publication is pruned or deleted.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the publication; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "publication_id": {
+          "description": "Publication that references the media item.",
+          "classification": "INTERNAL"
+        },
+        "media_asset_id": {
+          "description": "Referenced media item.",
+          "classification": "INTERNAL"
+        },
+        "sha256": {
+          "description": "SHA-256 of the display rendition the manifest names.",
+          "classification": "INTERNAL"
+        },
+        "byte_size": {
+          "description": "Size of the display rendition.",
+          "classification": "INTERNAL",
+          "unit": "bytes"
+        },
+        "content_type": {
+          "description": "Media type of the display rendition.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "publication_media_pkey": "One row per media item and publication.",
+        "publication_media_asset_idx": "Finds the retained publications that protect a media item.",
+        "publication_media_company_id_publication_id_fkey": "The publication belongs to the same company; rows go with it.",
+        "publication_media_company_id_media_asset_id_fkey": "The media item belongs to the same company.",
+        "publication_media_sha256": "The rendition digest is a 32-byte SHA-256.",
+        "publication_media_size": "Renditions are not empty."
+      }
+    },
+    "publication_device_states": {
+      "owner": "Publications",
+      "classification": "INTERNAL",
+      "description": "The latest synchronization report of each screen as the screen stated it, with the time the server received it and the desired publication it answered. Reported publication IDs are untrusted.",
+      "lifecycle": "Inserted at a screen's first synchronization and overwritten by each later report. Kept with the device record.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the screen; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "device_id": {
+          "description": "Screen that reported.",
+          "classification": "INTERNAL"
+        },
+        "received_at": {
+          "description": "PostgreSQL-clock instant the last report was received; the panel's connection state derives from it (AT-24).",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "protocol": {
+          "description": "Protocol agreed for the last exchange.",
+          "classification": "INTERNAL"
+        },
+        "app_version": {
+          "description": "Player version the screen reported.",
+          "classification": "INTERNAL"
+        },
+        "desired_publication_id": {
+          "description": "Publication the server answered as desired.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The screen's source had no publication."
+        },
+        "active_publication_id": {
+          "description": "Publication the screen reported active.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The screen reported no active publication."
+        },
+        "active_since": {
+          "description": "Activation time the screen reported, by its own clock.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision",
+          "nullMeaning": "The screen reported no active publication."
+        },
+        "recovery_publication_id": {
+          "description": "Previous valid publication the screen reported keeping.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The screen reported none."
+        },
+        "staging_publication_id": {
+          "description": "Publication the screen reported staging.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The screen reported no staging attempt."
+        },
+        "staging_state": {
+          "description": "DOWNLOADING, VERIFYING, READY or FAILED.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No staging attempt."
+        },
+        "staging_failure": {
+          "description": "Reported failure code of a failed staging attempt.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The attempt has not failed."
+        },
+        "staging_bytes_done": {
+          "description": "Bytes the screen reported as downloaded for the attempt.",
+          "classification": "INTERNAL",
+          "unit": "bytes",
+          "nullMeaning": "No staging attempt."
+        },
+        "staging_bytes_total": {
+          "description": "Bytes the attempt needs, as the screen reported.",
+          "classification": "INTERNAL",
+          "unit": "bytes",
+          "nullMeaning": "No staging attempt."
+        },
+        "playback": {
+          "description": "Reported playback condition: PLAYING, NEUTRAL, AUTHORIZATION_EXPIRED, CLOCK_UNTRUSTED, DEGRADED or SETUP.",
+          "classification": "INTERNAL"
+        },
+        "storage_free_bytes": {
+          "description": "Free storage the screen reported.",
+          "classification": "INTERNAL",
+          "unit": "bytes",
+          "nullMeaning": "Not reported."
+        },
+        "storage_total_bytes": {
+          "description": "Total storage the screen reported.",
+          "classification": "INTERNAL",
+          "unit": "bytes",
+          "nullMeaning": "Not reported."
+        },
+        "device_time": {
+          "description": "The screen's clock reading when it reported.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision",
+          "nullMeaning": "Not reported."
+        }
+      },
+      "objects": {
+        "publication_device_states_pkey": "One state per screen.",
+        "publication_device_states_company_id_device_id_fkey": "The screen belongs to the same company.",
+        "publication_device_states_protocol": "Protocols start at 1.",
+        "publication_device_states_staging": "A staging attempt has a publication, a known state, a failure only when failed, and byte counts.",
+        "publication_device_states_failure": "Failure codes come from a closed set.",
+        "publication_device_states_playback": "Playback conditions come from a closed set.",
+        "publication_device_states_storage": "Storage is reported as a pair with free space within the total."
+      }
+    },
+    "publication_device_events": {
+      "owner": "Publications",
+      "classification": "INTERNAL",
+      "description": "Transitions in screens' synchronization reports: a newly desired publication delivered, an activation, a failed staging attempt or a playback change (AT-20).",
+      "lifecycle": "Inserted when a report changes; never updated. Deleted by maintenance 30 days after it occurred.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated event UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the screen; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "device_id": {
+          "description": "Screen the transition belongs to.",
+          "classification": "INTERNAL"
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant the transition was received.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "kind": {
+          "description": "DESIRED_DELIVERED, ACTIVATED, STAGING_FAILED or PLAYBACK_CHANGED.",
+          "classification": "INTERNAL"
+        },
+        "publication_id": {
+          "description": "Publication the transition concerns, as delivered or reported.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The transition concerns no publication, such as a playback change or an unpublished source."
+        },
+        "detail": {
+          "description": "Failure code or playback condition.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The kind needs no detail."
+        }
+      },
+      "objects": {
+        "publication_device_events_pkey": "Unique event identity.",
+        "publication_device_events_company_id_id_key": "Tenant key for events.",
+        "publication_device_events_device_idx": "Reads a screen's recent transitions newest first.",
+        "publication_device_events_occurred_idx": "Finds transitions past their retention.",
+        "publication_device_events_company_id_device_id_fkey": "The screen belongs to the same company.",
+        "publication_device_events_kind": "Kinds come from a closed set."
+      }
+    },
+    "publication_audit_events": {
+      "owner": "Publications",
+      "classification": "CONFIDENTIAL",
+      "description": "Append-only record of publications and restores, with the acting member and the branches each program concerns.",
+      "lifecycle": "Inserted in the same transaction as the publication it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
+      "columns": {
+        "id": {
+          "description": "Backend-generated event UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company the publication belongs to.",
+          "classification": "INTERNAL"
+        },
+        "subject_type": {
+          "description": "Kind of subject: program.",
+          "classification": "INTERNAL"
+        },
+        "subject_id": {
+          "description": "Program the event concerns; not a foreign key, so events outlive deleted programs.",
+          "classification": "INTERNAL"
+        },
+        "branch_ids": {
+          "description": "Branches the program concerns, for branch-scoped audit reads; empty for a whole-company group.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Never null; an empty array means the program is company-wide."
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant of the publication.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "actor_principal_id": {
+          "description": "Principal that published.",
+          "classification": "INTERNAL"
+        },
+        "actor_membership_id": {
+          "description": "Membership through which the publication was made.",
+          "classification": "INTERNAL"
+        },
+        "action": {
+          "description": "publication.published or publication.restored.",
+          "classification": "INTERNAL"
+        },
+        "details": {
+          "description": "Bounded summary: source kind, generation, counts and IDs; never manifest content.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "publication_audit_events_pkey": "Unique event identity.",
+        "publication_audit_events_company_id_id_key": "Tenant key for events.",
+        "publication_audit_events_company_id_fkey": "An event belongs to an existing company.",
+        "publication_audit_events_actor_principal_id_fkey": "The actor is a known principal.",
+        "publication_audit_events_company_id_actor_membership_id_fkey": "The acting membership belongs to the same company.",
+        "publication_audit_events_subject_idx": "Reads a program's publication history newest first.",
+        "publication_audit_events_branch_ids_present": "The branch list is present and bounded.",
+        "publication_audit_events_subject_type": "Subjects come from a closed set.",
+        "publication_audit_events_details_object": "Details are a JSON object."
+      }
+    }
+  },
+  "enums": {}
+}

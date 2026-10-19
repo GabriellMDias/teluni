@@ -247,6 +247,7 @@ describe("organization access decisions", () => {
       ["media.upload"],
       ["media.archive", "devices.view"],
       ["programming.assign"],
+      ["publications.publish"],
     ])
       expect(() => profileCapabilities(requested)).toThrow(OrganizationFailure);
   });

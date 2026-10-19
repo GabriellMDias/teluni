@@ -29,6 +29,7 @@ export const delegableCapabilities: readonly DelegableCapability[] = [
   "programming.view",
   "programming.edit",
   "programming.assign",
+  "publications.publish",
 ];
 
 /** The API accepts these only together with the capability they need. */
@@ -40,6 +41,7 @@ const prerequisites: Readonly<
   "media.archive": "media.view",
   "programming.edit": "programming.view",
   "programming.assign": "programming.view",
+  "publications.publish": "programming.view",
 };
 
 function CapabilityFields({

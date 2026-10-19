@@ -65,6 +65,9 @@ model Device {
   // Back-relations of the programming module; never traversed across modules.
   programs             Program[]
   programmingSetting   ProgrammingDeviceSetting?
+  // Back-relations of the publications module; never traversed across modules.
+  publicationState     PublicationDeviceState?
+  publicationEvents    PublicationDeviceEvent[]
 
   @@unique([companyId, id], map: "devices_company_id_id_key")
   @@unique([enrollmentId], map: "devices_enrollment_key")

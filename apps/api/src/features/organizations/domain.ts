@@ -26,7 +26,8 @@ export type Capability =
   | "media.delete"
   | "programming.view"
   | "programming.edit"
-  | "programming.assign";
+  | "programming.assign"
+  | "publications.publish";
 
 type Preset = Readonly<{
   capabilities: ReadonlySet<Capability>;
@@ -35,9 +36,9 @@ type Preset = Readonly<{
 }>;
 
 // Only the capabilities implemented so far are listed; the matrix's other
-// rows (publication, export) arrive with their modules. Operators pair
-// devices, archive media and assign programming only through an additional
-// grant (an access profile); permanent media deletion stays with
+// rows (export, price changes) arrive with their modules. Operators pair
+// devices, archive media, assign programming and publish only through an
+// additional grant (an access profile); permanent media deletion stays with
 // administrators.
 export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
   COMPANY_ADMINISTRATOR: {
@@ -58,6 +59,7 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "programming.view",
       "programming.edit",
       "programming.assign",
+      "publications.publish",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -75,6 +77,7 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "programming.view",
       "programming.edit",
       "programming.assign",
+      "publications.publish",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -110,6 +113,7 @@ export const delegableCapabilities: readonly Capability[] = [
   "programming.view",
   "programming.edit",
   "programming.assign",
+  "publications.publish",
 ];
 
 /**
@@ -124,6 +128,7 @@ export const capabilityPrerequisites: Readonly<
   "media.archive": "media.view",
   "programming.edit": "programming.view",
   "programming.assign": "programming.view",
+  "publications.publish": "programming.view",
 };
 
 /**
@@ -141,6 +146,7 @@ const strongCapabilities: ReadonlySet<Capability> = new Set([
   "media.archive",
   "media.delete",
   "programming.assign",
+  "publications.publish",
 ]);
 
 /** What a grant confers: a standard role or a company's access profile. */

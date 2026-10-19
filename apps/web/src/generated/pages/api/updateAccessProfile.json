@@ -72,7 +72,8 @@
                   { "type": "string", "const": "media.archive" },
                   { "type": "string", "const": "programming.view" },
                   { "type": "string", "const": "programming.edit" },
-                  { "type": "string", "const": "programming.assign" }
+                  { "type": "string", "const": "programming.assign" },
+                  { "type": "string", "const": "publications.publish" }
                 ]
               },
               "minItems": 1,
@@ -109,7 +110,8 @@
               { "type": "string", "const": "media.archive" },
               { "type": "string", "const": "programming.view" },
               { "type": "string", "const": "programming.edit" },
-              { "type": "string", "const": "programming.assign" }
+              { "type": "string", "const": "programming.assign" },
+              { "type": "string", "const": "publications.publish" }
             ]
           },
           "minItems": 1,
@@ -132,7 +134,7 @@
       },
       {
         "name": "capabilities",
-        "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\"",
+        "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\" | \"publications.publish\"",
         "required": false
       }
     ]
@@ -181,7 +183,8 @@
                     { "type": "string", "const": "media.archive" },
                     { "type": "string", "const": "programming.view" },
                     { "type": "string", "const": "programming.edit" },
-                    { "type": "string", "const": "programming.assign" }
+                    { "type": "string", "const": "programming.assign" },
+                    { "type": "string", "const": "publications.publish" }
                   ]
                 }
               },
@@ -239,7 +242,8 @@
                 { "type": "string", "const": "media.archive" },
                 { "type": "string", "const": "programming.view" },
                 { "type": "string", "const": "programming.edit" },
-                { "type": "string", "const": "programming.assign" }
+                { "type": "string", "const": "programming.assign" },
+                { "type": "string", "const": "publications.publish" }
               ]
             }
           },
@@ -270,7 +274,7 @@
         },
         {
           "name": "capabilities",
-          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\"",
+          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\" | \"publications.publish\"",
           "required": true
         },
         {

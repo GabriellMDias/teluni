@@ -606,7 +606,7 @@ Lifecycle: Created ACTIVE; edited with expected versions, so every holder's acce
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `access_profiles_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A profile belongs to an existing company. |
-| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text])))` | A profile names at least one capability, all of them delegable. |
+| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text, 'publications.publish'::text])))` | A profile names at least one capability, all of them delegable. |
 | `access_profiles_name_nonblank` | `CHECK ((btrim((name)::text) <> ''::text))` | Profile name cannot be blank. |
 | `access_profiles_pkey` | `PRIMARY KEY (id)` | Unique profile identity. |
 | `access_profiles_version_positive` | `CHECK ((version >= 1))` | Rejects invalid concurrency versions. |
@@ -1109,6 +1109,216 @@ Lifecycle: Inserted in the same transaction as the change it records; never upda
 | `programming_audit_events_subject_type` | `CHECK (((subject_type)::text = ANY ((ARRAY['playlist'::character varying, 'group'::character varying, 'program'::character varying, 'device'::character varying])::text[])))` | Subjects come from a closed set. |
 | `programming_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX programming_audit_events_company_id_id_key ON public.programming_audit_events USING btree (company_id, id)` | Tenant key for events. |
 | `programming_audit_events_subject_idx` | `CREATE INDEX programming_audit_events_subject_idx ON public.programming_audit_events USING btree (company_id, subject_id, occurred_at DESC, id DESC)` | Reads a subject's history newest first. |
+
+## publications
+
+One immutable generation of a program (a group's or a screen's): its exact manifest bytes, their SHA-256, a digest of its content and counts, its publisher and time.
+
+Owner: Publications. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted when a person publishes or restores; never edited. Superseded when the next generation of its program is published; pruned (manifest cleared, media references deleted) by maintenance once it is neither the latest, nor reported in use by a screen within seven days, nor within 90 days of being superseded (AT-18). Deleted only with its program. See docs/project/publication-sync-design.md.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable publication UUID, also in the manifest. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the publication; immutable (tenant key). | — | — |
+| `program_id` | `uuid` | no | — | INTERNAL | Program this publication is a generation of; immutable. | — | — |
+| `branch_ids` | `uuid[]` | yes | `ARRAY[]::uuid[]` | INTERNAL | Branches the program concerned when it was published (a group's explicit span or the screen's branch), so the media guard discloses only references the caller may see; empty for a whole-company group. | Never null; an empty array means the program reached the whole company. | — |
+| `generation` | `integer` | no | — | INTERNAL | Generation number within the program, from 1, increasing. | — | — |
+| `protocol` | `smallint` | no | — | INTERNAL | Synchronization protocol the manifest is serialized in. | — | — |
+| `content_sha256` | `bytea` | no | — | INTERNAL | SHA-256 of the canonical outputs, playlists and media, equal for equal content; republishing unchanged content returns the latest publication. | — | — |
+| `manifest` | `bytea` | yes | — | CONFIDENTIAL | Exact UTF-8 JSON bytes served to screens, with schedules and media identifiers. | The publication was pruned and can no longer be delivered or restored. | — |
+| `manifest_sha256` | `bytea` | no | — | INTERNAL | SHA-256 of the manifest bytes, which authorization statements name. | — | — |
+| `manifest_size` | `integer` | no | — | INTERNAL | Length of the manifest. | — | bytes |
+| `rule_count` | `integer` | no | — | INTERNAL | Schedule rules across outputs. | — | — |
+| `playlist_count` | `integer` | no | — | INTERNAL | Distinct playlists copied. | — | — |
+| `item_count` | `integer` | no | — | INTERNAL | Playlist items across copied playlists. | — | — |
+| `media_count` | `integer` | no | — | INTERNAL | Distinct media items referenced. | — | — |
+| `media_bytes` | `bigint` | no | — | INTERNAL | Total size of the referenced display renditions. | — | bytes |
+| `restored_from_generation` | `integer` | yes | — | INTERNAL | Generation whose content this publication restored. | Published from the program's draft. | — |
+| `published_by_principal_id` | `uuid` | no | — | INTERNAL | Principal that published. | — | — |
+| `published_by_membership_id` | `uuid` | no | — | INTERNAL | Membership through which the publication was made. | — | — |
+| `published_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of publication. | — | UTC instant, millisecond precision |
+| `superseded_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant the next generation was published. | This is the program's latest publication. | UTC instant, millisecond precision |
+| `pruned_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant maintenance pruned the publication. | The publication is retained. | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `publications_branch_ids_present` | `CHECK (((branch_ids IS NOT NULL) AND (cardinality(branch_ids) <= 100)))` | The branch list is present and bounded. |
+| `publications_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A publication belongs to an existing company. |
+| `publications_company_id_program_id_fkey` | `FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The program belongs to the same company; deleting a group's program deletes its publications. |
+| `publications_company_id_published_by_membership_id_fkey` | `FOREIGN KEY (company_id, published_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The publishing membership belongs to the same company. |
+| `publications_counts` | `CHECK (((rule_count >= 0) AND (playlist_count >= 0) AND ((item_count >= 0) AND (item_count <= 2000)) AND ((media_count >= 0) AND (media_count <= 1000)) AND (media_bytes >= 0)))` | Counts are not negative and stay within the snapshot limits. |
+| `publications_digests` | `CHECK (((octet_length(content_sha256) = 32) AND (octet_length(manifest_sha256) = 32)))` | Digests are 32-byte SHA-256 values. |
+| `publications_generation_positive` | `CHECK ((generation >= 1))` | Generations start at 1. |
+| `publications_manifest_size` | `CHECK (((manifest_size > 0) AND ((manifest IS NULL) OR (octet_length(manifest) = manifest_size))))` | The recorded size matches the stored manifest. |
+| `publications_manifest_until_pruned` | `CHECK (((manifest IS NULL) = (pruned_at IS NOT NULL)))` | The manifest is kept exactly until the publication is pruned. |
+| `publications_pkey` | `PRIMARY KEY (id)` | Unique publication identity. |
+| `publications_protocol_known` | `CHECK ((protocol = 1))` | Only protocol 1 exists. |
+| `publications_pruned_after_superseded` | `CHECK (((pruned_at IS NULL) OR (superseded_at IS NOT NULL)))` | Only a superseded publication can be pruned. |
+| `publications_published_by_principal_id_fkey` | `FOREIGN KEY (published_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The publisher is a known principal. |
+| `publications_restored_from` | `CHECK (((restored_from_generation IS NULL) OR ((restored_from_generation >= 1) AND (restored_from_generation <= (generation - 1)))))` | A restore names an earlier generation. |
+| `publications_company_id_id_key` | `CREATE UNIQUE INDEX publications_company_id_id_key ON public.publications USING btree (company_id, id)` | Tenant key for publications. |
+| `publications_company_published_idx` | `CREATE INDEX publications_company_published_idx ON public.publications USING btree (company_id, published_at)` | Counts a company's recent publications for the publish limits. |
+| `publications_generation_key` | `CREATE UNIQUE INDEX publications_generation_key ON public.publications USING btree (company_id, program_id, generation)` | One publication per program and generation. |
+
+## publication_playlists
+
+Each playlist copied into a publication, with the branch that owned it when it was published, so a restore can check the program's current reach.
+
+Owner: Publications. Classification: INTERNAL.
+
+Lifecycle: Inserted with its publication; never updated. Deleted with its publication.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the publication; immutable (tenant key). | — | — |
+| `publication_id` | `uuid` | no | — | INTERNAL | Publication that copied the playlist. | — | — |
+| `playlist_id` | `uuid` | no | — | INTERNAL | Copied playlist; not a foreign key, so the copy outlives the playlist. | — | — |
+| `branch_id` | `uuid` | yes | — | INTERNAL | Branch that owned the playlist when it was published. | The playlist belonged to the whole company. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `publication_playlists_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The owning branch belongs to the same company. |
+| `publication_playlists_company_id_publication_id_fkey` | `FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The publication belongs to the same company; rows go with it. |
+| `publication_playlists_pkey` | `PRIMARY KEY (company_id, publication_id, playlist_id)` | One row per playlist and publication. |
+
+## publication_media
+
+Each media item of a retained publication with the display rendition delivered to screens; the publication media guard keeps these items from being deleted or purged.
+
+Owner: Publications. Classification: INTERNAL.
+
+Lifecycle: Inserted with its publication; never updated. Deleted when the publication is pruned or deleted.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the publication; immutable (tenant key). | — | — |
+| `publication_id` | `uuid` | no | — | INTERNAL | Publication that references the media item. | — | — |
+| `media_asset_id` | `uuid` | no | — | INTERNAL | Referenced media item. | — | — |
+| `sha256` | `bytea` | no | — | INTERNAL | SHA-256 of the display rendition the manifest names. | — | — |
+| `byte_size` | `bigint` | no | — | INTERNAL | Size of the display rendition. | — | bytes |
+| `content_type` | `character varying(64)` | no | — | INTERNAL | Media type of the display rendition. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `publication_media_company_id_media_asset_id_fkey` | `FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The media item belongs to the same company. |
+| `publication_media_company_id_publication_id_fkey` | `FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The publication belongs to the same company; rows go with it. |
+| `publication_media_pkey` | `PRIMARY KEY (company_id, publication_id, media_asset_id)` | One row per media item and publication. |
+| `publication_media_sha256` | `CHECK ((octet_length(sha256) = 32))` | The rendition digest is a 32-byte SHA-256. |
+| `publication_media_size` | `CHECK ((byte_size > 0))` | Renditions are not empty. |
+| `publication_media_asset_idx` | `CREATE INDEX publication_media_asset_idx ON public.publication_media USING btree (company_id, media_asset_id)` | Finds the retained publications that protect a media item. |
+
+## publication_device_states
+
+The latest synchronization report of each screen as the screen stated it, with the time the server received it and the desired publication it answered. Reported publication IDs are untrusted.
+
+Owner: Publications. Classification: INTERNAL.
+
+Lifecycle: Inserted at a screen's first synchronization and overwritten by each later report. Kept with the device record.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the screen; immutable (tenant key). | — | — |
+| `device_id` | `uuid` | no | — | INTERNAL | Screen that reported. | — | — |
+| `received_at` | `timestamp(3) with time zone` | no | — | INTERNAL | PostgreSQL-clock instant the last report was received; the panel's connection state derives from it (AT-24). | — | UTC instant, millisecond precision |
+| `protocol` | `smallint` | no | — | INTERNAL | Protocol agreed for the last exchange. | — | — |
+| `app_version` | `character varying(64)` | no | — | INTERNAL | Player version the screen reported. | — | — |
+| `desired_publication_id` | `uuid` | yes | — | INTERNAL | Publication the server answered as desired. | The screen's source had no publication. | — |
+| `active_publication_id` | `uuid` | yes | — | INTERNAL | Publication the screen reported active. | The screen reported no active publication. | — |
+| `active_since` | `timestamp(3) with time zone` | yes | — | INTERNAL | Activation time the screen reported, by its own clock. | The screen reported no active publication. | UTC instant, millisecond precision |
+| `recovery_publication_id` | `uuid` | yes | — | INTERNAL | Previous valid publication the screen reported keeping. | The screen reported none. | — |
+| `staging_publication_id` | `uuid` | yes | — | INTERNAL | Publication the screen reported staging. | The screen reported no staging attempt. | — |
+| `staging_state` | `character varying(16)` | yes | — | INTERNAL | DOWNLOADING, VERIFYING, READY or FAILED. | No staging attempt. | — |
+| `staging_failure` | `character varying(32)` | yes | — | INTERNAL | Reported failure code of a failed staging attempt. | The attempt has not failed. | — |
+| `staging_bytes_done` | `bigint` | yes | — | INTERNAL | Bytes the screen reported as downloaded for the attempt. | No staging attempt. | bytes |
+| `staging_bytes_total` | `bigint` | yes | — | INTERNAL | Bytes the attempt needs, as the screen reported. | No staging attempt. | bytes |
+| `playback` | `character varying(32)` | no | — | INTERNAL | Reported playback condition: PLAYING, NEUTRAL, AUTHORIZATION_EXPIRED, CLOCK_UNTRUSTED, DEGRADED or SETUP. | — | — |
+| `storage_free_bytes` | `bigint` | yes | — | INTERNAL | Free storage the screen reported. | Not reported. | bytes |
+| `storage_total_bytes` | `bigint` | yes | — | INTERNAL | Total storage the screen reported. | Not reported. | bytes |
+| `device_time` | `timestamp(3) with time zone` | yes | — | INTERNAL | The screen's clock reading when it reported. | Not reported. | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `publication_device_states_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The screen belongs to the same company. |
+| `publication_device_states_failure` | `CHECK (((staging_failure IS NULL) OR ((staging_failure)::text = ANY ((ARRAY['STORAGE_FULL'::character varying, 'DOWNLOAD_FAILED'::character varying, 'INTEGRITY_FAILED'::character varying, 'INVALID_MANIFEST'::character varying, 'INCOMPATIBLE'::character varying])::text[]))))` | Failure codes come from a closed set. |
+| `publication_device_states_pkey` | `PRIMARY KEY (company_id, device_id)` | One state per screen. |
+| `publication_device_states_playback` | `CHECK (((playback)::text = ANY ((ARRAY['PLAYING'::character varying, 'NEUTRAL'::character varying, 'AUTHORIZATION_EXPIRED'::character varying, 'CLOCK_UNTRUSTED'::character varying, 'DEGRADED'::character varying, 'SETUP'::character varying])::text[])))` | Playback conditions come from a closed set. |
+| `publication_device_states_protocol` | `CHECK ((protocol >= 1))` | Protocols start at 1. |
+| `publication_device_states_staging` | `CHECK ((((staging_publication_id IS NULL) AND (staging_state IS NULL) AND (staging_failure IS NULL) AND (staging_bytes_done IS NULL) AND (staging_bytes_total IS NULL)) OR ((staging_publication_id IS NOT NULL) AND ((staging_state)::text = ANY ((ARRAY['DOWNLOADING'::character varying, 'VERIFYING'::character varying, 'READY'::character varying, 'FAILED'::character varying])::text[])) AND ((staging_failure IS NULL) = ((staging_state)::text <> 'FAILED'::text)) AND (staging_bytes_done >= 0) AND (staging_bytes_total >= 0))))` | A staging attempt has a publication, a known state, a failure only when failed, and byte counts. |
+| `publication_device_states_storage` | `CHECK ((((storage_free_bytes IS NULL) = (storage_total_bytes IS NULL)) AND ((storage_free_bytes IS NULL) OR ((storage_free_bytes >= 0) AND (storage_free_bytes <= storage_total_bytes)))))` | Storage is reported as a pair with free space within the total. |
+
+## publication_device_events
+
+Transitions in screens' synchronization reports: a newly desired publication delivered, an activation, a failed staging attempt or a playback change (AT-20).
+
+Owner: Publications. Classification: INTERNAL.
+
+Lifecycle: Inserted when a report changes; never updated. Deleted by maintenance 30 days after it occurred.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the screen; immutable (tenant key). | — | — |
+| `device_id` | `uuid` | no | — | INTERNAL | Screen the transition belongs to. | — | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the transition was received. | — | UTC instant, millisecond precision |
+| `kind` | `character varying(32)` | no | — | INTERNAL | DESIRED_DELIVERED, ACTIVATED, STAGING_FAILED or PLAYBACK_CHANGED. | — | — |
+| `publication_id` | `uuid` | yes | — | INTERNAL | Publication the transition concerns, as delivered or reported. | The transition concerns no publication, such as a playback change or an unpublished source. | — |
+| `detail` | `character varying(32)` | yes | — | INTERNAL | Failure code or playback condition. | The kind needs no detail. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `publication_device_events_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The screen belongs to the same company. |
+| `publication_device_events_kind` | `CHECK (((kind)::text = ANY ((ARRAY['DESIRED_DELIVERED'::character varying, 'ACTIVATED'::character varying, 'STAGING_FAILED'::character varying, 'PLAYBACK_CHANGED'::character varying])::text[])))` | Kinds come from a closed set. |
+| `publication_device_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
+| `publication_device_events_company_id_id_key` | `CREATE UNIQUE INDEX publication_device_events_company_id_id_key ON public.publication_device_events USING btree (company_id, id)` | Tenant key for events. |
+| `publication_device_events_device_idx` | `CREATE INDEX publication_device_events_device_idx ON public.publication_device_events USING btree (company_id, device_id, occurred_at DESC, id DESC)` | Reads a screen's recent transitions newest first. |
+| `publication_device_events_occurred_idx` | `CREATE INDEX publication_device_events_occurred_idx ON public.publication_device_events USING btree (occurred_at)` | Finds transitions past their retention. |
+
+## publication_audit_events
+
+Append-only record of publications and restores, with the acting member and the branches each program concerns.
+
+Owner: Publications. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted in the same transaction as the publication it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company the publication belongs to. | — | — |
+| `subject_type` | `character varying(16)` | no | — | INTERNAL | Kind of subject: program. | — | — |
+| `subject_id` | `uuid` | no | — | INTERNAL | Program the event concerns; not a foreign key, so events outlive deleted programs. | — | — |
+| `branch_ids` | `uuid[]` | yes | `ARRAY[]::uuid[]` | INTERNAL | Branches the program concerns, for branch-scoped audit reads; empty for a whole-company group. | Never null; an empty array means the program is company-wide. | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the publication. | — | UTC instant, millisecond precision |
+| `actor_principal_id` | `uuid` | no | — | INTERNAL | Principal that published. | — | — |
+| `actor_membership_id` | `uuid` | no | — | INTERNAL | Membership through which the publication was made. | — | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | publication.published or publication.restored. | — | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Bounded summary: source kind, generation, counts and IDs; never manifest content. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `publication_audit_events_actor_principal_id_fkey` | `FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The actor is a known principal. |
+| `publication_audit_events_branch_ids_present` | `CHECK (((branch_ids IS NOT NULL) AND (cardinality(branch_ids) <= 100)))` | The branch list is present and bounded. |
+| `publication_audit_events_company_id_actor_membership_id_fkey` | `FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The acting membership belongs to the same company. |
+| `publication_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
+| `publication_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
+| `publication_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
+| `publication_audit_events_subject_type` | `CHECK (((subject_type)::text = 'program'::text))` | Subjects come from a closed set. |
+| `publication_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX publication_audit_events_company_id_id_key ON public.publication_audit_events USING btree (company_id, id)` | Tenant key for events. |
+| `publication_audit_events_subject_idx` | `CREATE INDEX publication_audit_events_subject_idx ON public.publication_audit_events USING btree (company_id, subject_id, occurred_at DESC, id DESC)` | Reads a program's publication history newest first. |
 
 ## Database enums
 

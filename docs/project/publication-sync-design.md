@@ -218,6 +218,18 @@ Copy is in `pt-BR` and `en-US`; reported states are labeled as reported by the s
 2. Panel pages: publish dialog, history and restore, the screen's synchronization section, list and group summaries, with browser tests and the end-to-end journey with a simulated player.
 3. Hardening with PJ-12 (player conformance against the manifest and statement), PJ-20/PJ-21 (layout and catalog content in the manifest, price publication), PJ-27 (commercial expiry and transfer accounting) and optional approvals (PJ-24).
 
+## Implementation status
+
+Implemented in [PJ-11](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options while the owner reviews them under [PH-25](human-actions.md#ph-25):
+
+- The [`publications` API module](../../apps/api/src/features/publications/AGENTS.md), its reviewed migration (which also lets profiles delegate `publications.publish`), runtime grants, schema metadata, the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK, and the `TELUNI_SYNC_SIGNING_KEYS` setting; without it the module stays unmounted.
+- `publications.publish` for administrators and branch managers and as a delegable profile capability with `programming.view`, always with strong authentication.
+- Check, publish with the reviewed content digest, history and restore over the programming port's locked snapshot; the protocol 1 manifest and content digest in [`domain.ts`](../../apps/api/src/features/publications/domain.ts); ES256 statements and the key set with `jose`.
+- The sync exchange, delivery of the desired publication's manifest and renditions with ranges and at most two downloads per screen, screen states and 30-day transitions, the `publication` media guard, hourly pruning, and the programming assignment that asks for confirmation only for unpublished destinations.
+- [Domain tests](../../apps/api/test/publications/domain.test.ts) for exact manifest bytes, fixture-format rules, digests, statements with rotated keys, authorization lists, AT-24 thresholds and protocol agreement, and the [two-company integration suite](../../apps/api/test/publications/integration.test.ts) with simulated screens against PostgreSQL as the runtime role.
+
+Pending: increment 2 (panel pages and the end-to-end journey with a simulated player) and increment 3.
+
 ## Decisions for review
 
 1. **Publication unit.** One immutable generation sequence per program; a publication copies the program's rules, its playlists and descriptors of its media; publishing needs the content digest the person reviewed, and unchanged content returns the latest publication.

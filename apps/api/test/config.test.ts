@@ -1,9 +1,11 @@
+import { generateKeyPairSync, type KeyObject } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   clientConfigFrom,
   configReference,
   parseServerConfig,
   parseSessionKeys,
+  parseSigningKeyRing,
   serverConfigSchema,
 } from "../src/config.js";
 
@@ -285,6 +287,40 @@ describe("transactional mail configuration", () => {
     for (const value of ["d1:short", `d1:${key},d1:${key}`, "no-id"])
       expect(() =>
         parseServerConfig({ ...identity, TELUNI_DEVICE_CODE_KEYS: value }),
+      ).toThrow("Invalid API configuration");
+  });
+
+  it("keeps sync signing keys optional and accepts only EC P-256 rings", () => {
+    const der = (key: KeyObject) =>
+      key.export({ format: "der", type: "pkcs8" }).toString("base64url");
+    const p256 = () =>
+      generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey;
+    expect(parseServerConfig(identity).syncSigningKeys).toBeUndefined();
+    const ring = `s2:${der(p256())},s1:${der(p256())}`;
+    expect(
+      parseServerConfig({ ...identity, TELUNI_SYNC_SIGNING_KEYS: ring })
+        .syncSigningKeys,
+    ).toBe(ring);
+    expect(parseSigningKeyRing(ring).map((entry) => entry.id)).toEqual([
+      "s2",
+      "s1",
+    ]);
+    const other = der(
+      generateKeyPairSync("ec", { namedCurve: "P-384" }).privateKey,
+    );
+    const rsa = der(
+      generateKeyPairSync("rsa", { modulusLength: 2048 }).privateKey,
+    );
+    const same = der(p256());
+    for (const value of [
+      `s1:${other}`,
+      `s1:${rsa}`,
+      "s1:not-a-key",
+      `s1:${same},s1:${same}`,
+      same,
+    ])
+      expect(() =>
+        parseServerConfig({ ...identity, TELUNI_SYNC_SIGNING_KEYS: value }),
       ).toThrow("Invalid API configuration");
   });
 });

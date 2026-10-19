@@ -1,4 +1,9 @@
-import { parseKeyRing, parseServerConfig, parseSessionKeys } from "./config.js";
+import {
+  parseKeyRing,
+  parseServerConfig,
+  parseSessionKeys,
+  parseSigningKeyRing,
+} from "./config.js";
 import { createLogger } from "./logging.js";
 import { errorDiagnostics } from "./error-diagnostics.js";
 import { shutdownRuntime, withDeadline } from "./lifecycle.js";
@@ -89,9 +94,20 @@ try {
         concurrency: config.mediaProcessingConcurrency,
       }
     : undefined;
+  const syncSigning = config.syncSigningKeys
+    ? { keys: parseSigningKeyRing(config.syncSigningKeys) }
+    : undefined;
   const modules = activateModules(
     apiModules,
-    { database, verifier, humanIdentity, mail, deviceEnrollment, mediaStorage },
+    {
+      database,
+      verifier,
+      humanIdentity,
+      mail,
+      deviceEnrollment,
+      mediaStorage,
+      syncSigning,
+    },
     config.environment,
   );
   const { app, lifecycle } = createApp(logger, undefined, {
