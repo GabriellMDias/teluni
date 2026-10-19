@@ -27,6 +27,8 @@ type LocalIdentity = Stoppable & {
   provisionerClientId: string;
   provisionerClientSecret: string;
   mailUrl: string;
+  mailSmtpHost: string;
+  mailSmtpPort: number;
 };
 
 async function startLocalIdentity(options: {
@@ -83,6 +85,8 @@ export type IdentityStack = Stoppable & {
   mailUrl: string;
   user: { email: string; password: string };
   member: { email: string; password: string };
+  /** A third person who joins only through an invitation. */
+  guest: { email: string; password: string };
   /** Superuser fixture arrangement only, never an application credential. */
   sql: pg.Client;
 };
@@ -97,6 +101,10 @@ export async function startIdentityStack(): Promise<IdentityStack> {
     email: `member-${randomBytes(4).toString("hex")}@example.test`,
     password: `Synthetic-${randomBytes(9).toString("base64url")}`,
   };
+  const guest = {
+    email: `guest-${randomBytes(4).toString("hex")}@example.test`,
+    password: `Synthetic-${randomBytes(9).toString("base64url")}`,
+  };
   try {
     const database = await startDatabase();
     resources.push(database);
@@ -109,16 +117,19 @@ export async function startIdentityStack(): Promise<IdentityStack> {
     const identity = await startLocalIdentity({
       publicOrigin,
       apiPort,
-      users: [user, member],
+      users: [user, member, guest],
     });
     resources.unshift(identity);
     const sessionKeys = `e2e:${randomBytes(32).toString("base64url")}`;
+    const mailKeys = `e2e:${randomBytes(32).toString("base64url")}`;
     const secrets = [
       identity.webClientSecret,
       identity.provisionerClientSecret,
       sessionKeys,
+      mailKeys,
       user.password,
       member.password,
+      guest.password,
     ];
     const api = await startApi({
       port: apiPort,
@@ -135,6 +146,11 @@ export async function startIdentityStack(): Promise<IdentityStack> {
         TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET:
           identity.provisionerClientSecret,
         TELUNI_SESSION_KEYS: sessionKeys,
+        TELUNI_MAIL_SMTP_HOST: identity.mailSmtpHost,
+        TELUNI_MAIL_SMTP_PORT: String(identity.mailSmtpPort),
+        TELUNI_MAIL_SMTP_SECURITY: "none",
+        TELUNI_MAIL_FROM: "no-reply@teluni.test",
+        TELUNI_MAIL_KEYS: mailKeys,
       },
     });
     resources.unshift(api);
@@ -146,6 +162,7 @@ export async function startIdentityStack(): Promise<IdentityStack> {
       mailUrl: identity.mailUrl,
       user,
       member,
+      guest,
       sql,
       stop: () => stopAll(resources),
     };

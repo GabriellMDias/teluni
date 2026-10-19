@@ -16,6 +16,7 @@ export type Capability =
   | "branches.view"
   | "branches.manage"
   | "members.manage"
+  | "invitations.manage"
   | "audit.view";
 
 type Preset = Readonly<{
@@ -34,12 +35,17 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "branches.view",
       "branches.manage",
       "members.manage",
+      "invitations.manage",
       "audit.view",
     ]),
     requiresStrongAuthentication: true,
   },
   BRANCH_MANAGER: {
-    capabilities: new Set(["company.view", "branches.view"]),
+    capabilities: new Set([
+      "company.view",
+      "branches.view",
+      "invitations.manage",
+    ]),
     requiresStrongAuthentication: true,
   },
   OPERATOR: {
@@ -166,7 +172,12 @@ export type OrganizationFailureCode =
   | "RECENT_AUTHENTICATION_REQUIRED"
   | "SUCCESSOR_NOT_ELIGIBLE"
   | "RESPONSIBILITY_TRANSFER_PENDING"
-  | "RESPONSIBILITY_TRANSFER_NOT_PENDING";
+  | "RESPONSIBILITY_TRANSFER_NOT_PENDING"
+  | "INVITATION_PENDING"
+  | "INVITATION_NO_LONGER_VALID"
+  | "INVITATION_RECIPIENT_MISMATCH"
+  | "MEMBERSHIP_SUSPENDED"
+  | "RATE_LIMITED";
 
 export class OrganizationFailure extends Error {
   readonly code: OrganizationFailureCode;
@@ -235,4 +246,76 @@ export function grantRequest(input: {
   )
     throw new OrganizationFailure("VALIDATION_FAILED");
   return { role: input.role, scope: input.scope, branchIds };
+}
+
+/** A pending invitation can be accepted for seven days (identity policy). */
+export const invitationDays = 7;
+
+/**
+ * Abuse limits of D-13: invitations created or resent per company in any
+ * 24 hours, pending invitations per company, and invitation emails to one
+ * address in any 24 hours across all companies.
+ */
+export const invitationLimits = Object.freeze({
+  perCompanyPerDay: 50,
+  pendingPerCompany: 100,
+  perRecipientPerDay: 3,
+});
+
+/** Days a final invitation keeps its address (provisional until PH-13). */
+export const invitationAddressRetentionDays = 90;
+
+/**
+ * Whether the caller may invite with this grant request now (D-13 "Who may
+ * invite"). Administrators invite operators and branch managers anywhere;
+ * only the responsible administrator invites administrators, and the
+ * repository additionally requires recent strong authentication. Branch
+ * managers invite operators to branches they manage, never company-wide.
+ */
+export function invitationDecision(
+  access: CompanyAccess,
+  request: {
+    role: AccessRole;
+    scope: GrantScopeName;
+    branchIds: readonly string[];
+  },
+): AccessDecision | "responsible_required" {
+  if (decide(access, "members.manage") === "allow") {
+    if (request.role === "COMPANY_ADMINISTRATOR" && !access.responsible)
+      return "responsible_required";
+    return "allow";
+  }
+  const reach = branchReach(access, "invitations.manage");
+  if (
+    request.role === "OPERATOR" &&
+    request.scope === "BRANCHES" &&
+    request.branchIds.length > 0 &&
+    request.branchIds.every((id) => reach === "all" || reach.has(id))
+  )
+    return "allow";
+  if (
+    !access.strong &&
+    reachableWithStrongAuthentication(access, "invitations.manage")
+  )
+    return "strong_required";
+  return "deny";
+}
+
+/** Which invitations a caller may see and manage. */
+export type InvitationVisibility =
+  { kind: "all" } | { kind: "operators"; branches: "all" | readonly string[] };
+
+/**
+ * Administrators see every invitation; branch managers see operator
+ * invitations whose branches all lie within the branches they manage.
+ * Returns null without any usable invitation capability.
+ */
+export function invitationVisibility(
+  access: CompanyAccess,
+): InvitationVisibility | null {
+  if (decide(access, "members.manage") === "allow") return { kind: "all" };
+  const reach = branchReach(access, "invitations.manage");
+  if (reach === "all") return { kind: "operators", branches: "all" };
+  if (reach.size > 0) return { kind: "operators", branches: [...reach].sort() };
+  return null;
 }

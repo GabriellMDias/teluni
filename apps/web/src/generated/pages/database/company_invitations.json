@@ -1,0 +1,252 @@
+{
+  "kind": "database",
+  "name": "company_invitations",
+  "description": "An invitation for a recipient address to join a company with one grant; only the person signed in with that verified address can accept it.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created PENDING with a seven-day validity; becomes ACCEPTED, REVOKED by an inviter, REPLACED by a resend or EXPIRED. The recipient address is replaced by a tombstone (NULL) 90 days after the invitation becomes final (provisional until PH-13); the row and its audit events remain.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated invitation UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company the invitation admits to; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "recipient_email",
+      "PostgreSQL type": "character varying(254)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Trimmed, lower-cased recipient address the accepting identity's verified email must equal.",
+      "Null meaning": "The invitation is final and its retention period ended, so the address was erased.",
+      "Unit": "—"
+    },
+    {
+      "Column": "credential_hash",
+      "PostgreSQL type": "bytea",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 hash of the invitation's 256-bit credential; the credential itself is never stored in plaintext.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "role",
+      "PostgreSQL type": "\"AccessRole\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Standard role the accepted invitation grants.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "scope",
+      "PostgreSQL type": "\"GrantScope\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "COMPANY or explicit BRANCHES listed in company_invitation_branches; administration is always company-wide.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "grant_expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Expiry of the granted access once accepted; never renewed automatically (P30).",
+      "Null meaning": "The granted access does not expire.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "invited_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership of the inviter, whose authority is rechecked at acceptance.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"InvitationStatus\"",
+      "Nullable": "no",
+      "Default": "'PENDING'::\"InvitationStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "PENDING until accepted, revoked, replaced or expired.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "message_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Outbound email that carries the invitation, owned by the mail module; a soft reference, because the mail module deletes final messages after their retention period.",
+      "Null meaning": "No message was recorded.",
+      "Unit": "—"
+    },
+    {
+      "Column": "replaces_invitation_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Pending invitation this one replaced through a resend.",
+      "Null meaning": "The invitation was not created by a resend.",
+      "Unit": "—"
+    },
+    {
+      "Column": "accepted_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that received the invited grant on acceptance.",
+      "Null meaning": "The invitation was not accepted.",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the invitation was created.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant after which the pending invitation can no longer be accepted.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "decided_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the invitation stopped being pending.",
+      "Null meaning": "The invitation is still pending.",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "company_invitations_acceptance_state",
+      "Physical definition": "CHECK (((status = 'ACCEPTED'::\"InvitationStatus\") = (accepted_membership_id IS NOT NULL)))",
+      "Purpose": "Exactly the accepted invitations name the membership that received the grant."
+    },
+    {
+      "Object": "company_invitations_administrator_company_wide",
+      "Physical definition": "CHECK (((role <> 'COMPANY_ADMINISTRATOR'::\"AccessRole\") OR (scope = 'COMPANY'::\"GrantScope\")))",
+      "Purpose": "Administration is never branch-scoped."
+    },
+    {
+      "Object": "company_invitations_company_id_accepted_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, accepted_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The accepting membership belongs to the same company."
+    },
+    {
+      "Object": "company_invitations_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An invitation belongs to an existing company."
+    },
+    {
+      "Object": "company_invitations_company_id_invited_by_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, invited_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The inviter is a membership of the same company."
+    },
+    {
+      "Object": "company_invitations_company_id_replaces_invitation_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, replaces_invitation_id) REFERENCES company_invitations(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A resend replaces an invitation of the same company."
+    },
+    {
+      "Object": "company_invitations_credential_hash_length",
+      "Physical definition": "CHECK ((octet_length(credential_hash) = 32))",
+      "Purpose": "The stored credential hash is a SHA-256 digest."
+    },
+    {
+      "Object": "company_invitations_decision_state",
+      "Physical definition": "CHECK (((status = 'PENDING'::\"InvitationStatus\") = (decided_at IS NULL)))",
+      "Purpose": "A decision instant exists exactly for invitations that are no longer pending."
+    },
+    {
+      "Object": "company_invitations_expiry_after_creation",
+      "Physical definition": "CHECK ((expires_at > created_at))",
+      "Purpose": "An invitation expires after it was created."
+    },
+    {
+      "Object": "company_invitations_grant_expiry_after_creation",
+      "Physical definition": "CHECK (((grant_expires_at IS NULL) OR (grant_expires_at > created_at)))",
+      "Purpose": "A temporary grant ends after the invitation was created."
+    },
+    {
+      "Object": "company_invitations_pending_recipient",
+      "Physical definition": "CHECK (((status <> 'PENDING'::\"InvitationStatus\") OR (recipient_email IS NOT NULL)))",
+      "Purpose": "A pending invitation always has its recipient address."
+    },
+    {
+      "Object": "company_invitations_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique invitation identity."
+    },
+    {
+      "Object": "company_invitations_recipient_normalized",
+      "Physical definition": "CHECK (((recipient_email)::text = lower(btrim((recipient_email)::text))))",
+      "Purpose": "Recipient addresses are stored trimmed and lower-cased."
+    },
+    {
+      "Object": "company_invitations_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX company_invitations_company_id_id_key ON public.company_invitations USING btree (company_id, id)",
+      "Purpose": "Tenant key for references to invitations."
+    },
+    {
+      "Object": "company_invitations_company_time_idx",
+      "Physical definition": "CREATE INDEX company_invitations_company_time_idx ON public.company_invitations USING btree (company_id, created_at DESC, id DESC)",
+      "Purpose": "Lists a company's invitations newest first with stable keyset pagination."
+    },
+    {
+      "Object": "company_invitations_credential_key",
+      "Physical definition": "CREATE UNIQUE INDEX company_invitations_credential_key ON public.company_invitations USING btree (credential_hash)",
+      "Purpose": "Finds an invitation by credential hash; credentials never collide."
+    },
+    {
+      "Object": "company_invitations_one_pending",
+      "Physical definition": "CREATE UNIQUE INDEX company_invitations_one_pending ON public.company_invitations USING btree (company_id, recipient_email) WHERE (status = 'PENDING'::\"InvitationStatus\")",
+      "Purpose": "At most one pending invitation per company and address, including racing requests."
+    },
+    {
+      "Object": "company_invitations_recipient_idx",
+      "Physical definition": "CREATE INDEX company_invitations_recipient_idx ON public.company_invitations USING btree (recipient_email, created_at)",
+      "Purpose": "Counts recent invitations to one address across companies for the abuse limit."
+    }
+  ]
+}

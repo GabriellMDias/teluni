@@ -71,11 +71,185 @@ export function formatInstant(locale: Locale, value: string): string {
   }).format(new Date(value));
 }
 
-const grantableRoles: readonly Role[] = [
-  "OPERATOR",
-  "BRANCH_MANAGER",
-  "COMPANY_ADMINISTRATOR",
-];
+/** A grant being composed: role, scope, branches and optional expiry. */
+export type GrantDraft = Readonly<{
+  role: Role;
+  scope: "COMPANY" | "BRANCHES";
+  branchIds: readonly string[];
+  /** `datetime-local` value in the browser's zone; empty for no expiry. */
+  expiresAt: string;
+}>;
+
+export const emptyGrantDraft: GrantDraft = {
+  role: "OPERATOR",
+  scope: "COMPANY",
+  branchIds: [],
+  expiresAt: "",
+};
+
+/** Company administration is always company-wide. */
+export function effectiveScope(draft: GrantDraft): "COMPANY" | "BRANCHES" {
+  return draft.role === "COMPANY_ADMINISTRATOR" ? "COMPANY" : draft.scope;
+}
+
+/** The grant request a draft describes, without the expiry. */
+export function grantRequestOf(draft: GrantDraft) {
+  const scope = effectiveScope(draft);
+  return {
+    role: draft.role,
+    scope,
+    ...(scope === "BRANCHES" ? { branchIds: [...draft.branchIds] } : {}),
+  };
+}
+
+export function draftExpiry(draft: GrantDraft): string | undefined {
+  return draft.expiresAt ? new Date(draft.expiresAt).toISOString() : undefined;
+}
+
+export function draftComplete(draft: GrantDraft): boolean {
+  return effectiveScope(draft) === "COMPANY" || draft.branchIds.length > 0;
+}
+
+/**
+ * Role, scope, branch and expiry fields shared by direct grants and
+ * invitations. `roles` lists what the viewer may grant; without
+ * `companyScope` the grant is always branch-scoped.
+ */
+export function GrantRequestFields({
+  companyId,
+  idPrefix,
+  roles,
+  companyScope,
+  hints,
+  draft,
+  onChange,
+  t,
+}: {
+  companyId: string;
+  idPrefix: string;
+  roles: readonly Role[];
+  companyScope: boolean;
+  hints?: readonly string[];
+  draft: GrantDraft;
+  onChange: (draft: GrantDraft) => void;
+  t: OrganizationMessages;
+}) {
+  const scope = companyScope ? effectiveScope(draft) : "BRANCHES";
+  const choices = useQuery({
+    queryKey: [...branchesKey(companyId), "choices"],
+    queryFn: () => listBranchChoices(companyId),
+    enabled: scope === "BRANCHES",
+  });
+  const id = (name: string) => `${idPrefix}-${name}`;
+  return (
+    <>
+      <label htmlFor={id("role")}>{t.grantRole}</label>
+      <select
+        id={id("role")}
+        value={draft.role}
+        onChange={(event) =>
+          onChange({ ...draft, role: event.target.value as Role })
+        }
+      >
+        {roles.map((choice) => (
+          <option key={choice} value={choice}>
+            {t.roles[choice]}
+          </option>
+        ))}
+      </select>
+      {hints?.map((hint) => (
+        <p key={hint} className="hint">
+          {hint}
+        </p>
+      ))}
+      {draft.role === "COMPANY_ADMINISTRATOR" ? (
+        <p className="hint">{t.grantAdministratorCompanyWide}</p>
+      ) : (
+        companyScope && (
+          <fieldset>
+            <legend>{t.grantScope}</legend>
+            {(["COMPANY", "BRANCHES"] as const).map((choice) => (
+              <label key={choice} className="choice">
+                <input
+                  type="radio"
+                  name={id("scope")}
+                  value={choice}
+                  checked={draft.scope === choice}
+                  onChange={() => onChange({ ...draft, scope: choice })}
+                />
+                {choice === "COMPANY"
+                  ? t.grantScopeCompany
+                  : t.grantScopeBranches}
+              </label>
+            ))}
+          </fieldset>
+        )
+      )}
+      {scope === "BRANCHES" && (
+        <fieldset>
+          <legend>{t.grantBranches}</legend>
+          {choices.isPending ? (
+            <p>{t.loading}</p>
+          ) : choices.isError ? (
+            <div role="alert" className="notice notice-error">
+              {describe(choices.error, t, "read")}
+              <button type="button" onClick={() => void choices.refetch()}>
+                {t.reload}
+              </button>
+            </div>
+          ) : choices.data.items.length === 0 ? (
+            <p className="hint">{t.grantNoBranches}</p>
+          ) : (
+            choices.data.items.map((branch) => (
+              <label key={branch.id} className="choice">
+                <input
+                  type="checkbox"
+                  checked={draft.branchIds.includes(branch.id)}
+                  onChange={(event) =>
+                    onChange({
+                      ...draft,
+                      branchIds: event.target.checked
+                        ? [...draft.branchIds, branch.id]
+                        : draft.branchIds.filter(
+                            (value) => value !== branch.id,
+                          ),
+                    })
+                  }
+                />
+                {branch.name}
+              </label>
+            ))
+          )}
+          {choices.data?.truncated && (
+            <p className="hint">{t.grantBranchesTruncated}</p>
+          )}
+        </fieldset>
+      )}
+      <label htmlFor={id("expiry")}>{t.grantExpiry}</label>
+      <input
+        id={id("expiry")}
+        type="datetime-local"
+        aria-describedby={id("expiry-hint")}
+        value={draft.expiresAt}
+        onChange={(event) =>
+          onChange({ ...draft, expiresAt: event.target.value })
+        }
+      />
+      <p id={id("expiry-hint")} className="hint">
+        {t.grantExpiryHint}
+      </p>
+    </>
+  );
+}
+
+/** The roles an administrator may grant; administration only when responsible. */
+export function administratorRoles(viewerResponsible: boolean): Role[] {
+  return [
+    "OPERATOR",
+    "BRANCH_MANAGER",
+    ...(viewerResponsible ? (["COMPANY_ADMINISTRATOR"] as const) : []),
+  ];
+}
 
 function GrantForm({
   companyId,
@@ -95,33 +269,22 @@ function GrantForm({
   onClose: () => void;
 }) {
   const client = useQueryClient();
-  const [role, setRole] = useState<Role>("OPERATOR");
-  const [scope, setScope] = useState<"COMPANY" | "BRANCHES">("COMPANY");
-  const [branchIds, setBranchIds] = useState<readonly string[]>([]);
-  const [expiresAt, setExpiresAt] = useState("");
-  const companyWide = role === "COMPANY_ADMINISTRATOR";
-  const effectiveScope = companyWide ? "COMPANY" : scope;
-  const choices = useQuery({
-    queryKey: [...branchesKey(companyId), "choices"],
-    queryFn: () => listBranchChoices(companyId),
-    enabled: effectiveScope === "BRANCHES",
-  });
+  const [draft, setDraft] = useState<GrantDraft>(emptyGrantDraft);
   // Granting is idempotent for an identical grant, so a retry after an
   // unknown outcome cannot duplicate it.
   const grant = useMutation({
-    mutationFn: () =>
-      addMemberGrant(companyId, member.id, {
-        role,
-        scope: effectiveScope,
-        ...(effectiveScope === "BRANCHES" ? { branchIds: [...branchIds] } : {}),
-        ...(expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {}),
-      }),
+    mutationFn: () => {
+      const expiresAt = draftExpiry(draft);
+      return addMemberGrant(companyId, member.id, {
+        ...grantRequestOf(draft),
+        ...(expiresAt ? { expiresAt } : {}),
+      });
+    },
     onSuccess: async () => {
       onClose();
       await invalidateCompany(client, companyId);
     },
   });
-  const id = (name: string) => `grant-${name}-${member.id}`;
   function submit(event: FormEvent) {
     event.preventDefault();
     grant.mutate();
@@ -132,92 +295,16 @@ function GrantForm({
       aria-label={`${t.grantAdd}: ${label}`}
       onSubmit={submit}
     >
-      <label htmlFor={id("role")}>{t.grantRole}</label>
-      <select
-        id={id("role")}
-        value={role}
-        onChange={(event) => setRole(event.target.value as Role)}
-      >
-        {grantableRoles
-          .filter(
-            (choice) => viewerResponsible || choice !== "COMPANY_ADMINISTRATOR",
-          )
-          .map((choice) => (
-            <option key={choice} value={choice}>
-              {t.roles[choice]}
-            </option>
-          ))}
-      </select>
-      {!viewerResponsible && <p className="hint">{t.grantResponsibleOnly}</p>}
-      {companyWide ? (
-        <p className="hint">{t.grantAdministratorCompanyWide}</p>
-      ) : (
-        <fieldset>
-          <legend>{t.grantScope}</legend>
-          {(["COMPANY", "BRANCHES"] as const).map((choice) => (
-            <label key={choice} className="choice">
-              <input
-                type="radio"
-                name={id("scope")}
-                value={choice}
-                checked={scope === choice}
-                onChange={() => setScope(choice)}
-              />
-              {choice === "COMPANY"
-                ? t.grantScopeCompany
-                : t.grantScopeBranches}
-            </label>
-          ))}
-        </fieldset>
-      )}
-      {effectiveScope === "BRANCHES" && (
-        <fieldset>
-          <legend>{t.grantBranches}</legend>
-          {choices.isPending ? (
-            <p>{t.loading}</p>
-          ) : choices.isError ? (
-            <div role="alert" className="notice notice-error">
-              {describe(choices.error, t, "read")}
-              <button type="button" onClick={() => void choices.refetch()}>
-                {t.reload}
-              </button>
-            </div>
-          ) : choices.data.items.length === 0 ? (
-            <p className="hint">{t.grantNoBranches}</p>
-          ) : (
-            choices.data.items.map((branch) => (
-              <label key={branch.id} className="choice">
-                <input
-                  type="checkbox"
-                  checked={branchIds.includes(branch.id)}
-                  onChange={(event) =>
-                    setBranchIds((current) =>
-                      event.target.checked
-                        ? [...current, branch.id]
-                        : current.filter((value) => value !== branch.id),
-                    )
-                  }
-                />
-                {branch.name}
-              </label>
-            ))
-          )}
-          {choices.data?.truncated && (
-            <p className="hint">{t.grantBranchesTruncated}</p>
-          )}
-        </fieldset>
-      )}
-      <label htmlFor={id("expiry")}>{t.grantExpiry}</label>
-      <input
-        id={id("expiry")}
-        type="datetime-local"
-        aria-describedby={id("expiry-hint")}
-        value={expiresAt}
-        onChange={(event) => setExpiresAt(event.target.value)}
+      <GrantRequestFields
+        companyId={companyId}
+        idPrefix={`grant-${member.id}`}
+        roles={administratorRoles(viewerResponsible)}
+        companyScope
+        hints={viewerResponsible ? [] : [t.grantResponsibleOnly]}
+        draft={draft}
+        onChange={setDraft}
+        t={t}
       />
-      <p id={id("expiry-hint")} className="hint">
-        {t.grantExpiryHint}
-      </p>
       {grant.error && (
         <WriteFailure error={grant.error} returnTo={returnTo} t={t} />
       )}
@@ -225,10 +312,7 @@ function GrantForm({
         <button
           type="submit"
           className="button-primary"
-          disabled={
-            grant.isPending ||
-            (effectiveScope === "BRANCHES" && branchIds.length === 0)
-          }
+          disabled={grant.isPending || !draftComplete(draft)}
         >
           {grant.isPending ? t.saving : t.grantSubmit}
         </button>

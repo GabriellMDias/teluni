@@ -93,6 +93,8 @@ try {
               provisionerClientId,
               provisionerClientSecret,
               mailUrl: mail.apiUrl,
+              mailSmtpHost: mail.hostSmtpHost,
+              mailSmtpPort: mail.hostSmtpPort,
               adminUrl: `${admin.baseUrl}/admin`,
             })}\n`,
           );

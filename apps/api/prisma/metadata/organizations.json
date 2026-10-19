@@ -162,9 +162,9 @@
         "memberships_company_id_fkey": "A membership belongs to an existing company.",
         "memberships_principal_id_fkey": "The member is an existing principal.",
         "memberships_company_id_id_key": "Tenant key that tenant references target.",
-        "memberships_company_principal_key": "At most one membership per principal and company.",
         "memberships_principal_status_idx": "Supports listing a principal's companies.",
-        "memberships_version_positive": "Rejects invalid concurrency versions."
+        "memberships_version_positive": "Rejects invalid concurrency versions.",
+        "memberships_company_principal_current_key": "At most one current (not REMOVED) membership per principal and company; a removed membership stays as history and the person can return through a new membership."
       }
     },
     "company_responsibilities": {
@@ -398,6 +398,131 @@
         "responsibility_transfers_expiry_after_creation": "A proposal expires after it was made.",
         "responsibility_transfers_decision_state": "A decision instant exists exactly for proposals that are no longer pending."
       }
+    },
+    "company_invitations": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "An invitation for a recipient address to join a company with one grant; only the person signed in with that verified address can accept it.",
+      "lifecycle": "Created PENDING with a seven-day validity; becomes ACCEPTED, REVOKED by an inviter, REPLACED by a resend or EXPIRED. The recipient address is replaced by a tombstone (NULL) 90 days after the invitation becomes final (provisional until PH-13); the row and its audit events remain.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated invitation UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company the invitation admits to; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "recipient_email": {
+          "description": "Trimmed, lower-cased recipient address the accepting identity's verified email must equal.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The invitation is final and its retention period ended, so the address was erased."
+        },
+        "credential_hash": {
+          "description": "SHA-256 hash of the invitation's 256-bit credential; the credential itself is never stored in plaintext.",
+          "classification": "RESTRICTED"
+        },
+        "role": {
+          "description": "Standard role the accepted invitation grants.",
+          "classification": "INTERNAL"
+        },
+        "scope": {
+          "description": "COMPANY or explicit BRANCHES listed in company_invitation_branches; administration is always company-wide.",
+          "classification": "INTERNAL"
+        },
+        "grant_expires_at": {
+          "description": "Expiry of the granted access once accepted; never renewed automatically (P30).",
+          "classification": "INTERNAL",
+          "nullMeaning": "The granted access does not expire.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "invited_by_membership_id": {
+          "description": "Membership of the inviter, whose authority is rechecked at acceptance.",
+          "classification": "INTERNAL"
+        },
+        "status": {
+          "description": "PENDING until accepted, revoked, replaced or expired.",
+          "classification": "INTERNAL"
+        },
+        "message_id": {
+          "description": "Outbound email that carries the invitation, owned by the mail module; a soft reference, because the mail module deletes final messages after their retention period.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No message was recorded."
+        },
+        "replaces_invitation_id": {
+          "description": "Pending invitation this one replaced through a resend.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The invitation was not created by a resend."
+        },
+        "accepted_membership_id": {
+          "description": "Membership that received the invited grant on acceptance.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The invitation was not accepted."
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the invitation was created.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "expires_at": {
+          "description": "Instant after which the pending invitation can no longer be accepted.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "decided_at": {
+          "description": "PostgreSQL-clock instant the invitation stopped being pending.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The invitation is still pending.",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "company_invitations_pkey": "Unique invitation identity.",
+        "company_invitations_company_id_fkey": "An invitation belongs to an existing company.",
+        "company_invitations_company_id_invited_by_membership_id_fkey": "The inviter is a membership of the same company.",
+        "company_invitations_company_id_accepted_membership_id_fkey": "The accepting membership belongs to the same company.",
+        "company_invitations_company_id_replaces_invitation_id_fkey": "A resend replaces an invitation of the same company.",
+        "company_invitations_company_id_id_key": "Tenant key for references to invitations.",
+        "company_invitations_credential_key": "Finds an invitation by credential hash; credentials never collide.",
+        "company_invitations_company_time_idx": "Lists a company's invitations newest first with stable keyset pagination.",
+        "company_invitations_recipient_idx": "Counts recent invitations to one address across companies for the abuse limit.",
+        "company_invitations_one_pending": "At most one pending invitation per company and address, including racing requests.",
+        "company_invitations_credential_hash_length": "The stored credential hash is a SHA-256 digest.",
+        "company_invitations_recipient_normalized": "Recipient addresses are stored trimmed and lower-cased.",
+        "company_invitations_pending_recipient": "A pending invitation always has its recipient address.",
+        "company_invitations_administrator_company_wide": "Administration is never branch-scoped.",
+        "company_invitations_expiry_after_creation": "An invitation expires after it was created.",
+        "company_invitations_grant_expiry_after_creation": "A temporary grant ends after the invitation was created.",
+        "company_invitations_decision_state": "A decision instant exists exactly for invitations that are no longer pending.",
+        "company_invitations_acceptance_state": "Exactly the accepted invitations name the membership that received the grant."
+      }
+    },
+    "company_invitation_branches": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Explicit branches of a branch-scoped invitation; all must still be active when it is accepted.",
+      "lifecycle": "Created with its invitation and never changed.",
+      "columns": {
+        "company_id": {
+          "description": "Owning company; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "invitation_id": {
+          "description": "Branch-scoped invitation.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "A branch the accepted grant will cover.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "company_invitation_branches_pkey": "Each branch appears once per invitation.",
+        "company_invitation_branches_company_id_fkey": "Rows belong to an existing company.",
+        "company_invitation_branches_company_id_invitation_id_fkey": "The invitation belongs to the same company.",
+        "company_invitation_branches_company_id_branch_id_fkey": "The branch belongs to the same company.",
+        "company_invitation_branches_branch_idx": "Finds invitations that name a branch."
+      }
     }
   },
   "enums": {
@@ -406,6 +531,7 @@
     "MembershipStatus": "Membership state: ACTIVE, SUSPENDED or REMOVED.",
     "AccessRole": "Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR.",
     "GrantScope": "Grant scope: COMPANY or explicit BRANCHES.",
-    "ResponsibilityTransferStatus": "Responsibility transfer state: PENDING, ACCEPTED, DECLINED, CANCELLED or EXPIRED."
+    "ResponsibilityTransferStatus": "Responsibility transfer state: PENDING, ACCEPTED, DECLINED, CANCELLED or EXPIRED.",
+    "InvitationStatus": "Invitation state: PENDING, ACCEPTED, REVOKED, REPLACED or EXPIRED."
   }
 }

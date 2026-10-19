@@ -1,5 +1,6 @@
 import { createRoute, Link } from "@tanstack/react-router";
 import { rootRoute } from "../shell.js";
+import { AcceptInvitationPage } from "./invitations.js";
 import {
   CompaniesPage,
   CompanyPage,
@@ -28,7 +29,10 @@ const companyRoute = createRoute({
   path: "/companies/$companyId",
   validateSearch: (
     search: Record<string, unknown>,
-  ): { cursor?: string; view?: "settings" | "history" | "members" } => ({
+  ): {
+    cursor?: string;
+    view?: "settings" | "history" | "members" | "invitations";
+  } => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
     search.cursor.length <= 1024
@@ -36,7 +40,8 @@ const companyRoute = createRoute({
       : {}),
     ...(search.view === "settings" ||
     search.view === "history" ||
-    search.view === "members"
+    search.view === "members" ||
+    search.view === "invitations"
       ? { view: search.view }
       : {}),
   }),
@@ -54,7 +59,22 @@ const companyRoute = createRoute({
   },
 });
 
-export const organizationRoutes = [companiesRoute, companyRoute] as const;
+// The invitation credential arrives in the URL fragment, which the page moves
+// into session storage; no search parameter carries it.
+const acceptInvitationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/invitations/accept",
+  component: function AcceptInvitationRoute() {
+    const { locale, t } = useOrganizationMessages();
+    return <AcceptInvitationPage locale={locale} t={t} />;
+  },
+});
+
+export const organizationRoutes = [
+  companiesRoute,
+  companyRoute,
+  acceptInvitationRoute,
+] as const;
 
 /** Header and home-page entry to the companies workspace; makes no API call. */
 export function OrganizationsNavigation() {

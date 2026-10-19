@@ -190,3 +190,87 @@ describe("human identity configuration", () => {
     ).toBe("https://app.example.test");
   });
 });
+
+describe("transactional mail configuration", () => {
+  const key = Buffer.alloc(32, 9).toString("base64url");
+  const identity = {
+    ORION_ENV: "test",
+    ORION_TOKEN_ISSUER: "http://localhost:8080/realms/teluni",
+    ORION_TOKEN_AUDIENCE: "teluni-api",
+    ORION_TOKEN_JWKS_URL:
+      "http://localhost:8080/realms/teluni/protocol/openid-connect/certs",
+    TELUNI_PUBLIC_ORIGIN: "http://127.0.0.1:5173",
+    TELUNI_OIDC_CLIENT_ID: "teluni-web",
+    TELUNI_OIDC_CLIENT_SECRET: "synthetic-client-secret",
+    TELUNI_IDENTITY_PROVISIONER_CLIENT_ID: "teluni-provisioner",
+    TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET: "synthetic-provisioner-secret",
+    TELUNI_SESSION_KEYS: `k1:${Buffer.alloc(32, 1).toString("base64url")}`,
+  };
+  const mail = {
+    TELUNI_MAIL_SMTP_HOST: "127.0.0.1",
+    TELUNI_MAIL_SMTP_PORT: "1025",
+    TELUNI_MAIL_SMTP_SECURITY: "none",
+    TELUNI_MAIL_FROM: "no-reply@teluni.test",
+    TELUNI_MAIL_KEYS: `m1:${key}`,
+  };
+
+  it("accepts a loopback test sink and keeps mail optional", () => {
+    expect(parseServerConfig({ ...identity, ...mail })).toMatchObject({
+      mailSmtpHost: "127.0.0.1",
+      mailSmtpPort: 1025,
+      mailSmtpSecurity: "none",
+    });
+    expect(parseServerConfig(identity)).toMatchObject({
+      mailSmtpPort: 587,
+      mailSmtpSecurity: "starttls",
+    });
+    expect(parseServerConfig(identity).mailKeys).toBeUndefined();
+  });
+
+  it.each([
+    { TELUNI_MAIL_FROM: undefined },
+    { TELUNI_MAIL_KEYS: undefined },
+    { TELUNI_PUBLIC_ORIGIN: undefined },
+    { TELUNI_MAIL_FROM: "Teluni <no-reply@teluni.test>" },
+    { TELUNI_MAIL_KEYS: "m1:short" },
+    { TELUNI_MAIL_SMTP_USERNAME: "relay-user" },
+    { TELUNI_MAIL_SMTP_PASSWORD: "relay-secret" },
+    { TELUNI_MAIL_SMTP_HOST: "smtp.example.test" },
+    { TELUNI_MAIL_SMTP_SECURITY: "plain" },
+    { TELUNI_MAIL_SMTP_PORT: "0" },
+  ])("rejects incomplete or unsafe mail settings %#", (change) => {
+    const env: Record<string, string | undefined> = {
+      ...identity,
+      ...mail,
+      ...change,
+    };
+    for (const [name, value] of Object.entries(env))
+      if (value === undefined) delete env[name];
+    expect(() => parseServerConfig(env)).toThrow("Invalid API configuration");
+  });
+
+  it("requires TLS to the relay in production", () => {
+    const production = {
+      ...identity,
+      ...mail,
+      ORION_ENV: "production",
+      ORION_TOKEN_ISSUER: "https://id.example.test/realms/teluni",
+      ORION_TOKEN_JWKS_URL:
+        "https://id.example.test/realms/teluni/protocol/openid-connect/certs",
+      TELUNI_PUBLIC_ORIGIN: "https://app.example.test",
+    };
+    expect(() => parseServerConfig(production)).toThrow(
+      "mail transport security",
+    );
+    expect(
+      parseServerConfig({
+        ...production,
+        TELUNI_MAIL_SMTP_HOST: "smtp.example.test",
+        TELUNI_MAIL_SMTP_PORT: "465",
+        TELUNI_MAIL_SMTP_SECURITY: "tls",
+        TELUNI_MAIL_SMTP_USERNAME: "relay-user",
+        TELUNI_MAIL_SMTP_PASSWORD: "relay-secret",
+      }).mailSmtpSecurity,
+    ).toBe("tls");
+  });
+});

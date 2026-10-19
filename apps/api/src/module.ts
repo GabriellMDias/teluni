@@ -40,7 +40,8 @@ export type ApiOperation = Readonly<{
   bodyContentType?: "application/json" | "application/x-www-form-urlencoded";
 }>;
 
-export type ModuleRequirement = "database" | "authentication" | "humanIdentity";
+export type ModuleRequirement =
+  "database" | "authentication" | "humanIdentity" | "mail";
 
 /** Validated settings of the server-managed human session boundary. */
 export type HumanIdentitySettings = Readonly<{
@@ -54,10 +55,27 @@ export type HumanIdentitySettings = Readonly<{
   sessionKeys: readonly Readonly<{ id: string; key: Buffer }>[];
 }>;
 
+/** Validated settings of the transactional-email relay (ADR-0026). */
+export type MailSettings = Readonly<{
+  environment: "development" | "test" | "production";
+  /** Browser-visible panel origin that email links point to. */
+  publicOrigin: string;
+  smtp: Readonly<{
+    host: string;
+    port: number;
+    security: "tls" | "starttls" | "none";
+    username?: string;
+    password?: string;
+  }>;
+  from: string;
+  keys: readonly Readonly<{ id: string; key: Buffer }>[];
+}>;
+
 export type ModuleResources = Readonly<{
   database?: Database;
   verifier?: AccessTokenVerifier;
   humanIdentity?: HumanIdentitySettings;
+  mail?: MailSettings;
 }>;
 
 /** A module whose dependencies are satisfied and whose routes can mount. */
@@ -99,6 +117,7 @@ export function activateModules(
     database: resources.database !== undefined,
     authentication: resources.verifier !== undefined,
     humanIdentity: resources.humanIdentity !== undefined,
+    mail: resources.mail !== undefined,
   };
   const active: RegisteredModule[] = [];
   const activated = new Set<string>();

@@ -1013,3 +1013,215 @@ test("names the role of grant history events", async () => {
     .element(screen.getByText(`${t.historyRole}: ${t.roles.BRANCH_MANAGER}`))
     .toBeVisible();
 });
+
+const invitationAccess = {
+  ...memberAccess,
+  capabilities: [...memberAccess.capabilities, "invitations.manage"],
+};
+const invitationItem = {
+  id: "00000000-0000-4000-8000-000000000071",
+  recipientEmail: "guest@example.test",
+  role: "OPERATOR",
+  scope: "COMPANY",
+  branches: [],
+  grantExpiresAt: null,
+  status: "PENDING",
+  delivery: "SENT",
+  invitedByName: "Owner Person",
+  createdAt: "2026-10-18T12:00:00.000Z",
+  expiresAt: "2026-10-25T12:00:00.000Z",
+};
+
+test("invites by email and revokes a pending invitation after confirmation", async () => {
+  let created = false;
+  respond((url, request) => {
+    if (request instanceof Request && request.method === "POST") {
+      created = true;
+      return url.pathname.endsWith("/revoke")
+        ? { status: 204, body: null }
+        : { status: 201, body: { ...invitationItem, delivery: "PENDING" } };
+    }
+    if (url.pathname.endsWith("/invitations"))
+      return {
+        body: { items: created ? [invitationItem] : [], nextCursor: null },
+      };
+    return { body: { ...memberCompany, access: invitationAccess } };
+  });
+  const { screen } = await open(`${companyPath}?view=invitations`);
+  await expect.element(screen.getByText(t.invitationsEmpty)).toBeVisible();
+  await expect
+    .element(
+      screen.getByRole("option", { name: t.roles.COMPANY_ADMINISTRATOR }),
+    )
+    .toBeInTheDocument();
+  await screen.getByLabelText(t.inviteEmail).fill("guest@example.test");
+  await screen.getByRole("button", { name: t.inviteSubmit }).click();
+  await expect.element(screen.getByText(t.inviteSent)).toBeVisible();
+  const request = posted(`/companies/${companyId}/invitations`);
+  if (!request) throw new Error("The invitation request was not sent");
+  expect(await request.clone().json()).toEqual({
+    email: "guest@example.test",
+    role: "OPERATOR",
+    scope: "COMPANY",
+  });
+  await expect
+    .element(screen.getByText(t.deliveryStates.SENT, { exact: false }))
+    .toBeVisible();
+  await screen
+    .getByRole("button", { name: `${t.invitationRevoke}: guest@example.test` })
+    .click();
+  await expect
+    .element(screen.getByText(t.invitationRevokeConfirmation))
+    .toBeVisible();
+  await screen.getByRole("button", { name: t.grantRevokeConfirm }).click();
+  await expect
+    .element(screen.getByText(t.invitationRevokeConfirmation))
+    .not.toBeInTheDocument();
+  expect(posted(`/invitations/${invitationItem.id}/revoke`)).toBeDefined();
+});
+
+test("lets a branch manager invite operators only to managed branches", async () => {
+  respond((url, request) => {
+    if (request instanceof Request && request.method === "POST")
+      return { status: 201, body: invitationItem };
+    if (url.pathname.endsWith("/branches"))
+      return {
+        body: {
+          items: [
+            {
+              id: northId,
+              name: "Norte",
+              status: "ACTIVE",
+              version: 1,
+              timeZone: "UTC",
+            },
+          ],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith("/invitations"))
+      return { body: { items: [], nextCursor: null } };
+    return {
+      body: {
+        ...memberCompany,
+        access: {
+          roles: ["BRANCH_MANAGER"],
+          responsible: false,
+          capabilities: ["company.view", "branches.view", "invitations.manage"],
+          capabilitiesAfterStrongAuthentication: [],
+        },
+      },
+    };
+  });
+  const { screen } = await open(`${companyPath}?view=invitations`);
+  await expect.element(screen.getByText(t.inviteManagerHint)).toBeVisible();
+  await expect
+    .element(screen.getByRole("option", { name: t.roles.BRANCH_MANAGER }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(screen.getByRole("radio", { name: t.grantScopeCompany }))
+    .not.toBeInTheDocument();
+  await screen.getByLabelText(t.inviteEmail).fill("operator@example.test");
+  await expect
+    .element(screen.getByRole("button", { name: t.inviteSubmit }))
+    .toBeDisabled();
+  await screen.getByRole("checkbox", { name: "Norte" }).click();
+  await screen.getByRole("button", { name: t.inviteSubmit }).click();
+  await expect.element(screen.getByText(t.inviteSent)).toBeVisible();
+  const request = posted(`/companies/${companyId}/invitations`);
+  if (!request) throw new Error("The invitation request was not sent");
+  expect(await request.clone().json()).toEqual({
+    email: "operator@example.test",
+    role: "OPERATOR",
+    scope: "BRANCHES",
+    branchIds: [northId],
+  });
+});
+
+const credential = "C".repeat(43);
+const previewBody = {
+  companyId,
+  companyName: "Invited company",
+  role: "OPERATOR",
+  scope: "COMPANY",
+  branches: [],
+  grantExpiresAt: null,
+  expiresAt: "2026-10-25T12:00:00.000Z",
+  invitedByName: "Owner Person",
+  status: "PENDING",
+};
+
+test("keeps the invitation credential out of the address and asks to sign in", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/auth/session")
+      ? {
+          status: 401,
+          body: {
+            error: { code: "AUTHENTICATION_REQUIRED", message: "Sign in" },
+          },
+        }
+      : { body: previewBody },
+  );
+  const { screen, router } = await open(
+    `/invitations/accept#${credential}`,
+    false,
+  );
+  await expect.element(screen.getByText(t.acceptSignIn)).toBeVisible();
+  await expect
+    .element(screen.getByRole("main").getByRole("link", { name: t.signIn }))
+    .toHaveAttribute(
+      "href",
+      `/api/auth/login?returnTo=${encodeURIComponent("/invitations/accept")}`,
+    );
+  expect(router.state.location.hash).toBe("");
+  expect(sessionStorage.getItem("teluni.invitation")).toBe(credential);
+  sessionStorage.removeItem("teluni.invitation");
+});
+
+test("accepts a previewed invitation and opens the company", async () => {
+  sessionStorage.setItem("teluni.invitation", credential);
+  respond((url) =>
+    url.pathname.endsWith("/invitations/accept")
+      ? { status: 201, body: { companyId, membershipId: memberId } }
+      : url.pathname.endsWith("/invitations/preview")
+        ? { body: previewBody }
+        : {
+            body: {
+              ...memberCompany,
+              company: { id: companyId, displayName: "Invited company" },
+            },
+          },
+  );
+  const { screen, router } = await open("/invitations/accept");
+  await expect
+    .element(screen.getByText("Invited company", { exact: true }))
+    .toBeVisible();
+  await expect.element(screen.getByText("Owner Person")).toBeVisible();
+  await screen.getByRole("button", { name: t.acceptButton }).click();
+  await expect.poll(() => router.state.location.pathname).toBe(companyPath);
+  expect(sessionStorage.getItem("teluni.invitation")).toBeNull();
+  const request = posted("/invitations/accept");
+  if (!request) throw new Error("The acceptance request was not sent");
+  expect(await request.clone().json()).toEqual({ credential });
+});
+
+test("explains a recipient mismatch without accepting", async () => {
+  sessionStorage.setItem("teluni.invitation", credential);
+  respond(() => ({
+    status: 403,
+    body: {
+      error: {
+        code: "INVITATION_RECIPIENT_MISMATCH",
+        message: "Sent to another address",
+      },
+    },
+  }));
+  const { screen } = await open("/invitations/accept");
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.INVITATION_RECIPIENT_MISMATCH);
+  await expect
+    .element(screen.getByRole("button", { name: t.acceptButton }))
+    .not.toBeInTheDocument();
+  sessionStorage.removeItem("teluni.invitation");
+});

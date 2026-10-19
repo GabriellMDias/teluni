@@ -67,7 +67,7 @@ pnpm -C apps/api build
 node apps/web/test/e2e/identity/manual.ts
 ```
 
-It starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It prints the panel URL, the Mailpit inbox URL and the synthetic user's email and password; you can also create an account on the Keycloak sign-in page and read its verification email in Mailpit. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).
+It starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It also configures the API's mail relay to Mailpit. It prints the panel URL, the Mailpit inbox URL and the email and password of a synthetic user and of a synthetic invitee; invitations sent from a company's Invitations view arrive in Mailpit, and you can also create an account on the Keycloak sign-in page and read its verification email there. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).
 
 ## Exercise automated workflows
 

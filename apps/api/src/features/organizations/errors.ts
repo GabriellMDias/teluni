@@ -89,8 +89,40 @@ export const organizationErrors = defineErrors({
   },
 });
 
+// Public conditions owned by the invitations module of this feature.
+export const invitationErrors = defineErrors({
+  INVITATION_PENDING: {
+    status: 409,
+    message:
+      "A pending invitation for this address already exists. Resend it instead.",
+    category: "conflict",
+    retryable: false,
+  },
+  INVITATION_NO_LONGER_VALID: {
+    status: 409,
+    message: "This invitation is no longer valid. Ask for a new one.",
+    category: "conflict",
+    retryable: false,
+  },
+  INVITATION_RECIPIENT_MISMATCH: {
+    status: 403,
+    message:
+      "This invitation was sent to another email address. Sign in with that address to accept it.",
+    category: "authorization",
+    retryable: false,
+  },
+  MEMBERSHIP_SUSPENDED: {
+    status: 409,
+    message:
+      "Your access to this company is suspended. Contact a company administrator.",
+    category: "conflict",
+    retryable: false,
+  },
+});
+
 export const respond = errorResponder({
   ...coreErrors,
   ...identityErrors,
   ...organizationErrors,
+  ...invitationErrors,
 });

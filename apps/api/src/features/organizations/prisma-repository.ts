@@ -85,14 +85,14 @@ export type TransferRecord = Readonly<{
   expiresAt: Date;
 }>;
 
-type LockedMember = {
+export type LockedMember = {
   id: string;
   principal_id: string;
   status: MembershipStatus;
   version: number;
 };
 
-const effectiveGrant = Prisma.sql`revoked_at IS NULL AND starts_at <= statement_timestamp()
+export const effectiveGrant = Prisma.sql`revoked_at IS NULL AND starts_at <= statement_timestamp()
   AND (expires_at IS NULL OR expires_at > statement_timestamp())`;
 
 type CompanyRow = {
@@ -150,6 +150,87 @@ const companyColumns = Prisma.sql`id, display_name, status::text AS status, defa
   time_zone, version, created_at, updated_at`;
 const branchColumns = Prisma.sql`id, company_id, name, time_zone, status::text AS status,
   version, created_at, updated_at`;
+
+/**
+ * Takes the authority locks every authority-changing writer uses: the
+ * company row first, then the involved memberships in ID order. It then
+ * rechecks that the actor is still an active company administrator.
+ */
+export async function lockAuthority(
+  tx: Prisma.TransactionClient,
+  actor: Actor,
+  companyId: string,
+  otherMembershipIds: readonly string[],
+): Promise<{
+  members: Map<string, LockedMember>;
+  administrators: Set<string>;
+  responsibleMembershipId: string | null;
+}> {
+  const [company] = await tx.$queryRaw<{ status: CompanyStatus }[]>`
+    SELECT status::text AS status FROM companies WHERE id = ${companyId}::uuid FOR UPDATE`;
+  const ids = [...new Set([actor.membershipId, ...otherMembershipIds])];
+  const locked = await tx.$queryRaw<LockedMember[]>`
+    SELECT id, principal_id, status::text AS status, version FROM memberships
+    WHERE company_id = ${companyId}::uuid
+      AND id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+    ORDER BY id FOR UPDATE`;
+  const members = new Map(locked.map((member) => [member.id, member]));
+  const current = members.get(actor.membershipId);
+  if (
+    !company ||
+    !current ||
+    current.principal_id !== actor.principalId ||
+    current.status !== "ACTIVE"
+  )
+    throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+  if (company.status !== "ACTIVE")
+    throw new OrganizationFailure("COMPANY_SUSPENDED");
+  const adminGrants = await tx.$queryRaw<{ membership_id: string }[]>`
+    SELECT membership_id FROM membership_grants WHERE company_id = ${companyId}::uuid
+      AND role = 'COMPANY_ADMINISTRATOR' AND scope = 'COMPANY' AND ${effectiveGrant}`;
+  const administrators = new Set(
+    adminGrants.map((grant) => grant.membership_id),
+  );
+  if (!administrators.has(actor.membershipId))
+    throw new OrganizationFailure("PERMISSION_DENIED");
+  const [responsibility] = await tx.$queryRaw<{ membership_id: string }[]>`
+    SELECT membership_id FROM company_responsibilities WHERE company_id = ${companyId}::uuid`;
+  return {
+    members,
+    administrators,
+    responsibleMembershipId: responsibility?.membership_id ?? null,
+  };
+}
+
+export async function requireRecent(
+  tx: Prisma.TransactionClient,
+  strongAuthenticatedAt: Date | null,
+): Promise<void> {
+  const [assurance] = await tx.$queryRaw<{ recent: boolean }[]>`
+    SELECT (${strongAuthenticatedAt}::timestamptz IS NOT NULL AND
+      ${strongAuthenticatedAt}::timestamptz >= statement_timestamp() - interval '5 minutes') AS recent`;
+  if (!assurance?.recent)
+    throw new OrganizationFailure("RECENT_AUTHENTICATION_REQUIRED");
+}
+
+export async function writeAudit(
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  actor: Actor,
+  event: {
+    action: string;
+    targetType: string;
+    targetId: string;
+    details: Record<string, unknown>;
+  },
+): Promise<void> {
+  await tx.$executeRaw`
+    INSERT INTO organization_audit_events (id, company_id, actor_principal_id,
+      actor_membership_id, action, target_type, target_id, details)
+    VALUES (${randomUUID()}::uuid, ${companyId}::uuid, ${actor.principalId}::uuid,
+      ${actor.membershipId}::uuid, ${event.action}, ${event.targetType},
+      ${event.targetId}::uuid, ${JSON.stringify(event.details)}::jsonb)`;
+}
 
 /**
  * PostgreSQL persistence for the organizations module. Every tenant-owned
@@ -258,68 +339,6 @@ export class PrismaOrganizationRepository {
     return result;
   }
 
-  /**
-   * Takes the authority locks every authority-changing writer uses: the
-   * company row first, then the involved memberships in ID order. It then
-   * rechecks that the actor is still an active company administrator.
-   */
-  async #lockAuthority(
-    tx: Prisma.TransactionClient,
-    actor: Actor,
-    companyId: string,
-    otherMembershipIds: readonly string[],
-  ): Promise<{
-    members: Map<string, LockedMember>;
-    administrators: Set<string>;
-    responsibleMembershipId: string | null;
-  }> {
-    const [company] = await tx.$queryRaw<{ status: CompanyStatus }[]>`
-      SELECT status::text AS status FROM companies WHERE id = ${companyId}::uuid FOR UPDATE`;
-    const ids = [...new Set([actor.membershipId, ...otherMembershipIds])];
-    const locked = await tx.$queryRaw<LockedMember[]>`
-      SELECT id, principal_id, status::text AS status, version FROM memberships
-      WHERE company_id = ${companyId}::uuid
-        AND id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
-      ORDER BY id FOR UPDATE`;
-    const members = new Map(locked.map((member) => [member.id, member]));
-    const current = members.get(actor.membershipId);
-    if (
-      !company ||
-      !current ||
-      current.principal_id !== actor.principalId ||
-      current.status !== "ACTIVE"
-    )
-      throw new OrganizationFailure("RESOURCE_NOT_FOUND");
-    if (company.status !== "ACTIVE")
-      throw new OrganizationFailure("COMPANY_SUSPENDED");
-    const adminGrants = await tx.$queryRaw<{ membership_id: string }[]>`
-      SELECT membership_id FROM membership_grants WHERE company_id = ${companyId}::uuid
-        AND role = 'COMPANY_ADMINISTRATOR' AND scope = 'COMPANY' AND ${effectiveGrant}`;
-    const administrators = new Set(
-      adminGrants.map((grant) => grant.membership_id),
-    );
-    if (!administrators.has(actor.membershipId))
-      throw new OrganizationFailure("PERMISSION_DENIED");
-    const [responsibility] = await tx.$queryRaw<{ membership_id: string }[]>`
-      SELECT membership_id FROM company_responsibilities WHERE company_id = ${companyId}::uuid`;
-    return {
-      members,
-      administrators,
-      responsibleMembershipId: responsibility?.membership_id ?? null,
-    };
-  }
-
-  async #requireRecent(
-    tx: Prisma.TransactionClient,
-    strongAuthenticatedAt: Date | null,
-  ): Promise<void> {
-    const [assurance] = await tx.$queryRaw<{ recent: boolean }[]>`
-      SELECT (${strongAuthenticatedAt}::timestamptz IS NOT NULL AND
-        ${strongAuthenticatedAt}::timestamptz >= statement_timestamp() - interval '5 minutes') AS recent`;
-    if (!assurance?.recent)
-      throw new OrganizationFailure("RECENT_AUTHENTICATION_REQUIRED");
-  }
-
   /** Active memberships other than `excluded` that keep an effective administrator grant. */
   async #otherActiveAdministrators(
     tx: Prisma.TransactionClient,
@@ -355,9 +374,7 @@ export class PrismaOrganizationRepository {
     strongAuthenticatedAt: Date | null,
   ): Promise<{ grant: GrantRecord; created: boolean }> {
     return this.#db.$transaction(async (tx) => {
-      const authority = await this.#lockAuthority(tx, actor, companyId, [
-        memberId,
-      ]);
+      const authority = await lockAuthority(tx, actor, companyId, [memberId]);
       const target = authority.members.get(memberId);
       if (!target) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
       if (target.status === "REMOVED")
@@ -365,7 +382,7 @@ export class PrismaOrganizationRepository {
       if (input.role === "COMPANY_ADMINISTRATOR") {
         if (authority.responsibleMembershipId !== actor.membershipId)
           throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
-        await this.#requireRecent(tx, strongAuthenticatedAt);
+        await requireRecent(tx, strongAuthenticatedAt);
       }
       if (input.expiresAt) {
         const [future] = await tx.$queryRaw<{ valid: boolean }[]>`
@@ -406,7 +423,7 @@ export class PrismaOrganizationRepository {
         await tx.$executeRaw`
           INSERT INTO membership_grant_branches (company_id, grant_id, branch_id)
           VALUES (${companyId}::uuid, ${grantId}::uuid, ${branchId}::uuid)`;
-      await this.#audit(tx, companyId, actor, {
+      await writeAudit(tx, companyId, actor, {
         action: "grant.created",
         targetType: "membership",
         targetId: memberId,
@@ -438,9 +455,7 @@ export class PrismaOrganizationRepository {
     grantId: string,
   ): Promise<void> {
     await this.#db.$transaction(async (tx) => {
-      const authority = await this.#lockAuthority(tx, actor, companyId, [
-        memberId,
-      ]);
+      const authority = await lockAuthority(tx, actor, companyId, [memberId]);
       const target = authority.members.get(memberId);
       if (!target) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
       const [grant] = await tx.$queryRaw<
@@ -476,7 +491,7 @@ export class PrismaOrganizationRepository {
       await tx.$executeRaw`
         UPDATE membership_grants SET revoked_at = statement_timestamp()
         WHERE company_id = ${companyId}::uuid AND id = ${grantId}::uuid AND revoked_at IS NULL`;
-      await this.#audit(tx, companyId, actor, {
+      await writeAudit(tx, companyId, actor, {
         action: "grant.revoked",
         targetType: "membership",
         targetId: memberId,
@@ -535,12 +550,12 @@ export class PrismaOrganizationRepository {
     strongAuthenticatedAt: Date | null,
   ): Promise<string> {
     return this.#db.$transaction(async (tx) => {
-      const authority = await this.#lockAuthority(tx, actor, companyId, [
+      const authority = await lockAuthority(tx, actor, companyId, [
         successorId,
       ]);
       if (authority.responsibleMembershipId !== actor.membershipId)
         throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
-      await this.#requireRecent(tx, strongAuthenticatedAt);
+      await requireRecent(tx, strongAuthenticatedAt);
       const successor = authority.members.get(successorId);
       if (!successor) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
       if (successorId === actor.membershipId)
@@ -566,7 +581,7 @@ export class PrismaOrganizationRepository {
         VALUES (${transferId}::uuid, ${companyId}::uuid, ${actor.membershipId}::uuid,
           ${successorId}::uuid, statement_timestamp(),
           statement_timestamp() + make_interval(days => ${responsibilityTransferDays}))`;
-      await this.#audit(tx, companyId, actor, {
+      await writeAudit(tx, companyId, actor, {
         action: "responsibility.transfer_requested",
         targetType: "membership",
         targetId: successorId,
@@ -633,10 +648,10 @@ export class PrismaOrganizationRepository {
       );
       if (transfer.to !== actor.membershipId)
         throw new OrganizationFailure("RESOURCE_NOT_FOUND");
-      const authority = await this.#lockAuthority(tx, actor, companyId, [
+      const authority = await lockAuthority(tx, actor, companyId, [
         transfer.from,
       ]);
-      await this.#requireRecent(tx, strongAuthenticatedAt);
+      await requireRecent(tx, strongAuthenticatedAt);
       if (authority.responsibleMembershipId !== transfer.from)
         throw new OrganizationFailure("RESPONSIBILITY_TRANSFER_NOT_PENDING");
       await tx.$executeRaw`
@@ -646,7 +661,7 @@ export class PrismaOrganizationRepository {
       await tx.$executeRaw`
         UPDATE responsibility_transfers SET status = 'ACCEPTED', decided_at = statement_timestamp()
         WHERE company_id = ${companyId}::uuid AND id = ${transferId}::uuid`;
-      await this.#audit(tx, companyId, actor, {
+      await writeAudit(tx, companyId, actor, {
         action: "responsibility.transferred",
         targetType: "membership",
         targetId: actor.membershipId,
@@ -683,7 +698,7 @@ export class PrismaOrganizationRepository {
         SET status = ${declined ? "DECLINED" : "CANCELLED"}::"ResponsibilityTransferStatus",
           decided_at = statement_timestamp()
         WHERE company_id = ${companyId}::uuid AND id = ${transferId}::uuid`;
-      await this.#audit(tx, companyId, actor, {
+      await writeAudit(tx, companyId, actor, {
         action: declined
           ? "responsibility.transfer_declined"
           : "responsibility.transfer_cancelled",
@@ -782,7 +797,7 @@ export class PrismaOrganizationRepository {
       await tx.$executeRaw`UPDATE memberships SET status = ${status}::"MembershipStatus", version = version + 1,
         updated_at = GREATEST(statement_timestamp(), updated_at + interval '1 millisecond')
         WHERE company_id = ${companyId}::uuid AND id = ${memberId}::uuid AND version = ${expectedVersion}`;
-      await this.#audit(tx, companyId, actor, {
+      await writeAudit(tx, companyId, actor, {
         action: "membership.status_changed",
         targetType: "membership",
         targetId: memberId,
@@ -933,7 +948,7 @@ export class PrismaOrganizationRepository {
         INSERT INTO membership_grants (id, company_id, membership_id, role, scope)
         VALUES (${randomUUID()}::uuid, ${id}::uuid, ${membershipId}::uuid,
           'COMPANY_ADMINISTRATOR', 'COMPANY')`;
-      await this.#audit(
+      await writeAudit(
         tx,
         id,
         { principalId: input.principalId, membershipId },
@@ -975,7 +990,7 @@ export class PrismaOrganizationRepository {
         WHERE id = ${companyId}::uuid AND version = ${expectedVersion}
         RETURNING ${companyColumns}`;
       if (!row) throw new OrganizationFailure("RESOURCE_VERSION_CONFLICT");
-      await this.#audit(tx, companyId, actor, {
+      await writeAudit(tx, companyId, actor, {
         action: "company.updated",
         targetType: "company",
         targetId: companyId,
@@ -1032,7 +1047,7 @@ export class PrismaOrganizationRepository {
           INSERT INTO branches (id, company_id, name, time_zone)
           VALUES (${id}::uuid, ${companyId}::uuid, ${input.name}, ${input.timeZone})
           RETURNING ${branchColumns}`;
-        await this.#audit(tx, companyId, actor, {
+        await writeAudit(tx, companyId, actor, {
           action: "branch.created",
           targetType: "branch",
           targetId: id,
@@ -1077,7 +1092,7 @@ export class PrismaOrganizationRepository {
             throw new OrganizationFailure("RESOURCE_VERSION_CONFLICT");
           throw new OrganizationFailure("BRANCH_ARCHIVED");
         }
-        await this.#audit(tx, companyId, actor, {
+        await writeAudit(tx, companyId, actor, {
           action: changes.archive ? "branch.archived" : "branch.updated",
           targetType: "branch",
           targetId: branchId,
@@ -1126,24 +1141,5 @@ export class PrismaOrganizationRepository {
       targetId: row.target_id,
       details: row.details,
     }));
-  }
-
-  async #audit(
-    tx: Prisma.TransactionClient,
-    companyId: string,
-    actor: Actor,
-    event: {
-      action: string;
-      targetType: string;
-      targetId: string;
-      details: Record<string, unknown>;
-    },
-  ): Promise<void> {
-    await tx.$executeRaw`
-      INSERT INTO organization_audit_events (id, company_id, actor_principal_id,
-        actor_membership_id, action, target_type, target_id, details)
-      VALUES (${randomUUID()}::uuid, ${companyId}::uuid, ${actor.principalId}::uuid,
-        ${actor.membershipId}::uuid, ${event.action}, ${event.targetType},
-        ${event.targetId}::uuid, ${JSON.stringify(event.details)}::jsonb)`;
   }
 }

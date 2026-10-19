@@ -13,6 +13,31 @@ test.describe.configure({ mode: "serial", timeout: 120_000 });
 const afterNavigation = expect.configure({ timeout: 20_000 });
 
 let stack: IdentityStack;
+
+/** The invitation link in the latest Mailpit message to `recipient`. */
+async function invitationLink(recipient: string): Promise<string> {
+  const deadline = Date.now() + 20_000;
+  for (;;) {
+    const search = (await (
+      await fetch(
+        `${stack.mailUrl}/api/v1/search?query=${encodeURIComponent(`to:${recipient}`)}`,
+      )
+    ).json()) as { messages: { ID: string }[] };
+    if (search.messages.length > 0) {
+      const message = (await (
+        await fetch(`${stack.mailUrl}/api/v1/message/${search.messages[0].ID}`)
+      ).json()) as { Text: string };
+      const match =
+        /(https?:\/\/\S+\/invitations\/accept#[A-Za-z0-9_-]{43})/.exec(
+          message.Text,
+        );
+      if (match) return match[1];
+    }
+    if (Date.now() > deadline)
+      throw new Error(`No invitation email reached ${recipient}`);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+}
 test.beforeAll(async () => {
   test.setTimeout(300_000);
   stack = await startIdentityStack();
@@ -21,7 +46,7 @@ test.afterAll(async () => {
   await stack?.stop();
 });
 
-test("creates a company, verifies in two steps and manages branches, settings, members and responsibility", async ({
+test("creates a company, verifies in two steps and manages branches, settings, members, responsibility and invitations", async ({
   page,
   browser,
 }) => {
@@ -335,6 +360,84 @@ test("creates a company, verifies in two steps and manages branches, settings, m
     await expect(
       userRow.getByRole("button", { name: /^Suspender:/ }),
     ).toHaveCount(0);
+
+    // Invitations: the member, still an administrator, invites a third
+    // person by email; only that person's verified address can accept.
+    await memberPage.goto(`${independentUrl}?view=invitations`);
+    await afterNavigation(
+      memberPage.getByLabel("E-mail da pessoa"),
+    ).toBeVisible();
+    await memberPage.getByLabel("E-mail da pessoa").fill(stack.guest.email);
+    await memberPage
+      .getByRole("button", { name: "Enviar convite", exact: true })
+      .click();
+    await expect(
+      memberPage.getByText("Convite criado.", { exact: false }),
+    ).toBeVisible();
+    const invitationRow = memberPage
+      .locator(".branch-list > li")
+      .filter({ hasText: stack.guest.email });
+    await expect(invitationRow).toContainText("Aguardando aceite");
+    expect(
+      (await new AxeBuilder({ page: memberPage }).analyze()).violations,
+    ).toEqual([]);
+    const link = await invitationLink(stack.guest.email);
+    expect(new URL(link).origin).toBe(new URL(stack.webUrl).origin);
+
+    // Another signed-in person with the link learns only that it is not theirs.
+    const otherTab = await page.context().newPage();
+    try {
+      await otherTab.goto(link);
+      await afterNavigation(otherTab.getByRole("alert")).toContainText(
+        "enviado para outro endereço",
+      );
+      await expect(
+        otherTab.getByRole("button", { name: "Aceitar convite" }),
+      ).toHaveCount(0);
+    } finally {
+      await otherTab.close();
+    }
+
+    const guestContext = await browser.newContext({ locale: "pt-BR" });
+    guestContext.setDefaultTimeout(20_000);
+    try {
+      const guestPage = await guestContext.newPage();
+      await guestPage.goto(link);
+      await afterNavigation(
+        guestPage.getByText(
+          "Entre com o endereço de e-mail que recebeu o convite",
+          {
+            exact: false,
+          },
+        ),
+      ).toBeVisible();
+      // The credential left the address bar before anything else ran.
+      expect(guestPage.url()).toBe(`${stack.webUrl}/invitations/accept`);
+      await guestPage
+        .getByRole("main")
+        .getByRole("link", { name: "Entrar", exact: true })
+        .click();
+      await enterCredentials(guestPage, stack.guest);
+      await afterNavigation(
+        guestPage.getByRole("button", { name: "Aceitar convite" }),
+      ).toBeVisible();
+      await expect(
+        guestPage.getByText("Empresa independente", { exact: true }),
+      ).toBeVisible();
+      expect(
+        (await new AxeBuilder({ page: guestPage }).analyze()).violations,
+      ).toEqual([]);
+      await guestPage.getByRole("button", { name: "Aceitar convite" }).click();
+      await afterNavigation(guestPage).toHaveURL(independentUrl);
+      await afterNavigation(
+        guestPage.getByRole("heading", { name: "Empresa independente" }),
+      ).toBeVisible();
+      await expect(guestPage.getByText(/Seu acesso: Operador/)).toBeVisible();
+    } finally {
+      await guestContext.close();
+    }
+    await memberPage.reload();
+    await afterNavigation(invitationRow).toContainText("Aceito");
   } finally {
     await memberContext.close();
   }

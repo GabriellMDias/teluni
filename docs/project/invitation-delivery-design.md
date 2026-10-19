@@ -82,7 +82,7 @@ The invited role's assurance requirement still applies at use: an accepted admin
 Invitations send email to arbitrary addresses from Teluni's sender, so they need limits independent of commercial quotas. Proposed initial values, enforced in PostgreSQL in the creating transaction:
 
 - at most 50 invitations created or resent per company in any 24 hours, and at most 100 pending invitations per company;
-- at most 3 invitation emails to the same normalized address in any 24 hours across all companies, counted by a keyed hash of the address so the count reveals nothing to other companies;
+- at most 3 invitation emails to the same normalized address in any 24 hours across all companies, counted from the invitation rows themselves, so no extra copy of the address exists and the count reveals nothing to other companies;
 - the existing per-route request rate limits.
 
 Exceeding a limit answers `RATE_LIMITED` without saying which limit applied. The email contains no inviter-supplied free text. Subject and body are fixed templates in `pt-BR` and `en-US`, chosen by the company's default locale, with a plain-text part and an escaped HTML part. Company and inviter names are inserted as escaped, length-limited text inside fixed wording, and the only link points to the configured public origin. The message says that ignoring it is safe and that it was sent because of a request in the named company. Phishing through tenant-chosen company names remains a residual risk that these limits and PH-17's abuse response mitigate but do not remove.
@@ -128,7 +128,6 @@ Keycloak sends its own verification and recovery email synchronously, through th
 | Invitation credential | `RESTRICTED` | Never stored in plaintext; the hash lives with the invitation; the encrypted delivery copy is erased at the message's final state |
 | Recipient address on the invitation | `CONFIDENTIAL` (personal data) | Kept while pending and for 90 days after the invitation becomes final, then replaced by a tombstone; the invitation row and its audit events remain |
 | Outbound message row (recipient, parameters, status) | `CONFIDENTIAL` | Deleted 30 days after reaching a final state |
-| Per-address rate-limit counters | `CONFIDENTIAL` (keyed hash) | Deleted after their 24-hour window |
 | Audit events | `CONFIDENTIAL` | Append-only, without recipient addresses, under the existing audit rules |
 
 Cleanup runs in the dispatcher's loop as bounded batches, with the same claiming rules. Backups keep copies until their own expiry under PH-10/PH-13. Real customer addresses are not processed before PH-13's notices and PH-17's approved sender exist; local and CI environments use synthetic addresses and Mailpit only.
@@ -173,7 +172,15 @@ Real invitations to real people additionally require PH-17 (sender, domain authe
 
 ## Implementation status
 
-Implementation started on 2026-10-18 under PJ-03; nothing is qualified yet. Each increment above records its evidence here and in the [plan](implementation-plan.md#current-work) when it lands.
+**Implemented and verified locally on 2026-10-18** (increments 1–4 above), with synthetic addresses and Mailpit only; no real provider, sender domain or recipient is involved.
+
+| Capability | Location | Verification |
+| --- | --- | --- |
+| `mail` API module: `outbound_emails` outbox, sealed secret parameters under the `TELUNI_MAIL_KEYS` ring, `SKIP LOCKED` leases, retry schedule, final-state erasure, 30-day purge, metrics and allowlisted logs | [`src/features/mail/`](../../apps/api/src/features/mail/module.ts), [migration](../../apps/api/prisma/migrations/20261018040000_mail_outbox/migration.sql), [grants](../../apps/api/prisma/runtime-grants/mail.sql), `TELUNI_MAIL_*` in the [configuration reference](../generated/configuration/api.md) | [Mail suite](../../apps/api/test/mail/integration.test.ts) against migrated PostgreSQL and a disposable Mailpit: real SMTP delivery, rollback, retries to the eighth attempt, permanent rejection, cancellation during an attempt, stale claims, competing dispatchers, purge, no address or secret in logs, runtime-role limits; [unit tests](../../apps/api/test/mail/domain.test.ts) for retry timing and failure classes |
+| `invitations` API module (in the organizations feature, so organizations works without mail): create, list, resend, revoke, preview and accept, abuse limits, revalidation, membership cases, address tombstones and the fixed `pt-BR`/`en-US` template | [`invitations-module.ts`](../../apps/api/src/features/organizations/invitations-module.ts), [migration](../../apps/api/prisma/migrations/20261018050000_company_invitations/migration.sql) | [Invitation suite](../../apps/api/test/organizations/invitations.test.ts): IA-02 recipient binding, replay, inviter scopes, stale assurance, resend/revoke, revalidation after suspension, archive and expiry, active/suspended/removed members, limits, atomicity with the audit insert, retention and runtime-role limits |
+| Panel: a company Invitations view (invite form, list with delivery state, resend and revoke) for administrators and branch managers, and the `/invitations/accept` page | [`invitations.tsx`](../../apps/web/src/organizations/invitations.tsx) | [Browser component tests](../../apps/web/test/organizations.browser.test.tsx) and the [company journey](../../apps/web/test/e2e/organizations/companies.spec.ts): an administrator invites through the panel, the link is read from Mailpit, another signed-in person is refused, and the invitee signs in and accepts |
+
+Implementation refinements within the approved decisions: the per-address limit counts the invitation rows instead of keeping separate keyed counters, which keeps fewer copies of the address; an acceptance that fails revalidation leaves the invitation pending but unusable rather than recording a new state, and the inviter can revoke or resend it; producer upkeep (expiry marking and address tombstones) runs inside the mail dispatcher's maintenance pass. Not yet done: real sending (PH-17 sender, domain authentication and provider terms; PH-13 notices and retention), Keycloak's production SMTP configuration under PJ-24, bounce handling, and registration of new accounts from an invitation, which waits for D-02 signup.
 
 ## Decisions for review
 

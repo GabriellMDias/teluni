@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { renderInvitationEmail } from "../../src/features/organizations/invitation-email.js";
 import {
   branchReach,
   companyAccess,
   decide,
   grantRequest,
+  invitationDecision,
+  invitationVisibility,
   isTimeZone,
   OrganizationFailure,
   requireCapability,
@@ -104,6 +107,74 @@ describe("organization access decisions", () => {
       expect(() => grantRequest(input)).toThrow(
         new OrganizationFailure("VALIDATION_FAILED"),
       );
+  });
+
+  it("lets administrators, the responsible administrator and branch managers invite only within their authority", () => {
+    const admin: Grant = { role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" };
+    const operatorNorth = {
+      role: "OPERATOR",
+      scope: "BRANCHES",
+      branchIds: ["north"],
+    } as const;
+    expect(invitationDecision(access([admin], true), operatorNorth)).toBe(
+      "allow",
+    );
+    expect(
+      invitationDecision(access([admin], true), {
+        role: "COMPANY_ADMINISTRATOR",
+        scope: "COMPANY",
+        branchIds: [],
+      }),
+    ).toBe("responsible_required");
+    expect(invitationDecision(access([manager], true), operatorNorth)).toBe(
+      "allow",
+    );
+    expect(invitationDecision(access([manager], false), operatorNorth)).toBe(
+      "strong_required",
+    );
+    for (const request of [
+      { role: "OPERATOR", scope: "BRANCHES", branchIds: ["south"] },
+      { role: "OPERATOR", scope: "COMPANY", branchIds: [] },
+      { role: "BRANCH_MANAGER", scope: "BRANCHES", branchIds: ["north"] },
+    ] as const)
+      expect(invitationDecision(access([manager], true), request)).toBe("deny");
+    expect(invitationDecision(access([operator], true), operatorNorth)).toBe(
+      "deny",
+    );
+    expect(invitationVisibility(access([admin], true))).toEqual({
+      kind: "all",
+    });
+    expect(invitationVisibility(access([manager], true))).toEqual({
+      kind: "operators",
+      branches: ["north"],
+    });
+    expect(invitationVisibility(access([operator], true))).toBeNull();
+  });
+
+  it("renders the invitation email with escaped names and one panel link", () => {
+    const email = renderInvitationEmail({
+      locale: "en-US",
+      parameters: {
+        acceptUrl: "https://app.example.test/invitations/accept",
+        companyName: "<b>Café</b>\r\nBcc: x@example.test",
+        inviterName: "",
+        role: "BRANCH_MANAGER",
+        expiresAt: "2026-10-25T12:00:00.000Z",
+        timeZone: "America/Sao_Paulo",
+      },
+      secret: "s".repeat(43),
+    });
+    expect(email.subject).not.toMatch(/[\r\n]/);
+    expect(email.text).toContain("You have been invited");
+    expect(email.text).toContain("as a branch manager");
+    expect(email.text).toContain(
+      `https://app.example.test/invitations/accept#${"s".repeat(43)}`,
+    );
+    expect(email.html).toContain("&lt;b&gt;Café&lt;/b&gt;");
+    expect(email.html).not.toContain("<b>Café");
+    expect(() =>
+      renderInvitationEmail({ locale: "pt-BR", parameters: {}, secret: null }),
+    ).toThrow();
   });
 
   it("accepts only IANA time zones known to the runtime", () => {

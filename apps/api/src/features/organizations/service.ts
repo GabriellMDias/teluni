@@ -44,6 +44,7 @@ const capabilities: readonly Capability[] = [
   "branches.view",
   "branches.manage",
   "members.manage",
+  "invitations.manage",
   "audit.view",
 ];
 
@@ -58,11 +59,11 @@ export type AccessSummary = Readonly<{
 
 type Cursor = Record<string, string>;
 
-function encodeCursor(value: Cursor): string {
+export function encodeCursor(value: Cursor): string {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
 }
 
-function branchScope(reach: "all" | ReadonlySet<string>): string {
+export function branchScope(reach: "all" | ReadonlySet<string>): string {
   return reach === "all"
     ? "all"
     : createHash("sha256")
@@ -71,12 +72,12 @@ function branchScope(reach: "all" | ReadonlySet<string>): string {
 }
 
 /** Cursors are bound to their collection, principal and applicable tenant scope. */
-function decodeCursor(
+export function decodeCursor(
   value: string | undefined,
   binding: {
     company: string;
     principal: string;
-    kind: "companies" | "branches" | "audit" | "members";
+    kind: "companies" | "branches" | "audit" | "members" | "invitations";
     scope: string;
   },
 ): Cursor | undefined {

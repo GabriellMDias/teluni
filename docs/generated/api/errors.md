@@ -29,3 +29,7 @@
 | `IDEMPOTENCY_KEY_REUSED` | 409 | conflict | no | The creation key was used for different content. |
 | `BRANCH_NAME_IN_USE` | 409 | conflict | no | Another active branch of this company already uses that name. |
 | `BRANCH_ARCHIVED` | 409 | conflict | no | The branch is archived and cannot be changed. |
+| `INVITATION_PENDING` | 409 | conflict | no | A pending invitation for this address already exists. Resend it instead. |
+| `INVITATION_NO_LONGER_VALID` | 409 | conflict | no | This invitation is no longer valid. Ask for a new one. |
+| `INVITATION_RECIPIENT_MISMATCH` | 403 | authorization | no | This invitation was sent to another email address. Sign in with that address to accept it. |
+| `MEMBERSHIP_SUSPENDED` | 409 | conflict | no | Your access to this company is suspended. Contact a company administrator. |

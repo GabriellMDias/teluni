@@ -29,6 +29,7 @@ import {
 } from "./api.js";
 import { organizationMessages, timeZoneChoices } from "./messages.js";
 import { CompanyMembers, formatInstant } from "./members.js";
+import { CompanyInvitations } from "./invitations.js";
 import { ResponsibilityTransferNotice } from "./responsibility.js";
 
 export function useOrganizationMessages() {
@@ -731,7 +732,7 @@ export function CompanyPage({
 }: {
   companyId: string;
   cursor?: string;
-  view?: "settings" | "history" | "members";
+  view?: "settings" | "history" | "members" | "invitations";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -841,6 +842,16 @@ export function CompanyPage({
             {t.membersTitle}
           </Link>
         )}
+        {access.capabilities.includes("invitations.manage") && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "invitations" }}
+            aria-current={view === "invitations" ? "page" : undefined}
+          >
+            {t.invitationsTitle}
+          </Link>
+        )}
         {access.capabilities.includes("audit.view") && (
           <Link
             to="/companies/$companyId"
@@ -859,6 +870,22 @@ export function CompanyPage({
             principalId={session.data.principalId}
             viewerResponsible={access.responsible}
             transferPending={Boolean(transfer)}
+            cursor={cursor}
+            returnTo={returnTo}
+            locale={locale}
+            t={t}
+          />
+        ) : (
+          <p role="alert" className="notice notice-error">
+            {t.errors.PERMISSION_DENIED}
+          </p>
+        )
+      ) : view === "invitations" ? (
+        access.capabilities.includes("invitations.manage") ? (
+          <CompanyInvitations
+            companyId={companyId}
+            administrator={access.capabilities.includes("members.manage")}
+            viewerResponsible={access.responsible}
             cursor={cursor}
             returnTo={returnTo}
             locale={locale}

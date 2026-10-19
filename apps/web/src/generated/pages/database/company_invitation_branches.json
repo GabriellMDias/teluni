@@ -1,0 +1,67 @@
+{
+  "kind": "database",
+  "name": "company_invitation_branches",
+  "description": "Explicit branches of a branch-scoped invitation; all must still be active when it is accepted.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created with its invitation and never changed.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Owning company; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "invitation_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch-scoped invitation.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "A branch the accepted grant will cover.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "company_invitation_branches_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The branch belongs to the same company."
+    },
+    {
+      "Object": "company_invitation_branches_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "Rows belong to an existing company."
+    },
+    {
+      "Object": "company_invitation_branches_company_id_invitation_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, invitation_id) REFERENCES company_invitations(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The invitation belongs to the same company."
+    },
+    {
+      "Object": "company_invitation_branches_pkey",
+      "Physical definition": "PRIMARY KEY (invitation_id, branch_id)",
+      "Purpose": "Each branch appears once per invitation."
+    },
+    {
+      "Object": "company_invitation_branches_branch_idx",
+      "Physical definition": "CREATE INDEX company_invitation_branches_branch_idx ON public.company_invitation_branches USING btree (company_id, branch_id)",
+      "Purpose": "Finds invitations that name a branch."
+    }
+  ]
+}

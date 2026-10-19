@@ -90,8 +90,12 @@ export async function withKeycloak<T>(
 /** Starts Mailpit as a local SMTP sink for verification and recovery mail. */
 export async function withMailpit<T>(
   work: (mail: {
+    /** SMTP address for containers on the network (or the host without one). */
     smtpHost: string;
     smtpPort: number;
+    /** SMTP address published on the host, for the API process. */
+    hostSmtpHost: string;
+    hostSmtpPort: number;
     apiUrl: string;
   }) => Promise<T>,
   options: { network?: StartedNetwork; alias?: string } = {},
@@ -108,6 +112,8 @@ export async function withMailpit<T>(
     return await work({
       smtpHost: options.alias ?? started.getHost(),
       smtpPort: options.alias ? 1025 : started.getMappedPort(1025),
+      hostSmtpHost: started.getHost(),
+      hostSmtpPort: started.getMappedPort(1025),
       apiUrl: `http://${started.getHost()}:${started.getMappedPort(8025)}`,
     });
   } finally {

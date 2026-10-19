@@ -104,9 +104,9 @@
       "Purpose": "Tenant key that tenant references target."
     },
     {
-      "Object": "memberships_company_principal_key",
-      "Physical definition": "CREATE UNIQUE INDEX memberships_company_principal_key ON public.memberships USING btree (company_id, principal_id)",
-      "Purpose": "At most one membership per principal and company."
+      "Object": "memberships_company_principal_current_key",
+      "Physical definition": "CREATE UNIQUE INDEX memberships_company_principal_current_key ON public.memberships USING btree (company_id, principal_id) WHERE (status <> 'REMOVED'::\"MembershipStatus\")",
+      "Purpose": "At most one current (not REMOVED) membership per principal and company; a removed membership stays as history and the person can return through a new membership."
     },
     {
       "Object": "memberships_principal_status_idx",

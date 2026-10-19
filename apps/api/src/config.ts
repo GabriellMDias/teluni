@@ -37,6 +37,23 @@ export const serverConfigSchema = Type.Object(
     ),
     provisionerClientSecret: Type.Optional(Type.String({ minLength: 16 })),
     sessionKeys: Type.Optional(Type.String({ minLength: 1 })),
+    mailSmtpHost: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9.-]{1,253}$" }),
+    ),
+    mailSmtpPort: Type.Integer({ minimum: 1, maximum: 65535 }),
+    mailSmtpSecurity: Type.Union([
+      Type.Literal("tls"),
+      Type.Literal("starttls"),
+      Type.Literal("none"),
+    ]),
+    mailSmtpUsername: Type.Optional(
+      Type.String({ minLength: 1, maxLength: 256 }),
+    ),
+    mailSmtpPassword: Type.Optional(
+      Type.String({ minLength: 1, maxLength: 512 }),
+    ),
+    mailFrom: Type.Optional(Type.String({ minLength: 3, maxLength: 254 })),
+    mailKeys: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
@@ -262,29 +279,123 @@ export const configReference = Object.freeze([
     purpose:
       "Key ring for provider-token encryption and CSRF tokens; the first key protects new values, all keys remain readable during rotation.",
   },
+  {
+    key: "mailSmtpHost",
+    name: "TELUNI_MAIL_SMTP_HOST",
+    type: "host name or address",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "SMTP submission relay for transactional email; configure with the sender and mail key ring to enable the mail module.",
+  },
+  {
+    key: "mailSmtpPort",
+    name: "TELUNI_MAIL_SMTP_PORT",
+    type: "integer 1..65535",
+    required: false,
+    default: "587",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose: "SMTP submission relay port.",
+  },
+  {
+    key: "mailSmtpSecurity",
+    name: "TELUNI_MAIL_SMTP_SECURITY",
+    type: "tls | starttls | none",
+    required: false,
+    default: "starttls",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Implicit TLS or mandatory STARTTLS with certificate verification; none only for a loopback test sink outside production.",
+  },
+  {
+    key: "mailSmtpUsername",
+    name: "TELUNI_MAIL_SMTP_USERNAME",
+    type: "string, 1..256 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "SMTP authentication user; configured together with the password, or both omitted for an unauthenticated test sink.",
+  },
+  {
+    key: "mailSmtpPassword",
+    name: "TELUNI_MAIL_SMTP_PASSWORD",
+    type: "secret string, 1..512 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose: "SMTP authentication credential of the mail relay.",
+  },
+  {
+    key: "mailFrom",
+    name: "TELUNI_MAIL_FROM",
+    type: "email address",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Sender address of transactional email; its domain must be authorized for the relay.",
+  },
+  {
+    key: "mailKeys",
+    name: "TELUNI_MAIL_KEYS",
+    type: "comma-separated id:base64url 32-byte keys, newest first",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Key ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values.",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
 
-const sessionKeyPattern = /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9_-]{43}$/;
+const keyRingEntryPattern = /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9_-]{43}$/;
+
+/** Parses a validated `id:key` ring; the first entry is current. */
+export function parseKeyRing(
+  value: string,
+  label: string,
+): readonly Readonly<{ id: string; key: Buffer }>[] {
+  const entries = value.split(",").map((entry) => entry.trim());
+  const ids = new Set<string>();
+  const keys = entries.map((entry) => {
+    if (!keyRingEntryPattern.test(entry))
+      throw new Error(`Invalid API configuration: ${label}`);
+    const [id, encoded] = entry.split(":") as [string, string];
+    if (ids.has(id)) throw new Error(`Invalid API configuration: ${label}`);
+    ids.add(id);
+    const key = Buffer.from(encoded, "base64url");
+    if (key.length !== 32)
+      throw new Error(`Invalid API configuration: ${label}`);
+    return Object.freeze({ id, key });
+  });
+  return Object.freeze(keys);
+}
 
 /** Parses the validated session key ring; the first entry is current. */
 export function parseSessionKeys(
   value: string,
 ): readonly Readonly<{ id: string; key: Buffer }>[] {
-  const entries = value.split(",").map((entry) => entry.trim());
-  const ids = new Set<string>();
-  const keys = entries.map((entry) => {
-    if (!sessionKeyPattern.test(entry))
-      throw new Error("Invalid API configuration: session keys");
-    const [id, encoded] = entry.split(":") as [string, string];
-    if (ids.has(id)) throw new Error("Invalid API configuration: session keys");
-    ids.add(id);
-    const key = Buffer.from(encoded, "base64url");
-    if (key.length !== 32)
-      throw new Error("Invalid API configuration: session keys");
-    return Object.freeze({ id, key });
-  });
-  return Object.freeze(keys);
+  return parseKeyRing(value, "session keys");
 }
+
+// The same conservative shape as src/email-address.ts. This file has no local
+// imports so repository tooling can load it directly.
+const senderPattern = /^[^\s@<>",;]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
   if (value === undefined) return fallback;
@@ -339,6 +450,23 @@ export function parseServerConfig(
     ...(env.TELUNI_SESSION_KEYS === undefined
       ? {}
       : { sessionKeys: env.TELUNI_SESSION_KEYS }),
+    ...(env.TELUNI_MAIL_SMTP_HOST === undefined
+      ? {}
+      : { mailSmtpHost: env.TELUNI_MAIL_SMTP_HOST }),
+    mailSmtpPort: numberFromEnv(env.TELUNI_MAIL_SMTP_PORT, 587),
+    mailSmtpSecurity: env.TELUNI_MAIL_SMTP_SECURITY ?? "starttls",
+    ...(env.TELUNI_MAIL_SMTP_USERNAME === undefined
+      ? {}
+      : { mailSmtpUsername: env.TELUNI_MAIL_SMTP_USERNAME }),
+    ...(env.TELUNI_MAIL_SMTP_PASSWORD === undefined
+      ? {}
+      : { mailSmtpPassword: env.TELUNI_MAIL_SMTP_PASSWORD }),
+    ...(env.TELUNI_MAIL_FROM === undefined
+      ? {}
+      : { mailFrom: env.TELUNI_MAIL_FROM }),
+    ...(env.TELUNI_MAIL_KEYS === undefined
+      ? {}
+      : { mailKeys: env.TELUNI_MAIL_KEYS }),
   };
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
@@ -440,6 +568,39 @@ export function parseServerConfig(
     )
       throw new Error("Invalid API configuration: public origin");
     parseSessionKeys(candidate.sessionKeys!);
+  }
+  const mailValues = [
+    candidate.mailSmtpHost,
+    candidate.mailFrom,
+    candidate.mailKeys,
+  ];
+  // Mail is all-or-none; its links point to the human panel origin.
+  if (
+    mailValues.some(Boolean) ||
+    candidate.mailSmtpUsername ||
+    candidate.mailSmtpPassword
+  ) {
+    if (mailValues.some((value) => !value) || !candidate.publicOrigin)
+      throw new Error("Invalid API configuration: incomplete mail settings");
+    if (
+      Boolean(candidate.mailSmtpUsername) !==
+      Boolean(candidate.mailSmtpPassword)
+    )
+      throw new Error("Invalid API configuration: mail credentials");
+    if (
+      candidate.mailFrom!.length > 254 ||
+      !senderPattern.test(candidate.mailFrom!)
+    )
+      throw new Error("Invalid API configuration: mail sender");
+    const loopbackRelay = ["localhost", "127.0.0.1", "::1"].includes(
+      candidate.mailSmtpHost!,
+    );
+    if (
+      candidate.mailSmtpSecurity === "none" &&
+      (candidate.environment === "production" || !loopbackRelay)
+    )
+      throw new Error("Invalid API configuration: mail transport security");
+    parseKeyRing(candidate.mailKeys!, "mail keys");
   }
   return Object.freeze(candidate);
 }

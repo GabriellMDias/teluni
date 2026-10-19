@@ -1,4 +1,4 @@
-import { parseServerConfig, parseSessionKeys } from "./config.js";
+import { parseKeyRing, parseServerConfig, parseSessionKeys } from "./config.js";
 import { createLogger } from "./logging.js";
 import { errorDiagnostics } from "./error-diagnostics.js";
 import { shutdownRuntime, withDeadline } from "./lifecycle.js";
@@ -58,9 +58,28 @@ try {
         sessionKeys: parseSessionKeys(config.sessionKeys),
       }
     : undefined;
+  const mail = config.mailKeys
+    ? {
+        environment: config.environment,
+        publicOrigin: config.publicOrigin!,
+        smtp: {
+          host: config.mailSmtpHost!,
+          port: config.mailSmtpPort,
+          security: config.mailSmtpSecurity,
+          ...(config.mailSmtpUsername
+            ? {
+                username: config.mailSmtpUsername,
+                password: config.mailSmtpPassword!,
+              }
+            : {}),
+        },
+        from: config.mailFrom!,
+        keys: parseKeyRing(config.mailKeys, "mail keys"),
+      }
+    : undefined;
   const modules = activateModules(
     apiModules,
-    { database, verifier, humanIdentity },
+    { database, verifier, humanIdentity, mail },
     config.environment,
   );
   const { app, lifecycle } = createApp(logger, undefined, {

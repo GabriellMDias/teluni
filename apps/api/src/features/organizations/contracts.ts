@@ -21,6 +21,7 @@ const capability = Type.Union([
   Type.Literal("branches.view"),
   Type.Literal("branches.manage"),
   Type.Literal("members.manage"),
+  Type.Literal("invitations.manage"),
   Type.Literal("audit.view"),
 ]);
 const limit = Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }));
@@ -572,3 +573,19 @@ export const organizationOperations = [
     ],
   },
 ] as const;
+
+// Shared wire fragments for the invitations operations of this feature.
+export {
+  common,
+  companyParams,
+  cursor,
+  grantScope,
+  instant,
+  limit,
+  mutation,
+  name,
+  role,
+  scoped,
+  session,
+  uuid,
+};

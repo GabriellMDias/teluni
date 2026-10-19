@@ -1,7 +1,7 @@
 import { startIdentityStack } from "./stack.ts";
 
 // Starts the disposable identity stack for manual exploration: migrated
-// PostgreSQL, Keycloak with a synthetic user, Mailpit, the emitted API and
+// PostgreSQL, Keycloak with synthetic users, Mailpit, the emitted API and
 // Vite. Run `pnpm -C apps/api build` first. Nothing persists after Ctrl+C.
 const stack = await startIdentityStack();
 const keepAlive = setInterval(() => undefined, 60_000);
@@ -13,8 +13,11 @@ process.stdout.write(
     `  Mail inbox:   ${stack.mailUrl}`,
     `  Sign in as:   ${stack.user.email}`,
     `  Password:     ${stack.user.password}`,
-    "  You can also create an account on the sign-in page; the verification",
-    "  email arrives in the mail inbox above.",
+    `  Invitee:      ${stack.guest.email}`,
+    `  Password:     ${stack.guest.password}`,
+    "  Invitation emails sent from a company's Invitations view and account",
+    "  verification emails arrive in the mail inbox above. You can also",
+    "  create an account on the sign-in page.",
     "Press Ctrl+C to stop and discard everything.",
     "",
   ].join("\n"),

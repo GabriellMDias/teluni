@@ -19,6 +19,10 @@ export const organizationErrorCodes: ReadonlySet<string> = new Set([
   "SUCCESSOR_NOT_ELIGIBLE",
   "RESPONSIBILITY_TRANSFER_PENDING",
   "RESPONSIBILITY_TRANSFER_NOT_PENDING",
+  "INVITATION_PENDING",
+  "INVITATION_NO_LONGER_VALID",
+  "INVITATION_RECIPIENT_MISMATCH",
+  "MEMBERSHIP_SUSPENDED",
 ]);
 
 export type CompanyWithAccess =
@@ -39,6 +43,13 @@ export type Grant = Member["grants"][number];
 export type GrantInput = NonNullable<
   paths["/companies/{companyId}/members/{membershipId}/grants"]["post"]["requestBody"]
 >["content"]["application/json"];
+export type Invitation =
+  paths["/companies/{companyId}/invitations"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
+export type InvitationInput = NonNullable<
+  paths["/companies/{companyId}/invitations"]["post"]["requestBody"]
+>["content"]["application/json"];
+export type InvitationPreview =
+  paths["/invitations/preview"]["post"]["responses"][200]["content"]["application/json"];
 export type ResponsibilityTransfer = NonNullable<
   CompanyWithAccess["responsibilityTransfer"]
 >;
@@ -51,6 +62,8 @@ export const branchesKey = (id: string) =>
 export const auditKey = (id: string) => ["organizations", "audit", id] as const;
 export const membersKey = (id: string) =>
   ["organizations", "members", id] as const;
+export const invitationsKey = (id: string) =>
+  ["organizations", "invitations", id] as const;
 
 const client = sessionApiClient;
 
@@ -61,6 +74,7 @@ export function invalidateCompany(queries: QueryClient, companyId: string) {
     queries.invalidateQueries({ queryKey: companyKey(companyId) }),
     queries.invalidateQueries({ queryKey: companiesKey }),
     queries.invalidateQueries({ queryKey: auditKey(companyId) }),
+    queries.invalidateQueries({ queryKey: invitationsKey(companyId) }),
   ]);
 }
 
@@ -158,6 +172,72 @@ export async function closeResponsibilityTransfer(
       "/companies/{companyId}/responsibility-transfers/{transferId}/cancel",
       { params: { path: { companyId, transferId } } },
     ),
+  );
+}
+
+export async function createInvitation(
+  companyId: string,
+  input: InvitationInput,
+): Promise<Invitation> {
+  return unwrap(
+    await client().POST("/companies/{companyId}/invitations", {
+      params: { path: { companyId } },
+      body: input,
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function listInvitations(companyId: string, cursor?: string) {
+  return unwrap(
+    await client().GET("/companies/{companyId}/invitations", {
+      params: { path: { companyId }, query: cursor ? { cursor } : {} },
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function resendInvitation(
+  companyId: string,
+  invitationId: string,
+): Promise<Invitation> {
+  return unwrap(
+    await client().POST(
+      "/companies/{companyId}/invitations/{invitationId}/resend",
+      { params: { path: { companyId, invitationId } } },
+    ),
+    organizationErrorCodes,
+  );
+}
+
+export async function revokeInvitation(
+  companyId: string,
+  invitationId: string,
+): Promise<void> {
+  settle(
+    await client().POST(
+      "/companies/{companyId}/invitations/{invitationId}/revoke",
+      { params: { path: { companyId, invitationId } } },
+    ),
+  );
+}
+
+/** The credential travels only in request bodies, never in a URL. */
+export async function previewInvitation(
+  credential: string,
+): Promise<InvitationPreview> {
+  return unwrap(
+    await client().POST("/invitations/preview", { body: { credential } }),
+    organizationErrorCodes,
+  );
+}
+
+export async function acceptInvitation(
+  credential: string,
+): Promise<{ companyId: string; membershipId: string }> {
+  return unwrap(
+    await client().POST("/invitations/accept", { body: { credential } }),
+    organizationErrorCodes,
   );
 }
 

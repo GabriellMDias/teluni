@@ -1,0 +1,32 @@
+// Mail module: the transactional outbound-email outbox (ADR-0026). Producers
+// own what a message means; this module owns delivery. See
+// docs/project/invitation-delivery-design.md#durable-email-delivery.
+
+enum OutboundEmailStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model OutboundEmail {
+  id                String              @id @db.Uuid
+  producer          String              @db.VarChar(64)
+  producerReference String              @map("producer_reference") @db.Uuid
+  template          String              @db.VarChar(64)
+  locale            String              @db.VarChar(16)
+  recipient         String              @db.VarChar(254)
+  parameters        Json                @db.JsonB
+  sealedSecret      Bytes?              @map("sealed_secret")
+  status            OutboundEmailStatus @default(PENDING)
+  attempts          Int                 @default(0)
+  nextAttemptAt     DateTime            @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
+  leaseExpiresAt    DateTime?           @map("lease_expires_at") @db.Timestamptz(3)
+  lastFailure       String?             @map("last_failure") @db.VarChar(32)
+  lastReplyCode     Int?                @map("last_reply_code")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  finalizedAt       DateTime?           @map("finalized_at") @db.Timestamptz(3)
+
+  @@index([producer, producerReference], map: "outbound_emails_producer_idx")
+  @@map("outbound_emails")
+}

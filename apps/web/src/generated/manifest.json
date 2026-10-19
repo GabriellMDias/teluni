@@ -4,6 +4,24 @@
   "api": { "title": "Teluni API", "version": "1.0.0" },
   "entries": [
     {
+      "id": "api/acceptInvitation",
+      "kind": "api",
+      "title": "acceptInvitation",
+      "group": "Invitations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /invitations/accept",
+      "method": "POST",
+      "path": "/invitations/accept",
+      "tags": ["Invitations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/acceptInvitation.json"
+    },
+    {
       "id": "api/acceptResponsibilityTransfer",
       "kind": "api",
       "title": "acceptResponsibilityTransfer",
@@ -125,6 +143,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/createCompany.json"
+    },
+    {
+      "id": "api/createInvitation",
+      "kind": "api",
+      "title": "createInvitation",
+      "group": "Invitations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/invitations",
+      "method": "POST",
+      "path": "/companies/{companyId}/invitations",
+      "tags": ["Invitations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createInvitation.json"
     },
     {
       "id": "api/getBranch",
@@ -297,6 +333,23 @@
       "file": "pages/api/listCompanyMembers.json"
     },
     {
+      "id": "api/listInvitations",
+      "kind": "api",
+      "title": "listInvitations",
+      "group": "Invitations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/invitations",
+      "method": "GET",
+      "path": "/companies/{companyId}/invitations",
+      "tags": ["Invitations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listInvitations.json"
+    },
+    {
       "id": "api/listSessions",
       "kind": "api",
       "title": "listSessions",
@@ -329,6 +382,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/logout.json"
+    },
+    {
+      "id": "api/previewInvitation",
+      "kind": "api",
+      "title": "previewInvitation",
+      "group": "Invitations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /invitations/preview",
+      "method": "POST",
+      "path": "/invitations/preview",
+      "tags": ["Invitations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/previewInvitation.json"
     },
     {
       "id": "api/receiveBackchannelLogout",
@@ -365,6 +436,40 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/requestResponsibilityTransfer.json"
+    },
+    {
+      "id": "api/resendInvitation",
+      "kind": "api",
+      "title": "resendInvitation",
+      "group": "Invitations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/invitations/{invitationId}/resend",
+      "method": "POST",
+      "path": "/companies/{companyId}/invitations/{invitationId}/resend",
+      "tags": ["Invitations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/resendInvitation.json"
+    },
+    {
+      "id": "api/revokeInvitation",
+      "kind": "api",
+      "title": "revokeInvitation",
+      "group": "Invitations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/invitations/{invitationId}/revoke",
+      "method": "POST",
+      "path": "/companies/{companyId}/invitations/{invitationId}/revoke",
+      "tags": ["Invitations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/revokeInvitation.json"
     },
     {
       "id": "api/revokeMemberGrant",
@@ -519,6 +624,26 @@
       "file": "pages/database/companies.json"
     },
     {
+      "id": "database/company_invitation_branches",
+      "kind": "database",
+      "title": "company_invitation_branches",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Explicit branches of a branch-scoped invitation; all must still be active when it is accepted.",
+      "headings": [],
+      "file": "pages/database/company_invitation_branches.json"
+    },
+    {
+      "id": "database/company_invitations",
+      "kind": "database",
+      "title": "company_invitations",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "An invitation for a recipient address to join a company with one grant; only the person signed in with that verified address can accept it.",
+      "headings": [],
+      "file": "pages/database/company_invitations.json"
+    },
+    {
       "id": "database/company_responsibilities",
       "kind": "database",
       "title": "company_responsibilities",
@@ -589,6 +714,16 @@
       "file": "pages/database/organization_audit_events.json"
     },
     {
+      "id": "database/outbound_emails",
+      "kind": "database",
+      "title": "outbound_emails",
+      "group": "Mail",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Transactional outbox of email messages: a producer records the intent in its own transaction and the dispatcher delivers it through the SMTP relay at least once.",
+      "headings": [],
+      "file": "pages/database/outbound_emails.json"
+    },
+    {
       "id": "database/principals",
       "kind": "database",
       "title": "principals",
@@ -657,6 +792,16 @@
       "summary": "This module owns application principals, server-managed human sessions and the session boundary other modules use. Read the identity and session design and the identity…",
       "headings": [],
       "file": "pages/repository/apps/api/src/features/identity/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/mail/AGENTS",
+      "kind": "repository",
+      "title": "Mail Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/mail/AGENTS.md",
+      "summary": "This module owns the transactional outbound-email outbox, its dispatcher and the SMTP adapter (ADR-0026). Read the delivery section of the invitation and email delivery design…",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/mail/AGENTS.json"
     },
     {
       "id": "repository/apps/api/src/features/organizations/AGENTS",
@@ -1733,25 +1878,26 @@
     "shards": [
       { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
       { "file": "search/0001.json", "count": 17, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 17, "kinds": ["api", "database"] },
+      { "file": "search/0002.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 17, "kinds": ["api", "database"] },
       {
-        "file": "search/0003.json",
-        "count": 68,
+        "file": "search/0004.json",
+        "count": 61,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0004.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 120, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 173, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 123, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 110, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 164, "kinds": ["repository"] },
       { "file": "search/0008.json", "count": 134, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 87, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 51, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 86, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 22, "kinds": ["repository"] }
+      { "file": "search/0009.json", "count": 131, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 87, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 63, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 62, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 59, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 51, "kinds": ["repository"] }
     ],
-    "count": 1263
+    "count": 1284
   }
 }

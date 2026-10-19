@@ -38,19 +38,27 @@ enum ResponsibilityTransferStatus {
   EXPIRED
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  REPLACED
+  EXPIRED
+}
+
 model Company {
-  id                      String                   @id @db.Uuid
-  displayName             String                   @map("display_name") @db.VarChar(120)
-  status                  CompanyStatus            @default(ACTIVE)
-  defaultLocale           String                   @map("default_locale") @db.VarChar(10)
-  timeZone                String                   @map("time_zone") @db.VarChar(64)
-  version                 Int                      @default(1)
-  createdByPrincipalId    String                   @map("created_by_principal_id") @db.Uuid
-  creationKey             String                   @map("creation_key") @db.VarChar(200)
-  creationFingerprint     String                   @map("creation_fingerprint") @db.Char(64)
-  createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt               DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
-  createdBy               Principal                @relation("CompanyCreator", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                      String                    @id @db.Uuid
+  displayName             String                    @map("display_name") @db.VarChar(120)
+  status                  CompanyStatus             @default(ACTIVE)
+  defaultLocale           String                    @map("default_locale") @db.VarChar(10)
+  timeZone                String                    @map("time_zone") @db.VarChar(64)
+  version                 Int                       @default(1)
+  createdByPrincipalId    String                    @map("created_by_principal_id") @db.Uuid
+  creationKey             String                    @map("creation_key") @db.VarChar(200)
+  creationFingerprint     String                    @map("creation_fingerprint") @db.Char(64)
+  createdAt               DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  createdBy               Principal                 @relation("CompanyCreator", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   branches                Branch[]
   memberships             Membership[]
   responsibility          CompanyResponsibility?
@@ -58,22 +66,25 @@ model Company {
   grantBranches           MembershipGrantBranch[]
   auditEvents             OrganizationAuditEvent[]
   responsibilityTransfers ResponsibilityTransfer[]
+  invitations             CompanyInvitation[]
+  invitationBranches      CompanyInvitationBranch[]
 
   @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
   @@map("companies")
 }
 
 model Branch {
-  id            String                  @id @db.Uuid
-  companyId     String                  @map("company_id") @db.Uuid
-  name          String                  @db.VarChar(120)
-  timeZone      String                  @map("time_zone") @db.VarChar(64)
-  status        BranchStatus            @default(ACTIVE)
-  version       Int                     @default(1)
-  createdAt     DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime                @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company       Company                 @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  grantBranches MembershipGrantBranch[]
+  id                 String                    @id @db.Uuid
+  companyId          String                    @map("company_id") @db.Uuid
+  name               String                    @db.VarChar(120)
+  timeZone           String                    @map("time_zone") @db.VarChar(64)
+  status             BranchStatus              @default(ACTIVE)
+  version            Int                       @default(1)
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company            Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grantBranches      MembershipGrantBranch[]
+  invitationBranches CompanyInvitationBranch[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
   @@index([companyId, status, name], map: "branches_company_status_name_idx")
@@ -96,9 +107,12 @@ model Membership {
   auditEvents       OrganizationAuditEvent[]
   outgoingTransfers ResponsibilityTransfer[] @relation("TransferFrom")
   incomingTransfers ResponsibilityTransfer[] @relation("TransferTo")
+  sentInvitations   CompanyInvitation[]      @relation("InvitationInviter")
+  invitationJoins   CompanyInvitation[]      @relation("InvitationAcceptance")
 
+  // One current (not REMOVED) membership per principal and company is a
+  // partial unique index in the reviewed SQL, which Prisma cannot express.
   @@unique([companyId, id], map: "memberships_company_id_id_key")
-  @@unique([companyId, principalId], map: "memberships_company_principal_key")
   @@index([principalId, status], map: "memberships_principal_status_idx")
   @@map("memberships")
 }
@@ -183,4 +197,47 @@ model ResponsibilityTransfer {
   @@unique([companyId, id], map: "responsibility_transfers_company_id_id_key")
   @@index([companyId, toMembershipId], map: "responsibility_transfers_successor_idx")
   @@map("responsibility_transfers")
+}
+
+model CompanyInvitation {
+  id                    String                    @id @db.Uuid
+  companyId             String                    @map("company_id") @db.Uuid
+  recipientEmail        String?                   @map("recipient_email") @db.VarChar(254)
+  credentialHash        Bytes                     @map("credential_hash")
+  role                  AccessRole
+  scope                 GrantScope
+  grantExpiresAt        DateTime?                 @map("grant_expires_at") @db.Timestamptz(3)
+  invitedByMembershipId String                    @map("invited_by_membership_id") @db.Uuid
+  status                InvitationStatus          @default(PENDING)
+  messageId             String?                   @map("message_id") @db.Uuid
+  replacesInvitationId  String?                   @map("replaces_invitation_id") @db.Uuid
+  acceptedMembershipId  String?                   @map("accepted_membership_id") @db.Uuid
+  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt             DateTime                  @map("expires_at") @db.Timestamptz(3)
+  decidedAt             DateTime?                 @map("decided_at") @db.Timestamptz(3)
+  company               Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  invitedBy             Membership                @relation("InvitationInviter", fields: [companyId, invitedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  acceptedMembership    Membership?               @relation("InvitationAcceptance", fields: [companyId, acceptedMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  replaces              CompanyInvitation?        @relation("InvitationReplacement", fields: [companyId, replacesInvitationId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  replacedBy            CompanyInvitation[]       @relation("InvitationReplacement")
+  branches              CompanyInvitationBranch[]
+
+  @@unique([companyId, id], map: "company_invitations_company_id_id_key")
+  @@unique([credentialHash], map: "company_invitations_credential_key")
+  @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "company_invitations_company_time_idx")
+  @@index([recipientEmail, createdAt], map: "company_invitations_recipient_idx")
+  @@map("company_invitations")
+}
+
+model CompanyInvitationBranch {
+  companyId    String            @map("company_id") @db.Uuid
+  invitationId String            @map("invitation_id") @db.Uuid
+  branchId     String            @map("branch_id") @db.Uuid
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  invitation   CompanyInvitation @relation(fields: [companyId, invitationId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branch       Branch            @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([invitationId, branchId], map: "company_invitation_branches_pkey")
+  @@index([companyId, branchId], map: "company_invitation_branches_branch_idx")
+  @@map("company_invitation_branches")
 }

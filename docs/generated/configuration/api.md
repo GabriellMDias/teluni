@@ -26,3 +26,10 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `TELUNI_IDENTITY_PROVISIONER_CLIENT_ID` | client identifier | no | — | server | INTERNAL | no | Service-account client that writes the administrator-only application principal attribute. |
 | `TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET` | secret string, at least 16 characters | no | — | server | RESTRICTED | yes | Credential of the principal provisioner service account. |
 | `TELUNI_SESSION_KEYS` | comma-separated id:base64url 32-byte keys, newest first | no | — | server | RESTRICTED | yes | Key ring for provider-token encryption and CSRF tokens; the first key protects new values, all keys remain readable during rotation. |
+| `TELUNI_MAIL_SMTP_HOST` | host name or address | no | — | server | INTERNAL | no | SMTP submission relay for transactional email; configure with the sender and mail key ring to enable the mail module. |
+| `TELUNI_MAIL_SMTP_PORT` | integer 1..65535 | no | `587` | server | INTERNAL | no | SMTP submission relay port. |
+| `TELUNI_MAIL_SMTP_SECURITY` | tls \| starttls \| none | no | `starttls` | server | INTERNAL | no | Implicit TLS or mandatory STARTTLS with certificate verification; none only for a loopback test sink outside production. |
+| `TELUNI_MAIL_SMTP_USERNAME` | string, 1..256 characters | no | — | server | INTERNAL | no | SMTP authentication user; configured together with the password, or both omitted for an unauthenticated test sink. |
+| `TELUNI_MAIL_SMTP_PASSWORD` | secret string, 1..512 characters | no | — | server | RESTRICTED | yes | SMTP authentication credential of the mail relay. |
+| `TELUNI_MAIL_FROM` | email address | no | — | server | INTERNAL | no | Sender address of transactional email; its domain must be authorized for the relay. |
+| `TELUNI_MAIL_KEYS` | comma-separated id:base64url 32-byte keys, newest first | no | — | server | RESTRICTED | yes | Key ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values. |

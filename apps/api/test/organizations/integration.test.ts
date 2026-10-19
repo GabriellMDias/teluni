@@ -284,6 +284,7 @@ describe("organizations: two-company isolation", () => {
         "branches.view",
         "branches.manage",
         "members.manage",
+        "invitations.manage",
         "audit.view",
       ],
     });

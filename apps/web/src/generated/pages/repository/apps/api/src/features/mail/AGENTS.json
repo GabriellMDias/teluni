@@ -1,0 +1,7 @@
+{
+  "kind": "repository",
+  "source": "apps/api/src/features/mail/AGENTS.md",
+  "title": "Mail Module",
+  "html": "<p>This module owns the transactional outbound-email outbox, its dispatcher and the SMTP adapter (ADR-0026). Read the <a href=\"/docs/repository/docs/project/invitation-delivery-design#durable-email-delivery\">delivery section of the invitation and email delivery design</a> and the <a href=\"/docs/repository/docs/architecture/delivery-and-side-effects\">delivery policy</a> before changing behavior.</p>\n<ul>\n<li>Producers own what a message means: they register its template and enqueue it through <code>public.ts</code> inside their own transaction. Do not add producer-specific wording, rules or tables here.</li>\n<li>Delivery is at least once. Never claim exactly once, and keep every outcome write guarded by the claim's lease and the pending state so a stale dispatcher or a cancellation is never overwritten.</li>\n<li>Secret parameters stay sealed under the mail key ring and are erased at the final state. Recipient addresses, secrets and message bodies never reach logs, spans, metrics or errors; diagnostics carry message IDs and failure classes only.</li>\n<li>Retry timing, attempt limits, lease length and retention live in <code>domain.ts</code>; change them with the design, its tests and the schema metadata together.</li>\n</ul>\n",
+  "headings": [{ "id": "mail-module", "text": "Mail Module", "level": 1 }]
+}

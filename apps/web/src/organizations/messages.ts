@@ -104,6 +104,51 @@ const ptBR = {
   transferAccept: "Aceitar responsabilidade",
   transferDecline: "Recusar transferência",
   transferCancel: "Cancelar transferência",
+  invitationsTitle: "Convites",
+  invitationsLead:
+    "Convide pessoas por e-mail. Cada convite vale por 7 dias e só pode ser aceito por quem entrar com o endereço convidado.",
+  invitationsEmpty: "Nenhum convite ainda.",
+  inviteTitle: "Convidar pessoa",
+  inviteEmail: "E-mail da pessoa",
+  inviteSubmit: "Enviar convite",
+  inviteSent: "Convite criado. O e-mail será enviado em instantes.",
+  inviteManagerHint:
+    "Como gerente de filial, você convida operadores para as filiais que gerencia.",
+  invitationStatuses: {
+    PENDING: "Aguardando aceite",
+    ACCEPTED: "Aceito",
+    REVOKED: "Revogado",
+    REPLACED: "Substituído por um reenvio",
+    EXPIRED: "Expirado",
+  },
+  deliveryStates: {
+    PENDING: "E-mail na fila de envio",
+    SENT: "E-mail entregue ao serviço de envio",
+    FAILED: "Falha no envio do e-mail; reenvie o convite",
+    CANCELLED: "E-mail cancelado",
+  },
+  invitationAddressErased: "Endereço removido após o período de retenção",
+  invitationUntil: "válido até",
+  invitationBy: "Convidado por",
+  invitationResend: "Reenviar convite",
+  invitationRevoke: "Revogar convite",
+  invitationRevokeConfirmation:
+    "O link deste convite deixa de funcionar imediatamente.",
+  acceptTitle: "Convite para uma empresa",
+  acceptMissing:
+    "Este link de convite está incompleto ou já foi usado neste navegador. Abra novamente o link recebido por e-mail.",
+  acceptSignIn:
+    "Entre com o endereço de e-mail que recebeu o convite para vê-lo e aceitá-lo.",
+  acceptLead:
+    "Ao aceitar, você passa a fazer parte desta empresa com o acesso abaixo.",
+  acceptCompany: "Empresa",
+  acceptAccess: "Acesso",
+  acceptInvitedBy: "Convidado por",
+  acceptExpires: "O convite vale até",
+  acceptButton: "Aceitar convite",
+  accepting: "Aceitando…",
+  acceptAlready: "Você já aceitou este convite.",
+  openCompany: "Abrir a empresa",
   memberConfirmations: {
     ACTIVE:
       "A reativação restaura os papéis ainda válidos deste membro nesta empresa.",
@@ -134,6 +179,10 @@ const ptBR = {
       "Transferência de responsabilidade recusada",
     "responsibility.transfer_cancelled":
       "Transferência de responsabilidade cancelada",
+    "invitation.created": "Convite enviado",
+    "invitation.resent": "Convite reenviado",
+    "invitation.revoked": "Convite revogado",
+    "invitation.accepted": "Convite aceito",
     "company.created": "Empresa criada",
     "company.updated": "Configurações da empresa alteradas",
     "branch.created": "Filial criada",
@@ -163,6 +212,14 @@ const ptBR = {
       "Já existe uma transferência de responsabilidade pendente. Cancele-a antes de propor outra.",
     RESPONSIBILITY_TRANSFER_NOT_PENDING:
       "Esta transferência não está mais pendente. Recarregue para ver a situação atual.",
+    INVITATION_PENDING:
+      "Já existe um convite pendente para este e-mail. Reenvie-o em vez de criar outro.",
+    INVITATION_NO_LONGER_VALID:
+      "Este convite não é mais válido. Peça um novo convite a quem convidou você.",
+    INVITATION_RECIPIENT_MISMATCH:
+      "Este convite foi enviado para outro endereço de e-mail. Saia e entre com o endereço que recebeu o convite.",
+    MEMBERSHIP_SUSPENDED:
+      "Seu acesso a esta empresa está suspenso. Fale com um administrador da empresa.",
     AUTHENTICATION_REQUIRED: "Sua sessão terminou. Entre novamente.",
     PERMISSION_DENIED: "Você não tem permissão para esta ação.",
     COMPANY_SUSPENDED:
@@ -296,6 +353,50 @@ const enUS: OrganizationMessages = {
   transferAccept: "Accept responsibility",
   transferDecline: "Decline transfer",
   transferCancel: "Cancel transfer",
+  invitationsTitle: "Invitations",
+  invitationsLead:
+    "Invite people by email. Each invitation is valid for 7 days and only the person who signs in with the invited address can accept it.",
+  invitationsEmpty: "No invitations yet.",
+  inviteTitle: "Invite someone",
+  inviteEmail: "Email address",
+  inviteSubmit: "Send invitation",
+  inviteSent: "Invitation created. The email will be sent shortly.",
+  inviteManagerHint:
+    "As a branch manager, you invite operators to the branches you manage.",
+  invitationStatuses: {
+    PENDING: "Awaiting acceptance",
+    ACCEPTED: "Accepted",
+    REVOKED: "Revoked",
+    REPLACED: "Replaced by a resend",
+    EXPIRED: "Expired",
+  },
+  deliveryStates: {
+    PENDING: "Email queued",
+    SENT: "Email handed to the mail service",
+    FAILED: "Email could not be sent; resend the invitation",
+    CANCELLED: "Email cancelled",
+  },
+  invitationAddressErased: "Address removed after the retention period",
+  invitationUntil: "valid until",
+  invitationBy: "Invited by",
+  invitationResend: "Resend invitation",
+  invitationRevoke: "Revoke invitation",
+  invitationRevokeConfirmation:
+    "This invitation's link stops working immediately.",
+  acceptTitle: "Company invitation",
+  acceptMissing:
+    "This invitation link is incomplete or was already used in this browser. Open the link from the email again.",
+  acceptSignIn:
+    "Sign in with the email address that received the invitation to see and accept it.",
+  acceptLead: "By accepting, you join this company with the access below.",
+  acceptCompany: "Company",
+  acceptAccess: "Access",
+  acceptInvitedBy: "Invited by",
+  acceptExpires: "The invitation is valid until",
+  acceptButton: "Accept invitation",
+  accepting: "Accepting…",
+  acceptAlready: "You already accepted this invitation.",
+  openCompany: "Open the company",
   memberConfirmations: {
     ACTIVE:
       "Reactivation restores this member's still-valid roles in this company.",
@@ -322,6 +423,10 @@ const enUS: OrganizationMessages = {
     "responsibility.transferred": "Responsibility transferred",
     "responsibility.transfer_declined": "Responsibility transfer declined",
     "responsibility.transfer_cancelled": "Responsibility transfer cancelled",
+    "invitation.created": "Invitation sent",
+    "invitation.resent": "Invitation resent",
+    "invitation.revoked": "Invitation revoked",
+    "invitation.accepted": "Invitation accepted",
     "company.created": "Company created",
     "company.updated": "Company settings changed",
     "branch.created": "Branch created",
@@ -352,6 +457,14 @@ const enUS: OrganizationMessages = {
       "A responsibility transfer is already pending. Cancel it before proposing another.",
     RESPONSIBILITY_TRANSFER_NOT_PENDING:
       "This transfer is no longer pending. Reload to see the current state.",
+    INVITATION_PENDING:
+      "A pending invitation for this email already exists. Resend it instead of creating another.",
+    INVITATION_NO_LONGER_VALID:
+      "This invitation is no longer valid. Ask the person who invited you for a new one.",
+    INVITATION_RECIPIENT_MISMATCH:
+      "This invitation was sent to another email address. Sign out and sign in with the address that received it.",
+    MEMBERSHIP_SUSPENDED:
+      "Your access to this company is suspended. Contact a company administrator.",
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You do not have permission for this action.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",
