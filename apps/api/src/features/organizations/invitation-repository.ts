@@ -3,7 +3,6 @@ import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type { MailOutboxPort } from "../mail/public.js";
 import {
-  companyAccess,
   invitationAddressRetentionDays,
   invitationDays,
   invitationDecision,
@@ -13,14 +12,17 @@ import {
   type InvitationVisibility,
   OrganizationFailure,
   type AccessRole,
-  type CompanyAccess,
   type CompanyStatus,
-  type Grant,
   type GrantScopeName,
   type Locale,
   type MembershipStatus,
 } from "./domain.js";
-import { requireRecent, writeAudit, type Actor } from "./prisma-repository.js";
+import {
+  accessOf,
+  requireRecent,
+  writeAudit,
+  type Actor,
+} from "./prisma-repository.js";
 
 export type InvitationStatus =
   "PENDING" | "ACCEPTED" | "REVOKED" | "REPLACED" | "EXPIRED";
@@ -808,64 +810,6 @@ export class PrismaInvitationRepository {
         VALUES (${companyId}::uuid, ${id}::uuid, ${branchId}::uuid)`;
     return { id, expiresAt: timing.expires };
   }
-}
-
-/** Effective access of a membership, read inside the caller's transaction. */
-async function accessOf(
-  tx: Prisma.TransactionClient,
-  companyId: string,
-  membershipId: string,
-  principalId: string,
-  strong: boolean,
-): Promise<CompanyAccess> {
-  const rows = await tx.$queryRaw<
-    {
-      company_status: CompanyStatus;
-      responsible: boolean;
-      grant_id: string | null;
-      role: AccessRole | null;
-      scope: GrantScopeName | null;
-      branch_id: string | null;
-    }[]
-  >`
-    SELECT c.status::text AS company_status,
-      COALESCE(r.membership_id = m.id, false) AS responsible,
-      g.id AS grant_id, g.role::text AS role, g.scope::text AS scope, gb.branch_id
-    FROM memberships m
-    JOIN companies c ON c.id = m.company_id
-    LEFT JOIN company_responsibilities r ON r.company_id = m.company_id
-    LEFT JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
-      AND g.revoked_at IS NULL AND g.starts_at <= statement_timestamp()
-      AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())
-    LEFT JOIN membership_grant_branches gb ON gb.company_id = g.company_id AND gb.grant_id = g.id
-    WHERE m.company_id = ${companyId}::uuid AND m.id = ${membershipId}::uuid`;
-  const grants = new Map<
-    string,
-    { role: AccessRole; scope: GrantScopeName; branches: Set<string> }
-  >();
-  for (const row of rows) {
-    if (!row.grant_id || !row.role || !row.scope) continue;
-    const grant = grants.get(row.grant_id) ?? {
-      role: row.role,
-      scope: row.scope,
-      branches: new Set<string>(),
-    };
-    if (row.branch_id) grant.branches.add(row.branch_id);
-    grants.set(row.grant_id, grant);
-  }
-  return companyAccess({
-    companyId,
-    companyStatus: rows[0]?.company_status ?? "SUSPENDED",
-    membershipId,
-    principalId,
-    responsible: rows[0]?.responsible ?? false,
-    grants: [...grants.values()].map((grant): Grant =>
-      grant.scope === "COMPANY"
-        ? { role: grant.role, scope: "COMPANY" }
-        : { role: grant.role, scope: "BRANCHES", branchIds: grant.branches },
-    ),
-    strong,
-  });
 }
 
 async function hasIdenticalGrant(

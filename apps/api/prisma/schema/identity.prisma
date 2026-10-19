@@ -28,6 +28,8 @@ model Principal {
   memberships      Membership[]
   createdCompanies Company[]                @relation("CompanyCreator")
   auditEvents      OrganizationAuditEvent[] @relation("AuditActor")
+  deviceFailures   DeviceClaimFailure[]
+  deviceAudit      DeviceAuditEvent[]       @relation("DeviceAuditActor")
 
   @@unique([issuer, subject], map: "principals_issuer_subject_key")
   @@map("principals")

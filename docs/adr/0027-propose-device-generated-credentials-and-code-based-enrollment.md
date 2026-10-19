@@ -1,7 +1,9 @@
-# ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment
+# ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-19
+
+**Acceptance scope:** The owner explicitly approved this decision and the nine decisions of the device enrollment and lifecycle design on 2026-10-19 under PH-22. Acceptance establishes the direction for local and CI implementation of PJ-08 with simulated players, not Android player delivery (PJ-12), hardware qualification (PH-08) or production readiness.
 
 ## Context
 

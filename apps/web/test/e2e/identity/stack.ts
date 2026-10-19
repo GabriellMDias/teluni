@@ -122,11 +122,13 @@ export async function startIdentityStack(): Promise<IdentityStack> {
     resources.unshift(identity);
     const sessionKeys = `e2e:${randomBytes(32).toString("base64url")}`;
     const mailKeys = `e2e:${randomBytes(32).toString("base64url")}`;
+    const deviceCodeKeys = `e2e:${randomBytes(32).toString("base64url")}`;
     const secrets = [
       identity.webClientSecret,
       identity.provisionerClientSecret,
       sessionKeys,
       mailKeys,
+      deviceCodeKeys,
       user.password,
       member.password,
       guest.password,
@@ -151,6 +153,7 @@ export async function startIdentityStack(): Promise<IdentityStack> {
         TELUNI_MAIL_SMTP_SECURITY: "none",
         TELUNI_MAIL_FROM: "no-reply@teluni.test",
         TELUNI_MAIL_KEYS: mailKeys,
+        TELUNI_DEVICE_CODE_KEYS: deviceCodeKeys,
       },
     });
     resources.unshift(api);

@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "archiveBranch",
   "summary": "",
-  "description": "Archive a branch with the observed version, keeping it for references. Requires company administration and two-step verification.",
+  "description": "Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration and two-step verification.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

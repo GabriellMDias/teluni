@@ -17,7 +17,9 @@ export type Capability =
   | "branches.manage"
   | "members.manage"
   | "invitations.manage"
-  | "audit.view";
+  | "audit.view"
+  | "devices.view"
+  | "devices.manage";
 
 type Preset = Readonly<{
   capabilities: ReadonlySet<Capability>;
@@ -26,7 +28,8 @@ type Preset = Readonly<{
 }>;
 
 // Only the capabilities implemented so far are listed; the matrix's other
-// rows (content, devices, publication, export) arrive with their modules.
+// rows (content, publication, export) arrive with their modules. Operators
+// pair devices only through a future additional grant (custom profiles).
 export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
   COMPANY_ADMINISTRATOR: {
     capabilities: new Set([
@@ -37,6 +40,8 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "members.manage",
       "invitations.manage",
       "audit.view",
+      "devices.view",
+      "devices.manage",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -45,11 +50,13 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "company.view",
       "branches.view",
       "invitations.manage",
+      "devices.view",
+      "devices.manage",
     ]),
     requiresStrongAuthentication: true,
   },
   OPERATOR: {
-    capabilities: new Set(["company.view", "branches.view"]),
+    capabilities: new Set(["company.view", "branches.view", "devices.view"]),
     requiresStrongAuthentication: false,
   },
 };
@@ -165,6 +172,7 @@ export type OrganizationFailureCode =
   | "IDEMPOTENCY_KEY_REUSED"
   | "BRANCH_NAME_IN_USE"
   | "BRANCH_ARCHIVED"
+  | "BRANCH_IN_USE"
   | "MEMBERSHIP_REMOVED"
   | "RESPONSIBLE_ADMINISTRATOR_PROTECTED"
   | "LAST_ADMINISTRATOR_REQUIRED"

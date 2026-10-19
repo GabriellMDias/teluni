@@ -187,7 +187,9 @@
                         { "type": "string", "const": "branches.manage" },
                         { "type": "string", "const": "members.manage" },
                         { "type": "string", "const": "invitations.manage" },
-                        { "type": "string", "const": "audit.view" }
+                        { "type": "string", "const": "audit.view" },
+                        { "type": "string", "const": "devices.view" },
+                        { "type": "string", "const": "devices.manage" }
                       ]
                     }
                   },
@@ -204,7 +206,9 @@
                         { "type": "string", "const": "branches.manage" },
                         { "type": "string", "const": "members.manage" },
                         { "type": "string", "const": "invitations.manage" },
-                        { "type": "string", "const": "audit.view" }
+                        { "type": "string", "const": "audit.view" },
+                        { "type": "string", "const": "devices.view" },
+                        { "type": "string", "const": "devices.manage" }
                       ]
                     }
                   }
@@ -339,7 +343,9 @@
                     { "type": "string", "const": "branches.manage" },
                     { "type": "string", "const": "members.manage" },
                     { "type": "string", "const": "invitations.manage" },
-                    { "type": "string", "const": "audit.view" }
+                    { "type": "string", "const": "audit.view" },
+                    { "type": "string", "const": "devices.view" },
+                    { "type": "string", "const": "devices.manage" }
                   ]
                 }
               },
@@ -353,7 +359,9 @@
                     { "type": "string", "const": "branches.manage" },
                     { "type": "string", "const": "members.manage" },
                     { "type": "string", "const": "invitations.manage" },
-                    { "type": "string", "const": "audit.view" }
+                    { "type": "string", "const": "audit.view" },
+                    { "type": "string", "const": "devices.view" },
+                    { "type": "string", "const": "devices.manage" }
                   ]
                 }
               }
@@ -461,12 +469,12 @@
         { "name": "access.responsible", "type": "boolean", "required": true },
         {
           "name": "access.capabilities",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
           "required": true
         },
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
           "required": true
         },
         {
@@ -564,7 +572,9 @@
                         { "type": "string", "const": "branches.manage" },
                         { "type": "string", "const": "members.manage" },
                         { "type": "string", "const": "invitations.manage" },
-                        { "type": "string", "const": "audit.view" }
+                        { "type": "string", "const": "audit.view" },
+                        { "type": "string", "const": "devices.view" },
+                        { "type": "string", "const": "devices.manage" }
                       ]
                     }
                   },
@@ -581,7 +591,9 @@
                         { "type": "string", "const": "branches.manage" },
                         { "type": "string", "const": "members.manage" },
                         { "type": "string", "const": "invitations.manage" },
-                        { "type": "string", "const": "audit.view" }
+                        { "type": "string", "const": "audit.view" },
+                        { "type": "string", "const": "devices.view" },
+                        { "type": "string", "const": "devices.manage" }
                       ]
                     }
                   }
@@ -716,7 +728,9 @@
                     { "type": "string", "const": "branches.manage" },
                     { "type": "string", "const": "members.manage" },
                     { "type": "string", "const": "invitations.manage" },
-                    { "type": "string", "const": "audit.view" }
+                    { "type": "string", "const": "audit.view" },
+                    { "type": "string", "const": "devices.view" },
+                    { "type": "string", "const": "devices.manage" }
                   ]
                 }
               },
@@ -730,7 +744,9 @@
                     { "type": "string", "const": "branches.manage" },
                     { "type": "string", "const": "members.manage" },
                     { "type": "string", "const": "invitations.manage" },
-                    { "type": "string", "const": "audit.view" }
+                    { "type": "string", "const": "audit.view" },
+                    { "type": "string", "const": "devices.view" },
+                    { "type": "string", "const": "devices.manage" }
                   ]
                 }
               }
@@ -838,12 +854,12 @@
         { "name": "access.responsible", "type": "boolean", "required": true },
         {
           "name": "access.capabilities",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
           "required": true
         },
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
           "required": true
         },
         {

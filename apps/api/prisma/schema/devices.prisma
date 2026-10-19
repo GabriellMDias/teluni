@@ -1,0 +1,105 @@
+// Devices module: screen identities, code-based enrollment, branch
+// assignment, rotation, unlink and erasure state (ADR-0027). Rules follow
+// docs/project/device-enrollment-design.md; tenant-owned tables keep a
+// (company_id, id) key and composite tenant references.
+
+enum DeviceEnrollmentStatus {
+  PENDING
+  CLAIMED
+}
+
+enum DeviceStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum DeviceErasure {
+  NONE
+  PENDING
+  CONFIRMED
+  RESET_RECORDED
+}
+
+model DeviceEnrollment {
+  id             String                 @id @db.Uuid
+  credentialHash Bytes                  @map("credential_hash")
+  codeHmac       Bytes                  @map("code_hmac")
+  codeKeyId      String                 @map("code_key_id") @db.VarChar(32)
+  report         Json                   @db.JsonB
+  status         DeviceEnrollmentStatus @default(PENDING)
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt      DateTime               @map("expires_at") @db.Timestamptz(3)
+  lastPolledAt   DateTime?              @map("last_polled_at") @db.Timestamptz(3)
+  claimedAt      DateTime?              @map("claimed_at") @db.Timestamptz(3)
+
+  @@unique([credentialHash], map: "device_enrollments_credential_key")
+  @@unique([codeHmac], map: "device_enrollments_code_key")
+  @@index([status, expiresAt], map: "device_enrollments_status_expiry_idx")
+  @@map("device_enrollments")
+}
+
+model Device {
+  id                   String             @id @db.Uuid
+  companyId            String             @map("company_id") @db.Uuid
+  branchId             String             @map("branch_id") @db.Uuid
+  enrollmentId         String             @map("enrollment_id") @db.Uuid
+  name                 String             @db.VarChar(80)
+  rotation             Int
+  status               DeviceStatus       @default(ACTIVE)
+  erasure              DeviceErasure      @default(NONE)
+  credentialHash       Bytes?             @map("credential_hash")
+  nextCredentialHash   Bytes?             @map("next_credential_hash")
+  report               Json               @db.JsonB
+  lastSeenAt           DateTime?          @map("last_seen_at") @db.Timestamptz(3)
+  pairedByMembershipId String             @map("paired_by_membership_id") @db.Uuid
+  pairedAt             DateTime           @default(now()) @map("paired_at") @db.Timestamptz(3)
+  revokedAt            DateTime?          @map("revoked_at") @db.Timestamptz(3)
+  erasureRecordedAt    DateTime?          @map("erasure_recorded_at") @db.Timestamptz(3)
+  version              Int                @default(1)
+  updatedAt            DateTime           @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company              Company            @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch               Branch             @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  pairedBy             Membership         @relation("DevicePairer", fields: [companyId, pairedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  auditEvents          DeviceAuditEvent[]
+
+  @@unique([companyId, id], map: "devices_company_id_id_key")
+  @@unique([enrollmentId], map: "devices_enrollment_key")
+  @@unique([credentialHash], map: "devices_credential_key")
+  @@unique([nextCredentialHash], map: "devices_next_credential_key")
+  @@index([companyId, branchId, status], map: "devices_company_branch_status_idx")
+  @@index([companyId, pairedAt(sort: Desc), id(sort: Desc)], map: "devices_company_paired_idx")
+  @@map("devices")
+}
+
+model DeviceClaimFailure {
+  id          String    @id @db.Uuid
+  companyId   String    @map("company_id") @db.Uuid
+  principalId String    @map("principal_id") @db.Uuid
+  occurredAt  DateTime  @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  principal   Principal @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "device_claim_failures_company_id_id_key")
+  @@index([principalId, occurredAt], map: "device_claim_failures_principal_time_idx")
+  @@index([companyId, occurredAt], map: "device_claim_failures_company_time_idx")
+  @@map("device_claim_failures")
+}
+
+model DeviceAuditEvent {
+  id                String      @id @db.Uuid
+  companyId         String      @map("company_id") @db.Uuid
+  deviceId          String      @map("device_id") @db.Uuid
+  occurredAt        DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String?     @map("actor_principal_id") @db.Uuid
+  actorMembershipId String?     @map("actor_membership_id") @db.Uuid
+  action            String      @db.VarChar(64)
+  details           Json        @default("{}")
+  company           Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  device            Device      @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Principal?  @relation("DeviceAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorMembership   Membership? @relation("DeviceAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "device_audit_events_company_id_id_key")
+  @@index([companyId, deviceId, occurredAt(sort: Desc), id(sort: Desc)], map: "device_audit_events_device_time_idx")
+  @@map("device_audit_events")
+}

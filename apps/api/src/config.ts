@@ -54,6 +54,7 @@ export const serverConfigSchema = Type.Object(
     ),
     mailFrom: Type.Optional(Type.String({ minLength: 3, maxLength: 254 })),
     mailKeys: Type.Optional(Type.String({ minLength: 1 })),
+    deviceCodeKeys: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
@@ -361,6 +362,18 @@ export const configReference = Object.freeze([
     purpose:
       "Key ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values.",
   },
+  {
+    key: "deviceCodeKeys",
+    name: "TELUNI_DEVICE_CODE_KEYS",
+    type: "comma-separated id:base64url 32-byte keys, newest first",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Key ring for the HMAC that stores screen pairing codes; the first key protects new codes, all keys remain readable during rotation. Enables the devices module.",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
 
 const keyRingEntryPattern = /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9_-]{43}$/;
@@ -467,6 +480,9 @@ export function parseServerConfig(
     ...(env.TELUNI_MAIL_KEYS === undefined
       ? {}
       : { mailKeys: env.TELUNI_MAIL_KEYS }),
+    ...(env.TELUNI_DEVICE_CODE_KEYS === undefined
+      ? {}
+      : { deviceCodeKeys: env.TELUNI_DEVICE_CODE_KEYS }),
   };
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
@@ -602,6 +618,8 @@ export function parseServerConfig(
       throw new Error("Invalid API configuration: mail transport security");
     parseKeyRing(candidate.mailKeys!, "mail keys");
   }
+  if (candidate.deviceCodeKeys !== undefined)
+    parseKeyRing(candidate.deviceCodeKeys, "device code keys");
   return Object.freeze(candidate);
 }
 

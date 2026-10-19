@@ -68,6 +68,10 @@ model Company {
   responsibilityTransfers ResponsibilityTransfer[]
   invitations             CompanyInvitation[]
   invitationBranches      CompanyInvitationBranch[]
+  // Back-relations of the devices module; never traversed across modules.
+  devices                 Device[]
+  deviceClaimFailures     DeviceClaimFailure[]
+  deviceAuditEvents       DeviceAuditEvent[]
 
   @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
   @@map("companies")
@@ -85,6 +89,7 @@ model Branch {
   company            Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   grantBranches      MembershipGrantBranch[]
   invitationBranches CompanyInvitationBranch[]
+  devices            Device[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
   @@index([companyId, status, name], map: "branches_company_status_name_idx")
@@ -109,6 +114,8 @@ model Membership {
   incomingTransfers ResponsibilityTransfer[] @relation("TransferTo")
   sentInvitations   CompanyInvitation[]      @relation("InvitationInviter")
   invitationJoins   CompanyInvitation[]      @relation("InvitationAcceptance")
+  pairedDevices     Device[]                 @relation("DevicePairer")
+  deviceAuditEvents DeviceAuditEvent[]       @relation("DeviceAuditActorMembership")
 
   // One current (not REMOVED) membership per principal and company is a
   // partial unique index in the reviewed SQL, which Prisma cannot express.

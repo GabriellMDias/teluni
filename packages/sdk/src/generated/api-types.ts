@@ -391,7 +391,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Archive a branch with the observed version, keeping it for references. Requires company administration and two-step verification. */
+        /** @description Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration and two-step verification. */
         post: operations["archiveBranch"];
         delete?: never;
         options?: never;
@@ -496,6 +496,195 @@ export interface paths {
         put?: never;
         /** @description Accept an invitation as the signed-in person whose verified email is its recipient. The inviter must still be able to grant it and the company and every branch must be active. Creates a membership, adds the grant to an active one, or refuses a suspended one; a removed person returns through a new membership. Repeating an acceptance returns the same result with 200. */
         post: operations["acceptInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/device-enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start pairing a screen. The player sends the SHA-256 of a 256-bit credential it generated and keeps, and its report; the answer carries the code to show (XXXX-XXXX, valid ten minutes, single use) and the enrollment to poll. A hash already bound to a device or an enrollment answers ENROLLMENT_REJECTED. Limited per client address and by the number of pending enrollments. */
+        post: operations["startDeviceEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/device-enrollments/{enrollmentId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Poll an enrollment with the credential whose hash started it, at most once per polling interval. Answers pending, paired with the device ID, or expired. Polling too fast answers RATE_LIMITED with Retry-After. */
+        post: operations["getDeviceEnrollmentStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/device/self": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The calling screen's configuration. An active screen receives authorizedUntil, seven days after this successful renewal (AT-15), which it must stop protected playback at. An unlinked screen learns only that it must clear its private content and credential, then confirm the erasure. A screen of a suspended company receives no renewal. */
+        get: operations["getDeviceSelf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/device/self/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Replace the active screen's report of its application, model, display and supported rotations. Reports are device statements, not qualified support. */
+        put: operations["updateDeviceReport"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/device/self/erasure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirm, as an unlinked screen, that private content, configuration and the credential were cleared. The server deletes the credential hash, so repeating the call answers DEVICE_UNAUTHORIZED, which the player treats as done. */
+        post: operations["confirmDeviceErasure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/device/self/credential": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Register the hash of a new device-generated credential. The current credential keeps working until the new one is first used, so a lost response is safe; repeating the same hash is harmless. */
+        post: operations["rotateDeviceCredential"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The company's screens the caller may view, newest pairing first: every screen for company-wide access, otherwise those in granted branches. Filter by branch or status. Cursors are bound to the company, caller, visible scope and filters. */
+        get: operations["listDevices"];
+        put?: never;
+        /** @description Pair the screen showing a code to an active branch the caller manages, with a name and one of the rotations the screen reported. Expired, used, unknown and concurrently claimed codes all answer PAIRING_CODE_INVALID; repeated failures answer RATE_LIMITED. Requires screen management and two-step verification. */
+        post: operations["pairDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/devices/{deviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One screen the caller may view. Screens outside the caller's branches answer RESOURCE_NOT_FOUND. */
+        get: operations["getDevice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Rename an active screen or change its rotation with the observed version. Only rotations the screen reported are accepted. */
+        patch: operations["updateDevice"];
+        trace?: never;
+    };
+    "/companies/{companyId}/devices/{deviceId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Move an active screen to another active branch of the same company with the observed version. The caller must manage both branches. Moving to another company is an unlink followed by a new pairing. */
+        post: operations["moveDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/devices/{deviceId}/unlink": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Unlink a screen with the observed version: its credential stops working at once except to learn that it must clear and to confirm the erasure, which stays pending until then. This cannot be undone; the screen is paired again with a new code. */
+        post: operations["unlinkDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/devices/{deviceId}/reset-record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Record, for an unlinked screen whose erasure is pending, that it was reset locally. The record stays distinct from an erasure the screen confirmed. */
+        post: operations["recordDeviceReset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2905,8 +3094,8 @@ export interface operations {
                         access: {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -2945,8 +3134,8 @@ export interface operations {
                         access: {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -3136,8 +3325,8 @@ export interface operations {
                         access: {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -5458,6 +5647,2378 @@ export interface operations {
                     "application/json": {
                         companyId: string;
                         membershipId: string;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    startDeviceEnrollment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    credentialHash: string;
+                    report: {
+                        appVersion: string;
+                        protocolVersion: number;
+                        manufacturer: string;
+                        model: string;
+                        osVersion: string;
+                        display: {
+                            width: number;
+                            height: number;
+                        };
+                        rotations: (0 | 90 | 180 | 270)[];
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enrollmentId: string;
+                        userCode: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        pollIntervalSeconds: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getDeviceEnrollmentStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status: "pending" | "paired" | "expired";
+                        deviceId: string | null;
+                        pollIntervalSeconds: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getDeviceSelf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        status: "active" | "suspended" | "unlinked";
+                        clearRequired: boolean;
+                        name: string | null;
+                        branch: {
+                            id: string;
+                            name: string;
+                            timeZone: string;
+                        } | null;
+                        rotation: (0 | 90 | 180 | 270) | null;
+                        authorizedUntil: string | null;
+                        /** Format: date-time */
+                        serverTime: string;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateDeviceReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    appVersion: string;
+                    protocolVersion: number;
+                    manufacturer: string;
+                    model: string;
+                    osVersion: string;
+                    display: {
+                        width: number;
+                        height: number;
+                    };
+                    rotations: (0 | 90 | 180 | 270)[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    confirmDeviceErasure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    rotateDeviceCredential: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    credentialHash: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listDevices: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                branchId?: string;
+                status?: "ACTIVE" | "REVOKED";
+            };
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            };
+                            rotation: 0 | 90 | 180 | 270;
+                            status: "ACTIVE" | "REVOKED";
+                            erasure: "NONE" | "PENDING" | "CONFIRMED" | "RESET_RECORDED";
+                            report: {
+                                appVersion: string;
+                                protocolVersion: number;
+                                manufacturer: string;
+                                model: string;
+                                osVersion: string;
+                                display: {
+                                    width: number;
+                                    height: number;
+                                };
+                                rotations: (0 | 90 | 180 | 270)[];
+                            };
+                            lastSeenAt: string | null;
+                            /** Format: date-time */
+                            pairedAt: string;
+                            revokedAt: string | null;
+                            erasureRecordedAt: string | null;
+                            version: number;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    pairDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    userCode: string;
+                    name: string;
+                    branchId: string;
+                    rotation: 0 | 90 | 180 | 270;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        };
+                        rotation: 0 | 90 | 180 | 270;
+                        status: "ACTIVE" | "REVOKED";
+                        erasure: "NONE" | "PENDING" | "CONFIRMED" | "RESET_RECORDED";
+                        report: {
+                            appVersion: string;
+                            protocolVersion: number;
+                            manufacturer: string;
+                            model: string;
+                            osVersion: string;
+                            display: {
+                                width: number;
+                                height: number;
+                            };
+                            rotations: (0 | 90 | 180 | 270)[];
+                        };
+                        lastSeenAt: string | null;
+                        /** Format: date-time */
+                        pairedAt: string;
+                        revokedAt: string | null;
+                        erasureRecordedAt: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        };
+                        rotation: 0 | 90 | 180 | 270;
+                        status: "ACTIVE" | "REVOKED";
+                        erasure: "NONE" | "PENDING" | "CONFIRMED" | "RESET_RECORDED";
+                        report: {
+                            appVersion: string;
+                            protocolVersion: number;
+                            manufacturer: string;
+                            model: string;
+                            osVersion: string;
+                            display: {
+                                width: number;
+                                height: number;
+                            };
+                            rotations: (0 | 90 | 180 | 270)[];
+                        };
+                        lastSeenAt: string | null;
+                        /** Format: date-time */
+                        pairedAt: string;
+                        revokedAt: string | null;
+                        erasureRecordedAt: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    name?: string;
+                    rotation?: 0 | 90 | 180 | 270;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        };
+                        rotation: 0 | 90 | 180 | 270;
+                        status: "ACTIVE" | "REVOKED";
+                        erasure: "NONE" | "PENDING" | "CONFIRMED" | "RESET_RECORDED";
+                        report: {
+                            appVersion: string;
+                            protocolVersion: number;
+                            manufacturer: string;
+                            model: string;
+                            osVersion: string;
+                            display: {
+                                width: number;
+                                height: number;
+                            };
+                            rotations: (0 | 90 | 180 | 270)[];
+                        };
+                        lastSeenAt: string | null;
+                        /** Format: date-time */
+                        pairedAt: string;
+                        revokedAt: string | null;
+                        erasureRecordedAt: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    moveDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    branchId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        };
+                        rotation: 0 | 90 | 180 | 270;
+                        status: "ACTIVE" | "REVOKED";
+                        erasure: "NONE" | "PENDING" | "CONFIRMED" | "RESET_RECORDED";
+                        report: {
+                            appVersion: string;
+                            protocolVersion: number;
+                            manufacturer: string;
+                            model: string;
+                            osVersion: string;
+                            display: {
+                                width: number;
+                                height: number;
+                            };
+                            rotations: (0 | 90 | 180 | 270)[];
+                        };
+                        lastSeenAt: string | null;
+                        /** Format: date-time */
+                        pairedAt: string;
+                        revokedAt: string | null;
+                        erasureRecordedAt: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    unlinkDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        };
+                        rotation: 0 | 90 | 180 | 270;
+                        status: "ACTIVE" | "REVOKED";
+                        erasure: "NONE" | "PENDING" | "CONFIRMED" | "RESET_RECORDED";
+                        report: {
+                            appVersion: string;
+                            protocolVersion: number;
+                            manufacturer: string;
+                            model: string;
+                            osVersion: string;
+                            display: {
+                                width: number;
+                                height: number;
+                            };
+                            rotations: (0 | 90 | 180 | 270)[];
+                        };
+                        lastSeenAt: string | null;
+                        /** Format: date-time */
+                        pairedAt: string;
+                        revokedAt: string | null;
+                        erasureRecordedAt: string | null;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recordDeviceReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        };
+                        rotation: 0 | 90 | 180 | 270;
+                        status: "ACTIVE" | "REVOKED";
+                        erasure: "NONE" | "PENDING" | "CONFIRMED" | "RESET_RECORDED";
+                        report: {
+                            appVersion: string;
+                            protocolVersion: number;
+                            manufacturer: string;
+                            model: string;
+                            osVersion: string;
+                            display: {
+                                width: number;
+                                height: number;
+                            };
+                            rotations: (0 | 90 | 180 | 270)[];
+                        };
+                        lastSeenAt: string | null;
+                        /** Format: date-time */
+                        pairedAt: string;
+                        revokedAt: string | null;
+                        erasureRecordedAt: string | null;
+                        version: number;
                     };
                 };
             };

@@ -2,8 +2,10 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import {
+  companyAccess,
   OrganizationFailure,
   responsibilityTransferDays,
+  type CompanyAccess,
   type AccessRole,
   type GrantScopeName,
   type BranchStatus,
@@ -54,6 +56,21 @@ export type ResolvedMembership = Readonly<{
 }>;
 
 export type Actor = Readonly<{ principalId: string; membershipId: string }>;
+
+export type CompanyDescription = Readonly<{
+  companyStatus: CompanyStatus | null;
+  branches: ReadonlyMap<
+    string,
+    Readonly<{ name: string; timeZone: string; status: BranchStatus }>
+  >;
+}>;
+
+/** True when the branch still holds active resources of another module. */
+export type BranchArchiveGuard = (
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  branchId: string,
+) => Promise<boolean>;
 
 /** A grant that has not been revoked and has not expired. */
 export type GrantRecord = Readonly<{
@@ -232,6 +249,64 @@ export async function writeAudit(
       ${event.targetId}::uuid, ${JSON.stringify(event.details)}::jsonb)`;
 }
 
+/** Effective access of a membership, read inside the caller's transaction. */
+export async function accessOf(
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  membershipId: string,
+  principalId: string,
+  strong: boolean,
+): Promise<CompanyAccess> {
+  const rows = await tx.$queryRaw<
+    {
+      company_status: CompanyStatus;
+      responsible: boolean;
+      grant_id: string | null;
+      role: AccessRole | null;
+      scope: GrantScopeName | null;
+      branch_id: string | null;
+    }[]
+  >`
+    SELECT c.status::text AS company_status,
+      COALESCE(r.membership_id = m.id, false) AS responsible,
+      g.id AS grant_id, g.role::text AS role, g.scope::text AS scope, gb.branch_id
+    FROM memberships m
+    JOIN companies c ON c.id = m.company_id
+    LEFT JOIN company_responsibilities r ON r.company_id = m.company_id
+    LEFT JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
+      AND g.revoked_at IS NULL AND g.starts_at <= statement_timestamp()
+      AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())
+    LEFT JOIN membership_grant_branches gb ON gb.company_id = g.company_id AND gb.grant_id = g.id
+    WHERE m.company_id = ${companyId}::uuid AND m.id = ${membershipId}::uuid`;
+  const grants = new Map<
+    string,
+    { role: AccessRole; scope: GrantScopeName; branches: Set<string> }
+  >();
+  for (const row of rows) {
+    if (!row.grant_id || !row.role || !row.scope) continue;
+    const grant = grants.get(row.grant_id) ?? {
+      role: row.role,
+      scope: row.scope,
+      branches: new Set<string>(),
+    };
+    if (row.branch_id) grant.branches.add(row.branch_id);
+    grants.set(row.grant_id, grant);
+  }
+  return companyAccess({
+    companyId,
+    companyStatus: rows[0]?.company_status ?? "SUSPENDED",
+    membershipId,
+    principalId,
+    responsible: rows[0]?.responsible ?? false,
+    grants: [...grants.values()].map((grant): Grant =>
+      grant.scope === "COMPANY"
+        ? { role: grant.role, scope: "COMPANY" }
+        : { role: grant.role, scope: "BRANCHES", branchIds: grant.branches },
+    ),
+    strong,
+  });
+}
+
 /**
  * PostgreSQL persistence for the organizations module. Every tenant-owned
  * read and write is scoped by company ID, and audit events commit in the
@@ -239,9 +314,88 @@ export async function writeAudit(
  */
 export class PrismaOrganizationRepository {
   readonly #db: Database;
+  readonly #archiveGuards: BranchArchiveGuard[] = [];
 
   constructor(database: Database) {
     this.#db = database;
+  }
+
+  /**
+   * The company's status and the named branches' presentation data, for a
+   * downstream module that already authorized the caller (or a device) for
+   * them. Grants nothing by itself.
+   */
+  async describe(
+    companyId: string,
+    branchIds: readonly string[],
+  ): Promise<CompanyDescription> {
+    const [company] = await this.#db.$queryRaw<{ status: CompanyStatus }[]>`
+      SELECT status::text AS status FROM companies WHERE id = ${companyId}::uuid`;
+    const ids = [...new Set(branchIds)];
+    const rows =
+      ids.length === 0
+        ? []
+        : await this.#db.$queryRaw<BranchRow[]>`
+            SELECT ${branchColumns} FROM branches WHERE company_id = ${companyId}::uuid
+              AND id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})`;
+    return {
+      companyStatus: company?.status ?? null,
+      branches: new Map(
+        rows.map((row) => [
+          row.id,
+          { name: row.name, timeZone: row.time_zone, status: row.status },
+        ]),
+      ),
+    };
+  }
+
+  /** Registers a downstream module's check that a branch still has active resources. */
+  addBranchArchiveGuard(guard: BranchArchiveGuard): void {
+    this.#archiveGuards.push(guard);
+  }
+
+  /**
+   * Locks for a downstream module's tenant write inside its transaction: the
+   * company row is share-locked, so authority writers (which lock it for
+   * update) serialize with the write, the caller's membership is rechecked
+   * and its access rebuilt from current grants, and the named branches are
+   * share-locked. Returns the access and which of the branches are active.
+   */
+  async lockForWrite(
+    tx: Prisma.TransactionClient,
+    principalId: string,
+    strong: boolean,
+    companyId: string,
+    branchIds: readonly string[],
+  ): Promise<{ access: CompanyAccess; activeBranchIds: ReadonlySet<string> }> {
+    const [company] = await tx.$queryRaw<{ status: CompanyStatus }[]>`
+      SELECT status::text AS status FROM companies WHERE id = ${companyId}::uuid FOR SHARE`;
+    if (!company) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+    const [member] = await tx.$queryRaw<{ id: string }[]>`
+      SELECT id FROM memberships
+      WHERE company_id = ${companyId}::uuid AND principal_id = ${principalId}::uuid
+        AND status = 'ACTIVE'
+      FOR SHARE`;
+    if (!member) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+    const access = await accessOf(
+      tx,
+      companyId,
+      member.id,
+      principalId,
+      strong,
+    );
+    const ids = [...new Set(branchIds)].sort();
+    const active =
+      ids.length === 0
+        ? []
+        : await tx.$queryRaw<{ id: string }[]>`
+            SELECT id FROM branches WHERE company_id = ${companyId}::uuid AND status = 'ACTIVE'
+              AND id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+            ORDER BY id FOR SHARE`;
+    return {
+      access,
+      activeBranchIds: new Set(active.map((row) => row.id)),
+    };
   }
 
   async listMembers(
@@ -1081,6 +1235,13 @@ export class PrismaOrganizationRepository {
           WHERE company_id = ${companyId}::uuid AND id = ${branchId}::uuid
             AND version = ${expectedVersion} AND status = 'ACTIVE'
           RETURNING ${branchColumns}`;
+        if (row && changes.archive) {
+          // The branch row is locked by the update; writers that place
+          // resources in a branch share-lock it, so the guards see them.
+          for (const guard of this.#archiveGuards)
+            if (await guard(tx, companyId, branchId))
+              throw new OrganizationFailure("BRANCH_IN_USE");
+        }
         if (!row) {
           // Classify the failed conditional write on the transaction's own
           // connection; acquiring a second one can exhaust a busy pool.

@@ -23,6 +23,8 @@ const capability = Type.Union([
   Type.Literal("members.manage"),
   Type.Literal("invitations.manage"),
   Type.Literal("audit.view"),
+  Type.Literal("devices.view"),
+  Type.Literal("devices.manage"),
 ]);
 const limit = Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }));
 const cursor = Type.Optional(Type.String({ minLength: 1, maxLength: 1024 }));
@@ -540,7 +542,7 @@ export const organizationOperations = [
     operationId: "archiveBranch",
     access: "session",
     description:
-      "Archive a branch with the observed version, keeping it for references. Requires company administration and two-step verification.",
+      "Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration and two-step verification.",
     schema: {
       params: branchParams,
       body: Type.Object(
@@ -549,7 +551,7 @@ export const organizationOperations = [
       ),
       response: { 200: branchSchema, ...common },
     },
-    expectedErrors: [...mutation, "BRANCH_ARCHIVED"],
+    expectedErrors: [...mutation, "BRANCH_ARCHIVED", "BRANCH_IN_USE"],
   },
   {
     method: "GET",
