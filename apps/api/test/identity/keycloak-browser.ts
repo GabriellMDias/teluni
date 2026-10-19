@@ -28,8 +28,9 @@ export class CookieJar {
   }
 }
 
+// Decode `&amp;` last so an escaped entity such as `&amp;#61;` stays literal.
 function decodeHtml(value: string): string {
-  return value.replaceAll("&amp;", "&").replaceAll("&#61;", "=");
+  return value.replaceAll("&#61;", "=").replaceAll("&amp;", "&");
 }
 
 /** Extracts the action of a provider form, identified by its id, from HTML. */
