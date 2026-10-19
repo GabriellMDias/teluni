@@ -94,8 +94,13 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   ).toHaveCount(2, { timeout: 60_000 });
 
   // The list refreshes itself until both items are prepared.
-  const logo = page.getByRole("listitem").filter({ hasText: "logo" });
-  const video = page.getByRole("listitem").filter({ hasText: "vitrine" });
+  // Library items carry a link; the upload rows that also name the files do not.
+  const item = (name: string) =>
+    page
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("link", { name }) });
+  const logo = item("logo");
+  const video = item("vitrine");
   await afterProcessing(logo).toContainText("Pronta");
   await afterProcessing(video).toContainText("Pronta");
   await expect(video).toContainText("0:02");
