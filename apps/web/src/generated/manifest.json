@@ -2192,7 +2192,7 @@
       "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
       "group": "Decisions",
       "source": "docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md",
-      "summary": "Teluni schedules playlists by local business time per screen: weekdays, local hours, overnight windows, inclusive final dates and all-day windows, interpreted in the screen's…",
+      "summary": "Acceptance scope: The owner explicitly approved this decision and the eleven decisions of the programming design on 2026-10-19 under PH-24. Acceptance establishes the direction…",
       "headings": [],
       "file": "pages/repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.json"
     },
@@ -2682,7 +2682,7 @@
       "title": "Teluni Programming Design",
       "group": "Project guides",
       "source": "docs/project/programming-design.md",
-      "summary": "Proposed detailed design for D-06 and the time-zone part of D-10, 2026-10-19, awaiting the owner's review under PH-24. The owner asked for development to continue autonomously,…",
+      "summary": "Approved detailed design for D-06 and the time-zone part of D-10, 2026-10-19. The owner approved all eleven decisions for review as proposed under PH-24, including ADR-0029,…",
       "headings": [],
       "file": "pages/repository/docs/project/programming-design.json"
     },

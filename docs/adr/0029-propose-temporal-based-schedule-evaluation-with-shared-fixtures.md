@@ -1,7 +1,9 @@
 # ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-19
+
+**Acceptance scope:** The owner explicitly approved this decision and the eleven decisions of the programming design on 2026-10-19 under PH-24. Acceptance establishes the direction for local and CI implementation of PJ-10, not the player's evaluator (PJ-12) or device qualification (PH-08).
 
 ## Context
 

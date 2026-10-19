@@ -4,7 +4,7 @@
 
 ## Status and scope
 
-**Proposed detailed design for D-06 and the time-zone part of D-10, 2026-10-19,** awaiting the owner's review under [PH-24](human-actions.md#ph-24). The owner asked for development to continue autonomously, so PJ-10 is implemented on the recommended options while the review is pending; a rejected or changed decision changes the design and the implementation before merge.
+**Approved detailed design for D-06 and the time-zone part of D-10, 2026-10-19.** The owner approved all eleven [decisions for review](#decisions-for-review) as proposed under [PH-24](human-actions.md#ph-24), including ADR-0029, after asking for development to continue autonomously. Approval authorizes implementation of PJ-10 in local and CI environments; the player's use of the fixtures remains PJ-12.
 
 In scope: playlists and their items, persistent programming groups, the programming source of each screen (group or individual), schedule rules with dates, weekdays, local hours, overnight windows and all-day windows, optional defaults, conflict validation, the time-zone and DST rules, the evaluator that turns a programming source into a timeline for one screen, the shared fixtures, the preview, permissions, limits, reference guards, audit, data, contracts, panel and verification (FR-05, FR-06).
 
@@ -185,7 +185,7 @@ Copy is in `pt-BR` and `en-US`, times use the person's locale with the screen's 
 
 ## Implementation status
 
-Implemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options while the owner's review under [PH-24](human-actions.md#ph-24) is pending:
+Implemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-24](human-actions.md#ph-24):
 
 - The [`programming` API module](../../apps/api/src/features/programming/AGENTS.md), its reviewed migration (which also adds the devices' `time_zone` column and lets profiles delegate the programming capabilities), runtime grants, schema metadata and the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK.
 - `programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities; `programming.assign` requires strong authentication.
@@ -198,7 +198,7 @@ Increment 2, the same day:
 - The panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation and step-up, and confirmed deletion; the screen page's time zone setting and programming link.
 - [Browser component tests](../../apps/web/test/programming.browser.test.tsx) and the [programming journey](../../apps/web/test/e2e/programming/journey.spec.ts).
 
-Pending: the owner's review under PH-24, and increment 3 with PJ-11 and PJ-20.
+Pending: increment 3 with PJ-11 and PJ-20.
 
 ## Decisions for review
 

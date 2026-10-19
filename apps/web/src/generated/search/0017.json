@@ -258,7 +258,7 @@
     "kind": "repository",
     "heading": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
     "anchor": "adr-0029-evaluate-schedules-with-the-temporal-api-and-shared-fixtures",
-    "text": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures\n**Status:** proposed\n**Date:** 2026-10-19\n"
+    "text": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures\n**Status:** accepted\n**Date:** 2026-10-19\n**Acceptance scope:** The owner explicitly approved this decision and the eleven decisions of the programming design on 2026-10-19 under PH-24. Acceptance establishes the direction for local and CI implementation of PJ-10, not the player's evaluator (PJ-12) or device qualification (PH-08).\n"
   },
   {
     "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
