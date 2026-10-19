@@ -1,0 +1,142 @@
+{
+  "kind": "database",
+  "name": "responsibility_transfers",
+  "description": "A responsible administrator's proposal to hand company responsibility to another active administrator; it takes effect only when that successor accepts.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created PENDING; becomes ACCEPTED, DECLINED by the successor, CANCELLED by the proposer, or EXPIRED after seven days. Retained for attribution; no runtime deletion.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated transfer UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company whose responsibility would move; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "from_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership of the responsible administrator who proposed the transfer.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "to_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership of the proposed successor, who must still be an active company administrator when accepting.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"ResponsibilityTransferStatus\"",
+      "Nullable": "no",
+      "Default": "'PENDING'::\"ResponsibilityTransferStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "PENDING until the successor accepts or declines, the proposer cancels, or the proposal expires.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the proposal.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Instant after which the pending proposal can no longer be accepted.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "decided_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the proposal stopped being pending.",
+      "Null meaning": "The proposal is still pending.",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "responsibility_transfers_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A transfer belongs to an existing company."
+    },
+    {
+      "Object": "responsibility_transfers_company_id_from_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, from_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The proposer is a membership of the same company."
+    },
+    {
+      "Object": "responsibility_transfers_company_id_to_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, to_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The successor is a membership of the same company."
+    },
+    {
+      "Object": "responsibility_transfers_decision_state",
+      "Physical definition": "CHECK (((status = 'PENDING'::\"ResponsibilityTransferStatus\") = (decided_at IS NULL)))",
+      "Purpose": "A decision instant exists exactly for proposals that are no longer pending."
+    },
+    {
+      "Object": "responsibility_transfers_distinct_parties",
+      "Physical definition": "CHECK ((from_membership_id <> to_membership_id))",
+      "Purpose": "A responsible administrator cannot propose themselves."
+    },
+    {
+      "Object": "responsibility_transfers_expiry_after_creation",
+      "Physical definition": "CHECK ((expires_at > created_at))",
+      "Purpose": "A proposal expires after it was made."
+    },
+    {
+      "Object": "responsibility_transfers_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique transfer identity."
+    },
+    {
+      "Object": "responsibility_transfers_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX responsibility_transfers_company_id_id_key ON public.responsibility_transfers USING btree (company_id, id)",
+      "Purpose": "Tenant key for future references to transfers."
+    },
+    {
+      "Object": "responsibility_transfers_one_pending",
+      "Physical definition": "CREATE UNIQUE INDEX responsibility_transfers_one_pending ON public.responsibility_transfers USING btree (company_id) WHERE (status = 'PENDING'::\"ResponsibilityTransferStatus\")",
+      "Purpose": "At most one pending transfer per company, including racing proposals."
+    },
+    {
+      "Object": "responsibility_transfers_successor_idx",
+      "Physical definition": "CREATE INDEX responsibility_transfers_successor_idx ON public.responsibility_transfers USING btree (company_id, to_membership_id)",
+      "Purpose": "Supports finding the proposals addressed to a successor."
+    }
+  ]
+}

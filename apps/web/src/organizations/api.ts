@@ -1,4 +1,5 @@
 import type { paths } from "@teluni/sdk";
+import type { QueryClient } from "@tanstack/react-query";
 import { ApiFailure, unwrap } from "../api-client.js";
 import { identityErrorCodes, sessionApiClient } from "../identity/api.js";
 import type { Locale } from "../locale.js";
@@ -15,9 +16,12 @@ export const organizationErrorCodes: ReadonlySet<string> = new Set([
   "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
   "LAST_ADMINISTRATOR_REQUIRED",
   "RESPONSIBLE_APPROVAL_REQUIRED",
+  "SUCCESSOR_NOT_ELIGIBLE",
+  "RESPONSIBILITY_TRANSFER_PENDING",
+  "RESPONSIBILITY_TRANSFER_NOT_PENDING",
 ]);
 
-type CompanyWithAccess =
+export type CompanyWithAccess =
   paths["/companies/{companyId}"]["get"]["responses"][200]["content"]["application/json"];
 export type CompanySummary =
   paths["/companies"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
@@ -31,6 +35,13 @@ export type AuditEvent =
   paths["/companies/{companyId}/audit-events"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
 export type Member =
   paths["/companies/{companyId}/members"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
+export type Grant = Member["grants"][number];
+export type GrantInput = NonNullable<
+  paths["/companies/{companyId}/members/{membershipId}/grants"]["post"]["requestBody"]
+>["content"]["application/json"];
+export type ResponsibilityTransfer = NonNullable<
+  CompanyWithAccess["responsibilityTransfer"]
+>;
 
 export const companiesKey = ["organizations", "companies"] as const;
 export const companyKey = (id: string) =>
@@ -42,6 +53,21 @@ export const membersKey = (id: string) =>
   ["organizations", "members", id] as const;
 
 const client = sessionApiClient;
+
+/** Refreshes everything an access or responsibility change can affect. */
+export function invalidateCompany(queries: QueryClient, companyId: string) {
+  return Promise.all([
+    queries.invalidateQueries({ queryKey: membersKey(companyId) }),
+    queries.invalidateQueries({ queryKey: companyKey(companyId) }),
+    queries.invalidateQueries({ queryKey: companiesKey }),
+    queries.invalidateQueries({ queryKey: auditKey(companyId) }),
+  ]);
+}
+
+/** Throws the API failure of a write that answers without a body. */
+function settle(result: { error?: unknown; response: Response }): void {
+  if (!result.response.ok) unwrap(result, organizationErrorCodes);
+}
 
 export async function listMembers(companyId: string, cursor?: string) {
   return unwrap(
@@ -64,7 +90,75 @@ export async function updateMemberStatus(
       body: input,
     },
   );
-  if (!result.response.ok) unwrap(result, organizationErrorCodes);
+  settle(result);
+}
+
+export async function addMemberGrant(
+  companyId: string,
+  memberId: string,
+  input: GrantInput,
+): Promise<Grant> {
+  return unwrap(
+    await client().POST(
+      "/companies/{companyId}/members/{membershipId}/grants",
+      {
+        params: { path: { companyId, membershipId: memberId } },
+        body: input,
+      },
+    ),
+    organizationErrorCodes,
+  );
+}
+
+export async function revokeMemberGrant(
+  companyId: string,
+  memberId: string,
+  grantId: string,
+): Promise<void> {
+  settle(
+    await client().POST(
+      "/companies/{companyId}/members/{membershipId}/grants/{grantId}/revoke",
+      { params: { path: { companyId, membershipId: memberId, grantId } } },
+    ),
+  );
+}
+
+export async function requestResponsibilityTransfer(
+  companyId: string,
+  successorMembershipId: string,
+): Promise<ResponsibilityTransfer> {
+  return unwrap(
+    await client().POST("/companies/{companyId}/responsibility-transfers", {
+      params: { path: { companyId } },
+      body: { successorMembershipId },
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function acceptResponsibilityTransfer(
+  companyId: string,
+  transferId: string,
+): Promise<void> {
+  settle(
+    await client().POST(
+      "/companies/{companyId}/responsibility-transfers/{transferId}/accept",
+      { params: { path: { companyId, transferId } } },
+    ),
+  );
+}
+
+/** Cancels the caller's proposal or declines one made to the caller. */
+export async function closeResponsibilityTransfer(
+  companyId: string,
+  transferId: string,
+): Promise<void> {
+  settle(
+    await client().POST(
+      "/companies/{companyId}/responsibility-transfers/{transferId}/cancel",
+      { params: { path: { companyId, transferId } } },
+    ),
+  );
 }
 
 export async function listCompanies(cursor?: string) {
@@ -91,7 +185,7 @@ export async function createCompany(
 
 export async function getCompany(
   companyId: string,
-): Promise<{ company: Company; access: Access }> {
+): Promise<CompanyWithAccess> {
   return unwrap(
     await client().GET("/companies/{companyId}", {
       params: { path: { companyId } },
@@ -134,6 +228,22 @@ export async function listBranches(
     }),
     organizationErrorCodes,
   );
+}
+
+/** Active branches a grant can name; the API caps one page at 100. */
+export async function listBranchChoices(
+  companyId: string,
+): Promise<{ items: Branch[]; truncated: boolean }> {
+  const page = unwrap(
+    await client().GET("/companies/{companyId}/branches", {
+      params: { path: { companyId }, query: { limit: 100 } },
+    }),
+    organizationErrorCodes,
+  );
+  return {
+    items: page.items.filter((branch) => branch.status === "ACTIVE"),
+    truncated: page.nextCursor !== null,
+  };
 }
 
 export async function createBranch(

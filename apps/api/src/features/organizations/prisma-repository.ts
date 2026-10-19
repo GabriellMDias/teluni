@@ -3,7 +3,9 @@ import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import {
   OrganizationFailure,
+  responsibilityTransferDays,
   type AccessRole,
+  type GrantScopeName,
   type BranchStatus,
   type CompanyStatus,
   type Grant,
@@ -53,6 +55,16 @@ export type ResolvedMembership = Readonly<{
 
 export type Actor = Readonly<{ principalId: string; membershipId: string }>;
 
+/** A grant that has not been revoked and has not expired. */
+export type GrantRecord = Readonly<{
+  id: string;
+  role: AccessRole;
+  scope: GrantScopeName;
+  branches: { id: string; name: string }[];
+  startsAt: Date;
+  expiresAt: Date | null;
+}>;
+
 export type MemberRecord = Readonly<{
   id: string;
   principalId: string;
@@ -60,7 +72,28 @@ export type MemberRecord = Readonly<{
   version: number;
   responsible: boolean;
   roles: AccessRole[];
+  grants: GrantRecord[];
 }>;
+
+export type TransferRecord = Readonly<{
+  id: string;
+  fromMembershipId: string;
+  toMembershipId: string;
+  fromPrincipalId: string;
+  toPrincipalId: string;
+  createdAt: Date;
+  expiresAt: Date;
+}>;
+
+type LockedMember = {
+  id: string;
+  principal_id: string;
+  status: MembershipStatus;
+  version: number;
+};
+
+const effectiveGrant = Prisma.sql`revoked_at IS NULL AND starts_at <= statement_timestamp()
+  AND (expires_at IS NULL OR expires_at > statement_timestamp())`;
 
 type CompanyRow = {
   id: string;
@@ -157,6 +190,10 @@ export class PrismaOrganizationRepository {
         AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())
       WHERE m.company_id = ${companyId}::uuid ${after}
       GROUP BY m.id, r.membership_id ORDER BY m.id LIMIT ${options.limit}`;
+    const grants = await this.#grantsOf(
+      companyId,
+      rows.map((row) => row.id),
+    );
     return rows.map((row) => ({
       id: row.id,
       principalId: row.principal_id,
@@ -164,7 +201,497 @@ export class PrismaOrganizationRepository {
       version: row.version,
       responsible: row.responsible,
       roles: [...row.roles].sort(),
+      grants: grants.get(row.id) ?? [],
     }));
+  }
+
+  /** Unrevoked, unexpired grants of the given memberships, with branch names. */
+  async #grantsOf(
+    companyId: string,
+    membershipIds: readonly string[],
+    tx: Prisma.TransactionClient | Database = this.#db,
+  ): Promise<Map<string, GrantRecord[]>> {
+    const result = new Map<string, GrantRecord[]>();
+    if (membershipIds.length === 0) return result;
+    const rows = await tx.$queryRaw<
+      {
+        id: string;
+        membership_id: string;
+        role: AccessRole;
+        scope: GrantScopeName;
+        starts_at: Date;
+        expires_at: Date | null;
+        branch_id: string | null;
+        branch_name: string | null;
+      }[]
+    >`
+      SELECT g.id, g.membership_id, g.role::text AS role, g.scope::text AS scope,
+        g.starts_at, g.expires_at, b.id AS branch_id, b.name AS branch_name
+      FROM membership_grants g
+      LEFT JOIN membership_grant_branches gb ON gb.company_id = g.company_id AND gb.grant_id = g.id
+      LEFT JOIN branches b ON b.company_id = gb.company_id AND b.id = gb.branch_id
+      WHERE g.company_id = ${companyId}::uuid
+        AND g.membership_id IN (${Prisma.join(membershipIds.map((id) => Prisma.sql`${id}::uuid`))})
+        AND g.revoked_at IS NULL
+        AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())
+      ORDER BY g.created_at, g.id, lower(b.name), b.id`;
+    const byId = new Map<string, GrantRecord & { membershipId: string }>();
+    for (const row of rows) {
+      let grant = byId.get(row.id);
+      if (!grant) {
+        grant = {
+          id: row.id,
+          membershipId: row.membership_id,
+          role: row.role,
+          scope: row.scope,
+          branches: [],
+          startsAt: row.starts_at,
+          expiresAt: row.expires_at,
+        };
+        byId.set(row.id, grant);
+      }
+      if (row.branch_id && row.branch_name)
+        grant.branches.push({ id: row.branch_id, name: row.branch_name });
+    }
+    for (const { membershipId, ...grant } of byId.values())
+      result.set(membershipId, [...(result.get(membershipId) ?? []), grant]);
+    return result;
+  }
+
+  /**
+   * Takes the authority locks every authority-changing writer uses: the
+   * company row first, then the involved memberships in ID order. It then
+   * rechecks that the actor is still an active company administrator.
+   */
+  async #lockAuthority(
+    tx: Prisma.TransactionClient,
+    actor: Actor,
+    companyId: string,
+    otherMembershipIds: readonly string[],
+  ): Promise<{
+    members: Map<string, LockedMember>;
+    administrators: Set<string>;
+    responsibleMembershipId: string | null;
+  }> {
+    const [company] = await tx.$queryRaw<{ status: CompanyStatus }[]>`
+      SELECT status::text AS status FROM companies WHERE id = ${companyId}::uuid FOR UPDATE`;
+    const ids = [...new Set([actor.membershipId, ...otherMembershipIds])];
+    const locked = await tx.$queryRaw<LockedMember[]>`
+      SELECT id, principal_id, status::text AS status, version FROM memberships
+      WHERE company_id = ${companyId}::uuid
+        AND id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+      ORDER BY id FOR UPDATE`;
+    const members = new Map(locked.map((member) => [member.id, member]));
+    const current = members.get(actor.membershipId);
+    if (
+      !company ||
+      !current ||
+      current.principal_id !== actor.principalId ||
+      current.status !== "ACTIVE"
+    )
+      throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+    if (company.status !== "ACTIVE")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    const adminGrants = await tx.$queryRaw<{ membership_id: string }[]>`
+      SELECT membership_id FROM membership_grants WHERE company_id = ${companyId}::uuid
+        AND role = 'COMPANY_ADMINISTRATOR' AND scope = 'COMPANY' AND ${effectiveGrant}`;
+    const administrators = new Set(
+      adminGrants.map((grant) => grant.membership_id),
+    );
+    if (!administrators.has(actor.membershipId))
+      throw new OrganizationFailure("PERMISSION_DENIED");
+    const [responsibility] = await tx.$queryRaw<{ membership_id: string }[]>`
+      SELECT membership_id FROM company_responsibilities WHERE company_id = ${companyId}::uuid`;
+    return {
+      members,
+      administrators,
+      responsibleMembershipId: responsibility?.membership_id ?? null,
+    };
+  }
+
+  async #requireRecent(
+    tx: Prisma.TransactionClient,
+    strongAuthenticatedAt: Date | null,
+  ): Promise<void> {
+    const [assurance] = await tx.$queryRaw<{ recent: boolean }[]>`
+      SELECT (${strongAuthenticatedAt}::timestamptz IS NOT NULL AND
+        ${strongAuthenticatedAt}::timestamptz >= statement_timestamp() - interval '5 minutes') AS recent`;
+    if (!assurance?.recent)
+      throw new OrganizationFailure("RECENT_AUTHENTICATION_REQUIRED");
+  }
+
+  /** Active memberships other than `excluded` that keep an effective administrator grant. */
+  async #otherActiveAdministrators(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    excluded: string,
+  ): Promise<number> {
+    const [remaining] = await tx.$queryRaw<{ count: number }[]>`
+      SELECT count(DISTINCT m.id)::int AS count FROM memberships m
+      JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
+      WHERE m.company_id = ${companyId}::uuid AND m.status = 'ACTIVE' AND m.id <> ${excluded}::uuid
+        AND g.role = 'COMPANY_ADMINISTRATOR' AND g.scope = 'COMPANY'
+        AND g.revoked_at IS NULL AND g.starts_at <= statement_timestamp()
+        AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())`;
+    return remaining?.count ?? 0;
+  }
+
+  /**
+   * Adds a standard-role grant to a membership. Only the responsible
+   * administrator, recently strongly authenticated, may grant company
+   * administration (P10/P14). An identical effective grant is returned
+   * instead of duplicated.
+   */
+  async addGrant(
+    actor: Actor,
+    companyId: string,
+    memberId: string,
+    input: {
+      role: AccessRole;
+      scope: GrantScopeName;
+      branchIds: string[];
+      expiresAt: Date | null;
+    },
+    strongAuthenticatedAt: Date | null,
+  ): Promise<{ grant: GrantRecord; created: boolean }> {
+    return this.#db.$transaction(async (tx) => {
+      const authority = await this.#lockAuthority(tx, actor, companyId, [
+        memberId,
+      ]);
+      const target = authority.members.get(memberId);
+      if (!target) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      if (target.status === "REMOVED")
+        throw new OrganizationFailure("MEMBERSHIP_REMOVED");
+      if (input.role === "COMPANY_ADMINISTRATOR") {
+        if (authority.responsibleMembershipId !== actor.membershipId)
+          throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
+        await this.#requireRecent(tx, strongAuthenticatedAt);
+      }
+      if (input.expiresAt) {
+        const [future] = await tx.$queryRaw<{ valid: boolean }[]>`
+          SELECT ${input.expiresAt}::timestamptz > statement_timestamp() + interval '1 minute' AS valid`;
+        if (!future?.valid) throw new OrganizationFailure("VALIDATION_FAILED");
+      }
+      if (input.scope === "BRANCHES") {
+        // Unknown, archived and other companies' branches are rejected alike.
+        const branches = await tx.$queryRaw<{ id: string }[]>`
+          SELECT id FROM branches WHERE company_id = ${companyId}::uuid AND status = 'ACTIVE'
+            AND id IN (${Prisma.join(input.branchIds.map((id) => Prisma.sql`${id}::uuid`))})
+          FOR SHARE`;
+        if (branches.length !== input.branchIds.length)
+          throw new OrganizationFailure("VALIDATION_FAILED");
+      }
+      const existing = (await this.#grantsOf(companyId, [memberId], tx))
+        .get(memberId)
+        ?.find(
+          (grant) =>
+            grant.role === input.role &&
+            grant.scope === input.scope &&
+            (grant.expiresAt?.getTime() ?? null) ===
+              (input.expiresAt?.getTime() ?? null) &&
+            grant.branches
+              .map((branch) => branch.id)
+              .sort()
+              .join(",") === input.branchIds.join(","),
+        );
+      if (existing) return { grant: existing, created: false };
+      const grantId = randomUUID();
+      await tx.$executeRaw`
+        INSERT INTO membership_grants (id, company_id, membership_id, role, scope,
+          expires_at, granted_by_membership_id)
+        VALUES (${grantId}::uuid, ${companyId}::uuid, ${memberId}::uuid,
+          ${input.role}::"AccessRole", ${input.scope}::"GrantScope",
+          ${input.expiresAt}::timestamptz, ${actor.membershipId}::uuid)`;
+      for (const branchId of input.branchIds)
+        await tx.$executeRaw`
+          INSERT INTO membership_grant_branches (company_id, grant_id, branch_id)
+          VALUES (${companyId}::uuid, ${grantId}::uuid, ${branchId}::uuid)`;
+      await this.#audit(tx, companyId, actor, {
+        action: "grant.created",
+        targetType: "membership",
+        targetId: memberId,
+        details: {
+          grantId,
+          role: input.role,
+          scope: input.scope,
+          branchCount: input.branchIds.length,
+          expiresAt: input.expiresAt?.toISOString() ?? null,
+        },
+      });
+      const created = (await this.#grantsOf(companyId, [memberId], tx))
+        .get(memberId)
+        ?.find((grant) => grant.id === grantId);
+      if (!created) throw new Error("Created grant is not readable");
+      return { grant: created, created: true };
+    });
+  }
+
+  /**
+   * Revokes a grant. The responsible administrator and the last active
+   * administrator keep company administration; an already revoked or
+   * expired grant is a no-op.
+   */
+  async revokeGrant(
+    actor: Actor,
+    companyId: string,
+    memberId: string,
+    grantId: string,
+  ): Promise<void> {
+    await this.#db.$transaction(async (tx) => {
+      const authority = await this.#lockAuthority(tx, actor, companyId, [
+        memberId,
+      ]);
+      const target = authority.members.get(memberId);
+      if (!target) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      const [grant] = await tx.$queryRaw<
+        { role: AccessRole; scope: GrantScopeName; effective: boolean }[]
+      >`
+        SELECT role::text AS role, scope::text AS scope,
+          (revoked_at IS NULL AND (expires_at IS NULL OR expires_at > statement_timestamp())) AS effective
+        FROM membership_grants
+        WHERE company_id = ${companyId}::uuid AND id = ${grantId}::uuid
+          AND membership_id = ${memberId}::uuid
+        FOR UPDATE`;
+      if (!grant) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      if (!grant.effective) return;
+      if (grant.role === "COMPANY_ADMINISTRATOR") {
+        const [other] = await tx.$queryRaw<{ present: boolean }[]>`
+          SELECT EXISTS (SELECT 1 FROM membership_grants
+            WHERE company_id = ${companyId}::uuid AND membership_id = ${memberId}::uuid
+              AND id <> ${grantId}::uuid AND role = 'COMPANY_ADMINISTRATOR'
+              AND scope = 'COMPANY' AND ${effectiveGrant}) AS present`;
+        if (!other?.present) {
+          if (authority.responsibleMembershipId === memberId)
+            throw new OrganizationFailure(
+              "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
+            );
+          if (
+            target.status === "ACTIVE" &&
+            (await this.#otherActiveAdministrators(tx, companyId, memberId)) ===
+              0
+          )
+            throw new OrganizationFailure("LAST_ADMINISTRATOR_REQUIRED");
+        }
+      }
+      await tx.$executeRaw`
+        UPDATE membership_grants SET revoked_at = statement_timestamp()
+        WHERE company_id = ${companyId}::uuid AND id = ${grantId}::uuid AND revoked_at IS NULL`;
+      await this.#audit(tx, companyId, actor, {
+        action: "grant.revoked",
+        targetType: "membership",
+        targetId: memberId,
+        details: { grantId, role: grant.role, scope: grant.scope },
+      });
+    });
+  }
+
+  /** The pending, unexpired transfer in which the membership takes part, if any. */
+  async currentTransfer(
+    companyId: string,
+    membershipId: string,
+  ): Promise<TransferRecord | null> {
+    const [row] = await this.#db.$queryRaw<
+      {
+        id: string;
+        from_membership_id: string;
+        to_membership_id: string;
+        from_principal_id: string;
+        to_principal_id: string;
+        created_at: Date;
+        expires_at: Date;
+      }[]
+    >`
+      SELECT t.id, t.from_membership_id, t.to_membership_id,
+        f.principal_id AS from_principal_id, s.principal_id AS to_principal_id,
+        t.created_at, t.expires_at
+      FROM responsibility_transfers t
+      JOIN memberships f ON f.company_id = t.company_id AND f.id = t.from_membership_id
+      JOIN memberships s ON s.company_id = t.company_id AND s.id = t.to_membership_id
+      WHERE t.company_id = ${companyId}::uuid AND t.status = 'PENDING'
+        AND t.expires_at > statement_timestamp()
+        AND ${membershipId}::uuid IN (t.from_membership_id, t.to_membership_id)`;
+    return row
+      ? {
+          id: row.id,
+          fromMembershipId: row.from_membership_id,
+          toMembershipId: row.to_membership_id,
+          fromPrincipalId: row.from_principal_id,
+          toPrincipalId: row.to_principal_id,
+          createdAt: row.created_at,
+          expiresAt: row.expires_at,
+        }
+      : null;
+  }
+
+  /**
+   * Proposes handing responsibility to another active administrator. Only
+   * the responsible administrator, recently strongly authenticated, may
+   * propose, and only one proposal per company can be pending.
+   */
+  async requestTransfer(
+    actor: Actor,
+    companyId: string,
+    successorId: string,
+    strongAuthenticatedAt: Date | null,
+  ): Promise<string> {
+    return this.#db.$transaction(async (tx) => {
+      const authority = await this.#lockAuthority(tx, actor, companyId, [
+        successorId,
+      ]);
+      if (authority.responsibleMembershipId !== actor.membershipId)
+        throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
+      await this.#requireRecent(tx, strongAuthenticatedAt);
+      const successor = authority.members.get(successorId);
+      if (!successor) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      if (successorId === actor.membershipId)
+        throw new OrganizationFailure("VALIDATION_FAILED");
+      if (
+        successor.status !== "ACTIVE" ||
+        !authority.administrators.has(successorId)
+      )
+        throw new OrganizationFailure("SUCCESSOR_NOT_ELIGIBLE");
+      await tx.$executeRaw`
+        UPDATE responsibility_transfers SET status = 'EXPIRED', decided_at = statement_timestamp()
+        WHERE company_id = ${companyId}::uuid AND status = 'PENDING'
+          AND expires_at <= statement_timestamp()`;
+      const [pending] = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM responsibility_transfers
+        WHERE company_id = ${companyId}::uuid AND status = 'PENDING'`;
+      if (pending)
+        throw new OrganizationFailure("RESPONSIBILITY_TRANSFER_PENDING");
+      const transferId = randomUUID();
+      await tx.$executeRaw`
+        INSERT INTO responsibility_transfers (id, company_id, from_membership_id,
+          to_membership_id, created_at, expires_at)
+        VALUES (${transferId}::uuid, ${companyId}::uuid, ${actor.membershipId}::uuid,
+          ${successorId}::uuid, statement_timestamp(),
+          statement_timestamp() + make_interval(days => ${responsibilityTransferDays}))`;
+      await this.#audit(tx, companyId, actor, {
+        action: "responsibility.transfer_requested",
+        targetType: "membership",
+        targetId: successorId,
+        details: { transferId },
+      });
+      return transferId;
+    });
+  }
+
+  /** Locks a transfer under the company lock and classifies a stale one. */
+  async #lockPendingTransfer(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    transferId: string,
+    actorMembershipId: string,
+  ): Promise<{ from: string; to: string }> {
+    await tx.$queryRaw`SELECT id FROM companies WHERE id = ${companyId}::uuid FOR UPDATE`;
+    const [transfer] = await tx.$queryRaw<
+      {
+        from_membership_id: string;
+        to_membership_id: string;
+        status: string;
+        expired: boolean;
+      }[]
+    >`
+      SELECT from_membership_id, to_membership_id, status::text AS status,
+        expires_at <= statement_timestamp() AS expired
+      FROM responsibility_transfers
+      WHERE company_id = ${companyId}::uuid AND id = ${transferId}::uuid FOR UPDATE`;
+    // Only the two parties learn that a transfer exists.
+    if (
+      !transfer ||
+      ![transfer.from_membership_id, transfer.to_membership_id].includes(
+        actorMembershipId,
+      )
+    )
+      throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+    // An expired proposal is treated as closed; a new proposal marks it EXPIRED.
+    if (transfer.status !== "PENDING" || transfer.expired)
+      throw new OrganizationFailure("RESPONSIBILITY_TRANSFER_NOT_PENDING");
+    return {
+      from: transfer.from_membership_id,
+      to: transfer.to_membership_id,
+    };
+  }
+
+  /**
+   * The successor accepts responsibility: they must still be an active
+   * administrator, recently strongly authenticated, and the proposer must
+   * still be responsible.
+   */
+  async acceptTransfer(
+    actor: Actor,
+    companyId: string,
+    transferId: string,
+    strongAuthenticatedAt: Date | null,
+  ): Promise<void> {
+    await this.#db.$transaction(async (tx) => {
+      const transfer = await this.#lockPendingTransfer(
+        tx,
+        companyId,
+        transferId,
+        actor.membershipId,
+      );
+      if (transfer.to !== actor.membershipId)
+        throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      const authority = await this.#lockAuthority(tx, actor, companyId, [
+        transfer.from,
+      ]);
+      await this.#requireRecent(tx, strongAuthenticatedAt);
+      if (authority.responsibleMembershipId !== transfer.from)
+        throw new OrganizationFailure("RESPONSIBILITY_TRANSFER_NOT_PENDING");
+      await tx.$executeRaw`
+        UPDATE company_responsibilities
+        SET membership_id = ${actor.membershipId}::uuid, assigned_at = statement_timestamp()
+        WHERE company_id = ${companyId}::uuid AND membership_id = ${transfer.from}::uuid`;
+      await tx.$executeRaw`
+        UPDATE responsibility_transfers SET status = 'ACCEPTED', decided_at = statement_timestamp()
+        WHERE company_id = ${companyId}::uuid AND id = ${transferId}::uuid`;
+      await this.#audit(tx, companyId, actor, {
+        action: "responsibility.transferred",
+        targetType: "membership",
+        targetId: actor.membershipId,
+        details: { transferId, previousMembershipId: transfer.from },
+      });
+    });
+  }
+
+  /** The proposer cancels, or the successor declines, a pending transfer. */
+  async closeTransfer(
+    actor: Actor,
+    companyId: string,
+    transferId: string,
+  ): Promise<void> {
+    await this.#db.$transaction(async (tx) => {
+      const transfer = await this.#lockPendingTransfer(
+        tx,
+        companyId,
+        transferId,
+        actor.membershipId,
+      );
+      const [member] = await tx.$queryRaw<LockedMember[]>`
+        SELECT id, principal_id, status::text AS status, version FROM memberships
+        WHERE company_id = ${companyId}::uuid AND id = ${actor.membershipId}::uuid FOR UPDATE`;
+      if (
+        !member ||
+        member.principal_id !== actor.principalId ||
+        member.status !== "ACTIVE"
+      )
+        throw new OrganizationFailure("RESOURCE_NOT_FOUND");
+      const declined = transfer.to === actor.membershipId;
+      await tx.$executeRaw`
+        UPDATE responsibility_transfers
+        SET status = ${declined ? "DECLINED" : "CANCELLED"}::"ResponsibilityTransferStatus",
+          decided_at = statement_timestamp()
+        WHERE company_id = ${companyId}::uuid AND id = ${transferId}::uuid`;
+      await this.#audit(tx, companyId, actor, {
+        action: declined
+          ? "responsibility.transfer_declined"
+          : "responsibility.transfer_cancelled",
+        targetType: "membership",
+        targetId: transfer.to,
+        details: { transferId },
+      });
+    });
   }
 
   /** Company-first locking is mandatory for every authority-changing writer. */

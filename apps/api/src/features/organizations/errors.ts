@@ -27,8 +27,28 @@ export const organizationErrors = defineErrors({
   RESPONSIBLE_APPROVAL_REQUIRED: {
     status: 403,
     message:
-      "Only the responsible administrator can reactivate an administrator.",
+      "Only the company's responsible administrator can approve this administrator change.",
     category: "authorization",
+    retryable: false,
+  },
+  SUCCESSOR_NOT_ELIGIBLE: {
+    status: 409,
+    message:
+      "Responsibility can only pass to another active company administrator.",
+    category: "conflict",
+    retryable: false,
+  },
+  RESPONSIBILITY_TRANSFER_PENDING: {
+    status: 409,
+    message:
+      "A responsibility transfer is already waiting for acceptance. Cancel it first.",
+    category: "conflict",
+    retryable: false,
+  },
+  RESPONSIBILITY_TRANSFER_NOT_PENDING: {
+    status: 409,
+    message: "This responsibility transfer was already decided or has expired.",
+    category: "conflict",
     retryable: false,
   },
   PERMISSION_DENIED: {

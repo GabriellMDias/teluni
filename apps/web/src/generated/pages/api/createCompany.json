@@ -106,7 +106,7 @@
         "application/json": {
           "schema": {
             "type": "object",
-            "required": ["company", "access"],
+            "required": ["company", "access", "responsibilityTransfer"],
             "properties": {
               "company": {
                 "type": "object",
@@ -208,6 +208,53 @@
                   }
                 },
                 "additionalProperties": false
+              },
+              "responsibilityTransfer": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "direction",
+                      "fromMembershipId",
+                      "toMembershipId",
+                      "counterpartName",
+                      "counterpartEmail",
+                      "createdAt",
+                      "expiresAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "direction": {
+                        "anyOf": [
+                          { "type": "string", "const": "outgoing" },
+                          { "type": "string", "const": "incoming" }
+                        ]
+                      },
+                      "fromMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "toMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "counterpartName": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "counterpartEmail": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "expiresAt": { "type": "string", "format": "date-time" }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
               }
             },
             "additionalProperties": false
@@ -216,7 +263,7 @@
       },
       "schema": {
         "type": "object",
-        "required": ["company", "access"],
+        "required": ["company", "access", "responsibilityTransfer"],
         "properties": {
           "company": {
             "type": "object",
@@ -308,6 +355,53 @@
               }
             },
             "additionalProperties": false
+          },
+          "responsibilityTransfer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id",
+                  "direction",
+                  "fromMembershipId",
+                  "toMembershipId",
+                  "counterpartName",
+                  "counterpartEmail",
+                  "createdAt",
+                  "expiresAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "direction": {
+                    "anyOf": [
+                      { "type": "string", "const": "outgoing" },
+                      { "type": "string", "const": "incoming" }
+                    ]
+                  },
+                  "fromMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "toMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "counterpartName": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "counterpartEmail": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "expiresAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
           }
         },
         "additionalProperties": false
@@ -369,6 +463,11 @@
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
           "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"audit.view\"",
+          "required": true
+        },
+        {
+          "name": "responsibilityTransfer",
+          "type": "object | null",
           "required": true
         }
       ]
@@ -380,7 +479,7 @@
         "application/json": {
           "schema": {
             "type": "object",
-            "required": ["company", "access"],
+            "required": ["company", "access", "responsibilityTransfer"],
             "properties": {
               "company": {
                 "type": "object",
@@ -482,6 +581,53 @@
                   }
                 },
                 "additionalProperties": false
+              },
+              "responsibilityTransfer": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "direction",
+                      "fromMembershipId",
+                      "toMembershipId",
+                      "counterpartName",
+                      "counterpartEmail",
+                      "createdAt",
+                      "expiresAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "direction": {
+                        "anyOf": [
+                          { "type": "string", "const": "outgoing" },
+                          { "type": "string", "const": "incoming" }
+                        ]
+                      },
+                      "fromMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "toMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "counterpartName": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "counterpartEmail": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "expiresAt": { "type": "string", "format": "date-time" }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
               }
             },
             "additionalProperties": false
@@ -490,7 +636,7 @@
       },
       "schema": {
         "type": "object",
-        "required": ["company", "access"],
+        "required": ["company", "access", "responsibilityTransfer"],
         "properties": {
           "company": {
             "type": "object",
@@ -582,6 +728,53 @@
               }
             },
             "additionalProperties": false
+          },
+          "responsibilityTransfer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id",
+                  "direction",
+                  "fromMembershipId",
+                  "toMembershipId",
+                  "counterpartName",
+                  "counterpartEmail",
+                  "createdAt",
+                  "expiresAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "direction": {
+                    "anyOf": [
+                      { "type": "string", "const": "outgoing" },
+                      { "type": "string", "const": "incoming" }
+                    ]
+                  },
+                  "fromMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "toMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "counterpartName": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "counterpartEmail": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "expiresAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
           }
         },
         "additionalProperties": false
@@ -643,6 +836,11 @@
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
           "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"audit.view\"",
+          "required": true
+        },
+        {
+          "name": "responsibilityTransfer",
+          "type": "object | null",
           "required": true
         }
       ]

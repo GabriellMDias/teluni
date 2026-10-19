@@ -4,6 +4,41 @@
   "api": { "title": "Teluni API", "version": "1.0.0" },
   "entries": [
     {
+      "id": "api/acceptResponsibilityTransfer",
+      "kind": "api",
+      "title": "acceptResponsibilityTransfer",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/responsibility-transfers/{transferId}/accept",
+      "method": "POST",
+      "path": "/companies/{companyId}/responsibility-transfers/{transferId}/accept",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/acceptResponsibilityTransfer.json"
+    },
+    {
+      "id": "api/addMemberGrant",
+      "kind": "api",
+      "title": "addMemberGrant",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/members/{membershipId}/grants",
+      "method": "POST",
+      "path": "/companies/{companyId}/members/{membershipId}/grants",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/addMemberGrant.json"
+    },
+    {
       "id": "api/archiveBranch",
       "kind": "api",
       "title": "archiveBranch",
@@ -20,6 +55,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/archiveBranch.json"
+    },
+    {
+      "id": "api/closeResponsibilityTransfer",
+      "kind": "api",
+      "title": "closeResponsibilityTransfer",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/responsibility-transfers/{transferId}/cancel",
+      "method": "POST",
+      "path": "/companies/{companyId}/responsibility-transfers/{transferId}/cancel",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/closeResponsibilityTransfer.json"
     },
     {
       "id": "api/completeLogin",
@@ -297,6 +349,41 @@
       "file": "pages/api/receiveBackchannelLogout.json"
     },
     {
+      "id": "api/requestResponsibilityTransfer",
+      "kind": "api",
+      "title": "requestResponsibilityTransfer",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/responsibility-transfers",
+      "method": "POST",
+      "path": "/companies/{companyId}/responsibility-transfers",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/requestResponsibilityTransfer.json"
+    },
+    {
+      "id": "api/revokeMemberGrant",
+      "kind": "api",
+      "title": "revokeMemberGrant",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/members/{membershipId}/grants/{grantId}/revoke",
+      "method": "POST",
+      "path": "/companies/{companyId}/members/{membershipId}/grants/{grantId}/revoke",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/revokeMemberGrant.json"
+    },
+    {
       "id": "api/startLogin",
       "kind": "api",
       "title": "startLogin",
@@ -510,6 +597,16 @@
       "summary": "Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.",
       "headings": [],
       "file": "pages/database/principals.json"
+    },
+    {
+      "id": "database/responsibility_transfers",
+      "kind": "database",
+      "title": "responsibility_transfers",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A responsible administrator's proposal to hand company responsibility to another active administrator; it takes effect only when that successor accepts.",
+      "headings": [],
+      "file": "pages/database/responsibility_transfers.json"
     },
     {
       "id": "components/ErrorNotice",
@@ -1614,26 +1711,26 @@
   ],
   "search": {
     "shards": [
-      { "file": "search/0000.json", "count": 17, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 14, "kinds": ["api"] },
+      { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0001.json", "count": 17, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 17, "kinds": ["api", "database"] },
       {
-        "file": "search/0002.json",
-        "count": 45,
-        "kinds": ["api", "component", "database", "repository"]
+        "file": "search/0003.json",
+        "count": 68,
+        "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0003.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 147, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 151, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 136, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 89, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 56, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 99, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 95, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 14, "kinds": ["repository"] }
+      { "file": "search/0004.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 173, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 116, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 133, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 88, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 53, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 102, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 85, "kinds": ["repository"] }
     ],
-    "count": 1220
+    "count": 1231
   }
 }

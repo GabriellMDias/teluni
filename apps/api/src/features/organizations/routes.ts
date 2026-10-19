@@ -10,13 +10,19 @@ import {
 import { organizationOperations } from "./contracts.js";
 import {
   OrganizationFailure,
+  type AccessRole,
   type Locale,
   type MembershipStatus,
 } from "./domain.js";
 import { respond } from "./errors.js";
 import type { BranchRecord, CompanyRecord } from "./prisma-repository.js";
-import type { OrganizationService } from "./service.js";
+import type { OrganizationService, TransferView } from "./service.js";
 
+const transferWire = (transfer: TransferView) => ({
+  ...transfer,
+  createdAt: transfer.createdAt.toISOString(),
+  expiresAt: transfer.expiresAt.toISOString(),
+});
 const companyWire = (item: CompanyRecord) => ({
   ...item,
   createdAt: item.createdAt.toISOString(),
@@ -96,6 +102,8 @@ export function registerOrganizationRoutes(
             companyId?: string;
             branchId?: string;
             membershipId?: string;
+            grantId?: string;
+            transferId?: string;
           };
           const body = (request.body ?? {}) as Record<string, unknown>;
           const query = (request.query ?? {}) as {
@@ -113,6 +121,54 @@ export function registerOrganizationRoutes(
                     ...(query.cursor ? { cursor: query.cursor } : {}),
                   }),
                 );
+              case "addMemberGrant": {
+                const added = await service.addGrant(
+                  context,
+                  companyId,
+                  params.membershipId ?? "",
+                  body as {
+                    role: AccessRole;
+                    scope: "COMPANY" | "BRANCHES";
+                    branchIds?: string[];
+                    expiresAt?: string;
+                  },
+                );
+                return reply.code(added.created ? 201 : 200).send(added.grant);
+              }
+              case "revokeMemberGrant":
+                await service.revokeGrant(
+                  context,
+                  companyId,
+                  params.membershipId ?? "",
+                  params.grantId ?? "",
+                );
+                return reply.code(204).send();
+              case "requestResponsibilityTransfer":
+                return reply
+                  .code(201)
+                  .send(
+                    transferWire(
+                      await service.requestResponsibilityTransfer(
+                        context,
+                        companyId,
+                        body.successorMembershipId as string,
+                      ),
+                    ),
+                  );
+              case "acceptResponsibilityTransfer":
+                await service.acceptResponsibilityTransfer(
+                  context,
+                  companyId,
+                  params.transferId ?? "",
+                );
+                return reply.code(204).send();
+              case "closeResponsibilityTransfer":
+                await service.closeResponsibilityTransfer(
+                  context,
+                  companyId,
+                  params.transferId ?? "",
+                );
+                return reply.code(204).send();
               case "updateCompanyMemberStatus":
                 await service.updateMemberStatus(
                   context,
@@ -135,6 +191,9 @@ export function registerOrganizationRoutes(
                 return reply.code(created.replayed ? 200 : 201).send({
                   company: companyWire(created.company),
                   access: created.access,
+                  responsibilityTransfer: created.responsibilityTransfer
+                    ? transferWire(created.responsibilityTransfer)
+                    : null,
                 });
               }
               case "listCompanies": {
@@ -157,6 +216,9 @@ export function registerOrganizationRoutes(
                 return reply.send({
                   company: companyWire(found.company),
                   access: found.access,
+                  responsibilityTransfer: found.responsibilityTransfer
+                    ? transferWire(found.responsibilityTransfer)
+                    : null,
                 });
               }
               case "updateCompany": {

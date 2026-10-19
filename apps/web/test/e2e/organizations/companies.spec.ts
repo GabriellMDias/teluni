@@ -21,10 +21,11 @@ test.afterAll(async () => {
   await stack?.stop();
 });
 
-test("creates a company, verifies in two steps and manages branches, settings and history", async ({
+test("creates a company, verifies in two steps and manages branches, settings, members and responsibility", async ({
   page,
   browser,
 }) => {
+  test.setTimeout(180_000);
   await page.goto(`${stack.webUrl}/companies`);
   await afterNavigation(
     page.getByText("Entre para ver suas empresas."),
@@ -241,15 +242,114 @@ test("creates a company, verifies in two steps and manages branches, settings an
         )
       ).status(),
     ).toBe(404);
+
+    // Responsibility moves only when the proposed administrator accepts it.
+    // Fixture arrangement only: the first person joins the member's company.
+    const { principalId: userPrincipalId } = (await (
+      await page.request.get(`${stack.webUrl}/api/auth/session`)
+    ).json()) as { principalId: string };
+    const userMembershipId = randomUUID();
+    await stack.sql.query(
+      "INSERT INTO memberships (id, company_id, principal_id) VALUES ($1, $2, $3)",
+      [userMembershipId, independentId, userPrincipalId],
+    );
+    await stack.sql.query(
+      "INSERT INTO membership_grants (id, company_id, membership_id, role, scope) VALUES ($1, $2, $3, 'OPERATOR', 'COMPANY')",
+      [randomUUID(), independentId, userMembershipId],
+    );
+    const independentUrl = `${stack.webUrl}/companies/${independentId}`;
+    await memberPage.goto(`${independentUrl}?view=members`);
+    await memberPage
+      .getByRole("link", { name: "Verificar em duas etapas" })
+      .click();
+    await enrollAuthenticator(memberPage);
+    await afterNavigation(memberPage).toHaveURL(
+      `${independentUrl}?view=members`,
+    );
+    const userRow = memberPage
+      .locator(".branch-list > li")
+      .filter({ hasText: stack.user.email });
+    await afterNavigation(userRow).toBeVisible();
+    await userRow.getByRole("button", { name: /^Adicionar papel:/ }).click();
+    await userRow
+      .getByLabel("Papel", { exact: true })
+      .selectOption("COMPANY_ADMINISTRATOR");
+    await expect(
+      userRow.getByText("A administração sempre vale para toda a empresa."),
+    ).toBeVisible();
+    expect(
+      (await new AxeBuilder({ page: memberPage }).analyze()).violations,
+    ).toEqual([]);
+    await userRow.getByRole("button", { name: "Conceder papel" }).click();
+    await expect(
+      userRow.getByRole("button", { name: /^Revogar papel: Administrador/ }),
+    ).toBeVisible();
+    await userRow
+      .getByRole("button", { name: /^Revogar papel: Operador/ })
+      .click();
+    await userRow
+      .getByRole("button", { name: "Confirmar revogação", exact: true })
+      .click();
+    await expect(
+      userRow.getByRole("button", { name: /^Revogar papel: Operador/ }),
+    ).toHaveCount(0);
+    await expect(userRow).toContainText("Ativo · Administrador");
+
+    await userRow
+      .getByRole("button", { name: /^Transferir responsabilidade:/ })
+      .click();
+    await userRow
+      .getByRole("button", { name: "Propor transferência", exact: true })
+      .click();
+    await expect(memberPage.getByRole("status")).toContainText(
+      "aguardando aceite",
+    );
+    await expect(
+      userRow.getByRole("button", { name: /^Transferir responsabilidade:/ }),
+    ).toHaveCount(0);
+
+    await page.goto(independentUrl);
+    await afterNavigation(page.getByRole("status")).toContainText(
+      "propôs transferir para você a responsabilidade",
+    );
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page
+      .getByRole("button", { name: "Aceitar responsabilidade" })
+      .click();
+    await expect(
+      page.getByText(/Seu acesso: Administrador · Responsável pela empresa/),
+    ).toBeVisible();
+    await expect(page.getByRole("status")).toHaveCount(0);
+    await page.getByRole("link", { name: "Histórico de alterações" }).click();
+    await expect(
+      page.getByText("Responsabilidade transferida", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.locator(".audit-list > li").filter({ hasText: "Papel concedido" }),
+    ).toContainText("Papel: Administrador");
+
+    await memberPage.reload();
+    await afterNavigation(userRow).toContainText(
+      "Responsável pela empresa. Transfira",
+    );
+    await expect(
+      userRow.getByRole("button", { name: /^Suspender:/ }),
+    ).toHaveCount(0);
   } finally {
     await memberContext.close();
   }
 
   await page.getByRole("link", { name: "Suas empresas" }).click();
   await expect(
-    page.getByRole("link", { name: "Lanchonete Central Renovada" }),
-  ).toBeVisible();
-  await expect(page.getByText("Administrador")).toBeVisible();
+    page
+      .locator(".organization-list > li")
+      .filter({ hasText: "Lanchonete Central Renovada" }),
+  ).toContainText("Administrador");
+  await expect(
+    page
+      .locator(".organization-list > li")
+      .filter({ hasText: "Empresa independente" }),
+  ).toContainText("Administrador");
 });
 
 test("does not reveal a company the person does not belong to", async ({

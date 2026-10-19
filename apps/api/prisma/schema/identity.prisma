@@ -14,15 +14,15 @@ enum HumanSessionState {
 }
 
 model Principal {
-  id         String          @id @db.Uuid
-  issuer     String          @db.VarChar(512)
-  subject    String          @db.VarChar(255)
-  status     PrincipalStatus @default(ACTIVE)
-  createdAt  DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  disabledAt DateTime?       @map("disabled_at") @db.Timestamptz(3)
-  displayName String?        @map("display_name") @db.VarChar(200)
-  verifiedEmail String?      @map("verified_email") @db.VarChar(320)
-  sessions   HumanSession[]
+  id               String                   @id @db.Uuid
+  issuer           String                   @db.VarChar(512)
+  subject          String                   @db.VarChar(255)
+  status           PrincipalStatus          @default(ACTIVE)
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  disabledAt       DateTime?                @map("disabled_at") @db.Timestamptz(3)
+  displayName      String?                  @map("display_name") @db.VarChar(200)
+  verifiedEmail    String?                  @map("verified_email") @db.VarChar(320)
+  sessions         HumanSession[]
   // Back-relations Prisma requires for downstream modules' references; they
   // grant no access and are never traversed across the module boundary.
   memberships      Membership[]
@@ -61,16 +61,16 @@ model HumanSession {
 }
 
 model OidcLoginAttempt {
-  id         String    @id @db.Uuid
-  handleHash Bytes     @map("handle_hash")
-  state      String    @db.VarChar(128)
-  secrets    Bytes
-  returnTo   String    @map("return_to") @db.VarChar(2048)
-  requestedAssurance String? @map("requested_assurance") @db.VarChar(64)
-  maxAgeSeconds      Int?    @map("max_age_seconds")
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
-  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+  id                 String    @id @db.Uuid
+  handleHash         Bytes     @map("handle_hash")
+  state              String    @db.VarChar(128)
+  secrets            Bytes
+  returnTo           String    @map("return_to") @db.VarChar(2048)
+  requestedAssurance String?   @map("requested_assurance") @db.VarChar(64)
+  maxAgeSeconds      Int?      @map("max_age_seconds")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt          DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt         DateTime? @map("consumed_at") @db.Timestamptz(3)
 
   @@unique([handleHash], map: "oidc_login_attempts_handle_hash_key")
   @@map("oidc_login_attempts")

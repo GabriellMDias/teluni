@@ -42,6 +42,36 @@ const membershipStatus = Type.Union([
   Type.Literal("SUSPENDED"),
   Type.Literal("REMOVED"),
 ]);
+const grantScope = Type.Union([
+  Type.Literal("COMPANY"),
+  Type.Literal("BRANCHES"),
+]);
+export const grantSchema = Type.Object(
+  {
+    id: uuid,
+    role,
+    scope: grantScope,
+    branches: Type.Array(
+      Type.Object({ id: uuid, name }, { additionalProperties: false }),
+    ),
+    startsAt: instant,
+    expiresAt: Type.Union([instant, Type.Null()]),
+  },
+  { additionalProperties: false },
+);
+export const transferSchema = Type.Object(
+  {
+    id: uuid,
+    direction: Type.Union([Type.Literal("outgoing"), Type.Literal("incoming")]),
+    fromMembershipId: uuid,
+    toMembershipId: uuid,
+    counterpartName: Type.Union([Type.String(), Type.Null()]),
+    counterpartEmail: Type.Union([Type.String(), Type.Null()]),
+    createdAt: instant,
+    expiresAt: instant,
+  },
+  { additionalProperties: false },
+);
 const memberPageSchema = Type.Object(
   {
     items: Type.Array(
@@ -53,6 +83,7 @@ const memberPageSchema = Type.Object(
           version,
           responsible: Type.Boolean(),
           roles: Type.Array(role),
+          grants: Type.Array(grantSchema),
           displayName: Type.Union([Type.String(), Type.Null()]),
           email: Type.Union([Type.String(), Type.Null()]),
         },
@@ -89,7 +120,12 @@ export const companySchema = Type.Object(
 );
 
 const companyWithAccessSchema = Type.Object(
-  { company: companySchema, access: accessSchema },
+  {
+    company: companySchema,
+    access: accessSchema,
+    /** The caller's pending responsibility transfer, as proposer or successor. */
+    responsibilityTransfer: Type.Union([transferSchema, Type.Null()]),
+  },
   { additionalProperties: false },
 );
 
@@ -190,7 +226,116 @@ const creationKey = Type.Object({
   }),
 });
 
+const grantParams = Type.Object(
+  { companyId: uuid, membershipId: uuid, grantId: uuid },
+  { additionalProperties: false },
+);
+const transferParams = Type.Object(
+  { companyId: uuid, transferId: uuid },
+  { additionalProperties: false },
+);
+
 export const organizationOperations = [
+  {
+    method: "POST",
+    url: "/companies/:companyId/members/:membershipId/grants",
+    operationId: "addMemberGrant",
+    access: "session",
+    description:
+      "Grant a standard role to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
+    schema: {
+      params: memberParams,
+      body: Type.Object(
+        {
+          role,
+          scope: grantScope,
+          branchIds: Type.Optional(
+            Type.Array(uuid, { minItems: 1, maxItems: 100 }),
+          ),
+          expiresAt: Type.Optional(instant),
+        },
+        { additionalProperties: false },
+      ),
+      response: { 201: grantSchema, 200: grantSchema, ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "MEMBERSHIP_REMOVED",
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+      "RECENT_AUTHENTICATION_REQUIRED",
+    ],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/members/:membershipId/grants/:grantId/revoke",
+    operationId: "revokeMemberGrant",
+    access: "session",
+    description:
+      "Revoke one of a membership's grants; revocation is terminal and an already revoked or expired grant is a no-op. Requires company administration and two-step verification. The responsible administrator and the last active administrator keep company administration.",
+    schema: {
+      params: grantParams,
+      response: { 204: Type.Null(), ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
+      "LAST_ADMINISTRATOR_REQUIRED",
+    ],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/responsibility-transfers",
+    operationId: "requestResponsibilityTransfer",
+    access: "session",
+    description:
+      "Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with strong authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts.",
+    schema: {
+      params: companyParams,
+      body: Type.Object(
+        { successorMembershipId: uuid },
+        { additionalProperties: false },
+      ),
+      response: { 201: transferSchema, ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+      "RECENT_AUTHENTICATION_REQUIRED",
+      "SUCCESSOR_NOT_ELIGIBLE",
+      "RESPONSIBILITY_TRANSFER_PENDING",
+    ],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/responsibility-transfers/:transferId/accept",
+    operationId: "acceptResponsibilityTransfer",
+    access: "session",
+    description:
+      "The proposed successor accepts responsibility. They must still be an active company administrator with strong authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
+    schema: {
+      params: transferParams,
+      response: { 204: Type.Null(), ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "RECENT_AUTHENTICATION_REQUIRED",
+      "SUCCESSOR_NOT_ELIGIBLE",
+      "RESPONSIBILITY_TRANSFER_NOT_PENDING",
+    ],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/responsibility-transfers/:transferId/cancel",
+    operationId: "closeResponsibilityTransfer",
+    access: "session",
+    description:
+      "The proposer cancels, or the successor declines, a pending responsibility transfer. Responsibility does not change.",
+    schema: {
+      params: transferParams,
+      response: { 204: Type.Null(), ...common },
+    },
+    expectedErrors: [...mutation, "RESPONSIBILITY_TRANSFER_NOT_PENDING"],
+  },
   {
     method: "GET",
     url: "/companies/:companyId/members",

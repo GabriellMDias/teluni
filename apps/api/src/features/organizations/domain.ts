@@ -163,7 +163,10 @@ export type OrganizationFailureCode =
   | "RESPONSIBLE_ADMINISTRATOR_PROTECTED"
   | "LAST_ADMINISTRATOR_REQUIRED"
   | "RESPONSIBLE_APPROVAL_REQUIRED"
-  | "RECENT_AUTHENTICATION_REQUIRED";
+  | "RECENT_AUTHENTICATION_REQUIRED"
+  | "SUCCESSOR_NOT_ELIGIBLE"
+  | "RESPONSIBILITY_TRANSFER_PENDING"
+  | "RESPONSIBILITY_TRANSFER_NOT_PENDING";
 
 export class OrganizationFailure extends Error {
   readonly code: OrganizationFailureCode;
@@ -203,4 +206,33 @@ export function isTimeZone(value: string): boolean {
 /** Trims surrounding whitespace; interior text is the user's own. */
 export function normalizeName(value: string): string {
   return value.trim();
+}
+
+/** A pending responsibility transfer can be accepted for seven days. */
+export const responsibilityTransferDays = 7;
+
+export type GrantScopeName = "COMPANY" | "BRANCHES";
+
+/**
+ * Validates the shape of a requested grant: company administration is
+ * always company-wide, and a branch scope names one to 100 distinct branches.
+ */
+export function grantRequest(input: {
+  role: AccessRole;
+  scope: GrantScopeName;
+  branchIds?: readonly string[];
+}): { role: AccessRole; scope: GrantScopeName; branchIds: string[] } {
+  const branchIds = [...new Set(input.branchIds ?? [])].sort();
+  if (input.role === "COMPANY_ADMINISTRATOR" && input.scope !== "COMPANY")
+    throw new OrganizationFailure("VALIDATION_FAILED");
+  if (input.scope === "COMPANY" && branchIds.length > 0)
+    throw new OrganizationFailure("VALIDATION_FAILED");
+  if (
+    input.scope === "BRANCHES" &&
+    (branchIds.length === 0 ||
+      branchIds.length > 100 ||
+      branchIds.length !== (input.branchIds ?? []).length)
+  )
+    throw new OrganizationFailure("VALIDATION_FAILED");
+  return { role: input.role, scope: input.scope, branchIds };
 }

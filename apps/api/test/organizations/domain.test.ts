@@ -3,6 +3,7 @@ import {
   branchReach,
   companyAccess,
   decide,
+  grantRequest,
   isTimeZone,
   OrganizationFailure,
   requireCapability,
@@ -66,6 +67,43 @@ describe("organization access decisions", () => {
     expect(() =>
       requireCapability(access([operator], false, "SUSPENDED"), "company.view"),
     ).toThrow(new OrganizationFailure("COMPANY_SUSPENDED"));
+  });
+
+  it("keeps administration company-wide and branch scopes explicit and distinct", () => {
+    expect(
+      grantRequest({
+        role: "OPERATOR",
+        scope: "BRANCHES",
+        branchIds: ["south", "north"],
+      }),
+    ).toEqual({
+      role: "OPERATOR",
+      scope: "BRANCHES",
+      branchIds: ["north", "south"],
+    });
+    expect(
+      grantRequest({ role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" }),
+    ).toEqual({
+      role: "COMPANY_ADMINISTRATOR",
+      scope: "COMPANY",
+      branchIds: [],
+    });
+    const tooMany = Array.from({ length: 101 }, (_, index) => `b${index}`);
+    for (const input of [
+      {
+        role: "COMPANY_ADMINISTRATOR",
+        scope: "BRANCHES",
+        branchIds: ["north"],
+      },
+      { role: "OPERATOR", scope: "COMPANY", branchIds: ["north"] },
+      { role: "BRANCH_MANAGER", scope: "BRANCHES" },
+      { role: "BRANCH_MANAGER", scope: "BRANCHES", branchIds: [] },
+      { role: "OPERATOR", scope: "BRANCHES", branchIds: ["north", "north"] },
+      { role: "OPERATOR", scope: "BRANCHES", branchIds: tooMany },
+    ] as const)
+      expect(() => grantRequest(input)).toThrow(
+        new OrganizationFailure("VALIDATION_FAILED"),
+      );
   });
 
   it("accepts only IANA time zones known to the runtime", () => {

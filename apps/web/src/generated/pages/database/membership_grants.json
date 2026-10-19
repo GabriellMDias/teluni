@@ -4,7 +4,7 @@
   "description": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
   "owner": "Organizations",
   "classification": "CONFIDENTIAL",
-  "lifecycle": "Effective from starts_at until expires_at or revoked_at; retained after expiry for attribution.",
+  "lifecycle": "Effective from starts_at until expires_at or revoked_at; company administrators revoke grants, never delete them, and expired or revoked grants are retained for attribution.",
   "columns": [
     {
       "Column": "id",
@@ -102,7 +102,7 @@
       "Nullable": "yes",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Instant the grant was revoked.",
+      "Meaning": "Instant a company administrator revoked the grant; revocation is terminal.",
       "Null meaning": "The grant has not been revoked.",
       "Unit": "UTC instant, millisecond precision"
     }

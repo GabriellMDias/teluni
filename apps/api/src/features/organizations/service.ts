@@ -4,6 +4,7 @@ import {
   branchReach,
   companyAccess,
   decide,
+  grantRequest,
   isTimeZone,
   normalizeName,
   OrganizationFailure,
@@ -13,6 +14,7 @@ import {
   type BranchStatus,
   type Capability,
   type CompanyAccess,
+  type GrantScopeName,
   type Locale,
   type MembershipStatus,
 } from "./domain.js";
@@ -20,8 +22,21 @@ import type {
   AuditRecord,
   BranchRecord,
   CompanyRecord,
+  GrantRecord,
   PrismaOrganizationRepository,
 } from "./prisma-repository.js";
+
+/** A pending responsibility transfer as seen by one of its two parties. */
+export type TransferView = Readonly<{
+  id: string;
+  direction: "outgoing" | "incoming";
+  fromMembershipId: string;
+  toMembershipId: string;
+  counterpartName: string | null;
+  counterpartEmail: string | null;
+  createdAt: Date;
+  expiresAt: Date;
+}>;
 
 const capabilities: readonly Capability[] = [
   "company.view",
@@ -107,6 +122,14 @@ function decodeCursor(
   throw new OrganizationFailure("VALIDATION_FAILED");
 }
 
+function grantWire(grant: GrantRecord) {
+  return {
+    ...grant,
+    startsAt: grant.startsAt.toISOString(),
+    expiresAt: grant.expiresAt?.toISOString() ?? null,
+  };
+}
+
 function validName(value: string): string {
   const name = normalizeName(value);
   if (name.length === 0 || name.length > 120)
@@ -161,6 +184,7 @@ export class OrganizationService {
     return {
       items: items.map((member) => ({
         ...member,
+        grants: member.grants.map(grantWire),
         displayName: profiles.get(member.principalId)?.displayName ?? null,
         email: profiles.get(member.principalId)?.email ?? null,
       })),
@@ -193,6 +217,139 @@ export class OrganizationService {
       expectedVersion,
       status,
       context.strongAuthenticatedAt,
+    );
+  }
+
+  async addGrant(
+    context: HumanContext,
+    companyId: string,
+    memberId: string,
+    input: {
+      role: AccessRole;
+      scope: GrantScopeName;
+      branchIds?: string[];
+      expiresAt?: string;
+    },
+  ) {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    const request = grantRequest(input);
+    const expiresAt =
+      input.expiresAt === undefined ? null : new Date(input.expiresAt);
+    if (expiresAt && Number.isNaN(expiresAt.getTime()))
+      throw new OrganizationFailure("VALIDATION_FAILED");
+    const result = await this.#repository.addGrant(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      memberId,
+      { ...request, expiresAt },
+      context.strongAuthenticatedAt,
+    );
+    return { grant: grantWire(result.grant), created: result.created };
+  }
+
+  async revokeGrant(
+    context: HumanContext,
+    companyId: string,
+    memberId: string,
+    grantId: string,
+  ): Promise<void> {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    await this.#repository.revokeGrant(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      memberId,
+      grantId,
+    );
+  }
+
+  /** The caller's pending transfer, with the other party's presentation data. */
+  async transferView(access: CompanyAccess): Promise<TransferView | null> {
+    const transfer = await this.#repository.currentTransfer(
+      access.companyId,
+      access.membershipId,
+    );
+    if (!transfer) return null;
+    const outgoing = transfer.fromMembershipId === access.membershipId;
+    const [profile] = await this.#profiles.getMany([
+      outgoing ? transfer.toPrincipalId : transfer.fromPrincipalId,
+    ]);
+    return {
+      id: transfer.id,
+      direction: outgoing ? "outgoing" : "incoming",
+      fromMembershipId: transfer.fromMembershipId,
+      toMembershipId: transfer.toMembershipId,
+      counterpartName: profile?.displayName ?? null,
+      counterpartEmail: profile?.email ?? null,
+      createdAt: transfer.createdAt,
+      expiresAt: transfer.expiresAt,
+    };
+  }
+
+  async requestResponsibilityTransfer(
+    context: HumanContext,
+    companyId: string,
+    successorMembershipId: string,
+  ): Promise<TransferView> {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    await this.#repository.requestTransfer(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      successorMembershipId,
+      context.strongAuthenticatedAt,
+    );
+    const view = await this.transferView(access);
+    if (!view) throw new Error("Requested transfer is not readable");
+    return view;
+  }
+
+  async acceptResponsibilityTransfer(
+    context: HumanContext,
+    companyId: string,
+    transferId: string,
+  ): Promise<void> {
+    const access = await this.access(context, companyId);
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    // Only a current administrator can become responsible (P10).
+    const decision = decide(access, "members.manage");
+    if (decision === "strong_required")
+      throw new OrganizationFailure("STRONG_AUTHENTICATION_REQUIRED");
+    if (decision === "deny") {
+      const transfer = await this.#repository.currentTransfer(
+        companyId,
+        access.membershipId,
+      );
+      throw new OrganizationFailure(
+        transfer?.id === transferId &&
+          transfer.toMembershipId === access.membershipId
+          ? "SUCCESSOR_NOT_ELIGIBLE"
+          : "RESOURCE_NOT_FOUND",
+      );
+    }
+    await this.#repository.acceptTransfer(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      transferId,
+      context.strongAuthenticatedAt,
+    );
+  }
+
+  /** The proposer cancels, or the successor declines; either needs only membership. */
+  async closeResponsibilityTransfer(
+    context: HumanContext,
+    companyId: string,
+    transferId: string,
+  ): Promise<void> {
+    const access = await this.access(context, companyId);
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    await this.#repository.closeTransfer(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      transferId,
     );
   }
 
@@ -237,6 +394,7 @@ export class OrganizationService {
   ): Promise<{
     company: CompanyRecord;
     access: AccessSummary;
+    responsibilityTransfer: TransferView | null;
     replayed: boolean;
   }> {
     const created = await this.#repository.createCompany({
@@ -247,7 +405,11 @@ export class OrganizationService {
       timeZone: validTimeZone(input.timeZone),
     });
     const access = await this.access(context, created.company.id);
-    return { ...created, access: this.summarize(access) };
+    return {
+      ...created,
+      access: this.summarize(access),
+      responsibilityTransfer: await this.transferView(access),
+    };
   }
 
   async listCompanies(
@@ -288,12 +450,20 @@ export class OrganizationService {
   async getCompany(
     context: HumanContext,
     companyId: string,
-  ): Promise<{ company: CompanyRecord; access: AccessSummary }> {
+  ): Promise<{
+    company: CompanyRecord;
+    access: AccessSummary;
+    responsibilityTransfer: TransferView | null;
+  }> {
     const access = await this.access(context, companyId);
     requireCapability(access, "company.view");
     const company = await this.#repository.findCompany(companyId);
     if (!company) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
-    return { company, access: this.summarize(access) };
+    return {
+      company,
+      access: this.summarize(access),
+      responsibilityTransfer: await this.transferView(access),
+    };
   }
 
   async updateCompany(

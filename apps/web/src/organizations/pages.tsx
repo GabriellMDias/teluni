@@ -28,7 +28,8 @@ import {
   type Company,
 } from "./api.js";
 import { organizationMessages, timeZoneChoices } from "./messages.js";
-import { CompanyMembers } from "./members.js";
+import { CompanyMembers, formatInstant } from "./members.js";
+import { ResponsibilityTransferNotice } from "./responsibility.js";
 
 export function useOrganizationMessages() {
   const locale = useMemo(browserLocale, []);
@@ -674,6 +675,13 @@ function CompanyHistory({
                 <strong>
                   {typeof action === "string" ? action : t.historyUnknown}
                 </strong>
+                {typeof event.details.role === "string" &&
+                  Object.hasOwn(t.roles, event.details.role) && (
+                    <span>
+                      {t.historyRole}:{" "}
+                      {t.roles[event.details.role as keyof typeof t.roles]}
+                    </span>
+                  )}
                 {event.targetType === "branch" &&
                   typeof event.details.branchName === "string" && (
                     <span>
@@ -682,10 +690,7 @@ function CompanyHistory({
                   )}
                 <span className="hint">
                   <time dateTime={event.occurredAt}>
-                    {new Intl.DateTimeFormat(locale, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(event.occurredAt))}
+                    {formatInstant(locale, event.occurredAt)}
                   </time>
                   {` · ${event.actorPrincipalId === principalId ? t.historyYou : t.historyMember}`}
                 </span>
@@ -774,7 +779,7 @@ export function CompanyPage({
         <Link to="/companies">{t.backToCompanies}</Link>
       </section>
     );
-  const { access } = company.data;
+  const { access, responsibilityTransfer: transfer } = company.data;
   const needsStepUp = access.capabilitiesAfterStrongAuthentication.length > 0;
   const canView = access.capabilities.includes("branches.view");
   return (
@@ -792,6 +797,16 @@ export function CompanyPage({
         {access.responsible ? ` · ${t.responsible}` : ""}
       </p>
       {needsStepUp && <StepUpPrompt returnTo={returnTo} />}
+      {transfer && (
+        <ResponsibilityTransferNotice
+          key={transfer.id}
+          companyId={companyId}
+          transfer={transfer}
+          returnTo={returnTo}
+          locale={locale}
+          t={t}
+        />
+      )}
       <nav
         className="company-navigation"
         aria-label={company.data.company.displayName}
@@ -842,8 +857,11 @@ export function CompanyPage({
           <CompanyMembers
             companyId={companyId}
             principalId={session.data.principalId}
+            viewerResponsible={access.responsible}
+            transferPending={Boolean(transfer)}
             cursor={cursor}
             returnTo={returnTo}
+            locale={locale}
             t={t}
           />
         ) : (

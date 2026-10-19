@@ -4,7 +4,7 @@
   "description": "The company's designated responsible administrator, who approves additional administrators (P10).",
   "owner": "Organizations",
   "classification": "CONFIDENTIAL",
-  "lifecycle": "Created with the company; transfer is a later attributable operation.",
+  "lifecycle": "Created with the company; moves to another active administrator only when that successor accepts a pending responsibility transfer.",
   "columns": [
     {
       "Column": "company_id",

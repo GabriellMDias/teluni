@@ -1,69 +1,330 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
 import { loginHref } from "../identity/api.js";
+import type { Locale } from "../locale.js";
 import {
-  auditKey,
-  companiesKey,
-  companyKey,
+  addMemberGrant,
+  branchesKey,
   describe,
+  invalidateCompany,
+  listBranchChoices,
   listMembers,
   membersKey,
+  requestResponsibilityTransfer,
+  revokeMemberGrant,
   updateMemberStatus,
+  type Grant,
   type Member,
+  type Role,
 } from "./api.js";
 import type { OrganizationMessages } from "./messages.js";
+
+/** Failure of a write, with the re-authentication its code asks for. */
+export function WriteFailure({
+  error,
+  returnTo,
+  t,
+  busy,
+  onReload,
+}: {
+  error: unknown;
+  returnTo: string;
+  t: OrganizationMessages;
+  busy?: boolean;
+  onReload?: () => void;
+}) {
+  const code = error instanceof ApiFailure ? error.code : undefined;
+  return (
+    <div role="alert" className="notice notice-error">
+      {describe(error, t, "write")}
+      {code === "RECENT_AUTHENTICATION_REQUIRED" && (
+        <a
+          className="button-link button-primary"
+          href={loginHref(returnTo, "recent")}
+        >
+          {t.memberReauthenticate}
+        </a>
+      )}
+      {code === "STRONG_AUTHENTICATION_REQUIRED" && (
+        <a
+          className="button-link button-primary"
+          href={loginHref(returnTo, "strong")}
+        >
+          {t.stepUpButton}
+        </a>
+      )}
+      {onReload && (
+        <button type="button" disabled={busy} onClick={onReload}>
+          {t.reload}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function formatInstant(locale: Locale, value: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+const grantableRoles: readonly Role[] = [
+  "OPERATOR",
+  "BRANCH_MANAGER",
+  "COMPANY_ADMINISTRATOR",
+];
+
+function GrantForm({
+  companyId,
+  member,
+  label,
+  viewerResponsible,
+  returnTo,
+  t,
+  onClose,
+}: {
+  companyId: string;
+  member: Member;
+  label: string;
+  viewerResponsible: boolean;
+  returnTo: string;
+  t: OrganizationMessages;
+  onClose: () => void;
+}) {
+  const client = useQueryClient();
+  const [role, setRole] = useState<Role>("OPERATOR");
+  const [scope, setScope] = useState<"COMPANY" | "BRANCHES">("COMPANY");
+  const [branchIds, setBranchIds] = useState<readonly string[]>([]);
+  const [expiresAt, setExpiresAt] = useState("");
+  const companyWide = role === "COMPANY_ADMINISTRATOR";
+  const effectiveScope = companyWide ? "COMPANY" : scope;
+  const choices = useQuery({
+    queryKey: [...branchesKey(companyId), "choices"],
+    queryFn: () => listBranchChoices(companyId),
+    enabled: effectiveScope === "BRANCHES",
+  });
+  // Granting is idempotent for an identical grant, so a retry after an
+  // unknown outcome cannot duplicate it.
+  const grant = useMutation({
+    mutationFn: () =>
+      addMemberGrant(companyId, member.id, {
+        role,
+        scope: effectiveScope,
+        ...(effectiveScope === "BRANCHES" ? { branchIds: [...branchIds] } : {}),
+        ...(expiresAt ? { expiresAt: new Date(expiresAt).toISOString() } : {}),
+      }),
+    onSuccess: async () => {
+      onClose();
+      await invalidateCompany(client, companyId);
+    },
+  });
+  const id = (name: string) => `grant-${name}-${member.id}`;
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    grant.mutate();
+  }
+  return (
+    <form
+      className="form-stack grant-form"
+      aria-label={`${t.grantAdd}: ${label}`}
+      onSubmit={submit}
+    >
+      <label htmlFor={id("role")}>{t.grantRole}</label>
+      <select
+        id={id("role")}
+        value={role}
+        onChange={(event) => setRole(event.target.value as Role)}
+      >
+        {grantableRoles
+          .filter(
+            (choice) => viewerResponsible || choice !== "COMPANY_ADMINISTRATOR",
+          )
+          .map((choice) => (
+            <option key={choice} value={choice}>
+              {t.roles[choice]}
+            </option>
+          ))}
+      </select>
+      {!viewerResponsible && <p className="hint">{t.grantResponsibleOnly}</p>}
+      {companyWide ? (
+        <p className="hint">{t.grantAdministratorCompanyWide}</p>
+      ) : (
+        <fieldset>
+          <legend>{t.grantScope}</legend>
+          {(["COMPANY", "BRANCHES"] as const).map((choice) => (
+            <label key={choice} className="choice">
+              <input
+                type="radio"
+                name={id("scope")}
+                value={choice}
+                checked={scope === choice}
+                onChange={() => setScope(choice)}
+              />
+              {choice === "COMPANY"
+                ? t.grantScopeCompany
+                : t.grantScopeBranches}
+            </label>
+          ))}
+        </fieldset>
+      )}
+      {effectiveScope === "BRANCHES" && (
+        <fieldset>
+          <legend>{t.grantBranches}</legend>
+          {choices.isPending ? (
+            <p>{t.loading}</p>
+          ) : choices.isError ? (
+            <div role="alert" className="notice notice-error">
+              {describe(choices.error, t, "read")}
+              <button type="button" onClick={() => void choices.refetch()}>
+                {t.reload}
+              </button>
+            </div>
+          ) : choices.data.items.length === 0 ? (
+            <p className="hint">{t.grantNoBranches}</p>
+          ) : (
+            choices.data.items.map((branch) => (
+              <label key={branch.id} className="choice">
+                <input
+                  type="checkbox"
+                  checked={branchIds.includes(branch.id)}
+                  onChange={(event) =>
+                    setBranchIds((current) =>
+                      event.target.checked
+                        ? [...current, branch.id]
+                        : current.filter((value) => value !== branch.id),
+                    )
+                  }
+                />
+                {branch.name}
+              </label>
+            ))
+          )}
+          {choices.data?.truncated && (
+            <p className="hint">{t.grantBranchesTruncated}</p>
+          )}
+        </fieldset>
+      )}
+      <label htmlFor={id("expiry")}>{t.grantExpiry}</label>
+      <input
+        id={id("expiry")}
+        type="datetime-local"
+        aria-describedby={id("expiry-hint")}
+        value={expiresAt}
+        onChange={(event) => setExpiresAt(event.target.value)}
+      />
+      <p id={id("expiry-hint")} className="hint">
+        {t.grantExpiryHint}
+      </p>
+      {grant.error && (
+        <WriteFailure error={grant.error} returnTo={returnTo} t={t} />
+      )}
+      <div className="action-group">
+        <button
+          type="submit"
+          className="button-primary"
+          disabled={
+            grant.isPending ||
+            (effectiveScope === "BRANCHES" && branchIds.length === 0)
+          }
+        >
+          {grant.isPending ? t.saving : t.grantSubmit}
+        </button>
+        <button type="button" disabled={grant.isPending} onClick={onClose}>
+          {t.cancel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+type Intent =
+  | { kind: "status"; status: Member["status"]; expectedVersion: number }
+  | { kind: "revoke"; grant: Grant }
+  | { kind: "grant" }
+  | { kind: "transfer" };
 
 function MemberRow({
   companyId,
   member,
   principalId,
+  viewerResponsible,
+  transferPending,
   returnTo,
+  locale,
   t,
 }: {
   companyId: string;
   member: Member;
   principalId: string;
+  viewerResponsible: boolean;
+  transferPending: boolean;
   returnTo: string;
+  locale: Locale;
   t: OrganizationMessages;
 }) {
   const client = useQueryClient();
-  // The confirmation keeps its observed version, even across list refetches.
-  const [intent, setIntent] = useState<{
-    status: Member["status"];
-    expectedVersion: number;
-  } | null>(null);
-  const refresh = () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey: membersKey(companyId) }),
-      client.invalidateQueries({ queryKey: companyKey(companyId) }),
-      client.invalidateQueries({ queryKey: companiesKey }),
-      client.invalidateQueries({ queryKey: auditKey(companyId) }),
-    ]);
-  const change = useMutation({
-    mutationFn: (input: NonNullable<typeof intent>) =>
-      updateMemberStatus(companyId, member.id, input),
+  // A status confirmation keeps its observed version, even across refetches.
+  const [intent, setIntent] = useState<Intent | null>(null);
+  const refresh = () => invalidateCompany(client, companyId);
+  const write = useMutation({
+    mutationFn: async (target: Intent) => {
+      if (target.kind === "status")
+        await updateMemberStatus(companyId, member.id, {
+          status: target.status,
+          expectedVersion: target.expectedVersion,
+        });
+      else if (target.kind === "revoke")
+        await revokeMemberGrant(companyId, member.id, target.grant.id);
+      else if (target.kind === "transfer")
+        await requestResponsibilityTransfer(companyId, member.id);
+    },
     onSuccess: async () => {
       setIntent(null);
       await refresh();
     },
   });
+  // Only a versioned status change can be stale; revocation is idempotent and
+  // a repeated proposal is answered as already pending.
   const mustReload =
-    Boolean(change.error) &&
-    (!(change.error instanceof ApiFailure) ||
-      change.error.status >= 500 ||
-      change.error.code === "RESOURCE_VERSION_CONFLICT");
+    intent?.kind === "status" &&
+    Boolean(write.error) &&
+    (!(write.error instanceof ApiFailure) ||
+      write.error.status >= 500 ||
+      write.error.code === "RESOURCE_VERSION_CONFLICT");
   const label = member.displayName ?? member.email ?? t.memberUnknown;
-  const begin = (status: Member["status"]) => {
-    change.reset();
-    setIntent({ status, expectedVersion: member.version });
+  const removed = member.status === "REMOVED";
+  const administratorGrants = member.grants.filter(
+    (grant) => grant.role === "COMPANY_ADMINISTRATOR",
+  ).length;
+  const begin = (next: Intent) => {
+    write.reset();
+    setIntent(next);
   };
   async function reload() {
     await refresh();
     setIntent(null);
-    change.reset();
+    write.reset();
   }
+  const canTransfer =
+    viewerResponsible &&
+    !transferPending &&
+    member.status === "ACTIVE" &&
+    member.principalId !== principalId &&
+    member.roles.includes("COMPANY_ADMINISTRATOR");
+  const confirmation =
+    intent?.kind === "status"
+      ? {
+          text: t.memberConfirmations[intent.status],
+          action: t.memberConfirm,
+        }
+      : intent?.kind === "revoke"
+        ? { text: t.grantRevokeConfirmation, action: t.grantRevokeConfirm }
+        : intent?.kind === "transfer"
+          ? { text: t.transferConfirmation, action: t.transferConfirm }
+          : null;
   return (
     <li className="branch-item">
       <div>
@@ -83,30 +344,68 @@ function MemberRow({
         {member.roles.map((role) => t.roles[role]).join(", ") ||
           t.memberNoRoles}
       </span>
-      {member.responsible ? (
+      {member.grants.length > 0 && (
+        <ul className="grant-list" aria-label={`${t.grantsOf} ${label}`}>
+          {member.grants.map((grant) => (
+            <li key={grant.id}>
+              <span>
+                <strong>{t.roles[grant.role]}</strong>
+                {" · "}
+                {grant.scope === "COMPANY"
+                  ? t.grantCompanyWide
+                  : `${t.grantBranches}: ${grant.branches.map((branch) => branch.name).join(", ")}`}
+                {grant.expiresAt &&
+                  ` · ${t.grantUntil} ${formatInstant(locale, grant.expiresAt)}`}
+              </span>
+              {!removed &&
+                !intent &&
+                !(
+                  member.responsible &&
+                  grant.role === "COMPANY_ADMINISTRATOR" &&
+                  administratorGrants <= 1
+                ) && (
+                  <button
+                    type="button"
+                    aria-label={`${t.grantRevoke}: ${t.roles[grant.role]} · ${label}`}
+                    onClick={() => begin({ kind: "revoke", grant })}
+                  >
+                    {t.grantRevoke}
+                  </button>
+                )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {member.responsible && (
         <p className="hint">{t.memberResponsibleProtected}</p>
-      ) : intent ? (
+      )}
+      {intent?.kind === "grant" ? (
+        <GrantForm
+          {...{ companyId, member, label, viewerResponsible, returnTo, t }}
+          onClose={() => setIntent(null)}
+        />
+      ) : intent && confirmation ? (
         <form
           className="form-stack"
-          aria-label={`${t.memberConfirm}: ${label}`}
+          aria-label={`${confirmation.action}: ${label}`}
           onSubmit={(event) => {
             event.preventDefault();
-            if (!mustReload) change.mutate(intent);
+            if (!mustReload) write.mutate(intent);
           }}
         >
-          <p>{t.memberConfirmations[intent.status]}</p>
+          <p>{confirmation.text}</p>
           <div className="action-group">
-            <button type="submit" disabled={change.isPending || mustReload}>
-              {change.isPending ? t.saving : t.memberConfirm}
+            <button type="submit" disabled={write.isPending || mustReload}>
+              {write.isPending ? t.saving : confirmation.action}
             </button>
             <button
               type="button"
-              disabled={change.isPending}
+              disabled={write.isPending}
               onClick={() => {
                 if (mustReload) void reload();
                 else {
                   setIntent(null);
-                  change.reset();
+                  write.reset();
                 }
               }}
             >
@@ -115,45 +414,59 @@ function MemberRow({
           </div>
         </form>
       ) : (
-        member.status !== "REMOVED" && (
+        !removed && (
           <div className="action-group">
-            <button
-              type="button"
-              onClick={() =>
-                begin(member.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE")
-              }
-            >
-              {member.status === "ACTIVE"
-                ? t.memberSuspend
-                : t.memberReactivate}
-              : {label}
-            </button>
-            <button type="button" onClick={() => begin("REMOVED")}>
-              {t.memberRemove}: {label}
-            </button>
+            {!member.responsible && (
+              <>
+                <button
+                  type="button"
+                  onClick={() =>
+                    begin({
+                      kind: "status",
+                      status:
+                        member.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE",
+                      expectedVersion: member.version,
+                    })
+                  }
+                >
+                  {member.status === "ACTIVE"
+                    ? t.memberSuspend
+                    : t.memberReactivate}
+                  : {label}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    begin({
+                      kind: "status",
+                      status: "REMOVED",
+                      expectedVersion: member.version,
+                    })
+                  }
+                >
+                  {t.memberRemove}: {label}
+                </button>
+                <button type="button" onClick={() => begin({ kind: "grant" })}>
+                  {t.grantAdd}: {label}
+                </button>
+              </>
+            )}
+            {canTransfer && (
+              <button type="button" onClick={() => begin({ kind: "transfer" })}>
+                {t.transferPropose}: {label}
+              </button>
+            )}
           </div>
         )
       )}
-      {change.error && (
-        <div role="alert" className="notice notice-error">
-          {describe(change.error, t, "write")}
-          {change.error instanceof ApiFailure &&
-            change.error.code === "RECENT_AUTHENTICATION_REQUIRED" && (
-              <a
-                className="button-link button-primary"
-                href={loginHref(returnTo, "recent")}
-              >
-                {t.memberReauthenticate}
-              </a>
-            )}
-          <button
-            type="button"
-            disabled={change.isPending}
-            onClick={() => void reload()}
-          >
-            {t.reload}
-          </button>
-        </div>
+      {write.error && (
+        <WriteFailure
+          error={write.error}
+          returnTo={returnTo}
+          t={t}
+          busy={write.isPending}
+          onReload={() => void reload()}
+        />
       )}
     </li>
   );
@@ -162,14 +475,20 @@ function MemberRow({
 export function CompanyMembers({
   companyId,
   principalId,
+  viewerResponsible,
+  transferPending,
   cursor,
   returnTo,
+  locale,
   t,
 }: {
   companyId: string;
   principalId: string;
+  viewerResponsible: boolean;
+  transferPending: boolean;
   cursor?: string;
   returnTo: string;
+  locale: Locale;
   t: OrganizationMessages;
 }) {
   const members = useQuery({
@@ -196,7 +515,16 @@ export function CompanyMembers({
           {members.data.items.map((member) => (
             <MemberRow
               key={member.id}
-              {...{ companyId, principalId, member, returnTo, t }}
+              {...{
+                companyId,
+                principalId,
+                member,
+                viewerResponsible,
+                transferPending,
+                returnTo,
+                locale,
+                t,
+              }}
             />
           ))}
         </ul>

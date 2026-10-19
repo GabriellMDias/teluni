@@ -19,7 +19,10 @@
 | `MEMBERSHIP_REMOVED` | 409 | conflict | no | This membership was removed and cannot be reactivated. |
 | `RESPONSIBLE_ADMINISTRATOR_PROTECTED` | 409 | conflict | no | Transfer responsibility before suspending or removing the responsible administrator. |
 | `LAST_ADMINISTRATOR_REQUIRED` | 409 | conflict | no | The company must retain an active administrator. |
-| `RESPONSIBLE_APPROVAL_REQUIRED` | 403 | authorization | no | Only the responsible administrator can reactivate an administrator. |
+| `RESPONSIBLE_APPROVAL_REQUIRED` | 403 | authorization | no | Only the company's responsible administrator can approve this administrator change. |
+| `SUCCESSOR_NOT_ELIGIBLE` | 409 | conflict | no | Responsibility can only pass to another active company administrator. |
+| `RESPONSIBILITY_TRANSFER_PENDING` | 409 | conflict | no | A responsibility transfer is already waiting for acceptance. Cancel it first. |
+| `RESPONSIBILITY_TRANSFER_NOT_PENDING` | 409 | conflict | no | This responsibility transfer was already decided or has expired. |
 | `PERMISSION_DENIED` | 403 | authorization | no | You do not have permission to perform this action. |
 | `COMPANY_SUSPENDED` | 403 | authorization | no | This company is suspended. Contact Teluni support. |
 | `RESOURCE_VERSION_CONFLICT` | 409 | conflict | no | The resource changed; reload it before trying again. |

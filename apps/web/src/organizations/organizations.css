@@ -77,3 +77,49 @@
   display: block;
   margin-top: 0.25rem;
 }
+.notice-info {
+  color: #1d3d5c;
+  background: #eef5fb;
+  border: 1px solid #b8d0e6;
+}
+.notice-info p {
+  margin: 0;
+}
+.grant-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.grant-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+.grant-form fieldset {
+  border: 1px solid #d7e0e7;
+  border-radius: 7px;
+  padding: 0.6rem 0.8rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.grant-form legend {
+  font-size: 0.88rem;
+  font-weight: 650;
+  padding: 0 0.3rem;
+}
+.grant-form .choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+.grant-form .choice input {
+  width: auto;
+}

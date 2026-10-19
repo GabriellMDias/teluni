@@ -69,6 +69,7 @@
                     "version",
                     "responsible",
                     "roles",
+                    "grants",
                     "displayName",
                     "email"
                   ],
@@ -101,6 +102,73 @@
                           { "type": "string", "const": "BRANCH_MANAGER" },
                           { "type": "string", "const": "OPERATOR" }
                         ]
+                      }
+                    },
+                    "grants": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "role",
+                          "scope",
+                          "branches",
+                          "startsAt",
+                          "expiresAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "role": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "COMPANY_ADMINISTRATOR"
+                              },
+                              { "type": "string", "const": "BRANCH_MANAGER" },
+                              { "type": "string", "const": "OPERATOR" }
+                            ]
+                          },
+                          "scope": {
+                            "anyOf": [
+                              { "type": "string", "const": "COMPANY" },
+                              { "type": "string", "const": "BRANCHES" }
+                            ]
+                          },
+                          "branches": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": ["id", "name"],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120,
+                                  "pattern": ".*\\S.*"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "expiresAt": {
+                            "anyOf": [
+                              { "type": "string", "format": "date-time" },
+                              { "type": "null" }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     },
                     "displayName": {
@@ -136,6 +204,7 @@
                 "version",
                 "responsible",
                 "roles",
+                "grants",
                 "displayName",
                 "email"
               ],
@@ -165,6 +234,70 @@
                       { "type": "string", "const": "BRANCH_MANAGER" },
                       { "type": "string", "const": "OPERATOR" }
                     ]
+                  }
+                },
+                "grants": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "role",
+                      "scope",
+                      "branches",
+                      "startsAt",
+                      "expiresAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "role": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "COMPANY_ADMINISTRATOR"
+                          },
+                          { "type": "string", "const": "BRANCH_MANAGER" },
+                          { "type": "string", "const": "OPERATOR" }
+                        ]
+                      },
+                      "scope": {
+                        "anyOf": [
+                          { "type": "string", "const": "COMPANY" },
+                          { "type": "string", "const": "BRANCHES" }
+                        ]
+                      },
+                      "branches": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["id", "name"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "pattern": ".*\\S.*"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "startsAt": { "type": "string", "format": "date-time" },
+                      "expiresAt": {
+                        "anyOf": [
+                          { "type": "string", "format": "date-time" },
+                          { "type": "null" }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 },
                 "displayName": {
@@ -205,6 +338,51 @@
         {
           "name": "items[].roles",
           "type": "array of \"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "required": true
+        },
+        {
+          "name": "items[].grants",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].role",
+          "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].scope",
+          "type": "\"COMPANY\" | \"BRANCHES\"",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].branches",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].branches[].id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].branches[].name",
+          "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].startsAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].expiresAt",
+          "type": "string (date-time) | null",
           "required": true
         },
         {

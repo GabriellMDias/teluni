@@ -237,7 +237,7 @@ The company's designated responsible administrator, who approves additional admi
 
 Owner: Organizations. Classification: CONFIDENTIAL.
 
-Lifecycle: Created with the company; transfer is a later attributable operation.
+Lifecycle: Created with the company; moves to another active administrator only when that successor accepts a pending responsibility transfer.
 
 | Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -260,7 +260,7 @@ A standard role granted to a membership over the whole company or explicit branc
 
 Owner: Organizations. Classification: CONFIDENTIAL.
 
-Lifecycle: Effective from starts_at until expires_at or revoked_at; retained after expiry for attribution.
+Lifecycle: Effective from starts_at until expires_at or revoked_at; company administrators revoke grants, never delete them, and expired or revoked grants are retained for attribution.
 
 | Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -273,7 +273,7 @@ Lifecycle: Effective from starts_at until expires_at or revoked_at; retained aft
 | `expires_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant a temporary grant stops being effective; no automatic renewal. | The grant does not expire. | UTC instant, millisecond precision |
 | `granted_by_membership_id` | `uuid` | yes | — | INTERNAL | Membership that granted it, for attribution. | Granted by company creation. | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
-| `revoked_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the grant was revoked. | The grant has not been revoked. | UTC instant, millisecond precision |
+| `revoked_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant a company administrator revoked the grant; revocation is terminal. | The grant has not been revoked. | UTC instant, millisecond precision |
 
 ### Constraints and indexes
 
@@ -346,6 +346,40 @@ Lifecycle: Never updated or deleted by the runtime; retention follows PH-13.
 | `organization_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX organization_audit_events_company_id_id_key ON public.organization_audit_events USING btree (company_id, id)` | Tenant key for future references to events. |
 | `organization_audit_events_company_time_idx` | `CREATE INDEX organization_audit_events_company_time_idx ON public.organization_audit_events USING btree (company_id, occurred_at DESC, id DESC)` | Supports company-scoped newest-first audit pagination. |
 
+## responsibility_transfers
+
+A responsible administrator's proposal to hand company responsibility to another active administrator; it takes effect only when that successor accepts.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Created PENDING; becomes ACCEPTED, DECLINED by the successor, CANCELLED by the proposer, or EXPIRED after seven days. Retained for attribution; no runtime deletion.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated transfer UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company whose responsibility would move; immutable (tenant key). | — | — |
+| `from_membership_id` | `uuid` | no | — | INTERNAL | Membership of the responsible administrator who proposed the transfer. | — | — |
+| `to_membership_id` | `uuid` | no | — | INTERNAL | Membership of the proposed successor, who must still be an active company administrator when accepting. | — | — |
+| `status` | `"ResponsibilityTransferStatus"` | no | `'PENDING'::"ResponsibilityTransferStatus"` | INTERNAL | PENDING until the successor accepts or declines, the proposer cancels, or the proposal expires. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the proposal. | — | UTC instant, millisecond precision |
+| `expires_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Instant after which the pending proposal can no longer be accepted. | — | UTC instant, millisecond precision |
+| `decided_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant the proposal stopped being pending. | The proposal is still pending. | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `responsibility_transfers_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A transfer belongs to an existing company. |
+| `responsibility_transfers_company_id_from_membership_id_fkey` | `FOREIGN KEY (company_id, from_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The proposer is a membership of the same company. |
+| `responsibility_transfers_company_id_to_membership_id_fkey` | `FOREIGN KEY (company_id, to_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The successor is a membership of the same company. |
+| `responsibility_transfers_decision_state` | `CHECK (((status = 'PENDING'::"ResponsibilityTransferStatus") = (decided_at IS NULL)))` | A decision instant exists exactly for proposals that are no longer pending. |
+| `responsibility_transfers_distinct_parties` | `CHECK ((from_membership_id <> to_membership_id))` | A responsible administrator cannot propose themselves. |
+| `responsibility_transfers_expiry_after_creation` | `CHECK ((expires_at > created_at))` | A proposal expires after it was made. |
+| `responsibility_transfers_pkey` | `PRIMARY KEY (id)` | Unique transfer identity. |
+| `responsibility_transfers_company_id_id_key` | `CREATE UNIQUE INDEX responsibility_transfers_company_id_id_key ON public.responsibility_transfers USING btree (company_id, id)` | Tenant key for future references to transfers. |
+| `responsibility_transfers_one_pending` | `CREATE UNIQUE INDEX responsibility_transfers_one_pending ON public.responsibility_transfers USING btree (company_id) WHERE (status = 'PENDING'::"ResponsibilityTransferStatus")` | At most one pending transfer per company, including racing proposals. |
+| `responsibility_transfers_successor_idx` | `CREATE INDEX responsibility_transfers_successor_idx ON public.responsibility_transfers USING btree (company_id, to_membership_id)` | Supports finding the proposals addressed to a successor. |
+
 ## Database enums
 
 | Enum | Values | Meaning |
@@ -357,3 +391,4 @@ Lifecycle: Never updated or deleted by the runtime; retention follows PH-13.
 | `HumanSessionState` | PENDING_LIMIT, ACTIVE, REVOKED | Server-managed session state: PENDING_LIMIT, ACTIVE or REVOKED. |
 | `MembershipStatus` | ACTIVE, SUSPENDED, REMOVED | Membership state: ACTIVE, SUSPENDED or REMOVED. |
 | `PrincipalStatus` | ACTIVE, DISABLED | Global principal state: ACTIVE or DISABLED. |
+| `ResponsibilityTransferStatus` | PENDING, ACCEPTED, DECLINED, CANCELLED, EXPIRED | Responsibility transfer state: PENDING, ACCEPTED, DECLINED, CANCELLED or EXPIRED. |

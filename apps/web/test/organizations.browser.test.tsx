@@ -10,6 +10,7 @@ import { sessionKey } from "../src/identity/api.js";
 import { browserLocale } from "../src/locale.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
+import { formatInstant } from "../src/organizations/members.js";
 import { organizationMessages } from "../src/organizations/messages.js";
 import {
   branchesKey,
@@ -19,7 +20,8 @@ import {
 
 const companyId = "00000000-0000-4000-8000-000000000001";
 const companyPath = `/companies/${companyId}`;
-const t = organizationMessages[browserLocale()];
+const locale = browserLocale();
+const t = organizationMessages[locale];
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -392,6 +394,7 @@ test("paginates localized history and resets the cursor when changing views", as
                 targetType: "branch",
                 details: {
                   branchName: "Historic branch",
+                  role: "__proto__",
                   fields: ["displayName", "__proto__", { untrusted: true }],
                 },
               },
@@ -492,6 +495,14 @@ const memberPage = (status = "ACTIVE", version = 1, roles = ["OPERATOR"]) => ({
       version,
       responsible: false,
       roles,
+      grants: roles.map((role, index) => ({
+        id: `00000000-0000-4000-8000-00000000010${index}`,
+        role,
+        scope: "COMPANY",
+        branches: [],
+        startsAt: "2026-10-18T12:00:00.000Z",
+        expiresAt: null,
+      })),
     },
   ],
   nextCursor: null,
@@ -663,4 +674,342 @@ test("preserves member pagination and hides lifecycle actions for the responsibl
     .element(screen.getByText("Responsible member", { exact: true }))
     .toBeVisible();
   expect(router.state.location.search).toEqual({ view: "members" });
+});
+
+const northId = "00000000-0000-4000-8000-000000000021";
+const posted = (suffix: string) =>
+  vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => input)
+    .find(
+      (input): input is Request =>
+        input instanceof Request &&
+        input.method === "POST" &&
+        new URL(input.url).pathname.endsWith(suffix),
+    );
+
+test("grants a temporary branch-scoped role over selected active branches", async () => {
+  respond((url, request) => {
+    if (request instanceof Request && request.method === "POST")
+      return {
+        status: 201,
+        body: {
+          id: "00000000-0000-4000-8000-000000000031",
+          role: "BRANCH_MANAGER",
+          scope: "BRANCHES",
+          branches: [{ id: northId, name: "Norte" }],
+          startsAt: "2026-10-18T12:00:00.000Z",
+          expiresAt: "2030-01-02T06:04:00.000Z",
+        },
+      };
+    if (url.pathname.endsWith("/branches"))
+      return {
+        body: {
+          items: [
+            {
+              id: northId,
+              name: "Norte",
+              status: "ACTIVE",
+              version: 1,
+              timeZone: "UTC",
+            },
+            {
+              id: "00000000-0000-4000-8000-000000000022",
+              name: "Antiga",
+              status: "ARCHIVED",
+              version: 2,
+              timeZone: "UTC",
+            },
+          ],
+          nextCursor: null,
+        },
+      };
+    return {
+      body: url.pathname.endsWith("/members") ? memberPage() : memberCompany,
+    };
+  });
+  const { screen } = await open(`${companyPath}?view=members`);
+  await screen
+    .getByRole("button", { name: `${t.grantAdd}: Synthetic member` })
+    .click();
+  await expect
+    .element(
+      screen.getByRole("option", { name: t.roles.COMPANY_ADMINISTRATOR }),
+    )
+    .toBeInTheDocument();
+  await screen.getByLabelText(t.grantRole).selectOptions("BRANCH_MANAGER");
+  await screen.getByRole("radio", { name: t.grantScopeBranches }).click();
+  await expect
+    .element(screen.getByRole("button", { name: t.grantSubmit }))
+    .toBeDisabled();
+  await expect
+    .element(screen.getByRole("checkbox", { name: "Antiga" }))
+    .not.toBeInTheDocument();
+  await screen.getByRole("checkbox", { name: "Norte" }).click();
+  await screen.getByLabelText(t.grantExpiry).fill("2030-01-02T03:04");
+  await screen.getByRole("button", { name: t.grantSubmit }).click();
+  await expect
+    .element(screen.getByRole("button", { name: t.grantSubmit }))
+    .not.toBeInTheDocument();
+  const request = posted(`/members/${memberId}/grants`);
+  if (!request) throw new Error("The grant request was not sent");
+  expect(await request.clone().json()).toEqual({
+    role: "BRANCH_MANAGER",
+    scope: "BRANCHES",
+    branchIds: [northId],
+    expiresAt: new Date("2030-01-02T03:04").toISOString(),
+  });
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.some(
+        ([input]) =>
+          input instanceof Request &&
+          new URL(input.url).pathname.endsWith("/branches") &&
+          new URL(input.url).searchParams.get("limit") === "100",
+      ),
+  ).toBe(true);
+});
+
+test("keeps administration out of a non-responsible administrator's grant form", async () => {
+  respond((url) => ({
+    body: url.pathname.endsWith("/members")
+      ? memberPage()
+      : {
+          ...memberCompany,
+          access: { ...memberAccess, responsible: false },
+        },
+  }));
+  const { screen } = await open(`${companyPath}?view=members`);
+  await screen
+    .getByRole("button", { name: `${t.grantAdd}: Synthetic member` })
+    .click();
+  await expect.element(screen.getByText(t.grantResponsibleOnly)).toBeVisible();
+  await expect
+    .element(
+      screen.getByRole("option", { name: t.roles.COMPANY_ADMINISTRATOR }),
+    )
+    .not.toBeInTheDocument();
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: `${t.transferPropose}: Synthetic member`,
+      }),
+    )
+    .not.toBeInTheDocument();
+});
+
+test("revokes a role after confirmation and keeps the responsible administrator's only administration", async () => {
+  const managerGrant = "00000000-0000-4000-8000-000000000041";
+  const expiresAt = "2030-01-02T06:04:00.000Z";
+  respond((url, request) =>
+    request instanceof Request && request.method === "POST"
+      ? { status: 204, body: null }
+      : {
+          body: url.pathname.endsWith("/members")
+            ? {
+                items: [
+                  {
+                    ...memberPage("ACTIVE", 1, ["COMPANY_ADMINISTRATOR"])
+                      .items[0],
+                    id: "00000000-0000-4000-8000-000000000008",
+                    displayName: "Responsible member",
+                    responsible: true,
+                  },
+                  {
+                    ...memberPage().items[0],
+                    roles: ["BRANCH_MANAGER", "OPERATOR"],
+                    grants: [
+                      ...memberPage().items[0].grants,
+                      {
+                        id: managerGrant,
+                        role: "BRANCH_MANAGER",
+                        scope: "BRANCHES",
+                        branches: [{ id: northId, name: "Norte" }],
+                        startsAt: "2026-10-18T12:00:00.000Z",
+                        expiresAt,
+                      },
+                    ],
+                  },
+                ],
+                nextCursor: null,
+              }
+            : memberCompany,
+        },
+  );
+  const { screen } = await open(`${companyPath}?view=members`);
+  await expect
+    .element(
+      screen.getByText(
+        `${t.grantBranches}: Norte · ${t.grantUntil} ${formatInstant(locale, expiresAt)}`,
+        { exact: false },
+      ),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: `${t.grantRevoke}: ${t.roles.COMPANY_ADMINISTRATOR} · Responsible member`,
+      }),
+    )
+    .not.toBeInTheDocument();
+  await screen
+    .getByRole("button", {
+      name: `${t.grantRevoke}: ${t.roles.BRANCH_MANAGER} · Synthetic member`,
+    })
+    .click();
+  await expect
+    .element(screen.getByText(t.grantRevokeConfirmation))
+    .toBeVisible();
+  await screen.getByRole("button", { name: t.grantRevokeConfirm }).click();
+  await expect
+    .element(screen.getByText(t.grantRevokeConfirmation))
+    .not.toBeInTheDocument();
+  expect(
+    posted(`/members/${memberId}/grants/${managerGrant}/revoke`),
+  ).toBeDefined();
+});
+
+test("proposes a responsibility transfer and lets the proposer cancel it", async () => {
+  const transfer = {
+    id: "00000000-0000-4000-8000-000000000051",
+    direction: "outgoing",
+    fromMembershipId: "00000000-0000-4000-8000-000000000008",
+    toMembershipId: memberId,
+    counterpartName: "Synthetic member",
+    counterpartEmail: "member@example.test",
+    createdAt: "2026-10-18T12:00:00.000Z",
+    expiresAt: "2026-10-25T12:00:00.000Z",
+  };
+  let pending = false;
+  respond((url, request) => {
+    if (request instanceof Request && request.method === "POST") {
+      pending = !url.pathname.endsWith("/cancel");
+      return pending
+        ? { status: 201, body: transfer }
+        : { status: 204, body: null };
+    }
+    return {
+      body: url.pathname.endsWith("/members")
+        ? memberPage("ACTIVE", 1, ["COMPANY_ADMINISTRATOR"])
+        : {
+            ...memberCompany,
+            responsibilityTransfer: pending ? transfer : null,
+          },
+    };
+  });
+  const { screen } = await open(`${companyPath}?view=members`);
+  await screen
+    .getByRole("button", { name: `${t.transferPropose}: Synthetic member` })
+    .click();
+  await expect.element(screen.getByText(t.transferConfirmation)).toBeVisible();
+  await screen.getByRole("button", { name: t.transferConfirm }).click();
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(
+      t.transferOutgoing(
+        "Synthetic member",
+        formatInstant(locale, transfer.expiresAt),
+      ),
+    );
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: `${t.transferPropose}: Synthetic member`,
+      }),
+    )
+    .not.toBeInTheDocument();
+  const request = posted("/responsibility-transfers");
+  if (!request) throw new Error("The transfer request was not sent");
+  expect(await request.clone().json()).toEqual({
+    successorMembershipId: memberId,
+  });
+  await screen.getByRole("button", { name: t.transferCancel }).click();
+  await expect.element(screen.getByRole("status")).not.toBeInTheDocument();
+  expect(
+    posted(`/responsibility-transfers/${transfer.id}/cancel`),
+  ).toBeDefined();
+});
+
+test("asks the successor for recent verification before accepting responsibility", async () => {
+  const transferId = "00000000-0000-4000-8000-000000000061";
+  respond((_url, request) =>
+    request instanceof Request && request.method === "POST"
+      ? {
+          status: 403,
+          body: {
+            error: {
+              code: "RECENT_AUTHENTICATION_REQUIRED",
+              message: "Recent assurance required",
+            },
+          },
+        }
+      : {
+          body: {
+            ...memberCompany,
+            access: { ...memberAccess, responsible: false },
+            responsibilityTransfer: {
+              id: transferId,
+              direction: "incoming",
+              fromMembershipId: "00000000-0000-4000-8000-000000000008",
+              toMembershipId: memberId,
+              counterpartName: null,
+              counterpartEmail: "owner@example.test",
+              createdAt: "2026-10-18T12:00:00.000Z",
+              expiresAt: "2026-10-25T12:00:00.000Z",
+            },
+          },
+        },
+  );
+  const { screen } = await open(companyPath);
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(
+      t.transferIncoming(
+        "owner@example.test",
+        formatInstant(locale, "2026-10-25T12:00:00.000Z"),
+      ),
+    );
+  await expect
+    .element(screen.getByRole("button", { name: t.transferDecline }))
+    .toBeVisible();
+  await screen.getByRole("button", { name: t.transferAccept }).click();
+  await expect
+    .element(screen.getByRole("link", { name: t.memberReauthenticate }))
+    .toHaveAttribute(
+      "href",
+      `/api/auth/login?returnTo=${encodeURIComponent(companyPath)}&assurance=recent`,
+    );
+  expect(
+    posted(`/responsibility-transfers/${transferId}/accept`),
+  ).toBeDefined();
+});
+
+test("names the role of grant history events", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              {
+                id: "grant-event",
+                action: "grant.created",
+                actorPrincipalId: "another-person",
+                occurredAt: "2026-10-18T12:00:00.000Z",
+                targetType: "membership",
+                details: { role: "BRANCH_MANAGER", scope: "BRANCHES" },
+              },
+            ],
+            nextCursor: null,
+          },
+        }
+      : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen } = await open(`${companyPath}?view=history`);
+  await expect
+    .element(screen.getByText(t.historyActions["grant.created"]))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(`${t.historyRole}: ${t.roles.BRANCH_MANAGER}`))
+    .toBeVisible();
 });

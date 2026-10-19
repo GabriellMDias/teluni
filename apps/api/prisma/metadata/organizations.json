@@ -171,7 +171,7 @@
       "owner": "Organizations",
       "classification": "CONFIDENTIAL",
       "description": "The company's designated responsible administrator, who approves additional administrators (P10).",
-      "lifecycle": "Created with the company; transfer is a later attributable operation.",
+      "lifecycle": "Created with the company; moves to another active administrator only when that successor accepts a pending responsibility transfer.",
       "columns": {
         "company_id": {
           "description": "Company whose responsibility this row records; one row per company.",
@@ -198,7 +198,7 @@
       "owner": "Organizations",
       "classification": "CONFIDENTIAL",
       "description": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
-      "lifecycle": "Effective from starts_at until expires_at or revoked_at; retained after expiry for attribution.",
+      "lifecycle": "Effective from starts_at until expires_at or revoked_at; company administrators revoke grants, never delete them, and expired or revoked grants are retained for attribution.",
       "columns": {
         "id": {
           "description": "Backend-generated grant UUID.",
@@ -242,7 +242,7 @@
           "unit": "UTC instant, millisecond precision"
         },
         "revoked_at": {
-          "description": "Instant the grant was revoked.",
+          "description": "Instant a company administrator revoked the grant; revocation is terminal.",
           "classification": "INTERNAL",
           "nullMeaning": "The grant has not been revoked.",
           "unit": "UTC instant, millisecond precision"
@@ -342,6 +342,62 @@
         "organization_audit_events_target_type_format": "Target types use lowercase identifiers.",
         "organization_audit_events_details_object": "Details are always a JSON object."
       }
+    },
+    "responsibility_transfers": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "A responsible administrator's proposal to hand company responsibility to another active administrator; it takes effect only when that successor accepts.",
+      "lifecycle": "Created PENDING; becomes ACCEPTED, DECLINED by the successor, CANCELLED by the proposer, or EXPIRED after seven days. Retained for attribution; no runtime deletion.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated transfer UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company whose responsibility would move; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "from_membership_id": {
+          "description": "Membership of the responsible administrator who proposed the transfer.",
+          "classification": "INTERNAL"
+        },
+        "to_membership_id": {
+          "description": "Membership of the proposed successor, who must still be an active company administrator when accepting.",
+          "classification": "INTERNAL"
+        },
+        "status": {
+          "description": "PENDING until the successor accepts or declines, the proposer cancels, or the proposal expires.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of the proposal.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "expires_at": {
+          "description": "Instant after which the pending proposal can no longer be accepted.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "decided_at": {
+          "description": "PostgreSQL-clock instant the proposal stopped being pending.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The proposal is still pending.",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "responsibility_transfers_pkey": "Unique transfer identity.",
+        "responsibility_transfers_company_id_fkey": "A transfer belongs to an existing company.",
+        "responsibility_transfers_company_id_from_membership_id_fkey": "The proposer is a membership of the same company.",
+        "responsibility_transfers_company_id_to_membership_id_fkey": "The successor is a membership of the same company.",
+        "responsibility_transfers_company_id_id_key": "Tenant key for future references to transfers.",
+        "responsibility_transfers_successor_idx": "Supports finding the proposals addressed to a successor.",
+        "responsibility_transfers_one_pending": "At most one pending transfer per company, including racing proposals.",
+        "responsibility_transfers_distinct_parties": "A responsible administrator cannot propose themselves.",
+        "responsibility_transfers_expiry_after_creation": "A proposal expires after it was made.",
+        "responsibility_transfers_decision_state": "A decision instant exists exactly for proposals that are no longer pending."
+      }
     }
   },
   "enums": {
@@ -349,6 +405,7 @@
     "BranchStatus": "Branch state: ACTIVE or ARCHIVED.",
     "MembershipStatus": "Membership state: ACTIVE, SUSPENDED or REMOVED.",
     "AccessRole": "Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR.",
-    "GrantScope": "Grant scope: COMPANY or explicit BRANCHES."
+    "GrantScope": "Grant scope: COMPANY or explicit BRANCHES.",
+    "ResponsibilityTransferStatus": "Responsibility transfer state: PENDING, ACCEPTED, DECLINED, CANCELLED or EXPIRED."
   }
 }

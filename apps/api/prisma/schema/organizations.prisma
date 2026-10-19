@@ -30,25 +30,34 @@ enum GrantScope {
   BRANCHES
 }
 
+enum ResponsibilityTransferStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+}
+
 model Company {
-  id                   String                   @id @db.Uuid
-  displayName          String                   @map("display_name") @db.VarChar(120)
-  status               CompanyStatus            @default(ACTIVE)
-  defaultLocale        String                   @map("default_locale") @db.VarChar(10)
-  timeZone             String                   @map("time_zone") @db.VarChar(64)
-  version              Int                      @default(1)
-  createdByPrincipalId String                   @map("created_by_principal_id") @db.Uuid
-  creationKey          String                   @map("creation_key") @db.VarChar(200)
-  creationFingerprint  String                   @map("creation_fingerprint") @db.Char(64)
-  createdAt            DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt            DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
-  createdBy            Principal                @relation("CompanyCreator", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  branches             Branch[]
-  memberships          Membership[]
-  responsibility       CompanyResponsibility?
-  grants               MembershipGrant[]
-  grantBranches        MembershipGrantBranch[]
-  auditEvents          OrganizationAuditEvent[]
+  id                      String                   @id @db.Uuid
+  displayName             String                   @map("display_name") @db.VarChar(120)
+  status                  CompanyStatus            @default(ACTIVE)
+  defaultLocale           String                   @map("default_locale") @db.VarChar(10)
+  timeZone                String                   @map("time_zone") @db.VarChar(64)
+  version                 Int                      @default(1)
+  createdByPrincipalId    String                   @map("created_by_principal_id") @db.Uuid
+  creationKey             String                   @map("creation_key") @db.VarChar(200)
+  creationFingerprint     String                   @map("creation_fingerprint") @db.Char(64)
+  createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  createdBy               Principal                @relation("CompanyCreator", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branches                Branch[]
+  memberships             Membership[]
+  responsibility          CompanyResponsibility?
+  grants                  MembershipGrant[]
+  grantBranches           MembershipGrantBranch[]
+  auditEvents             OrganizationAuditEvent[]
+  responsibilityTransfers ResponsibilityTransfer[]
 
   @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
   @@map("companies")
@@ -72,19 +81,21 @@ model Branch {
 }
 
 model Membership {
-  id                 String                   @id @db.Uuid
-  companyId          String                   @map("company_id") @db.Uuid
-  principalId        String                   @map("principal_id") @db.Uuid
-  status             MembershipStatus         @default(ACTIVE)
-  version            Int                      @default(1)
-  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company            Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  principal          Principal                @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  responsibility     CompanyResponsibility?
-  grants             MembershipGrant[]        @relation("GrantHolder")
-  grantedGrants      MembershipGrant[]        @relation("GrantGrantor")
-  auditEvents        OrganizationAuditEvent[]
+  id                String                   @id @db.Uuid
+  companyId         String                   @map("company_id") @db.Uuid
+  principalId       String                   @map("principal_id") @db.Uuid
+  status            MembershipStatus         @default(ACTIVE)
+  version           Int                      @default(1)
+  createdAt         DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company           Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  principal         Principal                @relation(fields: [principalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  responsibility    CompanyResponsibility?
+  grants            MembershipGrant[]        @relation("GrantHolder")
+  grantedGrants     MembershipGrant[]        @relation("GrantGrantor")
+  auditEvents       OrganizationAuditEvent[]
+  outgoingTransfers ResponsibilityTransfer[] @relation("TransferFrom")
+  incomingTransfers ResponsibilityTransfer[] @relation("TransferTo")
 
   @@unique([companyId, id], map: "memberships_company_id_id_key")
   @@unique([companyId, principalId], map: "memberships_company_principal_key")
@@ -154,4 +165,22 @@ model OrganizationAuditEvent {
   @@unique([companyId, id], map: "organization_audit_events_company_id_id_key")
   @@index([companyId, occurredAt(sort: Desc), id(sort: Desc)], map: "organization_audit_events_company_time_idx")
   @@map("organization_audit_events")
+}
+
+model ResponsibilityTransfer {
+  id               String                       @id @db.Uuid
+  companyId        String                       @map("company_id") @db.Uuid
+  fromMembershipId String                       @map("from_membership_id") @db.Uuid
+  toMembershipId   String                       @map("to_membership_id") @db.Uuid
+  status           ResponsibilityTransferStatus @default(PENDING)
+  createdAt        DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt        DateTime                     @map("expires_at") @db.Timestamptz(3)
+  decidedAt        DateTime?                    @map("decided_at") @db.Timestamptz(3)
+  company          Company                      @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  from             Membership                   @relation("TransferFrom", fields: [companyId, fromMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  to               Membership                   @relation("TransferTo", fields: [companyId, toMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "responsibility_transfers_company_id_id_key")
+  @@index([companyId, toMembershipId], map: "responsibility_transfers_successor_idx")
+  @@map("responsibility_transfers")
 }

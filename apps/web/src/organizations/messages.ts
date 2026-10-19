@@ -69,6 +69,41 @@ const ptBR = {
     SUSPENDED: "Suspenso",
     REMOVED: "Removido",
   },
+  grantsOf: "Papéis de",
+  grantCompanyWide: "Toda a empresa",
+  grantUntil: "até",
+  grantAdd: "Adicionar papel",
+  grantSubmit: "Conceder papel",
+  grantRole: "Papel",
+  grantScope: "Abrangência",
+  grantScopeCompany: "Toda a empresa",
+  grantScopeBranches: "Filiais selecionadas",
+  grantBranches: "Filiais",
+  grantNoBranches: "Nenhuma filial ativa para selecionar.",
+  grantBranchesTruncated:
+    "Mostrando as primeiras 100 filiais. Para as demais, conceda o papel para toda a empresa ou arquive filiais sem uso.",
+  grantAdministratorCompanyWide:
+    "A administração sempre vale para toda a empresa.",
+  grantResponsibleOnly:
+    "Somente o responsável pela empresa pode conceder administração.",
+  grantExpiry: "Válido até (opcional)",
+  grantExpiryHint:
+    "Sem data, o papel vale até ser revogado. Papéis temporários não são renovados automaticamente.",
+  grantRevoke: "Revogar papel",
+  grantRevokeConfirmation:
+    "A revogação encerra este papel imediatamente. Para restaurá-lo, conceda-o de novo.",
+  grantRevokeConfirm: "Confirmar revogação",
+  transferPropose: "Transferir responsabilidade",
+  transferConfirmation:
+    "A responsabilidade só passa para esta pessoa quando ela aceitar, em até 7 dias. Você continua administrador.",
+  transferConfirm: "Propor transferência",
+  transferOutgoing: (name: string, until: string) =>
+    `Transferência de responsabilidade para ${name} aguardando aceite até ${until}.`,
+  transferIncoming: (name: string, until: string) =>
+    `${name} propôs transferir para você a responsabilidade por esta empresa. Aceite até ${until}. Como responsável, seu acesso não poderá ser suspenso nem removido até que você transfira a responsabilidade.`,
+  transferAccept: "Aceitar responsabilidade",
+  transferDecline: "Recusar transferência",
+  transferCancel: "Cancelar transferência",
   memberConfirmations: {
     ACTIVE:
       "A reativação restaura os papéis ainda válidos deste membro nesta empresa.",
@@ -87,8 +122,18 @@ const ptBR = {
   historyYou: "Por você",
   historyMember: "Por outro membro",
   historyUnknown: "Organização alterada",
+  historyRole: "Papel",
   historyActions: {
     "membership.status_changed": "Acesso de membro alterado",
+    "grant.created": "Papel concedido",
+    "grant.revoked": "Papel revogado",
+    "responsibility.transfer_requested":
+      "Transferência de responsabilidade proposta",
+    "responsibility.transferred": "Responsabilidade transferida",
+    "responsibility.transfer_declined":
+      "Transferência de responsabilidade recusada",
+    "responsibility.transfer_cancelled":
+      "Transferência de responsabilidade cancelada",
     "company.created": "Empresa criada",
     "company.updated": "Configurações da empresa alteradas",
     "branch.created": "Filial criada",
@@ -111,7 +156,13 @@ const ptBR = {
     LAST_ADMINISTRATOR_REQUIRED:
       "A empresa precisa manter um administrador ativo.",
     RESPONSIBLE_APPROVAL_REQUIRED:
-      "Somente o responsável pela empresa pode reativar um administrador.",
+      "Somente o responsável pela empresa pode aprovar esta mudança de administrador.",
+    SUCCESSOR_NOT_ELIGIBLE:
+      "A responsabilidade só pode passar para um administrador ativo desta empresa.",
+    RESPONSIBILITY_TRANSFER_PENDING:
+      "Já existe uma transferência de responsabilidade pendente. Cancele-a antes de propor outra.",
+    RESPONSIBILITY_TRANSFER_NOT_PENDING:
+      "Esta transferência não está mais pendente. Recarregue para ver a situação atual.",
     AUTHENTICATION_REQUIRED: "Sua sessão terminou. Entre novamente.",
     PERMISSION_DENIED: "Você não tem permissão para esta ação.",
     COMPANY_SUSPENDED:
@@ -210,6 +261,41 @@ const enUS: OrganizationMessages = {
     SUSPENDED: "Suspended",
     REMOVED: "Removed",
   },
+  grantsOf: "Roles of",
+  grantCompanyWide: "Whole company",
+  grantUntil: "until",
+  grantAdd: "Add role",
+  grantSubmit: "Grant role",
+  grantRole: "Role",
+  grantScope: "Scope",
+  grantScopeCompany: "Whole company",
+  grantScopeBranches: "Selected branches",
+  grantBranches: "Branches",
+  grantNoBranches: "No active branches to select.",
+  grantBranchesTruncated:
+    "Showing the first 100 branches. For the others, grant the role company-wide or archive unused branches.",
+  grantAdministratorCompanyWide:
+    "Administration always covers the whole company.",
+  grantResponsibleOnly:
+    "Only the company's responsible administrator can grant administration.",
+  grantExpiry: "Valid until (optional)",
+  grantExpiryHint:
+    "Without a date, the role lasts until revoked. Temporary roles are never renewed automatically.",
+  grantRevoke: "Revoke role",
+  grantRevokeConfirmation:
+    "Revocation ends this role immediately. To restore it, grant it again.",
+  grantRevokeConfirm: "Confirm revocation",
+  transferPropose: "Transfer responsibility",
+  transferConfirmation:
+    "Responsibility moves to this person only when they accept it, within 7 days. You remain an administrator.",
+  transferConfirm: "Propose transfer",
+  transferOutgoing: (name: string, until: string) =>
+    `Responsibility transfer to ${name} awaiting acceptance until ${until}.`,
+  transferIncoming: (name: string, until: string) =>
+    `${name} proposed transferring responsibility for this company to you. Accept by ${until}. As the responsible administrator, your access cannot be suspended or removed until you transfer responsibility.`,
+  transferAccept: "Accept responsibility",
+  transferDecline: "Decline transfer",
+  transferCancel: "Cancel transfer",
   memberConfirmations: {
     ACTIVE:
       "Reactivation restores this member's still-valid roles in this company.",
@@ -227,8 +313,15 @@ const enUS: OrganizationMessages = {
   historyYou: "By you",
   historyMember: "By another member",
   historyUnknown: "Organization updated",
+  historyRole: "Role",
   historyActions: {
     "membership.status_changed": "Member access changed",
+    "grant.created": "Role granted",
+    "grant.revoked": "Role revoked",
+    "responsibility.transfer_requested": "Responsibility transfer proposed",
+    "responsibility.transferred": "Responsibility transferred",
+    "responsibility.transfer_declined": "Responsibility transfer declined",
+    "responsibility.transfer_cancelled": "Responsibility transfer cancelled",
     "company.created": "Company created",
     "company.updated": "Company settings changed",
     "branch.created": "Branch created",
@@ -252,7 +345,13 @@ const enUS: OrganizationMessages = {
     LAST_ADMINISTRATOR_REQUIRED:
       "The company must retain an active administrator.",
     RESPONSIBLE_APPROVAL_REQUIRED:
-      "Only the responsible administrator can reactivate an administrator.",
+      "Only the company's responsible administrator can approve this administrator change.",
+    SUCCESSOR_NOT_ELIGIBLE:
+      "Responsibility can only move to an active administrator of this company.",
+    RESPONSIBILITY_TRANSFER_PENDING:
+      "A responsibility transfer is already pending. Cancel it before proposing another.",
+    RESPONSIBILITY_TRANSFER_NOT_PENDING:
+      "This transfer is no longer pending. Reload to see the current state.",
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You do not have permission for this action.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",

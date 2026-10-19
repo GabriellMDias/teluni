@@ -920,6 +920,682 @@ describe("organizations: two-company isolation", () => {
     expect(await auditCount(company)).toBe(before);
   });
 
+  it("grants standard roles over the company or active branches without duplicating an identical grant", async () => {
+    const company = await createCompany("aAdmin", "Role grants");
+    const north = await createBranch("aAdmin", company, "Norte");
+    const south = await createBranch("aAdmin", company, "Sul");
+    const retired = await createBranch("aAdmin", company, "Antiga");
+    await call(
+      "aAdmin",
+      "POST",
+      `/companies/${company}/branches/${retired.id}/archive`,
+      { strong: true, body: { expectedVersion: retired.version } },
+    );
+    const member = await addCompanyMember("multi", company);
+    const grant = (body: object, person: Person = "aAdmin", strong = true) =>
+      call(person, "POST", `/companies/${company}/members/${member}/grants`, {
+        strong,
+        body,
+      });
+    const before = await auditCount(company);
+    const manager = await grant({
+      role: "BRANCH_MANAGER",
+      scope: "BRANCHES",
+      branchIds: [south.id, north.id],
+    });
+    expect(manager.status).toBe(201);
+    expect(manager.body).toMatchObject({
+      role: "BRANCH_MANAGER",
+      scope: "BRANCHES",
+      branches: [
+        { id: north.id, name: "Norte" },
+        { id: south.id, name: "Sul" },
+      ],
+      expiresAt: null,
+    });
+    const repeated = await grant({
+      role: "BRANCH_MANAGER",
+      scope: "BRANCHES",
+      branchIds: [north.id, south.id],
+    });
+    expect(repeated.status).toBe(200);
+    expect(repeated.body.id).toBe(manager.body.id);
+    expect(await auditCount(company)).toBe(before + 1);
+
+    const later = new Date(Date.now() + 3_600_000).toISOString();
+    const temporary = await grant({
+      role: "OPERATOR",
+      scope: "BRANCHES",
+      branchIds: [south.id],
+      expiresAt: later,
+    });
+    expect(temporary.status).toBe(201);
+    expect(temporary.body.expiresAt).toBe(later);
+    for (const body of [
+      {
+        role: "COMPANY_ADMINISTRATOR",
+        scope: "BRANCHES",
+        branchIds: [north.id],
+      },
+      { role: "OPERATOR", scope: "COMPANY", branchIds: [north.id] },
+      { role: "OPERATOR", scope: "BRANCHES" },
+      { role: "OPERATOR", scope: "BRANCHES", branchIds: [north.id, north.id] },
+      { role: "OPERATOR", scope: "BRANCHES", branchIds: [b1.id] },
+      { role: "OPERATOR", scope: "BRANCHES", branchIds: [retired.id] },
+      { role: "OPERATOR", scope: "BRANCHES", branchIds: [randomUUID()] },
+      {
+        role: "OPERATOR",
+        scope: "COMPANY",
+        expiresAt: new Date(Date.now() - 1000).toISOString(),
+      },
+      {
+        role: "OPERATOR",
+        scope: "COMPANY",
+        expiresAt: new Date(Date.now() + 30_000).toISOString(),
+      },
+    ])
+      expect(code(await grant(body)), JSON.stringify(body)).toBe(
+        "VALIDATION_FAILED",
+      );
+    expect(await auditCount(company)).toBe(before + 2);
+
+    const members = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/members`,
+      { strong: true },
+    );
+    const listed = (
+      members.body.items as {
+        id: string;
+        roles: string[];
+        grants: { id: string; role: string; scope: string }[];
+      }[]
+    ).find((item) => item.id === member)!;
+    expect(listed.roles).toEqual(["BRANCH_MANAGER", "OPERATOR"]);
+    expect(listed.grants.map((item) => [item.role, item.scope])).toEqual([
+      ["OPERATOR", "COMPANY"],
+      ["BRANCH_MANAGER", "BRANCHES"],
+      ["OPERATOR", "BRANCHES"],
+    ]);
+    const companyView = await call("multi", "GET", `/companies/${company}`, {
+      strong: true,
+    });
+    expect(companyView.body.access).toMatchObject({
+      roles: ["BRANCH_MANAGER", "OPERATOR"],
+      responsible: false,
+    });
+    expect(companyView.body.responsibilityTransfer).toBeNull();
+
+    const audit = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/audit-events`,
+      { strong: true },
+    );
+    expect(
+      (audit.body.items as { action: string; details: object }[])
+        .filter((item) => item.action === "grant.created")
+        .map((item) => item.details),
+    ).toEqual([
+      {
+        grantId: temporary.body.id,
+        role: "OPERATOR",
+        scope: "BRANCHES",
+        branchCount: 1,
+        expiresAt: later,
+      },
+      {
+        grantId: manager.body.id,
+        role: "BRANCH_MANAGER",
+        scope: "BRANCHES",
+        branchCount: 2,
+        expiresAt: null,
+      },
+    ]);
+
+    const operatorBody = { role: "OPERATOR", scope: "COMPANY" };
+    expect(code(await grant(operatorBody, "multi"))).toBe("PERMISSION_DENIED");
+    expect(code(await grant(operatorBody, "outsider"))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    expect(code(await grant(operatorBody, "aAdmin", false))).toBe(
+      "STRONG_AUTHENTICATION_REQUIRED",
+    );
+    const foreignMember = await sql.query<{ id: string }>(
+      "SELECT id FROM memberships WHERE company_id = $1 LIMIT 1",
+      [companyB],
+    );
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "POST",
+          `/companies/${company}/members/${foreignMember.rows[0].id}/grants`,
+          { strong: true, body: operatorBody },
+        ),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    const removed = await addCompanyMember("outsider", company);
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "PATCH",
+          `/companies/${company}/members/${removed}`,
+          {
+            strong: true,
+            body: { expectedVersion: 1, status: "REMOVED" },
+          },
+        )
+      ).status,
+    ).toBe(204);
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "POST",
+          `/companies/${company}/members/${removed}/grants`,
+          { strong: true, body: operatorBody },
+        ),
+      ),
+    ).toBe("MEMBERSHIP_REMOVED");
+  });
+
+  it("lets only the recently verified responsible administrator grant administration and keeps administrators on revocation", async () => {
+    const company = await createCompany("aAdmin", "Administrator grants");
+    await addCompanyMember("bAdmin", company, "COMPANY_ADMINISTRATOR");
+    const member = await addCompanyMember("multi", company);
+    const grant = (person: Person, body: object, age = 1) =>
+      call(person, "POST", `/companies/${company}/members/${member}/grants`, {
+        strong: true,
+        headers: { "x-test-strong-age": String(age) },
+        body,
+      });
+    const administration = { role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" };
+    expect(code(await grant("bAdmin", administration))).toBe(
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+    );
+    expect(code(await grant("aAdmin", administration, 301))).toBe(
+      "RECENT_AUTHENTICATION_REQUIRED",
+    );
+    const admin = await grant("aAdmin", administration);
+    expect(admin.status).toBe(201);
+    // Any administrator may grant the other standard roles.
+    const existingOperator = await grant("bAdmin", {
+      role: "OPERATOR",
+      scope: "COMPANY",
+    });
+    expect(existingOperator.status).toBe(200);
+    expect(
+      (
+        await call("multi", "GET", `/companies/${company}/members`, {
+          strong: true,
+        })
+      ).status,
+    ).toBe(200);
+
+    const list = await call("aAdmin", "GET", `/companies/${company}/members`, {
+      strong: true,
+    });
+    const items = list.body.items as {
+      id: string;
+      principalId: string;
+      responsible: boolean;
+      grants: { id: string; role: string }[];
+    }[];
+    const responsible = items.find((item) => item.responsible)!;
+    const revoke = (person: Person, memberId: string, grantId: string) =>
+      call(
+        person,
+        "POST",
+        `/companies/${company}/members/${memberId}/grants/${grantId}/revoke`,
+        { strong: true },
+      );
+    expect(
+      code(await revoke("bAdmin", responsible.id, responsible.grants[0].id)),
+    ).toBe("RESPONSIBLE_ADMINISTRATOR_PROTECTED");
+    // A second administrator grant keeps administration when one is revoked.
+    const extra = await call(
+      "aAdmin",
+      "POST",
+      `/companies/${company}/members/${responsible.id}/grants`,
+      {
+        strong: true,
+        body: {
+          ...administration,
+          expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+        },
+      },
+    );
+    expect(extra.status).toBe(201);
+    expect(
+      (await revoke("bAdmin", responsible.id, responsible.grants[0].id)).status,
+    ).toBe(204);
+    expect(
+      code(await revoke("bAdmin", responsible.id, extra.body.id as string)),
+    ).toBe("RESPONSIBLE_ADMINISTRATOR_PROTECTED");
+
+    const before = await auditCount(company);
+    expect(
+      (await revoke("bAdmin", member, admin.body.id as string)).status,
+    ).toBe(204);
+    expect(
+      (await revoke("bAdmin", member, admin.body.id as string)).status,
+    ).toBe(204);
+    expect(await auditCount(company)).toBe(before + 1);
+    expect(
+      code(
+        await call("multi", "GET", `/companies/${company}/members`, {
+          strong: true,
+        }),
+      ),
+    ).toBe("PERMISSION_DENIED");
+    expect(code(await revoke("bAdmin", member, randomUUID()))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    expect(code(await revoke("bAdmin", member, extra.body.id as string))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    const audit = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/audit-events?limit=1`,
+      { strong: true },
+    );
+    expect(audit.body.items).toMatchObject([
+      {
+        action: "grant.revoked",
+        targetId: member,
+        details: {
+          grantId: admin.body.id,
+          role: "COMPANY_ADMINISTRATOR",
+          scope: "COMPANY",
+        },
+      },
+    ]);
+
+    const lastCompany = await createCompany(
+      "aAdmin",
+      "Last administrator grant",
+    );
+    const last = await addCompanyMember(
+      "multi",
+      lastCompany,
+      "COMPANY_ADMINISTRATOR",
+    );
+    await sql.query(
+      "UPDATE membership_grants SET revoked_at = now() WHERE company_id = $1 AND membership_id <> $2",
+      [lastCompany, last],
+    );
+    const { rows } = await sql.query<{ id: string }>(
+      "SELECT id FROM membership_grants WHERE membership_id = $1",
+      [last],
+    );
+    expect(
+      code(
+        await call(
+          "multi",
+          "POST",
+          `/companies/${lastCompany}/members/${last}/grants/${rows[0].id}/revoke`,
+          { strong: true },
+        ),
+      ),
+    ).toBe("LAST_ADMINISTRATOR_REQUIRED");
+  });
+
+  it("moves responsibility only when an eligible successor accepts the proposal", async () => {
+    const company = await createCompany("aAdmin", "Responsibility transfer");
+    const successor = await addCompanyMember(
+      "multi",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    const operator = await addCompanyMember("outsider", company);
+    const otherAdmin = await addCompanyMember(
+      "bAdmin",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    const { rows: responsibility } = await sql.query<{ membership_id: string }>(
+      "SELECT membership_id FROM company_responsibilities WHERE company_id = $1",
+      [company],
+    );
+    const original = responsibility[0].membership_id;
+    const propose = (person: Person, successorMembershipId: string, age = 1) =>
+      call(person, "POST", `/companies/${company}/responsibility-transfers`, {
+        strong: true,
+        headers: { "x-test-strong-age": String(age) },
+        body: { successorMembershipId },
+      });
+    expect(code(await propose("bAdmin", successor))).toBe(
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+    );
+    expect(code(await propose("aAdmin", successor, 301))).toBe(
+      "RECENT_AUTHENTICATION_REQUIRED",
+    );
+    expect(code(await propose("aAdmin", operator))).toBe(
+      "SUCCESSOR_NOT_ELIGIBLE",
+    );
+    expect(code(await propose("aAdmin", original))).toBe("VALIDATION_FAILED");
+    const foreignMember = await sql.query<{ id: string }>(
+      "SELECT id FROM memberships WHERE company_id = $1 LIMIT 1",
+      [companyB],
+    );
+    expect(code(await propose("aAdmin", foreignMember.rows[0].id))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    const proposed = await propose("aAdmin", successor);
+    expect(proposed.status).toBe(201);
+    expect(proposed.body).toMatchObject({
+      direction: "outgoing",
+      fromMembershipId: original,
+      toMembershipId: successor,
+      counterpartName: "multi",
+    });
+    expect(
+      Date.parse(proposed.body.expiresAt as string) -
+        Date.parse(proposed.body.createdAt as string),
+    ).toBe(7 * 24 * 3_600_000);
+    const transfer = proposed.body.id as string;
+    expect(code(await propose("aAdmin", otherAdmin))).toBe(
+      "RESPONSIBILITY_TRANSFER_PENDING",
+    );
+    const view = async (person: Person) =>
+      (await call(person, "GET", `/companies/${company}`, { strong: true }))
+        .body.responsibilityTransfer as { direction: string } | null;
+    expect(await view("multi")).toMatchObject({
+      id: transfer,
+      direction: "incoming",
+      counterpartName: "aAdmin",
+    });
+    expect(await view("aAdmin")).toMatchObject({ direction: "outgoing" });
+    expect(await view("bAdmin")).toBeNull();
+    expect(await view("outsider")).toBeNull();
+
+    const accept = (
+      person: Person,
+      options: { strong?: boolean; age?: number } = {},
+    ) =>
+      call(
+        person,
+        "POST",
+        `/companies/${company}/responsibility-transfers/${transfer}/accept`,
+        {
+          strong: options.strong ?? true,
+          headers: { "x-test-strong-age": String(options.age ?? 1) },
+        },
+      );
+    for (const person of ["bAdmin", "outsider", "aAdmin", "aOperator"] as const)
+      expect(code(await accept(person)), person).toBe("RESOURCE_NOT_FOUND");
+    expect(code(await accept("multi", { strong: false }))).toBe(
+      "STRONG_AUTHENTICATION_REQUIRED",
+    );
+    expect(code(await accept("multi", { age: 301 }))).toBe(
+      "RECENT_AUTHENTICATION_REQUIRED",
+    );
+    // The successor must still administer the company when accepting.
+    const members = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/members`,
+      {
+        strong: true,
+      },
+    );
+    const successorGrant = (
+      members.body.items as { id: string; grants: { id: string }[] }[]
+    ).find((item) => item.id === successor)!.grants[0].id;
+    expect(
+      (
+        await call(
+          "bAdmin",
+          "POST",
+          `/companies/${company}/members/${successor}/grants/${successorGrant}/revoke`,
+          { strong: true },
+        )
+      ).status,
+    ).toBe(204);
+    expect(code(await accept("multi"))).toBe("SUCCESSOR_NOT_ELIGIBLE");
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "POST",
+          `/companies/${company}/members/${successor}/grants`,
+          {
+            strong: true,
+            body: { role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" },
+          },
+        )
+      ).status,
+    ).toBe(201);
+
+    const before = await auditCount(company);
+    expect((await accept("multi")).status).toBe(204);
+    expect(await auditCount(company)).toBe(before + 1);
+    expect(
+      (
+        await sql.query(
+          "SELECT membership_id FROM company_responsibilities WHERE company_id = $1",
+          [company],
+        )
+      ).rows,
+    ).toEqual([{ membership_id: successor }]);
+    expect(code(await accept("multi"))).toBe(
+      "RESPONSIBILITY_TRANSFER_NOT_PENDING",
+    );
+    expect(await view("multi")).toBeNull();
+    expect(
+      (await call("multi", "GET", `/companies/${company}`, { strong: true }))
+        .body.access,
+    ).toMatchObject({ responsible: true });
+    expect(code(await propose("aAdmin", otherAdmin))).toBe(
+      "RESPONSIBLE_APPROVAL_REQUIRED",
+    );
+    const audit = await call(
+      "multi",
+      "GET",
+      `/companies/${company}/audit-events?limit=1`,
+      { strong: true },
+    );
+    expect(audit.body.items).toMatchObject([
+      {
+        action: "responsibility.transferred",
+        targetId: successor,
+        details: { transferId: transfer, previousMembershipId: original },
+      },
+    ]);
+    // The previous responsible administrator is an ordinary administrator now.
+    expect(
+      (
+        await call(
+          "multi",
+          "PATCH",
+          `/companies/${company}/members/${original}`,
+          {
+            strong: true,
+            body: { expectedVersion: 1, status: "SUSPENDED" },
+          },
+        )
+      ).status,
+    ).toBe(204);
+    expect(
+      code(
+        await call(
+          "multi",
+          "PATCH",
+          `/companies/${company}/members/${successor}`,
+          {
+            strong: true,
+            body: { expectedVersion: 1, status: "SUSPENDED" },
+          },
+        ),
+      ),
+    ).toBe("RESPONSIBLE_ADMINISTRATOR_PROTECTED");
+  });
+
+  it("closes declined, cancelled and expired transfers without moving responsibility", async () => {
+    const company = await createCompany("aAdmin", "Closed transfers");
+    const successor = await addCompanyMember(
+      "multi",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    const otherAdmin = await addCompanyMember(
+      "bAdmin",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    const propose = (successorMembershipId = successor) =>
+      call("aAdmin", "POST", `/companies/${company}/responsibility-transfers`, {
+        strong: true,
+        body: { successorMembershipId },
+      });
+    const close = (person: Person, transferId: string) =>
+      call(
+        person,
+        "POST",
+        `/companies/${company}/responsibility-transfers/${transferId}/cancel`,
+      );
+    const status = async (transferId: string) =>
+      (
+        await sql.query<{ status: string }>(
+          "SELECT status::text AS status FROM responsibility_transfers WHERE id = $1",
+          [transferId],
+        )
+      ).rows[0].status;
+
+    const declined = (await propose()).body.id as string;
+    expect(code(await close("bAdmin", declined))).toBe("RESOURCE_NOT_FOUND");
+    expect((await close("multi", declined)).status).toBe(204);
+    expect(await status(declined)).toBe("DECLINED");
+    expect(code(await close("multi", declined))).toBe(
+      "RESPONSIBILITY_TRANSFER_NOT_PENDING",
+    );
+
+    const cancelled = (await propose()).body.id as string;
+    expect((await close("aAdmin", cancelled)).status).toBe(204);
+    expect(await status(cancelled)).toBe("CANCELLED");
+
+    const expired = (await propose()).body.id as string;
+    await sql.query(
+      "UPDATE responsibility_transfers SET created_at = now() - interval '8 days', expires_at = now() - interval '1 day' WHERE id = $1",
+      [expired],
+    );
+    expect(
+      (await call("multi", "GET", `/companies/${company}`, { strong: true }))
+        .body.responsibilityTransfer,
+    ).toBeNull();
+    expect(
+      code(
+        await call(
+          "multi",
+          "POST",
+          `/companies/${company}/responsibility-transfers/${expired}/accept`,
+          { strong: true },
+        ),
+      ),
+    ).toBe("RESPONSIBILITY_TRANSFER_NOT_PENDING");
+    const results = await Promise.all([propose(), propose(otherAdmin)]);
+    expect(results.map((result) => result.status).sort()).toEqual([201, 409]);
+    expect(await status(expired)).toBe("EXPIRED");
+
+    const { rows } = await sql.query<{ membership_id: string }>(
+      "SELECT r.membership_id FROM company_responsibilities r JOIN memberships m ON m.id = r.membership_id WHERE r.company_id = $1 AND m.principal_id = $2",
+      [company, people.aAdmin],
+    );
+    expect(rows).toHaveLength(1);
+    const audit = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/audit-events`,
+      { strong: true },
+    );
+    expect(
+      (audit.body.items as { action: string }[])
+        .map((item) => item.action)
+        .filter((action) => action.startsWith("responsibility.")),
+    ).toEqual([
+      "responsibility.transfer_requested",
+      "responsibility.transfer_requested",
+      "responsibility.transfer_cancelled",
+      "responsibility.transfer_requested",
+      "responsibility.transfer_declined",
+      "responsibility.transfer_requested",
+    ]);
+  });
+
+  it("keeps transfer parties tenant-bound, immutable and one pending per company for the runtime role", async () => {
+    const company = await createCompany("aAdmin", "Transfer constraints");
+    const successor = await addCompanyMember(
+      "multi",
+      company,
+      "COMPANY_ADMINISTRATOR",
+    );
+    const transfer = (
+      await call(
+        "aAdmin",
+        "POST",
+        `/companies/${company}/responsibility-transfers`,
+        {
+          strong: true,
+          body: { successorMembershipId: successor },
+        },
+      )
+    ).body.id as string;
+    const { rows } = await sql.query<{ membership_id: string }>(
+      "SELECT membership_id FROM company_responsibilities WHERE company_id = $1",
+      [company],
+    );
+    const foreign = await sql.query<{ id: string }>(
+      "SELECT id FROM memberships WHERE company_id = $1 LIMIT 1",
+      [companyB],
+    );
+    // A closed row avoids the one-pending index, so the reference is what fails.
+    const insert = (to: string, status = "PENDING") =>
+      runtime.query(
+        "INSERT INTO responsibility_transfers (id, company_id, from_membership_id, to_membership_id, status, expires_at, decided_at) VALUES ($1, $2, $3, $4, $5, now() + interval '1 day', $6)",
+        [
+          randomUUID(),
+          company,
+          rows[0].membership_id,
+          to,
+          status,
+          status === "PENDING" ? null : new Date(),
+        ],
+      );
+    await expect(insert(successor)).rejects.toMatchObject({ code: "23505" });
+    await expect(insert(foreign.rows[0].id, "CANCELLED")).rejects.toMatchObject(
+      {
+        code: "23503",
+      },
+    );
+    await expect(
+      runtime.query(
+        "UPDATE responsibility_transfers SET to_membership_id = from_membership_id WHERE id = $1",
+        [transfer],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+    await expect(
+      runtime.query(
+        "UPDATE responsibility_transfers SET status = 'ACCEPTED' WHERE id = $1",
+        [transfer],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+    await expect(
+      runtime.query("DELETE FROM responsibility_transfers WHERE id = $1", [
+        transfer,
+      ]),
+    ).rejects.toMatchObject({ code: "42501" });
+    await expect(
+      runtime.query(
+        "UPDATE membership_grants SET role = 'COMPANY_ADMINISTRATOR' WHERE company_id = $1",
+        [company],
+      ),
+    ).rejects.toMatchObject({ code: "42501" });
+  });
+
   it("paginates more than 200 companies with stable boundaries and current membership predicates", async () => {
     const { rows } = await sql.query<{ company_id: string }>(
       `
