@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion itself changes only by adding its foundation manifest, validation, and documentation; its history and completed evidence are preserved.\nA future change to the manifest schema requires a new schema version and an upgrade path for existing projects.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[Implementation plan](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/implementation-plan.md) and [human actions](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/human-actions.md)\n[Migration policy](../database/migrations.md) and [release evolution](../database/release-evolution.md)\n[ADR-0011: continuous integration and supply-chain security](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "anchor": "adr-0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "text": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags\n**Status:** accepted\n**Date:** 2026-09-29\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only its statement that no release or version scheme exists\n"
+  },
+  {
     "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
     "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
     "group": "Decisions",
@@ -1519,68 +1546,5 @@
     "heading": "ADR-NNNN: Decision Title",
     "anchor": "adr-nnnn-decision-title",
     "text": "ADR-NNNN: Decision Title\n**Status:** proposed\n**Date:** YYYY-MM-DD\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nDescribe the architectural problem or constraint that requires a decision.\nInclude only the context necessary to understand:\nwhy a decision is needed;\nwhich systems or boundaries are affected;\nwhich constraints materially influence the choice;\nwhich assumptions matter.\nAvoid turning this section into a complete implementation design.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nState the architectural decision clearly.\nThis section should make it possible to understand the chosen direction without inferring it from the alternatives or rationale.\nExample form:\nThis repository will ...\n\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nExplain why this option was selected.\nFocus on the tradeoffs, constraints, and evidence that materially influenced the decision.\nDo not list only advantages.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternative A",
-    "anchor": "alternative-a",
-    "text": "Alternative A\nBriefly describe the alternative and why it was not selected.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternative B",
-    "anchor": "alternative-b",
-    "text": "Alternative B\nBriefly describe the alternative and why it was not selected.\nRemove unused alternative sections rather than inventing alternatives.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
   }
 ]

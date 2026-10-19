@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { createInterface } from "node:readline";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import pg from "pg";
 import {
   freePort,
@@ -123,6 +125,12 @@ export async function startIdentityStack(): Promise<IdentityStack> {
     const sessionKeys = `e2e:${randomBytes(32).toString("base64url")}`;
     const mailKeys = `e2e:${randomBytes(32).toString("base64url")}`;
     const deviceCodeKeys = `e2e:${randomBytes(32).toString("base64url")}`;
+    // A disposable media volume; processing needs FFmpeg on PATH.
+    const mediaRoot = await mkdtemp(join(tmpdir(), "teluni-e2e-media-"));
+    resources.push({
+      stop: () =>
+        rm(mediaRoot, { recursive: true, force: true, maxRetries: 3 }),
+    });
     const secrets = [
       identity.webClientSecret,
       identity.provisionerClientSecret,
@@ -154,6 +162,7 @@ export async function startIdentityStack(): Promise<IdentityStack> {
         TELUNI_MAIL_FROM: "no-reply@teluni.test",
         TELUNI_MAIL_KEYS: mailKeys,
         TELUNI_DEVICE_CODE_KEYS: deviceCodeKeys,
+        TELUNI_MEDIA_STORAGE_PATH: mediaRoot,
       },
     });
     resources.unshift(api);

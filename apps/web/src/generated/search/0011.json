@@ -4,6 +4,33 @@
     "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "pgvector",
+    "anchor": "pgvector",
+    "text": "pgvector\nThe optional pgvector capability established by ADR-0005 will be supported through this persistence strategy.\nWhen an application requires pgvector and the selected Prisma version does not completely represent the required vector functionality, Orion may use:\ncustom SQL migrations\n    +\nPrisma unsupported database representations where appropriate\n    +\nTypedSQL or explicit parameterized SQL\n\nfor vector storage and similarity queries.\nThe inability of the ORM to represent a specialized PostgreSQL capability is not sufficient reason to avoid a database feature that otherwise provides clear architectural value.\nVector-specific persistence operations should remain isolated within appropriate persistence or retrieval adapters.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Transactions",
+    "anchor": "transactions",
+    "text": "Transactions\nPrisma transaction mechanisms may be used where they provide the transactional behavior required by the application.\nTransaction boundaries are an application and database-correctness concern, not an ORM convenience concern.\nBusiness operations requiring atomic persistence must define appropriate transaction boundaries according to Orion's transaction and concurrency policy.\nIf a required PostgreSQL transaction behavior cannot be expressed adequately through the selected Prisma API, a more explicit database-access mechanism may be used within the persistence boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Schema documentation",
+    "anchor": "schema-documentation",
+    "text": "Schema documentation\nGenerated database documentation must represent the database that applications actually depend on.\nThe intended flow is:\nPrisma schema\n    +\nversioned SQL migrations\n    ↓\nmigrated PostgreSQL database\n    ↓\nschema introspection\n    ↓\ngenerated database reference\n\nThis prevents generated documentation from silently omitting database behavior introduced through custom SQL migrations.\nThe generated reference remains derived documentation and must not become an independently edited source of truth.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
     "text": "Rationale\nPrisma ORM provides a strong combination of TypeScript integration, schema readability, migration tooling, generated type-safe database access, introspection, and development tooling.\nThis combination aligns particularly well with Orion's AI-first goal.\nA Prisma schema provides a compact and structured representation of persistence relationships that can be efficiently inspected by both human contributors and AI agents.\nImportant persistence properties such as relations, identifiers, nullability, uniqueness, and database types can be discovered without reverse-engineering database access code.\nPrisma Client also provides a highly readable database API for common persistence operations.\nFor ordinary relational workloads this reduces repetitive database-access code while preserving strong TypeScript inference.\nThe integrated relationship between schema definition, generated database client, migrations, and introspection also reduces the number of independent tools that Orion needs to standardize.\nThis is valuable for a reusable engineering foundation intended to support many future projects.\nPrisma is not selected because Orion intends to hide SQL.\nOrion treats SQL and PostgreSQL behavior as important engineering concerns.\nThe persistence strategy therefore deliberately preserves explicit SQL as a first-class escape path.\nThis becomes increasingly important in large systems where reporting, performance-sensitive operations, PostgreSQL-specific features, or specialized persistence workloads may exceed the useful abstraction boundary of an ORM.\nThe intended model is:\ncommon persistence operations\n    → Prisma Client\n\nspecialized database operations\n    → TypedSQL or explicit SQL\n\nrather than:\nevery database operation\n    → ORM regardless of suitability\n\nThis prevents the ORM from becoming an architectural constraint.\nThe decision also preserves PostgreSQL as the authoritative persistence platform.\nPrisma is tooling around PostgreSQL, not a replacement for understanding PostgreSQL.\nThis distinction is important for transaction behavior, indexing, query planning, locking, migrations, constraints, performance, and production investigation.\nPrisma Migrate aligns with Orion's migration philosophy because it produces version-controlled SQL migrations that can be inspected and customized.\nThis allows Orion to retain both the productivity of declarative schema evolution and the operational control required for safe production changes.\nThe Prisma schema alone cannot necessarily represent every physical PostgreSQL capability an Orion application may require.\nTreating an actually migrated PostgreSQL database as the authority for the complete physical schema resolves this limitation without abandoning Prisma's useful authored schema model.\nThe resulting model is:\nPrisma schema\n    → convenient authored persistence model\n\nSQL migrations\n    → explicit released evolution\n\nmigrated PostgreSQL\n    → complete physical truth\n\nThis also provides a stronger foundation for generated database documentation.\nPrisma ORM 7 is selected as the initial baseline because Orion should begin from a stable production-oriented release rather than making a foundational dependency on an in-transition major release.\nA future Prisma major release may provide significant improvements and can be adopted once its production behavior and compatibility are sufficiently established.\nThe project owner also has existing Prisma experience.\nFor a reusable foundation maintained and repeatedly applied across future projects, existing operational and development familiarity provides real value.\nIt reduces learning cost, improves the ability to review generated migrations and persistence behavior, and lowers the risk associated with creating repository conventions around an unfamiliar persistence tool.\n"
@@ -997,23 +1024,5 @@
     "heading": "Decision",
     "anchor": "decision",
     "text": "Decision\nOrion will use **OpenTelemetry as its primary observability standard for distributed tracing and metrics**.\nOrion will continue to use **Pino as its structured application logging implementation**.\nThe default observability model is:\ntraces\n    → OpenTelemetry\n\nmetrics\n    → OpenTelemetry\n\napplication logs\n    → Pino\n\ntelemetry transport\n    → OTLP\n\nproduction telemetry routing\n    → OpenTelemetry Collector preferred\n\nobservability backend\n    → deployment-specific\n\nNo observability backend or SaaS vendor will be selected globally by the Orion foundation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Observability responsibilities",
-    "anchor": "observability-responsibilities",
-    "text": "Observability responsibilities\nThe responsibilities are intentionally separated:\nOpenTelemetry\n├── tracing\n├── metrics\n├── context propagation\n├── instrumentation\n└── telemetry export\n\nPino\n├── structured application logs\n├── operational events\n├── request logs\n└── structured error logs\n\ndeployment infrastructure\n├── log collection\n├── telemetry routing\n├── storage\n├── querying\n├── dashboards\n└── alerting\n\nAn observability provider must not become a dependency of Orion domain or application architecture merely because it stores or visualizes telemetry.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Distributed tracing",
-    "anchor": "distributed-tracing",
-    "text": "Distributed tracing\nOpenTelemetry will provide Orion's distributed tracing model.\nTracing should cover important execution boundaries including, where applicable:\ninbound HTTP requests;\nFastify request processing;\noutbound HTTP requests;\nPrisma/database operations;\nexternal integrations;\nbackground work;\ndistributed service calls;\noperationally significant application operations.\nThe intended trace structure is conceptually:\nincoming HTTP request\n    ↓\nHTTP server span\n    ↓\nFastify processing\n    ↓\napplication operation\n    ↓\ndatabase / external integration\n\nTracing is intended to represent causally related units of work rather than duplicate every function call in the application.\n"
   }
 ]

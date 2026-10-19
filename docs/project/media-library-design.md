@@ -173,7 +173,9 @@ Implemented in [PJ-09](implementation-plan.md#current-work) on 2026-10-19, incre
 - The in-process processor with leases, FFmpeg isolation and renditions; delete to trash, restore, discard, purge with reference guards and object sharing, and maintenance of expired uploads, work files and orphan objects. Programming and publications register their guards in PJ-10 and PJ-11.
 - The [two-company integration suite](../../apps/api/test/media/integration.test.ts) processes generated fixtures with real FFmpeg against PostgreSQL as the runtime role, and [domain tests](../../apps/api/test/media/domain.test.ts) cover the bounds and the playback-profile decision.
 
-Pending: increment 3 (explicit sharing with selected branches and storage accounting for PJ-27), a processing-timeout fixture, and the panel **Mídia** pages.
+- The panel's **Mídia** pages in `apps/web` for the library, upload with per-file progress, preview, rename and tags, archive, trash and discard, with browser component tests and a [browser journey](../../apps/web/test/e2e/media/library.spec.ts) through the real identity stack and FFmpeg.
+
+Pending: increment 3 (explicit sharing with selected branches and storage accounting for PJ-27) and a processing-timeout fixture.
 
 ## Decisions for review
 

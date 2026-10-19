@@ -14,6 +14,14 @@ export const identityErrorCodes: ReadonlySet<string> = new Set([
 // The session's CSRF token lives only in memory and only for unsafe requests.
 let csrfToken: string | null = null;
 
+/**
+ * The session's CSRF token for unsafe requests the SDK cannot send, such as
+ * uploads that report progress. Never store or log it.
+ */
+export function currentCsrfToken(): string | null {
+  return csrfToken;
+}
+
 /** SDK client that sends the session cookie and, on unsafe methods, the CSRF token. */
 export function sessionApiClient() {
   return createApiClient(loadClientConfig().apiBaseUrl, () => null, {

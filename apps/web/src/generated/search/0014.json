@@ -4,6 +4,69 @@
     "title": "ADR-NNNN: Decision Title",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nDescribe the architectural problem or constraint that requires a decision.\nInclude only the context necessary to understand:\nwhy a decision is needed;\nwhich systems or boundaries are affected;\nwhich constraints materially influence the choice;\nwhich assumptions matter.\nAvoid turning this section into a complete implementation design.\n"
+  },
+  {
+    "id": "repository/docs/adr/template",
+    "title": "ADR-NNNN: Decision Title",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nState the architectural decision clearly.\nThis section should make it possible to understand the chosen direction without inferring it from the alternatives or rationale.\nExample form:\nThis repository will ...\n\n"
+  },
+  {
+    "id": "repository/docs/adr/template",
+    "title": "ADR-NNNN: Decision Title",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nExplain why this option was selected.\nFocus on the tradeoffs, constraints, and evidence that materially influenced the decision.\nDo not list only advantages.\n"
+  },
+  {
+    "id": "repository/docs/adr/template",
+    "title": "ADR-NNNN: Decision Title",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/template",
+    "title": "ADR-NNNN: Decision Title",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternative A",
+    "anchor": "alternative-a",
+    "text": "Alternative A\nBriefly describe the alternative and why it was not selected.\n"
+  },
+  {
+    "id": "repository/docs/adr/template",
+    "title": "ADR-NNNN: Decision Title",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternative B",
+    "anchor": "alternative-b",
+    "text": "Alternative B\nBriefly describe the alternative and why it was not selected.\nRemove unused alternative sections rather than inventing alternatives.\n"
+  },
+  {
+    "id": "repository/docs/adr/template",
+    "title": "ADR-NNNN: Decision Title",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/template",
+    "title": "ADR-NNNN: Decision Title",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nDescribe meaningful benefits.\n"
@@ -952,14 +1015,5 @@
     "heading": "Sources and representations",
     "anchor": "sources-and-representations",
     "text": "Sources and representations\nThe navigation brand displays the Orion foundation revision. At Vite startup/build, [build metadata](../../apps/web/scripts/foundation-version.ts) reads stable Git tags reachable from the foundation checkout; later or modified revisions are marked `unreleased`. Derived projects display their recorded baseline SHA instead of interpreting product tags as Orion releases. Missing Git history is shown as `Version unavailable`. This metadata is embedded in the build, requires no browser network request, and does not duplicate the canonical tag in tracked generated files.\nSubject\nCanonical source\nDerived representation\nRepository knowledge\nAuthored Markdown under `docs/` and local README/instruction files\nSafe rendered page JSON, headings, catalog summaries, and searchable sections\nAPI\nExecutable TypeBox contracts, route metadata, and error registry, through generated OpenAPI/errors\nOperation detail pages with full schemas and referenced components; error-registry document; generated SDK remains a separate consumer\nDatabase\nMigrated PostgreSQL and schema-adjacent semantic metadata in `apps/api/prisma/metadata/`, through generated database Markdown\nTable dictionary pages and complete physical/semantic reference, including enums\nComponents\n[Actual exports](../../apps/web/src/components.tsx) and [owned examples/metadata](../../apps/web/src/components.docs.json)\nComponent detail pages, safe previews, and [AI-readable Markdown](../generated/components/web.md)\nConfiguration\nAPI TypeBox schema and [reference metadata](../../apps/api/src/config.ts)\nLocally readable [safe configuration reference](../generated/configuration/api.md); no environment values\nAuthored guidance owns intent, constraints, rationale, and procedures. The portal may summarize, index, or render those sources but must not invent missing meaning. Accepted ADRs retain decision-time context and status. Repository policy, current implementation, and deliberately conditional capabilities remain distinguishable.\n"
-  },
-  {
-    "id": "repository/docs/architecture/living-documentation",
-    "title": "Living Documentation",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Generation and drift protection",
-    "anchor": "generation-and-drift-protection",
-    "text": "Generation and drift protection\nThe [generator entry point](../../tooling/documentation/generate.mjs) delegates discovery/output handling, Markdown rendering, and reference transformation to small tooling modules. It emits `apps/web/src/generated/manifest.json`, individual JSON files under `pages/`, bounded search assets under `search/`, and the component Markdown reference. The manifest contains navigation metadata, not the repository body text. Repository outlines load with their page. The browser loads only the selected page; the application workflow lazy-loads the documentation UI separately.\nDiscovery uses Git's tracked and non-ignored new files, constrained to the documented source scope. Dependencies, ignored local files, runtime environment, databases, and arbitrary filesystem paths are not publication inputs. Symlinks and paths escaping the repository are rejected. Files, IDs, headings, search records, and serialized outputs have deterministic ordering; output contains no clock, host path, or environment-dependent values. Line endings normalize before comparison.\n`pnpm docs:references:write` deliberately regenerates owned output and removes obsolete generated files. `pnpm docs:references:check` detects missing, stale, or orphaned generated output without repairing it. Component metadata completeness, supported schema metadata, duplicate identifiers, referenced schemas, local links, and known secret patterns are checked at their owning layers. Test fixtures exercise malicious Markdown, links, identifiers, drift, and larger document inventories. These controls do not prove authored meaning is correct or detect every secret; review remains required.\nThe database introspector supports current ordinary application tables, columns, non-primary constraints/indexes, and enums. Extend it before introducing uncovered PostgreSQL object kinds; [schema documentation](../database/schema-documentation.md) retains the broader physical-truth requirement. The portal does not reinterpret an absent catalog object as permission to omit it.\n"
   }
 ]

@@ -4,6 +4,24 @@
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Observability responsibilities",
+    "anchor": "observability-responsibilities",
+    "text": "Observability responsibilities\nThe responsibilities are intentionally separated:\nOpenTelemetry\n├── tracing\n├── metrics\n├── context propagation\n├── instrumentation\n└── telemetry export\n\nPino\n├── structured application logs\n├── operational events\n├── request logs\n└── structured error logs\n\ndeployment infrastructure\n├── log collection\n├── telemetry routing\n├── storage\n├── querying\n├── dashboards\n└── alerting\n\nAn observability provider must not become a dependency of Orion domain or application architecture merely because it stores or visualizes telemetry.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Distributed tracing",
+    "anchor": "distributed-tracing",
+    "text": "Distributed tracing\nOpenTelemetry will provide Orion's distributed tracing model.\nTracing should cover important execution boundaries including, where applicable:\ninbound HTTP requests;\nFastify request processing;\noutbound HTTP requests;\nPrisma/database operations;\nexternal integrations;\nbackground work;\ndistributed service calls;\noperationally significant application operations.\nThe intended trace structure is conceptually:\nincoming HTTP request\n    ↓\nHTTP server span\n    ↓\nFastify processing\n    ↓\napplication operation\n    ↓\ndatabase / external integration\n\nTracing is intended to represent causally related units of work rather than duplicate every function call in the application.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Fastify instrumentation",
     "anchor": "fastify-instrumentation",
     "text": "Fastify instrumentation\nFastify tracing will use **`@fastify/otel`** as the preferred Fastify-specific OpenTelemetry integration.\nThe instrumentation must be initialized early enough to observe relevant Fastify lifecycle behavior.\nUnderlying HTTP instrumentation must also be configured where required for inbound and outbound trace propagation.\nFastify instrumentation remains a transport/infrastructure concern.\nDomain and application code must not depend on Fastify-specific OpenTelemetry APIs.\n"
@@ -1213,32 +1231,5 @@
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nProject history includes Orion's history, and upgrades can still conflict where projects change foundation files.\nRemote protection is local Git configuration; each clone must run `pnpm orion:upstream`, and repository-level protections still require the project's own settings.\nSquash or rebase merges of upgrades break the baseline check and must be avoided.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nOrion itself changes only by adding its foundation manifest, validation, and documentation; its history and completed evidence are preserved.\nA future change to the manifest schema requires a new schema version and an upgrade path for existing projects.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[Implementation plan](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/implementation-plan.md) and [human actions](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/human-actions.md)\n[Migration policy](../database/migrations.md) and [release evolution](../database/release-evolution.md)\n[ADR-0011: continuous integration and supply-chain security](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "anchor": "adr-0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "text": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags\n**Status:** accepted\n**Date:** 2026-09-29\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only its statement that no release or version scheme exists\n"
   }
 ]

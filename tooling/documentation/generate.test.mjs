@@ -292,7 +292,14 @@ test("generation is deterministic and preserves full contracts with bounded per-
         (response) => "description" in response && "content" in response,
       ),
     );
-    if (operation.requestBody) assert.equal(page.request.schema.type, "object");
+    // JSON bodies are objects; a byte upload keeps its binary schema.
+    if (operation.requestBody?.content?.["application/json"])
+      assert.equal(page.request.schema.type, "object");
+    else if (operation.requestBody)
+      assert.deepEqual(
+        page.request.schema,
+        Object.values(operation.requestBody.content)[0].schema,
+      );
     for (const requirement of operation.security ?? [])
       for (const name of Object.keys(requirement))
         assert.ok(
