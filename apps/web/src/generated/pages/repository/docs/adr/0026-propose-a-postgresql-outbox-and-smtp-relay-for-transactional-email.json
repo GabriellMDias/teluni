@@ -1,0 +1,50 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md",
+  "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+  "html": "<p><strong>Status:</strong> proposed\n<strong>Date:</strong> 2026-10-18</p>\n<h2 id=\"context\">Context</h2>\n<p>Company invitations are the first Teluni workflow that must send email from the application: the selected identity policy requires recipient-bound, single-use invitations valid for seven days, and later notices will need the same capability. Keycloak sends its own verification and recovery messages but cannot send application messages, and memberships and grants are application-owned (ADR-0025).</p>\n<p>The <a href=\"/docs/repository/docs/architecture/delivery-and-side-effects\">delivery policy</a> requires a durable required side effect to record its intent with the state change, since sending after commit can lose the effect in a crash and sending before commit can announce a change that never happened. The API currently has no background processing, message broker or outbound-email path. Deployment is a single residential host with Docker Compose and PostgreSQL (ADR-0021), with no recurring procurement budget for identity or email services yet (P03). The real provider, sender domain and DNS authentication are not selected (PH-17), and legal retention is not set (PH-13).</p>\n<p>This record decides the delivery mechanism. The invitation rules, credential handling, limits and retention proposals are specified in the <a href=\"/docs/repository/docs/project/invitation-delivery-design\">invitation and email delivery design</a> (D-13).</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Teluni will deliver transactional email through an application-owned outbox in PostgreSQL and an authenticated SMTP relay:</p>\n<ul>\n<li>A dedicated API capability owns an outbound-message table, a dispatcher and an SMTP adapter. Producers enqueue a message in the same database transaction as the business change it reports, through that capability's public port, and can cancel a message they enqueued. The producing capability owns the meaning of a message; the mail capability owns only delivery.</li>\n<li>The dispatcher runs inside the API process. It claims due messages with row locks and <code>SKIP LOCKED</code> under expiring leases, submits them through SMTP, and records sent, failed or cancelled outcomes with bounded retries, so several instances never send one claim twice in normal operation.</li>\n<li>Delivery is at least once. A crash between the relay's acceptance and the local record can send a message again; consumers of the email (people following a link) must tolerate repeats, and exactly-once delivery is not claimed.</li>\n<li>The SMTP client is the established <code>nodemailer</code> library. The relay is provider-neutral and configured, with TLS required in production; a provider's proprietary HTTP API or webhooks are not used in this version.</li>\n<li>Message bodies are rendered from fixed templates when sent. Secret parameters are stored encrypted under a dedicated key ring only until the message is final. Recipient addresses and credentials never reach logs or telemetry.</li>\n</ul>\n<p>No message broker, separate worker service or job-queue library is introduced. Bounce processing, delivery receipts and a separate worker deployment remain possible later without changing producers.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>PostgreSQL is already the system of record and provides transactional enqueueing and concurrent claiming, so the producer's change and its email commit or fail together without a second stateful system on the single host. In-process dispatch adds no deployment unit; when the API is down, messages wait rather than disappear, which fits low pilot volume and residential availability. Leases and <code>SKIP LOCKED</code> keep the design correct if more instances run later.</p>\n<p>SMTP submission is the most widely supported provider interface, which keeps PH-17 free to choose any service, including one already available to the owner, and keeps a provider change to configuration. <code>nodemailer</code> is the long-established Node.js SMTP client and avoids writing protocol code; it is a routine dependency added under the normal review and supply-chain rules.</p>\n<p>At-least-once delivery is the honest guarantee for an external effect without provider-side idempotency. For invitations a repeated email contains the same still-valid link, so duplicates are harmless; later producers must state their own tolerance.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"send-after-commit-in-the-request\">Send after commit in the request</h3>\n<p>Simplest, but a crash or relay outage after commit silently loses the message, and retrying inside the request ties panel latency to the relay. Rejected by the delivery policy for required effects.</p>\n<h3 id=\"postgresql-job-library\">PostgreSQL job library</h3>\n<p>Libraries such as pg-boss provide queues on PostgreSQL, but they own their schema and its migrations. Fitting that schema into the repository's reviewed SQL migrations, semantic metadata and least-privilege runtime grants would need adaptation and ongoing tracking of the library's internal tables. A small owned table covers the current need with explicit semantics. This was assessed from the libraries' documented design, not by a trial integration.</p>\n<h3 id=\"broker-or-redis-backed-queue\">Broker or Redis-backed queue</h3>\n<p>Adds stateful infrastructure, backups and monitoring on the single host for low volume, and still needs an outbox to close the commit gap.</p>\n<h3 id=\"provider-http-api-with-webhooks\">Provider HTTP API with webhooks</h3>\n<p>Offers delivery events and bounce data, but couples code to one provider before PH-17 selects it and may require paid procurement. Can be reconsidered when a provider is chosen and bounce handling is needed.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>An email intent commits or rolls back with the change it reports, and survives restarts and relay outages.</li>\n<li>No new infrastructure beyond the existing API and PostgreSQL; the provider stays replaceable through configuration.</li>\n<li>Delivery state is queryable, so the panel can show failures and offer resend.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Duplicate emails are possible after a crash; every producer must tolerate them.</li>\n<li>Dispatch stops while the API is down, and the API process gains a background loop to drain, monitor and test.</li>\n<li>Without bounce processing, &quot;sent&quot; means accepted by the relay, not delivered to the mailbox.</li>\n<li>The outbox holds personal data and short-lived encrypted secrets, which need retention, cleanup and key rotation.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>New <code>RESTRICTED</code> settings (relay credentials and the outbound-mail key ring) and monitoring of queue age and failures. Real sending requires PH-17's sender, domain authentication and provider terms, and PH-13's notices; local and CI use a disposable Mailpit sink.</li>\n<li>Moving dispatch to a separate worker later reuses the same table and claiming rules; adopting a provider API later replaces only the adapter.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/project/invitation-delivery-design\">Invitation and email delivery design (D-13)</a></li>\n<li><a href=\"/docs/repository/docs/architecture/delivery-and-side-effects\">Delivery and side effects</a></li>\n<li><a href=\"/docs/repository/docs/project/identity-and-access\">Identity and access policies</a></li>\n<li><a href=\"/docs/repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage\">ADR-0021</a>, <a href=\"/docs/repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions\">ADR-0024</a>, <a href=\"/docs/repository/docs/adr/0025-propose-application-owned-scoped-access-profiles\">ADR-0025</a></li>\n<li><a href=\"/docs/repository/docs/project/human-actions#ph-17\">PH-17</a>, <a href=\"/docs/repository/docs/project/human-actions#ph-21\">PH-21</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0026-deliver-transactional-email-through-a-postgresql-outbox-and-an-smtp-relay",
+      "text": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "send-after-commit-in-the-request",
+      "text": "Send after commit in the request",
+      "level": 3
+    },
+    {
+      "id": "postgresql-job-library",
+      "text": "PostgreSQL job library",
+      "level": 3
+    },
+    {
+      "id": "broker-or-redis-backed-queue",
+      "text": "Broker or Redis-backed queue",
+      "level": 3
+    },
+    {
+      "id": "provider-http-api-with-webhooks",
+      "text": "Provider HTTP API with webhooks",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

@@ -939,6 +939,16 @@
       "file": "pages/repository/docs/adr/0025-propose-application-owned-scoped-access-profiles.json"
     },
     {
+      "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+      "kind": "repository",
+      "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+      "group": "Decisions",
+      "source": "docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md",
+      "summary": "Company invitations are the first Teluni workflow that must send email from the application: the selected identity policy requires recipient-bound, single-use invitations valid…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -1349,6 +1359,16 @@
       "file": "pages/repository/docs/project/implementation-plan.json"
     },
     {
+      "id": "repository/docs/project/invitation-delivery-design",
+      "kind": "repository",
+      "title": "Teluni Company Invitation and Durable Email Delivery Design",
+      "group": "Project guides",
+      "source": "docs/project/invitation-delivery-design.md",
+      "summary": "Proposed detailed design for D-13, 2026-10-18, awaiting owner review under PH-21. Nothing in this document is implemented. It specifies company invitations (the selected…",
+      "headings": [],
+      "file": "pages/repository/docs/project/invitation-delivery-design.json"
+    },
+    {
       "id": "repository/docs/project/mvp",
       "kind": "repository",
       "title": "Teluni Initial Release Requirements and Acceptance",
@@ -1722,15 +1742,16 @@
       { "file": "search/0004.json", "count": 109, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 120, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 173, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 116, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 133, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 88, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 53, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 71, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 102, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 85, "kinds": ["repository"] }
+      { "file": "search/0007.json", "count": 123, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 134, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 87, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 52, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 21, "kinds": ["repository"] }
     ],
-    "count": 1231
+    "count": 1262
   }
 }
