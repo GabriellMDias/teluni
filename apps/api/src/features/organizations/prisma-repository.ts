@@ -2,9 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import {
+  delegableCapabilities,
   OrganizationFailure,
   responsibilityTransferDays,
   type AccessRole,
+  type Capability,
+  type GrantAuthority,
   type AuditVisibility,
   type GrantScopeName,
   type BranchStatus,
@@ -59,7 +62,9 @@ export type Actor = Readonly<{ principalId: string; membershipId: string }>;
 /** A grant that has not been revoked and has not expired. */
 export type GrantRecord = Readonly<{
   id: string;
-  role: AccessRole;
+  /** The standard role, or null when the grant carries an access profile. */
+  role: AccessRole | null;
+  profile: { id: string; name: string } | null;
   scope: GrantScopeName;
   branches: { id: string; name: string }[];
   startsAt: Date;
@@ -95,6 +100,71 @@ export type LockedMember = {
 
 export const effectiveGrant = Prisma.sql`revoked_at IS NULL AND starts_at <= statement_timestamp()
   AND (expires_at IS NULL OR expires_at > statement_timestamp())`;
+
+/** A grant row joined with its branch scope and active profile, for access decisions. */
+export type GrantAccessRow = {
+  grant_id: string | null;
+  role: AccessRole | null;
+  profile_id: string | null;
+  profile_capabilities: string[] | null;
+  profile_name: string | null;
+  scope: GrantScopeName | null;
+  branch_id: string | null;
+};
+
+/**
+ * Columns and joins that read effective grants as GrantAccessRow; the query
+ * aliases memberships as `m` and joins membership_grants as `g`. A profile
+ * grant counts only while its profile is active.
+ */
+export const grantAccessColumns = Prisma.sql`g.id AS grant_id, g.role::text AS role,
+  p.id AS profile_id, p.name AS profile_name, p.capabilities AS profile_capabilities, g.scope::text AS scope, gb.branch_id`;
+export const grantAccessJoins = Prisma.sql`
+  LEFT JOIN access_profiles p ON p.company_id = g.company_id AND p.id = g.profile_id
+    AND p.status = 'ACTIVE'
+  LEFT JOIN membership_grant_branches gb ON gb.company_id = g.company_id AND gb.grant_id = g.id`;
+
+/** Folds GrantAccessRow rows into the grants a CompanyAccess carries. */
+export function grantsFromRows(rows: readonly GrantAccessRow[]): Grant[] {
+  const grants = new Map<
+    string,
+    {
+      authority: GrantAuthority;
+      scope: GrantScopeName;
+      branches: Set<string>;
+    }
+  >();
+  for (const row of rows) {
+    if (!row.grant_id || !row.scope) continue;
+    let grant = grants.get(row.grant_id);
+    if (!grant) {
+      const authority: GrantAuthority | null = row.role
+        ? { role: row.role }
+        : row.profile_id && row.profile_capabilities
+          ? {
+              profileId: row.profile_id,
+              profileName: row.profile_name ?? "",
+              capabilities: new Set(
+                row.profile_capabilities.filter((capability) =>
+                  (delegableCapabilities as readonly string[]).includes(
+                    capability,
+                  ),
+                ) as Capability[],
+              ),
+            }
+          : null;
+      if (!authority) continue;
+      grant = { authority, scope: row.scope, branches: new Set<string>() };
+      grants.set(row.grant_id, grant);
+    }
+    if (row.branch_id) grant.branches.add(row.branch_id);
+  }
+  return [...grants.values()].map(({ authority, scope, branches }): Grant =>
+    scope === "COMPANY"
+      ? { ...authority, scope: "COMPANY" }
+      : { ...authority, scope: "BRANCHES", branchIds: branches },
+  );
+}
 
 type CompanyRow = {
   id: string;
@@ -139,7 +209,7 @@ const branch = (row: BranchRow): BranchRecord => ({
 });
 
 /** True when the database rejected a write through the named unique index. */
-function violates(error: unknown, constraint: string): boolean {
+export function violates(error: unknown, constraint: string): boolean {
   if (!(error instanceof Error)) return false;
   const evidence = `${error.message} ${JSON.stringify(
     (error as { meta?: unknown }).meta ?? {},
@@ -271,7 +341,7 @@ export class PrismaOrganizationRepository {
     >`
       SELECT m.id, m.principal_id, m.status::text AS status, m.version,
         COALESCE(r.membership_id = m.id, false) AS responsible,
-        COALESCE(array_agg(DISTINCT g.role::text) FILTER (WHERE g.id IS NOT NULL), '{}') AS roles
+        COALESCE(array_agg(DISTINCT g.role::text) FILTER (WHERE g.role IS NOT NULL), '{}') AS roles
       FROM memberships m
       LEFT JOIN company_responsibilities r ON r.company_id = m.company_id
       LEFT JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
@@ -306,7 +376,9 @@ export class PrismaOrganizationRepository {
       {
         id: string;
         membership_id: string;
-        role: AccessRole;
+        role: AccessRole | null;
+        profile_id: string | null;
+        profile_name: string | null;
         scope: GrantScopeName;
         starts_at: Date;
         expires_at: Date | null;
@@ -314,9 +386,11 @@ export class PrismaOrganizationRepository {
         branch_name: string | null;
       }[]
     >`
-      SELECT g.id, g.membership_id, g.role::text AS role, g.scope::text AS scope,
+      SELECT g.id, g.membership_id, g.role::text AS role, p.id AS profile_id,
+        p.name AS profile_name, g.scope::text AS scope,
         g.starts_at, g.expires_at, b.id AS branch_id, b.name AS branch_name
       FROM membership_grants g
+      LEFT JOIN access_profiles p ON p.company_id = g.company_id AND p.id = g.profile_id
       LEFT JOIN membership_grant_branches gb ON gb.company_id = g.company_id AND gb.grant_id = g.id
       LEFT JOIN branches b ON b.company_id = gb.company_id AND b.id = gb.branch_id
       WHERE g.company_id = ${companyId}::uuid
@@ -324,7 +398,10 @@ export class PrismaOrganizationRepository {
         AND g.revoked_at IS NULL
         AND (g.expires_at IS NULL OR g.expires_at > statement_timestamp())
       ORDER BY g.created_at, g.id, lower(b.name), b.id`;
-    const byId = new Map<string, GrantRecord & { membershipId: string }>();
+    const byId = new Map<
+      string,
+      GrantRecord & { membershipId: string; branches: GrantRecord["branches"] }
+    >();
     for (const row of rows) {
       let grant = byId.get(row.id);
       if (!grant) {
@@ -332,6 +409,10 @@ export class PrismaOrganizationRepository {
           id: row.id,
           membershipId: row.membership_id,
           role: row.role,
+          profile:
+            row.profile_id && row.profile_name
+              ? { id: row.profile_id, name: row.profile_name }
+              : null,
           scope: row.scope,
           branches: [],
           startsAt: row.starts_at,
@@ -374,7 +455,9 @@ export class PrismaOrganizationRepository {
     companyId: string,
     memberId: string,
     input: {
-      role: AccessRole;
+      /** Exactly one of role and profileId is set. */
+      role: AccessRole | null;
+      profileId: string | null;
       scope: GrantScopeName;
       branchIds: string[];
       expiresAt: Date | null;
@@ -406,11 +489,23 @@ export class PrismaOrganizationRepository {
         if (branches.length !== input.branchIds.length)
           throw new OrganizationFailure("VALIDATION_FAILED");
       }
+      let profileName: string | null = null;
+      if (input.profileId) {
+        // Unknown, archived and other companies' profiles are rejected alike;
+        // the share lock keeps the profile active until this grant commits.
+        const [profile] = await tx.$queryRaw<{ name: string }[]>`
+          SELECT name FROM access_profiles WHERE company_id = ${companyId}::uuid
+            AND id = ${input.profileId}::uuid AND status = 'ACTIVE'
+          FOR SHARE`;
+        if (!profile) throw new OrganizationFailure("VALIDATION_FAILED");
+        profileName = profile.name;
+      }
       const existing = (await this.#grantsOf(companyId, [memberId], tx))
         .get(memberId)
         ?.find(
           (grant) =>
             grant.role === input.role &&
+            (grant.profile?.id ?? null) === input.profileId &&
             grant.scope === input.scope &&
             (grant.expiresAt?.getTime() ?? null) ===
               (input.expiresAt?.getTime() ?? null) &&
@@ -422,10 +517,10 @@ export class PrismaOrganizationRepository {
       if (existing) return { grant: existing, created: false };
       const grantId = randomUUID();
       await tx.$executeRaw`
-        INSERT INTO membership_grants (id, company_id, membership_id, role, scope,
-          expires_at, granted_by_membership_id)
+        INSERT INTO membership_grants (id, company_id, membership_id, role, profile_id,
+          scope, expires_at, granted_by_membership_id)
         VALUES (${grantId}::uuid, ${companyId}::uuid, ${memberId}::uuid,
-          ${input.role}::"AccessRole", ${input.scope}::"GrantScope",
+          ${input.role}::"AccessRole", ${input.profileId}::uuid, ${input.scope}::"GrantScope",
           ${input.expiresAt}::timestamptz, ${actor.membershipId}::uuid)`;
       for (const branchId of input.branchIds)
         await tx.$executeRaw`
@@ -437,7 +532,9 @@ export class PrismaOrganizationRepository {
         targetId: memberId,
         details: {
           grantId,
-          role: input.role,
+          ...(input.role
+            ? { role: input.role }
+            : { profileId: input.profileId, profileName }),
           scope: input.scope,
           branchCount: input.branchIds.length,
           expiresAt: input.expiresAt?.toISOString() ?? null,
@@ -468,9 +565,18 @@ export class PrismaOrganizationRepository {
       const target = authority.members.get(memberId);
       if (!target) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
       const [grant] = await tx.$queryRaw<
-        { role: AccessRole; scope: GrantScopeName; effective: boolean }[]
+        {
+          role: AccessRole | null;
+          profile_id: string | null;
+          profile_name: string | null;
+          scope: GrantScopeName;
+          effective: boolean;
+        }[]
       >`
-        SELECT role::text AS role, scope::text AS scope,
+        SELECT role::text AS role, profile_id, scope::text AS scope,
+          (SELECT p.name FROM access_profiles p
+            WHERE p.company_id = membership_grants.company_id
+              AND p.id = membership_grants.profile_id) AS profile_name,
           (revoked_at IS NULL AND (expires_at IS NULL OR expires_at > statement_timestamp())) AS effective
         FROM membership_grants
         WHERE company_id = ${companyId}::uuid AND id = ${grantId}::uuid
@@ -507,7 +613,13 @@ export class PrismaOrganizationRepository {
         action: "grant.revoked",
         targetType: "membership",
         targetId: memberId,
-        details: { grantId, role: grant.role, scope: grant.scope },
+        details: {
+          grantId,
+          ...(grant.role
+            ? { role: grant.role }
+            : { profileId: grant.profile_id, profileName: grant.profile_name }),
+          scope: grant.scope,
+        },
         branchIds: branches.map((row) => row.branch_id),
       });
     });
@@ -825,54 +937,31 @@ export class PrismaOrganizationRepository {
     companyId: string,
   ): Promise<ResolvedMembership | null> {
     const rows = await this.#db.$queryRaw<
-      {
+      ({
         company_status: CompanyStatus;
         membership_id: string;
         responsible: boolean;
-        grant_id: string | null;
-        role: AccessRole | null;
-        scope: "COMPANY" | "BRANCHES" | null;
-        branch_id: string | null;
-      }[]
+      } & GrantAccessRow)[]
     >`
       SELECT c.status::text AS company_status, m.id AS membership_id,
-        COALESCE(r.membership_id = m.id, false) AS responsible,
-        g.id AS grant_id, g.role::text AS role, g.scope::text AS scope, gb.branch_id
+        COALESCE(r.membership_id = m.id, false) AS responsible, ${grantAccessColumns}
       FROM memberships m
       JOIN companies c ON c.id = m.company_id
       LEFT JOIN company_responsibilities r ON r.company_id = m.company_id
       LEFT JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id
         AND g.revoked_at IS NULL AND g.starts_at <= now()
         AND (g.expires_at IS NULL OR g.expires_at > now())
-      LEFT JOIN membership_grant_branches gb ON gb.company_id = g.company_id AND gb.grant_id = g.id
+      ${grantAccessJoins}
       WHERE m.company_id = ${companyId}::uuid AND m.principal_id = ${principalId}::uuid
         AND m.status = 'ACTIVE'`;
     const first = rows[0];
     if (!first) return null;
-    const grants = new Map<
-      string,
-      { role: AccessRole; scope: "COMPANY" | "BRANCHES"; branches: Set<string> }
-    >();
-    for (const row of rows) {
-      if (!row.grant_id || !row.role || !row.scope) continue;
-      const grant = grants.get(row.grant_id) ?? {
-        role: row.role,
-        scope: row.scope,
-        branches: new Set<string>(),
-      };
-      if (row.branch_id) grant.branches.add(row.branch_id);
-      grants.set(row.grant_id, grant);
-    }
     return {
       companyId,
       companyStatus: first.company_status,
       membershipId: first.membership_id,
       responsible: first.responsible,
-      grants: [...grants.values()].map((grant) =>
-        grant.scope === "COMPANY"
-          ? { role: grant.role, scope: "COMPANY" }
-          : { role: grant.role, scope: "BRANCHES", branchIds: grant.branches },
-      ),
+      grants: grantsFromRows(rows),
     };
   }
 
@@ -889,7 +978,7 @@ export class PrismaOrganizationRepository {
     >`
       SELECT c.id, c.display_name, c.status::text AS status, c.default_locale, c.time_zone,
         c.version, c.created_at, c.updated_at,
-        COALESCE(array_agg(DISTINCT g.role::text) FILTER (WHERE g.id IS NOT NULL), '{}') AS roles
+        COALESCE(array_agg(DISTINCT g.role::text) FILTER (WHERE g.role IS NOT NULL), '{}') AS roles
       FROM memberships m
       JOIN companies c ON c.id = m.company_id
       LEFT JOIN membership_grants g ON g.company_id = m.company_id AND g.membership_id = m.id

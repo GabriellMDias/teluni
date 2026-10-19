@@ -3,6 +3,7 @@ import type { HumanProfilePort, HumanSessionPort } from "../identity/public.js";
 import { organizationOperations } from "./contracts.js";
 import { organizationErrors } from "./errors.js";
 import { PrismaOrganizationRepository } from "./prisma-repository.js";
+import { PrismaProfileRepository } from "./profile-repository.js";
 import type { CompanyAccessPort } from "./public.js";
 import { registerOrganizationRoutes } from "./routes.js";
 import { OrganizationService } from "./service.js";
@@ -34,6 +35,7 @@ export function createOrganizationsModule(options: {
       // Activation guarantees the database and the identity module.
       const active = new OrganizationService(
         new PrismaOrganizationRepository(database!),
+        new PrismaProfileRepository(database!),
         options.profiles,
       );
       service = active;

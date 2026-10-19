@@ -33,7 +33,7 @@ const companyRoute = createRoute({
     search: Record<string, unknown>,
   ): {
     cursor?: string;
-    view?: "settings" | "history" | "members" | "invitations";
+    view?: "settings" | "history" | "members" | "invitations" | "profiles";
   } => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
@@ -43,7 +43,8 @@ const companyRoute = createRoute({
     ...(search.view === "settings" ||
     search.view === "history" ||
     search.view === "members" ||
-    search.view === "invitations"
+    search.view === "invitations" ||
+    search.view === "profiles"
       ? { view: search.view }
       : {}),
   }),

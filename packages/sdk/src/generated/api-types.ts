@@ -200,7 +200,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Grant a standard role to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches are rejected alike. An identical effective grant is returned with 200 instead of duplicated. */
+        /** @description Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated. */
         post: operations["addMemberGrant"];
         delete?: never;
         options?: never;
@@ -410,6 +410,59 @@ export interface paths {
         get: operations["listCompanyAuditEvents"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/access-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification. */
+        get: operations["listAccessProfiles"];
+        put?: never;
+        /** @description Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification. */
+        post: operations["createAccessProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/access-profiles/{profileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration and two-step verification. */
+        get: operations["getAccessProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration and two-step verification. */
+        patch: operations["updateAccessProfile"];
+        trace?: never;
+    };
+    "/companies/{companyId}/access-profiles/{profileId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration and two-step verification. */
+        post: operations["archiveAccessProfile"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1498,7 +1551,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    role: "COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR";
+                    role?: "COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR";
+                    profileId?: string;
                     scope: "COMPANY" | "BRANCHES";
                     branchIds?: string[];
                     /** Format: date-time */
@@ -1515,7 +1569,11 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
-                        role: "COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR";
+                        role: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR") | null;
+                        profile: {
+                            id: string;
+                            name: string;
+                        } | null;
                         scope: "COMPANY" | "BRANCHES";
                         branches: {
                             id: string;
@@ -1535,7 +1593,11 @@ export interface operations {
                 content: {
                     "application/json": {
                         id: string;
-                        role: "COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR";
+                        role: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR") | null;
+                        profile: {
+                            id: string;
+                            name: string;
+                        } | null;
                         scope: "COMPANY" | "BRANCHES";
                         branches: {
                             id: string;
@@ -2372,7 +2434,11 @@ export interface operations {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             grants: {
                                 id: string;
-                                role: "COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR";
+                                role: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR") | null;
+                                profile: {
+                                    id: string;
+                                    name: string;
+                                } | null;
                                 scope: "COMPANY" | "BRANCHES";
                                 branches: {
                                     id: string;
@@ -2904,6 +2970,7 @@ export interface operations {
                         };
                         access: {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
+                            profiles: string[];
                             responsible: boolean;
                             capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
                             capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
@@ -2944,6 +3011,7 @@ export interface operations {
                         };
                         access: {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
+                            profiles: string[];
                             responsible: boolean;
                             capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
                             capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
@@ -3135,6 +3203,7 @@ export interface operations {
                         };
                         access: {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
+                            profiles: string[];
                             responsible: boolean;
                             capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
                             capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view")[];
@@ -4393,6 +4462,910 @@ export interface operations {
                             };
                         }[];
                         nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listAccessProfiles: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            capabilities: ("branches.view" | "invitations.manage" | "audit.view")[];
+                            status: "ACTIVE" | "ARCHIVED";
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            memberCount: number;
+                            grantCount: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createAccessProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    capabilities: ("branches.view" | "invitations.manage" | "audit.view")[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view")[];
+                        status: "ACTIVE" | "ARCHIVED";
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        memberCount: number;
+                        grantCount: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getAccessProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                profileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        profile: {
+                            id: string;
+                            name: string;
+                            capabilities: ("branches.view" | "invitations.manage" | "audit.view")[];
+                            status: "ACTIVE" | "ARCHIVED";
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            memberCount: number;
+                            grantCount: number;
+                        };
+                        holders: {
+                            grantId: string;
+                            membershipId: string;
+                            membershipStatus: "ACTIVE" | "SUSPENDED" | "REMOVED";
+                            displayName: string | null;
+                            email: string | null;
+                            scope: "COMPANY" | "BRANCHES";
+                            branches: {
+                                id: string;
+                                name: string;
+                            }[];
+                            expiresAt: string | null;
+                        }[];
+                        holdersTruncated: boolean;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateAccessProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                profileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    name?: string;
+                    capabilities?: ("branches.view" | "invitations.manage" | "audit.view")[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view")[];
+                        status: "ACTIVE" | "ARCHIVED";
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        memberCount: number;
+                        grantCount: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    archiveAccessProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                profileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view")[];
+                        status: "ACTIVE" | "ARCHIVED";
+                        version: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        memberCount: number;
+                        grantCount: number;
                     };
                 };
             };

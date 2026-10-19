@@ -2139,7 +2139,7 @@
     "/companies/{companyId}/members/{membershipId}/grants": {
       "post": {
         "operationId": "addMemberGrant",
-        "description": "Grant a standard role to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
+        "description": "Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -2172,7 +2172,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["role", "scope"],
+                "required": ["scope"],
                 "properties": {
                   "role": {
                     "anyOf": [
@@ -2189,6 +2189,10 @@
                         "const": "OPERATOR"
                       }
                     ]
+                  },
+                  "profileId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                   },
                   "scope": {
                     "anyOf": [
@@ -2231,6 +2235,7 @@
                   "required": [
                     "id",
                     "role",
+                    "profile",
                     "scope",
                     "branches",
                     "startsAt",
@@ -2244,16 +2249,47 @@
                     "role": {
                       "anyOf": [
                         {
-                          "type": "string",
-                          "const": "COMPANY_ADMINISTRATOR"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "COMPANY_ADMINISTRATOR"
+                            },
+                            {
+                              "type": "string",
+                              "const": "BRANCH_MANAGER"
+                            },
+                            {
+                              "type": "string",
+                              "const": "OPERATOR"
+                            }
+                          ]
                         },
                         {
-                          "type": "string",
-                          "const": "BRANCH_MANAGER"
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "profile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "pattern": ".*\\S.*"
+                            }
+                          },
+                          "additionalProperties": false
                         },
                         {
-                          "type": "string",
-                          "const": "OPERATOR"
+                          "type": "null"
                         }
                       ]
                     },
@@ -2319,6 +2355,7 @@
                   "required": [
                     "id",
                     "role",
+                    "profile",
                     "scope",
                     "branches",
                     "startsAt",
@@ -2332,16 +2369,47 @@
                     "role": {
                       "anyOf": [
                         {
-                          "type": "string",
-                          "const": "COMPANY_ADMINISTRATOR"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "COMPANY_ADMINISTRATOR"
+                            },
+                            {
+                              "type": "string",
+                              "const": "BRANCH_MANAGER"
+                            },
+                            {
+                              "type": "string",
+                              "const": "OPERATOR"
+                            }
+                          ]
                         },
                         {
-                          "type": "string",
-                          "const": "BRANCH_MANAGER"
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "profile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "pattern": ".*\\S.*"
+                            }
+                          },
+                          "additionalProperties": false
                         },
                         {
-                          "type": "string",
-                          "const": "OPERATOR"
+                          "type": "null"
                         }
                       ]
                     },
@@ -4365,6 +4433,7 @@
                               "required": [
                                 "id",
                                 "role",
+                                "profile",
                                 "scope",
                                 "branches",
                                 "startsAt",
@@ -4378,16 +4447,47 @@
                                 "role": {
                                   "anyOf": [
                                     {
-                                      "type": "string",
-                                      "const": "COMPANY_ADMINISTRATOR"
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "const": "COMPANY_ADMINISTRATOR"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "BRANCH_MANAGER"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "OPERATOR"
+                                        }
+                                      ]
                                     },
                                     {
-                                      "type": "string",
-                                      "const": "BRANCH_MANAGER"
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "profile": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "required": ["id", "name"],
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "name": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 120,
+                                          "pattern": ".*\\S.*"
+                                        }
+                                      },
+                                      "additionalProperties": false
                                     },
                                     {
-                                      "type": "string",
-                                      "const": "OPERATOR"
+                                      "type": "null"
                                     }
                                   ]
                                 },
@@ -5335,6 +5435,7 @@
                       "type": "object",
                       "required": [
                         "roles",
+                        "profiles",
                         "responsible",
                         "capabilities",
                         "capabilitiesAfterStrongAuthentication"
@@ -5357,6 +5458,15 @@
                                 "const": "OPERATOR"
                               }
                             ]
+                          }
+                        },
+                        "profiles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120,
+                            "pattern": ".*\\S.*"
                           }
                         },
                         "responsible": {
@@ -5595,6 +5705,7 @@
                       "type": "object",
                       "required": [
                         "roles",
+                        "profiles",
                         "responsible",
                         "capabilities",
                         "capabilitiesAfterStrongAuthentication"
@@ -5617,6 +5728,15 @@
                                 "const": "OPERATOR"
                               }
                             ]
+                          }
+                        },
+                        "profiles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120,
+                            "pattern": ".*\\S.*"
                           }
                         },
                         "responsible": {
@@ -6615,6 +6735,7 @@
                       "type": "object",
                       "required": [
                         "roles",
+                        "profiles",
                         "responsible",
                         "capabilities",
                         "capabilitiesAfterStrongAuthentication"
@@ -6637,6 +6758,15 @@
                                 "const": "OPERATOR"
                               }
                             ]
+                          }
+                        },
+                        "profiles": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120,
+                            "pattern": ".*\\S.*"
                           }
                         },
                         "responsible": {
@@ -10178,6 +10308,2411 @@
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
           "STRONG_AUTHENTICATION_REQUIRED"
+        ]
+      }
+    },
+    "/companies/{companyId}/access-profiles": {
+      "get": {
+        "operationId": "listAccessProfiles",
+        "description": "List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["items"],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "capabilities",
+                          "status",
+                          "version",
+                          "createdAt",
+                          "updatedAt",
+                          "memberCount",
+                          "grantCount"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120,
+                            "pattern": ".*\\S.*"
+                          },
+                          "capabilities": {
+                            "type": "array",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "branches.view"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "invitations.manage"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "audit.view"
+                                }
+                              ]
+                            }
+                          },
+                          "status": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "ACTIVE"
+                              },
+                              {
+                                "type": "string",
+                                "const": "ARCHIVED"
+                              }
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "memberCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "grantCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED"
+        ]
+      },
+      "post": {
+        "operationId": "createAccessProfile",
+        "description": "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "capabilities"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": ".*\\S.*"
+                  },
+                  "capabilities": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "branches.view"
+                        },
+                        {
+                          "type": "string",
+                          "const": "invitations.manage"
+                        },
+                        {
+                          "type": "string",
+                          "const": "audit.view"
+                        }
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "uniqueItems": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "capabilities",
+                    "status",
+                    "version",
+                    "createdAt",
+                    "updatedAt",
+                    "memberCount",
+                    "grantCount"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": ".*\\S.*"
+                    },
+                    "capabilities": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "branches.view"
+                          },
+                          {
+                            "type": "string",
+                            "const": "invitations.manage"
+                          },
+                          {
+                            "type": "string",
+                            "const": "audit.view"
+                          }
+                        ]
+                      }
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "ACTIVE"
+                        },
+                        {
+                          "type": "string",
+                          "const": "ARCHIVED"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "memberCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "grantCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "CSRF_VALIDATION_FAILED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED",
+          "RESOURCE_VERSION_CONFLICT",
+          "PROFILE_NAME_IN_USE",
+          "PROFILE_LIMIT_REACHED"
+        ]
+      }
+    },
+    "/companies/{companyId}/access-profiles/{profileId}": {
+      "get": {
+        "operationId": "getAccessProfile",
+        "description": "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration and two-step verification.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "profileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["profile", "holders", "holdersTruncated"],
+                  "properties": {
+                    "profile": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "capabilities",
+                        "status",
+                        "version",
+                        "createdAt",
+                        "updatedAt",
+                        "memberCount",
+                        "grantCount"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 120,
+                          "pattern": ".*\\S.*"
+                        },
+                        "capabilities": {
+                          "type": "array",
+                          "items": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "branches.view"
+                              },
+                              {
+                                "type": "string",
+                                "const": "invitations.manage"
+                              },
+                              {
+                                "type": "string",
+                                "const": "audit.view"
+                              }
+                            ]
+                          }
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "ACTIVE"
+                            },
+                            {
+                              "type": "string",
+                              "const": "ARCHIVED"
+                            }
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "memberCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "grantCount": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "holders": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "grantId",
+                          "membershipId",
+                          "membershipStatus",
+                          "displayName",
+                          "email",
+                          "scope",
+                          "branches",
+                          "expiresAt"
+                        ],
+                        "properties": {
+                          "grantId": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "membershipId": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "membershipStatus": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "ACTIVE"
+                              },
+                              {
+                                "type": "string",
+                                "const": "SUSPENDED"
+                              },
+                              {
+                                "type": "string",
+                                "const": "REMOVED"
+                              }
+                            ]
+                          },
+                          "displayName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "email": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "scope": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "COMPANY"
+                              },
+                              {
+                                "type": "string",
+                                "const": "BRANCHES"
+                              }
+                            ]
+                          },
+                          "branches": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": ["id", "name"],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 120,
+                                  "pattern": ".*\\S.*"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "expiresAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "holdersTruncated": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED"
+        ]
+      },
+      "patch": {
+        "operationId": "updateAccessProfile",
+        "description": "Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration and two-step verification.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "profileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expectedVersion"],
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": ".*\\S.*"
+                  },
+                  "capabilities": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "branches.view"
+                        },
+                        {
+                          "type": "string",
+                          "const": "invitations.manage"
+                        },
+                        {
+                          "type": "string",
+                          "const": "audit.view"
+                        }
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "uniqueItems": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "capabilities",
+                    "status",
+                    "version",
+                    "createdAt",
+                    "updatedAt",
+                    "memberCount",
+                    "grantCount"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": ".*\\S.*"
+                    },
+                    "capabilities": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "branches.view"
+                          },
+                          {
+                            "type": "string",
+                            "const": "invitations.manage"
+                          },
+                          {
+                            "type": "string",
+                            "const": "audit.view"
+                          }
+                        ]
+                      }
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "ACTIVE"
+                        },
+                        {
+                          "type": "string",
+                          "const": "ARCHIVED"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "memberCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "grantCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "CSRF_VALIDATION_FAILED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED",
+          "RESOURCE_VERSION_CONFLICT",
+          "PROFILE_NAME_IN_USE",
+          "PROFILE_ARCHIVED"
+        ]
+      }
+    },
+    "/companies/{companyId}/access-profiles/{profileId}/archive": {
+      "post": {
+        "operationId": "archiveAccessProfile",
+        "description": "Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration and two-step verification.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "profileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expectedVersion"],
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "capabilities",
+                    "status",
+                    "version",
+                    "createdAt",
+                    "updatedAt",
+                    "memberCount",
+                    "grantCount"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": ".*\\S.*"
+                    },
+                    "capabilities": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "const": "branches.view"
+                          },
+                          {
+                            "type": "string",
+                            "const": "invitations.manage"
+                          },
+                          {
+                            "type": "string",
+                            "const": "audit.view"
+                          }
+                        ]
+                      }
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "ACTIVE"
+                        },
+                        {
+                          "type": "string",
+                          "const": "ARCHIVED"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "memberCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "grantCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "CSRF_VALIDATION_FAILED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED",
+          "RESOURCE_VERSION_CONFLICT",
+          "PROFILE_IN_USE",
+          "PROFILE_ARCHIVED"
         ]
       }
     },

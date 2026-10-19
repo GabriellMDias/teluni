@@ -87,6 +87,33 @@ export const organizationErrors = defineErrors({
     category: "conflict",
     retryable: false,
   },
+  PROFILE_NAME_IN_USE: {
+    status: 409,
+    message:
+      "Another active access profile of this company already uses that name.",
+    category: "conflict",
+    retryable: false,
+  },
+  PROFILE_ARCHIVED: {
+    status: 409,
+    message: "The access profile is archived and cannot be changed.",
+    category: "conflict",
+    retryable: false,
+  },
+  PROFILE_IN_USE: {
+    status: 409,
+    message:
+      "Members still hold this access profile. Revoke their grants before archiving it.",
+    category: "conflict",
+    retryable: false,
+  },
+  PROFILE_LIMIT_REACHED: {
+    status: 409,
+    message:
+      "The company already has the maximum number of active access profiles.",
+    category: "conflict",
+    retryable: false,
+  },
 });
 
 // Public conditions owned by the invitations module of this feature.

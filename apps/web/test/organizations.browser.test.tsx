@@ -142,6 +142,7 @@ test("preserves branch pagination in the URL and browser history", async () => {
             company: { id: companyId, displayName: "Synthetic company" },
             access: {
               roles: ["OPERATOR"],
+              profiles: [],
               responsible: false,
               capabilities: ["company.view", "branches.view"],
               capabilitiesAfterStrongAuthentication: [],
@@ -191,6 +192,7 @@ test("keeps the edited version across refetch and reviews current data after a c
         company: { id: companyId, displayName: "Synthetic company" },
         access: {
           roles: ["COMPANY_ADMINISTRATOR"],
+          profiles: [],
           responsible: true,
           capabilities: ["company.view", "branches.view", "branches.manage"],
           capabilitiesAfterStrongAuthentication: [],
@@ -265,6 +267,7 @@ test("preserves company pagination in the URL and browser history", async () => 
 
 const administratorAccess = {
   roles: ["COMPANY_ADMINISTRATOR"],
+  profiles: [],
   responsible: true,
   capabilities: [
     "company.view",
@@ -450,6 +453,7 @@ test.each(["settings", "history", "members"])(
         company: { id: companyId, displayName: "Restricted company" },
         access: {
           roles: ["OPERATOR"],
+          profiles: [],
           responsible: false,
           capabilities: ["company.view", "branches.view"],
           capabilitiesAfterStrongAuthentication: [],
@@ -498,6 +502,7 @@ const memberPage = (status = "ACTIVE", version = 1, roles = ["OPERATOR"]) => ({
       grants: roles.map((role, index) => ({
         id: `00000000-0000-4000-8000-00000000010${index}`,
         role,
+        profile: null,
         scope: "COMPANY",
         branches: [],
         startsAt: "2026-10-18T12:00:00.000Z",
@@ -724,6 +729,8 @@ test("grants a temporary branch-scoped role over selected active branches", asyn
           nextCursor: null,
         },
       };
+    if (url.pathname.endsWith("/access-profiles"))
+      return { body: { items: [] } };
     return {
       body: url.pathname.endsWith("/members") ? memberPage() : memberCompany,
     };
@@ -773,12 +780,14 @@ test("grants a temporary branch-scoped role over selected active branches", asyn
 
 test("keeps administration out of a non-responsible administrator's grant form", async () => {
   respond((url) => ({
-    body: url.pathname.endsWith("/members")
-      ? memberPage()
-      : {
-          ...memberCompany,
-          access: { ...memberAccess, responsible: false },
-        },
+    body: url.pathname.endsWith("/access-profiles")
+      ? { items: [] }
+      : url.pathname.endsWith("/members")
+        ? memberPage()
+        : {
+            ...memberCompany,
+            access: { ...memberAccess, responsible: false },
+          },
   }));
   const { screen } = await open(`${companyPath}?view=members`);
   await screen
@@ -797,6 +806,246 @@ test("keeps administration out of a non-responsible administrator's grant form",
       }),
     )
     .not.toBeInTheDocument();
+});
+
+const profileId = "00000000-0000-4000-8000-000000000041";
+const accessProfile = (overrides: Record<string, unknown> = {}) => ({
+  id: profileId,
+  name: "Auditor",
+  capabilities: ["branches.view", "audit.view"],
+  status: "ACTIVE",
+  version: 1,
+  createdAt: "2026-10-18T12:00:00.000Z",
+  updatedAt: "2026-10-18T12:00:00.000Z",
+  memberCount: 0,
+  grantCount: 0,
+  ...overrides,
+});
+
+test("grants a customized access profile and names it on the member", async () => {
+  respond((url, request) => {
+    if (request instanceof Request && request.method === "POST")
+      return {
+        status: 201,
+        body: {
+          id: "00000000-0000-4000-8000-000000000032",
+          role: null,
+          profile: { id: profileId, name: "Auditor" },
+          scope: "COMPANY",
+          branches: [],
+          startsAt: "2026-10-18T12:00:00.000Z",
+          expiresAt: null,
+        },
+      };
+    if (url.pathname.endsWith("/access-profiles"))
+      return { body: { items: [accessProfile()] } };
+    if (url.pathname.endsWith("/members")) {
+      const page = memberPage("ACTIVE", 1, []);
+      return {
+        body: {
+          ...page,
+          items: [
+            {
+              ...page.items[0],
+              grants: [
+                {
+                  id: "00000000-0000-4000-8000-000000000033",
+                  role: null,
+                  profile: { id: profileId, name: "Auditor" },
+                  scope: "COMPANY",
+                  branches: [],
+                  startsAt: "2026-10-18T12:00:00.000Z",
+                  expiresAt: null,
+                },
+              ],
+            },
+          ],
+        },
+      };
+    }
+    return { body: memberCompany };
+  });
+  const { screen } = await open(`${companyPath}?view=members`);
+  await expect
+    .element(screen.getByText(`${t.grantProfile}: Auditor`))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByRole("button", {
+        name: `${t.grantRevoke}: ${t.grantProfile}: Auditor · Synthetic member`,
+      }),
+    )
+    .toBeVisible();
+  await screen
+    .getByRole("button", { name: `${t.grantAdd}: Synthetic member` })
+    .click();
+  await screen
+    .getByLabelText(t.grantRoleOrProfile)
+    .selectOptions(`profile:${profileId}`);
+  await expect
+    .element(
+      screen.getByText(
+        `${t.grantProfileIncludes}: ${t.capabilities["branches.view"]}, ${t.capabilities["audit.view"]}`,
+      ),
+    )
+    .toBeVisible();
+  await screen.getByRole("button", { name: t.grantSubmit }).click();
+  await expect
+    .element(screen.getByRole("button", { name: t.grantSubmit }))
+    .not.toBeInTheDocument();
+  const request = posted(`/members/${memberId}/grants`);
+  if (!request) throw new Error("The grant request was not sent");
+  expect(await request.clone().json()).toEqual({
+    profileId,
+    scope: "COMPANY",
+  });
+});
+
+test("creates profiles and confirms a capability change that reaches members", async () => {
+  let current = accessProfile({ memberCount: 1, grantCount: 1 });
+  respond((url, request) => {
+    if (request instanceof Request && request.method === "POST")
+      return {
+        status: 201,
+        body: accessProfile({
+          id: "00000000-0000-4000-8000-000000000042",
+          name: "Recepção",
+          capabilities: ["invitations.manage"],
+        }),
+      };
+    if (request instanceof Request && request.method === "PATCH") {
+      current = {
+        ...current,
+        version: 2,
+        capabilities: ["audit.view"],
+      };
+      return { body: current };
+    }
+    if (url.pathname.endsWith(`/access-profiles/${profileId}`))
+      return {
+        body: {
+          profile: current,
+          holders: [
+            {
+              grantId: "00000000-0000-4000-8000-000000000033",
+              membershipId: memberId,
+              membershipStatus: "ACTIVE",
+              displayName: "Synthetic member",
+              email: "member@example.test",
+              scope: "BRANCHES",
+              branches: [{ id: northId, name: "Norte" }],
+              expiresAt: null,
+            },
+          ],
+          holdersTruncated: false,
+        },
+      };
+    if (url.pathname.endsWith("/access-profiles"))
+      return { body: { items: [current] } };
+    return { body: memberCompany };
+  });
+  const { screen } = await open(`${companyPath}?view=profiles`);
+  await expect
+    .element(screen.getByRole("link", { name: t.profilesTitle }))
+    .toHaveAttribute("aria-current", "page");
+  await expect.element(screen.getByText(t.profileUsage(1, 1))).toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: `${t.archive}: Auditor` }))
+    .toBeDisabled();
+  await screen
+    .getByRole("button", { name: `${t.profileEdit}: Auditor` })
+    .click();
+  await expect
+    .element(screen.getByText(`Synthetic member · ${t.grantBranches}: Norte`))
+    .toBeVisible();
+  const editor = screen.getByRole("form", {
+    name: `${t.profileEdit}: Auditor`,
+  });
+  await editor
+    .getByRole("checkbox", { name: t.capabilities["branches.view"] })
+    .click();
+  await editor.getByRole("button", { name: t.save }).click();
+  await expect
+    .element(screen.getByText(t.profileChangeConfirmation(1)))
+    .toBeVisible();
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.some(
+        ([input]) => input instanceof Request && input.method === "PATCH",
+      ),
+  ).toBe(false);
+  await editor.getByRole("button", { name: t.profileChangeConfirm }).click();
+  await expect
+    .element(screen.getByText(t.profileChangeConfirmation(1)))
+    .not.toBeInTheDocument();
+  const update = vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => input)
+    .find(
+      (input): input is Request =>
+        input instanceof Request && input.method === "PATCH",
+    );
+  if (!update) throw new Error("The profile update was not sent");
+  expect(await update.clone().json()).toEqual({
+    expectedVersion: 1,
+    capabilities: ["audit.view"],
+  });
+
+  await screen.getByLabelText(t.profileName).fill("Recepção");
+  const create = screen.getByRole("form", { name: t.profileCreateTitle });
+  await expect
+    .element(create.getByRole("button", { name: t.profileCreate }))
+    .toBeDisabled();
+  await create
+    .getByRole("checkbox", { name: t.capabilities["invitations.manage"] })
+    .click();
+  await create.getByRole("button", { name: t.profileCreate }).click();
+  const created = posted("/access-profiles");
+  if (!created) throw new Error("The profile was not created");
+  expect(await created.clone().json()).toEqual({
+    name: "Recepção",
+    capabilities: ["invitations.manage"],
+  });
+});
+
+test("names the access profile of profile history events", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              {
+                id: "profile-event",
+                action: "profile.updated",
+                actorPrincipalId: "synthetic",
+                occurredAt: "2026-10-18T12:00:00.000Z",
+                targetType: "access_profile",
+                details: {
+                  profileName: "Auditor",
+                  fields: ["name", "capabilities"],
+                },
+              },
+            ],
+            nextCursor: null,
+          },
+        }
+      : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen } = await open(`${companyPath}?view=history`);
+  await expect
+    .element(screen.getByText(t.historyActions["profile.updated"]))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(`${t.historyProfile}: Auditor`))
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(
+        `${t.historyFields.profileName}, ${t.historyFields.capabilities}`,
+      ),
+    )
+    .toBeVisible();
 });
 
 test("revokes a role after confirmation and keeps the responsible administrator's only administration", async () => {
@@ -1037,6 +1286,7 @@ test("offers branch managers the history of their own branches", async () => {
             ...memberCompany,
             access: {
               roles: ["BRANCH_MANAGER"],
+              profiles: [],
               responsible: false,
               capabilities: [
                 "company.view",
@@ -1151,6 +1401,7 @@ test("lets a branch manager invite operators only to managed branches", async ()
         ...memberCompany,
         access: {
           roles: ["BRANCH_MANAGER"],
+          profiles: [],
           responsible: false,
           capabilities: ["company.view", "branches.view", "invitations.manage"],
           capabilitiesAfterStrongAuthentication: [],

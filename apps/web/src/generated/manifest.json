@@ -57,6 +57,24 @@
       "file": "pages/api/addMemberGrant.json"
     },
     {
+      "id": "api/archiveAccessProfile",
+      "kind": "api",
+      "title": "archiveAccessProfile",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/access-profiles/{profileId}/archive",
+      "method": "POST",
+      "path": "/companies/{companyId}/access-profiles/{profileId}/archive",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/archiveAccessProfile.json"
+    },
+    {
       "id": "api/archiveBranch",
       "kind": "api",
       "title": "archiveBranch",
@@ -107,6 +125,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/completeLogin.json"
+    },
+    {
+      "id": "api/createAccessProfile",
+      "kind": "api",
+      "title": "createAccessProfile",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/access-profiles",
+      "method": "POST",
+      "path": "/companies/{companyId}/access-profiles",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createAccessProfile.json"
     },
     {
       "id": "api/createBranch",
@@ -161,6 +197,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/createInvitation.json"
+    },
+    {
+      "id": "api/getAccessProfile",
+      "kind": "api",
+      "title": "getAccessProfile",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/access-profiles/{profileId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/access-profiles/{profileId}",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getAccessProfile.json"
     },
     {
       "id": "api/getBranch",
@@ -263,6 +316,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getStartupHealth.json"
+    },
+    {
+      "id": "api/listAccessProfiles",
+      "kind": "api",
+      "title": "listAccessProfiles",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/access-profiles",
+      "method": "GET",
+      "path": "/companies/{companyId}/access-profiles",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listAccessProfiles.json"
     },
     {
       "id": "api/listBranches",
@@ -540,6 +610,24 @@
       "file": "pages/api/terminateSession.json"
     },
     {
+      "id": "api/updateAccessProfile",
+      "kind": "api",
+      "title": "updateAccessProfile",
+      "group": "Organizations",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/access-profiles/{profileId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/access-profiles/{profileId}",
+      "tags": ["Organizations"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateAccessProfile.json"
+    },
+    {
       "id": "api/updateBranch",
       "kind": "api",
       "title": "updateBranch",
@@ -592,6 +680,16 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/updateCompanyMemberStatus.json"
+    },
+    {
+      "id": "database/access_profiles",
+      "kind": "database",
+      "title": "access_profiles",
+      "group": "Organizations",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Company-customized access profile: a named set of delegable business capabilities that grants can carry instead of a standard role.",
+      "headings": [],
+      "file": "pages/database/access_profiles.json"
     },
     {
       "id": "database/backchannel_logout_replays",
@@ -679,7 +777,7 @@
       "title": "membership_grants",
       "group": "Organizations",
       "source": "docs/generated/database/schema.md",
-      "summary": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
+      "summary": "A standard role or a company-customized access profile granted to a membership over the whole company or explicit branches; grants combine additively.",
       "headings": [],
       "file": "pages/database/membership_grants.json"
     },
@@ -819,7 +917,7 @@
       "title": "Organizations Module",
       "group": "Agent instructions",
       "source": "apps/api/src/features/organizations/AGENTS.md",
-      "summary": "This module owns companies (tenants), branches, memberships, standard role grants, the responsible administrator and organization audit. Read the tenant data design and the…",
+      "summary": "This module owns companies (tenants), branches, memberships, standard role and access profile grants, the responsible administrator and organization audit. Read the tenant data…",
       "headings": [],
       "file": "pages/repository/apps/api/src/features/organizations/AGENTS.json"
     },
@@ -1887,27 +1985,28 @@
   "search": {
     "shards": [
       { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 17, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0003.json", "count": 17, "kinds": ["api", "database"] },
+      { "file": "search/0001.json", "count": 14, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 16, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 21, "kinds": ["api", "database"] },
       {
-        "file": "search/0004.json",
-        "count": 59,
+        "file": "search/0005.json",
+        "count": 78,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0005.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 120, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 156, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 142, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 132, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 87, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 61, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 60, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 61, "kinds": ["repository"] }
+      { "file": "search/0006.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 125, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 173, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 114, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 132, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 65, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 53, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 63, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 50, "kinds": ["repository"] }
     ],
-    "count": 1290
+    "count": 1303
   }
 }

@@ -55,10 +55,86 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
   },
 };
 
-export type Grant = Readonly<
-  | { role: AccessRole; scope: "COMPANY" }
-  | { role: AccessRole; scope: "BRANCHES"; branchIds: ReadonlySet<string> }
+/**
+ * Capabilities a company may delegate through a customized access profile.
+ * Company settings, branch management and member administration stay with
+ * the standard administrator role, so a profile can never bypass the
+ * responsible administrator's approval of administrators (P10).
+ */
+export const delegableCapabilities: readonly Capability[] = [
+  "branches.view",
+  "invitations.manage",
+  "audit.view",
+];
+
+/**
+ * Capabilities that need strong authentication whatever role or profile
+ * confers them (P12), so a custom label never lowers the assurance a
+ * capability requires.
+ */
+const strongCapabilities: ReadonlySet<Capability> = new Set([
+  "company.settings.manage",
+  "branches.manage",
+  "members.manage",
+  "invitations.manage",
+  "audit.view",
+]);
+
+/** What a grant confers: a standard role or a company's access profile. */
+export type GrantAuthority = Readonly<
+  | { role: AccessRole }
+  | {
+      profileId: string;
+      profileName: string;
+      capabilities: ReadonlySet<Capability>;
+    }
 >;
+
+export type Grant = GrantAuthority &
+  Readonly<
+    { scope: "COMPANY" } | { scope: "BRANCHES"; branchIds: ReadonlySet<string> }
+  >;
+
+/** The capabilities a grant confers; every profile includes company.view. */
+function capabilitiesOf(grant: GrantAuthority): ReadonlySet<Capability> {
+  if ("role" in grant) return rolePresets[grant.role].capabilities;
+  return new Set<Capability>(["company.view", ...grant.capabilities]);
+}
+
+/**
+ * Whether using a capability through a grant needs strong authentication.
+ * A standard role sets it for the whole role (P12: administrators and branch
+ * managers always); a profile sets it per capability, so a profile's
+ * read-only capabilities work in a standard session while its sensitive
+ * ones never do.
+ */
+function needsStrong(grant: GrantAuthority, capability: Capability): boolean {
+  return "role" in grant
+    ? rolePresets[grant.role].requiresStrongAuthentication
+    : strongCapabilities.has(capability);
+}
+
+/**
+ * Normalizes a profile's capability set: one to all delegable capabilities,
+ * without duplicates, in a stable order.
+ */
+export function profileCapabilities(
+  requested: readonly string[],
+): Capability[] {
+  const unique = new Set(requested);
+  if (
+    unique.size === 0 ||
+    unique.size !== requested.length ||
+    ![...unique].every((capability) =>
+      (delegableCapabilities as readonly string[]).includes(capability),
+    )
+  )
+    throw new OrganizationFailure("VALIDATION_FAILED");
+  return delegableCapabilities.filter((capability) => unique.has(capability));
+}
+
+/** Active access profiles a company may keep (an engineering bound). */
+export const maxActiveProfiles = 50;
 
 declare const companyAccessBrand: unique symbol;
 
@@ -101,8 +177,8 @@ function covers(
 
 /**
  * Decides one capability, optionally for one branch. Grants combine
- * additively; a grant whose role requires strong authentication counts only
- * in a strongly authenticated session. A company-scoped decision (no branch)
+ * additively; a grant that needs strong authentication for the capability
+ * counts only in a strongly authenticated session. A company-scoped decision (no branch)
  * needs a company-wide grant.
  */
 export function decide(
@@ -110,18 +186,17 @@ export function decide(
   capability: Capability,
   branchId?: string,
 ): AccessDecision {
-  let needsStrong = false;
+  let strongRequired = false;
   for (const grant of access.grants) {
-    const preset = rolePresets[grant.role];
     if (
-      !preset.capabilities.has(capability) ||
+      !capabilitiesOf(grant).has(capability) ||
       !covers(grant, capability, branchId)
     )
       continue;
-    if (!preset.requiresStrongAuthentication || access.strong) return "allow";
-    needsStrong = true;
+    if (!needsStrong(grant, capability) || access.strong) return "allow";
+    strongRequired = true;
   }
-  return needsStrong ? "strong_required" : "deny";
+  return strongRequired ? "strong_required" : "deny";
 }
 
 /**
@@ -135,9 +210,8 @@ export function branchReach(
 ): "all" | ReadonlySet<string> {
   const reached = new Set<string>();
   for (const grant of access.grants) {
-    const preset = rolePresets[grant.role];
-    if (!preset.capabilities.has(capability)) continue;
-    if (preset.requiresStrongAuthentication && !access.strong) continue;
+    if (!capabilitiesOf(grant).has(capability)) continue;
+    if (needsStrong(grant, capability) && !access.strong) continue;
     if (grant.scope === "COMPANY" || companyWide.has(capability)) return "all";
     for (const id of grant.branchIds) reached.add(id);
   }
@@ -151,8 +225,7 @@ export function reachableWithStrongAuthentication(
 ): boolean {
   return access.grants.some(
     (grant) =>
-      rolePresets[grant.role].capabilities.has(capability) &&
-      rolePresets[grant.role].requiresStrongAuthentication,
+      capabilitiesOf(grant).has(capability) && needsStrong(grant, capability),
   );
 }
 
@@ -166,6 +239,10 @@ export type OrganizationFailureCode =
   | "IDEMPOTENCY_KEY_REUSED"
   | "BRANCH_NAME_IN_USE"
   | "BRANCH_ARCHIVED"
+  | "PROFILE_NAME_IN_USE"
+  | "PROFILE_ARCHIVED"
+  | "PROFILE_IN_USE"
+  | "PROFILE_LIMIT_REACHED"
   | "MEMBERSHIP_REMOVED"
   | "RESPONSIBLE_ADMINISTRATOR_PROTECTED"
   | "LAST_ADMINISTRATOR_REQUIRED"
@@ -226,6 +303,27 @@ export const responsibilityTransferDays = 7;
 export type GrantScopeName = "COMPANY" | "BRANCHES";
 
 /**
+ * Validates a grant scope: a branch scope names one to 100 distinct
+ * branches, a company scope none. Returns the branches in a stable order.
+ */
+export function grantScope(
+  scope: GrantScopeName,
+  requested: readonly string[] = [],
+): string[] {
+  const branchIds = [...new Set(requested)].sort();
+  if (scope === "COMPANY" && branchIds.length > 0)
+    throw new OrganizationFailure("VALIDATION_FAILED");
+  if (
+    scope === "BRANCHES" &&
+    (branchIds.length === 0 ||
+      branchIds.length > 100 ||
+      branchIds.length !== requested.length)
+  )
+    throw new OrganizationFailure("VALIDATION_FAILED");
+  return branchIds;
+}
+
+/**
  * Validates the shape of a requested grant: company administration is
  * always company-wide, and a branch scope names one to 100 distinct branches.
  */
@@ -234,18 +332,9 @@ export function grantRequest(input: {
   scope: GrantScopeName;
   branchIds?: readonly string[];
 }): { role: AccessRole; scope: GrantScopeName; branchIds: string[] } {
-  const branchIds = [...new Set(input.branchIds ?? [])].sort();
   if (input.role === "COMPANY_ADMINISTRATOR" && input.scope !== "COMPANY")
     throw new OrganizationFailure("VALIDATION_FAILED");
-  if (input.scope === "COMPANY" && branchIds.length > 0)
-    throw new OrganizationFailure("VALIDATION_FAILED");
-  if (
-    input.scope === "BRANCHES" &&
-    (branchIds.length === 0 ||
-      branchIds.length > 100 ||
-      branchIds.length !== (input.branchIds ?? []).length)
-  )
-    throw new OrganizationFailure("VALIDATION_FAILED");
+  const branchIds = grantScope(input.scope, input.branchIds);
   return { role: input.role, scope: input.scope, branchIds };
 }
 

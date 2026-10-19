@@ -29,6 +29,10 @@
 | `IDEMPOTENCY_KEY_REUSED` | 409 | conflict | no | The creation key was used for different content. |
 | `BRANCH_NAME_IN_USE` | 409 | conflict | no | Another active branch of this company already uses that name. |
 | `BRANCH_ARCHIVED` | 409 | conflict | no | The branch is archived and cannot be changed. |
+| `PROFILE_NAME_IN_USE` | 409 | conflict | no | Another active access profile of this company already uses that name. |
+| `PROFILE_ARCHIVED` | 409 | conflict | no | The access profile is archived and cannot be changed. |
+| `PROFILE_IN_USE` | 409 | conflict | no | Members still hold this access profile. Revoke their grants before archiving it. |
+| `PROFILE_LIMIT_REACHED` | 409 | conflict | no | The company already has the maximum number of active access profiles. |
 | `INVITATION_PENDING` | 409 | conflict | no | A pending invitation for this address already exists. Resend it instead. |
 | `INVITATION_NO_LONGER_VALID` | 409 | conflict | no | This invitation is no longer valid. Ask for a new one. |
 | `INVITATION_RECIPIENT_MISMATCH` | 403 | authorization | no | This invitation was sent to another email address. Sign in with that address to accept it. |

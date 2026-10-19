@@ -276,6 +276,7 @@ describe("organizations: two-company isolation", () => {
     expect(first.status).toBe(201);
     expect(first.body.access).toEqual({
       roles: ["COMPANY_ADMINISTRATOR"],
+      profiles: [],
       responsible: true,
       capabilities: [],
       capabilitiesAfterStrongAuthentication: [
@@ -1967,6 +1968,311 @@ describe("organizations: two-company isolation", () => {
     await sql.query("UPDATE companies SET status = 'ACTIVE' WHERE id = $1", [
       companyB,
     ]);
+  });
+
+  it("lets administrators define access profiles whose current capabilities and assurance bind every holder", async () => {
+    const company = await createCompany("aAdmin", "Profiles");
+    const north = await createBranch("aAdmin", company, "Norte");
+    await createBranch("aAdmin", company, "Sul");
+    // A membership without grants, which only the profile will empower.
+    const member = randomUUID();
+    await sql.query(
+      "INSERT INTO memberships (id, company_id, principal_id) VALUES ($1, $2, $3)",
+      [member, company, people.multi],
+    );
+    await grantBranches("aManager", company, "BRANCH_MANAGER", [north.id]);
+    const profiles = `/companies/${company}/access-profiles`;
+    const create = (body: object, person: Person = "aAdmin", strong = true) =>
+      call(person, "POST", profiles, { strong, body });
+
+    const created = await create({
+      name: "Supervisão",
+      capabilities: ["audit.view", "branches.view"],
+    });
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({
+      name: "Supervisão",
+      capabilities: ["branches.view", "audit.view"],
+      status: "ACTIVE",
+      version: 1,
+      memberCount: 0,
+      grantCount: 0,
+    });
+    const profileId = created.body.id as string;
+    for (const [body, expected] of [
+      [
+        { name: "Admin", capabilities: ["members.manage"] },
+        "VALIDATION_FAILED",
+      ],
+      [{ name: "Vazio", capabilities: [] }, "VALIDATION_FAILED"],
+      [
+        { name: "Dup", capabilities: ["audit.view", "audit.view"] },
+        "VALIDATION_FAILED",
+      ],
+      [
+        { name: " supervisão ", capabilities: ["branches.view"] },
+        "PROFILE_NAME_IN_USE",
+      ],
+    ] as const)
+      expect(code(await create(body)), JSON.stringify(body)).toBe(expected);
+    expect(
+      code(
+        await create(
+          { name: "X", capabilities: ["branches.view"] },
+          "aAdmin",
+          false,
+        ),
+      ),
+    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
+    expect(
+      code(
+        await create(
+          { name: "X", capabilities: ["branches.view"] },
+          "aManager",
+        ),
+      ),
+    ).toBe("PERMISSION_DENIED");
+    expect(code(await call("bAdmin", "GET", profiles, { strong: true }))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+
+    // A grant carries exactly one role or one active profile of this company.
+    const grant = (body: object) =>
+      call("aAdmin", "POST", `/companies/${company}/members/${member}/grants`, {
+        strong: true,
+        body,
+      });
+    const otherProfile = await call(
+      "bAdmin",
+      "POST",
+      `/companies/${companyB}/access-profiles`,
+      { strong: true, body: { name: "B", capabilities: ["branches.view"] } },
+    );
+    expect(otherProfile.status).toBe(201);
+    for (const body of [
+      { scope: "COMPANY" },
+      { role: "OPERATOR", profileId, scope: "COMPANY" },
+      { profileId: otherProfile.body.id, scope: "COMPANY" },
+      { profileId: randomUUID(), scope: "COMPANY" },
+      { profileId, scope: "BRANCHES" },
+    ])
+      expect(code(await grant(body)), JSON.stringify(body)).toBe(
+        "VALIDATION_FAILED",
+      );
+    const granted = await grant({
+      profileId,
+      scope: "BRANCHES",
+      branchIds: [north.id],
+    });
+    expect(granted.status).toBe(201);
+    expect(granted.body).toMatchObject({
+      role: null,
+      profile: { id: profileId, name: "Supervisão" },
+      scope: "BRANCHES",
+      branches: [{ id: north.id, name: "Norte" }],
+    });
+    expect(
+      (await grant({ profileId, scope: "BRANCHES", branchIds: [north.id] }))
+        .status,
+    ).toBe(200);
+
+    // The profile reaches only its branches, and audit.view needs two-step verification.
+    const branches = await call(
+      "multi",
+      "GET",
+      `/companies/${company}/branches`,
+    );
+    expect(
+      (branches.body.items as { id: string }[]).map((item) => item.id),
+    ).toEqual([north.id]);
+    const summary = await call("multi", "GET", `/companies/${company}`);
+    expect(summary.body.access).toMatchObject({
+      roles: [],
+      profiles: ["Supervisão"],
+      capabilities: ["company.view", "branches.view"],
+      capabilitiesAfterStrongAuthentication: ["audit.view"],
+    });
+    expect(
+      code(await call("multi", "GET", `/companies/${company}/audit-events`)),
+    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
+    const audit = await call(
+      "multi",
+      "GET",
+      `/companies/${company}/audit-events`,
+      { strong: true },
+    );
+    expect(audit.status).toBe(200);
+    expect(
+      (audit.body.items as { action: string }[]).map((item) => item.action),
+    ).toEqual(["grant.created", "branch.created"]);
+
+    // The detail shows who an edit would affect.
+    const detail = await call("aAdmin", "GET", `${profiles}/${profileId}`, {
+      strong: true,
+    });
+    expect(detail.body).toMatchObject({
+      profile: { memberCount: 1, grantCount: 1 },
+      holders: [
+        {
+          membershipId: member,
+          displayName: "multi",
+          membershipStatus: "ACTIVE",
+          scope: "BRANCHES",
+          branches: [{ id: north.id, name: "Norte" }],
+        },
+      ],
+      holdersTruncated: false,
+    });
+    expect(
+      code(
+        await call(
+          "bAdmin",
+          "GET",
+          `/companies/${companyB}/access-profiles/${profileId}`,
+          {
+            strong: true,
+          },
+        ),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+
+    // Edits apply to the next request of every holder and are audited.
+    const update = (body: object) =>
+      call("aAdmin", "PATCH", `${profiles}/${profileId}`, {
+        strong: true,
+        body,
+      });
+    expect(
+      code(
+        await update({ expectedVersion: 7, capabilities: ["branches.view"] }),
+      ),
+    ).toBe("RESOURCE_VERSION_CONFLICT");
+    const before = await auditCount(company);
+    const unchanged = await update({
+      expectedVersion: 1,
+      capabilities: ["branches.view", "audit.view"],
+    });
+    expect(unchanged.body.version).toBe(1);
+    expect(await auditCount(company)).toBe(before);
+    const narrowed = await update({
+      expectedVersion: 1,
+      name: "Leitura",
+      capabilities: ["branches.view"],
+    });
+    expect(narrowed.status).toBe(200);
+    expect(narrowed.body).toMatchObject({
+      name: "Leitura",
+      capabilities: ["branches.view"],
+      version: 2,
+    });
+    expect(
+      code(
+        await call("multi", "GET", `/companies/${company}/audit-events`, {
+          strong: true,
+        }),
+      ),
+    ).toBe("PERMISSION_DENIED");
+    const history = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/audit-events?limit=1`,
+      { strong: true },
+    );
+    expect(history.body.items).toMatchObject([
+      {
+        action: "profile.updated",
+        targetType: "access_profile",
+        targetId: profileId,
+        details: {
+          profileName: "Leitura",
+          fields: ["name", "capabilities"],
+          addedCapabilities: [],
+          removedCapabilities: ["audit.view"],
+          affectedGrants: 1,
+        },
+      },
+    ]);
+
+    // Archival waits until nobody holds the profile; archived profiles are frozen.
+    const archive = (expectedVersion: number) =>
+      call("aAdmin", "POST", `${profiles}/${profileId}/archive`, {
+        strong: true,
+        body: { expectedVersion },
+      });
+    expect(code(await archive(2))).toBe("PROFILE_IN_USE");
+    const members = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/members`,
+      { strong: true },
+    );
+    const held = (
+      members.body.items as {
+        id: string;
+        grants: { id: string; profile: { id: string } | null }[];
+      }[]
+    )
+      .find((item) => item.id === member)!
+      .grants.find((item) => item.profile?.id === profileId)!;
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "POST",
+          `/companies/${company}/members/${member}/grants/${held.id}/revoke`,
+          { strong: true },
+        )
+      ).status,
+    ).toBe(204);
+    const archived = await archive(2);
+    expect(archived.body).toMatchObject({ status: "ARCHIVED", version: 3 });
+    expect(code(await archive(3))).toBe("PROFILE_ARCHIVED");
+    expect(
+      code(await update({ expectedVersion: 3, capabilities: ["audit.view"] })),
+    ).toBe("PROFILE_ARCHIVED");
+    expect(code(await grant({ profileId, scope: "COMPANY" }))).toBe(
+      "VALIDATION_FAILED",
+    );
+    const active = await call("aAdmin", "GET", profiles, { strong: true });
+    expect(active.body.items).toEqual([]);
+    const all = await call(
+      "aAdmin",
+      "GET",
+      `${profiles}?includeArchived=true`,
+      {
+        strong: true,
+      },
+    );
+    expect(all.body.items).toMatchObject([
+      { id: profileId, status: "ARCHIVED" },
+    ]);
+    expect(
+      (await create({ name: "Leitura", capabilities: ["branches.view"] }))
+        .status,
+    ).toBe(201);
+
+    // The schema itself keeps profiles delegable, tenant-bound and exclusive of roles.
+    await expect(
+      runtime.query(
+        "INSERT INTO access_profiles (id, company_id, name, capabilities) VALUES ($1, $2, 'Bad', ARRAY['members.manage'])",
+        [randomUUID(), company],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+    await expect(
+      runtime.query(
+        "INSERT INTO membership_grants (id, company_id, membership_id, role, profile_id, scope) VALUES ($1, $2, $3, 'OPERATOR', $4, 'COMPANY')",
+        [randomUUID(), company, member, profileId],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+    await expect(
+      runtime.query(
+        "INSERT INTO membership_grants (id, company_id, membership_id, profile_id, scope) VALUES ($1, $2, $3, $4, 'COMPANY')",
+        [randomUUID(), company, member, otherProfile.body.id],
+      ),
+    ).rejects.toMatchObject({ code: "23503" });
+    await expect(
+      runtime.query("UPDATE access_profiles SET company_id = $1", [companyB]),
+    ).rejects.toMatchObject({ code: "42501" });
   });
 
   it("makes mixed-company references, tenant moves and audit edits impossible for the runtime role", async () => {

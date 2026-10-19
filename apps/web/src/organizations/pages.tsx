@@ -30,6 +30,7 @@ import {
 import { organizationMessages, timeZoneChoices } from "./messages.js";
 import { CompanyMembers, formatInstant } from "./members.js";
 import { CompanyInvitations } from "./invitations.js";
+import { CompanyProfiles } from "./profiles.js";
 import { ResponsibilityTransferNotice } from "./responsibility.js";
 
 export function useOrganizationMessages() {
@@ -670,7 +671,15 @@ function CompanyHistory({
             const fields = Array.isArray(event.details.fields)
               ? event.details.fields
                   .filter((field): field is string => typeof field === "string")
-                  .map((field) => t.historyFields[field])
+                  .map(
+                    (field) =>
+                      t.historyFields[
+                        event.targetType === "access_profile" &&
+                        field === "name"
+                          ? "profileName"
+                          : field
+                      ],
+                  )
                   .filter((field): field is string => typeof field === "string")
               : [];
             const action = t.historyActions[event.action];
@@ -686,6 +695,11 @@ function CompanyHistory({
                       {t.roles[event.details.role as keyof typeof t.roles]}
                     </span>
                   )}
+                {typeof event.details.profileName === "string" && (
+                  <span>
+                    {t.historyProfile}: {event.details.profileName}
+                  </span>
+                )}
                 {event.targetType === "branch" &&
                   typeof event.details.branchName === "string" && (
                     <span>
@@ -735,7 +749,7 @@ export function CompanyPage({
 }: {
   companyId: string;
   cursor?: string;
-  view?: "settings" | "history" | "members" | "invitations";
+  view?: "settings" | "history" | "members" | "invitations" | "profiles";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -797,7 +811,11 @@ export function CompanyPage({
       </p>
       <h1 id="company-title">{company.data.company.displayName}</h1>
       <p className="hint">
-        {t.yourAccess}: {access.roles.map((role) => t.roles[role]).join(", ")}
+        {t.yourAccess}:{" "}
+        {[
+          ...access.roles.map((role) => t.roles[role]),
+          ...access.profiles,
+        ].join(", ")}
         {access.responsible ? ` · ${t.responsible}` : ""}
       </p>
       {needsStepUp && <StepUpPrompt returnTo={returnTo} />}
@@ -845,6 +863,16 @@ export function CompanyPage({
             {t.membersTitle}
           </Link>
         )}
+        {access.capabilities.includes("members.manage") && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "profiles" }}
+            aria-current={view === "profiles" ? "page" : undefined}
+          >
+            {t.profilesTitle}
+          </Link>
+        )}
         {access.capabilities.includes("invitations.manage") && (
           <Link
             to="/companies/$companyId"
@@ -878,6 +906,14 @@ export function CompanyPage({
             locale={locale}
             t={t}
           />
+        ) : (
+          <p role="alert" className="notice notice-error">
+            {t.errors.PERMISSION_DENIED}
+          </p>
+        )
+      ) : view === "profiles" ? (
+        access.capabilities.includes("members.manage") ? (
+          <CompanyProfiles companyId={companyId} returnTo={returnTo} t={t} />
         ) : (
           <p role="alert" className="notice notice-error">
             {t.errors.PERMISSION_DENIED}

@@ -9,13 +9,17 @@ import {
   branchesKey,
   describe,
   invalidateCompany,
+  listAccessProfiles,
   listBranchChoices,
   listMembers,
   membersKey,
+  profilesKey,
   requestResponsibilityTransfer,
   revokeMemberGrant,
   updateMemberStatus,
+  type AccessProfile,
   type Grant,
+  type GrantInput,
   type Member,
   type Role,
 } from "./api.js";
@@ -71,9 +75,14 @@ export function formatInstant(locale: Locale, value: string): string {
   }).format(new Date(value));
 }
 
-/** A grant being composed: role, scope, branches and optional expiry. */
+/**
+ * A grant being composed: role or access profile, scope, branches and
+ * optional expiry.
+ */
 export type GrantDraft = Readonly<{
   role: Role;
+  /** The chosen access profile; empty when the grant carries `role`. */
+  profileId: string;
   scope: "COMPANY" | "BRANCHES";
   branchIds: readonly string[];
   /** `datetime-local` value in the browser's zone; empty for no expiry. */
@@ -82,6 +91,7 @@ export type GrantDraft = Readonly<{
 
 export const emptyGrantDraft: GrantDraft = {
   role: "OPERATOR",
+  profileId: "",
   scope: "COMPANY",
   branchIds: [],
   expiresAt: "",
@@ -89,7 +99,9 @@ export const emptyGrantDraft: GrantDraft = {
 
 /** Company administration is always company-wide. */
 export function effectiveScope(draft: GrantDraft): "COMPANY" | "BRANCHES" {
-  return draft.role === "COMPANY_ADMINISTRATOR" ? "COMPANY" : draft.scope;
+  return !draft.profileId && draft.role === "COMPANY_ADMINISTRATOR"
+    ? "COMPANY"
+    : draft.scope;
 }
 
 /** The grant request a draft describes, without the expiry. */
@@ -102,6 +114,25 @@ export function grantRequestOf(draft: GrantDraft) {
   };
 }
 
+/** The direct-grant request a draft describes, by role or profile. */
+export function memberGrantRequestOf(
+  draft: GrantDraft,
+): Omit<GrantInput, "expiresAt"> {
+  if (!draft.profileId) return grantRequestOf(draft);
+  return {
+    profileId: draft.profileId,
+    scope: draft.scope,
+    ...(draft.scope === "BRANCHES" ? { branchIds: [...draft.branchIds] } : {}),
+  };
+}
+
+/** How a grant reads to people: its role, or its access profile's name. */
+export function grantLabel(grant: Grant, t: OrganizationMessages): string {
+  return grant.role
+    ? t.roles[grant.role]
+    : `${t.grantProfile}: ${grant.profile?.name ?? t.memberUnknown}`;
+}
+
 export function draftExpiry(draft: GrantDraft): string | undefined {
   return draft.expiresAt ? new Date(draft.expiresAt).toISOString() : undefined;
 }
@@ -112,13 +143,15 @@ export function draftComplete(draft: GrantDraft): boolean {
 
 /**
  * Role, scope, branch and expiry fields shared by direct grants and
- * invitations. `roles` lists what the viewer may grant; without
- * `companyScope` the grant is always branch-scoped.
+ * invitations. `roles` lists what the viewer may grant and `profiles` the
+ * active access profiles offered beside them; without `companyScope` the
+ * grant is always branch-scoped.
  */
 export function GrantRequestFields({
   companyId,
   idPrefix,
   roles,
+  profiles = [],
   companyScope,
   hints,
   draft,
@@ -128,6 +161,7 @@ export function GrantRequestFields({
   companyId: string;
   idPrefix: string;
   roles: readonly Role[];
+  profiles?: readonly AccessProfile[];
   companyScope: boolean;
   hints?: readonly string[];
   draft: GrantDraft;
@@ -141,28 +175,58 @@ export function GrantRequestFields({
     enabled: scope === "BRANCHES",
   });
   const id = (name: string) => `${idPrefix}-${name}`;
+  const profile = profiles.find((choice) => choice.id === draft.profileId);
+  const roleChoices = roles.map((choice) => (
+    <option key={choice} value={choice}>
+      {t.roles[choice]}
+    </option>
+  ));
   return (
     <>
-      <label htmlFor={id("role")}>{t.grantRole}</label>
+      <label htmlFor={id("role")}>
+        {profiles.length > 0 ? t.grantRoleOrProfile : t.grantRole}
+      </label>
       <select
         id={id("role")}
-        value={draft.role}
-        onChange={(event) =>
-          onChange({ ...draft, role: event.target.value as Role })
-        }
+        value={draft.profileId ? `profile:${draft.profileId}` : draft.role}
+        onChange={(event) => {
+          const value = event.target.value;
+          onChange(
+            value.startsWith("profile:")
+              ? { ...draft, profileId: value.slice("profile:".length) }
+              : { ...draft, role: value as Role, profileId: "" },
+          );
+        }}
       >
-        {roles.map((choice) => (
-          <option key={choice} value={choice}>
-            {t.roles[choice]}
-          </option>
-        ))}
+        {profiles.length > 0 ? (
+          <>
+            <optgroup label={t.grantRolesGroup}>{roleChoices}</optgroup>
+            <optgroup label={t.grantProfilesGroup}>
+              {profiles.map((choice) => (
+                <option key={choice.id} value={`profile:${choice.id}`}>
+                  {choice.name}
+                </option>
+              ))}
+            </optgroup>
+          </>
+        ) : (
+          roleChoices
+        )}
       </select>
+      {profile && (
+        <p className="hint">
+          {t.grantProfileIncludes}:{" "}
+          {profile.capabilities
+            .map((capability) => t.capabilities[capability])
+            .join(", ")}
+        </p>
+      )}
       {hints?.map((hint) => (
         <p key={hint} className="hint">
           {hint}
         </p>
       ))}
-      {draft.role === "COMPANY_ADMINISTRATOR" ? (
+      {!profile && draft.role === "COMPANY_ADMINISTRATOR" ? (
         <p className="hint">{t.grantAdministratorCompanyWide}</p>
       ) : (
         companyScope && (
@@ -270,13 +334,17 @@ function GrantForm({
 }) {
   const client = useQueryClient();
   const [draft, setDraft] = useState<GrantDraft>(emptyGrantDraft);
+  const profiles = useQuery({
+    queryKey: profilesKey(companyId),
+    queryFn: () => listAccessProfiles(companyId),
+  });
   // Granting is idempotent for an identical grant, so a retry after an
   // unknown outcome cannot duplicate it.
   const grant = useMutation({
     mutationFn: () => {
       const expiresAt = draftExpiry(draft);
       return addMemberGrant(companyId, member.id, {
-        ...grantRequestOf(draft),
+        ...memberGrantRequestOf(draft),
         ...(expiresAt ? { expiresAt } : {}),
       });
     },
@@ -299,12 +367,14 @@ function GrantForm({
         companyId={companyId}
         idPrefix={`grant-${member.id}`}
         roles={administratorRoles(viewerResponsible)}
+        profiles={profiles.data ?? []}
         companyScope
         hints={viewerResponsible ? [] : [t.grantResponsibleOnly]}
         draft={draft}
         onChange={setDraft}
         t={t}
       />
+      {profiles.isError && <p className="hint">{t.grantProfilesUnavailable}</p>}
       {grant.error && (
         <WriteFailure error={grant.error} returnTo={returnTo} t={t} />
       )}
@@ -425,15 +495,21 @@ function MemberRow({
       )}
       <span>
         {t.memberStatuses[member.status]} ·{" "}
-        {member.roles.map((role) => t.roles[role]).join(", ") ||
-          t.memberNoRoles}
+        {[
+          ...member.roles.map((role) => t.roles[role]),
+          ...new Set(
+            member.grants.flatMap((grant) =>
+              grant.profile ? [grant.profile.name] : [],
+            ),
+          ),
+        ].join(", ") || t.memberNoRoles}
       </span>
       {member.grants.length > 0 && (
         <ul className="grant-list" aria-label={`${t.grantsOf} ${label}`}>
           {member.grants.map((grant) => (
             <li key={grant.id}>
               <span>
-                <strong>{t.roles[grant.role]}</strong>
+                <strong>{grantLabel(grant, t)}</strong>
                 {" · "}
                 {grant.scope === "COMPANY"
                   ? t.grantCompanyWide
@@ -450,7 +526,7 @@ function MemberRow({
                 ) && (
                   <button
                     type="button"
-                    aria-label={`${t.grantRevoke}: ${t.roles[grant.role]} · ${label}`}
+                    aria-label={`${t.grantRevoke}: ${grantLabel(grant, t)} · ${label}`}
                     onClick={() => begin({ kind: "revoke", grant })}
                   >
                     {t.grantRevoke}

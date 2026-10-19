@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "addMemberGrant",
   "summary": "",
-  "description": "Grant a standard role to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
+  "description": "Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -49,7 +49,7 @@
       "application/json": {
         "schema": {
           "type": "object",
-          "required": ["role", "scope"],
+          "required": ["scope"],
           "properties": {
             "role": {
               "anyOf": [
@@ -57,6 +57,10 @@
                 { "type": "string", "const": "BRANCH_MANAGER" },
                 { "type": "string", "const": "OPERATOR" }
               ]
+            },
+            "profileId": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
             },
             "scope": {
               "anyOf": [
@@ -81,7 +85,7 @@
     },
     "schema": {
       "type": "object",
-      "required": ["role", "scope"],
+      "required": ["scope"],
       "properties": {
         "role": {
           "anyOf": [
@@ -89,6 +93,10 @@
             { "type": "string", "const": "BRANCH_MANAGER" },
             { "type": "string", "const": "OPERATOR" }
           ]
+        },
+        "profileId": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
         },
         "scope": {
           "anyOf": [
@@ -113,7 +121,12 @@
       {
         "name": "role",
         "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
-        "required": true
+        "required": false
+      },
+      {
+        "name": "profileId",
+        "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+        "required": false
       },
       {
         "name": "scope",
@@ -139,6 +152,7 @@
             "required": [
               "id",
               "role",
+              "profile",
               "scope",
               "branches",
               "startsAt",
@@ -151,9 +165,36 @@
               },
               "role": {
                 "anyOf": [
-                  { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
-                  { "type": "string", "const": "BRANCH_MANAGER" },
-                  { "type": "string", "const": "OPERATOR" }
+                  {
+                    "anyOf": [
+                      { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                      { "type": "string", "const": "BRANCH_MANAGER" },
+                      { "type": "string", "const": "OPERATOR" }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "profile": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "pattern": ".*\\S.*"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
                 ]
               },
               "scope": {
@@ -199,6 +240,7 @@
         "required": [
           "id",
           "role",
+          "profile",
           "scope",
           "branches",
           "startsAt",
@@ -211,9 +253,36 @@
           },
           "role": {
             "anyOf": [
-              { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
-              { "type": "string", "const": "BRANCH_MANAGER" },
-              { "type": "string", "const": "OPERATOR" }
+              {
+                "anyOf": [
+                  { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                  { "type": "string", "const": "BRANCH_MANAGER" },
+                  { "type": "string", "const": "OPERATOR" }
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["id", "name"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": ".*\\S.*"
+                  }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
             ]
           },
           "scope": {
@@ -260,9 +329,10 @@
         },
         {
           "name": "role",
-          "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\" | null",
           "required": true
         },
+        { "name": "profile", "type": "object | null", "required": true },
         {
           "name": "scope",
           "type": "\"COMPANY\" | \"BRANCHES\"",
@@ -297,6 +367,7 @@
             "required": [
               "id",
               "role",
+              "profile",
               "scope",
               "branches",
               "startsAt",
@@ -309,9 +380,36 @@
               },
               "role": {
                 "anyOf": [
-                  { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
-                  { "type": "string", "const": "BRANCH_MANAGER" },
-                  { "type": "string", "const": "OPERATOR" }
+                  {
+                    "anyOf": [
+                      { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                      { "type": "string", "const": "BRANCH_MANAGER" },
+                      { "type": "string", "const": "OPERATOR" }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "profile": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "pattern": ".*\\S.*"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
                 ]
               },
               "scope": {
@@ -357,6 +455,7 @@
         "required": [
           "id",
           "role",
+          "profile",
           "scope",
           "branches",
           "startsAt",
@@ -369,9 +468,36 @@
           },
           "role": {
             "anyOf": [
-              { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
-              { "type": "string", "const": "BRANCH_MANAGER" },
-              { "type": "string", "const": "OPERATOR" }
+              {
+                "anyOf": [
+                  { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                  { "type": "string", "const": "BRANCH_MANAGER" },
+                  { "type": "string", "const": "OPERATOR" }
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["id", "name"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": ".*\\S.*"
+                  }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
             ]
           },
           "scope": {
@@ -418,9 +544,10 @@
         },
         {
           "name": "role",
-          "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\" | null",
           "required": true
         },
+        { "name": "profile", "type": "object | null", "required": true },
         {
           "name": "scope",
           "type": "\"COMPANY\" | \"BRANCHES\"",
