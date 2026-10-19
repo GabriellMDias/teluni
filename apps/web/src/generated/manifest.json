@@ -1491,6 +1491,16 @@
       "file": "pages/repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment.json"
     },
     {
+      "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+      "kind": "repository",
+      "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+      "group": "Decisions",
+      "source": "docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md",
+      "summary": "Teluni stores private customer images and videos, validates them against the selected ingestion bounds and turns them into renditions that Android TV screens can play offline…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -1921,6 +1931,16 @@
       "file": "pages/repository/docs/project/invitation-delivery-design.json"
     },
     {
+      "id": "repository/docs/project/media-library-design",
+      "kind": "repository",
+      "title": "Teluni Media Library Design",
+      "group": "Project guides",
+      "source": "docs/project/media-library-design.md",
+      "summary": "Proposed detailed design for D-05, 2026-10-19, for owner review under PH-23. The owner asked for development to continue autonomously on 2026-10-19; the media library is the…",
+      "headings": [],
+      "file": "pages/repository/docs/project/media-library-design.json"
+    },
+    {
       "id": "repository/docs/project/mvp",
       "kind": "repository",
       "title": "Teluni Initial Release Requirements and Acceptance",
@@ -2298,17 +2318,17 @@
       { "file": "search/0008.json", "count": 110, "kinds": ["repository"] },
       { "file": "search/0009.json", "count": 119, "kinds": ["repository"] },
       { "file": "search/0010.json", "count": 170, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 133, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 132, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 86, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 65, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 51, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 95, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 94, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 14, "kinds": ["repository"] }
+      { "file": "search/0011.json", "count": 139, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 135, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 47, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 48, "kinds": ["repository"] }
     ],
-    "count": 1373
+    "count": 1408
   }
 }
