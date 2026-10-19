@@ -253,9 +253,23 @@
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "required": ["key", "defaultPlaylist", "rules"],
+                  "required": [
+                    "key",
+                    "defaultPlaylistId",
+                    "defaultPlaylist",
+                    "rules"
+                  ],
                   "properties": {
                     "key": { "type": "string", "const": "screen" },
+                    "defaultPlaylistId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
                     "defaultPlaylist": {
                       "anyOf": [
                         {
@@ -391,9 +405,23 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["key", "defaultPlaylist", "rules"],
+              "required": [
+                "key",
+                "defaultPlaylistId",
+                "defaultPlaylist",
+                "rules"
+              ],
               "properties": {
                 "key": { "type": "string", "const": "screen" },
+                "defaultPlaylistId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    { "type": "null" }
+                  ]
+                },
                 "defaultPlaylist": {
                   "anyOf": [
                     {
@@ -516,6 +544,11 @@
         { "name": "version", "type": "integer (minimum 0)", "required": true },
         { "name": "outputs", "type": "array of object", "required": true },
         { "name": "outputs[].key", "type": "\"screen\"", "required": true },
+        {
+          "name": "outputs[].defaultPlaylistId",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$) | null",
+          "required": true
+        },
         {
           "name": "outputs[].defaultPlaylist",
           "type": "object | null",

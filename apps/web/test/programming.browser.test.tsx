@@ -75,7 +75,14 @@ function group(overrides: Partial<Group> = {}): Group {
 
 const emptyProgram: Program = {
   version: 0,
-  outputs: [{ key: "screen", defaultPlaylist: null, rules: [] }],
+  outputs: [
+    {
+      key: "screen",
+      defaultPlaylistId: null,
+      defaultPlaylist: null,
+      rules: [],
+    },
+  ],
 };
 
 const timeline = {
@@ -363,7 +370,14 @@ test("shows conflicts per schedule and saves only a clean set", async () => {
       return {
         body: {
           version: 1,
-          outputs: [{ key: "screen", defaultPlaylist: null, rules: [] }],
+          outputs: [
+            {
+              key: "screen",
+              defaultPlaylistId: null,
+              defaultPlaylist: null,
+              rules: [],
+            },
+          ],
         },
       };
     if (url.pathname.endsWith(`/groups/${groupId}/program`))
@@ -506,4 +520,104 @@ test("asks for step-up before assigning screens", async () => {
   await expect
     .element(screen.getByRole("heading", { name: t.assignmentTitle }))
     .not.toBeInTheDocument();
+});
+
+const individualScreen: DeviceProgramming = {
+  device: {
+    id: deviceId,
+    name: "Entrada",
+    branch: { id: branchA, name: "Centro", timeZone: "America/Sao_Paulo" },
+    timeZone: null,
+  },
+  group: null,
+  individual: false,
+  source: "individual",
+  version: 3,
+};
+
+test("keeps a screen in a group the caller cannot fully see until another choice", async () => {
+  const current: DeviceProgramming = { ...individualScreen, source: "group" };
+  respond([...editor, "programming.assign"], (url) => {
+    if (url.pathname.endsWith(`/devices/${deviceId}/assignment`))
+      return { body: { ...individualScreen, version: 4 } };
+    if (url.pathname.endsWith(`/devices/${deviceId}`)) return { body: current };
+    if (url.pathname.endsWith("/programming/groups"))
+      return { body: { items: [], nextCursor: null } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/screens/${deviceId}`);
+  await expect.element(screen.getByText(t.hiddenGroupSchedules)).toBeVisible();
+  await expect
+    .element(screen.getByRole("heading", { name: t.schedulesTitle }))
+    .not.toBeInTheDocument();
+  const choice = screen.getByLabelText(t.groupLabel);
+  await expect.element(choice).toHaveValue("hidden");
+  await screen.getByRole("checkbox", { name: t.confirmUnpublished }).click();
+  const save = screen.getByRole("button", { name: t.assign });
+  await expect.element(save).toBeDisabled();
+  await choice.selectOptions(t.noGroup);
+  await save.click();
+  await expect.element(screen.getByText(t.assigned)).toBeVisible();
+  expect(await sent("PUT", "/assignment")).toEqual({
+    expectedVersion: 3,
+    groupId: null,
+    individual: false,
+    confirmUnpublished: true,
+  });
+  expect(sentCount("GET", `/devices/${deviceId}/program`)).toBe(0);
+});
+
+test("offers every page of playlists and marks the ones outside the caller's access", async () => {
+  const hiddenId = "00000000-0000-4000-8000-0000000000c3";
+  respond(editor, (url) => {
+    if (url.pathname.endsWith(`/devices/${deviceId}/timeline`))
+      return {
+        body: {
+          ...timeline,
+          segments: [
+            { ...timeline.segments[0], source: "default", playlist: null },
+          ],
+        },
+      };
+    if (url.pathname.endsWith(`/devices/${deviceId}/program`))
+      return {
+        body: {
+          version: 2,
+          outputs: [
+            {
+              key: "screen",
+              defaultPlaylistId: hiddenId,
+              defaultPlaylist: null,
+              rules: [],
+            },
+          ],
+        },
+      };
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: individualScreen };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return url.searchParams.get("cursor") === "next"
+        ? {
+            body: {
+              items: [playlist({ id: otherPlaylistId, name: "Tarde" })],
+              nextCursor: null,
+            },
+          }
+        : { body: { items: [playlist()], nextCursor: "next" } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/screens/${deviceId}`);
+  await expect.element(screen.getByText(t.hiddenPlaylists)).toBeVisible();
+  await expect
+    .element(screen.getByLabelText(t.defaultPlaylist))
+    .toHaveValue(hiddenId);
+  await expect
+    .element(screen.getByRole("option", { name: "Tarde" }))
+    .toBeInTheDocument();
+  await expect
+    .element(screen.getByRole("option", { name: t.hiddenPlaylist }))
+    .toBeInTheDocument();
+  await expect
+    .element(screen.getByRole("cell", { name: t.hiddenPlaylist }))
+    .toBeVisible();
 });

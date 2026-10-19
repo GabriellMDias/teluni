@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "getDeviceTimeline",
   "summary": "",
-  "description": "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes.",
+  "description": "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -77,16 +77,21 @@
                     "properties": {
                       "kind": { "type": "string", "const": "group" },
                       "group": {
-                        "type": "object",
-                        "required": ["id", "name"],
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": ["id", "name"],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              "name": { "type": "string" }
+                            },
+                            "additionalProperties": false
                           },
-                          "name": { "type": "string" }
-                        },
-                        "additionalProperties": false
+                          { "type": "null" }
+                        ]
                       }
                     },
                     "additionalProperties": false
@@ -210,16 +215,21 @@
                 "properties": {
                   "kind": { "type": "string", "const": "group" },
                   "group": {
-                    "type": "object",
-                    "required": ["id", "name"],
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": ["id", "name"],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "name": { "type": "string" }
+                        },
+                        "additionalProperties": false
                       },
-                      "name": { "type": "string" }
-                    },
-                    "additionalProperties": false
+                      { "type": "null" }
+                    ]
                   }
                 },
                 "additionalProperties": false

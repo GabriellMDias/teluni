@@ -91,6 +91,30 @@ export async function listPlaylists(
   );
 }
 
+/**
+ * Every playlist the caller can see, page by page, for the schedule
+ * selectors. A company holds at most 1,000 playlists, so this stays bounded.
+ */
+export async function listPlaylistChoices(companyId: string) {
+  type Page = Awaited<ReturnType<typeof listPlaylists>>;
+  const items: Page["items"] = [];
+  let cursor: string | null = null;
+  do {
+    const page: Page = unwrap(
+      await client().GET("/companies/{companyId}/programming/playlists", {
+        params: {
+          path: { companyId },
+          query: { limit: 100, ...(cursor ? { cursor } : {}) },
+        },
+      }),
+      programmingErrorCodes,
+    );
+    items.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+  return items;
+}
+
 export async function getPlaylist(companyId: string, playlistId: string) {
   return unwrap(
     await client().GET(

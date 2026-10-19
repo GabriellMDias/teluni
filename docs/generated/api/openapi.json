@@ -35654,11 +35654,27 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["key", "defaultPlaylist", "rules"],
+                        "required": [
+                          "key",
+                          "defaultPlaylistId",
+                          "defaultPlaylist",
+                          "rules"
+                        ],
                         "properties": {
                           "key": {
                             "type": "string",
                             "const": "screen"
+                          },
+                          "defaultPlaylistId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylist": {
                             "anyOf": [
@@ -36289,11 +36305,27 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["key", "defaultPlaylist", "rules"],
+                        "required": [
+                          "key",
+                          "defaultPlaylistId",
+                          "defaultPlaylist",
+                          "rules"
+                        ],
                         "properties": {
                           "key": {
                             "type": "string",
                             "const": "screen"
+                          },
+                          "defaultPlaylistId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylist": {
                             "anyOf": [
@@ -36777,7 +36809,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}": {
       "get": {
         "operationId": "getDeviceProgramming",
-        "description": "A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned.",
+        "description": "A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned. The group is null for a caller who cannot view every branch of its span, while the source still says the screen follows a group.",
         "tags": ["Programming"],
         "security": [
           {
@@ -37725,7 +37757,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}/program": {
       "get": {
         "operationId": "getDeviceProgram",
-        "description": "The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved.",
+        "description": "The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
         "tags": ["Programming"],
         "security": [
           {
@@ -37769,11 +37801,27 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["key", "defaultPlaylist", "rules"],
+                        "required": [
+                          "key",
+                          "defaultPlaylistId",
+                          "defaultPlaylist",
+                          "rules"
+                        ],
                         "properties": {
                           "key": {
                             "type": "string",
                             "const": "screen"
+                          },
+                          "defaultPlaylistId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylist": {
                             "anyOf": [
@@ -38405,11 +38453,27 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["key", "defaultPlaylist", "rules"],
+                        "required": [
+                          "key",
+                          "defaultPlaylistId",
+                          "defaultPlaylist",
+                          "rules"
+                        ],
                         "properties": {
                           "key": {
                             "type": "string",
                             "const": "screen"
+                          },
+                          "defaultPlaylistId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylist": {
                             "anyOf": [
@@ -39375,7 +39439,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}/timeline": {
       "get": {
         "operationId": "getDeviceTimeline",
-        "description": "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes.",
+        "description": "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary.",
         "tags": ["Programming"],
         "security": [
           {
@@ -39440,18 +39504,25 @@
                               "const": "group"
                             },
                             "group": {
-                              "type": "object",
-                              "required": ["id", "name"],
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": ["id", "name"],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "additionalProperties": false
                                 },
-                                "name": {
-                                  "type": "string"
+                                {
+                                  "type": "null"
                                 }
-                              },
-                              "additionalProperties": false
+                              ]
                             }
                           },
                           "additionalProperties": false
@@ -40021,18 +40092,25 @@
                               "const": "group"
                             },
                             "group": {
-                              "type": "object",
-                              "required": ["id", "name"],
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": ["id", "name"],
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "additionalProperties": false
                                 },
-                                "name": {
-                                  "type": "string"
+                                {
+                                  "type": "null"
                                 }
-                              },
-                              "additionalProperties": false
+                              ]
                             }
                           },
                           "additionalProperties": false

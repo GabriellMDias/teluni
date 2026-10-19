@@ -94,6 +94,7 @@ const programWire = (program: ProgramView) => ({
   version: program.version,
   outputs: program.outputs.map((output) => ({
     key: output.key,
+    defaultPlaylistId: output.defaultPlaylistId,
     defaultPlaylist: output.defaultPlaylist,
     rules: output.rules.map((rule) => ({
       id: rule.id,
@@ -128,13 +129,7 @@ const deviceWire = (view: DeviceProgrammingView) => ({
 const timelineWire = (timeline: TimelineView) => ({
   source:
     timeline.source.kind === "group"
-      ? {
-          kind: "group" as const,
-          group: {
-            id: timeline.source.groupId,
-            name: timeline.source.groupName,
-          },
-        }
+      ? { kind: "group" as const, group: timeline.source.group }
       : { kind: "individual" as const },
   timeZone: timeline.timeZone,
   segments: timeline.segments.map((segment) => ({

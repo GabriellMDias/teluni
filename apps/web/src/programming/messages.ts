@@ -124,6 +124,9 @@ const ptBR = {
   timelineEnd: "Fim",
   timelinePlays: "O que passa",
   segmentNone: "Tela neutra",
+  hiddenPlaylist: "Playlist fora do seu acesso",
+  hiddenPlaylists:
+    "Esta programação usa playlists fora do seu acesso, como as da filial anterior da tela. Troque-as para salvar.",
   segmentDefault: (name: string) => `${name} (padrão)`,
   noteGap: (local: string, resolved: string) =>
     `${local} não existe nesse dia por causa da mudança de horário; vale a partir de ${resolved}.`,
@@ -131,6 +134,9 @@ const ptBR = {
     `${local} acontece duas vezes por causa da mudança de horário; vale ${resolved}.`,
   sourceLabel: "Origem da programação",
   sources: { group: "Grupo", individual: "Programação própria" },
+  hiddenGroup: "Grupo com filiais fora do seu acesso",
+  hiddenGroupSchedules:
+    "Esta tela segue um grupo com filiais fora do seu acesso. Os horários dele são editados por quem tem acesso a todas essas filiais.",
   zoneLabel: "Fuso horário",
   branchZone: (zone: string) => `${zone} (da filial)`,
   branchLabel: "Filial",
@@ -309,6 +315,9 @@ const enUS: Messages = {
   timelineEnd: "End",
   timelinePlays: "What plays",
   segmentNone: "Neutral screen",
+  hiddenPlaylist: "A playlist outside your access",
+  hiddenPlaylists:
+    "This programming uses playlists outside your access, such as those of the screen's previous branch. Replace them to save.",
   segmentDefault: (name: string) => `${name} (default)`,
   noteGap: (local: string, resolved: string) =>
     `${local} does not exist that day because of a clock change; it applies from ${resolved}.`,
@@ -316,6 +325,9 @@ const enUS: Messages = {
     `${local} happens twice because of a clock change; ${resolved} applies.`,
   sourceLabel: "Programming source",
   sources: { group: "Group", individual: "Own programming" },
+  hiddenGroup: "A group with branches outside your access",
+  hiddenGroupSchedules:
+    "This screen follows a group with branches outside your access. Its schedules are edited by someone with access to all of those branches.",
   zoneLabel: "Time zone",
   branchZone: (zone: string) => `${zone} (from the branch)`,
   branchLabel: "Branch",

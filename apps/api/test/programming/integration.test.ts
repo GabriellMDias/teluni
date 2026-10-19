@@ -602,7 +602,14 @@ describe("programming: playlists, groups, schedules and assignments", () => {
     );
     expect(program.body).toMatchObject({
       version: 1,
-      outputs: [{ key: "screen", defaultPlaylist: null, rules: [] }],
+      outputs: [
+        {
+          key: "screen",
+          defaultPlaylistId: null,
+          defaultPlaylist: null,
+          rules: [],
+        },
+      ],
     });
     const overlapping = [
       { ...morning, playlistId: shared.id },
@@ -932,5 +939,165 @@ describe("programming: playlists, groups, schedules and assignments", () => {
         ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
+  });
+
+  it("hides groups and playlists outside the caller's access from a screen", async () => {
+    const range = "from=2027-01-04T00:00:00Z&to=2027-01-05T00:00:00Z";
+    const shared = await playlist("aAdmin", null, "Rede geral");
+    const network = await call("aAdmin", "POST", `${base}/groups`, {
+      body: {
+        name: "Rede inteira",
+        allBranches: false,
+        branchIds: [a1.id, a2.id],
+      },
+    });
+    expect(network.status, JSON.stringify(network.body)).toBe(201);
+    await call(
+      "aAdmin",
+      "PUT",
+      `${base}/groups/${network.body.id}/program/outputs/screen`,
+      {
+        body: {
+          expectedVersion: 1,
+          defaultPlaylistId: null,
+          rules: [{ ...morning, playlistId: shared.id }],
+        },
+      },
+    );
+    const member = await screen(companyA, a1.id, "Vitrine 1");
+    const memberPath = `${base}/devices/${member.id}`;
+    const joined = await call("aAdmin", "PUT", `${memberPath}/assignment`, {
+      strong: true,
+      body: {
+        expectedVersion: 0,
+        groupId: network.body.id,
+        individual: false,
+        confirmUnpublished: true,
+      },
+    });
+    expect(joined.status, JSON.stringify(joined.body)).toBe(200);
+    // A manager of one branch sees the screen follow a group, not which one.
+    const managed = await call("aManager", "GET", memberPath);
+    expect(managed.body).toMatchObject({
+      group: null,
+      individual: false,
+      source: "group",
+    });
+    const plays = await call(
+      "aManager",
+      "GET",
+      `${memberPath}/timeline?${range}`,
+    );
+    expect(plays.status, JSON.stringify(plays.body)).toBe(200);
+    expect(plays.body.source).toEqual({ kind: "group", group: null });
+    expect(
+      (plays.body.segments as { playlist: { name: string } | null }[]).map(
+        (segment) => segment.playlist?.name ?? null,
+      ),
+    ).toEqual([null, "Rede geral", null]);
+    expect(
+      (await call("aAdmin", "GET", `${memberPath}/timeline?${range}`)).body
+        .source,
+    ).toEqual({
+      kind: "group",
+      group: { id: network.body.id, name: "Rede inteira" },
+    });
+    // A moved screen keeps playlists of its previous branch, unresolved for
+    // a caller who cannot see that branch.
+    const local = await playlist("aAdmin", a2.id, "Só no bairro");
+    const mover = await screen(companyA, a2.id, "Vitrine 2");
+    const moverPath = `${base}/devices/${mover.id}`;
+    const own = await call(
+      "aAdmin",
+      "PUT",
+      `${moverPath}/program/outputs/screen`,
+      {
+        body: {
+          expectedVersion: 0,
+          defaultPlaylistId: local.id,
+          rules: [{ ...morning, playlistId: local.id }],
+        },
+      },
+    );
+    expect(own.status, JSON.stringify(own.body)).toBe(200);
+    const device = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/devices/${mover.id}`,
+    );
+    const moved = await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/devices/${mover.id}/move`,
+      {
+        strong: true,
+        body: { expectedVersion: device.body.version, branchId: a1.id },
+      },
+    );
+    expect(moved.status, JSON.stringify(moved.body)).toBe(200);
+    const program = await call("aManager", "GET", `${moverPath}/program`);
+    expect(program.status, JSON.stringify(program.body)).toBe(200);
+    expect(program.body.outputs).toMatchObject([
+      {
+        defaultPlaylistId: local.id,
+        defaultPlaylist: null,
+        rules: [{ playlistId: local.id, playlist: null }],
+      },
+    ]);
+    const hidden = await call(
+      "aManager",
+      "GET",
+      `${moverPath}/timeline?${range}`,
+    );
+    expect(
+      (hidden.body.segments as { source: string; playlist: unknown }[]).map(
+        ({ source, playlist }) => [source, playlist],
+      ),
+    ).toEqual([
+      ["default", null],
+      ["rule", null],
+      ["default", null],
+    ]);
+    const full = await call("aAdmin", "GET", `${moverPath}/program`);
+    expect(full.body.outputs).toMatchObject([
+      { defaultPlaylist: { id: local.id, name: "Só no bairro" } },
+    ]);
+    // Keeping the old branch playlist is rejected for the new branch.
+    expect(
+      code(
+        await call("aManager", "PUT", `${moverPath}/program/outputs/screen`, {
+          body: {
+            expectedVersion: program.body.version,
+            defaultPlaylistId: local.id,
+            rules: [],
+          },
+        }),
+      ),
+    ).toBe("PLAYLIST_SCOPE_MISMATCH");
+  });
+
+  it("holds the playlist limit under concurrent creation", async () => {
+    const companyC = await createCompany("aAdmin", "Rede C");
+    await sql.query(
+      `INSERT INTO playlists (id, company_id, branch_id, name, transition, fade_ms)
+       SELECT gen_random_uuid(), $1, NULL, 'Lista ' || n, 'CUT', NULL
+       FROM generate_series(1, 998) AS n`,
+      [companyC],
+    );
+    const results = await Promise.all(
+      [1, 2, 3, 4].map((n) =>
+        call("aAdmin", "POST", `/companies/${companyC}/programming/playlists`, {
+          body: { name: `Concorrente ${n}`, branchId: null },
+        }),
+      ),
+    );
+    expect(results.map((result) => result.status).sort()).toEqual([
+      201, 201, 409, 409,
+    ]);
+    const { rows } = await sql.query<{ total: number }>(
+      "SELECT count(*)::int AS total FROM playlists WHERE company_id = $1",
+      [companyC],
+    );
+    expect(rows[0].total).toBe(1_000);
   });
 });

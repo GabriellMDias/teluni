@@ -28,6 +28,7 @@ import {
   groupKey,
   groupsKey,
   listGroups,
+  listPlaylistChoices,
   listPlaylists,
   listSelectableMedia,
   playlistKey,
@@ -1212,7 +1213,7 @@ function ScheduleEditor({
   });
   const playlists = useQuery({
     queryKey: [...playlistsKey(companyId), "choices"],
-    queryFn: () => listPlaylists(companyId, {}),
+    queryFn: () => listPlaylistChoices(companyId),
   });
   if (program.isPending) return <p>{t.loading}</p>;
   if (program.isError)
@@ -1226,14 +1227,17 @@ function ScheduleEditor({
   const fits = (playlist: { branch: { id: string } | null }) =>
     playlist.branch === null ||
     (reach !== "all" && reach.size === 1 && reach.has(playlist.branch.id));
+  // References keep their place even when the caller cannot see the playlist,
+  // such as one of a moved screen's previous branch.
   const choices = new Map<string, string>();
+  const refer = (id: string | null, summary: { name: string } | null) => {
+    if (id) choices.set(id, summary?.name ?? t.hiddenPlaylist);
+  };
   for (const output of program.data.outputs) {
-    if (output.defaultPlaylist)
-      choices.set(output.defaultPlaylist.id, output.defaultPlaylist.name);
-    for (const rule of output.rules)
-      if (rule.playlist) choices.set(rule.playlist.id, rule.playlist.name);
+    refer(output.defaultPlaylistId, output.defaultPlaylist);
+    for (const rule of output.rules) refer(rule.playlistId, rule.playlist);
   }
-  for (const playlist of playlists.data?.items ?? [])
+  for (const playlist of playlists.data ?? [])
     if (fits(playlist)) choices.set(playlist.id, playlist.name);
   return (
     <ScheduleForm
@@ -1281,7 +1285,12 @@ function ScheduleForm({
   const { t } = useProgrammingMessages();
   const [rules, setRules] = useState<DraftRule[]>(() => toDraftRules(program));
   const [fallback, setFallback] = useState(
-    program.outputs[0]?.defaultPlaylist?.id ?? "",
+    program.outputs[0]?.defaultPlaylistId ?? "",
+  );
+  const hidden = program.outputs.some(
+    (output) =>
+      (output.defaultPlaylistId !== null && !output.defaultPlaylist) ||
+      output.rules.some((rule) => !rule.playlist),
   );
   const [problems, setProblems] = useState<Map<number, string[]>>(new Map());
   const formatDate = (date: string) =>
@@ -1328,6 +1337,7 @@ function ScheduleForm({
       <p className="hint">{t.schedulesLead}</p>
       {notice && <p role="status">{notice}</p>}
       {choices.length === 0 && <p className="hint">{t.noPlaylists}</p>}
+      {hidden && <p className="hint">{t.hiddenPlaylists}</p>}
       <fieldset disabled={!editable} className="programming-rules">
         <legend className="visually-hidden">{t.schedulesTitle}</legend>
         {rules.map((rule, index) => {
@@ -1588,11 +1598,13 @@ function TimelinePreview({
                   <td>{format(segment.start)}</td>
                   <td>{format(segment.end)}</td>
                   <td>
-                    {segment.source === "none" || !segment.playlist
+                    {segment.source === "none"
                       ? t.segmentNone
-                      : segment.source === "default"
-                        ? t.segmentDefault(segment.playlist.name)
-                        : segment.playlist.name}
+                      : !segment.playlist
+                        ? t.hiddenPlaylist
+                        : segment.source === "default"
+                          ? t.segmentDefault(segment.playlist.name)
+                          : segment.playlist.name}
                   </td>
                 </tr>
               ))}
@@ -1860,6 +1872,9 @@ export function GroupPage({
 
 // Screens
 
+/** Select value for a group the caller cannot fully see; it cannot be sent. */
+const HIDDEN_GROUP = "hidden";
+
 function AssignmentForm({
   companyId,
   current,
@@ -1872,7 +1887,14 @@ function AssignmentForm({
   onChanged: (notice: string) => Promise<void>;
 }) {
   const { t } = useProgrammingMessages();
-  const [groupId, setGroupId] = useState(current.group?.id ?? "");
+  // Individual programming exists only inside a group, so a screen with it
+  // and no visible group belongs to a hidden one.
+  const hidden =
+    current.group === null &&
+    (current.source === "group" || current.individual);
+  const [groupId, setGroupId] = useState(
+    current.group?.id ?? (hidden ? HIDDEN_GROUP : ""),
+  );
   const [individual, setIndividual] = useState(current.individual);
   const [confirmed, setConfirmed] = useState(false);
   const branchId = current.device.branch.id;
@@ -1900,9 +1922,11 @@ function AssignmentForm({
       }),
     onSuccess: () => onChanged(t.assigned),
   });
-  const unchanged =
-    (groupId || null) === (current.group?.id ?? null) &&
-    (groupId ? individual : false) === current.individual;
+  // Leaving a hidden group is always a change; keeping it sends nothing.
+  const unchanged = hidden
+    ? groupId === HIDDEN_GROUP
+    : (groupId || null) === (current.group?.id ?? null) &&
+      (groupId ? individual : false) === current.individual;
   return (
     <form
       className="form-stack"
@@ -1920,13 +1944,14 @@ function AssignmentForm({
         onChange={(event) => setGroupId(event.target.value)}
       >
         <option value="">{t.noGroup}</option>
+        {hidden && <option value={HIDDEN_GROUP}>{t.hiddenGroup}</option>}
         {choices.map((group) => (
           <option key={group.id} value={group.id}>
             {group.name}
           </option>
         ))}
       </select>
-      {groupId && (
+      {groupId && groupId !== HIDDEN_GROUP && (
         <label className="checkbox-row">
           <input
             type="checkbox"
@@ -2032,9 +2057,11 @@ function ScreenProgrammingDetail({
         </dd>
         <dt>{t.sourceLabel}</dt>
         <dd>
-          {current.source === "group" && current.group
-            ? `${t.sources.group}: ${current.group.name}`
-            : t.sources.individual}
+          {current.source === "individual"
+            ? t.sources.individual
+            : current.group
+              ? `${t.sources.group}: ${current.group.name}`
+              : t.hiddenGroup}
         </dd>
       </dl>
       {stepUp && <StepUpPrompt returnTo={returnTo} />}
@@ -2075,6 +2102,8 @@ function ScreenProgrammingDetail({
             {t.groupSchedules}
           </Link>
         </p>
+      ) : current.source === "group" ? (
+        <p className="hint">{t.hiddenGroupSchedules}</p>
       ) : (
         <ScheduleEditor
           companyId={companyId}

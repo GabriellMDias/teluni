@@ -91,6 +91,7 @@ export type ProgramView = Readonly<{
   version: number;
   outputs: readonly {
     key: OutputKey;
+    defaultPlaylistId: string | null;
     defaultPlaylist: PlaylistSummary | null;
     rules: readonly (ScheduleRule & { playlist: PlaylistSummary | null })[];
   }[];
@@ -106,7 +107,7 @@ export type DeviceProgrammingView = Readonly<{
 
 export type TimelineView = Readonly<{
   source:
-    | { kind: "group"; groupId: string; groupName: string }
+    | { kind: "group"; group: { id: string; name: string } | null }
     | { kind: "individual" };
   timeZone: string;
   segments: readonly {
@@ -618,7 +619,7 @@ export class ProgrammingService {
     companyId: string,
     groupId: string,
   ): Promise<GroupView> {
-    const group = await this.#visibleGroup(context, companyId, groupId);
+    const { group } = await this.#visibleGroup(context, companyId, groupId);
     return (await this.#groupViews(companyId, [group]))[0];
   }
 
@@ -626,13 +627,13 @@ export class ProgrammingService {
     context: HumanContext,
     companyId: string,
     groupId: string,
-  ): Promise<GroupRecord> {
+  ): Promise<{ group: GroupRecord; access: CompanyAccess }> {
     const access = await this.#companies.resolve(context, companyId);
     requireActive(access);
     const group = await this.#repository.findGroup(companyId, groupId);
     if (!group || !groupVisible(access, group))
       throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
-    return group;
+    return { group, access };
   }
 
   async updateGroup(
@@ -770,17 +771,22 @@ export class ProgrammingService {
     companyId: string,
     source: ProgramSource,
   ): Promise<ProgramView> {
+    let access: CompanyAccess;
     if (source.kind === "group")
-      await this.#visibleGroup(context, companyId, source.groupId);
+      ({ access } = await this.#visibleGroup(
+        context,
+        companyId,
+        source.groupId,
+      ));
     else {
-      const access = await this.#companies.resolve(context, companyId);
+      access = await this.#companies.resolve(context, companyId);
       const [device] = await this.#devices.describe(null, companyId, [
         source.deviceId,
       ]);
       requireDevice(access, "programming.view", device);
     }
     const program = await this.#repository.program(companyId, source);
-    return this.#programView(companyId, program);
+    return this.#programView(access, companyId, program);
   }
 
   /** Read-only validation of a rule set for the panel. */
@@ -893,7 +899,7 @@ export class ProgrammingService {
         ...(input.defaultPlaylistId ? [input.defaultPlaylistId] : []),
       ];
       await this.#requirePlaylists(tx, companyId, referenced, reach);
-      return this.#repository.replaceOutput(
+      const saved = await this.#repository.replaceOutput(
         tx,
         actorOf(context, locked.access),
         companyId,
@@ -915,8 +921,9 @@ export class ProgrammingService {
           })),
         },
       );
+      return { saved, access: locked.access };
     });
-    return this.#programView(companyId, program);
+    return this.#programView(program.access, companyId, program.saved);
   }
 
   async #requirePlaylists(
@@ -958,7 +965,7 @@ export class ProgrammingService {
     const [device] = await this.#devices.describe(null, companyId, [deviceId]);
     const found = requireDevice(access, "programming.view", device);
     const setting = await this.#repository.setting(companyId, deviceId);
-    return this.#deviceView(companyId, found, setting);
+    return this.#deviceView(access, companyId, found, setting);
   }
 
   async assign(
@@ -1023,9 +1030,14 @@ export class ProgrammingService {
         { groupId: input.groupId, individual: input.individual },
         [found.branchId],
       );
-      return { device: found, setting };
+      return { device: found, setting, access: locked.access };
     });
-    return this.#deviceView(companyId, result.device, result.setting);
+    return this.#deviceView(
+      result.access,
+      companyId,
+      result.device,
+      result.setting,
+    );
   }
 
   /** The devices move hook: a screen leaves a group that no longer spans it. */
@@ -1077,27 +1089,24 @@ export class ProgrammingService {
     const [device] = await this.#devices.describe(null, companyId, [deviceId]);
     const found = requireDevice(access, "programming.view", device);
     const setting = await this.#repository.setting(companyId, deviceId);
-    const view = await this.#deviceView(companyId, found, setting);
-    const group =
-      view.source === "group" && setting.groupId
-        ? await this.#repository.findGroup(companyId, setting.groupId)
-        : null;
+    const view = await this.#deviceView(access, companyId, found, setting);
+    // The screen plays its group's program even when the caller may not see
+    // the whole group; the group's identity then stays hidden.
+    const groupId =
+      view.source === "group" ? (setting.groupId ?? undefined) : undefined;
     const program = await this.#repository.program(
       companyId,
-      group
-        ? { kind: "group", groupId: group.id }
-        : { kind: "device", deviceId },
+      groupId ? { kind: "group", groupId } : { kind: "device", deviceId },
     );
     const zone = found.timeZone ?? view.device.branchTimeZone;
     return this.#timeline(
+      access,
       companyId,
       program,
       zone,
       from,
       to,
-      group
-        ? { kind: "group", groupId: group.id, groupName: group.name }
-        : { kind: "individual" },
+      groupId ? { kind: "group", group: view.group } : { kind: "individual" },
     );
   }
 
@@ -1110,19 +1119,31 @@ export class ProgrammingService {
     const { from, to } = timelineRange(range);
     if (!isTimeZone(range.timeZone))
       throw new ProgrammingFailure("VALIDATION_FAILED");
-    const group = await this.#visibleGroup(context, companyId, groupId);
+    const { group, access } = await this.#visibleGroup(
+      context,
+      companyId,
+      groupId,
+    );
     const program = await this.#repository.program(companyId, {
       kind: "group",
       groupId,
     });
-    return this.#timeline(companyId, program, range.timeZone, from, to, {
-      kind: "group",
-      groupId: group.id,
-      groupName: group.name,
-    });
+    return this.#timeline(
+      access,
+      companyId,
+      program,
+      range.timeZone,
+      from,
+      to,
+      {
+        kind: "group",
+        group: { id: group.id, name: group.name },
+      },
+    );
   }
 
   async #timeline(
+    access: CompanyAccess,
     companyId: string,
     program: ProgramRecord | null,
     zone: string,
@@ -1149,6 +1170,7 @@ export class ProgrammingService {
       throw error;
     }
     const summaries = await this.#summaries(
+      access,
       companyId,
       timeline.segments.flatMap((segment) =>
         segment.source.kind === "none" ? [] : [segment.source.playlistId],
@@ -1218,12 +1240,20 @@ export class ProgrammingService {
     return new Map(facts.map((fact) => [fact.id, fact]));
   }
 
+  /**
+   * Summaries of the referenced playlists the caller may see. A screen's own
+   * program can keep playlists of its previous branch after a move; those
+   * stay unresolved for a caller without access to that branch.
+   */
   async #summaries(
+    access: CompanyAccess,
     companyId: string,
     playlistIds: readonly string[],
   ): Promise<Map<string, PlaylistSummary>> {
     const unique = [...new Set(playlistIds)];
-    const playlists = await this.#repository.findPlaylists(companyId, unique);
+    const playlists = (
+      await this.#repository.findPlaylists(companyId, unique)
+    ).filter((playlist) => playlistVisible(access, playlist));
     const views = await this.#playlistViews(companyId, playlists);
     return new Map(
       views.map((view) => [
@@ -1239,6 +1269,7 @@ export class ProgrammingService {
   }
 
   async #programView(
+    access: CompanyAccess,
     companyId: string,
     program: ProgramRecord | null,
   ): Promise<ProgramView> {
@@ -1247,7 +1278,7 @@ export class ProgrammingService {
       ...output.rules.map((rule) => rule.playlistId),
       ...(output.defaultPlaylistId ? [output.defaultPlaylistId] : []),
     ]);
-    const summaries = await this.#summaries(companyId, referenced);
+    const summaries = await this.#summaries(access, companyId, referenced);
     const screen = outputs.get("screen") ?? {
       defaultPlaylistId: null,
       rules: [],
@@ -1257,6 +1288,7 @@ export class ProgrammingService {
       outputs: [
         {
           key: "screen",
+          defaultPlaylistId: screen.defaultPlaylistId,
           defaultPlaylist: screen.defaultPlaylistId
             ? (summaries.get(screen.defaultPlaylistId) ?? null)
             : null,
@@ -1316,7 +1348,13 @@ export class ProgrammingService {
     }));
   }
 
+  /**
+   * A screen's programming source. The group stays hidden (null) from a
+   * caller who cannot see every branch of its span, though the source
+   * still says the screen follows a group.
+   */
   async #deviceView(
+    access: CompanyAccess,
     companyId: string,
     device: DeviceFacts,
     setting: SettingRecord,
@@ -1334,7 +1372,10 @@ export class ProgrammingService {
         branchName: branch?.name ?? "",
         branchTimeZone: branch?.timeZone ?? "UTC",
       },
-      group: group ? { id: group.id, name: group.name } : null,
+      group:
+        group && groupVisible(access, group)
+          ? { id: group.id, name: group.name }
+          : null,
       individual: setting.individual,
       source: group && !setting.individual ? "group" : "individual",
       version: setting.version,

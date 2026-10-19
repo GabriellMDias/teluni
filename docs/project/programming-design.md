@@ -128,12 +128,13 @@ Scope rules:
 - A playlist is visible and editable under the capability on its owning scope; a company playlist is visible to anyone with `programming.view` anywhere in the company and editable with company-wide `programming.edit`.
 - A group, its program and its branch span need the capability on every branch of the span; a whole-company group needs company scope. A group that a person can see only partly does not exist for them (`RESOURCE_NOT_FOUND`).
 - A screen's own program and settings need the capability on the screen's branch. Joining a group needs `programming.assign` on the screen's branch and on every branch of the group's span.
+- A screen's views never reveal what the caller cannot see. A screen in a group the caller sees only partly reports a group source with no group, and its timeline still shows what the screen plays; leaving that group needs only `programming.assign` on the screen's branch. A playlist outside the caller's scope, such as one of a moved screen's previous branch, keeps its ID without a summary.
 - A rule or default may use a playlist only when every branch the program can reach is inside the playlist's scope: company playlists always, a branch playlist only for that branch's screens or for a group whose span is exactly that branch.
 - The capabilities follow the existing assurance rule for standard roles; profiles set it per capability.
 
 ## Abuse limits
 
-Per company: 1,000 playlists, 100 groups, 2,000 programs. Per playlist 500 items; per output 200 rules. A timeline request covers at most 31 days and 2,000 segments. Exceeding a count limit returns `PROGRAMMING_LIMIT_REACHED`, whose message names the limits; list and rule-set sizes beyond their maximum fail request validation.
+Per company: 1,000 playlists, 100 groups, 2,000 programs. Per playlist 500 items; per output 200 rules. A timeline request covers at most 31 days and 2,000 segments. Exceeding a count limit returns `PROGRAMMING_LIMIT_REACHED`, whose message names the limits; a transaction-scoped lock per company serializes each count with its insert, so concurrent creations cannot pass a limit; list and rule-set sizes beyond their maximum fail request validation.
 
 ## Audit
 

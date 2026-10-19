@@ -85,16 +85,21 @@
                     "properties": {
                       "kind": { "type": "string", "const": "group" },
                       "group": {
-                        "type": "object",
-                        "required": ["id", "name"],
-                        "properties": {
-                          "id": {
-                            "type": "string",
-                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": ["id", "name"],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              "name": { "type": "string" }
+                            },
+                            "additionalProperties": false
                           },
-                          "name": { "type": "string" }
-                        },
-                        "additionalProperties": false
+                          { "type": "null" }
+                        ]
                       }
                     },
                     "additionalProperties": false
@@ -218,16 +223,21 @@
                 "properties": {
                   "kind": { "type": "string", "const": "group" },
                   "group": {
-                    "type": "object",
-                    "required": ["id", "name"],
-                    "properties": {
-                      "id": {
-                        "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": ["id", "name"],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "name": { "type": "string" }
+                        },
+                        "additionalProperties": false
                       },
-                      "name": { "type": "string" }
-                    },
-                    "additionalProperties": false
+                      { "type": "null" }
+                    ]
                   }
                 },
                 "additionalProperties": false

@@ -169,11 +169,17 @@ export class PrismaProgrammingRepository {
         ${actor.membershipId}::uuid, ${action}, ${JSON.stringify(details)}::jsonb)`;
   }
 
-  /** Rows of a company for the count limits. */
+  /**
+   * Counts behind the company limits. A transaction-scoped advisory lock per
+   * company serializes every count-and-insert until commit (the company row
+   * is only share-locked), and the count runs after it in a fresh snapshot.
+   */
   async counts(
     tx: Prisma.TransactionClient,
     companyId: string,
   ): Promise<{ playlists: number; groups: number; programs: number }> {
+    const key = `programming-limits:${companyId}`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
     const [row] = await tx.$queryRaw<
       { playlists: number; groups: number; programs: number }[]
     >`

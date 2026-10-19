@@ -999,7 +999,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned. */
+        /** @description A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned. The group is null for a caller who cannot view every branch of its span, while the source still says the screen follows a group. */
         get: operations["getDeviceProgramming"];
         put?: never;
         post?: never;
@@ -1033,7 +1033,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. */
+        /** @description The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary. */
         get: operations["getDeviceProgram"];
         put?: never;
         post?: never;
@@ -1084,7 +1084,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. */
+        /** @description Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary. */
         get: operations["getDeviceTimeline"];
         put?: never;
         post?: never;
@@ -13693,6 +13693,7 @@ export interface operations {
                         outputs: {
                             /** @constant */
                             key: "screen";
+                            defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
                                 name: string;
@@ -13899,6 +13900,7 @@ export interface operations {
                         outputs: {
                             /** @constant */
                             key: "screen";
+                            defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
                                 name: string;
@@ -14455,6 +14457,7 @@ export interface operations {
                         outputs: {
                             /** @constant */
                             key: "screen";
+                            defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
                                 name: string;
@@ -14661,6 +14664,7 @@ export interface operations {
                         outputs: {
                             /** @constant */
                             key: "screen";
+                            defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
                                 name: string;
@@ -15040,7 +15044,7 @@ export interface operations {
                             group: {
                                 id: string;
                                 name: string;
-                            };
+                            } | null;
                         } | {
                             /** @constant */
                             kind: "individual";
@@ -15242,7 +15246,7 @@ export interface operations {
                             group: {
                                 id: string;
                                 name: string;
-                            };
+                            } | null;
                         } | {
                             /** @constant */
                             kind: "individual";

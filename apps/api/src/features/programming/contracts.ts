@@ -156,6 +156,7 @@ export const programSchema = Type.Object(
       Type.Object(
         {
           key: outputKey,
+          defaultPlaylistId: Type.Union([uuid, Type.Null()]),
           defaultPlaylist: Type.Union([playlistSummarySchema, Type.Null()]),
           rules: Type.Array(
             Type.Object(
@@ -207,7 +208,10 @@ export const timelineSchema = Type.Object(
   {
     source: Type.Union([
       Type.Object(
-        { kind: Type.Literal("group"), group: named },
+        {
+          kind: Type.Literal("group"),
+          group: Type.Union([named, Type.Null()]),
+        },
         { additionalProperties: false },
       ),
       Type.Object(
@@ -573,7 +577,7 @@ export const programmingOperations = [
     operationId: "getDeviceProgramming",
     access: "session",
     description:
-      "A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned.",
+      "A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned. The group is null for a caller who cannot view every branch of its span, while the source still says the screen follows a group.",
     schema: {
       params: deviceParams,
       response: { 200: deviceProgrammingSchema, ...common },
@@ -613,7 +617,7 @@ export const programmingOperations = [
     operationId: "getDeviceProgram",
     access: "session",
     description:
-      "The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved.",
+      "The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
     schema: {
       params: deviceParams,
       response: { 200: programSchema, ...common },
@@ -687,7 +691,7 @@ export const programmingOperations = [
     operationId: "getDeviceTimeline",
     access: "session",
     description:
-      "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes.",
+      "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary.",
     schema: {
       params: deviceParams,
       querystring: Type.Object(range, { additionalProperties: false }),

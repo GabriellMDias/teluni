@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "getDeviceProgramming",
   "summary": "",
-  "description": "A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned.",
+  "description": "A screen's programming source: its group, whether individual programming is selected, and the settings version that assignments send. Version 0 means the screen was never assigned. The group is null for a caller who cannot view every branch of its span, while the source still says the screen follows a group.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
