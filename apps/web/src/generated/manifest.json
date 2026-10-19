@@ -109,6 +109,23 @@
       "file": "pages/api/completeLogin.json"
     },
     {
+      "id": "api/confirmDeviceErasure",
+      "kind": "api",
+      "title": "confirmDeviceErasure",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /device/self/erasure",
+      "method": "POST",
+      "path": "/device/self/erasure",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/confirmDeviceErasure.json"
+    },
+    {
       "id": "api/createBranch",
       "kind": "api",
       "title": "createBranch",
@@ -195,6 +212,57 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getCompany.json"
+    },
+    {
+      "id": "api/getDevice",
+      "kind": "api",
+      "title": "getDevice",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/devices/{deviceId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/devices/{deviceId}",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDevice.json"
+    },
+    {
+      "id": "api/getDeviceEnrollmentStatus",
+      "kind": "api",
+      "title": "getDeviceEnrollmentStatus",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /device-enrollments/{enrollmentId}/status",
+      "method": "POST",
+      "path": "/device-enrollments/{enrollmentId}/status",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceEnrollmentStatus.json"
+    },
+    {
+      "id": "api/getDeviceSelf",
+      "kind": "api",
+      "title": "getDeviceSelf",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /device/self",
+      "method": "GET",
+      "path": "/device/self",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceSelf.json"
     },
     {
       "id": "api/getLiveness",
@@ -333,6 +401,23 @@
       "file": "pages/api/listCompanyMembers.json"
     },
     {
+      "id": "api/listDevices",
+      "kind": "api",
+      "title": "listDevices",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/devices",
+      "method": "GET",
+      "path": "/companies/{companyId}/devices",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listDevices.json"
+    },
+    {
       "id": "api/listInvitations",
       "kind": "api",
       "title": "listInvitations",
@@ -384,6 +469,42 @@
       "file": "pages/api/logout.json"
     },
     {
+      "id": "api/moveDevice",
+      "kind": "api",
+      "title": "moveDevice",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/devices/{deviceId}/move",
+      "method": "POST",
+      "path": "/companies/{companyId}/devices/{deviceId}/move",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/moveDevice.json"
+    },
+    {
+      "id": "api/pairDevice",
+      "kind": "api",
+      "title": "pairDevice",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/devices",
+      "method": "POST",
+      "path": "/companies/{companyId}/devices",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/pairDevice.json"
+    },
+    {
       "id": "api/previewInvitation",
       "kind": "api",
       "title": "previewInvitation",
@@ -418,6 +539,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/receiveBackchannelLogout.json"
+    },
+    {
+      "id": "api/recordDeviceReset",
+      "kind": "api",
+      "title": "recordDeviceReset",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/devices/{deviceId}/reset-record",
+      "method": "POST",
+      "path": "/companies/{companyId}/devices/{deviceId}/reset-record",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/recordDeviceReset.json"
     },
     {
       "id": "api/requestResponsibilityTransfer",
@@ -489,6 +628,42 @@
       "file": "pages/api/revokeMemberGrant.json"
     },
     {
+      "id": "api/rotateDeviceCredential",
+      "kind": "api",
+      "title": "rotateDeviceCredential",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /device/self/credential",
+      "method": "POST",
+      "path": "/device/self/credential",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/rotateDeviceCredential.json"
+    },
+    {
+      "id": "api/startDeviceEnrollment",
+      "kind": "api",
+      "title": "startDeviceEnrollment",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /device-enrollments",
+      "method": "POST",
+      "path": "/device-enrollments",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/startDeviceEnrollment.json"
+    },
+    {
       "id": "api/startLogin",
       "kind": "api",
       "title": "startLogin",
@@ -538,6 +713,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/terminateSession.json"
+    },
+    {
+      "id": "api/unlinkDevice",
+      "kind": "api",
+      "title": "unlinkDevice",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/devices/{deviceId}/unlink",
+      "method": "POST",
+      "path": "/companies/{companyId}/devices/{deviceId}/unlink",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/unlinkDevice.json"
     },
     {
       "id": "api/updateBranch",
@@ -592,6 +785,42 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/updateCompanyMemberStatus.json"
+    },
+    {
+      "id": "api/updateDevice",
+      "kind": "api",
+      "title": "updateDevice",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/devices/{deviceId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/devices/{deviceId}",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateDevice.json"
+    },
+    {
+      "id": "api/updateDeviceReport",
+      "kind": "api",
+      "title": "updateDeviceReport",
+      "group": "Devices",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /device/self/report",
+      "method": "PUT",
+      "path": "/device/self/report",
+      "tags": ["Devices"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateDeviceReport.json"
     },
     {
       "id": "database/backchannel_logout_replays",
@@ -652,6 +881,46 @@
       "summary": "The company's designated responsible administrator, who approves additional administrators (P10).",
       "headings": [],
       "file": "pages/database/company_responsibilities.json"
+    },
+    {
+      "id": "database/device_audit_events",
+      "kind": "database",
+      "title": "device_audit_events",
+      "group": "Devices",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Append-only device lifecycle audit: pairing, renaming, rotation, moves, unlinking, erasure confirmation and recorded resets.",
+      "headings": [],
+      "file": "pages/database/device_audit_events.json"
+    },
+    {
+      "id": "database/device_claim_failures",
+      "kind": "database",
+      "title": "device_claim_failures",
+      "group": "Devices",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Counter rows for failed pairing-code claims, which bound guessing per person and per company.",
+      "headings": [],
+      "file": "pages/database/device_claim_failures.json"
+    },
+    {
+      "id": "database/device_enrollments",
+      "kind": "database",
+      "title": "device_enrollments",
+      "group": "Devices",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A screen's request to be paired: the hash of the credential the player generated, the HMAC of the short code it shows and its report. Platform-scoped until a member claims the code.",
+      "headings": [],
+      "file": "pages/database/device_enrollments.json"
+    },
+    {
+      "id": "database/devices",
+      "kind": "database",
+      "title": "devices",
+      "group": "Devices",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A paired screen: its identity in one company and branch, configuration, credential hash and unlink/erasure state.",
+      "headings": [],
+      "file": "pages/database/devices.json"
     },
     {
       "id": "database/human_sessions",
@@ -782,6 +1051,16 @@
       "summary": "The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma,…",
       "headings": [],
       "file": "pages/repository/apps/api/README.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/devices/AGENTS",
+      "kind": "repository",
+      "title": "Devices Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/devices/AGENTS.md",
+      "summary": "This module owns screen (player) enrollment, pairing and lifecycle under ADR-0027 and the device enrollment design. Read both before changing behavior.",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/devices/AGENTS.json"
     },
     {
       "id": "repository/apps/api/src/features/identity/AGENTS",
@@ -1092,6 +1371,16 @@
       "summary": "Acceptance scope: The owner explicitly approved this decision and the D-13 design on 2026-10-18 under PH-21. Acceptance establishes the architectural direction for local and CI…",
       "headings": [],
       "file": "pages/repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.json"
+    },
+    {
+      "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+      "kind": "repository",
+      "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+      "group": "Decisions",
+      "source": "docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md",
+      "summary": "Acceptance scope: The owner explicitly approved this decision and the nine decisions of the device enrollment and lifecycle design on 2026-10-19 under PH-22. Acceptance…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -1409,7 +1698,7 @@
       "title": "Database Reference",
       "group": "Generated references",
       "source": "docs/generated/database/schema.md",
-      "summary": "Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.",
+      "summary": "A screen's request to be paired: the hash of the credential the player generated, the HMAC of the short code it shows and its report. Platform-scoped until a member claims the…",
       "headings": [],
       "file": "pages/repository/docs/generated/database/schema.json"
     },
@@ -1452,6 +1741,16 @@
       "summary": "Decided for planning on 2026-10-18: the owner explicitly approved all recommendations in the 38-question PH-12 working questionnaire and requested completion of the action.…",
       "headings": [],
       "file": "pages/repository/docs/project/commercial-policies.json"
+    },
+    {
+      "id": "repository/docs/project/device-enrollment-design",
+      "kind": "repository",
+      "title": "Teluni Device Enrollment and Lifecycle Design",
+      "group": "Project guides",
+      "source": "docs/project/device-enrollment-design.md",
+      "summary": "Approved detailed design for the server side of D-03, 2026-10-19. The owner approved all nine decisions for review as proposed under PH-22, including ADR-0027, and asked for…",
+      "headings": [],
+      "file": "pages/repository/docs/project/device-enrollment-design.json"
     },
     {
       "id": "repository/docs/project/human-actions",
@@ -1877,27 +2176,30 @@
   "search": {
     "shards": [
       { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 17, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0003.json", "count": 17, "kinds": ["api", "database"] },
+      { "file": "search/0001.json", "count": 14, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 15, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 19, "kinds": ["api", "database"] },
       {
-        "file": "search/0004.json",
-        "count": 61,
+        "file": "search/0006.json",
+        "count": 52,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0005.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 121, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 159, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 138, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 132, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 88, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 59, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 74, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 55, "kinds": ["repository"] }
+      { "file": "search/0007.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 121, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 148, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 157, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 135, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 88, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 48, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 19, "kinds": ["repository"] }
     ],
-    "count": 1287
+    "count": 1357
   }
 }

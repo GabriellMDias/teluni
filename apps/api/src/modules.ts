@@ -1,4 +1,5 @@
 import type { ApiModule } from "./module.js";
+import { createDevicesModule } from "./features/devices/module.js";
 import { createIdentityModule } from "./features/identity/module.js";
 import { createMailModule } from "./features/mail/module.js";
 import { createInvitationsModule } from "./features/organizations/invitations-module.js";
@@ -19,10 +20,15 @@ const invitations = createInvitationsModule({
   companies: organizations.companies,
   mail,
 });
+const devices = createDevicesModule({
+  sessions: identity.sessions,
+  companies: organizations.companies,
+});
 
 export const apiModules: readonly ApiModule[] = [
   identity.module,
   mail.module,
   organizations.module,
   invitations,
+  devices,
 ];

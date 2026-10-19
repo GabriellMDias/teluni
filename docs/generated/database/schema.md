@@ -4,6 +4,157 @@
 
 [Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)
 
+## device_enrollments
+
+A screen's request to be paired: the hash of the credential the player generated, the HMAC of the short code it shows and its report. Platform-scoped until a member claims the code.
+
+Owner: Devices. Classification: RESTRICTED.
+
+Lifecycle: Created PENDING with a ten-minute validity; becomes CLAIMED when a member pairs the code, which creates the device. Expiry is read lazily. Unclaimed rows are deleted one day after expiry and claimed rows 30 days after the claim (provisional until PH-13).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated enrollment UUID the player polls. | — | — |
+| `credential_hash` | `bytea` | no | — | RESTRICTED | SHA-256 of the 256-bit credential the player generated; the credential itself never reaches the server before it is used. | — | — |
+| `code_hmac` | `bytea` | no | — | RESTRICTED | HMAC-SHA-256 of the normalized eight-character code under the device code key ring; the code itself is never stored. | — | — |
+| `code_key_id` | `character varying(32)` | no | — | INTERNAL | Identifier of the code key ring entry that computed code_hmac. | — | — |
+| `report` | `jsonb` | no | — | CONFIDENTIAL | The player's report of its application, model, display and supported rotations, as sent at enrollment. | — | — |
+| `status` | `"DeviceEnrollmentStatus"` | no | `'PENDING'::"DeviceEnrollmentStatus"` | INTERNAL | PENDING until a member claims the code, then CLAIMED. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the enrollment started. | — | UTC instant, millisecond precision |
+| `expires_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Instant after which the code can no longer be claimed. | — | UTC instant, millisecond precision |
+| `last_polled_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Latest accepted status poll, which bounds polling to once per interval. | The player has not polled yet. | UTC instant, millisecond precision |
+| `claimed_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant a member claimed the code. | The enrollment was not claimed. | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `device_enrollments_claim_state` | `CHECK (((status = 'CLAIMED'::"DeviceEnrollmentStatus") = (claimed_at IS NOT NULL)))` | A claim instant exists exactly for claimed enrollments. |
+| `device_enrollments_code_hmac_length` | `CHECK ((octet_length(code_hmac) = 32))` | The stored code HMAC is a SHA-256 digest. |
+| `device_enrollments_credential_hash_length` | `CHECK ((octet_length(credential_hash) = 32))` | The stored credential hash is a SHA-256 digest. |
+| `device_enrollments_expiry_after_creation` | `CHECK ((expires_at > created_at))` | An enrollment expires after it started. |
+| `device_enrollments_pkey` | `PRIMARY KEY (id)` | Unique enrollment identity. |
+| `device_enrollments_report_object` | `CHECK ((jsonb_typeof(report) = 'object'::text))` | The report is a JSON object. |
+| `device_enrollments_code_key` | `CREATE UNIQUE INDEX device_enrollments_code_key ON public.device_enrollments USING btree (code_hmac)` | Live codes never collide; a colliding new code is regenerated. |
+| `device_enrollments_credential_key` | `CREATE UNIQUE INDEX device_enrollments_credential_key ON public.device_enrollments USING btree (credential_hash)` | One credential hash binds at most one enrollment. |
+| `device_enrollments_status_expiry_idx` | `CREATE INDEX device_enrollments_status_expiry_idx ON public.device_enrollments USING btree (status, expires_at)` | Counts live pending enrollments and finds expired ones to purge. |
+
+## devices
+
+A paired screen: its identity in one company and branch, configuration, credential hash and unlink/erasure state.
+
+Owner: Devices. Classification: CONFIDENTIAL.
+
+Lifecycle: Created ACTIVE when a member claims an enrollment. Renamed, rotated and moved within the company with optimistic versions. Unlinking makes it REVOKED with erasure PENDING, irreversibly; the screen confirms erasure (CONFIRMED, credential hash deleted) or a member records a controlled reset (RESET_RECORDED). Rows are kept with the company; no runtime deletion.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable device UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the device; immutable (tenant key). | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch the screen is assigned to within its company. | — | — |
+| `enrollment_id` | `uuid` | no | — | INTERNAL | Enrollment the device was claimed from; a plain identifier because enrollments are purged. | — | — |
+| `name` | `character varying(80)` | no | — | CONFIDENTIAL | Trimmed screen name shown to members. | — | — |
+| `rotation` | `integer` | no | — | INTERNAL | Configured clockwise rotation in degrees: 0 and 180 horizontal, 90 and 270 vertical; one the screen reported as supported. | — | degrees |
+| `status` | `"DeviceStatus"` | no | `'ACTIVE'::"DeviceStatus"` | INTERNAL | ACTIVE screens use every device operation; REVOKED screens can only learn they must clear and confirm it. | — | — |
+| `erasure` | `"DeviceErasure"` | no | `'NONE'::"DeviceErasure"` | INTERNAL | NONE while active; PENDING after unlink; CONFIRMED by the screen or RESET_RECORDED by a member. | — | — |
+| `credential_hash` | `bytea` | yes | — | RESTRICTED | SHA-256 of the screen's current credential. | Erasure was confirmed, so the credential no longer authenticates. | — |
+| `next_credential_hash` | `bytea` | yes | — | RESTRICTED | SHA-256 of a rotated credential that replaces the current one on first use. | No rotation is pending. | — |
+| `report` | `jsonb` | no | — | CONFIDENTIAL | The screen's latest report of its application, model, display and supported rotations; a device statement, not a qualified profile. | — | — |
+| `last_seen_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Latest authenticated device request, written at most once per minute. | The screen has not called since pairing. | UTC instant, millisecond precision |
+| `paired_by_membership_id` | `uuid` | no | — | INTERNAL | Membership that claimed the code. | — | — |
+| `paired_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the device was paired. | — | UTC instant, millisecond precision |
+| `revoked_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant the device was unlinked. | The device is active. | UTC instant, millisecond precision |
+| `erasure_recorded_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the erasure was confirmed by the screen or the reset was recorded. | No erasure outcome is recorded. | UTC instant, millisecond precision |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `devices_active_credential` | `CHECK (((status <> 'ACTIVE'::"DeviceStatus") OR (credential_hash IS NOT NULL)))` | An active device always has a credential. |
+| `devices_active_state` | `CHECK (((status = 'ACTIVE'::"DeviceStatus") = (erasure = 'NONE'::"DeviceErasure")))` | Exactly the active devices have no erasure state. |
+| `devices_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The device's branch belongs to the same company. |
+| `devices_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A device belongs to an existing company. |
+| `devices_company_id_paired_by_membership_id_fkey` | `FOREIGN KEY (company_id, paired_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The pairing membership belongs to the same company. |
+| `devices_confirmed_without_credential` | `CHECK (((erasure <> 'CONFIRMED'::"DeviceErasure") OR (credential_hash IS NULL)))` | A confirmed erasure leaves no credential hash. |
+| `devices_credential_hash_length` | `CHECK (((credential_hash IS NULL) OR (octet_length(credential_hash) = 32)))` | The stored credential hash is a SHA-256 digest. |
+| `devices_erasure_recorded_state` | `CHECK (((erasure = ANY (ARRAY['CONFIRMED'::"DeviceErasure", 'RESET_RECORDED'::"DeviceErasure"])) = (erasure_recorded_at IS NOT NULL)))` | An erasure instant exists exactly for confirmed or recorded erasures. |
+| `devices_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are stored trimmed and nonempty. |
+| `devices_next_credential_distinct` | `CHECK (((next_credential_hash IS NULL) OR (next_credential_hash <> credential_hash)))` | A rotation names a different credential. |
+| `devices_next_credential_hash_length` | `CHECK (((next_credential_hash IS NULL) OR (octet_length(next_credential_hash) = 32)))` | The stored rotated credential hash is a SHA-256 digest. |
+| `devices_pkey` | `PRIMARY KEY (id)` | Unique device identity. |
+| `devices_report_object` | `CHECK ((jsonb_typeof(report) = 'object'::text))` | The report is a JSON object. |
+| `devices_revocation_state` | `CHECK (((status = 'REVOKED'::"DeviceStatus") = (revoked_at IS NOT NULL)))` | A revocation instant exists exactly for revoked devices. |
+| `devices_rotation_pending_only_active` | `CHECK (((status = 'ACTIVE'::"DeviceStatus") OR (next_credential_hash IS NULL)))` | Only active devices can have a pending credential rotation. |
+| `devices_rotation_valid` | `CHECK ((rotation = ANY (ARRAY[0, 90, 180, 270])))` | Rotation is a quarter turn. |
+| `devices_version_positive` | `CHECK ((version >= 1))` | Versions start at one. |
+| `devices_company_branch_status_idx` | `CREATE INDEX devices_company_branch_status_idx ON public.devices USING btree (company_id, branch_id, status)` | Lists a branch's devices and finds active devices before a branch is archived. |
+| `devices_company_id_id_key` | `CREATE UNIQUE INDEX devices_company_id_id_key ON public.devices USING btree (company_id, id)` | Tenant key for references to devices. |
+| `devices_company_paired_idx` | `CREATE INDEX devices_company_paired_idx ON public.devices USING btree (company_id, paired_at DESC, id DESC)` | Lists a company's devices newest pairing first with stable keyset pagination. |
+| `devices_credential_key` | `CREATE UNIQUE INDEX devices_credential_key ON public.devices USING btree (credential_hash)` | Finds a device by credential hash; credentials never collide. |
+| `devices_enrollment_key` | `CREATE UNIQUE INDEX devices_enrollment_key ON public.devices USING btree (enrollment_id)` | An enrollment creates at most one device and finds it when the player polls. |
+| `devices_next_credential_key` | `CREATE UNIQUE INDEX devices_next_credential_key ON public.devices USING btree (next_credential_hash)` | Finds a device by its rotated credential; credentials never collide. |
+
+## device_claim_failures
+
+Counter rows for failed pairing-code claims, which bound guessing per person and per company.
+
+Owner: Devices. Classification: INTERNAL.
+
+Lifecycle: Inserted on each failed claim; counted over 15 minutes and deleted one day later.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated failure UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company the failed claim targeted; immutable (tenant key). | — | — |
+| `principal_id` | `uuid` | no | — | INTERNAL | Person who attempted the claim. | — | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the failure. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `device_claim_failures_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A failure belongs to an existing company. |
+| `device_claim_failures_pkey` | `PRIMARY KEY (id)` | Unique failure identity. |
+| `device_claim_failures_principal_id_fkey` | `FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A failure belongs to an existing principal. |
+| `device_claim_failures_company_id_id_key` | `CREATE UNIQUE INDEX device_claim_failures_company_id_id_key ON public.device_claim_failures USING btree (company_id, id)` | Tenant key of failure rows. |
+| `device_claim_failures_company_time_idx` | `CREATE INDEX device_claim_failures_company_time_idx ON public.device_claim_failures USING btree (company_id, occurred_at)` | Counts a company's recent failures. |
+| `device_claim_failures_principal_time_idx` | `CREATE INDEX device_claim_failures_principal_time_idx ON public.device_claim_failures USING btree (principal_id, occurred_at)` | Counts a person's recent failures. |
+
+## device_audit_events
+
+Append-only device lifecycle audit: pairing, renaming, rotation, moves, unlinking, erasure confirmation and recorded resets.
+
+Owner: Devices. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted in the transaction of the change it records; never updated or deleted by the runtime. Retention follows PH-13.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company the event belongs to; immutable (tenant key). | — | — |
+| `device_id` | `uuid` | no | — | INTERNAL | Device the event is about. | — | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
+| `actor_principal_id` | `uuid` | yes | — | INTERNAL | Person who made the change. | The device itself confirmed its erasure. | — |
+| `actor_membership_id` | `uuid` | yes | — | INTERNAL | Membership through which the person acted. | The device itself confirmed its erasure. | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | Event name, such as device.paired or device.unlinked. | — | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | INTERNAL | Allowlisted details such as branch IDs and rotations; never codes, hashes or network addresses. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `device_audit_events_actor_pair` | `CHECK (((actor_principal_id IS NULL) = (actor_membership_id IS NULL)))` | A person and their membership are recorded together or not at all. |
+| `device_audit_events_actor_principal_id_fkey` | `FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The actor is an existing principal. |
+| `device_audit_events_company_id_actor_membership_id_fkey` | `FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The acting membership belongs to the same company. |
+| `device_audit_events_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The device belongs to the same company. |
+| `device_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
+| `device_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
+| `device_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
+| `device_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX device_audit_events_company_id_id_key ON public.device_audit_events USING btree (company_id, id)` | Tenant key of device audit events. |
+| `device_audit_events_device_time_idx` | `CREATE INDEX device_audit_events_device_time_idx ON public.device_audit_events USING btree (company_id, device_id, occurred_at DESC, id DESC)` | Lists a device's events newest first. |
+
 ## principals
 
 Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.
@@ -500,6 +651,9 @@ Lifecycle: Created with its invitation and never changed.
 | `AccessRole` | COMPANY_ADMINISTRATOR, BRANCH_MANAGER, OPERATOR | Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR. |
 | `BranchStatus` | ACTIVE, ARCHIVED | Branch state: ACTIVE or ARCHIVED. |
 | `CompanyStatus` | ACTIVE, SUSPENDED | Company state: ACTIVE or SUSPENDED. |
+| `DeviceEnrollmentStatus` | PENDING, CLAIMED | Enrollment state: PENDING or CLAIMED. |
+| `DeviceErasure` | NONE, PENDING, CONFIRMED, RESET_RECORDED | Erasure state of a device: NONE, PENDING, CONFIRMED or RESET_RECORDED. |
+| `DeviceStatus` | ACTIVE, REVOKED | Device state: ACTIVE or REVOKED. |
 | `GrantScope` | COMPANY, BRANCHES | Grant scope: COMPANY or explicit BRANCHES. |
 | `HumanSessionState` | PENDING_LIMIT, ACTIVE, REVOKED | Server-managed session state: PENDING_LIMIT, ACTIVE or REVOKED. |
 | `InvitationStatus` | PENDING, ACCEPTED, REVOKED, REPLACED, EXPIRED | Invitation state: PENDING, ACCEPTED, REVOKED, REPLACED or EXPIRED. |

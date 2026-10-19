@@ -1,0 +1,82 @@
+{
+  "kind": "database",
+  "name": "device_claim_failures",
+  "description": "Counter rows for failed pairing-code claims, which bound guessing per person and per company.",
+  "owner": "Devices",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted on each failed claim; counted over 15 minutes and deleted one day later.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated failure UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company the failed claim targeted; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Person who attempted the claim.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the failure.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "device_claim_failures_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A failure belongs to an existing company."
+    },
+    {
+      "Object": "device_claim_failures_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique failure identity."
+    },
+    {
+      "Object": "device_claim_failures_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A failure belongs to an existing principal."
+    },
+    {
+      "Object": "device_claim_failures_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX device_claim_failures_company_id_id_key ON public.device_claim_failures USING btree (company_id, id)",
+      "Purpose": "Tenant key of failure rows."
+    },
+    {
+      "Object": "device_claim_failures_company_time_idx",
+      "Physical definition": "CREATE INDEX device_claim_failures_company_time_idx ON public.device_claim_failures USING btree (company_id, occurred_at)",
+      "Purpose": "Counts a company's recent failures."
+    },
+    {
+      "Object": "device_claim_failures_principal_time_idx",
+      "Physical definition": "CREATE INDEX device_claim_failures_principal_time_idx ON public.device_claim_failures USING btree (principal_id, occurred_at)",
+      "Purpose": "Counts a person's recent failures."
+    }
+  ]
+}

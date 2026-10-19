@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { deviceRoutes } from "./devices/routes.js";
 import { identityRoutes, IdentityNavigation } from "./identity/routes.js";
 import {
   organizationRoutes,
@@ -22,6 +23,7 @@ export const routeTree = rootRoute.addChildren([
   ...workspaceRoutes,
   ...identityRoutes,
   ...organizationRoutes,
+  ...deviceRoutes,
   ...(developerPortal?.documentationRoutes ?? []),
 ]);
 

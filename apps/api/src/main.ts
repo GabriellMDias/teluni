@@ -77,9 +77,12 @@ try {
         keys: parseKeyRing(config.mailKeys, "mail keys"),
       }
     : undefined;
+  const deviceEnrollment = config.deviceCodeKeys
+    ? { codeKeys: parseKeyRing(config.deviceCodeKeys, "device code keys") }
+    : undefined;
   const modules = activateModules(
     apiModules,
-    { database, verifier, humanIdentity, mail },
+    { database, verifier, humanIdentity, mail, deviceEnrollment },
     config.environment,
   );
   const { app, lifecycle } = createApp(logger, undefined, {

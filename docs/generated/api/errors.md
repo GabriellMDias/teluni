@@ -29,7 +29,14 @@
 | `IDEMPOTENCY_KEY_REUSED` | 409 | conflict | no | The creation key was used for different content. |
 | `BRANCH_NAME_IN_USE` | 409 | conflict | no | Another active branch of this company already uses that name. |
 | `BRANCH_ARCHIVED` | 409 | conflict | no | The branch is archived and cannot be changed. |
+| `BRANCH_IN_USE` | 409 | conflict | no | The branch still has active resources, such as paired screens. Move or unlink them before archiving it. |
 | `INVITATION_PENDING` | 409 | conflict | no | A pending invitation for this address already exists. Resend it instead. |
 | `INVITATION_NO_LONGER_VALID` | 409 | conflict | no | This invitation is no longer valid. Ask for a new one. |
 | `INVITATION_RECIPIENT_MISMATCH` | 403 | authorization | no | This invitation was sent to another email address. Sign in with that address to accept it. |
 | `MEMBERSHIP_SUSPENDED` | 409 | conflict | no | Your access to this company is suspended. Contact a company administrator. |
+| `PAIRING_CODE_INVALID` | 409 | conflict | no | This code is not valid. Check the code shown on the screen, or restart pairing on the screen to get a new one. |
+| `ENROLLMENT_REJECTED` | 409 | conflict | no | This credential cannot be used. Generate a new credential on the device. |
+| `ROTATION_UNSUPPORTED` | 409 | conflict | no | The screen did not report support for this rotation. |
+| `DEVICE_UNAUTHORIZED` | 401 | authentication | no | The device credential is not valid for this operation. |
+| `DEVICE_UNLINKED` | 409 | conflict | no | This screen was unlinked and can no longer change. |
+| `DEVICE_ERASURE_NOT_PENDING` | 409 | conflict | no | This screen has no pending erasure to record. |
