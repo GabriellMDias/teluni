@@ -1,0 +1,305 @@
+{
+  "tables": {
+    "media_objects": {
+      "owner": "Media",
+      "classification": "CONFIDENTIAL",
+      "description": "One stored file of a company on the media volume, named by the SHA-256 of its bytes: an original upload, a display rendition or a thumbnail. Identical bytes are stored once per company and never shared across companies.",
+      "lifecycle": "Inserted when a file is published into the volume, under this row's lock, before the referencing asset commits. Deleted by purge, with the file, once no asset of the company references it. Rows never change.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the object; part of the key so objects never cross tenants.",
+          "classification": "INTERNAL"
+        },
+        "sha256": {
+          "description": "SHA-256 of the object's bytes; with the company it names the file on the media volume.",
+          "classification": "CONFIDENTIAL"
+        },
+        "byte_size": {
+          "description": "Size of the stored file.",
+          "classification": "INTERNAL",
+          "unit": "bytes"
+        },
+        "content_type": {
+          "description": "Server-determined media type of the stored file, sent when it is delivered.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the object was first stored.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "media_objects_pkey": "One row per company and content hash.",
+        "media_objects_company_id_fkey": "An object belongs to an existing company.",
+        "media_objects_sha256_length": "The key is a SHA-256 digest.",
+        "media_objects_size_positive": "Stored files are never empty."
+      }
+    },
+    "media_assets": {
+      "owner": "Media",
+      "classification": "CONFIDENTIAL",
+      "description": "A media item of a company: one uploaded image or video, its owning scope (the company or one branch), name and tags, inspected facts and the objects derived from it.",
+      "lifecycle": "Created UPLOADING; a complete upload makes it PROCESSING; the processor makes it READY or REJECTED (final) or, after repeated internal failures, FAILED. READY and ARCHIVED alternate; deleting an ARCHIVED item without protected references makes it DELETED with a 30-day purge_after, from which it can return to ARCHIVED; purge or discarding an unusable upload makes it PURGED, clearing object references. Rows are kept for audit; no runtime deletion. See docs/project/media-library-design.md.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable media item UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the item; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch that owns the item; immutable.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The item belongs to the whole company and every member who may view media sees it."
+        },
+        "name": {
+          "description": "Display name chosen by members, the uploaded file name by default; never used as a path.",
+          "classification": "CONFIDENTIAL"
+        },
+        "tags": {
+          "description": "Lower-case organization labels, at most ten, sorted.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Never null; an empty array means no tags."
+        },
+        "kind": {
+          "description": "IMAGE or VIDEO, fixed by the declared type.",
+          "classification": "INTERNAL"
+        },
+        "status": {
+          "description": "Lifecycle state; see the table lifecycle.",
+          "classification": "INTERNAL"
+        },
+        "rejection_reason": {
+          "description": "Why inspection or conversion rejected the file, from a closed set of MEDIA_* reason codes.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The item was not rejected."
+        },
+        "declared_content_type": {
+          "description": "Media type the uploader declared; it only admits the upload, the file signature decides.",
+          "classification": "INTERNAL"
+        },
+        "declared_size": {
+          "description": "Exact size the uploader declared; the upload must deliver exactly this many bytes.",
+          "classification": "INTERNAL",
+          "unit": "bytes"
+        },
+        "original_sha256": {
+          "description": "Hash of the stored original upload.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No complete upload is stored (still uploading, rejected or purged)."
+        },
+        "display_sha256": {
+          "description": "Hash of the display rendition that playlists and publications use.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The item has no usable rendition (not ready, rejected, failed or purged)."
+        },
+        "thumbnail_sha256": {
+          "description": "Hash of the panel thumbnail.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The item has no usable rendition (not ready, rejected, failed or purged)."
+        },
+        "width": {
+          "description": "Displayed width of the display rendition after orientation.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Not inspected yet, or rejected.",
+          "unit": "pixels"
+        },
+        "height": {
+          "description": "Displayed height of the display rendition after orientation.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Not inspected yet, or rejected.",
+          "unit": "pixels"
+        },
+        "duration_ms": {
+          "description": "Duration of a video.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "An image, or a video not inspected yet.",
+          "unit": "milliseconds"
+        },
+        "has_audio": {
+          "description": "Whether the video's display rendition carries an audio track.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "An image, or a video not inspected yet."
+        },
+        "processing_stage": {
+          "description": "Current processing step: probing, converting or verifying.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not being processed."
+        },
+        "processing_progress": {
+          "description": "Conversion progress reported by FFmpeg, written at most every two seconds.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not converting or progress unknown.",
+          "unit": "percent"
+        },
+        "processing_attempts": {
+          "description": "Processing attempts started; internal failures retry up to three attempts.",
+          "classification": "INTERNAL",
+          "unit": "attempts"
+        },
+        "lease_until": {
+          "description": "Instant until which one processor owns the item's processing.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No processor holds the item.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "next_attempt_at": {
+          "description": "Earliest instant the processor may claim the item.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not waiting for processing.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "created_by_membership_id": {
+          "description": "Membership that created the item; historical attribution, not authority.",
+          "classification": "INTERNAL"
+        },
+        "created_by_principal_id": {
+          "description": "Principal that created the item, for per-person upload limits.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the item was created.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "uploaded_at": {
+          "description": "Instant the complete file was received.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No complete upload yet.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "ready_at": {
+          "description": "Instant the item first became usable.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Never became ready.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "archived_at": {
+          "description": "Instant of the latest archive.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Never archived, or restored since.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "deleted_at": {
+          "description": "Instant the item was moved to the trash.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not in the trash.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "purge_after": {
+          "description": "Earliest instant the purge may remove a deleted item.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not in the trash.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "purged_at": {
+          "description": "Instant the item's files were removed.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not purged.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "version": {
+          "description": "Optimistic concurrency token incremented once per successful member change.",
+          "classification": "INTERNAL",
+          "unit": "successful writes"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the latest change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "media_assets_pkey": "Unique media item identity.",
+        "media_assets_company_id_id_key": "Tenant key for references to media items.",
+        "media_assets_company_id_fkey": "An item belongs to an existing company.",
+        "media_assets_company_id_branch_id_fkey": "The owning branch belongs to the same company.",
+        "media_assets_company_id_created_by_membership_id_fkey": "The creating membership belongs to the same company.",
+        "media_assets_created_by_principal_id_fkey": "The creator is a known principal.",
+        "media_assets_company_id_original_sha256_fkey": "The original is an object of the same company.",
+        "media_assets_company_id_display_sha256_fkey": "The display rendition is an object of the same company.",
+        "media_assets_company_id_thumbnail_sha256_fkey": "The thumbnail is an object of the same company.",
+        "media_assets_company_created_idx": "Lists a company's items newest first with stable keyset pagination.",
+        "media_assets_company_status_idx": "Counts a company's open uploads and processing items for abuse limits.",
+        "media_assets_processing_idx": "Finds items due for processing and expired uploads and trash.",
+        "media_assets_original_idx": "Finds whether another item still references an object before it is deleted.",
+        "media_assets_display_idx": "Finds whether another item still references an object before it is deleted.",
+        "media_assets_thumbnail_idx": "Finds whether another item still references an object before it is deleted.",
+        "media_assets_name_trimmed": "Names are stored trimmed and nonempty.",
+        "media_assets_tags_bounded": "Tags are present and at most ten.",
+        "media_assets_declared_size_positive": "A declared size is positive.",
+        "media_assets_hash_lengths": "Object references are SHA-256 digests.",
+        "media_assets_usable_objects": "Ready, archived and deleted items keep all their objects and facts.",
+        "media_assets_unusable_without_renditions": "Items that are not usable hold no renditions.",
+        "media_assets_rejection_state": "A rejection reason exists exactly for rejected items.",
+        "media_assets_trash_state": "A purge instant exists exactly for items in the trash.",
+        "media_assets_purged_state": "A purge instant is recorded exactly for purged items.",
+        "media_assets_video_duration": "Only videos have a positive duration.",
+        "media_assets_dimensions_positive": "Dimensions are positive.",
+        "media_assets_progress_range": "Progress is a percentage.",
+        "media_assets_attempts_nonnegative": "Attempt counts never go below zero.",
+        "media_assets_version_positive": "Versions start at one."
+      }
+    },
+    "media_audit_events": {
+      "owner": "Media",
+      "classification": "CONFIDENTIAL",
+      "description": "Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.",
+      "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
+      "columns": {
+        "id": {
+          "description": "Backend-generated event UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the item.",
+          "classification": "INTERNAL"
+        },
+        "asset_id": {
+          "description": "Media item the event concerns.",
+          "classification": "INTERNAL"
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant of the change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "actor_principal_id": {
+          "description": "Principal that made the change.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The processor or maintenance made the change."
+        },
+        "actor_membership_id": {
+          "description": "Membership through which the change was made.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The processor or maintenance made the change."
+        },
+        "action": {
+          "description": "Event name such as media.uploaded, media.ready, media.archived or media.purged.",
+          "classification": "INTERNAL"
+        },
+        "details": {
+          "description": "Allowlisted IDs, kinds, sizes, states and reason codes; never names of other items, hashes or paths.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "media_audit_events_pkey": "Unique event identity.",
+        "media_audit_events_company_id_id_key": "Tenant key for events.",
+        "media_audit_events_company_id_fkey": "An event belongs to an existing company.",
+        "media_audit_events_company_id_asset_id_fkey": "The item belongs to the same company.",
+        "media_audit_events_actor_principal_id_fkey": "The actor is a known principal.",
+        "media_audit_events_company_id_actor_membership_id_fkey": "The acting membership belongs to the same company.",
+        "media_audit_events_asset_time_idx": "Reads an item's history newest first.",
+        "media_audit_events_details_object": "Details are a JSON object."
+      }
+    }
+  },
+  "enums": {
+    "MediaKind": "Kind of media item: IMAGE or VIDEO.",
+    "MediaStatus": "Lifecycle state of a media item: UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED or PURGED."
+  }
+}

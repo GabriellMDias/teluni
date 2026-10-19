@@ -56,6 +56,10 @@ const capabilities: readonly Capability[] = [
   "audit.view",
   "devices.view",
   "devices.manage",
+  "media.view",
+  "media.upload",
+  "media.archive",
+  "media.delete",
 ];
 
 export type AccessSummary = Readonly<{

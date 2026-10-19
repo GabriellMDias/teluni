@@ -1,0 +1,82 @@
+{
+  "kind": "database",
+  "name": "media_objects",
+  "description": "One stored file of a company on the media volume, named by the SHA-256 of its bytes: an original upload, a display rendition or a thumbnail. Identical bytes are stored once per company and never shared across companies.",
+  "owner": "Media",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted when a file is published into the volume, under this row's lock, before the referencing asset commits. Deleted by purge, with the file, once no asset of the company references it. Rows never change.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the object; part of the key so objects never cross tenants.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "sha256",
+      "PostgreSQL type": "bytea",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "SHA-256 of the object's bytes; with the company it names the file on the media volume.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "byte_size",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Size of the stored file.",
+      "Null meaning": "—",
+      "Unit": "bytes"
+    },
+    {
+      "Column": "content_type",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Server-determined media type of the stored file, sent when it is delivered.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the object was first stored.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "media_objects_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An object belongs to an existing company."
+    },
+    {
+      "Object": "media_objects_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, sha256)",
+      "Purpose": "One row per company and content hash."
+    },
+    {
+      "Object": "media_objects_sha256_length",
+      "Physical definition": "CHECK ((octet_length(sha256) = 32))",
+      "Purpose": "The key is a SHA-256 digest."
+    },
+    {
+      "Object": "media_objects_size_positive",
+      "Physical definition": "CHECK ((byte_size > 0))",
+      "Purpose": "Stored files are never empty."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "createAccessProfile",
   "summary": "",
-  "description": "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
+  "description": "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive); devices.manage needs devices.view, and media.upload and media.archive need media.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -54,7 +54,10 @@
                   { "type": "string", "const": "invitations.manage" },
                   { "type": "string", "const": "audit.view" },
                   { "type": "string", "const": "devices.view" },
-                  { "type": "string", "const": "devices.manage" }
+                  { "type": "string", "const": "devices.manage" },
+                  { "type": "string", "const": "media.view" },
+                  { "type": "string", "const": "media.upload" },
+                  { "type": "string", "const": "media.archive" }
                 ]
               },
               "minItems": 1,
@@ -84,7 +87,10 @@
               { "type": "string", "const": "invitations.manage" },
               { "type": "string", "const": "audit.view" },
               { "type": "string", "const": "devices.view" },
-              { "type": "string", "const": "devices.manage" }
+              { "type": "string", "const": "devices.manage" },
+              { "type": "string", "const": "media.view" },
+              { "type": "string", "const": "media.upload" },
+              { "type": "string", "const": "media.archive" }
             ]
           },
           "minItems": 1,
@@ -102,7 +108,7 @@
       },
       {
         "name": "capabilities",
-        "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
+        "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\"",
         "required": true
       }
     ]
@@ -145,7 +151,10 @@
                     { "type": "string", "const": "invitations.manage" },
                     { "type": "string", "const": "audit.view" },
                     { "type": "string", "const": "devices.view" },
-                    { "type": "string", "const": "devices.manage" }
+                    { "type": "string", "const": "devices.manage" },
+                    { "type": "string", "const": "media.view" },
+                    { "type": "string", "const": "media.upload" },
+                    { "type": "string", "const": "media.archive" }
                   ]
                 }
               },
@@ -197,7 +206,10 @@
                 { "type": "string", "const": "invitations.manage" },
                 { "type": "string", "const": "audit.view" },
                 { "type": "string", "const": "devices.view" },
-                { "type": "string", "const": "devices.manage" }
+                { "type": "string", "const": "devices.manage" },
+                { "type": "string", "const": "media.view" },
+                { "type": "string", "const": "media.upload" },
+                { "type": "string", "const": "media.archive" }
               ]
             }
           },
@@ -228,7 +240,7 @@
         },
         {
           "name": "capabilities",
-          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\"",
+          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\"",
           "required": true
         },
         {

@@ -25,13 +25,46 @@ export function createApp(
     checkReady?: () => Promise<boolean>;
   } = {},
 ) {
+  // A module that streams large uploads raises the server's request
+  // deadline; every other route keeps the standard 30 seconds to receive
+  // its request through the hook below.
+  const standardRequestMs = 30_000;
+  const requestTimeout = Math.max(
+    standardRequestMs,
+    ...(options.modules ?? []).map((module) => module.requestTimeoutMs ?? 0),
+  );
   const app = Fastify({
     loggerInstance: logger,
     logController: new SafeLogController(),
     genReqId: () => `req_${randomUUID()}`,
-    requestTimeout: 30_000,
+    requestTimeout,
     connectionTimeout: 10_000,
   }).withTypeProvider<TypeBoxTypeProvider>();
+
+  if (requestTimeout > standardRequestMs) {
+    const deadlines = new WeakMap<object, NodeJS.Timeout>();
+    app.addHook("onRequest", (request, _reply, done) => {
+      const config = request.routeOptions.config as { longRequest?: boolean };
+      if (!config?.longRequest) {
+        const timer = setTimeout(
+          () => request.raw.destroy(),
+          standardRequestMs,
+        );
+        timer.unref();
+        deadlines.set(request, timer);
+      }
+      done();
+    });
+    // The request has been received once handling starts.
+    app.addHook("preHandler", (request, _reply, done) => {
+      clearTimeout(deadlines.get(request));
+      done();
+    });
+    app.addHook("onResponse", (request, _reply, done) => {
+      clearTimeout(deadlines.get(request));
+      done();
+    });
+  }
 
   app.addHook("onRequest", async (request, reply) => {
     reply.header("x-request-id", request.id);

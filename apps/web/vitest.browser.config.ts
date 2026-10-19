@@ -5,7 +5,11 @@ import { playwright } from "@vitest/browser-playwright";
 export default defineConfig({
   plugins: [react({ compiler: true })],
   optimizeDeps: {
-    include: ["@tanstack/react-query", "@tanstack/react-router"],
+    include: [
+      "@tanstack/react-query",
+      "@tanstack/react-router",
+      "react-dom/client",
+    ],
   },
   test: {
     include: ["test/**/*.browser.test.tsx"],

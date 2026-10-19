@@ -268,6 +268,17 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0027 accepted, complete PJ-33 and start PJ-08. A rejected or changed item updates the design and, where it changes the mechanism, ADR-0027.
 **Evidence / blocker:** 2026-10-19: design proposed in [pull request #7](https://github.com/GabriellMDias/teluni/pull/7); the owner approved all nine decisions as proposed, including ADR-0027, in the project thread the same day and asked for implementation, which continues in PJ-08.
 
+## PH-23
+
+- [x] **Review and approve the proposed D-05 media library design and ADR-0028.**
+
+**Status:** completed. **Owner:** project owner, with engineering/security review.
+**Dependency / trigger:** [PJ-34](implementation-plan.md#current-work); gates merging [PJ-09](implementation-plan.md#current-work), which every playlist, publication and screen needs, and through it PJ-10/PJ-11/PJ-12/PJ-20/PJ-21.
+**Request and reason:** Read the [media library design](media-library-design.md) and the proposed [ADR-0028](../adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md), then approve, reject or adjust each of the design's [nine decisions for review](media-library-design.md#decisions-for-review): (1) local content-addressed storage per company with atomic publication and a free-space reserve; (2) FFmpeg 6.1+ as the only parser and converter, in isolated child processes with timeouts, and an in-process PostgreSQL-leased processor; (3) the accepted image and video formats and bounds; (4) the single display rendition profile (H.264 High 4.1 up to 1080p30 with AAC, images within 3840×2160 with metadata removed); (5) a create request followed by one streamed upload, without a resumable protocol; (6) company or branch ownership and the `media.view`/`media.upload`/`media.archive`/`media.delete` permissions; (7) archive, delete blocked by protected references, a 30-day trash and reference-checked purge; (8) the abuse limits; (9) provisional retention. These are security, storage and processing choices with long-lived consequences for every customer file, which the repository requires the owner, not an agent, to approve.
+**Configuration:** none now. The design names `TELUNI_MEDIA_STORAGE_PATH`, `TELUNI_MEDIA_FFMPEG_PATH`, `TELUNI_MEDIA_FFPROBE_PATH` and `TELUNI_MEDIA_PROCESSING_CONCURRENCY`, added to the canonical configuration schema with the implementation; none is secret. Local and CI work uses a temporary directory and the distribution's FFmpeg.
+**Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0028 accepted, complete PJ-34 and merge PJ-09 work. A rejected or changed item updates the design and, where it changes the mechanism, ADR-0028.
+**Evidence / blocker:** 2026-10-19: the owner asked for development to continue autonomously; the design and ADR-0028 were drafted, linked from the plan, the product architecture and the decision index, and implemented on the same branch following the recommended options so the review can see working behavior. The same day the owner approved all nine decisions as proposed, including ADR-0028, on the decision card in the project thread; implementation continues in PJ-09.
+
 ## New action template
 
 Allocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the blocked or conditional plan task.

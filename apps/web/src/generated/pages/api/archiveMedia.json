@@ -1,0 +1,986 @@
+{
+  "kind": "api",
+  "operationId": "archiveMedia",
+  "summary": "",
+  "description": "Archive a ready item: it leaves selection lists and keeps working wherever it is already used.",
+  "security": [{ "sessionCookie": [] }],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-teluni_session",
+        "description": "Opaque server-managed human session. Loopback development uses teluni_session. Unsafe methods also require the session CSRF token in X-CSRF-Token and a matching Origin."
+      }
+    }
+  },
+  "method": "POST",
+  "path": "/companies/{companyId}/media/{assetId}/archive",
+  "tags": ["Media"],
+  "authentication": "Session cookie",
+  "parameters": [
+    {
+      "name": "companyId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    },
+    {
+      "name": "assetId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    }
+  ],
+  "request": {
+    "required": true,
+    "description": "",
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "required": ["expectedVersion"],
+          "properties": {
+            "expectedVersion": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "required": ["expectedVersion"],
+      "properties": { "expectedVersion": { "type": "integer", "minimum": 1 } },
+      "additionalProperties": false
+    },
+    "fields": [
+      {
+        "name": "expectedVersion",
+        "type": "integer (minimum 1)",
+        "required": true
+      }
+    ]
+  },
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "tags",
+              "kind",
+              "status",
+              "rejectionReason",
+              "branch",
+              "declaredContentType",
+              "declaredSize",
+              "width",
+              "height",
+              "durationMs",
+              "hasAudio",
+              "processing",
+              "createdAt",
+              "readyAt",
+              "archivedAt",
+              "deletedAt",
+              "purgeAfter",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40,
+                  "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+                },
+                "maxItems": 10
+              },
+              "kind": {
+                "anyOf": [
+                  { "type": "string", "const": "IMAGE" },
+                  { "type": "string", "const": "VIDEO" }
+                ]
+              },
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "UPLOADING" },
+                  { "type": "string", "const": "PROCESSING" },
+                  { "type": "string", "const": "READY" },
+                  { "type": "string", "const": "REJECTED" },
+                  { "type": "string", "const": "FAILED" },
+                  { "type": "string", "const": "ARCHIVED" },
+                  { "type": "string", "const": "DELETED" }
+                ]
+              },
+              "rejectionReason": {
+                "anyOf": [
+                  {
+                    "anyOf": [
+                      { "type": "string", "const": "MEDIA_TYPE_MISMATCH" },
+                      { "type": "string", "const": "MEDIA_TYPE_UNSUPPORTED" },
+                      { "type": "string", "const": "MEDIA_TOO_LARGE" },
+                      {
+                        "type": "string",
+                        "const": "MEDIA_DIMENSIONS_EXCEEDED"
+                      },
+                      { "type": "string", "const": "MEDIA_DURATION_EXCEEDED" },
+                      { "type": "string", "const": "MEDIA_UNREADABLE" },
+                      { "type": "string", "const": "MEDIA_CONVERSION_FAILED" }
+                    ]
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "branch": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "name": { "type": "string" }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "declaredContentType": {
+                "anyOf": [
+                  { "type": "string", "const": "image/jpeg" },
+                  { "type": "string", "const": "image/png" },
+                  { "type": "string", "const": "image/webp" },
+                  { "type": "string", "const": "video/mp4" },
+                  { "type": "string", "const": "video/quicktime" },
+                  { "type": "string", "const": "video/x-m4v" },
+                  { "type": "string", "const": "video/webm" },
+                  { "type": "string", "const": "video/x-matroska" }
+                ]
+              },
+              "declaredSize": { "type": "integer", "minimum": 1 },
+              "width": {
+                "anyOf": [
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "null" }
+                ]
+              },
+              "height": {
+                "anyOf": [
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "null" }
+                ]
+              },
+              "durationMs": {
+                "anyOf": [
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "null" }
+                ]
+              },
+              "hasAudio": {
+                "anyOf": [{ "type": "boolean" }, { "type": "null" }]
+              },
+              "processing": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["stage", "progress"],
+                    "properties": {
+                      "stage": {
+                        "anyOf": [
+                          { "type": "string", "const": "queued" },
+                          { "type": "string", "const": "probing" },
+                          { "type": "string", "const": "converting" },
+                          { "type": "string", "const": "verifying" }
+                        ]
+                      },
+                      "progress": {
+                        "anyOf": [
+                          { "type": "integer", "minimum": 0, "maximum": 100 },
+                          { "type": "null" }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "readyAt": {
+                "anyOf": [
+                  { "type": "string", "format": "date-time" },
+                  { "type": "null" }
+                ]
+              },
+              "archivedAt": {
+                "anyOf": [
+                  { "type": "string", "format": "date-time" },
+                  { "type": "null" }
+                ]
+              },
+              "deletedAt": {
+                "anyOf": [
+                  { "type": "string", "format": "date-time" },
+                  { "type": "null" }
+                ]
+              },
+              "purgeAfter": {
+                "anyOf": [
+                  { "type": "string", "format": "date-time" },
+                  { "type": "null" }
+                ]
+              },
+              "version": { "type": "integer", "minimum": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "tags",
+          "kind",
+          "status",
+          "rejectionReason",
+          "branch",
+          "declaredContentType",
+          "declaredSize",
+          "width",
+          "height",
+          "durationMs",
+          "hasAudio",
+          "processing",
+          "createdAt",
+          "readyAt",
+          "archivedAt",
+          "deletedAt",
+          "purgeAfter",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+            },
+            "maxItems": 10
+          },
+          "kind": {
+            "anyOf": [
+              { "type": "string", "const": "IMAGE" },
+              { "type": "string", "const": "VIDEO" }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              { "type": "string", "const": "UPLOADING" },
+              { "type": "string", "const": "PROCESSING" },
+              { "type": "string", "const": "READY" },
+              { "type": "string", "const": "REJECTED" },
+              { "type": "string", "const": "FAILED" },
+              { "type": "string", "const": "ARCHIVED" },
+              { "type": "string", "const": "DELETED" }
+            ]
+          },
+          "rejectionReason": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  { "type": "string", "const": "MEDIA_TYPE_MISMATCH" },
+                  { "type": "string", "const": "MEDIA_TYPE_UNSUPPORTED" },
+                  { "type": "string", "const": "MEDIA_TOO_LARGE" },
+                  { "type": "string", "const": "MEDIA_DIMENSIONS_EXCEEDED" },
+                  { "type": "string", "const": "MEDIA_DURATION_EXCEEDED" },
+                  { "type": "string", "const": "MEDIA_UNREADABLE" },
+                  { "type": "string", "const": "MEDIA_CONVERSION_FAILED" }
+                ]
+              },
+              { "type": "null" }
+            ]
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["id", "name"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "name": { "type": "string" }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "declaredContentType": {
+            "anyOf": [
+              { "type": "string", "const": "image/jpeg" },
+              { "type": "string", "const": "image/png" },
+              { "type": "string", "const": "image/webp" },
+              { "type": "string", "const": "video/mp4" },
+              { "type": "string", "const": "video/quicktime" },
+              { "type": "string", "const": "video/x-m4v" },
+              { "type": "string", "const": "video/webm" },
+              { "type": "string", "const": "video/x-matroska" }
+            ]
+          },
+          "declaredSize": { "type": "integer", "minimum": 1 },
+          "width": {
+            "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+          },
+          "height": {
+            "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+          },
+          "durationMs": {
+            "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+          },
+          "hasAudio": { "anyOf": [{ "type": "boolean" }, { "type": "null" }] },
+          "processing": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["stage", "progress"],
+                "properties": {
+                  "stage": {
+                    "anyOf": [
+                      { "type": "string", "const": "queued" },
+                      { "type": "string", "const": "probing" },
+                      { "type": "string", "const": "converting" },
+                      { "type": "string", "const": "verifying" }
+                    ]
+                  },
+                  "progress": {
+                    "anyOf": [
+                      { "type": "integer", "minimum": 0, "maximum": 100 },
+                      { "type": "null" }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "readyAt": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ]
+          },
+          "archivedAt": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ]
+          },
+          "deletedAt": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ]
+          },
+          "purgeAfter": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ]
+          },
+          "version": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        {
+          "name": "id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string (min length 1, max length 120, pattern ^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$)",
+          "required": true
+        },
+        {
+          "name": "tags",
+          "type": "array of string (min length 1, max length 40, pattern ^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$)",
+          "required": true
+        },
+        { "name": "kind", "type": "\"IMAGE\" | \"VIDEO\"", "required": true },
+        {
+          "name": "status",
+          "type": "\"UPLOADING\" | \"PROCESSING\" | \"READY\" | \"REJECTED\" | \"FAILED\" | \"ARCHIVED\" | \"DELETED\"",
+          "required": true
+        },
+        {
+          "name": "rejectionReason",
+          "type": "\"MEDIA_TYPE_MISMATCH\" | \"MEDIA_TYPE_UNSUPPORTED\" | \"MEDIA_TOO_LARGE\" | \"MEDIA_DIMENSIONS_EXCEEDED\" | \"MEDIA_DURATION_EXCEEDED\" | \"MEDIA_UNREADABLE\" | \"MEDIA_CONVERSION_FAILED\" | null",
+          "required": true
+        },
+        { "name": "branch", "type": "object | null", "required": true },
+        {
+          "name": "declaredContentType",
+          "type": "\"image/jpeg\" | \"image/png\" | \"image/webp\" | \"video/mp4\" | \"video/quicktime\" | \"video/x-m4v\" | \"video/webm\" | \"video/x-matroska\"",
+          "required": true
+        },
+        {
+          "name": "declaredSize",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "width",
+          "type": "integer (minimum 1) | null",
+          "required": true
+        },
+        {
+          "name": "height",
+          "type": "integer (minimum 1) | null",
+          "required": true
+        },
+        {
+          "name": "durationMs",
+          "type": "integer (minimum 1) | null",
+          "required": true
+        },
+        { "name": "hasAudio", "type": "boolean | null", "required": true },
+        { "name": "processing", "type": "object | null", "required": true },
+        { "name": "createdAt", "type": "string (date-time)", "required": true },
+        {
+          "name": "readyAt",
+          "type": "string (date-time) | null",
+          "required": true
+        },
+        {
+          "name": "archivedAt",
+          "type": "string (date-time) | null",
+          "required": true
+        },
+        {
+          "name": "deletedAt",
+          "type": "string (date-time) | null",
+          "required": true
+        },
+        {
+          "name": "purgeAfter",
+          "type": "string (date-time) | null",
+          "required": true
+        },
+        { "name": "version", "type": "integer (minimum 1)", "required": true }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

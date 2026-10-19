@@ -52,18 +52,18 @@ enum InvitationStatus {
 }
 
 model Company {
-  id                      String                    @id @db.Uuid
-  displayName             String                    @map("display_name") @db.VarChar(120)
-  status                  CompanyStatus             @default(ACTIVE)
-  defaultLocale           String                    @map("default_locale") @db.VarChar(10)
-  timeZone                String                    @map("time_zone") @db.VarChar(64)
-  version                 Int                       @default(1)
-  createdByPrincipalId    String                    @map("created_by_principal_id") @db.Uuid
-  creationKey             String                    @map("creation_key") @db.VarChar(200)
-  creationFingerprint     String                    @map("creation_fingerprint") @db.Char(64)
-  createdAt               DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt               DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(3)
-  createdBy               Principal                 @relation("CompanyCreator", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                      String                         @id @db.Uuid
+  displayName             String                         @map("display_name") @db.VarChar(120)
+  status                  CompanyStatus                  @default(ACTIVE)
+  defaultLocale           String                         @map("default_locale") @db.VarChar(10)
+  timeZone                String                         @map("time_zone") @db.VarChar(64)
+  version                 Int                            @default(1)
+  createdByPrincipalId    String                         @map("created_by_principal_id") @db.Uuid
+  creationKey             String                         @map("creation_key") @db.VarChar(200)
+  creationFingerprint     String                         @map("creation_fingerprint") @db.Char(64)
+  createdAt               DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                       @default(now()) @map("updated_at") @db.Timestamptz(3)
+  createdBy               Principal                      @relation("CompanyCreator", fields: [createdByPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   branches                Branch[]
   memberships             Membership[]
   responsibility          CompanyResponsibility?
@@ -79,25 +79,30 @@ model Company {
   devices                 Device[]
   deviceClaimFailures     DeviceClaimFailure[]
   deviceAuditEvents       DeviceAuditEvent[]
+  // Back-relations of the media module; never traversed across modules.
+  mediaObjects            MediaObject[]
+  mediaAssets             MediaAsset[]
+  mediaAuditEvents        MediaAuditEvent[]
 
   @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
   @@map("companies")
 }
 
 model Branch {
-  id                 String                    @id @db.Uuid
-  companyId          String                    @map("company_id") @db.Uuid
-  name               String                    @db.VarChar(120)
-  timeZone           String                    @map("time_zone") @db.VarChar(64)
-  status             BranchStatus              @default(ACTIVE)
-  version            Int                       @default(1)
-  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company            Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                 String                         @id @db.Uuid
+  companyId          String                         @map("company_id") @db.Uuid
+  name               String                         @db.VarChar(120)
+  timeZone           String                         @map("time_zone") @db.VarChar(64)
+  status             BranchStatus                   @default(ACTIVE)
+  version            Int                            @default(1)
+  createdAt          DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                       @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company            Company                        @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   grantBranches      MembershipGrantBranch[]
   invitationBranches CompanyInvitationBranch[]
   auditEventBranches OrganizationAuditEventBranch[]
   devices            Device[]
+  mediaAssets        MediaAsset[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
   @@index([companyId, status, name], map: "branches_company_status_name_idx")
@@ -124,6 +129,8 @@ model Membership {
   invitationJoins   CompanyInvitation[]      @relation("InvitationAcceptance")
   pairedDevices     Device[]                 @relation("DevicePairer")
   deviceAuditEvents DeviceAuditEvent[]       @relation("DeviceAuditActorMembership")
+  createdMedia      MediaAsset[]             @relation("MediaCreator")
+  mediaAuditEvents  MediaAuditEvent[]        @relation("MediaAuditActorMembership")
 
   // One current (not REMOVED) membership per principal and company is a
   // partial unique index in the reviewed SQL, which Prisma cannot express.
@@ -197,18 +204,18 @@ model MembershipGrantBranch {
 }
 
 model OrganizationAuditEvent {
-  id                String      @id @db.Uuid
-  companyId         String      @map("company_id") @db.Uuid
-  occurredAt        DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(3)
-  actorPrincipalId  String      @map("actor_principal_id") @db.Uuid
-  actorMembershipId String?     @map("actor_membership_id") @db.Uuid
-  action            String      @db.VarChar(64)
-  targetType        String      @map("target_type") @db.VarChar(32)
-  targetId          String      @map("target_id") @db.Uuid
-  details           Json        @default("{}")
-  company           Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  actor             Principal   @relation("AuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  actorMembership   Membership? @relation(fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  id                String                         @id @db.Uuid
+  companyId         String                         @map("company_id") @db.Uuid
+  occurredAt        DateTime                       @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String                         @map("actor_principal_id") @db.Uuid
+  actorMembershipId String?                        @map("actor_membership_id") @db.Uuid
+  action            String                         @db.VarChar(64)
+  targetType        String                         @map("target_type") @db.VarChar(32)
+  targetId          String                         @map("target_id") @db.Uuid
+  details           Json                           @default("{}")
+  company           Company                        @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Principal                      @relation("AuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorMembership   Membership?                    @relation(fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   branches          OrganizationAuditEventBranch[]
 
   @@unique([companyId, id], map: "organization_audit_events_company_id_id_key")

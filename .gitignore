@@ -5,6 +5,7 @@ apps/api/src/generated/prisma/
 coverage/
 playwright-report/
 test-results/
+.dev-media/
 .env
 .env.*
 !.env.example

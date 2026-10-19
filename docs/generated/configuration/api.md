@@ -34,3 +34,7 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `TELUNI_MAIL_FROM` | email address | no | — | server | INTERNAL | no | Sender address of transactional email; its domain must be authorized for the relay. |
 | `TELUNI_MAIL_KEYS` | comma-separated id:base64url 32-byte keys, newest first | no | — | server | RESTRICTED | yes | Key ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values. |
 | `TELUNI_DEVICE_CODE_KEYS` | comma-separated id:base64url 32-byte keys, newest first | no | — | server | RESTRICTED | yes | Key ring for the HMAC that stores screen pairing codes; the first key protects new codes, all keys remain readable during rotation. Enables the devices module. |
+| `TELUNI_MEDIA_STORAGE_PATH` | absolute directory path | no | — | server | INTERNAL | no | Directory on durable storage that holds media objects and work files on one filesystem; enables the media module. |
+| `TELUNI_MEDIA_FFMPEG_PATH` | executable name or path | no | `ffmpeg` | server | INTERNAL | no | FFmpeg 6.1 or later executable that converts media in isolated child processes. |
+| `TELUNI_MEDIA_FFPROBE_PATH` | executable name or path | no | `ffprobe` | server | INTERNAL | no | ffprobe 6.1 or later executable that inspects uploaded media in isolated child processes. |
+| `TELUNI_MEDIA_PROCESSING_CONCURRENCY` | integer 1..4 | no | `1` | server | INTERNAL | no | Media processing jobs this API process runs at once. |

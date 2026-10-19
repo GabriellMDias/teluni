@@ -1009,6 +1009,22 @@ test("creates profiles and confirms a capability change that reaches members", a
   });
 });
 
+test("keeps each profile capability together with the one it needs", async () => {
+  respond((url) =>
+    url.pathname.endsWith("/access-profiles")
+      ? { body: { items: [] } }
+      : { body: memberCompany },
+  );
+  const { screen } = await open(`${companyPath}?view=profiles`);
+  const create = screen.getByRole("form", { name: t.profileCreateTitle });
+  const box = (capability: keyof typeof t.capabilities) =>
+    create.getByRole("checkbox", { name: t.capabilities[capability] });
+  await box("media.upload").click();
+  await expect.element(box("media.view")).toBeChecked();
+  await box("media.view").click();
+  await expect.element(box("media.upload")).not.toBeChecked();
+});
+
 test("names the access profile of profile history events", async () => {
   respond((url) =>
     url.pathname.endsWith("/audit-events")

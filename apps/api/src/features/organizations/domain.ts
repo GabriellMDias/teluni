@@ -19,7 +19,11 @@ export type Capability =
   | "invitations.manage"
   | "audit.view"
   | "devices.view"
-  | "devices.manage";
+  | "devices.manage"
+  | "media.view"
+  | "media.upload"
+  | "media.archive"
+  | "media.delete";
 
 type Preset = Readonly<{
   capabilities: ReadonlySet<Capability>;
@@ -28,8 +32,9 @@ type Preset = Readonly<{
 }>;
 
 // Only the capabilities implemented so far are listed; the matrix's other
-// rows (content, publication, export) arrive with their modules. Operators
-// pair devices only through an additional grant (an access profile).
+// rows (publication, export) arrive with their modules. Operators pair
+// devices and archive media only through an additional grant (an access
+// profile); permanent media deletion stays with administrators.
 export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
   COMPANY_ADMINISTRATOR: {
     capabilities: new Set([
@@ -42,6 +47,10 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "audit.view",
       "devices.view",
       "devices.manage",
+      "media.view",
+      "media.upload",
+      "media.archive",
+      "media.delete",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -53,11 +62,20 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "audit.view",
       "devices.view",
       "devices.manage",
+      "media.view",
+      "media.upload",
+      "media.archive",
     ]),
     requiresStrongAuthentication: true,
   },
   OPERATOR: {
-    capabilities: new Set(["company.view", "branches.view", "devices.view"]),
+    capabilities: new Set([
+      "company.view",
+      "branches.view",
+      "devices.view",
+      "media.view",
+      "media.upload",
+    ]),
     requiresStrongAuthentication: false,
   },
 };
@@ -74,7 +92,22 @@ export const delegableCapabilities: readonly Capability[] = [
   "audit.view",
   "devices.view",
   "devices.manage",
+  "media.view",
+  "media.upload",
+  "media.archive",
 ];
+
+/**
+ * Capabilities a profile may carry only with another one: a module hides
+ * what its view capability does not reach, so acting without it would fail.
+ */
+export const capabilityPrerequisites: Readonly<
+  Partial<Record<Capability, Capability>>
+> = {
+  "devices.manage": "devices.view",
+  "media.upload": "media.view",
+  "media.archive": "media.view",
+};
 
 /**
  * Capabilities that need strong authentication whatever role or profile
@@ -88,6 +121,8 @@ const strongCapabilities: ReadonlySet<Capability> = new Set([
   "invitations.manage",
   "audit.view",
   "devices.manage",
+  "media.archive",
+  "media.delete",
 ]);
 
 /** What a grant confers: a standard role or a company's access profile. */
@@ -126,7 +161,7 @@ function needsStrong(grant: GrantAuthority, capability: Capability): boolean {
 
 /**
  * Normalizes a profile's capability set: one to all delegable capabilities,
- * without duplicates, in a stable order.
+ * without duplicates, each with its prerequisite, in a stable order.
  */
 export function profileCapabilities(
   requested: readonly string[],
@@ -137,7 +172,11 @@ export function profileCapabilities(
     unique.size !== requested.length ||
     ![...unique].every((capability) =>
       (delegableCapabilities as readonly string[]).includes(capability),
-    )
+    ) ||
+    [...unique].some((capability) => {
+      const prerequisite = capabilityPrerequisites[capability as Capability];
+      return prerequisite !== undefined && !unique.has(prerequisite);
+    })
   )
     throw new OrganizationFailure("VALIDATION_FAILED");
   return delegableCapabilities.filter((capability) => unique.has(capability));

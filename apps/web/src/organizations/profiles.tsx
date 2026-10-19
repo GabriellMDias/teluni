@@ -23,7 +23,19 @@ export const delegableCapabilities: readonly DelegableCapability[] = [
   "audit.view",
   "devices.view",
   "devices.manage",
+  "media.view",
+  "media.upload",
+  "media.archive",
 ];
+
+/** The API accepts these only together with the capability they need. */
+const prerequisites: Readonly<
+  Partial<Record<DelegableCapability, DelegableCapability>>
+> = {
+  "devices.manage": "devices.view",
+  "media.upload": "media.view",
+  "media.archive": "media.view",
+};
 
 function CapabilityFields({
   idPrefix,
@@ -50,9 +62,15 @@ function CapabilityFields({
                 event.target.checked
                   ? delegableCapabilities.filter(
                       (choice) =>
-                        choice === capability || value.includes(choice),
+                        choice === capability ||
+                        choice === prerequisites[capability] ||
+                        value.includes(choice),
                     )
-                  : value.filter((choice) => choice !== capability),
+                  : value.filter(
+                      (choice) =>
+                        choice !== capability &&
+                        prerequisites[choice] !== capability,
+                    ),
               )
             }
           />

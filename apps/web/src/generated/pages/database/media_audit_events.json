@@ -1,0 +1,132 @@
+{
+  "kind": "database",
+  "name": "media_audit_events",
+  "description": "Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.",
+  "owner": "Media",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated event UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the item.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "asset_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Media item the event concerns.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "actor_principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Principal that made the change.",
+      "Null meaning": "The processor or maintenance made the change.",
+      "Unit": "—"
+    },
+    {
+      "Column": "actor_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership through which the change was made.",
+      "Null meaning": "The processor or maintenance made the change.",
+      "Unit": "—"
+    },
+    {
+      "Column": "action",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Event name such as media.uploaded, media.ready, media.archived or media.purged.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "details",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Allowlisted IDs, kinds, sizes, states and reason codes; never names of other items, hashes or paths.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "media_audit_events_actor_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The actor is a known principal."
+    },
+    {
+      "Object": "media_audit_events_company_id_actor_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The acting membership belongs to the same company."
+    },
+    {
+      "Object": "media_audit_events_company_id_asset_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The item belongs to the same company."
+    },
+    {
+      "Object": "media_audit_events_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An event belongs to an existing company."
+    },
+    {
+      "Object": "media_audit_events_details_object",
+      "Physical definition": "CHECK ((jsonb_typeof(details) = 'object'::text))",
+      "Purpose": "Details are a JSON object."
+    },
+    {
+      "Object": "media_audit_events_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique event identity."
+    },
+    {
+      "Object": "media_audit_events_asset_time_idx",
+      "Physical definition": "CREATE INDEX media_audit_events_asset_time_idx ON public.media_audit_events USING btree (company_id, asset_id, occurred_at DESC, id DESC)",
+      "Purpose": "Reads an item's history newest first."
+    },
+    {
+      "Object": "media_audit_events_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX media_audit_events_company_id_id_key ON public.media_audit_events USING btree (company_id, id)",
+      "Purpose": "Tenant key for events."
+    }
+  ]
+}

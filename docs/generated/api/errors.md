@@ -44,3 +44,11 @@
 | `DEVICE_UNAUTHORIZED` | 401 | authentication | no | The device credential is not valid for this operation. |
 | `DEVICE_UNLINKED` | 409 | conflict | no | This screen was unlinked and can no longer change. |
 | `DEVICE_ERASURE_NOT_PENDING` | 409 | conflict | no | This screen has no pending erasure to record. |
+| `MEDIA_TYPE_UNSUPPORTED` | 400 | validation | no | This file type is not supported. Use a JPEG, PNG or WebP image, or an MP4, MOV, WebM or MKV video. |
+| `MEDIA_TOO_LARGE` | 400 | validation | no | This file is too large. Images may have up to 20 MiB and videos up to 1 GiB. |
+| `MEDIA_UPLOAD_INCOMPLETE` | 400 | validation | yes | The upload did not deliver exactly the declared file. Send the whole file again. |
+| `MEDIA_NOT_UPLOADING` | 409 | conflict | no | This media item already received its file. |
+| `MEDIA_NOT_READY` | 409 | conflict | yes | This media item is not ready to be shown yet. |
+| `MEDIA_IN_USE` | 409 | conflict | no | This media item is still used by programming or a publication and cannot be deleted. |
+| `MEDIA_STORAGE_FULL` | 503 | availability | yes | The media storage is nearly full, so new uploads are paused. Contact support. |
+| `MEDIA_INVALID_STATE` | 409 | conflict | no | This media item cannot do that in its current state. |

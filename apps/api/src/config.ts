@@ -55,6 +55,12 @@ export const serverConfigSchema = Type.Object(
     mailFrom: Type.Optional(Type.String({ minLength: 3, maxLength: 254 })),
     mailKeys: Type.Optional(Type.String({ minLength: 1 })),
     deviceCodeKeys: Type.Optional(Type.String({ minLength: 1 })),
+    mediaStoragePath: Type.Optional(
+      Type.String({ minLength: 2, maxLength: 1024, pattern: "^/" }),
+    ),
+    mediaFfmpegPath: Type.String({ minLength: 1, maxLength: 1024 }),
+    mediaFfprobePath: Type.String({ minLength: 1, maxLength: 1024 }),
+    mediaProcessingConcurrency: Type.Integer({ minimum: 1, maximum: 4 }),
   },
   { additionalProperties: false },
 );
@@ -374,6 +380,53 @@ export const configReference = Object.freeze([
     purpose:
       "Key ring for the HMAC that stores screen pairing codes; the first key protects new codes, all keys remain readable during rotation. Enables the devices module.",
   },
+  {
+    key: "mediaStoragePath",
+    name: "TELUNI_MEDIA_STORAGE_PATH",
+    type: "absolute directory path",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Directory on durable storage that holds media objects and work files on one filesystem; enables the media module.",
+  },
+  {
+    key: "mediaFfmpegPath",
+    name: "TELUNI_MEDIA_FFMPEG_PATH",
+    type: "executable name or path",
+    required: false,
+    default: "ffmpeg",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "FFmpeg 6.1 or later executable that converts media in isolated child processes.",
+  },
+  {
+    key: "mediaFfprobePath",
+    name: "TELUNI_MEDIA_FFPROBE_PATH",
+    type: "executable name or path",
+    required: false,
+    default: "ffprobe",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "ffprobe 6.1 or later executable that inspects uploaded media in isolated child processes.",
+  },
+  {
+    key: "mediaProcessingConcurrency",
+    name: "TELUNI_MEDIA_PROCESSING_CONCURRENCY",
+    type: "integer 1..4",
+    required: false,
+    default: "1",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose: "Media processing jobs this API process runs at once.",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
 
 const keyRingEntryPattern = /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9_-]{43}$/;
@@ -483,6 +536,15 @@ export function parseServerConfig(
     ...(env.TELUNI_DEVICE_CODE_KEYS === undefined
       ? {}
       : { deviceCodeKeys: env.TELUNI_DEVICE_CODE_KEYS }),
+    ...(env.TELUNI_MEDIA_STORAGE_PATH === undefined
+      ? {}
+      : { mediaStoragePath: env.TELUNI_MEDIA_STORAGE_PATH }),
+    mediaFfmpegPath: env.TELUNI_MEDIA_FFMPEG_PATH ?? "ffmpeg",
+    mediaFfprobePath: env.TELUNI_MEDIA_FFPROBE_PATH ?? "ffprobe",
+    mediaProcessingConcurrency: numberFromEnv(
+      env.TELUNI_MEDIA_PROCESSING_CONCURRENCY,
+      1,
+    ),
   };
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
@@ -620,6 +682,11 @@ export function parseServerConfig(
   }
   if (candidate.deviceCodeKeys !== undefined)
     parseKeyRing(candidate.deviceCodeKeys, "device code keys");
+  // Tools run without a shell; a name is looked up on PATH, a path is used
+  // as given. Neither may carry arguments.
+  for (const tool of [candidate.mediaFfmpegPath, candidate.mediaFfprobePath])
+    if (/[\s;&|`$<>]/.test(tool) || tool.includes("\0"))
+      throw new Error("Invalid API configuration: media tool path");
   return Object.freeze(candidate);
 }
 

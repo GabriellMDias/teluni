@@ -22,6 +22,7 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | How will Keycloak, principals, browser sessions and assurance integrate with the API (approved D-02)? | [Human identity and session integration design](identity-session-design.md) |
 | How will company invitations and durable transactional email work (approved D-13)? | [Company invitation and durable email delivery design](invitation-delivery-design.md) |
 | How will screens be enrolled, authenticated, moved and unlinked (approved D-03 server side)? | [Device enrollment and lifecycle design](device-enrollment-design.md) |
+| How are media files uploaded, validated, converted, stored and deleted (approved D-05)? | [Media library design](media-library-design.md) |
 | What could prevent delivery or safe operation? | [Risks and dependencies](risks.md) |
 | What is the phase sequence and current execution state? | [Implementation plan](implementation-plan.md) |
 | Which decisions or external prerequisites need a human? | [Human actions](human-actions.md) |
