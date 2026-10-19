@@ -63,20 +63,33 @@ export class MediaObjectStore {
 
   /**
    * Streams bytes into a work file, hashing them, and fails without leaving
-   * a file when more than `limit` bytes arrive or the stream breaks.
+   * a file when more than `limit` bytes arrive, no bytes arrive for `idleMs`
+   * or the stream breaks.
    */
-  async receive(source: Readable, limit: number): Promise<WorkFile> {
+  async receive(
+    source: Readable,
+    limit: number,
+    idleMs: number,
+  ): Promise<WorkFile> {
     const path = join(this.#work, `upload-${randomUUID()}`);
     const hash = createHash("sha256");
     let size = 0;
-    const counter = new Transform({
+    let idle: NodeJS.Timeout | undefined;
+    const counter: Transform = new Transform({
       transform(chunk: Buffer, _encoding, done) {
+        arm();
         size += chunk.length;
         if (size > limit) return done(new UploadTooLong());
         hash.update(chunk);
         done(null, chunk);
       },
     });
+    // The pipeline destroys every stream, including the request, on error.
+    const arm = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => counter.destroy(new UploadIdle()), idleMs);
+    };
+    arm();
     try {
       await pipeline(
         source,
@@ -93,6 +106,8 @@ export class MediaObjectStore {
     } catch (error) {
       await rm(path, { force: true });
       throw error;
+    } finally {
+      clearTimeout(idle);
     }
   }
 
@@ -212,6 +227,13 @@ export class MediaObjectStore {
   async capacity(): Promise<{ free: number; total: number }> {
     const info = await statfs(this.#objects);
     return { free: info.bavail * info.bsize, total: info.blocks * info.bsize };
+  }
+}
+
+export class UploadIdle extends Error {
+  constructor() {
+    super("The upload sent no bytes within the idle timeout");
+    this.name = "UploadIdle";
   }
 }
 

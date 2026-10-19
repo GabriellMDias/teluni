@@ -508,7 +508,7 @@ export class PrismaMediaRepository {
     job: ProcessingJob,
     reason: RejectionReason,
   ): Promise<Buffer[]> {
-    return this.transaction(async (tx) => {
+    const released = await this.transaction(async (tx) => {
       const [current] = await tx.$queryRaw<{ id: string }[]>`
         SELECT id FROM media_assets
         WHERE id = ${job.id}::uuid AND status = 'PROCESSING'
@@ -527,6 +527,8 @@ export class PrismaMediaRepository {
       });
       return this.#release(tx, job.companyId, [job.originalSha256]);
     });
+    await this.removeFiles(job.companyId, released);
+    return released;
   }
 
   /** Retries an internal failure later, or gives up after the last attempt. */
@@ -659,8 +661,10 @@ export class PrismaMediaRepository {
   }
 
   /**
-   * Deletes the rows and files of objects no item of the company references
-   * any more, each under its own lock, and returns their hashes.
+   * Deletes the rows of objects no item of the company references any more,
+   * each under its own lock, and returns their hashes. Their files go only
+   * after the transaction commits, through `removeFiles`, so a rollback
+   * never leaves a recorded object without its file.
    */
   async #release(
     tx: Prisma.TransactionClient,
@@ -687,9 +691,6 @@ export class PrismaMediaRepository {
       await tx.$executeRaw`
         DELETE FROM media_objects
         WHERE company_id = ${companyId}::uuid AND sha256 = ${hash}`;
-      // The file goes while the object lock is held, so a concurrent upload of
-      // the same bytes waits and then publishes a fresh file.
-      await this.#store.delete(companyId, hash);
       released.push(hash);
     }
     return released;
@@ -737,11 +738,37 @@ export class PrismaMediaRepository {
     );
   }
 
-  /** Whether the database still records an object, for orphan sweeps. */
-  async objectExists(companyId: string, sha256: Buffer): Promise<boolean> {
-    const [row] = await this.#db.$queryRaw<{ found: number }[]>`
-      SELECT 1 AS found FROM media_objects
-      WHERE company_id = ${companyId}::uuid AND sha256 = ${sha256}`;
-    return row !== undefined;
+  /**
+   * Deletes an object's file unless the database records the object, under
+   * the object lock: an upload of the same bytes publishes and commits while
+   * holding that lock, so it either finished first (and the file stays) or
+   * publishes a fresh file afterwards. Returns whether the file was deleted.
+   */
+  async removeUnrecorded(companyId: string, sha256: Buffer): Promise<boolean> {
+    return this.transaction(async (tx) => {
+      await lockObject(tx, companyId, sha256);
+      const [row] = await tx.$queryRaw<{ found: number }[]>`
+        SELECT 1 AS found FROM media_objects
+        WHERE company_id = ${companyId}::uuid AND sha256 = ${sha256}`;
+      if (row) return false;
+      await this.#store.delete(companyId, sha256);
+      return true;
+    });
+  }
+
+  /**
+   * Deletes the files of objects a committed transaction released and
+   * returns how many could not be deleted; the orphan sweep removes those.
+   */
+  async removeFiles(
+    companyId: string,
+    hashes: readonly Buffer[],
+  ): Promise<number> {
+    let failed = 0;
+    for (const hash of hashes)
+      await this.removeUnrecorded(companyId, hash).catch(() => {
+        failed += 1;
+      });
+    return failed;
   }
 }

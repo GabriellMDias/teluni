@@ -98,6 +98,18 @@ export const delegableCapabilities: readonly Capability[] = [
 ];
 
 /**
+ * Capabilities a profile may carry only with another one: a module hides
+ * what its view capability does not reach, so acting without it would fail.
+ */
+export const capabilityPrerequisites: Readonly<
+  Partial<Record<Capability, Capability>>
+> = {
+  "devices.manage": "devices.view",
+  "media.upload": "media.view",
+  "media.archive": "media.view",
+};
+
+/**
  * Capabilities that need strong authentication whatever role or profile
  * confers them (P12), so a custom label never lowers the assurance a
  * capability requires.
@@ -149,7 +161,7 @@ function needsStrong(grant: GrantAuthority, capability: Capability): boolean {
 
 /**
  * Normalizes a profile's capability set: one to all delegable capabilities,
- * without duplicates, in a stable order.
+ * without duplicates, each with its prerequisite, in a stable order.
  */
 export function profileCapabilities(
   requested: readonly string[],
@@ -160,7 +172,11 @@ export function profileCapabilities(
     unique.size !== requested.length ||
     ![...unique].every((capability) =>
       (delegableCapabilities as readonly string[]).includes(capability),
-    )
+    ) ||
+    [...unique].some((capability) => {
+      const prerequisite = capabilityPrerequisites[capability as Capability];
+      return prerequisite !== undefined && !unique.has(prerequisite);
+    })
   )
     throw new OrganizationFailure("VALIDATION_FAILED");
   return delegableCapabilities.filter((capability) => unique.has(capability));

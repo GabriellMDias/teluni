@@ -225,13 +225,27 @@ describe("organization access decisions", () => {
 
   it("accepts only delegable, distinct profile capabilities in a stable order", () => {
     expect(
-      profileCapabilities(["devices.manage", "audit.view", "branches.view"]),
-    ).toEqual(["branches.view", "audit.view", "devices.manage"]);
+      profileCapabilities([
+        "devices.manage",
+        "audit.view",
+        "devices.view",
+        "branches.view",
+      ]),
+    ).toEqual([
+      "branches.view",
+      "audit.view",
+      "devices.view",
+      "devices.manage",
+    ]);
     for (const requested of [
       [],
       ["members.manage"],
       ["company.view"],
       ["audit.view", "audit.view"],
+      // An action whose view capability is missing would find nothing.
+      ["devices.manage"],
+      ["media.upload"],
+      ["media.archive", "devices.view"],
     ])
       expect(() => profileCapabilities(requested)).toThrow(OrganizationFailure);
   });

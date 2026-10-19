@@ -32,7 +32,7 @@ import type {
   MediaReferenceGuard,
   SelectableMedia,
 } from "./public.js";
-import { UploadTooLong, type MediaObjectStore } from "./storage.js";
+import { UploadIdle, UploadTooLong, type MediaObjectStore } from "./storage.js";
 
 export type MediaView = MediaRecord &
   Readonly<{ branchName: string | null; references?: number }>;
@@ -239,9 +239,17 @@ export class MediaService {
     await this.#requireCapacity(item.declaredSize);
     let file;
     try {
-      file = await this.#store.receive(body, item.declaredSize);
+      file = await this.#store.receive(
+        body,
+        item.declaredSize,
+        mediaPolicy.uploadIdleSeconds * 1000,
+      );
     } catch (error) {
-      if (error instanceof UploadTooLong || isStreamFailure(error))
+      if (
+        error instanceof UploadTooLong ||
+        error instanceof UploadIdle ||
+        isStreamFailure(error)
+      )
         throw new MediaFailure("MEDIA_UPLOAD_INCOMPLETE");
       throw error;
     }
@@ -589,7 +597,7 @@ export class MediaService {
       if (current.version !== expectedVersion)
         throw new MediaFailure("RESOURCE_VERSION_CONFLICT");
       const change = await decideChange(current, tx);
-      const { record } = await this.#repository.change(
+      return this.#repository.change(
         tx,
         {
           principalId: context.principalId,
@@ -598,9 +606,9 @@ export class MediaService {
         current,
         change,
       );
-      return record;
     });
-    return (await this.#views(companyId, [changed]))[0];
+    await this.#repository.removeFiles(companyId, changed.released);
+    return (await this.#views(companyId, [changed.record]))[0];
   }
 
   async #views(

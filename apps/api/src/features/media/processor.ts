@@ -8,6 +8,7 @@ import {
   MediaRejection,
   mediaPolicy,
   requireDeclaredFormat,
+  reserveBytes,
   verifyDisplay,
   type DeclaredType,
 } from "./domain.js";
@@ -63,6 +64,8 @@ export class MediaProcessor {
   #lastOrphanSweep = 0;
   #failing = false;
   #ticking = false;
+  /** Video conversions in progress, each able to write a full rendition. */
+  #converting = 0;
 
   constructor(options: ProcessorOptions) {
     this.#options = { pollMs: 2000, maintenanceMs: 60_000, ...options };
@@ -172,6 +175,7 @@ export class MediaProcessor {
     const { repository, store, tools } = this.#options;
     const started = performance.now();
     const directory = await store.workDirectory();
+    let converting = false;
     try {
       const declared = declaredTypes[job.declaredContentType as DeclaredType];
       if (!declared) throw new MediaRejection("MEDIA_TYPE_UNSUPPORTED");
@@ -188,6 +192,19 @@ export class MediaProcessor {
         declared.format,
         await probe(tools, input, declared.format, directory),
       );
+      // A video rendition may grow to its byte cap whatever the original's
+      // size, so conversion starts only while every running one fits above
+      // the reserve; otherwise the job fails and retries with backoff.
+      if (inspection.kind === "VIDEO") {
+        const { free, total } = await store.capacity();
+        if (
+          free - (this.#converting + 1) * mediaPolicy.maxRenditionBytes <
+          reserveBytes(total)
+        )
+          throw new Error("Media volume has no room for a rendition");
+        this.#converting += 1;
+        converting = true;
+      }
       await repository.progress(job, "converting", null);
       let lastReport = 0;
       const rendered =
@@ -267,6 +284,7 @@ export class MediaProcessor {
         );
       }
     } finally {
+      if (converting) this.#converting -= 1;
       duration.record((performance.now() - started) / 1000, { kind: job.kind });
       await store.removeWork(directory);
     }
@@ -275,24 +293,30 @@ export class MediaProcessor {
   /** Upkeep: expired uploads, due purges, stale work and orphan files. */
   async maintain(): Promise<void> {
     const { repository, service, store } = this.#options;
-    for (const due of await repository.expiredUploads(100))
-      await repository.transaction(async (tx) => {
+    // Files go after each purge commits; see PrismaMediaRepository.removeFiles.
+    for (const due of await repository.expiredUploads(100)) {
+      const released = await repository.transaction(async (tx) => {
         const current = await repository.lock(tx, due.companyId, due.id);
-        if (current?.status === "UPLOADING")
-          await repository.purgeLocked(tx, current, "media.discarded");
+        return current?.status === "UPLOADING"
+          ? repository.purgeLocked(tx, current, "media.discarded")
+          : [];
       });
+      await repository.removeFiles(due.companyId, released);
+    }
     let kept = 0;
-    for (const due of await repository.duePurges(100))
-      await repository.transaction(async (tx) => {
+    for (const due of await repository.duePurges(100)) {
+      const released = await repository.transaction(async (tx) => {
         const current = await repository.lock(tx, due.companyId, due.id);
-        if (current?.status !== "DELETED") return;
+        if (current?.status !== "DELETED") return [];
         // Retention expiry alone never deletes protected media.
         if ((await service.references(tx, due.companyId, due.id)).length > 0) {
           kept += 1;
-          return;
+          return [];
         }
-        await repository.purgeLocked(tx, current, "media.purged");
+        return repository.purgeLocked(tx, current, "media.purged");
       });
+      await repository.removeFiles(due.companyId, released);
+    }
     if (kept > 0) this.#log?.info({ kept }, "media_purge_deferred");
     const day = 24 * 60 * 60_000;
     await store.sweepWork(day);
@@ -302,11 +326,9 @@ export class MediaProcessor {
       for await (const file of store.list())
         if (
           file.ageMs > day &&
-          !(await repository.objectExists(file.companyId, file.sha256))
-        ) {
-          await store.delete(file.companyId, file.sha256);
+          (await repository.removeUnrecorded(file.companyId, file.sha256))
+        )
           removed += 1;
-        }
       if (removed > 0) this.#log?.warn({ removed }, "media_orphans_removed");
     }
   }
