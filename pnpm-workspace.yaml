@@ -5,6 +5,7 @@ packages:
 overrides:
   "@prisma/config@7.10.0>deepmerge-ts": 8.0.2
   "prisma@7.10.0>mysql2": 3.24.4
+  "source-map-js@<1.2.2": ^1.2.2
 allowBuilds:
   "@prisma/engines": true
   cpu-features: false
