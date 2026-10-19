@@ -182,10 +182,9 @@ function PairForm({
   const pair = useMutation({
     mutationFn: () =>
       pairDevice(companyId, { userCode, name, branchId, rotation }),
-    onSuccess: async (device) => {
+    onSuccess: async () => {
       setUserCode("");
       setName("");
-      queryClient.setQueryData(deviceKey(companyId, device.id), device);
       await queryClient.invalidateQueries({ queryKey: devicesKey(companyId) });
     },
   });
