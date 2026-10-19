@@ -29,7 +29,8 @@ function device(overrides: Partial<Device> = {}): Device {
   return {
     id: deviceId,
     name: "Caixa 1",
-    branch: { id: branchA, name: "Centro" },
+    branch: { id: branchA, name: "Centro", timeZone: "America/Sao_Paulo" },
+    timeZone: null,
     rotation: 0,
     status: "ACTIVE",
     erasure: "NONE",

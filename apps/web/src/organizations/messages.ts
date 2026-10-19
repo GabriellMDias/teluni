@@ -107,6 +107,9 @@ const ptBR = {
     "media.view": "Ver e usar mídia",
     "media.upload": "Enviar e editar mídia",
     "media.archive": "Arquivar e restaurar mídia",
+    "programming.view": "Ver programações",
+    "programming.edit": "Montar playlists e programações",
+    "programming.assign": "Escolher a programação das telas",
   } satisfies Record<DelegableCapability, string>,
   profilesTitle: "Perfis de acesso",
   profilesLead:
@@ -414,6 +417,9 @@ const enUS: OrganizationMessages = {
     "media.view": "View and use media",
     "media.upload": "Upload and edit media",
     "media.archive": "Archive and restore media",
+    "programming.view": "View programming",
+    "programming.edit": "Build playlists and programming",
+    "programming.assign": "Choose the screens' programming",
   },
   profilesTitle: "Access profiles",
   profilesLead:

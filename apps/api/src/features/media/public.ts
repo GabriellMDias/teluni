@@ -4,7 +4,7 @@
 // deletion and select media for new references through the port.
 import type { Prisma } from "../../generated/prisma/client.js";
 import type { CompanyAccess } from "../organizations/public.js";
-import type { MediaKind } from "./domain.js";
+import type { MediaKind, MediaStatus } from "./domain.js";
 
 export { MediaFailure } from "./domain.js";
 export { mediaErrors } from "./errors.js";
@@ -42,6 +42,16 @@ export type SelectableMedia = Readonly<{
   displayContentType: string;
 }>;
 
+/** What a referencing module may show about an item it already references. */
+export type MediaFacts = Readonly<{
+  id: string;
+  name: string;
+  kind: MediaKind;
+  status: MediaStatus;
+  branchId: string | null;
+  durationMs: number | null;
+}>;
+
 export type MediaPort = Readonly<{
   /** Registers a guard; deletion and purge ask every registered guard. */
   registerReferenceGuard(kind: string, guard: MediaReferenceGuard): void;
@@ -57,4 +67,12 @@ export type MediaPort = Readonly<{
     access: CompanyAccess,
     assetIds: readonly string[],
   ): Promise<SelectableMedia[]>;
+  /**
+   * Facts about items of one company that the caller already references.
+   * It authorizes nothing; unknown IDs are omitted.
+   */
+  describe(
+    companyId: string,
+    assetIds: readonly string[],
+  ): Promise<MediaFacts[]>;
 }>;

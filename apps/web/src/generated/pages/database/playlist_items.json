@@ -1,0 +1,92 @@
+{
+  "kind": "database",
+  "name": "playlist_items",
+  "description": "One position of a playlist: the media item it plays and, for an image, how long.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced as a whole list when members save the playlist's items; deleted with the playlist (cascade inside the module). The same media item may appear at several positions.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the playlist (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "playlist_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Playlist the item belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "position",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Zero-based play order, 0 to 499.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "media_asset_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Media item played at this position.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "duration_ms",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "How long an image is shown, 1,000 to 3,600,000.",
+      "Null meaning": "The item is a video and plays its whole duration.",
+      "Unit": "milliseconds"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "playlist_items_company_id_media_asset_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The media item belongs to the same company and cannot be removed while referenced."
+    },
+    {
+      "Object": "playlist_items_company_id_playlist_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The playlist belongs to the same company; items are deleted with it."
+    },
+    {
+      "Object": "playlist_items_duration_range",
+      "Physical definition": "CHECK (((duration_ms IS NULL) OR ((duration_ms >= 1000) AND (duration_ms <= 3600000))))",
+      "Purpose": "Image durations stay within 1 to 3,600 seconds."
+    },
+    {
+      "Object": "playlist_items_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, playlist_id, \"position\")",
+      "Purpose": "One item per playlist position."
+    },
+    {
+      "Object": "playlist_items_position_range",
+      "Physical definition": "CHECK (((\"position\" >= 0) AND (\"position\" <= 499)))",
+      "Purpose": "At most 500 positions."
+    },
+    {
+      "Object": "playlist_items_media_idx",
+      "Physical definition": "CREATE INDEX playlist_items_media_idx ON public.playlist_items USING btree (company_id, media_asset_id)",
+      "Purpose": "Finds the playlists that use a media item, for the media reference guard."
+    }
+  ]
+}

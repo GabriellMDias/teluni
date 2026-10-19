@@ -42,7 +42,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive); company administration is never delegable through a profile.",
+      "Meaning": "Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign); company administration is never delegable through a profile.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -95,7 +95,7 @@
     },
     {
       "Object": "access_profiles_delegable_capabilities",
-      "Physical definition": "CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text])))",
+      "Physical definition": "CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text])))",
       "Purpose": "A profile names at least one capability, all of them delegable."
     },
     {

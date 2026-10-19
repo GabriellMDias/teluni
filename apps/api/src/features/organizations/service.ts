@@ -60,6 +60,9 @@ const capabilities: readonly Capability[] = [
   "media.upload",
   "media.archive",
   "media.delete",
+  "programming.view",
+  "programming.edit",
+  "programming.assign",
 ];
 
 export type AccessSummary = Readonly<{

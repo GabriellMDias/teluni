@@ -29,6 +29,11 @@ const deviceStatus = Type.Union([
   Type.Literal("ACTIVE"),
   Type.Literal("REVOKED"),
 ]);
+const timeZone = Type.String({
+  minLength: 1,
+  maxLength: 64,
+  pattern: "^[A-Za-z][A-Za-z0-9_+/-]*$",
+});
 const erasure = Type.Union([
   Type.Literal("NONE"),
   Type.Literal("PENDING"),
@@ -96,9 +101,10 @@ export const deviceSchema = Type.Object(
     id: uuid,
     name: deviceName,
     branch: Type.Object(
-      { id: uuid, name: Type.String() },
+      { id: uuid, name: Type.String(), timeZone: Type.String() },
       { additionalProperties: false },
     ),
+    timeZone: Type.Union([timeZone, Type.Null()]),
     rotation,
     status: deviceStatus,
     erasure,
@@ -194,7 +200,7 @@ export const deviceOperations = [
     operationId: "getDeviceSelf",
     access: "device",
     description:
-      "The calling screen's configuration. An active screen receives authorizedUntil, seven days after this successful renewal (AT-15), which it must stop protected playback at. An unlinked screen learns only that it must clear its private content and credential, then confirm the erasure. A screen of a suspended company receives no renewal.",
+      "The calling screen's configuration, including the time zone that schedules use: its explicit zone, otherwise its branch's. An active screen receives authorizedUntil, seven days after this successful renewal (AT-15), which it must stop protected playback at. An unlinked screen learns only that it must clear its private content and credential, then confirm the erasure. A screen of a suspended company receives no renewal.",
     schema: {
       response: {
         200: Type.Object(
@@ -214,6 +220,7 @@ export const deviceOperations = [
               ),
               Type.Null(),
             ]),
+            timeZone: Type.Union([Type.String(), Type.Null()]),
             rotation: Type.Union([rotation, Type.Null()]),
             authorizedUntil: Type.Union([instant, Type.Null()]),
             serverTime: instant,
@@ -342,7 +349,7 @@ export const deviceOperations = [
     operationId: "updateDevice",
     access: "session",
     description:
-      "Rename an active screen or change its rotation with the observed version. Only rotations the screen reported are accepted.",
+      "Rename an active screen, change its rotation or set its explicit time zone (null follows the branch) with the observed version. Only rotations the screen reported are accepted.",
     schema: {
       params: deviceParams,
       body: Type.Object(
@@ -350,6 +357,7 @@ export const deviceOperations = [
           expectedVersion: version,
           name: Type.Optional(deviceName),
           rotation: Type.Optional(rotation),
+          timeZone: Type.Optional(Type.Union([timeZone, Type.Null()])),
         },
         { additionalProperties: false },
       ),

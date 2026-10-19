@@ -1,0 +1,437 @@
+{
+  "tables": {
+    "playlists": {
+      "owner": "Programming",
+      "classification": "CONFIDENTIAL",
+      "description": "An ordered, looping list of media items owned by a company or one branch, with its transition. Several programs may schedule the same playlist.",
+      "lifecycle": "Created empty; renames, transition changes and item replacements bump the version. Deleted at runtime, with its items, only when no schedule rule or default uses it. The owning scope never changes. See docs/project/programming-design.md.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable playlist UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the playlist; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch that owns the playlist; immutable.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The playlist belongs to the whole company and every member who may view programming sees it."
+        },
+        "name": {
+          "description": "Display name chosen by members, trimmed, 1 to 120 characters.",
+          "classification": "CONFIDENTIAL"
+        },
+        "transition": {
+          "description": "CUT or FADE between items.",
+          "classification": "INTERNAL"
+        },
+        "fade_ms": {
+          "description": "Fade duration between items.",
+          "classification": "INTERNAL",
+          "unit": "milliseconds",
+          "nullMeaning": "The transition is CUT."
+        },
+        "version": {
+          "description": "Optimistic concurrency version, starting at 1.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "playlists_pkey": "Unique playlist identity.",
+        "playlists_company_id_id_key": "Tenant key for playlists.",
+        "playlists_company_id_fkey": "A playlist belongs to an existing company.",
+        "playlists_company_id_branch_id_fkey": "The owning branch belongs to the same company.",
+        "playlists_company_created_idx": "Lists a company's playlists newest first with keyset cursors.",
+        "playlists_name_trimmed": "Names are trimmed and not empty.",
+        "playlists_fade": "A fade carries a duration from 250 to 2,000 ms and a cut carries none.",
+        "playlists_version_positive": "Versions start at 1."
+      }
+    },
+    "playlist_items": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "One position of a playlist: the media item it plays and, for an image, how long.",
+      "lifecycle": "Replaced as a whole list when members save the playlist's items; deleted with the playlist (cascade inside the module). The same media item may appear at several positions.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the playlist (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "playlist_id": {
+          "description": "Playlist the item belongs to.",
+          "classification": "INTERNAL"
+        },
+        "position": {
+          "description": "Zero-based play order, 0 to 499.",
+          "classification": "INTERNAL"
+        },
+        "media_asset_id": {
+          "description": "Media item played at this position.",
+          "classification": "INTERNAL"
+        },
+        "duration_ms": {
+          "description": "How long an image is shown, 1,000 to 3,600,000.",
+          "classification": "INTERNAL",
+          "unit": "milliseconds",
+          "nullMeaning": "The item is a video and plays its whole duration."
+        }
+      },
+      "objects": {
+        "playlist_items_pkey": "One item per playlist position.",
+        "playlist_items_company_id_playlist_id_fkey": "The playlist belongs to the same company; items are deleted with it.",
+        "playlist_items_company_id_media_asset_id_fkey": "The media item belongs to the same company and cannot be removed while referenced.",
+        "playlist_items_media_idx": "Finds the playlists that use a media item, for the media reference guard.",
+        "playlist_items_position_range": "At most 500 positions.",
+        "playlist_items_duration_range": "Image durations stay within 1 to 3,600 seconds."
+      }
+    },
+    "programming_groups": {
+      "owner": "Programming",
+      "classification": "CONFIDENTIAL",
+      "description": "A company-owned group of screens that share one program, spanning the whole company or a fixed set of branches.",
+      "lifecycle": "Created with its program; renames and span changes bump the version. Deleted at runtime, with its program and span rows, only when it has no member screens.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable group UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the group; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "name": {
+          "description": "Display name, trimmed, 1 to 80 characters, unique in the company ignoring case.",
+          "classification": "CONFIDENTIAL"
+        },
+        "all_branches": {
+          "description": "True when the group spans every branch of the company; otherwise programming_group_branches lists its span.",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency version, starting at 1.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "programming_groups_pkey": "Unique group identity.",
+        "programming_groups_company_id_id_key": "Tenant key for groups.",
+        "programming_groups_company_id_fkey": "A group belongs to an existing company.",
+        "programming_groups_company_name_unique": "Group names are unique in a company, ignoring case.",
+        "programming_groups_name_trimmed": "Names are trimmed and not empty.",
+        "programming_groups_version_positive": "Versions start at 1."
+      }
+    },
+    "programming_group_branches": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "The explicit branch span of a group that does not cover the whole company.",
+      "lifecycle": "Replaced when the group's span changes; deleted with the group (cascade inside the module). While a row names a branch, archiving that branch is refused.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the group (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "group_id": {
+          "description": "Group whose span this row belongs to.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch inside the group's span.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "programming_group_branches_pkey": "Each branch appears once in a group's span.",
+        "programming_group_branches_company_id_group_id_fkey": "The group belongs to the same company; rows are deleted with it.",
+        "programming_group_branches_company_id_branch_id_fkey": "The branch belongs to the same company.",
+        "programming_group_branches_branch_idx": "Finds groups whose span names a branch, for the branch archive guard."
+      }
+    },
+    "programs": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "The draft programming of one source: exactly one group or one screen.",
+      "lifecycle": "A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its first output is saved and kept with the device record. Saving an output bumps the version.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable program UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the program; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "group_id": {
+          "description": "Group the program belongs to.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The program belongs to a screen."
+        },
+        "device_id": {
+          "description": "Screen the program belongs to.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The program belongs to a group."
+        },
+        "version": {
+          "description": "Optimistic concurrency version, starting at 1; the API reports 0 for a program not yet saved.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "programs_pkey": "Unique program identity.",
+        "programs_company_id_id_key": "Tenant key for programs.",
+        "programs_company_id_fkey": "A program belongs to an existing company.",
+        "programs_company_id_group_id_fkey": "The group belongs to the same company; its program is deleted with it.",
+        "programs_company_id_device_id_fkey": "The screen belongs to the same company.",
+        "programs_group_key": "A group has at most one program.",
+        "programs_device_key": "A screen has at most one program.",
+        "programs_one_source": "A program belongs to exactly one group or one screen.",
+        "programs_version_positive": "Versions start at 1."
+      }
+    },
+    "program_outputs": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "One output of a program (the full screen now; layout areas later) with its optional default playlist.",
+      "lifecycle": "Created or updated when the output is saved; deleted with the program (cascade inside the module).",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the program (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "program_id": {
+          "description": "Program the output belongs to.",
+          "classification": "INTERNAL"
+        },
+        "output_key": {
+          "description": "Output name; only screen exists until layouts (PJ-20).",
+          "classification": "INTERNAL"
+        },
+        "default_playlist_id": {
+          "description": "Playlist shown when no schedule applies.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The output shows neutral output when no schedule applies."
+        }
+      },
+      "objects": {
+        "program_outputs_pkey": "One row per program output.",
+        "program_outputs_company_id_program_id_fkey": "The program belongs to the same company; outputs are deleted with it.",
+        "program_outputs_company_id_default_playlist_id_fkey": "The default playlist belongs to the same company and cannot be deleted while used.",
+        "program_outputs_default_idx": "Finds outputs using a playlist as default, for the playlist delete check.",
+        "program_outputs_known_key": "Only the screen output exists."
+      }
+    },
+    "schedule_rules": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "A recurring local-time window that assigns a playlist to one output of a program. Rules store local values only; zones apply per screen when evaluating.",
+      "lifecycle": "Replaced as the whole rule set of an output when it is saved, after conflict validation; deleted with the program (cascade inside the module).",
+      "columns": {
+        "id": {
+          "description": "Backend-generated rule UUID, new on every save.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the program (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "program_id": {
+          "description": "Program the rule belongs to.",
+          "classification": "INTERNAL"
+        },
+        "output_key": {
+          "description": "Output the rule programs; only screen exists until layouts (PJ-20).",
+          "classification": "INTERNAL"
+        },
+        "position": {
+          "description": "Display order inside the output, 0 to 199.",
+          "classification": "INTERNAL"
+        },
+        "playlist_id": {
+          "description": "Playlist shown during the window.",
+          "classification": "INTERNAL"
+        },
+        "weekdays": {
+          "description": "Bitmask of the ISO weekdays on which a window starts, bit 0 for Monday, 1 to 127.",
+          "classification": "INTERNAL"
+        },
+        "all_day": {
+          "description": "True when each window covers the whole local day.",
+          "classification": "INTERNAL"
+        },
+        "start_minute": {
+          "description": "Local start of the window.",
+          "classification": "INTERNAL",
+          "unit": "minute of the local day, 0 to 1,439",
+          "nullMeaning": "The rule is all-day."
+        },
+        "end_minute": {
+          "description": "Local end of the window; earlier than the start ends on the next day, 0 means the following midnight.",
+          "classification": "INTERNAL",
+          "unit": "minute of the local day, 0 to 1,439",
+          "nullMeaning": "The rule is all-day."
+        },
+        "starts_on": {
+          "description": "First local date on which a window may start.",
+          "classification": "INTERNAL",
+          "unit": "local calendar date"
+        },
+        "ends_on": {
+          "description": "Final local date, inclusive; windows clip at the midnight that ends it.",
+          "classification": "INTERNAL",
+          "unit": "local calendar date",
+          "nullMeaning": "The rule has no final date."
+        }
+      },
+      "objects": {
+        "schedule_rules_pkey": "Unique rule identity.",
+        "schedule_rules_company_id_id_key": "Tenant key for rules.",
+        "schedule_rules_company_id_program_id_fkey": "The program belongs to the same company; rules are deleted with it.",
+        "schedule_rules_company_id_playlist_id_fkey": "The playlist belongs to the same company and cannot be deleted while used.",
+        "schedule_rules_playlist_idx": "Finds rules using a playlist, for the playlist delete check.",
+        "schedule_rules_position_key": "One rule per display position of an output.",
+        "schedule_rules_known_key": "Only the screen output exists.",
+        "schedule_rules_position_range": "At most 200 rules per output.",
+        "schedule_rules_weekdays_mask": "At least one weekday and no unknown bits.",
+        "schedule_rules_times": "All-day rules have no times; other rules have two distinct minutes of the day.",
+        "schedule_rules_dates": "The final date is not before the first date."
+      }
+    },
+    "programming_device_settings": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "A screen's programming source: its group, if any, and whether individual programming is selected.",
+      "lifecycle": "Created by the first assignment; each assignment, or a move outside the group's span, updates it and bumps the version. Kept with the device record after unlinking.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the screen (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "device_id": {
+          "description": "Screen these settings belong to.",
+          "classification": "INTERNAL"
+        },
+        "group_id": {
+          "description": "Group the screen belongs to.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The screen belongs to no group and is programmed individually."
+        },
+        "individual": {
+          "description": "True when the screen uses its own program although it belongs to a group.",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency version, starting at 1; the API reports 0 for a screen never assigned.",
+          "classification": "INTERNAL"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "programming_device_settings_pkey": "One settings row per screen.",
+        "programming_device_settings_company_id_device_id_fkey": "The screen belongs to the same company.",
+        "programming_device_settings_company_id_group_id_fkey": "The group belongs to the same company and cannot be deleted while it has members.",
+        "programming_device_settings_group_idx": "Lists a group's member screens.",
+        "programming_device_settings_version_positive": "Versions start at 1."
+      }
+    },
+    "programming_audit_events": {
+      "owner": "Programming",
+      "classification": "CONFIDENTIAL",
+      "description": "Append-only record of programming changes and assignments, with the acting member and the branches each change concerns.",
+      "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
+      "columns": {
+        "id": {
+          "description": "Backend-generated event UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company the change belongs to.",
+          "classification": "INTERNAL"
+        },
+        "subject_type": {
+          "description": "Kind of subject: playlist, group, program or device.",
+          "classification": "INTERNAL"
+        },
+        "subject_id": {
+          "description": "Playlist, group, program or screen the event concerns; not a foreign key, so events outlive deleted subjects.",
+          "classification": "INTERNAL"
+        },
+        "branch_ids": {
+          "description": "Branches the change concerns, for branch-scoped audit reads; empty for company-wide subjects.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Never null; an empty array means the subject is company-wide."
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant of the change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "actor_principal_id": {
+          "description": "Principal that made the change.",
+          "classification": "INTERNAL"
+        },
+        "actor_membership_id": {
+          "description": "Membership through which the change was made.",
+          "classification": "INTERNAL"
+        },
+        "action": {
+          "description": "Event name such as playlist.created, playlist.items_replaced, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move.",
+          "classification": "INTERNAL"
+        },
+        "details": {
+          "description": "Bounded summary: names, counts, versions and IDs; never media content.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "programming_audit_events_pkey": "Unique event identity.",
+        "programming_audit_events_company_id_id_key": "Tenant key for events.",
+        "programming_audit_events_company_id_fkey": "An event belongs to an existing company.",
+        "programming_audit_events_actor_principal_id_fkey": "The actor is a known principal.",
+        "programming_audit_events_company_id_actor_membership_id_fkey": "The acting membership belongs to the same company.",
+        "programming_audit_events_subject_idx": "Reads a subject's history newest first.",
+        "programming_audit_events_branch_ids_present": "The branch list is present and bounded.",
+        "programming_audit_events_subject_type": "Subjects come from a closed set.",
+        "programming_audit_events_details_object": "Details are a JSON object."
+      }
+    }
+  },
+  "enums": {
+    "PlaylistTransition": "Transition between playlist items: CUT or FADE."
+  }
+}

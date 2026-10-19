@@ -84,7 +84,7 @@ beforeAll(async () => {
       },
     });
     const modules = activateModules(
-      [identityStub, organizations.module, devices],
+      [identityStub, organizations.module, devices.module],
       {
         database,
         deviceEnrollment: {

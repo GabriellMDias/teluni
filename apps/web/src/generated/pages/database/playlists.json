@@ -1,0 +1,142 @@
+{
+  "kind": "database",
+  "name": "playlists",
+  "description": "An ordered, looping list of media items owned by a company or one branch, with its transition. Several programs may schedule the same playlist.",
+  "owner": "Programming",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created empty; renames, transition changes and item replacements bump the version. Deleted at runtime, with its items, only when no schedule rule or default uses it. The owning scope never changes. See docs/project/programming-design.md.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable playlist UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the playlist; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch that owns the playlist; immutable.",
+      "Null meaning": "The playlist belongs to the whole company and every member who may view programming sees it.",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display name chosen by members, trimmed, 1 to 120 characters.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "transition",
+      "PostgreSQL type": "\"PlaylistTransition\"",
+      "Nullable": "no",
+      "Default": "'CUT'::\"PlaylistTransition\"",
+      "Classification": "INTERNAL",
+      "Meaning": "CUT or FADE between items.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "fade_ms",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Fade duration between items.",
+      "Null meaning": "The transition is CUT.",
+      "Unit": "milliseconds"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency version, starting at 1.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of creation.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "playlists_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The owning branch belongs to the same company."
+    },
+    {
+      "Object": "playlists_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A playlist belongs to an existing company."
+    },
+    {
+      "Object": "playlists_fade",
+      "Physical definition": "CHECK ((((transition = 'CUT'::\"PlaylistTransition\") AND (fade_ms IS NULL)) OR ((transition = 'FADE'::\"PlaylistTransition\") AND ((fade_ms >= 250) AND (fade_ms <= 2000)))))",
+      "Purpose": "A fade carries a duration from 250 to 2,000 ms and a cut carries none."
+    },
+    {
+      "Object": "playlists_name_trimmed",
+      "Physical definition": "CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))",
+      "Purpose": "Names are trimmed and not empty."
+    },
+    {
+      "Object": "playlists_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique playlist identity."
+    },
+    {
+      "Object": "playlists_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "playlists_company_created_idx",
+      "Physical definition": "CREATE INDEX playlists_company_created_idx ON public.playlists USING btree (company_id, created_at DESC, id DESC)",
+      "Purpose": "Lists a company's playlists newest first with keyset cursors."
+    },
+    {
+      "Object": "playlists_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX playlists_company_id_id_key ON public.playlists USING btree (company_id, id)",
+      "Purpose": "Tenant key for playlists."
+    }
+  ]
+}

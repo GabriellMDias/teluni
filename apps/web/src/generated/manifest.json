@@ -111,6 +111,42 @@
       "file": "pages/api/archiveMedia.json"
     },
     {
+      "id": "api/assignDeviceProgramming",
+      "kind": "api",
+      "title": "assignDeviceProgramming",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/programming/devices/{deviceId}/assignment",
+      "method": "PUT",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/assignment",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/assignDeviceProgramming.json"
+    },
+    {
+      "id": "api/checkScheduleRules",
+      "kind": "api",
+      "title": "checkScheduleRules",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/rule-checks",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/rule-checks",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/checkScheduleRules.json"
+    },
+    {
       "id": "api/closeResponsibilityTransfer",
       "kind": "api",
       "title": "closeResponsibilityTransfer",
@@ -252,6 +288,42 @@
       "file": "pages/api/createMedia.json"
     },
     {
+      "id": "api/createPlaylist",
+      "kind": "api",
+      "title": "createPlaylist",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/playlists",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/playlists",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createPlaylist.json"
+    },
+    {
+      "id": "api/createProgrammingGroup",
+      "kind": "api",
+      "title": "createProgrammingGroup",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/groups",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/groups",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createProgrammingGroup.json"
+    },
+    {
       "id": "api/deleteMedia",
       "kind": "api",
       "title": "deleteMedia",
@@ -268,6 +340,42 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/deleteMedia.json"
+    },
+    {
+      "id": "api/deletePlaylist",
+      "kind": "api",
+      "title": "deletePlaylist",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/programming/playlists/{playlistId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/programming/playlists/{playlistId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deletePlaylist.json"
+    },
+    {
+      "id": "api/deleteProgrammingGroup",
+      "kind": "api",
+      "title": "deleteProgrammingGroup",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/programming/groups/{groupId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/programming/groups/{groupId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteProgrammingGroup.json"
     },
     {
       "id": "api/discardMedia",
@@ -373,6 +481,40 @@
       "file": "pages/api/getDeviceEnrollmentStatus.json"
     },
     {
+      "id": "api/getDeviceProgram",
+      "kind": "api",
+      "title": "getDeviceProgram",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/devices/{deviceId}/program",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/program",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceProgram.json"
+    },
+    {
+      "id": "api/getDeviceProgramming",
+      "kind": "api",
+      "title": "getDeviceProgramming",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/devices/{deviceId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceProgramming.json"
+    },
+    {
       "id": "api/getDeviceSelf",
       "kind": "api",
       "title": "getDeviceSelf",
@@ -388,6 +530,57 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getDeviceSelf.json"
+    },
+    {
+      "id": "api/getDeviceTimeline",
+      "kind": "api",
+      "title": "getDeviceTimeline",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/devices/{deviceId}/timeline",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/timeline",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceTimeline.json"
+    },
+    {
+      "id": "api/getGroupProgram",
+      "kind": "api",
+      "title": "getGroupProgram",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/groups/{groupId}/program",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/groups/{groupId}/program",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getGroupProgram.json"
+    },
+    {
+      "id": "api/getGroupTimeline",
+      "kind": "api",
+      "title": "getGroupTimeline",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/groups/{groupId}/timeline",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/groups/{groupId}/timeline",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getGroupTimeline.json"
     },
     {
       "id": "api/getLiveness",
@@ -439,6 +632,40 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getMediaContent.json"
+    },
+    {
+      "id": "api/getPlaylist",
+      "kind": "api",
+      "title": "getPlaylist",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/playlists/{playlistId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/playlists/{playlistId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getPlaylist.json"
+    },
+    {
+      "id": "api/getProgrammingGroup",
+      "kind": "api",
+      "title": "getProgrammingGroup",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/groups/{groupId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/groups/{groupId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getProgrammingGroup.json"
     },
     {
       "id": "api/getReadiness",
@@ -628,6 +855,40 @@
       "file": "pages/api/listMedia.json"
     },
     {
+      "id": "api/listPlaylists",
+      "kind": "api",
+      "title": "listPlaylists",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/playlists",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/playlists",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listPlaylists.json"
+    },
+    {
+      "id": "api/listProgrammingGroups",
+      "kind": "api",
+      "title": "listProgrammingGroups",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/groups",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/groups",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listProgrammingGroups.json"
+    },
+    {
       "id": "api/listSessions",
       "kind": "api",
       "title": "listSessions",
@@ -750,6 +1011,60 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/recordDeviceReset.json"
+    },
+    {
+      "id": "api/replaceDeviceProgramOutput",
+      "kind": "api",
+      "title": "replaceDeviceProgramOutput",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/programming/devices/{deviceId}/program/outputs/{outputKey}",
+      "method": "PUT",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/program/outputs/{outputKey}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/replaceDeviceProgramOutput.json"
+    },
+    {
+      "id": "api/replaceGroupProgramOutput",
+      "kind": "api",
+      "title": "replaceGroupProgramOutput",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/programming/groups/{groupId}/program/outputs/{outputKey}",
+      "method": "PUT",
+      "path": "/companies/{companyId}/programming/groups/{groupId}/program/outputs/{outputKey}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/replaceGroupProgramOutput.json"
+    },
+    {
+      "id": "api/replacePlaylistItems",
+      "kind": "api",
+      "title": "replacePlaylistItems",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/programming/playlists/{playlistId}/items",
+      "method": "PUT",
+      "path": "/companies/{companyId}/programming/playlists/{playlistId}/items",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/replacePlaylistItems.json"
     },
     {
       "id": "api/requestResponsibilityTransfer",
@@ -1088,6 +1403,42 @@
       "file": "pages/api/updateMedia.json"
     },
     {
+      "id": "api/updatePlaylist",
+      "kind": "api",
+      "title": "updatePlaylist",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/programming/playlists/{playlistId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/programming/playlists/{playlistId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updatePlaylist.json"
+    },
+    {
+      "id": "api/updateProgrammingGroup",
+      "kind": "api",
+      "title": "updateProgrammingGroup",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/programming/groups/{groupId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/programming/groups/{groupId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateProgrammingGroup.json"
+    },
+    {
       "id": "api/uploadMediaContent",
       "kind": "api",
       "title": "uploadMediaContent",
@@ -1326,6 +1677,26 @@
       "file": "pages/database/outbound_emails.json"
     },
     {
+      "id": "database/playlist_items",
+      "kind": "database",
+      "title": "playlist_items",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One position of a playlist: the media item it plays and, for an image, how long.",
+      "headings": [],
+      "file": "pages/database/playlist_items.json"
+    },
+    {
+      "id": "database/playlists",
+      "kind": "database",
+      "title": "playlists",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "An ordered, looping list of media items owned by a company or one branch, with its transition. Several programs may schedule the same playlist.",
+      "headings": [],
+      "file": "pages/database/playlists.json"
+    },
+    {
       "id": "database/principals",
       "kind": "database",
       "title": "principals",
@@ -1336,6 +1707,66 @@
       "file": "pages/database/principals.json"
     },
     {
+      "id": "database/program_outputs",
+      "kind": "database",
+      "title": "program_outputs",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One output of a program (the full screen now; layout areas later) with its optional default playlist.",
+      "headings": [],
+      "file": "pages/database/program_outputs.json"
+    },
+    {
+      "id": "database/programming_audit_events",
+      "kind": "database",
+      "title": "programming_audit_events",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Append-only record of programming changes and assignments, with the acting member and the branches each change concerns.",
+      "headings": [],
+      "file": "pages/database/programming_audit_events.json"
+    },
+    {
+      "id": "database/programming_device_settings",
+      "kind": "database",
+      "title": "programming_device_settings",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A screen's programming source: its group, if any, and whether individual programming is selected.",
+      "headings": [],
+      "file": "pages/database/programming_device_settings.json"
+    },
+    {
+      "id": "database/programming_group_branches",
+      "kind": "database",
+      "title": "programming_group_branches",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The explicit branch span of a group that does not cover the whole company.",
+      "headings": [],
+      "file": "pages/database/programming_group_branches.json"
+    },
+    {
+      "id": "database/programming_groups",
+      "kind": "database",
+      "title": "programming_groups",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A company-owned group of screens that share one program, spanning the whole company or a fixed set of branches.",
+      "headings": [],
+      "file": "pages/database/programming_groups.json"
+    },
+    {
+      "id": "database/programs",
+      "kind": "database",
+      "title": "programs",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The draft programming of one source: exactly one group or one screen.",
+      "headings": [],
+      "file": "pages/database/programs.json"
+    },
+    {
       "id": "database/responsibility_transfers",
       "kind": "database",
       "title": "responsibility_transfers",
@@ -1344,6 +1775,16 @@
       "summary": "A responsible administrator's proposal to hand company responsibility to another active administrator; it takes effect only when that successor accepts.",
       "headings": [],
       "file": "pages/database/responsibility_transfers.json"
+    },
+    {
+      "id": "database/schedule_rules",
+      "kind": "database",
+      "title": "schedule_rules",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A recurring local-time window that assigns a playlist to one output of a program. Rules store local values only; zones apply per screen when evaluating.",
+      "headings": [],
+      "file": "pages/database/schedule_rules.json"
     },
     {
       "id": "components/ErrorNotice",
@@ -1434,6 +1875,16 @@
       "summary": "This module owns companies (tenants), branches, memberships, standard role and access profile grants, the responsible administrator and organization audit. Read the tenant data…",
       "headings": [],
       "file": "pages/repository/apps/api/src/features/organizations/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/programming/AGENTS",
+      "kind": "repository",
+      "title": "Programming Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/programming/AGENTS.md",
+      "summary": "This module owns playlists, programming groups, the draft programs of groups and screens, schedule rules, screen assignments and timelines under the programming design and…",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/programming/AGENTS.json"
     },
     {
       "id": "repository/apps/web/AGENTS",
@@ -1734,6 +2185,16 @@
       "summary": "Acceptance scope: The owner explicitly approved this decision and the nine decisions of the media library design on 2026-10-19 under PH-23. Acceptance establishes the direction…",
       "headings": [],
       "file": "pages/repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.json"
+    },
+    {
+      "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+      "kind": "repository",
+      "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+      "group": "Decisions",
+      "source": "docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md",
+      "summary": "Teluni schedules playlists by local business time per screen: weekdays, local hours, overnight windows, inclusive final dates and all-day windows, interpreted in the screen's…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -2216,6 +2677,16 @@
       "file": "pages/repository/docs/project/product.json"
     },
     {
+      "id": "repository/docs/project/programming-design",
+      "kind": "repository",
+      "title": "Teluni Programming Design",
+      "group": "Project guides",
+      "source": "docs/project/programming-design.md",
+      "summary": "Proposed detailed design for D-06 and the time-zone part of D-10, 2026-10-19, awaiting the owner's review under PH-24. The owner asked for development to continue autonomously,…",
+      "headings": [],
+      "file": "pages/repository/docs/project/programming-design.json"
+    },
+    {
       "id": "repository/docs/project/README",
       "kind": "repository",
       "title": "Teluni Product Documentation",
@@ -2541,32 +3012,35 @@
       { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
       { "file": "search/0001.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0002.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0003.json", "count": 15, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 14, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 16, "kinds": ["api"] },
       { "file": "search/0006.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0007.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0008.json", "count": 18, "kinds": ["api", "database"] },
+      { "file": "search/0008.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0009.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0010.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0011.json", "count": 18, "kinds": ["api", "database"] },
       {
-        "file": "search/0009.json",
-        "count": 44,
+        "file": "search/0012.json",
+        "count": 34,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0010.json", "count": 101, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 114, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 137, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 172, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 113, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 121, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 73, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 65, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 54, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0021.json", "count": 101, "kinds": ["repository"] },
-      { "file": "search/0022.json", "count": 92, "kinds": ["repository"] },
-      { "file": "search/0023.json", "count": 7, "kinds": ["repository"] }
+      { "file": "search/0013.json", "count": 89, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 110, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 130, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 177, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 122, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 131, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 79, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 73, "kinds": ["repository"] },
+      { "file": "search/0021.json", "count": 65, "kinds": ["repository"] },
+      { "file": "search/0022.json", "count": 44, "kinds": ["repository"] },
+      { "file": "search/0023.json", "count": 73, "kinds": ["repository"] },
+      { "file": "search/0024.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0025.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0026.json", "count": 88, "kinds": ["repository"] }
     ],
-    "count": 1442
+    "count": 1547
   }
 }

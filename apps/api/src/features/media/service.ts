@@ -28,6 +28,7 @@ import type {
   PrismaMediaRepository,
 } from "./prisma-repository.js";
 import type {
+  MediaFacts,
   MediaReference,
   MediaReferenceGuard,
   SelectableMedia,
@@ -535,6 +536,22 @@ export class MediaService {
         return { kind: "discard" };
       },
     );
+  }
+
+  /** The public port's facts about already referenced items. */
+  async describe(
+    companyId: string,
+    assetIds: readonly string[],
+  ): Promise<MediaFacts[]> {
+    const rows = await this.#repository.findMany(companyId, assetIds);
+    return rows.map((item) => ({
+      id: item.id,
+      name: item.name,
+      kind: item.kind,
+      status: item.status,
+      branchId: item.branchId,
+      durationMs: item.durationMs,
+    }));
   }
 
   /** The public port's selection of media for a new reference. */

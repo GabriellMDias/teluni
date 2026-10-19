@@ -23,7 +23,10 @@ export type Capability =
   | "media.view"
   | "media.upload"
   | "media.archive"
-  | "media.delete";
+  | "media.delete"
+  | "programming.view"
+  | "programming.edit"
+  | "programming.assign";
 
 type Preset = Readonly<{
   capabilities: ReadonlySet<Capability>;
@@ -33,8 +36,9 @@ type Preset = Readonly<{
 
 // Only the capabilities implemented so far are listed; the matrix's other
 // rows (publication, export) arrive with their modules. Operators pair
-// devices and archive media only through an additional grant (an access
-// profile); permanent media deletion stays with administrators.
+// devices, archive media and assign programming only through an additional
+// grant (an access profile); permanent media deletion stays with
+// administrators.
 export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
   COMPANY_ADMINISTRATOR: {
     capabilities: new Set([
@@ -51,6 +55,9 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "media.upload",
       "media.archive",
       "media.delete",
+      "programming.view",
+      "programming.edit",
+      "programming.assign",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -65,6 +72,9 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "media.view",
       "media.upload",
       "media.archive",
+      "programming.view",
+      "programming.edit",
+      "programming.assign",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -75,6 +85,8 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "devices.view",
       "media.view",
       "media.upload",
+      "programming.view",
+      "programming.edit",
     ]),
     requiresStrongAuthentication: false,
   },
@@ -95,6 +107,9 @@ export const delegableCapabilities: readonly Capability[] = [
   "media.view",
   "media.upload",
   "media.archive",
+  "programming.view",
+  "programming.edit",
+  "programming.assign",
 ];
 
 /**
@@ -107,6 +122,8 @@ export const capabilityPrerequisites: Readonly<
   "devices.manage": "devices.view",
   "media.upload": "media.view",
   "media.archive": "media.view",
+  "programming.edit": "programming.view",
+  "programming.assign": "programming.view",
 };
 
 /**
@@ -123,6 +140,7 @@ const strongCapabilities: ReadonlySet<Capability> = new Set([
   "devices.manage",
   "media.archive",
   "media.delete",
+  "programming.assign",
 ]);
 
 /** What a grant confers: a standard role or a company's access profile. */

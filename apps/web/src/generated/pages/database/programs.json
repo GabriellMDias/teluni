@@ -1,0 +1,127 @@
+{
+  "kind": "database",
+  "name": "programs",
+  "description": "The draft programming of one source: exactly one group or one screen.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its first output is saved and kept with the device record. Saving an output bumps the version.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable program UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the program; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "group_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Group the program belongs to.",
+      "Null meaning": "The program belongs to a screen.",
+      "Unit": "—"
+    },
+    {
+      "Column": "device_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Screen the program belongs to.",
+      "Null meaning": "The program belongs to a group.",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency version, starting at 1; the API reports 0 for a program not yet saved.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of creation.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "programs_company_id_device_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The screen belongs to the same company."
+    },
+    {
+      "Object": "programs_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A program belongs to an existing company."
+    },
+    {
+      "Object": "programs_company_id_group_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The group belongs to the same company; its program is deleted with it."
+    },
+    {
+      "Object": "programs_one_source",
+      "Physical definition": "CHECK (((group_id IS NULL) <> (device_id IS NULL)))",
+      "Purpose": "A program belongs to exactly one group or one screen."
+    },
+    {
+      "Object": "programs_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique program identity."
+    },
+    {
+      "Object": "programs_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "programs_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX programs_company_id_id_key ON public.programs USING btree (company_id, id)",
+      "Purpose": "Tenant key for programs."
+    },
+    {
+      "Object": "programs_device_key",
+      "Physical definition": "CREATE UNIQUE INDEX programs_device_key ON public.programs USING btree (company_id, device_id)",
+      "Purpose": "A screen has at most one program."
+    },
+    {
+      "Object": "programs_group_key",
+      "Physical definition": "CREATE UNIQUE INDEX programs_group_key ON public.programs USING btree (company_id, group_id)",
+      "Purpose": "A group has at most one program."
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import type { CompanyDescription } from "./prisma-repository.js";
 export {
   branchReach,
   decide,
+  isTimeZone,
   OrganizationFailure,
   requireCapability,
   type Capability,

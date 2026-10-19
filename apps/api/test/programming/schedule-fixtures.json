@@ -1,0 +1,866 @@
+{
+  "description": "Canonical schedule fixtures of the programming design (docs/project/programming-design.md#shared-fixtures). The API's evaluator and the player must both produce these results. Instants are UTC; sources are rule:<id>, default or none.",
+  "version": 1,
+  "timelines": [
+    {
+      "id": "inclusive-start-exclusive-end",
+      "description": "A window starts at its start minute and ends before its end minute.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "18:00",
+          "startsOn": "2027-01-04",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-01-04T10:00:00Z",
+      "to": "2027-01-04T22:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-04T10:00:00Z",
+            "end": "2027-01-04T11:00:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-01-04T11:00:00Z",
+            "end": "2027-01-04T21:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-01-04T21:00:00Z",
+            "end": "2027-01-04T22:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "overnight-anchored-on-start-day",
+      "description": "Friday 22:00-02:00 ends on Saturday at 02:00; the default fills the rest.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [5],
+          "allDay": false,
+          "startTime": "22:00",
+          "endTime": "02:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": "d",
+      "from": "2027-01-08T00:00:00Z",
+      "to": "2027-01-09T12:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-08T00:00:00Z",
+            "end": "2027-01-09T01:00:00Z",
+            "source": "default"
+          },
+          {
+            "start": "2027-01-09T01:00:00Z",
+            "end": "2027-01-09T05:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-01-09T05:00:00Z",
+            "end": "2027-01-09T12:00:00Z",
+            "source": "default"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "final-date-clips-overnight",
+      "description": "When Friday is the final date, its 22:00-02:00 window ends at Saturday 00:00.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [5],
+          "allDay": false,
+          "startTime": "22:00",
+          "endTime": "02:00",
+          "startsOn": "2027-01-01",
+          "endsOn": "2027-01-08"
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-01-08T00:00:00Z",
+      "to": "2027-01-09T12:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-08T00:00:00Z",
+            "end": "2027-01-09T01:00:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-01-09T01:00:00Z",
+            "end": "2027-01-09T03:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-01-09T03:00:00Z",
+            "end": "2027-01-09T12:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "all-day-windows",
+      "description": "All-day windows run from local midnight to the next local midnight.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [6, 7],
+          "allDay": true,
+          "startsOn": "2027-01-02",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-01-08T12:00:00Z",
+      "to": "2027-01-11T12:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-08T12:00:00Z",
+            "end": "2027-01-09T03:00:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-01-09T03:00:00Z",
+            "end": "2027-01-10T03:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-01-10T03:00:00Z",
+            "end": "2027-01-11T03:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-01-11T03:00:00Z",
+            "end": "2027-01-11T12:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "range-starts-inside-overnight-window",
+      "description": "A range that starts inside an overnight window includes the window anchored on the previous day.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "20:00",
+          "endTime": "06:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-01-05T06:00:00Z",
+      "to": "2027-01-05T10:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-05T06:00:00Z",
+            "end": "2027-01-05T09:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-01-05T09:00:00Z",
+            "end": "2027-01-05T10:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "no-window-before-first-date",
+      "description": "An overnight window anchored on the day before the first date does not exist.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "20:00",
+          "endTime": "06:00",
+          "startsOn": "2027-01-05",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-01-05T06:00:00Z",
+      "to": "2027-01-05T10:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-05T06:00:00Z",
+            "end": "2027-01-05T10:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "cross-branch-group-lisbon",
+      "description": "The same local hours in another branch's zone give other instants.",
+      "timeZone": "Europe/Lisbon",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "18:00",
+          "startsOn": "2027-01-04",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-01-04T07:00:00Z",
+      "to": "2027-01-04T19:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-04T07:00:00Z",
+            "end": "2027-01-04T08:00:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-01-04T08:00:00Z",
+            "end": "2027-01-04T18:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-01-04T18:00:00Z",
+            "end": "2027-01-04T19:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "dst-gap-at-start",
+      "description": "A start inside the spring-forward gap resolves to the first valid instant, 03:00.",
+      "timeZone": "America/New_York",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [7],
+          "allDay": false,
+          "startTime": "02:30",
+          "endTime": "05:00",
+          "startsOn": "2027-03-14",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-03-14T05:00:00Z",
+      "to": "2027-03-14T10:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-03-14T05:00:00Z",
+            "end": "2027-03-14T07:00:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-03-14T07:00:00Z",
+            "end": "2027-03-14T09:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-03-14T09:00:00Z",
+            "end": "2027-03-14T10:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": [
+          {
+            "ruleId": "r1",
+            "boundary": "start",
+            "resolution": "gap",
+            "local": "2027-03-14T02:30",
+            "instant": "2027-03-14T07:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dst-gap-at-end",
+      "description": "An end inside the spring-forward gap resolves to the first valid instant, 03:00.",
+      "timeZone": "America/New_York",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [7],
+          "allDay": false,
+          "startTime": "01:00",
+          "endTime": "02:30",
+          "startsOn": "2027-03-14",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-03-14T05:00:00Z",
+      "to": "2027-03-14T08:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-03-14T05:00:00Z",
+            "end": "2027-03-14T06:00:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-03-14T06:00:00Z",
+            "end": "2027-03-14T07:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-03-14T07:00:00Z",
+            "end": "2027-03-14T08:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": [
+          {
+            "ruleId": "r1",
+            "boundary": "end",
+            "resolution": "gap",
+            "local": "2027-03-14T02:30",
+            "instant": "2027-03-14T07:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "repeated-hour-at-start",
+      "description": "A start in the repeated hour uses its earlier occurrence.",
+      "timeZone": "America/New_York",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [7],
+          "allDay": false,
+          "startTime": "01:30",
+          "endTime": "03:00",
+          "startsOn": "2027-11-07",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-11-07T04:00:00Z",
+      "to": "2027-11-07T09:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-11-07T04:00:00Z",
+            "end": "2027-11-07T05:30:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-11-07T05:30:00Z",
+            "end": "2027-11-07T08:00:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-11-07T08:00:00Z",
+            "end": "2027-11-07T09:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": [
+          {
+            "ruleId": "r1",
+            "boundary": "start",
+            "resolution": "repeated",
+            "local": "2027-11-07T01:30",
+            "instant": "2027-11-07T05:30:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "repeated-hour-at-end",
+      "description": "An end in the repeated hour uses its later occurrence.",
+      "timeZone": "America/New_York",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [7],
+          "allDay": false,
+          "startTime": "00:00",
+          "endTime": "01:30",
+          "startsOn": "2027-11-07",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-11-07T03:00:00Z",
+      "to": "2027-11-07T08:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-11-07T03:00:00Z",
+            "end": "2027-11-07T04:00:00Z",
+            "source": "none"
+          },
+          {
+            "start": "2027-11-07T04:00:00Z",
+            "end": "2027-11-07T06:30:00Z",
+            "source": "rule:r1"
+          },
+          {
+            "start": "2027-11-07T06:30:00Z",
+            "end": "2027-11-07T08:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": [
+          {
+            "ruleId": "r1",
+            "boundary": "end",
+            "resolution": "repeated",
+            "local": "2027-11-07T01:30",
+            "instant": "2027-11-07T06:30:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "repeated-hour-handoff",
+      "description": "Two close windows in the repeated hour: the earlier window's end is clipped to the next start, so they never overlap.",
+      "timeZone": "America/New_York",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [7],
+          "allDay": false,
+          "startTime": "00:00",
+          "endTime": "01:15",
+          "startsOn": "2027-11-07",
+          "endsOn": null
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [7],
+          "allDay": false,
+          "startTime": "01:45",
+          "endTime": "03:00",
+          "startsOn": "2027-11-07",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": null,
+      "from": "2027-11-07T04:00:00Z",
+      "to": "2027-11-07T08:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-11-07T04:00:00Z",
+            "end": "2027-11-07T05:45:00Z",
+            "source": "rule:a"
+          },
+          {
+            "start": "2027-11-07T05:45:00Z",
+            "end": "2027-11-07T08:00:00Z",
+            "source": "rule:b"
+          }
+        ],
+        "notes": [
+          {
+            "ruleId": "a",
+            "boundary": "end",
+            "resolution": "repeated",
+            "local": "2027-11-07T01:15",
+            "instant": "2027-11-07T06:15:00Z"
+          },
+          {
+            "ruleId": "b",
+            "boundary": "start",
+            "resolution": "repeated",
+            "local": "2027-11-07T01:45",
+            "instant": "2027-11-07T05:45:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "id": "touching-windows",
+      "description": "A window ending at 12:00 and one starting at 12:00 are contiguous.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "12:00",
+          "startsOn": "2027-01-04",
+          "endsOn": null
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "12:00",
+          "endTime": "18:00",
+          "startsOn": "2027-01-04",
+          "endsOn": null
+        }
+      ],
+      "defaultPlaylistId": "d",
+      "from": "2027-01-04T10:00:00Z",
+      "to": "2027-01-04T22:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-04T10:00:00Z",
+            "end": "2027-01-04T11:00:00Z",
+            "source": "default"
+          },
+          {
+            "start": "2027-01-04T11:00:00Z",
+            "end": "2027-01-04T15:00:00Z",
+            "source": "rule:a"
+          },
+          {
+            "start": "2027-01-04T15:00:00Z",
+            "end": "2027-01-04T21:00:00Z",
+            "source": "rule:b"
+          },
+          {
+            "start": "2027-01-04T21:00:00Z",
+            "end": "2027-01-04T22:00:00Z",
+            "source": "default"
+          }
+        ],
+        "notes": []
+      }
+    },
+    {
+      "id": "no-rules-without-default",
+      "description": "An output with no rules and no default is neutral for the whole range.",
+      "timeZone": "America/Sao_Paulo",
+      "rules": [],
+      "defaultPlaylistId": null,
+      "from": "2027-01-04T00:00:00Z",
+      "to": "2027-01-05T00:00:00Z",
+      "expect": {
+        "segments": [
+          {
+            "start": "2027-01-04T00:00:00Z",
+            "end": "2027-01-05T00:00:00Z",
+            "source": "none"
+          }
+        ],
+        "notes": []
+      }
+    }
+  ],
+  "validation": [
+    {
+      "id": "equal-times-rejected",
+      "description": "Equal start and end times are ambiguous; all-day is a separate option.",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "10:00",
+          "endTime": "10:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        }
+      ],
+      "issues": [
+        {
+          "ruleId": "r1",
+          "issue": "times_equal"
+        }
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "midnight-to-midnight-rejected",
+      "description": "00:00-00:00 is equal times, not a whole day.",
+      "rules": [
+        {
+          "id": "r1",
+          "playlistId": "p-r1",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "00:00",
+          "endTime": "00:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        }
+      ],
+      "issues": [
+        {
+          "ruleId": "r1",
+          "issue": "times_equal"
+        }
+      ],
+      "conflicts": []
+    },
+    {
+      "id": "overlap-rejected",
+      "description": "Overlapping windows on the same output conflict.",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [1],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "12:00",
+          "startsOn": "2027-01-04",
+          "endsOn": null
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [1],
+          "allDay": false,
+          "startTime": "11:00",
+          "endTime": "14:00",
+          "startsOn": "2027-01-04",
+          "endsOn": null
+        }
+      ],
+      "issues": [],
+      "conflicts": [
+        {
+          "first": "a",
+          "second": "b",
+          "date": "2027-01-04"
+        }
+      ]
+    },
+    {
+      "id": "touching-allowed",
+      "description": "Touching windows do not conflict.",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "12:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "12:00",
+          "endTime": "18:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        }
+      ],
+      "issues": [],
+      "conflicts": []
+    },
+    {
+      "id": "overnight-overlaps-next-day",
+      "description": "Friday 22:00-02:00 overlaps Saturday 01:00-03:00 on Saturday.",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [5],
+          "allDay": false,
+          "startTime": "22:00",
+          "endTime": "02:00",
+          "startsOn": "2027-01-08",
+          "endsOn": null
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [6],
+          "allDay": false,
+          "startTime": "01:00",
+          "endTime": "03:00",
+          "startsOn": "2027-01-08",
+          "endsOn": null
+        }
+      ],
+      "issues": [],
+      "conflicts": [
+        {
+          "first": "a",
+          "second": "b",
+          "date": "2027-01-09"
+        }
+      ]
+    },
+    {
+      "id": "final-date-clip-avoids-conflict",
+      "description": "A final date clips the overnight window before the next rule begins.",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [5],
+          "allDay": false,
+          "startTime": "22:00",
+          "endTime": "02:00",
+          "startsOn": "2027-01-01",
+          "endsOn": "2027-01-08"
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [6],
+          "allDay": false,
+          "startTime": "00:00",
+          "endTime": "03:00",
+          "startsOn": "2027-01-09",
+          "endsOn": null
+        }
+      ],
+      "issues": [],
+      "conflicts": []
+    },
+    {
+      "id": "disjoint-validity",
+      "description": "Rules valid on different dates never conflict.",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "12:00",
+          "startsOn": "2027-01-01",
+          "endsOn": "2027-01-31"
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [1, 2, 3, 4, 5, 6, 7],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "12:00",
+          "startsOn": "2027-02-01",
+          "endsOn": null
+        }
+      ],
+      "issues": [],
+      "conflicts": []
+    },
+    {
+      "id": "long-span-overlap",
+      "description": "An overlap inside a long common span is found on its first date.",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [1],
+          "allDay": false,
+          "startTime": "08:00",
+          "endTime": "10:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [1],
+          "allDay": false,
+          "startTime": "09:00",
+          "endTime": "11:00",
+          "startsOn": "2027-06-01",
+          "endsOn": "2027-12-31"
+        }
+      ],
+      "issues": [],
+      "conflicts": [
+        {
+          "first": "a",
+          "second": "b",
+          "date": "2027-06-07"
+        }
+      ]
+    },
+    {
+      "id": "all-day-overlaps-timed",
+      "description": "An all-day window conflicts with a timed window on the same day.",
+      "rules": [
+        {
+          "id": "a",
+          "playlistId": "p-a",
+          "weekdays": [3],
+          "allDay": true,
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        },
+        {
+          "id": "b",
+          "playlistId": "p-b",
+          "weekdays": [3],
+          "allDay": false,
+          "startTime": "09:00",
+          "endTime": "10:00",
+          "startsOn": "2027-01-01",
+          "endsOn": null
+        }
+      ],
+      "issues": [],
+      "conflicts": [
+        {
+          "first": "a",
+          "second": "b",
+          "date": "2027-01-06"
+        }
+      ]
+    }
+  ]
+}

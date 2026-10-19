@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "updateDevice",
   "summary": "",
-  "description": "Rename an active screen or change its rotation with the observed version. Only rotations the screen reported are accepted.",
+  "description": "Rename an active screen, change its rotation or set its explicit time zone (null follows the branch) with the observed version. Only rotations the screen reported are accepted.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -65,6 +65,17 @@
                 { "type": "number", "const": 180 },
                 { "type": "number", "const": 270 }
               ]
+            },
+            "timeZone": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "pattern": "^[A-Za-z][A-Za-z0-9_+/-]*$"
+                },
+                { "type": "null" }
+              ]
             }
           },
           "additionalProperties": false
@@ -89,6 +100,17 @@
             { "type": "number", "const": 180 },
             { "type": "number", "const": 270 }
           ]
+        },
+        "timeZone": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z][A-Za-z0-9_+/-]*$"
+            },
+            { "type": "null" }
+          ]
         }
       },
       "additionalProperties": false
@@ -104,7 +126,12 @@
         "type": "string (min length 1, max length 80, pattern .*\\S.*)",
         "required": false
       },
-      { "name": "rotation", "type": "0 | 90 | 180 | 270", "required": false }
+      { "name": "rotation", "type": "0 | 90 | 180 | 270", "required": false },
+      {
+        "name": "timeZone",
+        "type": "string (min length 1, max length 64, pattern ^[A-Za-z][A-Za-z0-9_+/-]*$) | null",
+        "required": false
+      }
     ]
   },
   "responses": [
@@ -119,6 +146,7 @@
               "id",
               "name",
               "branch",
+              "timeZone",
               "rotation",
               "status",
               "erasure",
@@ -142,15 +170,27 @@
               },
               "branch": {
                 "type": "object",
-                "required": ["id", "name"],
+                "required": ["id", "name", "timeZone"],
                 "properties": {
                   "id": {
                     "type": "string",
                     "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                   },
-                  "name": { "type": "string" }
+                  "name": { "type": "string" },
+                  "timeZone": { "type": "string" }
                 },
                 "additionalProperties": false
+              },
+              "timeZone": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "pattern": "^[A-Za-z][A-Za-z0-9_+/-]*$"
+                  },
+                  { "type": "null" }
+                ]
               },
               "rotation": {
                 "anyOf": [
@@ -279,6 +319,7 @@
           "id",
           "name",
           "branch",
+          "timeZone",
           "rotation",
           "status",
           "erasure",
@@ -302,15 +343,27 @@
           },
           "branch": {
             "type": "object",
-            "required": ["id", "name"],
+            "required": ["id", "name", "timeZone"],
             "properties": {
               "id": {
                 "type": "string",
                 "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
               },
-              "name": { "type": "string" }
+              "name": { "type": "string" },
+              "timeZone": { "type": "string" }
             },
             "additionalProperties": false
+          },
+          "timeZone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[A-Za-z][A-Za-z0-9_+/-]*$"
+              },
+              { "type": "null" }
+            ]
           },
           "rotation": {
             "anyOf": [
@@ -449,6 +502,12 @@
           "required": true
         },
         { "name": "branch.name", "type": "string", "required": true },
+        { "name": "branch.timeZone", "type": "string", "required": true },
+        {
+          "name": "timeZone",
+          "type": "string (min length 1, max length 64, pattern ^[A-Za-z][A-Za-z0-9_+/-]*$) | null",
+          "required": true
+        },
         { "name": "rotation", "type": "0 | 90 | 180 | 270", "required": true },
         {
           "name": "status",

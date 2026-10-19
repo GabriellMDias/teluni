@@ -15,6 +15,8 @@ export type DeviceRecord = Readonly<{
   companyId: string;
   branchId: string;
   name: string;
+  /** Explicit time zone; null follows the branch. */
+  timeZone: string | null;
   rotation: Rotation;
   status: DeviceStatus;
   erasure: DeviceErasure;
@@ -46,6 +48,7 @@ type DeviceRow = {
   company_id: string;
   branch_id: string;
   name: string;
+  time_zone: string | null;
   rotation: number;
   status: DeviceStatus;
   erasure: DeviceErasure;
@@ -57,7 +60,7 @@ type DeviceRow = {
   version: number;
 };
 
-const deviceColumns = Prisma.sql`id, company_id, branch_id, name, rotation,
+const deviceColumns = Prisma.sql`id, company_id, branch_id, name, time_zone, rotation,
   status::text AS status, erasure::text AS erasure, report, last_seen_at,
   paired_at, revoked_at, erasure_recorded_at, version`;
 
@@ -66,6 +69,7 @@ const record = (row: DeviceRow): DeviceRecord => ({
   companyId: row.company_id,
   branchId: row.branch_id,
   name: row.name,
+  timeZone: row.time_zone,
   rotation: row.rotation as Rotation,
   status: row.status,
   erasure: row.erasure,
@@ -353,6 +357,30 @@ export class PrismaDeviceRepository {
     return row ? record(row) : null;
   }
 
+  /**
+   * Named devices of one company for another module's decision; inside a
+   * transaction they are share-locked so moves and unlinks wait for it.
+   */
+  async describe(
+    tx: Prisma.TransactionClient | null,
+    companyId: string,
+    deviceIds: readonly string[],
+  ): Promise<DeviceRecord[]> {
+    if (deviceIds.length === 0) return [];
+    const ids = Prisma.join(
+      [...new Set(deviceIds)].sort().map((id) => Prisma.sql`${id}::uuid`),
+    );
+    const rows = tx
+      ? await tx.$queryRaw<DeviceRow[]>`
+          SELECT ${deviceColumns} FROM devices
+          WHERE company_id = ${companyId}::uuid AND id IN (${ids})
+          ORDER BY id FOR SHARE`
+      : await this.#db.$queryRaw<DeviceRow[]>`
+          SELECT ${deviceColumns} FROM devices
+          WHERE company_id = ${companyId}::uuid AND id IN (${ids})`;
+    return rows.map(record);
+  }
+
   async lock(
     tx: Prisma.TransactionClient,
     companyId: string,
@@ -371,7 +399,12 @@ export class PrismaDeviceRepository {
     actor: NonNullable<DeviceActor>,
     current: DeviceRecord,
     change:
-      | { kind: "configure"; name?: string; rotation?: Rotation }
+      | {
+          kind: "configure";
+          name?: string;
+          rotation?: Rotation;
+          timeZone?: string | null;
+        }
       | { kind: "move"; branchId: string }
       | { kind: "unlink" }
       | { kind: "reset" },
@@ -380,12 +413,16 @@ export class PrismaDeviceRepository {
     const rotation =
       change.kind === "configure" ? (change.rotation ?? null) : null;
     const branchId = change.kind === "move" ? change.branchId : null;
+    const setZone =
+      change.kind === "configure" && change.timeZone !== undefined;
+    const zone = setZone ? (change.timeZone ?? null) : null;
     const unlink = change.kind === "unlink";
     const reset = change.kind === "reset";
     const [row] = await tx.$queryRaw<DeviceRow[]>`
       UPDATE devices SET
         name = COALESCE(${name}, name),
         rotation = COALESCE(${rotation}::int, rotation),
+        time_zone = CASE WHEN ${setZone} THEN ${zone}::text ELSE time_zone END,
         branch_id = COALESCE(${branchId}::uuid, branch_id),
         status = CASE WHEN ${unlink} THEN 'REVOKED'::"DeviceStatus" ELSE status END,
         erasure = CASE WHEN ${unlink} THEN 'PENDING'::"DeviceErasure"
@@ -406,6 +443,11 @@ export class PrismaDeviceRepository {
         events.push([
           "device.rotation_changed",
           { from: current.rotation, to: change.rotation },
+        ]);
+      if (change.timeZone !== undefined && change.timeZone !== current.timeZone)
+        events.push([
+          "device.time_zone_changed",
+          { from: current.timeZone, to: change.timeZone },
         ]);
     } else if (change.kind === "move")
       events.push([

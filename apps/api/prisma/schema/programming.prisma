@@ -1,0 +1,164 @@
+// Programming module: playlists, programming groups, the draft programs of
+// groups and screens with their schedule rules, and each screen's
+// programming source. Rules follow docs/project/programming-design.md;
+// tenant-owned tables keep a (company_id, ...) key and composite tenant
+// references.
+
+enum PlaylistTransition {
+  CUT
+  FADE
+}
+
+model Playlist {
+  id         String             @id @db.Uuid
+  companyId  String             @map("company_id") @db.Uuid
+  branchId   String?            @map("branch_id") @db.Uuid
+  name       String             @db.VarChar(120)
+  transition PlaylistTransition @default(CUT)
+  fadeMs     Int?               @map("fade_ms")
+  version    Int                @default(1)
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime           @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch     Branch?            @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  items      PlaylistItem[]
+  defaultFor ProgramOutput[]
+  rules      ScheduleRule[]
+
+  @@unique([companyId, id], map: "playlists_company_id_id_key")
+  @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "playlists_company_created_idx")
+  @@map("playlists")
+}
+
+model PlaylistItem {
+  companyId    String     @map("company_id") @db.Uuid
+  playlistId   String     @map("playlist_id") @db.Uuid
+  position     Int
+  mediaAssetId String     @map("media_asset_id") @db.Uuid
+  durationMs   Int?       @map("duration_ms")
+  playlist     Playlist   @relation(fields: [companyId, playlistId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  mediaAsset   MediaAsset @relation(fields: [companyId, mediaAssetId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, playlistId, position], map: "playlist_items_pkey")
+  @@index([companyId, mediaAssetId], map: "playlist_items_media_idx")
+  @@map("playlist_items")
+}
+
+model ProgrammingGroup {
+  id          String                     @id @db.Uuid
+  companyId   String                     @map("company_id") @db.Uuid
+  name        String                     @db.VarChar(80)
+  allBranches Boolean                    @map("all_branches")
+  version     Int                        @default(1)
+  createdAt   DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime                   @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company     Company                    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branches    ProgrammingGroupBranch[]
+  program     Program?
+  members     ProgrammingDeviceSetting[]
+
+  @@unique([companyId, id], map: "programming_groups_company_id_id_key")
+  @@map("programming_groups")
+}
+
+model ProgrammingGroupBranch {
+  companyId String           @map("company_id") @db.Uuid
+  groupId   String           @map("group_id") @db.Uuid
+  branchId  String           @map("branch_id") @db.Uuid
+  group     ProgrammingGroup @relation(fields: [companyId, groupId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  branch    Branch           @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, groupId, branchId], map: "programming_group_branches_pkey")
+  @@index([companyId, branchId], map: "programming_group_branches_branch_idx")
+  @@map("programming_group_branches")
+}
+
+model Program {
+  id        String            @id @db.Uuid
+  companyId String            @map("company_id") @db.Uuid
+  groupId   String?           @map("group_id") @db.Uuid
+  deviceId  String?           @map("device_id") @db.Uuid
+  version   Int               @default(1)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  group     ProgrammingGroup? @relation(fields: [companyId, groupId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  device    Device?           @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  outputs   ProgramOutput[]
+  rules     ScheduleRule[]
+
+  @@unique([companyId, id], map: "programs_company_id_id_key")
+  @@unique([companyId, groupId], map: "programs_group_key")
+  @@unique([companyId, deviceId], map: "programs_device_key")
+  @@map("programs")
+}
+
+model ProgramOutput {
+  companyId         String    @map("company_id") @db.Uuid
+  programId         String    @map("program_id") @db.Uuid
+  outputKey         String    @map("output_key") @db.VarChar(32)
+  defaultPlaylistId String?   @map("default_playlist_id") @db.Uuid
+  program           Program   @relation(fields: [companyId, programId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  defaultPlaylist   Playlist? @relation(fields: [companyId, defaultPlaylistId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, programId, outputKey], map: "program_outputs_pkey")
+  @@index([companyId, defaultPlaylistId], map: "program_outputs_default_idx")
+  @@map("program_outputs")
+}
+
+model ScheduleRule {
+  id          String    @id @db.Uuid
+  companyId   String    @map("company_id") @db.Uuid
+  programId   String    @map("program_id") @db.Uuid
+  outputKey   String    @map("output_key") @db.VarChar(32)
+  position    Int
+  playlistId  String    @map("playlist_id") @db.Uuid
+  weekdays    Int
+  allDay      Boolean   @map("all_day")
+  startMinute Int?      @map("start_minute")
+  endMinute   Int?      @map("end_minute")
+  startsOn    DateTime  @map("starts_on") @db.Date
+  endsOn      DateTime? @map("ends_on") @db.Date
+  program     Program   @relation(fields: [companyId, programId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  playlist    Playlist  @relation(fields: [companyId, playlistId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "schedule_rules_company_id_id_key")
+  @@unique([companyId, programId, outputKey, position], map: "schedule_rules_position_key")
+  @@index([companyId, playlistId], map: "schedule_rules_playlist_idx")
+  @@map("schedule_rules")
+}
+
+model ProgrammingDeviceSetting {
+  companyId  String            @map("company_id") @db.Uuid
+  deviceId   String            @map("device_id") @db.Uuid
+  groupId    String?           @map("group_id") @db.Uuid
+  individual Boolean           @default(false)
+  version    Int               @default(1)
+  updatedAt  DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  device     Device            @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  group      ProgrammingGroup? @relation(fields: [companyId, groupId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, deviceId], map: "programming_device_settings_pkey")
+  @@index([companyId, groupId], map: "programming_device_settings_group_idx")
+  @@map("programming_device_settings")
+}
+
+model ProgrammingAuditEvent {
+  id                String     @id @db.Uuid
+  companyId         String     @map("company_id") @db.Uuid
+  subjectType       String     @map("subject_type") @db.VarChar(16)
+  subjectId         String     @map("subject_id") @db.Uuid
+  branchIds         String[]   @default([]) @map("branch_ids") @db.Uuid
+  occurredAt        DateTime   @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String     @map("actor_principal_id") @db.Uuid
+  actorMembershipId String     @map("actor_membership_id") @db.Uuid
+  action            String     @db.VarChar(64)
+  details           Json       @default("{}")
+  company           Company    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Principal  @relation("ProgrammingAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorMembership   Membership @relation("ProgrammingAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "programming_audit_events_company_id_id_key")
+  @@index([companyId, subjectId, occurredAt(sort: Desc), id(sort: Desc)], map: "programming_audit_events_subject_idx")
+  @@map("programming_audit_events")
+}

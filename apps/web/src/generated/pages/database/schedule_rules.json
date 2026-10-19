@@ -1,0 +1,187 @@
+{
+  "kind": "database",
+  "name": "schedule_rules",
+  "description": "A recurring local-time window that assigns a playlist to one output of a program. Rules store local values only; zones apply per screen when evaluating.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced as the whole rule set of an output when it is saved, after conflict validation; deleted with the program (cascade inside the module).",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated rule UUID, new on every save.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the program (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "program_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Program the rule belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "output_key",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Output the rule programs; only screen exists until layouts (PJ-20).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "position",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Display order inside the output, 0 to 199.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "playlist_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Playlist shown during the window.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "weekdays",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Bitmask of the ISO weekdays on which a window starts, bit 0 for Monday, 1 to 127.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "all_day",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "True when each window covers the whole local day.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "start_minute",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Local start of the window.",
+      "Null meaning": "The rule is all-day.",
+      "Unit": "minute of the local day, 0 to 1,439"
+    },
+    {
+      "Column": "end_minute",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Local end of the window; earlier than the start ends on the next day, 0 means the following midnight.",
+      "Null meaning": "The rule is all-day.",
+      "Unit": "minute of the local day, 0 to 1,439"
+    },
+    {
+      "Column": "starts_on",
+      "PostgreSQL type": "date",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "First local date on which a window may start.",
+      "Null meaning": "—",
+      "Unit": "local calendar date"
+    },
+    {
+      "Column": "ends_on",
+      "PostgreSQL type": "date",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Final local date, inclusive; windows clip at the midnight that ends it.",
+      "Null meaning": "The rule has no final date.",
+      "Unit": "local calendar date"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "schedule_rules_company_id_playlist_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The playlist belongs to the same company and cannot be deleted while used."
+    },
+    {
+      "Object": "schedule_rules_company_id_program_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The program belongs to the same company; rules are deleted with it."
+    },
+    {
+      "Object": "schedule_rules_dates",
+      "Physical definition": "CHECK (((ends_on IS NULL) OR (ends_on >= starts_on)))",
+      "Purpose": "The final date is not before the first date."
+    },
+    {
+      "Object": "schedule_rules_known_key",
+      "Physical definition": "CHECK (((output_key)::text = 'screen'::text))",
+      "Purpose": "Only the screen output exists."
+    },
+    {
+      "Object": "schedule_rules_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique rule identity."
+    },
+    {
+      "Object": "schedule_rules_position_range",
+      "Physical definition": "CHECK (((\"position\" >= 0) AND (\"position\" <= 199)))",
+      "Purpose": "At most 200 rules per output."
+    },
+    {
+      "Object": "schedule_rules_times",
+      "Physical definition": "CHECK (((all_day AND (start_minute IS NULL) AND (end_minute IS NULL)) OR ((NOT all_day) AND ((start_minute >= 0) AND (start_minute <= 1439)) AND ((end_minute >= 0) AND (end_minute <= 1439)) AND (start_minute <> end_minute))))",
+      "Purpose": "All-day rules have no times; other rules have two distinct minutes of the day."
+    },
+    {
+      "Object": "schedule_rules_weekdays_mask",
+      "Physical definition": "CHECK (((weekdays >= 1) AND (weekdays <= 127)))",
+      "Purpose": "At least one weekday and no unknown bits."
+    },
+    {
+      "Object": "schedule_rules_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX schedule_rules_company_id_id_key ON public.schedule_rules USING btree (company_id, id)",
+      "Purpose": "Tenant key for rules."
+    },
+    {
+      "Object": "schedule_rules_playlist_idx",
+      "Physical definition": "CREATE INDEX schedule_rules_playlist_idx ON public.schedule_rules USING btree (company_id, playlist_id)",
+      "Purpose": "Finds rules using a playlist, for the playlist delete check."
+    },
+    {
+      "Object": "schedule_rules_position_key",
+      "Physical definition": "CREATE UNIQUE INDEX schedule_rules_position_key ON public.schedule_rules USING btree (company_id, program_id, output_key, \"position\")",
+      "Purpose": "One rule per display position of an output."
+    }
+  ]
+}

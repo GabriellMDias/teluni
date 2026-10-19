@@ -40,7 +40,7 @@ Saving items replaces the whole ordered list with an expected version, so reorde
 
 ## Programming groups and sources
 
-A group has a name (1 to 80 characters, unique within the company, ignoring case) and its branch span. Only screens of branches in that span may join. Narrowing the span is refused while member screens of the removed branches remain. Deleting a group is refused while it has members.
+A group has a name (1 to 80 characters, unique within the company, ignoring case) and its branch span. Only screens of branches in that span may join. Narrowing the span is refused while member screens of the removed branches remain, and changing it is refused when the group's rules would use a branch playlist outside the new span. Deleting a group is refused while it has members.
 
 Joining or leaving a group and selecting or clearing individual programming are **assignments**. An assignment never edits a program. Its request carries the screen's current settings version and, while the destination has no published programming, `confirmUnpublished: true`, which the panel asks for with a sentence explaining that the screen will show neutral output until the destination is published. Until PJ-11 exists no destination is published, so every assignment needs that confirmation; PJ-11 replaces the check with the real publication fact and requests the destination's latest publication.
 
@@ -50,18 +50,18 @@ A screen that leaves its group keeps its own program, which is empty unless it w
 
 A rule assigns one playlist to one output of a program for a recurring local window:
 
-| Field | Meaning |
-| --- | --- |
-| `playlistId` | A playlist the program may use (see permissions) |
-| `weekdays` | One to seven ISO weekdays (Monday 1 to Sunday 7) on which a window starts |
-| `allDay` | When true, each window covers the whole local day; `startTime` and `endTime` are absent |
+| Field                  | Meaning                                                                                                                                                                                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `playlistId`           | A playlist the program may use (see permissions)                                                                                                                                                                                                      |
+| `weekdays`             | One to seven ISO weekdays (Monday 1 to Sunday 7) on which a window starts                                                                                                                                                                             |
+| `allDay`               | When true, each window covers the whole local day; `startTime` and `endTime` are absent                                                                                                                                                               |
 | `startTime`, `endTime` | Local wall-clock times `HH:MM` with minute precision. `endTime` earlier than `startTime` makes an overnight window that ends on the next local day; equal times are rejected (`SCHEDULE_TIMES_EQUAL`); `endTime` `00:00` means the following midnight |
-| `startsOn` | The first local date on which a window may start |
-| `endsOn` | Optional final local date, inclusive; every window clips at the local midnight that ends it |
+| `startsOn`             | The first local date on which a window may start                                                                                                                                                                                                      |
+| `endsOn`               | Optional final local date, inclusive; every window clips at the local midnight that ends it                                                                                                                                                           |
 
 Rules store local values only. The time zone is applied per screen when evaluating, so one group program means the same local hours in every branch of a cross-branch group. A window anchored on Friday 22:00–02:00 ends Saturday 02:00; when Friday is the final date it ends Saturday 00:00. A window cannot start before `startsOn`; an overnight window anchored on the day before `startsOn` does not exist.
 
-A program has at most 200 rules per output. Rules are saved as the whole set of an output with an expected program version, so validation sees the complete result and concurrent editors get `VERSION_CONFLICT`.
+A program has at most 200 rules per output. Rules are saved as the whole set of an output with an expected program version, so validation sees the complete result and concurrent editors get `RESOURCE_VERSION_CONFLICT`.
 
 ## Conflict validation
 
@@ -69,13 +69,13 @@ Two rules of the same output conflict when any of their windows overlap. Validat
 
 1. Each window becomes an interval of local minutes from its anchored start to its end, including the overnight day and the final-date clip.
 2. For a pair of rules, only dates in the intersection of their validity extended by one day on each side can overlap. When that span is 21 days or shorter every date is checked; otherwise the first 10 and last 10 days are, which contain every weekday combination of the repeating middle; an open-ended span checks its first 10 days.
-3. Touching windows (one ends at 18:00, the next starts at 18:00) do not overlap. An overlap rejects the whole set with `SCHEDULE_CONFLICT`, naming both rules and the first overlapping local date, so the panel can point at them.
+3. Touching windows (one ends at 18:00, the next starts at 18:00) do not overlap. An overlap rejects the whole set with `SCHEDULE_CONFLICT`. Because the error envelope carries no details, a read-only check operation takes a rule set and returns each conflicting pair with its first overlapping local date, so the panel can point at both rules before saving.
 
 Wall-clock validation is stricter than validating each zone's resolved instants, except inside a repeated hour, which decision 5 handles.
 
 ## Time zones and DST
 
-A screen's zone is its explicit time zone when set, otherwise its branch's zone. Both are IANA names validated against the runtime's zone database; `Etc/` offsets and abbreviations are rejected. The explicit device time zone is a device setting edited with `devices.manage` and returned by `GET /device/self`; changing a branch's zone changes the evaluation of every screen that does not override it. The server's own zone is never read: evaluation uses explicit zone names only.
+A screen's zone is its explicit time zone when set, otherwise its branch's zone. Both are IANA names validated against the runtime's zone database, with the same rule that branches use. The explicit device time zone is a device setting edited with `devices.manage` and returned by `GET /device/self`; changing a branch's zone changes the evaluation of every screen that does not override it. The server's own zone is never read: evaluation uses explicit zone names only.
 
 Resolving a local date and time in a zone:
 
@@ -102,25 +102,26 @@ The canonical fixtures are a JSON file owned by the API's programming module. Ea
 
 ## Preview
 
-`GET /companies/{companyId}/programming/devices/{deviceId}/timeline?from=&to=` evaluates the screen's current draft source in its zone. `GET /companies/{companyId}/programming/groups/{groupId}/timeline?timeZone=&from=&to=` evaluates a group program for a zone the caller chooses among its branches' and members' zones, so a group can be previewed before it has screens. A range covers at most 31 days and returns at most 2,000 segments; the panel shows the next seven days by default, in local time, with the resolution notes. The response names the source (group or individual) and, for each segment, the playlist's name, total duration and item count as the caller may see them.
+`GET /companies/{companyId}/programming/devices/{deviceId}/timeline?from=&to=` evaluates the screen's current draft source in its zone. `GET /companies/{companyId}/programming/groups/{groupId}/timeline?timeZone=&from=&to=` evaluates a group program for a zone the caller chooses (the panel offers its branches' and members' zones), so a group can be previewed before it has screens. A range covers at most 31 days and returns at most 2,000 segments; the panel shows the next seven days by default, in local time, with the resolution notes. The response names the source (group or individual) and, for each segment, the playlist's name, total duration and item count as the caller may see them.
 
 ## Lifecycle and references
 
 - Media: the programming module registers a media reference guard. An asset used by a playlist item cannot be deleted; the refusal names the playlists the caller may see and counts the others. Archived assets remain in playlists.
 - Playlists: a playlist used by a rule or a default cannot be deleted (`PLAYLIST_IN_USE`); otherwise deletion removes it and its items after a confirmation naming it. A playlist cannot change its owning scope.
 - Groups: deletable when they have no members; their program is deleted with them.
-- Devices: an unlinked screen's settings and individual program are kept with the device record for audit and are no longer evaluated or editable. A screen moved to another branch outside its group's span leaves the group in the same transaction as the move, which the devices module calls through a programming port; the move response says so.
-- Branches: archiving a branch is refused while a group's span names it explicitly or a branch playlist is still used by a program outside that branch.
+- Devices: an unlinked screen's settings and individual program are kept with the device record for audit and are no longer evaluated or editable. A screen moved to another branch outside its group's span leaves the group in the same transaction as the move, which the devices module calls through a hook the programming module registers; the screen's programming then shows its own program.
+- Branches: archiving a branch is refused while a group's span names it explicitly. Branch playlists of an archived branch stay, like its media.
+- Moved screens: rules of a moved screen's own program that use the previous branch's playlists stay as drafts; saving that output again, or publishing it (PJ-11), is refused until they are replaced.
 
 Publication (PJ-11) adds protection for references from published, staged and retained generations.
 
 ## Permissions
 
-| Capability | Company administrator | Branch manager | Operator | Delegable |
-| --- | --- | --- | --- | --- |
-| `programming.view`: see playlists, groups, programs, assignments and timelines | Company | Branches | Branches | Yes |
-| `programming.edit`: create, edit and delete playlists, groups' names and programs (drafts) | Company | Branches | Branches | Yes |
-| `programming.assign`: change group membership, individual programming and a group's branch span | Company | Branches | No | Yes |
+| Capability                                                                                          | Company administrator | Branch manager | Operator | Delegable |
+| --------------------------------------------------------------------------------------------------- | --------------------- | -------------- | -------- | --------- |
+| `programming.view`: see playlists, groups, programs, assignments and timelines                      | Company               | Branches       | Branches | Yes       |
+| `programming.edit`: create, edit and delete playlists, groups (name and span) and programs (drafts) | Company               | Branches       | Branches | Yes       |
+| `programming.assign`: change group membership and individual programming                            | Company               | Branches       | No       | Yes       |
 
 Scope rules:
 
@@ -132,7 +133,7 @@ Scope rules:
 
 ## Abuse limits
 
-Per company: 1,000 playlists, 100 groups, 2,000 programs. Per playlist 500 items; per output 200 rules. A timeline request covers at most 31 days and 2,000 segments. Exceeding a count limit returns `PROGRAMMING_LIMIT_REACHED` with the limit's name.
+Per company: 1,000 playlists, 100 groups, 2,000 programs. Per playlist 500 items; per output 200 rules. A timeline request covers at most 31 days and 2,000 segments. Exceeding a count limit returns `PROGRAMMING_LIMIT_REACHED`, whose message names the limits; list and rule-set sizes beyond their maximum fail request validation.
 
 ## Audit
 
@@ -140,23 +141,23 @@ Every creation, edit, deletion and assignment writes a programming audit event w
 
 ## Data
 
-| Table | Purpose |
-| --- | --- |
-| `playlists` | Company, optional owning branch, name, transition, fade duration, version, creator and timestamps |
-| `playlist_items` | Composite key (company, playlist, position); media asset reference with a composite tenant foreign key; image duration in milliseconds or empty for video |
-| `programming_groups` | Company, name with a case-insensitive unique index, `all_branches`, version |
-| `programming_group_branches` | Explicit branch span rows for groups that do not cover the whole company |
-| `programs` | Company, exactly one of group or device (each unique), version |
-| `program_outputs` | Program and output key (`screen` now), optional default playlist |
-| `schedule_rules` | Program, output key, playlist, weekday bitmask, all-day flag, start and end minute of day, `starts_on`, optional `ends_on`, position for display |
-| `programming_device_settings` | Device (composite key), optional group, `individual` flag, version |
-| `programming_audit_events` | Append-only audit rows with their branch rows |
+| Table                         | Purpose                                                                                                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `playlists`                   | Company, optional owning branch, name, transition, fade duration, version, creator and timestamps                                                         |
+| `playlist_items`              | Composite key (company, playlist, position); media asset reference with a composite tenant foreign key; image duration in milliseconds or empty for video |
+| `programming_groups`          | Company, name with a case-insensitive unique index, `all_branches`, version                                                                               |
+| `programming_group_branches`  | Explicit branch span rows for groups that do not cover the whole company                                                                                  |
+| `programs`                    | Company, exactly one of group or device (each unique), version                                                                                            |
+| `program_outputs`             | Program and output key (`screen` now), optional default playlist                                                                                          |
+| `schedule_rules`              | Program, output key, playlist, weekday bitmask, all-day flag, start and end minute of day, `starts_on`, optional `ends_on`, position for display          |
+| `programming_device_settings` | Device (composite key), optional group, `individual` flag, version                                                                                        |
+| `programming_audit_events`    | Append-only audit rows with the branches they concern                                                                                                     |
 
 Every table carries `company_id` and composite tenant references as the [tenant data design](tenant-data-design.md) requires. The explicit time zone is a nullable `time_zone` column on `devices`, owned by the devices module. Checks enforce weekday masks from 1 to 127, minutes from 0 to 1,439, time pairs only when not all-day, `ends_on` not before `starts_on`, image durations from 1,000 to 3,600,000 ms and fade durations from 250 to 2,000 ms.
 
 ## Contracts
 
-Versioned JSON operations under `/companies/{companyId}/programming/...` for playlists (list with scope and name filters and cursors, create, get, rename, replace items, change transition, delete), groups (list, create, get, rename, change span, delete), group and device programs (get, replace one output's rules and default), device settings (get, assign) and the two timelines; plus the time-zone field on device detail and update. Errors use the existing envelope with the codes named in this design. The SDK and OpenAPI document are regenerated.
+Versioned JSON operations under `/companies/{companyId}/programming/...` for playlists (list with scope and name filters and cursors, create, get, rename, replace items, change transition, delete), groups (list, create, get, rename, change span, delete), group and device programs (get, replace one output's rules and default), device settings (get, assign), the rule check and the two timelines; plus the time-zone field on device detail and update. Errors use the existing envelope with the codes named in this design. The SDK and OpenAPI document are regenerated.
 
 ## Panel
 
@@ -182,6 +183,18 @@ Copy is in `pt-BR` and `en-US`, times use the person's locale with the screen's 
 2. Panel pages for playlists, groups, screen programming, schedules and the timeline, with browser and end-to-end tests.
 3. Hardening with PJ-11 (published destinations and published references) and PJ-20 (layout areas as outputs).
 
+## Implementation status
+
+Implemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options while the owner's review under [PH-24](human-actions.md#ph-24) is pending:
+
+- The [`programming` API module](../../apps/api/src/features/programming/AGENTS.md), its reviewed migration (which also adds the devices' `time_zone` column and lets profiles delegate the programming capabilities), runtime grants, schema metadata and the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK.
+- `programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities; `programming.assign` requires strong authentication.
+- The pure evaluator and conflict validation in [`schedule.ts`](../../apps/api/src/features/programming/schedule.ts) on `temporal-polyfill`, with the [canonical fixtures](../../apps/api/test/programming/schedule-fixtures.json) run by [the evaluator tests](../../apps/api/test/programming/schedule.test.ts).
+- The media reference guard, the branch archive guard for explicit spans and the devices move hook; the explicit device time zone in device detail, update and `GET /device/self`.
+- The [two-company integration suite](../../apps/api/test/programming/integration.test.ts) against PostgreSQL as the runtime role with the organizations, devices and media modules.
+
+Pending: increment 2 (the panel's Programação pages with browser and end-to-end tests) and increment 3 with PJ-11 and PJ-20.
+
 ## Decisions for review
 
 1. **Program model.** Reusable playlists owned like media (company or one branch); one program per group and per screen; a screen without a group, or with individual programming selected, uses its own program; one full-screen output now, with layout areas as further outputs in PJ-20.
@@ -191,7 +204,7 @@ Copy is in `pt-BR` and `en-US`, times use the person's locale with the screen's 
 5. **DST handoff refinement.** Gaps resolve to the first valid instant and repeated hours to the earlier occurrence for starts and the later for ends, as selected; additionally, an end never extends past the next window's start on the same output. This refines P14 so that two close windows can never overlap in a repeated hour, which wall-clock validation cannot see, instead of rejecting otherwise valid schedules in zones with DST.
 6. **Evaluator and library (ADR-0029).** A pure TypeScript evaluator in the API on the Temporal API through the `temporal-polyfill` package until Node.js ships Temporal; canonical JSON fixtures owned by the API and run by the player in PJ-12; preview computed only by the API.
 7. **Items and transitions.** Images 1 to 3,600 s (10 s default), videos at full duration, playlists loop, boundaries interrupt; transitions `CUT` or `FADE` of 250 to 2,000 ms, with fades accepted at publication only on qualified profiles.
-8. **Permissions.** `programming.view`, `programming.edit` and `programming.assign` as in the table, all delegable; operators author drafts but do not assign.
+8. **Permissions.** `programming.view`, `programming.edit` and `programming.assign` as in the table, all delegable; operators author drafts but do not assign; assigning needs strong authentication like managing screens.
 9. **Assignment confirmation.** Assignments are separate from program edits, use the screen's settings version and require an explicit confirmation while the destination is unpublished, which is every destination until PJ-11.
 10. **Lifecycle.** Playlists and groups are deleted only when unused, with a confirmation; media used by playlists cannot be deleted; archived media stays in playlists but cannot be added.
 11. **Limits.** 1,000 playlists, 100 groups and 2,000 programs per company; 500 items per playlist; 200 rules per output; timelines of 31 days and 2,000 segments.

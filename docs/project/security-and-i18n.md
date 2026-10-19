@@ -32,14 +32,14 @@ Revocation denies future server access; an unreachable device cannot receive an 
 
 This classifies anticipated data using inherited levels; exact field inventories and retention periods must be recorded with future schemas. Customer media is not automatically public just because it will appear on a physical display.
 
-| Anticipated data | Baseline handling/classification | Collection/retention purpose |
-| --- | --- | --- |
-| Public marketing and deliberately public product documentation | `PUBLIC` after approval | Product communication; exclude secrets/customer examples |
-| User contact/identity references, memberships, branch assignments | `CONFIDENTIAL` | Access administration; minimize identity attributes and review removal |
-| Customer media, drafts, schedules, custom catalog schemas/records, prices, publications and file metadata | `CONFIDENTIAL` by default; restricted content requires explicit review | Private content, data-driven display and reliable distribution; reference-aware lifecycle |
-| Device configuration, linked IDs, addresses and diagnostics | `CONFIDENTIAL` where linked to people/companies; minimize network identifiers | Fleet operation, security and troubleshooting |
-| Credentials, refresh/session material, pairing secrets and signing/backup keys | `RESTRICTED` | Authentication/recovery only; dedicated protected storage and narrow access |
-| Audit and operational telemetry | Classification inherited from contained fields; generally private | Attributable actions, incident investigation and reliability; bounded independent retention |
+| Anticipated data                                                                                          | Baseline handling/classification                                              | Collection/retention purpose                                                                |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Public marketing and deliberately public product documentation                                            | `PUBLIC` after approval                                                       | Product communication; exclude secrets/customer examples                                    |
+| User contact/identity references, memberships, branch assignments                                         | `CONFIDENTIAL`                                                                | Access administration; minimize identity attributes and review removal                      |
+| Customer media, drafts, schedules, custom catalog schemas/records, prices, publications and file metadata | `CONFIDENTIAL` by default; restricted content requires explicit review        | Private content, data-driven display and reliable distribution; reference-aware lifecycle   |
+| Device configuration, linked IDs, addresses and diagnostics                                               | `CONFIDENTIAL` where linked to people/companies; minimize network identifiers | Fleet operation, security and troubleshooting                                               |
+| Credentials, refresh/session material, pairing secrets and signing/backup keys                            | `RESTRICTED`                                                                  | Authentication/recovery only; dedicated protected storage and narrow access                 |
+| Audit and operational telemetry                                                                           | Classification inherited from contained fields; generally private             | Attributable actions, incident investigation and reliability; bounded independent retention |
 
 The release does not require patient records, biometrics, card data, surveillance footage or other sensitive personal records. Configurable fields and a weekly-agenda view do not authorize collecting them; use public/synthetic events for examples and qualification. Prevent unsupported data collection and agree customer upload restrictions, purpose, retention/deletion/export, privacy notices, customer/operator responsibilities and incident handling under [PH-13](human-actions.md#ph-13). LGPD and international privacy applicability require qualified review against actual operation; this is not a legal compliance certification.
 

@@ -85,38 +85,38 @@ The target specification defines the protocol-generation support window. Reject 
 
 Evidence: owner questionnaire supplied on **2026-10-18**, with explicit authorization to decide delegated or unanswered items. Detailed responses are authoritative; the optional summary table still containing `PENDENTE` is not a conflicting answer. The external Portuguese working attachment is not a canonical repository document.
 
-| Questionnaire | Decision authority | Canonical outcome |
-| --- | --- | --- |
-| P01 | Owner | Hybrid independent/optional coordinated areas |
-| P02 | Owner | Price saves automatically publish validated versions of affected published content |
-| P03 | Owner | Multiple audible areas with individual volume/mute |
-| P04 | Owner | Isolated recovery/contingency for an active area's failure |
-| P05 | Owner custom response | User-defined typed catalogs/fields/records, including weekly agendas; no product-only schema |
-| P06 | Delegated to engineering | Company base monetary price with explicit branch overrides/currency |
-| P07 | Delegated to engineering | Promotion validity, normal-price recovery, conflict rejection and hidden unavailable items by default |
-| P08 | Owner | Versioned textual layouts, validated copy/import/export and preview |
-| P09 | Owner | Optional per-area default, otherwise neutral without layout redistribution |
-| P10 | Owner | Regional schedules govern their area over page changes; return without unrelated restarts |
-| P11 | Owner | Explicit coordinated-page duration, full-video validation and shorter-video last-frame hold |
-| P12 | Owner | Inclusive final date clipped at next local midnight |
-| P13 | Owner | Reject equal times; explicit all-day option |
-| P14 | Owner | Deterministic geographic-timezone gap/ambiguity policy and matching preview/player fixtures |
-| P15 | Owner | Cuts/fades on qualified profiles; no extension of expired content |
-| P16 | Delegated to engineering | AT-01–AT-03 configurable image/video ingestion and duration bounds |
-| P17 | Owner | Preserve originals, validated compatible renditions or explicit rejection |
-| P18 | Owner | AT-04 composition/video qualification target |
-| P19 | Owner | AT-05 protected generations and reserved capacity |
-| P20 | Delegated to engineering | AT-06–AT-10 startup, recovery, power and offline qualification goals |
-| P21 | Delegated to engineering | AT-11–AT-14 detection, activation, schedule and panel timing |
-| P22 | Owner | AT-15 bounded offline authorization |
-| P23 | Owner | AT-16 clock-confidence bound and safe uncertainty output |
-| P24 | Owner | Explicit unlink, pending erasure and verified cleanup before tenant reassignment |
-| P25 | Owner | Archive and protected-reference-aware deletion/assisted draft removal |
-| P26 | Delegated to engineering | AT-17–AT-20 operational retention with protected-reference exceptions |
-| P27 | Delegated to engineering | AT-21–AT-23 reference load and API/panel performance goals |
-| P28 | Delegated to engineering | AT-24 heartbeat/freshness thresholds and distinct playback/connectivity states |
-| P29 | Delegated to engineering | AT-25 usability/accessibility qualification |
-| P30 | Delegated to engineering | AT-26 protocol support and controlled update/recovery direction |
-| P31 | Owner | Automatic/manual catalog pagination with readable-size/overflow validation |
+| Questionnaire | Decision authority       | Canonical outcome                                                                                     |
+| ------------- | ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| P01           | Owner                    | Hybrid independent/optional coordinated areas                                                         |
+| P02           | Owner                    | Price saves automatically publish validated versions of affected published content                    |
+| P03           | Owner                    | Multiple audible areas with individual volume/mute                                                    |
+| P04           | Owner                    | Isolated recovery/contingency for an active area's failure                                            |
+| P05           | Owner custom response    | User-defined typed catalogs/fields/records, including weekly agendas; no product-only schema          |
+| P06           | Delegated to engineering | Company base monetary price with explicit branch overrides/currency                                   |
+| P07           | Delegated to engineering | Promotion validity, normal-price recovery, conflict rejection and hidden unavailable items by default |
+| P08           | Owner                    | Versioned textual layouts, validated copy/import/export and preview                                   |
+| P09           | Owner                    | Optional per-area default, otherwise neutral without layout redistribution                            |
+| P10           | Owner                    | Regional schedules govern their area over page changes; return without unrelated restarts             |
+| P11           | Owner                    | Explicit coordinated-page duration, full-video validation and shorter-video last-frame hold           |
+| P12           | Owner                    | Inclusive final date clipped at next local midnight                                                   |
+| P13           | Owner                    | Reject equal times; explicit all-day option                                                           |
+| P14           | Owner                    | Deterministic geographic-timezone gap/ambiguity policy and matching preview/player fixtures           |
+| P15           | Owner                    | Cuts/fades on qualified profiles; no extension of expired content                                     |
+| P16           | Delegated to engineering | AT-01–AT-03 configurable image/video ingestion and duration bounds                                    |
+| P17           | Owner                    | Preserve originals, validated compatible renditions or explicit rejection                             |
+| P18           | Owner                    | AT-04 composition/video qualification target                                                          |
+| P19           | Owner                    | AT-05 protected generations and reserved capacity                                                     |
+| P20           | Delegated to engineering | AT-06–AT-10 startup, recovery, power and offline qualification goals                                  |
+| P21           | Delegated to engineering | AT-11–AT-14 detection, activation, schedule and panel timing                                          |
+| P22           | Owner                    | AT-15 bounded offline authorization                                                                   |
+| P23           | Owner                    | AT-16 clock-confidence bound and safe uncertainty output                                              |
+| P24           | Owner                    | Explicit unlink, pending erasure and verified cleanup before tenant reassignment                      |
+| P25           | Owner                    | Archive and protected-reference-aware deletion/assisted draft removal                                 |
+| P26           | Delegated to engineering | AT-17–AT-20 operational retention with protected-reference exceptions                                 |
+| P27           | Delegated to engineering | AT-21–AT-23 reference load and API/panel performance goals                                            |
+| P28           | Delegated to engineering | AT-24 heartbeat/freshness thresholds and distinct playback/connectivity states                        |
+| P29           | Delegated to engineering | AT-25 usability/accessibility qualification                                                           |
+| P30           | Delegated to engineering | AT-26 protocol support and controlled update/recovery direction                                       |
+| P31           | Owner                    | Automatic/manual catalog pagination with readable-size/overflow validation                            |
 
 PH-09 completes policy/target selection only. Technical schemas, rendering/storage/processing/security mechanisms and their ADR review remain PJ-07/D-01–D-11; qualification evidence remains PH-08/PJ-12/PJ-14 and infrastructure evidence PH-10/PJ-13. No completion is inferred for those tasks.

@@ -29,6 +29,9 @@ const capability = Type.Union([
   Type.Literal("media.upload"),
   Type.Literal("media.archive"),
   Type.Literal("media.delete"),
+  Type.Literal("programming.view"),
+  Type.Literal("programming.edit"),
+  Type.Literal("programming.assign"),
 ]);
 const delegableCapability = Type.Union([
   Type.Literal("branches.view"),
@@ -39,6 +42,9 @@ const delegableCapability = Type.Union([
   Type.Literal("media.view"),
   Type.Literal("media.upload"),
   Type.Literal("media.archive"),
+  Type.Literal("programming.view"),
+  Type.Literal("programming.edit"),
+  Type.Literal("programming.assign"),
 ]);
 const limit = Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }));
 const cursor = Type.Optional(Type.String({ minLength: 1, maxLength: 1024 }));
@@ -680,7 +686,7 @@ export const organizationOperations = [
     operationId: "createAccessProfile",
     access: "session",
     description:
-      "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive); devices.manage needs devices.view, and media.upload and media.archive need media.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
+      "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign); devices.manage needs devices.view, media.upload and media.archive need media.view, and programming.edit and programming.assign need programming.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
     schema: {
       params: companyParams,
       body: Type.Object(

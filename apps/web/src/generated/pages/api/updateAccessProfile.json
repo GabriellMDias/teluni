@@ -69,7 +69,10 @@
                   { "type": "string", "const": "devices.manage" },
                   { "type": "string", "const": "media.view" },
                   { "type": "string", "const": "media.upload" },
-                  { "type": "string", "const": "media.archive" }
+                  { "type": "string", "const": "media.archive" },
+                  { "type": "string", "const": "programming.view" },
+                  { "type": "string", "const": "programming.edit" },
+                  { "type": "string", "const": "programming.assign" }
                 ]
               },
               "minItems": 1,
@@ -103,7 +106,10 @@
               { "type": "string", "const": "devices.manage" },
               { "type": "string", "const": "media.view" },
               { "type": "string", "const": "media.upload" },
-              { "type": "string", "const": "media.archive" }
+              { "type": "string", "const": "media.archive" },
+              { "type": "string", "const": "programming.view" },
+              { "type": "string", "const": "programming.edit" },
+              { "type": "string", "const": "programming.assign" }
             ]
           },
           "minItems": 1,
@@ -126,7 +132,7 @@
       },
       {
         "name": "capabilities",
-        "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\"",
+        "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\"",
         "required": false
       }
     ]
@@ -172,7 +178,10 @@
                     { "type": "string", "const": "devices.manage" },
                     { "type": "string", "const": "media.view" },
                     { "type": "string", "const": "media.upload" },
-                    { "type": "string", "const": "media.archive" }
+                    { "type": "string", "const": "media.archive" },
+                    { "type": "string", "const": "programming.view" },
+                    { "type": "string", "const": "programming.edit" },
+                    { "type": "string", "const": "programming.assign" }
                   ]
                 }
               },
@@ -227,7 +236,10 @@
                 { "type": "string", "const": "devices.manage" },
                 { "type": "string", "const": "media.view" },
                 { "type": "string", "const": "media.upload" },
-                { "type": "string", "const": "media.archive" }
+                { "type": "string", "const": "media.archive" },
+                { "type": "string", "const": "programming.view" },
+                { "type": "string", "const": "programming.edit" },
+                { "type": "string", "const": "programming.assign" }
               ]
             }
           },
@@ -258,7 +270,7 @@
         },
         {
           "name": "capabilities",
-          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\"",
+          "type": "array of \"branches.view\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\"",
           "required": true
         },
         {
