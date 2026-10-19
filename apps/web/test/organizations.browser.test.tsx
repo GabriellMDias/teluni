@@ -1309,6 +1309,67 @@ test("offers branch managers the history of their own branches", async () => {
     .toBeVisible();
 });
 
+test("never shows history read under a wider access after the access narrows", async () => {
+  let manager = false;
+  respond((url) =>
+    url.pathname.endsWith("/audit-events")
+      ? {
+          body: {
+            items: [
+              manager
+                ? {
+                    id: "branch-event",
+                    action: "branch.created",
+                    actorPrincipalId: "another-person",
+                    occurredAt: "2026-10-18T12:00:00.000Z",
+                    targetType: "branch",
+                    details: { branchName: "Norte" },
+                  }
+                : {
+                    id: "company-event",
+                    action: "company.updated",
+                    actorPrincipalId: "another-person",
+                    occurredAt: "2026-10-18T12:00:00.000Z",
+                    targetType: "company",
+                    details: { fields: ["displayName"] },
+                  },
+            ],
+            nextCursor: null,
+          },
+        }
+      : {
+          body: {
+            ...memberCompany,
+            access: manager
+              ? {
+                  ...memberAccess,
+                  roles: ["BRANCH_MANAGER"],
+                  responsible: false,
+                  capabilities: ["company.view", "branches.view", "audit.view"],
+                }
+              : {
+                  ...memberAccess,
+                  capabilities: [...memberAccess.capabilities, "audit.view"],
+                },
+          },
+        },
+  );
+  const { screen, client } = await open(`${companyPath}?view=history`);
+  await expect
+    .element(screen.getByText(t.historyActions["company.updated"]))
+    .toBeVisible();
+  manager = true;
+  // Only the company access refreshes, as when another session narrows it.
+  await client.invalidateQueries({ queryKey: companyKey(companyId) });
+  await expect.element(screen.getByText(t.historyLeadBranches)).toBeVisible();
+  await expect
+    .element(screen.getByText(t.historyActions["company.updated"]))
+    .not.toBeInTheDocument();
+  await expect
+    .element(screen.getByText(`${t.fieldBranchName}: Norte`))
+    .toBeVisible();
+});
+
 const invitationAccess = {
   ...memberAccess,
   capabilities: [...memberAccess.capabilities, "invitations.manage"],

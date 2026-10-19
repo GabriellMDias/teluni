@@ -638,18 +638,24 @@ function CompanyHistory({
   companyId,
   principalId,
   administrator,
+  accessScope,
   cursor,
 }: {
   companyId: string;
   principalId: string;
   /** Administrators read every event; branch managers only their branches'. */
   administrator: boolean;
+  /** Identifies the viewer's current access, so pages never cross scopes. */
+  accessScope: string;
   cursor?: string;
 }) {
   const { locale, t } = useOrganizationMessages();
+  // Pages are cached per access scope and dropped once the view closes, so a
+  // narrowed access never renders events read under a wider one.
   const events = useQuery({
-    queryKey: [...auditKey(companyId), cursor ?? null],
+    queryKey: [...auditKey(companyId), accessScope, cursor ?? null],
     queryFn: () => listAuditEvents(companyId, cursor),
+    gcTime: 0,
   });
   return (
     <section aria-labelledby="company-history-title">
@@ -954,6 +960,11 @@ export function CompanyPage({
             companyId={companyId}
             principalId={session.data.principalId}
             administrator={access.capabilities.includes("members.manage")}
+            accessScope={JSON.stringify([
+              access.roles,
+              access.profiles,
+              access.capabilities,
+            ])}
             cursor={cursor}
           />
         ) : (
