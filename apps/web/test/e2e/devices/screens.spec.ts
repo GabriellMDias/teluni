@@ -126,7 +126,10 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
     clearRequired: false,
   });
 
-  await page.getByRole("link", { name: "Caixa 1" }).click();
+  await page
+    .getByRole("listitem")
+    .getByRole("link", { name: "Caixa 1" })
+    .click();
   await afterNavigation(
     page.getByRole("heading", { name: "Caixa 1" }),
   ).toBeVisible();
