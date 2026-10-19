@@ -193,7 +193,12 @@ Implemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, incre
 - The media reference guard, the branch archive guard for explicit spans and the devices move hook; the explicit device time zone in device detail, update and `GET /device/self`.
 - The [two-company integration suite](../../apps/api/test/programming/integration.test.ts) against PostgreSQL as the runtime role with the organizations, devices and media modules.
 
-Pending: increment 2 (the panel's Programação pages with browser and end-to-end tests) and increment 3 with PJ-11 and PJ-20.
+Increment 2, the same day:
+
+- The panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation and step-up, and confirmed deletion; the screen page's time zone setting and programming link.
+- [Browser component tests](../../apps/web/test/programming.browser.test.tsx) and the [programming journey](../../apps/web/test/e2e/programming/journey.spec.ts).
+
+Pending: the owner's review under PH-24, and increment 3 with PJ-11 and PJ-20.
 
 ## Decisions for review
 

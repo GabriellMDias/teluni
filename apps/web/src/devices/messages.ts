@@ -29,6 +29,11 @@ const ptBR = {
   neverSeen: "Ainda não fez contato",
   authorizedUntil: "Pode exibir sem conexão até, no máximo",
   rotationLabel: "Rotação",
+  timeZoneLabel: "Fuso horário",
+  timeZoneHint: (zone: string) =>
+    `Deixe em branco para seguir o fuso da filial (${zone}). Use um nome IANA, como America/Sao_Paulo.`,
+  branchTimeZone: (zone: string) => `${zone} (da filial)`,
+  programmingLink: "Ver a programação desta tela",
   rotations: {
     0: "Normal (0°)",
     90: "90°",
@@ -141,6 +146,11 @@ const enUS: Messages = {
   neverSeen: "Not seen yet",
   authorizedUntil: "May play offline until at most",
   rotationLabel: "Rotation",
+  timeZoneLabel: "Time zone",
+  timeZoneHint: (zone: string) =>
+    `Leave empty to follow the branch's time zone (${zone}). Use an IANA name such as America/Sao_Paulo.`,
+  branchTimeZone: (zone: string) => `${zone} (from the branch)`,
+  programmingLink: "See this screen's programming",
   rotations: {
     0: "Normal (0°)",
     90: "90°",

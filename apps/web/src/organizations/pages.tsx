@@ -859,6 +859,11 @@ export function CompanyPage({
             {t.mediaTitle}
           </Link>
         )}
+        {access.capabilities.includes("programming.view") && (
+          <Link to="/companies/$companyId/programming" params={{ companyId }}>
+            {t.programmingTitle}
+          </Link>
+        )}
         {access.capabilities.includes("company.settings.manage") && (
           <Link
             to="/companies/$companyId"

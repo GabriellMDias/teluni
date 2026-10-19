@@ -1,0 +1,11 @@
+[
+  {
+    "id": "repository/README",
+    "title": "Teluni",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "License",
+    "anchor": "license",
+    "text": "License\nTeluni repository source and documentation are licensed under the [Apache License, Version 2.0](LICENSE) (`Apache-2.0`), including independently developed Teluni material. [ADR-0022](docs/adr/0022-license-teluni-under-apache-2-0.md) records the product owner's decision. Material inherited from Orion retains its Apache-2.0 license and provenance; third-party dependencies and separately licensed material retain their own terms.\n"
+  }
+]

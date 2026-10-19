@@ -4,6 +4,15 @@
     "title": "Alerting",
     "group": "Reliability",
     "kind": "repository",
+    "heading": "Symptom-based alerting",
+    "anchor": "symptom-based-alerting",
+    "text": "Symptom-based alerting\nPrefer evidence of user/service impact: valid requests failing, latency objectives violated, work missing deadlines, or a critical operation unavailable. Cause metrics support investigation. Preventive cause alerts are appropriate when a known risk, meaningful response window, and effective action can prevent impact, such as full storage, expiring certificates, recovery-threatening replication lag, or an undrainable queue.\nAn alert must answer what action follows. If none is required, use a dashboard, metric, log, periodic review, or ticket as appropriate. Before adding a signal, inspect existing symptom alerts for the same incident. Do not page separately on every error, restart, unready replica, retry, short circuit-breaker transition, or arbitrary resource percentage.\nPrefer safe, understood, verifiable automatic recovery; notify when it fails, repeats excessively, threatens capacity/redundancy, or leaves meaningful impact. Unique/stateful instances and data-risk failures may justify instance-level alerts even when stateless replicated services use service-level aggregation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
     "heading": "Alert ownership and context",
     "anchor": "alert-ownership-and-context",
     "text": "Alert ownership and context\nEvery alert must identify an owner able and authorized to act. Ownership can follow service, domain, application, or infrastructure responsibility. Shared dependency failures need coordinated response across infrastructure and affected application owners, not independent competing investigations.\nUse stable semantic names describing the condition; keep volatile thresholds in configuration. Names, ownership, severity, service, environment, and signal type should be machine-readable where tooling supports it. Do not group alerts primarily by arbitrary message text or use high-cardinality personal data in queries.\nA concise notification should explain impact, duration, current value versus threshold/objective, release when relevant, owner, and first investigation step. Link directly to useful dashboards/runbooks and safe trace/error references where available. Investigators should be able to connect the condition to affected service/release, metrics, error groups, traces, and recovery guidance.\nNotifications must contain only safe operational context. Chat/paging access may be broader than production telemetry: keep detailed evidence in authorized systems, and never include credentials, raw payloads, personal data, or restricted identifiers. Follow [telemetry redaction](../security/telemetry-redaction.md) and [production access](../security/production-access.md), including for AI investigation.\nAcknowledgement assigns response ownership; it does not resolve the condition. Alert resolution means the triggering condition cleared, not that the root cause is permanently fixed or the incident is closed. [Incident response](../security/incident-response.md) determines proportional coordination and closure based on impact, duration, data/security risk, and involved owners. Incidents may arise without an automated alert, and not every alert becomes an incident.\n"
@@ -907,23 +916,5 @@
     "heading": "Authorization testing",
     "anchor": "authorization-testing",
     "text": "Authorization testing\nBoth allow and deny paths must be tested. Include applicable anonymous, wrong-owner, wrong-tenant, insufficient-permission, expired-delegation, changed-permission, insufficient-assurance, and privileged-field cases. Test horizontal/vertical escalation, collection filtering, API enforcement despite modified clients, and relevant asynchronous timing. Add regression tests for authorization security bugs; property-based invariants can help when policy complexity justifies them.\nUse reusable synthetic principal helpers and realistic development identities while testing ordinary and denied access. Do not disable authorization globally. Any test/development bypass must be isolated, explicitly tested, and impossible to enable accidentally in production.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "New authorization policy checklist",
-    "anchor": "new-authorization-policy-checklist",
-    "text": "New authorization policy checklist\nFor a new or changed policy, identify:\nProtected operation, owner, actor types, resource, trusted inputs, existing equivalent permissions, and scope.\nOwnership/tenant/state/assurance requirements, role assignment authority, freshness/revocation, delegation, and denied-information exposure.\nConfidential/restricted data impact, required audit evidence, allow/deny tests, and compatibility effects on existing actors and consumers.\nDocument meaning near the policy and derive references from canonical machine-readable definitions where practical. Mechanical enforcement may validate declared protected operations, known permissions, privileged contracts, and tenant scope when tooling supports it; do not claim such coverage before it exists. Repository-wide policy engines, global roles/tenants, registry formats, and AI delegation models remain requirement-driven decisions.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Data Classification",
-    "anchor": "data-classification",
-    "text": "Data Classification\nThis policy owns the repository's sensitivity model and data-handling baseline. [Redaction](telemetry-redaction.md), [retention](data-retention.md), [secrets management](secrets-management.md), and [production access](production-access.md) own their detailed controls. Classification follows data meaning and disclosure risk, not whether a tool can technically access it.\n"
   }
 ]
