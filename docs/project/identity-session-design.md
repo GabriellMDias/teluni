@@ -6,7 +6,7 @@
 
 **Approved detailed design for D-02, 2026-10-18.** The owner approved it as proposed under [PH-20](human-actions.md#ph-20). It turns accepted ADR-0024 (Keycloak, server-managed browser sessions) and ADR-0025 (application-owned access) into concrete trust boundaries, flows, state and controls, and preserves accepted ADR-0012 unchanged. It answers the [new authentication mechanism checklist](../security/authentication.md#new-authentication-mechanism-checklist). PJ-24 implements it incrementally; [implementation status](#implementation-status) separates what exists and is qualified from what remains. A Keycloak behavior below is established only where that section names the passing test.
 
-Out of scope here: company, membership, grant and invitation semantics ([tenant data design](tenant-data-design.md) and the organizations implementation conventions), invitation email delivery (proposed in the D-13 [invitation and email delivery design](invitation-delivery-design.md) under the [delivery policy](../architecture/delivery-and-side-effects.md)), player/device credentials (D-03) and real environment provisioning (PH-15–PH-17).
+Out of scope here: company, membership, grant and invitation semantics ([tenant data design](tenant-data-design.md) and the organizations implementation conventions), invitation email delivery (specified by the approved D-13 [invitation and email delivery design](invitation-delivery-design.md) under the [delivery policy](../architecture/delivery-and-side-effects.md)), player/device credentials (D-03) and real environment provisioning (PH-15–PH-17).
 
 ## Components and trust boundaries
 

@@ -4,7 +4,7 @@
 
 ## Status and scope
 
-**Proposed detailed design for D-13, 2026-10-18, awaiting owner review under [PH-21](human-actions.md#ph-21).** Nothing in this document is implemented. It specifies company invitations (the selected invitation policy and IA-02) on top of the approved [tenant data design](tenant-data-design.md) and [identity and session design](identity-session-design.md), and the durable transactional-email mechanism they need, whose architectural direction [ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) proposes. The decisions the owner must approve are listed under [decisions for review](#decisions-for-review).
+**Approved detailed design for D-13, 2026-10-18.** The owner approved all ten [decisions for review](#decisions-for-review) as proposed, including ADR-0026, under [PH-21](human-actions.md#ph-21), and asked for implementation. Approval authorizes implementation in local and CI environments with synthetic addresses and Mailpit; [implementation status](#implementation-status) records what exists. It specifies company invitations (the selected invitation policy and IA-02) on top of the approved [tenant data design](tenant-data-design.md) and [identity and session design](identity-session-design.md), and the durable transactional-email mechanism they need, whose architectural direction [ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) proposes. The approved decisions are listed under [decisions for review](#decisions-for-review).
 
 In scope: who may invite whom and with which access, the invitation lifecycle, the invitation credential and link, acceptance by a verified identity, revalidation, abuse limits, the outbound-mail outbox and dispatcher, SMTP delivery, failure handling, retention, observability and verification. Out of scope: account registration, email verification and password recovery, which Keycloak performs under D-02 and PJ-24; Keycloak's own mail delivery (see [Keycloak mail](#keycloak-mail)); choosing the real mail provider, sender domain and DNS authentication, which remain [PH-17](human-actions.md#ph-17); and legal retention periods, which remain [PH-13](human-actions.md#ph-13).
 
@@ -89,7 +89,7 @@ Exceeding a limit answers `RATE_LIMITED` without saying which limit applied. The
 
 ## Durable email delivery
 
-[ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) proposes the direction; this section specifies it.
+[ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) sets the direction; this section specifies it.
 
 **Ownership.** A new API module, `mail`, owns an `outbound_emails` table, the dispatcher and the SMTP adapter. It is platform-operational infrastructure without its own business meaning: producers own what a message means. Its public port lets a producer enqueue a message with a template key, locale, recipient, allowlisted parameters and an optional secret parameter inside the producer's own database transaction, and cancel a message it enqueued. Organizations is the first producer. The table has no tenant key because future producers (identity notices, platform messages) are not tenant-scoped; each row records its producer and producer reference, and invitation rows reference their message.
 
@@ -171,9 +171,13 @@ A browser journey sends an invitation, reads the message from Mailpit, signs in 
 
 Real invitations to real people additionally require PH-17 (sender, domain authentication, provider terms) and PH-13 (notices and retention).
 
+## Implementation status
+
+Implementation started on 2026-10-18 under PJ-03; nothing is qualified yet. Each increment above records its evidence here and in the [plan](implementation-plan.md#current-work) when it lands.
+
 ## Decisions for review
 
-The owner is asked to approve, reject or adjust each item under [PH-21](human-actions.md#ph-21):
+The owner approved each item as proposed on 2026-10-18 under [PH-21](human-actions.md#ph-21):
 
 1. **Delivery architecture (ADR-0026).** Application-owned transactional email through a PostgreSQL outbox written in the producer's transaction, an in-process dispatcher in the API, and a provider-neutral authenticated SMTP relay through `nodemailer`; no message broker, separate worker service, provider HTTP API or webhook in this version.
 2. **Delivery guarantees.** At least once, with possible duplicates after a crash; up to eight attempts over about 22 hours, immediate failure on permanent rejection, and failures shown to the inviter, who can resend.

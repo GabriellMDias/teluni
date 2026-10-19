@@ -944,7 +944,7 @@
       "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
       "group": "Decisions",
       "source": "docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md",
-      "summary": "Company invitations are the first Teluni workflow that must send email from the application: the selected identity policy requires recipient-bound, single-use invitations valid…",
+      "summary": "Acceptance scope: The owner explicitly approved this decision and the D-13 design on 2026-10-18 under PH-21. Acceptance establishes the architectural direction for local and CI…",
       "headings": [],
       "file": "pages/repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.json"
     },
@@ -1364,7 +1364,7 @@
       "title": "Teluni Company Invitation and Durable Email Delivery Design",
       "group": "Project guides",
       "source": "docs/project/invitation-delivery-design.md",
-      "summary": "Proposed detailed design for D-13, 2026-10-18, awaiting owner review under PH-21. Nothing in this document is implemented. It specifies company invitations (the selected…",
+      "summary": "Approved detailed design for D-13, 2026-10-18. The owner approved all ten decisions for review as proposed, including ADR-0026, under PH-21, and asked for implementation.…",
       "headings": [],
       "file": "pages/repository/docs/project/invitation-delivery-design.json"
     },
@@ -1746,12 +1746,12 @@
       { "file": "search/0008.json", "count": 134, "kinds": ["repository"] },
       { "file": "search/0009.json", "count": 87, "kinds": ["repository"] },
       { "file": "search/0010.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 52, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 51, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 69, "kinds": ["repository"] },
       { "file": "search/0013.json", "count": 86, "kinds": ["repository"] },
       { "file": "search/0014.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 21, "kinds": ["repository"] }
+      { "file": "search/0015.json", "count": 22, "kinds": ["repository"] }
     ],
-    "count": 1262
+    "count": 1263
   }
 }

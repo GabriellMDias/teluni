@@ -1,7 +1,9 @@
 # ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay
 
-**Status:** proposed
+**Status:** accepted
 **Date:** 2026-10-18
+
+**Acceptance scope:** The owner explicitly approved this decision and the D-13 design on 2026-10-18 under PH-21. Acceptance establishes the architectural direction for local and CI implementation, not production readiness. Real sending still requires PH-17's sender, domain authentication and provider terms and PH-13's notices and retention, and the qualification evidence in the [implementation plan](../project/implementation-plan.md) remains mandatory.
 
 ## Context
 

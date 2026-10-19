@@ -33,4 +33,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md) | Adopt Versioned Catalog and Composition Publications |
 | [ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md) | Adopt Keycloak and Server-Managed Human Sessions |
 | [ADR-0025](0025-propose-application-owned-scoped-access-profiles.md) | Adopt Application-Owned Scoped Access Profiles |
-| [ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) | Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay (proposed) |
+| [ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) | Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay |
