@@ -35,3 +35,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0025](0025-propose-application-owned-scoped-access-profiles.md) | Adopt Application-Owned Scoped Access Profiles |
 | [ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) | Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay |
 | [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md) | Adopt Device-Generated Credentials and Code-Based Enrollment |
+| [ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md) | Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing |
