@@ -316,7 +316,7 @@ function ScreenList({
       },
     });
   return (
-    <section aria-label={t.title}>
+    <div className="devices-list-section">
       <div className="devices-filters">
         <label htmlFor="filter-branch">{t.filterBranch}</label>
         <select
@@ -403,7 +403,7 @@ function ScreenList({
           </Link>
         )}
       </nav>
-    </section>
+    </div>
   );
 }
 
