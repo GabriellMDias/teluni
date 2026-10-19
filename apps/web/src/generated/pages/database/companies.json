@@ -1,0 +1,167 @@
+{
+  "kind": "database",
+  "name": "companies",
+  "description": "Customer company: the tenant that owns branches, memberships, content, devices and publications.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created ACTIVE by its first responsible administrator; suspension is a state. No runtime deletion; erasure and retention follow PH-13.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable company UUID; the tenant identifier and public resource ID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "display_name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Company name shown to its members.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"CompanyStatus\"",
+      "Nullable": "no",
+      "Default": "'ACTIVE'::\"CompanyStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "ACTIVE companies allow protected operations; SUSPENDED denies them to members.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "default_locale",
+      "PostgreSQL type": "character varying(10)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Default interface locale for the company: pt-BR or en-US.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "time_zone",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Default IANA time zone for new branches; business time never uses the host time zone.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency token incremented once per successful settings change.",
+      "Null meaning": "—",
+      "Unit": "successful writes"
+    },
+    {
+      "Column": "created_by_principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Principal who created the company and became its first responsible administrator.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "creation_key",
+      "PostgreSQL type": "character varying(200)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Creator-supplied idempotency key, unique per creator, that makes company creation safely repeatable.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "creation_fingerprint",
+      "PostgreSQL type": "character(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Immutable SHA-256 fingerprint of the normalized original creation inputs; retries compare it rather than mutable company settings. Not exposed in the API.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the latest settings change; not audit history.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "companies_created_by_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The creator is an existing principal."
+    },
+    {
+      "Object": "companies_creation_fingerprint_format",
+      "Physical definition": "CHECK ((creation_fingerprint ~ '^[0-9a-f]{64}$'::text))",
+      "Purpose": "Creation fingerprints are lowercase SHA-256 hex values."
+    },
+    {
+      "Object": "companies_creation_key_format",
+      "Physical definition": "CHECK (((creation_key)::text ~ '^[A-Za-z0-9._~-]+$'::text))",
+      "Purpose": "Creation keys use the documented opaque ASCII alphabet."
+    },
+    {
+      "Object": "companies_default_locale_supported",
+      "Physical definition": "CHECK (((default_locale)::text = ANY ((ARRAY['pt-BR'::character varying, 'en-US'::character varying])::text[])))",
+      "Purpose": "Only the supported interface locales."
+    },
+    {
+      "Object": "companies_display_name_nonblank",
+      "Physical definition": "CHECK (((display_name)::text ~ '[^[:space:]]'::text))",
+      "Purpose": "Company name cannot be blank."
+    },
+    {
+      "Object": "companies_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique immutable company identity."
+    },
+    {
+      "Object": "companies_time_zone_nonblank",
+      "Physical definition": "CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))",
+      "Purpose": "Time zone has the IANA identifier shape; the API validates it against the runtime's zone database."
+    },
+    {
+      "Object": "companies_version_positive",
+      "Physical definition": "CHECK ((version > 0))",
+      "Purpose": "Rejects invalid concurrency versions."
+    },
+    {
+      "Object": "companies_creator_key_unique",
+      "Physical definition": "CREATE UNIQUE INDEX companies_creator_key_unique ON public.companies USING btree (created_by_principal_id, creation_key)",
+      "Purpose": "One company per creator and creation key, including racing retries."
+    }
+  ]
+}

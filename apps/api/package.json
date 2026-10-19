@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env.local --import tsx --watch src/main.ts",
+    "dev:services": "tsx scripts/dev-services.ts",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -15,6 +16,7 @@
     "references:check": "tsx scripts/generate-references.ts --check"
   },
   "dependencies": {
+    "@fastify/cookie": "11.1.3",
     "@fastify/otel": "0.21.0",
     "@fastify/rate-limit": "11.2.0",
     "@fastify/type-provider-typebox": "6.1.0",
@@ -32,6 +34,8 @@
     "@prisma/instrumentation": "7.10.0",
     "fastify": "5.12.5",
     "jose": "6.2.12",
+    "nodemailer": "10.1.2",
+    "openid-client": "6.8.8",
     "pg": "8.16.3",
     "pino": "10.3.1",
     "typebox": "1.3.34"

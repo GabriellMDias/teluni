@@ -1,0 +1,99 @@
+{
+  "tables": {
+    "outbound_emails": {
+      "owner": "Mail",
+      "classification": "CONFIDENTIAL",
+      "description": "Transactional outbox of email messages: a producer records the intent in its own transaction and the dispatcher delivers it through the SMTP relay at least once.",
+      "lifecycle": "Created PENDING by a producer; becomes SENT when the relay accepts it, FAILED after a permanent rejection or the last attempt, or CANCELLED by its producer. The sealed secret is erased at the final state, and the row is deleted 30 days later (provisional until PH-13).",
+      "columns": {
+        "id": {
+          "description": "Backend-generated message UUID; also the stable source of the email Message-ID across retries.",
+          "classification": "INTERNAL"
+        },
+        "producer": {
+          "description": "Capability that enqueued the message and owns its meaning, for example organizations.invitation.",
+          "classification": "INTERNAL"
+        },
+        "producer_reference": {
+          "description": "Identifier of the producer's record the message reports, such as an invitation ID.",
+          "classification": "INTERNAL"
+        },
+        "template": {
+          "description": "Producer-registered template rendered when the message is sent.",
+          "classification": "INTERNAL"
+        },
+        "locale": {
+          "description": "Template locale: pt-BR or en-US.",
+          "classification": "INTERNAL"
+        },
+        "recipient": {
+          "description": "Normalized recipient address.",
+          "classification": "CONFIDENTIAL"
+        },
+        "parameters": {
+          "description": "Allowlisted, non-secret template parameters as a JSON object of strings.",
+          "classification": "CONFIDENTIAL"
+        },
+        "sealed_secret": {
+          "description": "AES-256-GCM sealed secret parameter (such as an invitation credential) under the mail key ring, bound to the message ID.",
+          "classification": "RESTRICTED",
+          "nullMeaning": "The message has no secret parameter, or it reached a final state and the secret was erased."
+        },
+        "status": {
+          "description": "PENDING until sent, failed or cancelled.",
+          "classification": "INTERNAL"
+        },
+        "attempts": {
+          "description": "Delivery attempts claimed so far, including an attempt interrupted by a crash.",
+          "classification": "INTERNAL",
+          "unit": "attempts"
+        },
+        "next_attempt_at": {
+          "description": "Earliest instant the dispatcher may claim the pending message again.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "lease_expires_at": {
+          "description": "End of the current dispatcher's claim; also its ownership token when recording the outcome.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No dispatcher has claimed the message yet.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "last_failure": {
+          "description": "Class of the latest failed attempt: connection, timeout, tls, authentication, rejected or unexpected. Never raw provider text.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No attempt has failed."
+        },
+        "last_reply_code": {
+          "description": "SMTP reply code of the latest failed attempt.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No failure, or the failure carried no SMTP reply."
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the producer enqueued the message.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "finalized_at": {
+          "description": "PostgreSQL-clock instant the message reached SENT, FAILED or CANCELLED; starts the retention period.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The message is still pending.",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "outbound_emails_pkey": "Unique message identity.",
+        "outbound_emails_producer_idx": "Finds a producer's messages to report delivery state or cancel them.",
+        "outbound_emails_due_idx": "Claims due pending messages in order without scanning final ones.",
+        "outbound_emails_finalized_idx": "Finds final messages whose retention period has ended.",
+        "outbound_emails_attempts_nonnegative": "Attempt counts never go negative.",
+        "outbound_emails_final_state": "A final instant exists exactly for messages that are no longer pending.",
+        "outbound_emails_secret_only_pending": "A sealed secret survives only while the message is pending.",
+        "outbound_emails_parameters_object": "Template parameters are a JSON object."
+      }
+    }
+  },
+  "enums": {
+    "OutboundEmailStatus": "Outbound email state: PENDING, SENT, FAILED or CANCELLED."
+  }
+}

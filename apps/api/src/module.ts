@@ -29,12 +29,53 @@ export type ApiOperation = Readonly<{
     response: Readonly<Record<number, TSchema>>;
   }>;
   expectedErrors?: readonly string[];
+  /**
+   * Authentication the operation requires. `public` operations accept
+   * anonymous callers; `session` operations require the server-managed human
+   * session cookie. Omitted, a module requiring `authentication` uses bearer
+   * tokens.
+   */
+  access?: "public" | "session";
+  /** Request body media type; JSON unless a protocol requires a form. */
+  bodyContentType?: "application/json" | "application/x-www-form-urlencoded";
 }>;
 
-export type ModuleRequirement = "database" | "authentication";
+export type ModuleRequirement =
+  "database" | "authentication" | "humanIdentity" | "mail";
+
+/** Validated settings of the server-managed human session boundary. */
+export type HumanIdentitySettings = Readonly<{
+  environment: "development" | "test" | "production";
+  issuer: string;
+  publicOrigin: string;
+  clientId: string;
+  clientSecret: string;
+  provisionerClientId: string;
+  provisionerClientSecret: string;
+  sessionKeys: readonly Readonly<{ id: string; key: Buffer }>[];
+}>;
+
+/** Validated settings of the transactional-email relay (ADR-0026). */
+export type MailSettings = Readonly<{
+  environment: "development" | "test" | "production";
+  /** Browser-visible panel origin that email links point to. */
+  publicOrigin: string;
+  smtp: Readonly<{
+    host: string;
+    port: number;
+    security: "tls" | "starttls" | "none";
+    username?: string;
+    password?: string;
+  }>;
+  from: string;
+  keys: readonly Readonly<{ id: string; key: Buffer }>[];
+}>;
+
 export type ModuleResources = Readonly<{
   database?: Database;
   verifier?: AccessTokenVerifier;
+  humanIdentity?: HumanIdentitySettings;
+  mail?: MailSettings;
 }>;
 
 /** A module whose dependencies are satisfied and whose routes can mount. */
@@ -52,6 +93,11 @@ export type ApiModule = Readonly<{
   /** OpenAPI tag grouping the module's operations. */
   tag: string;
   requires: readonly ModuleRequirement[];
+  /**
+   * Names of modules whose public capabilities this module uses. They must
+   * be listed earlier in the composition and activate first.
+   */
+  requiresModules?: readonly string[];
   operations: readonly ApiOperation[];
   errors: Readonly<Record<string, ErrorDefinition>>;
   /** Called only when every requirement is configured. */
@@ -70,14 +116,21 @@ export function activateModules(
   const available: Record<ModuleRequirement, boolean> = {
     database: resources.database !== undefined,
     authentication: resources.verifier !== undefined,
+    humanIdentity: resources.humanIdentity !== undefined,
+    mail: resources.mail !== undefined,
   };
   const active: RegisteredModule[] = [];
+  const activated = new Set<string>();
   for (const module of modules) {
-    const missing = module.requires.filter(
+    const missing: string[] = module.requires.filter(
       (requirement) => !available[requirement],
     );
-    if (missing.length === 0) active.push(module.activate(resources));
-    else if (environment === "production")
+    for (const name of module.requiresModules ?? [])
+      if (!activated.has(name)) missing.push(`module ${name}`);
+    if (missing.length === 0) {
+      active.push(module.activate(resources));
+      activated.add(module.name);
+    } else if (environment === "production")
       throw new Error(
         `Invalid API configuration: ${module.name} requires ${missing.join(" and ")}`,
       );

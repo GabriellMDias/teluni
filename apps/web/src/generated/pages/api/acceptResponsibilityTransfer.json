@@ -1,0 +1,519 @@
+{
+  "kind": "api",
+  "operationId": "acceptResponsibilityTransfer",
+  "summary": "",
+  "description": "The proposed successor accepts responsibility. They must still be an active company administrator with strong authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
+  "security": [{ "sessionCookie": [] }],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-teluni_session",
+        "description": "Opaque server-managed human session. Loopback development uses teluni_session. Unsafe methods also require the session CSRF token in X-CSRF-Token and a matching Origin."
+      }
+    }
+  },
+  "method": "POST",
+  "path": "/companies/{companyId}/responsibility-transfers/{transferId}/accept",
+  "tags": ["Organizations"],
+  "authentication": "Session cookie",
+  "parameters": [
+    {
+      "name": "companyId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    },
+    {
+      "name": "transferId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    }
+  ],
+  "request": null,
+  "responses": [
+    {
+      "status": "204",
+      "description": "Response",
+      "content": {},
+      "schema": null,
+      "fields": []
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

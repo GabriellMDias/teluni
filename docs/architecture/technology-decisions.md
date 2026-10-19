@@ -24,7 +24,7 @@ This is a navigation summary, not an independent technology specification. Each 
 
 ## Accepted Teluni product directions
 
-The owner explicitly accepted the seven pending product ADRs on 2026-10-18. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).
+The owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).
 
 | Governing decision | Accepted direction | Current policy / remaining gate |
 | --- | --- | --- |
@@ -35,6 +35,7 @@ The owner explicitly accepted the seven pending product ADRs on 2026-10-18. Thes
 | [ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md) | Versioned declarative composition and typed catalogs in immutable publications | [Release policies](../project/release-policies.md); concrete schemas, rendering/storage and qualified interoperability pending |
 | [ADR-0024](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md) | Self-hosted Keycloak and server-managed human browser sessions, preserving ADR-0012 | [Identity/access](../project/identity-and-access.md); pinned-source assessment supports selection, actual provider/session integration pending |
 | [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) | Application-owned scoped standard/custom profiles and attributable consent-based support | [Identity/access](../project/identity-and-access.md); concrete authorization/session contracts and all IA cases pending |
+| [ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md) | Transactional email through a PostgreSQL outbox, an in-process dispatcher and a provider-neutral SMTP relay (`nodemailer`), at least once | [Invitation and email delivery design](../project/invitation-delivery-design.md); accepted 2026-10-18 under PH-21; real sender/provider PH-17 and retention PH-13 pending |
 
 ## Deliberately unresolved or conditional choices
 
@@ -42,7 +43,7 @@ The owner explicitly accepted the seven pending product ADRs on 2026-10-18. Thes
 - UI/design systems, styling, accessibility primitives, charts, grids, and forms depend on product needs. No general global-state library or full-stack web framework is selected by default.
 - GraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.
 - Bearer access-token verification is implemented as shared API infrastructure under ADR-0012; Teluni accepts Keycloak and server-managed sessions through ADR-0024, while concrete session/refresh/revocation implementation and qualification remain pending. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.
-- Queue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements.
+- Queue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements. Teluni's transactional email uses the PostgreSQL outbox, in-process dispatcher and SMTP relay accepted in ADR-0026; that does not make them a general job or messaging platform.
 - Mobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery are product/deployment decisions. Teluni has accepted its Android and initial Compose directions above; detailed tooling and operational readiness are not thereby supplied. Testcontainers does not select an application deployment platform.
 - Observability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.
 

@@ -24,6 +24,9 @@ export default defineConfig({
   },
   build: { assetsInlineLimit: 0 },
   server: {
+    // Transform the application entry graph at startup so the first page a
+    // fresh dev server serves is not slowed by on-demand compilation.
+    warmup: { clientFiles: ["./src/main.tsx"] },
     proxy: {
       "/api": {
         target: process.env.ORION_WEB_API_TARGET ?? "http://127.0.0.1:3000",

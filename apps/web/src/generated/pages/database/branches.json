@@ -1,0 +1,132 @@
+{
+  "kind": "database",
+  "name": "branches",
+  "description": "Branch of a company: a location with its own business time zone, assigned members and, later, devices.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created ACTIVE; archived rather than deleted so references remain valid.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable branch UUID; public resource ID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Owning company; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Branch name, unique among the company's active branches regardless of case.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "time_zone",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "IANA time zone for the branch's local business time.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"BranchStatus\"",
+      "Nullable": "no",
+      "Default": "'ACTIVE'::\"BranchStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "ACTIVE branches are usable; ARCHIVED branches are retained for references.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency token incremented once per successful change.",
+      "Null meaning": "—",
+      "Unit": "successful writes"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the latest change; not audit history.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "branches_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A branch belongs to an existing company."
+    },
+    {
+      "Object": "branches_name_nonblank",
+      "Physical definition": "CHECK (((name)::text ~ '[^[:space:]]'::text))",
+      "Purpose": "Branch name cannot be blank."
+    },
+    {
+      "Object": "branches_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique branch identity."
+    },
+    {
+      "Object": "branches_time_zone_nonblank",
+      "Physical definition": "CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))",
+      "Purpose": "Time zone has the IANA identifier shape."
+    },
+    {
+      "Object": "branches_version_positive",
+      "Physical definition": "CHECK ((version > 0))",
+      "Purpose": "Rejects invalid concurrency versions."
+    },
+    {
+      "Object": "branches_company_active_name_unique",
+      "Physical definition": "CREATE UNIQUE INDEX branches_company_active_name_unique ON public.branches USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"BranchStatus\")",
+      "Purpose": "Active branch names are unique within a company, ignoring case, including racing creations."
+    },
+    {
+      "Object": "branches_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX branches_company_id_id_key ON public.branches USING btree (company_id, id)",
+      "Purpose": "Tenant key that tenant references target."
+    },
+    {
+      "Object": "branches_company_status_name_idx",
+      "Physical definition": "CREATE INDEX branches_company_status_name_idx ON public.branches USING btree (company_id, status, name)",
+      "Purpose": "Supports listing a company's branches by state and name."
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "kind": "database",
+  "name": "organization_audit_events",
+  "description": "Append-only attributable record of company, branch, membership and grant changes, written in the same transaction as each change.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Never updated or deleted by the runtime; retention follows PH-13.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated event UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company whose change the event records.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "actor_principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Principal who performed the change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "actor_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Actor's membership in the company.",
+      "Null meaning": "The actor had no membership yet, as when creating the company.",
+      "Unit": "—"
+    },
+    {
+      "Column": "action",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Stable dotted action identifier, such as company.created or branch.archived.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "target_type",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Kind of changed resource, such as company or branch.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "target_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Identifier of the changed resource.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "details",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Allowlisted non-secret change details: changed field names and, for branch events, the branch name at the time of the event. Never secrets or full payloads.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "organization_audit_events_action_format",
+      "Physical definition": "CHECK (((action)::text ~ '^[a-z]+(\\.[a-z_]+)+$'::text))",
+      "Purpose": "Actions use the stable dotted identifier format."
+    },
+    {
+      "Object": "organization_audit_events_actor_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The actor is an existing principal."
+    },
+    {
+      "Object": "organization_audit_events_company_id_actor_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The actor membership, when present, belongs to the same company."
+    },
+    {
+      "Object": "organization_audit_events_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An event belongs to an existing company."
+    },
+    {
+      "Object": "organization_audit_events_details_object",
+      "Physical definition": "CHECK ((jsonb_typeof(details) = 'object'::text))",
+      "Purpose": "Details are always a JSON object."
+    },
+    {
+      "Object": "organization_audit_events_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique event identity."
+    },
+    {
+      "Object": "organization_audit_events_target_type_format",
+      "Physical definition": "CHECK (((target_type)::text ~ '^[a-z_]+$'::text))",
+      "Purpose": "Target types use lowercase identifiers."
+    },
+    {
+      "Object": "organization_audit_events_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX organization_audit_events_company_id_id_key ON public.organization_audit_events USING btree (company_id, id)",
+      "Purpose": "Tenant key for future references to events."
+    },
+    {
+      "Object": "organization_audit_events_company_time_idx",
+      "Physical definition": "CREATE INDEX organization_audit_events_company_time_idx ON public.organization_audit_events USING btree (company_id, occurred_at DESC, id DESC)",
+      "Purpose": "Supports company-scoped newest-first audit pagination."
+    }
+  ]
+}

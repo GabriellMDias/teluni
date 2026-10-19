@@ -1,0 +1,188 @@
+{
+  "kind": "api",
+  "operationId": "completeLogin",
+  "summary": "",
+  "description": "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
+  "security": [],
+  "components": {},
+  "method": "GET",
+  "path": "/auth/callback",
+  "tags": ["Identity"],
+  "authentication": "None declared",
+  "parameters": [
+    {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "minLength": 1, "maxLength": 4096 },
+      "type": "string (min length 1, max length 4096)",
+      "description": ""
+    },
+    {
+      "name": "state",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "minLength": 1, "maxLength": 4096 },
+      "type": "string (min length 1, max length 4096)",
+      "description": ""
+    },
+    {
+      "name": "session_state",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "minLength": 1, "maxLength": 4096 },
+      "type": "string (min length 1, max length 4096)",
+      "description": ""
+    },
+    {
+      "name": "iss",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "minLength": 1, "maxLength": 4096 },
+      "type": "string (min length 1, max length 4096)",
+      "description": ""
+    },
+    {
+      "name": "error",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "minLength": 1, "maxLength": 4096 },
+      "type": "string (min length 1, max length 4096)",
+      "description": ""
+    },
+    {
+      "name": "error_description",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "minLength": 1, "maxLength": 4096 },
+      "type": "string (min length 1, max length 4096)",
+      "description": ""
+    }
+  ],
+  "request": null,
+  "responses": [
+    {
+      "status": "303",
+      "description": "Response",
+      "content": {},
+      "schema": null,
+      "fields": []
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

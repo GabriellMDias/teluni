@@ -28,6 +28,11 @@ function asSchema(value: object): Schema {
   return value as Schema;
 }
 function response(schema: unknown, status: string) {
+  // A `Type.Null()` response has no body, such as a redirect or 204.
+  const empty =
+    typeof schema === "object" &&
+    schema !== null &&
+    (schema as Schema).type === "null";
   return {
     description: "Response",
     ...(status === "429"
@@ -39,8 +44,17 @@ function response(schema: unknown, status: string) {
             },
           },
         }
-      : {}),
-    content: { "application/json": { schema } },
+      : status.startsWith("3")
+        ? {
+            headers: {
+              Location: {
+                description: "Destination of the browser redirect.",
+                schema: { type: "string" },
+              },
+            },
+          }
+        : {}),
+    ...(empty ? {} : { content: { "application/json": { schema } } }),
   };
 }
 
@@ -53,22 +67,29 @@ export async function generateOpenApi(
   const operations: {
     operation: ApiOperation;
     tag: string;
-    authenticated: boolean;
+    security: "none" | "bearer" | "session";
   }[] = [
     ...healthOperations.map((operation) => ({
       operation,
       tag: "Health",
-      authenticated: false,
+      security: "none" as const,
     })),
     ...modules.flatMap((module) =>
       module.operations.map((operation) => ({
         operation,
         tag: module.tag,
-        authenticated: module.requires.includes("authentication"),
+        security:
+          operation.access === "public"
+            ? ("none" as const)
+            : operation.access === "session"
+              ? ("session" as const)
+              : module.requires.includes("authentication")
+                ? ("bearer" as const)
+                : ("none" as const),
       })),
     ),
   ];
-  for (const { operation, tag, authenticated } of operations) {
+  for (const { operation, tag, security } of operations) {
     if (ids.has(operation.operationId))
       throw new Error(`Duplicate operationId: ${operation.operationId}`);
     ids.add(operation.operationId);
@@ -121,13 +142,21 @@ export async function generateOpenApi(
       operationId: operation.operationId,
       description: operation.description,
       tags: [tag],
-      ...(authenticated ? { security: [{ bearerAuth: [] }] } : {}),
+      ...(security === "bearer"
+        ? { security: [{ bearerAuth: [] }] }
+        : security === "session"
+          ? { security: [{ sessionCookie: [] }] }
+          : {}),
       parameters,
       ...(schema.body
         ? {
             requestBody: {
               required: true,
-              content: { "application/json": { schema: schema.body } },
+              content: {
+                [operation.bodyContentType ?? "application/json"]: {
+                  schema: schema.body,
+                },
+              },
             },
           }
         : {}),
@@ -148,15 +177,30 @@ export async function generateOpenApi(
         info: { title: `${await projectName()} API`, version: "1.0.0" },
         servers: [{ url: "/" }],
         paths,
-        ...(operations.some(({ authenticated }) => authenticated)
+        ...(operations.some(({ security }) => security !== "none")
           ? {
               components: {
                 securitySchemes: {
-                  bearerAuth: {
-                    type: "http",
-                    scheme: "bearer",
-                    bearerFormat: "JWT",
-                  },
+                  ...(operations.some(({ security }) => security === "bearer")
+                    ? {
+                        bearerAuth: {
+                          type: "http",
+                          scheme: "bearer",
+                          bearerFormat: "JWT",
+                        },
+                      }
+                    : {}),
+                  ...(operations.some(({ security }) => security === "session")
+                    ? {
+                        sessionCookie: {
+                          type: "apiKey",
+                          in: "cookie",
+                          name: "__Host-teluni_session",
+                          description:
+                            "Opaque server-managed human session. Loopback development uses teluni_session. Unsafe methods also require the session CSRF token in X-CSRF-Token and a matching Origin.",
+                        },
+                      }
+                    : {}),
                 },
               },
             }

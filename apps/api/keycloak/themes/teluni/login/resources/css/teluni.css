@@ -1,0 +1,66 @@
+/* Teluni identity over keycloak.v2: palette, typeface and brand mark from
+   docs/project/branding/README.md. */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("../fonts/plus-jakarta-sans.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+:root {
+  --keycloak-bg-logo-url: none;
+  --keycloak-card-top-color: #2563eb;
+  --pf-v5-global--FontFamily--text: "Plus Jakarta Sans", ui-sans-serif,
+    system-ui, sans-serif;
+  --pf-v5-global--FontFamily--heading: "Plus Jakarta Sans", ui-sans-serif,
+    system-ui, sans-serif;
+  --pf-v5-global--primary-color--100: #2563eb;
+  --pf-v5-global--primary-color--200: #1d4ed8;
+  --pf-v5-global--link--Color: #2563eb;
+  --pf-v5-global--link--Color--hover: #1d4ed8;
+  --pf-v5-global--active-color--100: #2563eb;
+}
+
+.login-pf body {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+#kc-header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: #0f172a !important;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.02em;
+}
+
+#kc-header-wrapper::before {
+  content: "";
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff url("../img/brand-mark.svg") no-repeat center / 34px;
+}
+
+.pf-v5-c-login__main {
+  border-radius: 12px;
+  box-shadow: 0 6px 22px #1d3d5c14;
+}
+
+.pf-v5-c-login__main-header {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--m-primary--BackgroundColor: #185f9b;
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: #124977;
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: #124977;
+  font-weight: 650;
+}

@@ -1,0 +1,212 @@
+{
+  "kind": "database",
+  "name": "outbound_emails",
+  "description": "Transactional outbox of email messages: a producer records the intent in its own transaction and the dispatcher delivers it through the SMTP relay at least once.",
+  "owner": "Mail",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created PENDING by a producer; becomes SENT when the relay accepts it, FAILED after a permanent rejection or the last attempt, or CANCELLED by its producer. The sealed secret is erased at the final state, and the row is deleted 30 days later (provisional until PH-13).",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated message UUID; also the stable source of the email Message-ID across retries.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "producer",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Capability that enqueued the message and owns its meaning, for example organizations.invitation.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "producer_reference",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Identifier of the producer's record the message reports, such as an invitation ID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "template",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Producer-registered template rendered when the message is sent.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "locale",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Template locale: pt-BR or en-US.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "recipient",
+      "PostgreSQL type": "character varying(254)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Normalized recipient address.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "parameters",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Allowlisted, non-secret template parameters as a JSON object of strings.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "sealed_secret",
+      "PostgreSQL type": "bytea",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "AES-256-GCM sealed secret parameter (such as an invitation credential) under the mail key ring, bound to the message ID.",
+      "Null meaning": "The message has no secret parameter, or it reached a final state and the secret was erased.",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"OutboundEmailStatus\"",
+      "Nullable": "no",
+      "Default": "'PENDING'::\"OutboundEmailStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "PENDING until sent, failed or cancelled.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "attempts",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "INTERNAL",
+      "Meaning": "Delivery attempts claimed so far, including an attempt interrupted by a crash.",
+      "Null meaning": "—",
+      "Unit": "attempts"
+    },
+    {
+      "Column": "next_attempt_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "Earliest instant the dispatcher may claim the pending message again.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "lease_expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "End of the current dispatcher's claim; also its ownership token when recording the outcome.",
+      "Null meaning": "No dispatcher has claimed the message yet.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "last_failure",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Class of the latest failed attempt: connection, timeout, tls, authentication, rejected or unexpected. Never raw provider text.",
+      "Null meaning": "No attempt has failed.",
+      "Unit": "—"
+    },
+    {
+      "Column": "last_reply_code",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "SMTP reply code of the latest failed attempt.",
+      "Null meaning": "No failure, or the failure carried no SMTP reply.",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the producer enqueued the message.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "finalized_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the message reached SENT, FAILED or CANCELLED; starts the retention period.",
+      "Null meaning": "The message is still pending.",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "outbound_emails_attempts_nonnegative",
+      "Physical definition": "CHECK ((attempts >= 0))",
+      "Purpose": "Attempt counts never go negative."
+    },
+    {
+      "Object": "outbound_emails_final_state",
+      "Physical definition": "CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") = (finalized_at IS NULL)))",
+      "Purpose": "A final instant exists exactly for messages that are no longer pending."
+    },
+    {
+      "Object": "outbound_emails_parameters_object",
+      "Physical definition": "CHECK ((jsonb_typeof(parameters) = 'object'::text))",
+      "Purpose": "Template parameters are a JSON object."
+    },
+    {
+      "Object": "outbound_emails_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique message identity."
+    },
+    {
+      "Object": "outbound_emails_secret_only_pending",
+      "Physical definition": "CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") OR (sealed_secret IS NULL)))",
+      "Purpose": "A sealed secret survives only while the message is pending."
+    },
+    {
+      "Object": "outbound_emails_due_idx",
+      "Physical definition": "CREATE INDEX outbound_emails_due_idx ON public.outbound_emails USING btree (next_attempt_at) WHERE (status = 'PENDING'::\"OutboundEmailStatus\")",
+      "Purpose": "Claims due pending messages in order without scanning final ones."
+    },
+    {
+      "Object": "outbound_emails_finalized_idx",
+      "Physical definition": "CREATE INDEX outbound_emails_finalized_idx ON public.outbound_emails USING btree (finalized_at) WHERE (status <> 'PENDING'::\"OutboundEmailStatus\")",
+      "Purpose": "Finds final messages whose retention period has ended."
+    },
+    {
+      "Object": "outbound_emails_producer_idx",
+      "Physical definition": "CREATE INDEX outbound_emails_producer_idx ON public.outbound_emails USING btree (producer, producer_reference)",
+      "Purpose": "Finds a producer's messages to report delivery state or cancel them."
+    }
+  ]
+}

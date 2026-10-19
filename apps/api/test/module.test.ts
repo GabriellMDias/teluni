@@ -55,6 +55,34 @@ describe("API module composition", () => {
     expect(activateModules([], {}, "production")).toEqual([]);
   });
 
+  it("activates a module only after the modules whose capabilities it uses", () => {
+    const provider = exampleModule({ name: "provider", errors: {} });
+    const consumer = exampleModule({
+      name: "consumer",
+      errors: {},
+      requiresModules: ["provider"],
+    });
+    expect(
+      activateModules([provider, consumer], { database }, "test").map(
+        (module) => module.name,
+      ),
+    ).toEqual(["example", "example"]);
+    const unconfigured = exampleModule({
+      name: "provider",
+      errors: {},
+      requires: ["humanIdentity"],
+    });
+    expect(
+      activateModules([unconfigured, consumer], { database }, "test"),
+    ).toEqual([]);
+    expect(() =>
+      activateModules([unconfigured, consumer], { database }, "production"),
+    ).toThrow("Invalid API configuration: provider requires humanIdentity");
+    expect(() =>
+      activateModules([consumer, provider], { database }, "production"),
+    ).toThrow("Invalid API configuration: consumer requires module provider");
+  });
+
   it("mounts active module routes beside the shared health routes", async () => {
     const [active] = activateModules([exampleModule()], { database }, "test");
     const { app, lifecycle } = createApp(pino({ level: "silent" }), undefined, {

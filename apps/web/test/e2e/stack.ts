@@ -261,14 +261,17 @@ export async function startApi({
   environment = "test",
   env = {},
   secrets = [],
+  port: requestedPort,
 }: {
   environment?: "development" | "test";
   env?: Readonly<Record<string, string>>;
   secrets?: readonly string[];
+  /** A port chosen in advance, for example one an identity provider calls back. */
+  port?: number;
 } = {}): Promise<
   Stoppable & { url: string; child: ChildProcess; service: WatchedService }
 > {
-  const port = await freePort();
+  const port = requestedPort ?? (await freePort());
   const child = spawn(process.execPath, [resolve(apiRoot, "dist/main.js")], {
     cwd: apiRoot,
     env: {

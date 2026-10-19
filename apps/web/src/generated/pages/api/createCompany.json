@@ -1,0 +1,1321 @@
+{
+  "kind": "api",
+  "operationId": "createCompany",
+  "summary": "",
+  "description": "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. Further administration requires two-step verification.",
+  "security": [{ "sessionCookie": [] }],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-teluni_session",
+        "description": "Opaque server-managed human session. Loopback development uses teluni_session. Unsafe methods also require the session CSRF token in X-CSRF-Token and a matching Origin."
+      }
+    }
+  },
+  "method": "POST",
+  "path": "/companies",
+  "tags": ["Organizations"],
+  "authentication": "Session cookie",
+  "parameters": [
+    {
+      "name": "idempotency-key",
+      "in": "header",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "pattern": "^[A-Za-z0-9._~-]+$"
+      },
+      "type": "string (min length 1, max length 200, pattern ^[A-Za-z0-9._~-]+$)",
+      "description": ""
+    }
+  ],
+  "request": {
+    "required": true,
+    "description": "",
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "required": ["displayName", "defaultLocale", "timeZone"],
+          "properties": {
+            "displayName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": ".*\\S.*"
+            },
+            "defaultLocale": {
+              "anyOf": [
+                { "type": "string", "const": "pt-BR" },
+                { "type": "string", "const": "en-US" }
+              ]
+            },
+            "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "required": ["displayName", "defaultLocale", "timeZone"],
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": ".*\\S.*"
+        },
+        "defaultLocale": {
+          "anyOf": [
+            { "type": "string", "const": "pt-BR" },
+            { "type": "string", "const": "en-US" }
+          ]
+        },
+        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+      },
+      "additionalProperties": false
+    },
+    "fields": [
+      {
+        "name": "displayName",
+        "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+        "required": true
+      },
+      {
+        "name": "defaultLocale",
+        "type": "\"pt-BR\" | \"en-US\"",
+        "required": true
+      },
+      {
+        "name": "timeZone",
+        "type": "string (min length 1, max length 64)",
+        "required": true
+      }
+    ]
+  },
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["company", "access", "responsibilityTransfer"],
+            "properties": {
+              "company": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "displayName",
+                  "status",
+                  "defaultLocale",
+                  "timeZone",
+                  "version",
+                  "createdAt",
+                  "updatedAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": ".*\\S.*"
+                  },
+                  "status": {
+                    "anyOf": [
+                      { "type": "string", "const": "ACTIVE" },
+                      { "type": "string", "const": "SUSPENDED" }
+                    ]
+                  },
+                  "defaultLocale": {
+                    "anyOf": [
+                      { "type": "string", "const": "pt-BR" },
+                      { "type": "string", "const": "en-US" }
+                    ]
+                  },
+                  "timeZone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "version": { "type": "integer", "minimum": 1 },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "updatedAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              "access": {
+                "type": "object",
+                "required": [
+                  "roles",
+                  "responsible",
+                  "capabilities",
+                  "capabilitiesAfterStrongAuthentication"
+                ],
+                "properties": {
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                        { "type": "string", "const": "BRANCH_MANAGER" },
+                        { "type": "string", "const": "OPERATOR" }
+                      ]
+                    }
+                  },
+                  "responsible": { "type": "boolean" },
+                  "capabilities": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        { "type": "string", "const": "company.view" },
+                        {
+                          "type": "string",
+                          "const": "company.settings.manage"
+                        },
+                        { "type": "string", "const": "branches.view" },
+                        { "type": "string", "const": "branches.manage" },
+                        { "type": "string", "const": "members.manage" },
+                        { "type": "string", "const": "invitations.manage" },
+                        { "type": "string", "const": "audit.view" }
+                      ]
+                    }
+                  },
+                  "capabilitiesAfterStrongAuthentication": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        { "type": "string", "const": "company.view" },
+                        {
+                          "type": "string",
+                          "const": "company.settings.manage"
+                        },
+                        { "type": "string", "const": "branches.view" },
+                        { "type": "string", "const": "branches.manage" },
+                        { "type": "string", "const": "members.manage" },
+                        { "type": "string", "const": "invitations.manage" },
+                        { "type": "string", "const": "audit.view" }
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "responsibilityTransfer": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "direction",
+                      "fromMembershipId",
+                      "toMembershipId",
+                      "counterpartName",
+                      "counterpartEmail",
+                      "createdAt",
+                      "expiresAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "direction": {
+                        "anyOf": [
+                          { "type": "string", "const": "outgoing" },
+                          { "type": "string", "const": "incoming" }
+                        ]
+                      },
+                      "fromMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "toMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "counterpartName": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "counterpartEmail": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "expiresAt": { "type": "string", "format": "date-time" }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["company", "access", "responsibilityTransfer"],
+        "properties": {
+          "company": {
+            "type": "object",
+            "required": [
+              "id",
+              "displayName",
+              "status",
+              "defaultLocale",
+              "timeZone",
+              "version",
+              "createdAt",
+              "updatedAt"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+              },
+              "displayName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": ".*\\S.*"
+              },
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "ACTIVE" },
+                  { "type": "string", "const": "SUSPENDED" }
+                ]
+              },
+              "defaultLocale": {
+                "anyOf": [
+                  { "type": "string", "const": "pt-BR" },
+                  { "type": "string", "const": "en-US" }
+                ]
+              },
+              "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+              "version": { "type": "integer", "minimum": 1 },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            },
+            "additionalProperties": false
+          },
+          "access": {
+            "type": "object",
+            "required": [
+              "roles",
+              "responsible",
+              "capabilities",
+              "capabilitiesAfterStrongAuthentication"
+            ],
+            "properties": {
+              "roles": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                    { "type": "string", "const": "BRANCH_MANAGER" },
+                    { "type": "string", "const": "OPERATOR" }
+                  ]
+                }
+              },
+              "responsible": { "type": "boolean" },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "company.view" },
+                    { "type": "string", "const": "company.settings.manage" },
+                    { "type": "string", "const": "branches.view" },
+                    { "type": "string", "const": "branches.manage" },
+                    { "type": "string", "const": "members.manage" },
+                    { "type": "string", "const": "invitations.manage" },
+                    { "type": "string", "const": "audit.view" }
+                  ]
+                }
+              },
+              "capabilitiesAfterStrongAuthentication": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "company.view" },
+                    { "type": "string", "const": "company.settings.manage" },
+                    { "type": "string", "const": "branches.view" },
+                    { "type": "string", "const": "branches.manage" },
+                    { "type": "string", "const": "members.manage" },
+                    { "type": "string", "const": "invitations.manage" },
+                    { "type": "string", "const": "audit.view" }
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "responsibilityTransfer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id",
+                  "direction",
+                  "fromMembershipId",
+                  "toMembershipId",
+                  "counterpartName",
+                  "counterpartEmail",
+                  "createdAt",
+                  "expiresAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "direction": {
+                    "anyOf": [
+                      { "type": "string", "const": "outgoing" },
+                      { "type": "string", "const": "incoming" }
+                    ]
+                  },
+                  "fromMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "toMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "counterpartName": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "counterpartEmail": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "expiresAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "company", "type": "object", "required": true },
+        {
+          "name": "company.id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "company.displayName",
+          "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        {
+          "name": "company.status",
+          "type": "\"ACTIVE\" | \"SUSPENDED\"",
+          "required": true
+        },
+        {
+          "name": "company.defaultLocale",
+          "type": "\"pt-BR\" | \"en-US\"",
+          "required": true
+        },
+        {
+          "name": "company.timeZone",
+          "type": "string (min length 1, max length 64)",
+          "required": true
+        },
+        {
+          "name": "company.version",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "company.createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "company.updatedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        { "name": "access", "type": "object", "required": true },
+        {
+          "name": "access.roles",
+          "type": "array of \"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "required": true
+        },
+        { "name": "access.responsible", "type": "boolean", "required": true },
+        {
+          "name": "access.capabilities",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "required": true
+        },
+        {
+          "name": "access.capabilitiesAfterStrongAuthentication",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "required": true
+        },
+        {
+          "name": "responsibilityTransfer",
+          "type": "object | null",
+          "required": true
+        }
+      ]
+    },
+    {
+      "status": "201",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["company", "access", "responsibilityTransfer"],
+            "properties": {
+              "company": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "displayName",
+                  "status",
+                  "defaultLocale",
+                  "timeZone",
+                  "version",
+                  "createdAt",
+                  "updatedAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": ".*\\S.*"
+                  },
+                  "status": {
+                    "anyOf": [
+                      { "type": "string", "const": "ACTIVE" },
+                      { "type": "string", "const": "SUSPENDED" }
+                    ]
+                  },
+                  "defaultLocale": {
+                    "anyOf": [
+                      { "type": "string", "const": "pt-BR" },
+                      { "type": "string", "const": "en-US" }
+                    ]
+                  },
+                  "timeZone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "version": { "type": "integer", "minimum": 1 },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "updatedAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              "access": {
+                "type": "object",
+                "required": [
+                  "roles",
+                  "responsible",
+                  "capabilities",
+                  "capabilitiesAfterStrongAuthentication"
+                ],
+                "properties": {
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                        { "type": "string", "const": "BRANCH_MANAGER" },
+                        { "type": "string", "const": "OPERATOR" }
+                      ]
+                    }
+                  },
+                  "responsible": { "type": "boolean" },
+                  "capabilities": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        { "type": "string", "const": "company.view" },
+                        {
+                          "type": "string",
+                          "const": "company.settings.manage"
+                        },
+                        { "type": "string", "const": "branches.view" },
+                        { "type": "string", "const": "branches.manage" },
+                        { "type": "string", "const": "members.manage" },
+                        { "type": "string", "const": "invitations.manage" },
+                        { "type": "string", "const": "audit.view" }
+                      ]
+                    }
+                  },
+                  "capabilitiesAfterStrongAuthentication": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        { "type": "string", "const": "company.view" },
+                        {
+                          "type": "string",
+                          "const": "company.settings.manage"
+                        },
+                        { "type": "string", "const": "branches.view" },
+                        { "type": "string", "const": "branches.manage" },
+                        { "type": "string", "const": "members.manage" },
+                        { "type": "string", "const": "invitations.manage" },
+                        { "type": "string", "const": "audit.view" }
+                      ]
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "responsibilityTransfer": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "direction",
+                      "fromMembershipId",
+                      "toMembershipId",
+                      "counterpartName",
+                      "counterpartEmail",
+                      "createdAt",
+                      "expiresAt"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "direction": {
+                        "anyOf": [
+                          { "type": "string", "const": "outgoing" },
+                          { "type": "string", "const": "incoming" }
+                        ]
+                      },
+                      "fromMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "toMembershipId": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "counterpartName": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "counterpartEmail": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "createdAt": { "type": "string", "format": "date-time" },
+                      "expiresAt": { "type": "string", "format": "date-time" }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["company", "access", "responsibilityTransfer"],
+        "properties": {
+          "company": {
+            "type": "object",
+            "required": [
+              "id",
+              "displayName",
+              "status",
+              "defaultLocale",
+              "timeZone",
+              "version",
+              "createdAt",
+              "updatedAt"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+              },
+              "displayName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": ".*\\S.*"
+              },
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "ACTIVE" },
+                  { "type": "string", "const": "SUSPENDED" }
+                ]
+              },
+              "defaultLocale": {
+                "anyOf": [
+                  { "type": "string", "const": "pt-BR" },
+                  { "type": "string", "const": "en-US" }
+                ]
+              },
+              "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+              "version": { "type": "integer", "minimum": 1 },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            },
+            "additionalProperties": false
+          },
+          "access": {
+            "type": "object",
+            "required": [
+              "roles",
+              "responsible",
+              "capabilities",
+              "capabilitiesAfterStrongAuthentication"
+            ],
+            "properties": {
+              "roles": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "COMPANY_ADMINISTRATOR" },
+                    { "type": "string", "const": "BRANCH_MANAGER" },
+                    { "type": "string", "const": "OPERATOR" }
+                  ]
+                }
+              },
+              "responsible": { "type": "boolean" },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "company.view" },
+                    { "type": "string", "const": "company.settings.manage" },
+                    { "type": "string", "const": "branches.view" },
+                    { "type": "string", "const": "branches.manage" },
+                    { "type": "string", "const": "members.manage" },
+                    { "type": "string", "const": "invitations.manage" },
+                    { "type": "string", "const": "audit.view" }
+                  ]
+                }
+              },
+              "capabilitiesAfterStrongAuthentication": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "company.view" },
+                    { "type": "string", "const": "company.settings.manage" },
+                    { "type": "string", "const": "branches.view" },
+                    { "type": "string", "const": "branches.manage" },
+                    { "type": "string", "const": "members.manage" },
+                    { "type": "string", "const": "invitations.manage" },
+                    { "type": "string", "const": "audit.view" }
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "responsibilityTransfer": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "id",
+                  "direction",
+                  "fromMembershipId",
+                  "toMembershipId",
+                  "counterpartName",
+                  "counterpartEmail",
+                  "createdAt",
+                  "expiresAt"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "direction": {
+                    "anyOf": [
+                      { "type": "string", "const": "outgoing" },
+                      { "type": "string", "const": "incoming" }
+                    ]
+                  },
+                  "fromMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "toMembershipId": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "counterpartName": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "counterpartEmail": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "expiresAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "company", "type": "object", "required": true },
+        {
+          "name": "company.id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "company.displayName",
+          "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        {
+          "name": "company.status",
+          "type": "\"ACTIVE\" | \"SUSPENDED\"",
+          "required": true
+        },
+        {
+          "name": "company.defaultLocale",
+          "type": "\"pt-BR\" | \"en-US\"",
+          "required": true
+        },
+        {
+          "name": "company.timeZone",
+          "type": "string (min length 1, max length 64)",
+          "required": true
+        },
+        {
+          "name": "company.version",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "company.createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "company.updatedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        { "name": "access", "type": "object", "required": true },
+        {
+          "name": "access.roles",
+          "type": "array of \"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "required": true
+        },
+        { "name": "access.responsible", "type": "boolean", "required": true },
+        {
+          "name": "access.capabilities",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "required": true
+        },
+        {
+          "name": "access.capabilitiesAfterStrongAuthentication",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\"",
+          "required": true
+        },
+        {
+          "name": "responsibilityTransfer",
+          "type": "object | null",
+          "required": true
+        }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

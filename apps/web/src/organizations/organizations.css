@@ -1,0 +1,125 @@
+.organization-panel {
+  max-width: 52rem;
+}
+.organization-panel .notice {
+  margin: 1rem 0;
+}
+.organization-panel .notice .button-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+}
+.organization-list,
+.branch-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.organization-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  align-items: baseline;
+}
+.branch-item {
+  border: 1px solid #d7e0e7;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.branch-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.branch-create,
+.organization-panel form {
+  margin-top: 1.5rem;
+  max-width: 28rem;
+}
+.organization-panel select {
+  border: 1px solid #a9bbca;
+  border-radius: 7px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+  color: #172b3c;
+}
+.company-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin: 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #d7e0e7;
+}
+.company-navigation [aria-current="page"] {
+  font-weight: 700;
+}
+.company-settings dt {
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+.company-settings dd {
+  margin: 0.25rem 0 0;
+}
+.audit-list {
+  padding-left: 1.5rem;
+}
+.audit-list li {
+  margin: 1rem 0;
+}
+.audit-list li > span {
+  display: block;
+  margin-top: 0.25rem;
+}
+.notice-info {
+  color: #1d3d5c;
+  background: #eef5fb;
+  border: 1px solid #b8d0e6;
+}
+.notice-info p {
+  margin: 0;
+}
+.grant-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.grant-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+}
+.grant-form fieldset {
+  border: 1px solid #d7e0e7;
+  border-radius: 7px;
+  padding: 0.6rem 0.8rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.grant-form legend {
+  font-size: 0.88rem;
+  font-weight: 650;
+  padding: 0 0.3rem;
+}
+.grant-form .choice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+.grant-form .choice input {
+  width: auto;
+}

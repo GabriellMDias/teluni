@@ -2,7 +2,7 @@
 
 [Setup](../../docs/setup.md) · [API principles](../../docs/api/principles.md) · [OpenAPI](../../docs/generated/api/openapi.json) · [Validation](../../docs/validation.md)
 
-The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma, and optional bearer access-token verification. Product capabilities are [modules](#modules) composed in [`src/modules.ts`](src/modules.ts). The [web application](../web/README.md) consumes the generated API contract through the workspace SDK package (`packages/sdk`). The API verifies access tokens; it does not implement login, passwords, refresh tokens, or provider-specific sessions.
+The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma, and optional bearer access-token verification. Product capabilities are [modules](#modules) composed in [`src/modules.ts`](src/modules.ts). The [web application](../web/README.md) consumes the generated API contract through the workspace SDK package (`packages/sdk`). The composed `identity` module implements Keycloak login and server-managed human sessions without handling passwords; see [identity and sessions](#identity-and-sessions).
 
 ## Find the owning implementation
 
@@ -39,7 +39,7 @@ From the repository root:
 | Intentionally regenerate tracked API/database/configuration/error references | `pnpm -C apps/api references:write` |
 | Check current API/database/SDK references without editing them | `pnpm references:check` |
 
-Tests and reference generation use fresh migrated Testcontainers PostgreSQL, so a compatible container runtime must be reachable. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md) for downstream SDK/portal generation after source changes. The root `pnpm validate` also checks emitted builds, real-process recovery, and browser behavior; a focused package check alone does not replace it.
+Tests and reference generation use fresh migrated Testcontainers PostgreSQL, and identity tests also start the pinned Keycloak image, so a compatible container runtime must be reachable. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md) for downstream SDK/portal generation after source changes. The root `pnpm validate` also checks emitted builds, real-process recovery, and browser behavior; a focused package check alone does not replace it.
 
 ## Configuration and database access
 
@@ -51,9 +51,25 @@ The runtime role needs `USAGE` on the application schema plus only the table and
 
 The [release workflow](../../docs/database/release-evolution.md) owns durable migration recording. An empty registry is not permission to rewrite unverified history.
 
+## Identity and sessions
+
+The [`identity` module](src/features/identity/AGENTS.md) owns application principals and PostgreSQL-backed browser sessions under the [identity and session design](../../docs/project/identity-session-design.md). It requires the database, the token settings and the six `TELUNI_` human identity settings, and stays unmounted outside production until they are configured. Login, callback and back-channel logout are public browser/provider routes under `/auth`; session routes and every product module that needs a human authenticate through its session boundary, exposed to other modules only by `src/features/identity/public.ts`. That boundary passes the stored provider access token through the unchanged verifier below, so the cookie never bypasses it. Bearer-only requests without a session are rejected by session-protected operations.
+
+The realm contract is provisioned by [`scripts/identity-realm.ts`](scripts/identity-realm.ts) and qualified against the pinned Keycloak image in [`scripts/keycloak.ts`](scripts/keycloak.ts). Identity tests start that image and PostgreSQL through Testcontainers.
+
+## Organizations
+
+The [`organizations` module](src/features/organizations/AGENTS.md) depends on the identity session boundary. It owns companies, branches, creator memberships, responsibility, standard-role grants and branch scopes, and append-only organization audit under [D-01](../../docs/project/tenant-data-design.md#implementation-status). Every request resolves current tenant access; administrator and manager grants require strong authentication. Company creation is idempotent per principal/key and atomically creates the creator relationships and audit event. Company and branch changes use expected versions and write audit in the same transaction. Branch and audit pagination reject invalid or incorrectly bound cursors. Runtime grants exclude tenant-column changes, audit edits/deletion and membership/grant administration that has no implemented operation.
+
+The [`mail` module](src/features/mail/AGENTS.md) owns the transactional outbound-email outbox under [ADR-0026](../../docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md). It requires the database and the `TELUNI_MAIL_` settings (which also need `TELUNI_PUBLIC_ORIGIN`) and stays unmounted outside production until they are configured. Producers enqueue messages inside their own transactions through `src/features/mail/public.ts`; the dispatcher starts when the server is ready, claims due messages with expiring leases, submits them through SMTP at least once with bounded retries, and stops during shutdown drain.
+
+The `invitations` module, composed from the organizations feature, requires organizations and mail and owns company invitations under [D-13](../../docs/project/invitation-delivery-design.md#implementation-status): administrators and branch managers invite by email, and the person signed in with the invited verified address accepts with the credential from the email link in a request body. Organizations keeps working without it when mail is not configured.
+
+The [two-company suite](test/organizations/integration.test.ts) runs against migrated PostgreSQL as the restricted runtime role; its synthetic session port is confined to the test. The [organizations browser journeys](../web/test/e2e/organizations/companies.spec.ts) use the real identity stack. Invitations, membership/grant administration, responsibility transfer, custom profiles and platform/support access remain pending in PJ-03/PJ-24.
+
 ## Identity and contract
 
-The shared [token verifier](src/authentication.ts) accepts verified `at+jwt` tokens signed with RS256 or ES256 by the configured issuer for the configured audience. It validates expiration and requires nonempty `sub`, valid issuance/expiry timing, a stable `orion_principal_id` UUID, `orion_actor_type=human`, and a string `scope`. It yields the principal ID and the issuer-granted scopes; each module maps scopes to its own capabilities. Stored ownership must survive provider changes; request bodies cannot grant identity or capability. The [authentication policy](../../docs/security/authentication.md) and [ADR-0012](../../docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) govern this boundary; no concrete provider is selected or provisioned.
+The shared [token verifier](src/authentication.ts) accepts verified `at+jwt` tokens signed with RS256 or ES256 by the configured issuer for the configured audience. It validates expiration and requires nonempty `sub`, valid issuance/expiry timing, a stable `orion_principal_id` UUID, `orion_actor_type=human`, and a string `scope`. It yields the principal ID and the issuer-granted scopes; product modules also enforce current session and application-owned memberships. Stored ownership must survive provider changes; request bodies cannot grant identity or capability. The [authentication policy](../../docs/security/authentication.md) and [ADR-0012](../../docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) govern this boundary. Keycloak is selected and locally qualified; no real environment is provisioned.
 
 Executable module contracts own operations, stable operation IDs, typed inputs/outputs, and expected failures. The [OpenAPI reference](../../docs/generated/api/openapi.json) includes health and every composed module's operations; the [error reference](../../docs/generated/api/errors.md) derives from the shared and module registries.
 

@@ -41,13 +41,13 @@ Start the web development server in another terminal:
 pnpm -C apps/web dev
 ```
 
-Open the URL printed by Vite, normally `http://127.0.0.1:5173`. Vite forwards `/api` to the local API by default and loads its own `apps/web/.env.local` if web-specific `VITE_` values are needed. Do not copy the root API `.env.local` into the web app: server-only values must not enter a browser build. The home page lists the workflows that [web modules](../apps/web/README.md#modules) compose.
+Open the URL printed by Vite, normally `http://127.0.0.1:5173`. Vite forwards `/api` to the local API by default and loads its own `apps/web/.env.local` if web-specific `VITE_` values are needed. Do not copy the root API `.env.local` into the web app: server-only values must not enter a browser build. Teluni's entry page sends visitors to sign-in and shows signed-in people their [home page](../apps/web/README.md#entry-and-home-page).
 
 ## Local database and authentication
 
 [API configuration](generated/configuration/api.md) names the runtime settings. `ORION_DATABASE_URL` enables PostgreSQL for modules that require it and adds the database to readiness. The three token settings enable bearer authentication together; a trusted issuer must provide the claims described by the [authentication policy](security/authentication.md).
 
-For a separate **local** PostgreSQL, create distinct migration and restricted runtime credentials. Supply `ORION_MIGRATION_DATABASE_URL` in the shell only for `pnpm -C apps/api db:migrate:deploy`; the Prisma CLI reads it from that process. Keep `ORION_DATABASE_URL` in the root ignored `.env.local` for the API runtime, alongside any trusted token issuer, audience, and JWKS URL. The repository does not select or provision an issuer. Do not copy Testcontainers' synthetic credentials into a persistent environment, and clear the migration credential from the shell after deployment.
+For a separate **local** PostgreSQL, create distinct migration and restricted runtime credentials. Supply `ORION_MIGRATION_DATABASE_URL` in the shell only for `pnpm -C apps/api db:migrate:deploy`; the Prisma CLI reads it from that process. Keep `ORION_DATABASE_URL` in the root ignored `.env.local` for the API runtime, alongside the trusted token issuer, audience and JWKS URL. Human sessions use the selected Keycloak realm and the additional identity settings in the [configuration reference](generated/configuration/api.md); [the disposable identity stack](#try-sign-in-locally) is the available local qualification path. No persistent environment is provisioned by this guide. Do not copy Testcontainers' synthetic credentials into a persistent environment, and clear the migration credential from the shell after deployment.
 
 ## Living Documentation Portal
 
@@ -55,7 +55,32 @@ The portal needs no API, database, identity provider, or `.env.local`. After the
 
 To try an API route, also run the API as described above, open an API operation, enter declared inputs and a token when the operation requires one, then select **Send request**. Writes require explicit acknowledgement. Tokens and responses remain in memory; no request executes automatically. Cancellation/timeouts do not prove a write was undone. Without the API, reading remains available and request failures are shown safely.
 
-After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Build with `pnpm -C apps/web build`; preview with `pnpm -C apps/web exec vite preview --host 127.0.0.1`, then open `/docs` on the printed port. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.
+After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Teluni's production build (`pnpm -C apps/web build`) deliberately excludes the portal, so read it through the development server; `vite preview` serves the product build only. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.
+
+## Persistent local environment
+
+For day-to-day development with data that survives restarts, start the local services once and run the API and web application in watch mode. With Docker running, from the repository root:
+
+```sh
+pnpm db:generate
+pnpm -C apps/api dev:services up
+pnpm -C apps/api dev
+pnpm -C apps/web dev
+```
+
+`dev:services up` creates or starts named containers (PostgreSQL on `127.0.0.1:55433`, Keycloak on `localhost:8180` with its management port on `9180`, Mailpit with SMTP on `127.0.0.1:1025` and its inbox on `http://127.0.0.1:8025`) with named volumes, applies the committed migrations and runtime grants, provisions the `teluni` realm with the Teluni sign-in theme, creates the synthetic developer account `dev@teluni.test`, and writes the root `.env.local` the API loads. Machine-local credentials (database, Keycloak bootstrap administrator, client secrets, key rings and the developer password) are generated once and kept in the ignored `.env.dev-services`; a previous `.env.local` is copied to `.env.local.before-dev-services`. Open `http://127.0.0.1:5173`; invitation and verification emails arrive in the Mailpit inbox. Rerun `up` after pulling new migrations or realm changes. `pnpm -C apps/api dev:services down` stops the containers and keeps their data; `reset` removes containers, volumes and network so the next `up` starts empty. Keycloak's back-channel logout cannot reach an API listening on loopback, so in this environment provider-side sign-outs end panel sessions through the 30-second revalidation instead. These are development services only; never point the script or its credentials at shared or production systems.
+
+## Try sign-in locally
+
+The identity workflow needs a Keycloak that the API calls back, so it runs as a disposable stack rather than with `.env.local`. With Docker running, from the repository root:
+
+```sh
+pnpm db:generate
+pnpm -C apps/api build
+node apps/web/test/e2e/identity/manual.ts
+```
+
+It starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It also configures the API's mail relay to Mailpit. It prints the panel URL, the Mailpit inbox URL and the email and password of a synthetic user and of a synthetic invitee; invitations sent from a company's Invitations view arrive in Mailpit, and you can also create an account on the Keycloak sign-in page and read its verification email there. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).
 
 ## Exercise automated workflows
 

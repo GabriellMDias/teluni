@@ -27,6 +27,33 @@ export const serverConfigSchema = Type.Object(
     tokenIssuer: Type.Optional(Type.String({ minLength: 1 })),
     tokenAudience: Type.Optional(Type.String({ minLength: 1 })),
     tokenJwksUrl: Type.Optional(Type.String({ minLength: 1 })),
+    publicOrigin: Type.Optional(Type.String({ minLength: 1 })),
+    oidcClientId: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9._-]{1,255}$" }),
+    ),
+    oidcClientSecret: Type.Optional(Type.String({ minLength: 16 })),
+    provisionerClientId: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9._-]{1,255}$" }),
+    ),
+    provisionerClientSecret: Type.Optional(Type.String({ minLength: 16 })),
+    sessionKeys: Type.Optional(Type.String({ minLength: 1 })),
+    mailSmtpHost: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9.-]{1,253}$" }),
+    ),
+    mailSmtpPort: Type.Integer({ minimum: 1, maximum: 65535 }),
+    mailSmtpSecurity: Type.Union([
+      Type.Literal("tls"),
+      Type.Literal("starttls"),
+      Type.Literal("none"),
+    ]),
+    mailSmtpUsername: Type.Optional(
+      Type.String({ minLength: 1, maxLength: 256 }),
+    ),
+    mailSmtpPassword: Type.Optional(
+      Type.String({ minLength: 1, maxLength: 512 }),
+    ),
+    mailFrom: Type.Optional(Type.String({ minLength: 3, maxLength: 254 })),
+    mailKeys: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
@@ -182,7 +209,193 @@ export const configReference = Object.freeze([
     secret: false,
     purpose: "Trusted issuer public-key endpoint.",
   },
+  {
+    key: "publicOrigin",
+    name: "TELUNI_PUBLIC_ORIGIN",
+    type: "origin URL (scheme, host, optional port)",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Browser-visible panel origin for OIDC callbacks, cookie security and CSRF origin checks; HTTPS outside loopback development.",
+  },
+  {
+    key: "oidcClientId",
+    name: "TELUNI_OIDC_CLIENT_ID",
+    type: "client identifier",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Confidential human-login OIDC client used by the server-managed session boundary.",
+  },
+  {
+    key: "oidcClientSecret",
+    name: "TELUNI_OIDC_CLIENT_SECRET",
+    type: "secret string, at least 16 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose: "Credential of the human-login OIDC client.",
+  },
+  {
+    key: "provisionerClientId",
+    name: "TELUNI_IDENTITY_PROVISIONER_CLIENT_ID",
+    type: "client identifier",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Service-account client that writes the administrator-only application principal attribute.",
+  },
+  {
+    key: "provisionerClientSecret",
+    name: "TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET",
+    type: "secret string, at least 16 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose: "Credential of the principal provisioner service account.",
+  },
+  {
+    key: "sessionKeys",
+    name: "TELUNI_SESSION_KEYS",
+    type: "comma-separated id:base64url 32-byte keys, newest first",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Key ring for provider-token encryption and CSRF tokens; the first key protects new values, all keys remain readable during rotation.",
+  },
+  {
+    key: "mailSmtpHost",
+    name: "TELUNI_MAIL_SMTP_HOST",
+    type: "host name or address",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "SMTP submission relay for transactional email; configure with the sender and mail key ring to enable the mail module.",
+  },
+  {
+    key: "mailSmtpPort",
+    name: "TELUNI_MAIL_SMTP_PORT",
+    type: "integer 1..65535",
+    required: false,
+    default: "587",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose: "SMTP submission relay port.",
+  },
+  {
+    key: "mailSmtpSecurity",
+    name: "TELUNI_MAIL_SMTP_SECURITY",
+    type: "tls | starttls | none",
+    required: false,
+    default: "starttls",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Implicit TLS or mandatory STARTTLS with certificate verification; none only for a loopback test sink outside production.",
+  },
+  {
+    key: "mailSmtpUsername",
+    name: "TELUNI_MAIL_SMTP_USERNAME",
+    type: "string, 1..256 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "SMTP authentication user; configured together with the password, or both omitted for an unauthenticated test sink.",
+  },
+  {
+    key: "mailSmtpPassword",
+    name: "TELUNI_MAIL_SMTP_PASSWORD",
+    type: "secret string, 1..512 characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose: "SMTP authentication credential of the mail relay.",
+  },
+  {
+    key: "mailFrom",
+    name: "TELUNI_MAIL_FROM",
+    type: "email address",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Sender address of transactional email; its domain must be authorized for the relay.",
+  },
+  {
+    key: "mailKeys",
+    name: "TELUNI_MAIL_KEYS",
+    type: "comma-separated id:base64url 32-byte keys, newest first",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Key ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values.",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
+
+const keyRingEntryPattern = /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9_-]{43}$/;
+
+/** Parses a validated `id:key` ring; the first entry is current. */
+export function parseKeyRing(
+  value: string,
+  label: string,
+): readonly Readonly<{ id: string; key: Buffer }>[] {
+  const entries = value.split(",").map((entry) => entry.trim());
+  const ids = new Set<string>();
+  const keys = entries.map((entry) => {
+    if (!keyRingEntryPattern.test(entry))
+      throw new Error(`Invalid API configuration: ${label}`);
+    const [id, encoded] = entry.split(":") as [string, string];
+    if (ids.has(id)) throw new Error(`Invalid API configuration: ${label}`);
+    ids.add(id);
+    const key = Buffer.from(encoded, "base64url");
+    if (key.length !== 32)
+      throw new Error(`Invalid API configuration: ${label}`);
+    return Object.freeze({ id, key });
+  });
+  return Object.freeze(keys);
+}
+
+/** Parses the validated session key ring; the first entry is current. */
+export function parseSessionKeys(
+  value: string,
+): readonly Readonly<{ id: string; key: Buffer }>[] {
+  return parseKeyRing(value, "session keys");
+}
+
+// The same conservative shape as src/email-address.ts. This file has no local
+// imports so repository tooling can load it directly.
+const senderPattern = /^[^\s@<>",;]{1,64}@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
   if (value === undefined) return fallback;
@@ -216,6 +429,44 @@ export function parseServerConfig(
     ...(env.ORION_TOKEN_JWKS_URL === undefined
       ? {}
       : { tokenJwksUrl: env.ORION_TOKEN_JWKS_URL }),
+    ...(env.TELUNI_PUBLIC_ORIGIN === undefined
+      ? {}
+      : { publicOrigin: env.TELUNI_PUBLIC_ORIGIN }),
+    ...(env.TELUNI_OIDC_CLIENT_ID === undefined
+      ? {}
+      : { oidcClientId: env.TELUNI_OIDC_CLIENT_ID }),
+    ...(env.TELUNI_OIDC_CLIENT_SECRET === undefined
+      ? {}
+      : { oidcClientSecret: env.TELUNI_OIDC_CLIENT_SECRET }),
+    ...(env.TELUNI_IDENTITY_PROVISIONER_CLIENT_ID === undefined
+      ? {}
+      : { provisionerClientId: env.TELUNI_IDENTITY_PROVISIONER_CLIENT_ID }),
+    ...(env.TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET === undefined
+      ? {}
+      : {
+          provisionerClientSecret:
+            env.TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET,
+        }),
+    ...(env.TELUNI_SESSION_KEYS === undefined
+      ? {}
+      : { sessionKeys: env.TELUNI_SESSION_KEYS }),
+    ...(env.TELUNI_MAIL_SMTP_HOST === undefined
+      ? {}
+      : { mailSmtpHost: env.TELUNI_MAIL_SMTP_HOST }),
+    mailSmtpPort: numberFromEnv(env.TELUNI_MAIL_SMTP_PORT, 587),
+    mailSmtpSecurity: env.TELUNI_MAIL_SMTP_SECURITY ?? "starttls",
+    ...(env.TELUNI_MAIL_SMTP_USERNAME === undefined
+      ? {}
+      : { mailSmtpUsername: env.TELUNI_MAIL_SMTP_USERNAME }),
+    ...(env.TELUNI_MAIL_SMTP_PASSWORD === undefined
+      ? {}
+      : { mailSmtpPassword: env.TELUNI_MAIL_SMTP_PASSWORD }),
+    ...(env.TELUNI_MAIL_FROM === undefined
+      ? {}
+      : { mailFrom: env.TELUNI_MAIL_FROM }),
+    ...(env.TELUNI_MAIL_KEYS === undefined
+      ? {}
+      : { mailKeys: env.TELUNI_MAIL_KEYS }),
   };
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
@@ -285,6 +536,72 @@ export function parseServerConfig(
     candidate.tokenAudience.trim() === ""
   )
     throw new Error("Invalid API configuration: token audience");
+  const identityValues = [
+    candidate.publicOrigin,
+    candidate.oidcClientId,
+    candidate.oidcClientSecret,
+    candidate.provisionerClientId,
+    candidate.provisionerClientSecret,
+    candidate.sessionKeys,
+  ];
+  // Human sessions are all-or-none and reuse the access-token issuer.
+  if (identityValues.some(Boolean)) {
+    if (identityValues.some((value) => !value) || !candidate.tokenIssuer)
+      throw new Error(
+        "Invalid API configuration: incomplete human identity settings",
+      );
+    let origin: URL;
+    try {
+      origin = new URL(candidate.publicOrigin!);
+    } catch {
+      throw new Error("Invalid API configuration: public origin");
+    }
+    const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(
+      origin.hostname,
+    );
+    if (
+      origin.origin !== candidate.publicOrigin ||
+      (origin.protocol !== "https:" &&
+        (origin.protocol !== "http:" ||
+          !loopback ||
+          candidate.environment === "production"))
+    )
+      throw new Error("Invalid API configuration: public origin");
+    parseSessionKeys(candidate.sessionKeys!);
+  }
+  const mailValues = [
+    candidate.mailSmtpHost,
+    candidate.mailFrom,
+    candidate.mailKeys,
+  ];
+  // Mail is all-or-none; its links point to the human panel origin.
+  if (
+    mailValues.some(Boolean) ||
+    candidate.mailSmtpUsername ||
+    candidate.mailSmtpPassword
+  ) {
+    if (mailValues.some((value) => !value) || !candidate.publicOrigin)
+      throw new Error("Invalid API configuration: incomplete mail settings");
+    if (
+      Boolean(candidate.mailSmtpUsername) !==
+      Boolean(candidate.mailSmtpPassword)
+    )
+      throw new Error("Invalid API configuration: mail credentials");
+    if (
+      candidate.mailFrom!.length > 254 ||
+      !senderPattern.test(candidate.mailFrom!)
+    )
+      throw new Error("Invalid API configuration: mail sender");
+    const loopbackRelay = ["localhost", "127.0.0.1", "::1"].includes(
+      candidate.mailSmtpHost!,
+    );
+    if (
+      candidate.mailSmtpSecurity === "none" &&
+      (candidate.environment === "production" || !loopbackRelay)
+    )
+      throw new Error("Invalid API configuration: mail transport security");
+    parseKeyRing(candidate.mailKeys!, "mail keys");
+  }
   return Object.freeze(candidate);
 }
 

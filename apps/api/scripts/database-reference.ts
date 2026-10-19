@@ -168,7 +168,11 @@ export async function generateDatabaseReference(
       FROM pg_index x JOIN pg_class c ON c.oid=x.indrelid JOIN pg_class i ON i.oid=x.indexrelid
       JOIN pg_namespace n ON n.oid=c.relnamespace
       WHERE n.nspname='public' AND c.relname <> '_prisma_migrations'
-        AND NOT EXISTS (SELECT 1 FROM pg_constraint k WHERE k.conindid=i.oid)
+        -- Skip only indexes owned by a primary-key, unique or exclusion
+        -- constraint; a foreign key also records the referenced index in
+        -- conindid, but that index remains a standalone documented object.
+        AND NOT EXISTS (SELECT 1 FROM pg_constraint k WHERE k.conindid=i.oid
+          AND k.conrelid=x.indrelid AND k.contype IN ('p','u','x'))
       ORDER BY c.relname,i.relname`)
     ).rows;
     const enums = (

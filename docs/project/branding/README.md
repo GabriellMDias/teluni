@@ -60,7 +60,7 @@ The kit's standalone symbol is an export of the runtime mark; do not evolve it i
 
 ## Web integration and regeneration
 
-The shell, documentation rail and browser favicon use the canonical SVG. The web stylesheet serves Plus Jakarta Sans from [the local font file](../../../apps/web/public/fonts/plus-jakarta-sans.ttf). The public font directory includes its [OFL license](../../../apps/web/public/fonts/OFL.txt) and [upstream source metadata](../../../apps/web/public/fonts/sources.json), which are copied into the static build along with the font. Third-party font software retains its own license.
+The shell, documentation rail, browser favicon and the Keycloak sign-in theme (which mounts it from `apps/web/src/assets`) use the canonical SVG. The web stylesheet, and the sign-in theme through the same file, serve Plus Jakarta Sans from [the local font file](../../../apps/web/public/fonts/plus-jakarta-sans.ttf). The public font directory includes its [OFL license](../../../apps/web/public/fonts/OFL.txt) and [upstream source metadata](../../../apps/web/public/fonts/sources.json), which are copied into the static build along with the font. Third-party font software retains its own license.
 
 After changing the approved mark, run `pnpm -C apps/web identity:write` to regenerate the runtime touch PNG through the existing Playwright exporter. Commit SVG and PNG together. The export background is `#F8FAFC`; do not edit the PNG independently or replace it with a board image. Refresh kit symbol/touch copies from these canonical outputs, then regenerate size-specific proofs if needed.
 

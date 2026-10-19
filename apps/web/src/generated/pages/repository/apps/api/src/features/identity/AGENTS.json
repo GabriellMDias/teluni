@@ -1,0 +1,9 @@
+{
+  "kind": "repository",
+  "source": "apps/api/src/features/identity/AGENTS.md",
+  "title": "Identity Module",
+  "html": "<p>This module owns application principals, server-managed human sessions and the session boundary other modules use. Read the <a href=\"/docs/repository/docs/project/identity-session-design\">identity and session design</a> and the <a href=\"/docs/repository/docs/project/identity-and-access\">identity policies</a> before changing behavior.</p>\n<ul>\n<li>Other modules import only <code>public.ts</code>; dependency rules reject imports of this module's internals. Compose dependents after this module in <code>src/modules.ts</code> with <code>requiresModules: [&quot;identity&quot;]</code>.</li>\n<li>Never weaken the ADR-0012 verifier, the CSRF/Origin check, the 30-second provider revalidation or the single-use login attempt to make a flow pass. A Keycloak behavior that does not meet the design is a recorded gap, not a reason to relax a check.</li>\n<li>Keep provider calls outside database transactions, credentials out of logs and errors, and the recoverable cookie credential out of storage (only its SHA-256 digest is persisted; provider tokens are sealed).</li>\n<li>The realm contract lives in <code>apps/api/scripts/identity-realm.ts</code> and is qualified by <code>test/identity/keycloak-contract.test.ts</code> against the pinned image in <code>scripts/keycloak.ts</code>; change them together.</li>\n</ul>\n",
+  "headings": [
+    { "id": "identity-module", "text": "Identity Module", "level": 1 }
+  ]
+}

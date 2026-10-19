@@ -1,0 +1,259 @@
+{
+  "tables": {
+    "principals": {
+      "owner": "Identity",
+      "classification": "CONFIDENTIAL",
+      "description": "Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.",
+      "lifecycle": "Created at first verified login; never deleted by the runtime. Disablement is a state change. Retention and erasure follow PH-13.",
+      "columns": {
+        "id": {
+          "description": "Application-generated immutable principal UUID, written to the provider's administrator-only attribute and asserted by access tokens as orion_principal_id.",
+          "classification": "CONFIDENTIAL"
+        },
+        "issuer": {
+          "description": "Exact OIDC issuer that authenticated this principal; together with subject it is the provider association.",
+          "classification": "INTERNAL"
+        },
+        "subject": {
+          "description": "Provider-assigned stable subject identifier at the issuer; never used as the application identity.",
+          "classification": "CONFIDENTIAL"
+        },
+        "status": {
+          "description": "ACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of principal provisioning.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "disabled_at": {
+          "description": "PostgreSQL-clock instant of global disablement.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The principal is active.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "display_name": {
+          "description": "Presentation name from the last verified login; never used as identity or authorization evidence.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No bounded display name has been obtained from a verified login."
+        },
+        "verified_email": {
+          "description": "Presentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No bounded verified email snapshot has been obtained."
+        }
+      },
+      "objects": {
+        "principals_pkey": "Unique immutable application principal identity.",
+        "principals_issuer_subject_key": "One application principal per provider identity; concurrent first logins converge on one row.",
+        "principals_issuer_nonblank": "Issuer is an absolute HTTP(S) URL without whitespace.",
+        "principals_subject_nonblank": "Provider subject cannot be blank.",
+        "principals_disabled_state": "A disablement instant exists exactly for disabled principals.",
+        "principals_display_name_nonblank": "A presentation name, when present, cannot be blank.",
+        "principals_verified_email_nonblank": "A verified-login email snapshot, when present, cannot be blank."
+      }
+    },
+    "human_sessions": {
+      "owner": "Identity",
+      "classification": "RESTRICTED",
+      "description": "Server-managed browser session: an opaque cookie credential's hash, its bounds and assurance, and the sealed provider tokens obtained for it.",
+      "lifecycle": "Created at login as ACTIVE, or PENDING_LIMIT when the principal already has five active sessions; REVOKED rows are retained without deletion until a retention rule is approved under PH-13.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated session UUID, shown to its owner for session management and bound into sealed tokens and CSRF tokens.",
+          "classification": "CONFIDENTIAL"
+        },
+        "principal_id": {
+          "description": "Principal that authenticated this session.",
+          "classification": "CONFIDENTIAL"
+        },
+        "token_hash": {
+          "description": "SHA-256 of the 32-byte random cookie credential; the recoverable credential is never stored.",
+          "classification": "RESTRICTED"
+        },
+        "state": {
+          "description": "PENDING_LIMIT may only list and end sessions; ACTIVE may call protected operations; REVOKED is terminal.",
+          "classification": "INTERNAL"
+        },
+        "provider_session_id": {
+          "description": "Provider session identifier (OIDC sid) used to apply back-channel logout.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The provider did not report a session identifier."
+        },
+        "assurance_level": {
+          "description": "Authentication context class (acr) asserted by the ID token verified at login.",
+          "classification": "INTERNAL"
+        },
+        "authenticated_at": {
+          "description": "Provider-reported instant of the user's authentication (auth_time) for this session.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "strong_authenticated_at": {
+          "description": "Instant of the latest strong authentication verified for this session, used for recent-authentication checks.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No strong authentication has been verified for this session.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "idle_timeout_seconds": {
+          "description": "Inactivity bound applied to this session: 1800 for administrative contexts or principals without memberships, 7200 for operator-only access.",
+          "classification": "INTERNAL",
+          "unit": "seconds"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the session was created.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "last_activity_at": {
+          "description": "PostgreSQL-clock instant of the latest recorded human activity; background requests do not advance it, and writes are throttled to 15 seconds.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "absolute_expires_at": {
+          "description": "Instant after which the session is invalid regardless of activity, at most 12 hours after creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "provider_tokens": {
+          "description": "Provider access, refresh and ID tokens sealed with AES-256-GCM under the session key ring and bound to the session ID.",
+          "classification": "RESTRICTED"
+        },
+        "access_token_expires_at": {
+          "description": "Database-clock estimate of the sealed access token's expiry, five seconds earlier than the provider's lifetime.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "provider_checked_at": {
+          "description": "Latest instant the provider confirmed the session through introspection, refresh or login.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "refresh_lease_until": {
+          "description": "End of the single-flight lease held by the request refreshing provider tokens.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No refresh is in progress.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "revoked_at": {
+          "description": "PostgreSQL-clock instant the session was revoked.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The session has not been revoked.",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "revocation_reason": {
+          "description": "Why the session ended: logout, user termination, expiry, replacement, provider logout or inactivity, refresh rejection, principal disablement or principal mismatch.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The session has not been revoked."
+        }
+      },
+      "objects": {
+        "human_sessions_pkey": "Unique session identity.",
+        "human_sessions_principal_id_fkey": "A session belongs to an existing principal; principals cannot be deleted while sessions exist.",
+        "human_sessions_token_hash_key": "One session per cookie credential; supports lookup by credential hash.",
+        "human_sessions_principal_state_idx": "Supports counting and listing a principal's sessions by state.",
+        "human_sessions_provider_session_idx": "Supports back-channel logout by provider session identifier.",
+        "human_sessions_token_hash_sha256": "Credential hash is exactly one SHA-256 digest.",
+        "human_sessions_idle_bounds": "Inactivity bound stays between one minute and the two-hour operator maximum.",
+        "human_sessions_absolute_after_creation": "Absolute expiry follows creation by at most the selected 12-hour maximum.",
+        "human_sessions_revocation_state": "Revocation instant and reason exist exactly for revoked sessions.",
+        "human_sessions_revocation_reason_known": "Revocation reason is one of the documented values."
+      }
+    },
+    "oidc_login_attempts": {
+      "owner": "Identity",
+      "classification": "RESTRICTED",
+      "description": "Single-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.",
+      "lifecycle": "Created when a login starts, consumed once by the callback and expired after 10 minutes; expired rows are retained until a cleanup rule is approved.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated attempt UUID that binds the sealed secrets.",
+          "classification": "INTERNAL"
+        },
+        "handle_hash": {
+          "description": "SHA-256 of the random login-attempt cookie value.",
+          "classification": "RESTRICTED"
+        },
+        "state": {
+          "description": "OIDC state value expected back at the callback.",
+          "classification": "INTERNAL"
+        },
+        "secrets": {
+          "description": "PKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID.",
+          "classification": "RESTRICTED"
+        },
+        "return_to": {
+          "description": "Validated same-origin relative path to open after a successful login.",
+          "classification": "INTERNAL"
+        },
+        "requested_assurance": {
+          "description": "Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.",
+          "classification": "INTERNAL",
+          "nullMeaning": "A standard login without a requested level."
+        },
+        "max_age_seconds": {
+          "description": "Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No maximum age was requested.",
+          "unit": "seconds"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the login started.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "expires_at": {
+          "description": "Instant after which the callback can no longer consume the attempt.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "consumed_at": {
+          "description": "Instant the callback consumed the attempt; a second use is rejected.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The attempt has not been used.",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "oidc_login_attempts_pkey": "Unique attempt identity.",
+        "oidc_login_attempts_handle_hash_key": "One attempt per browser handle; supports consumption by handle.",
+        "oidc_login_attempts_handle_sha256": "Handle hash is exactly one SHA-256 digest.",
+        "oidc_login_attempts_state_nonblank": "State uses the base64url alphabet and cannot be blank.",
+        "oidc_login_attempts_return_relative": "Return path is relative to the panel origin.",
+        "oidc_login_attempts_expiry_bounds": "An attempt expires after creation and within 10 minutes.",
+        "oidc_login_attempts_max_age_bounds": "Requested maximum authentication age cannot be negative."
+      }
+    },
+    "backchannel_logout_replays": {
+      "owner": "Identity",
+      "classification": "INTERNAL",
+      "description": "Identifiers of accepted provider logout tokens, kept to reject a replayed token.",
+      "lifecycle": "Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.",
+      "columns": {
+        "jti": {
+          "description": "Unique identifier (jti) of an accepted logout token.",
+          "classification": "INTERNAL"
+        },
+        "received_at": {
+          "description": "PostgreSQL-clock instant the token was accepted.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "expires_at": {
+          "description": "Instant after which the token would fail the five-minute age check, so its record is no longer needed.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "backchannel_logout_replays_pkey": "Each logout token is accepted at most once.",
+        "backchannel_logout_replays_expiry_after_receipt": "A replay record expires after it was received."
+      }
+    }
+  },
+  "enums": {
+    "PrincipalStatus": "Global principal state: ACTIVE or DISABLED.",
+    "HumanSessionState": "Server-managed session state: PENDING_LIMIT, ACTIVE or REVOKED."
+  }
+}

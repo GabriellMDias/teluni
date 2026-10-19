@@ -18,6 +18,9 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | What must tenancy, identity, data protection, and localization protect? | [Security and internationalization](security-and-i18n.md) |
 | Which human login, recovery, session and permission policies did the owner select? | [Human identity and access](identity-and-access.md) |
 | What evidence supports the accepted identity provider, and what remains unqualified? | [Identity-provider evaluation](identity-provider-evaluation.md) |
+| How will tenant-owned data be constrained and scoped in persistence (approved D-01)? | [Tenant data ownership and access design](tenant-data-design.md) |
+| How will Keycloak, principals, browser sessions and assurance integrate with the API (approved D-02)? | [Human identity and session integration design](identity-session-design.md) |
+| How will company invitations and durable transactional email work (approved D-13)? | [Company invitation and durable email delivery design](invitation-delivery-design.md) |
 | What could prevent delivery or safe operation? | [Risks and dependencies](risks.md) |
 | What is the phase sequence and current execution state? | [Implementation plan](implementation-plan.md) |
 | Which decisions or external prerequisites need a human? | [Human actions](human-actions.md) |
@@ -38,6 +41,6 @@ Task statuses (`pending`, `in progress`, `completed`, `blocked`, `changed`) have
 
 ## Verified baseline
 
-The [manifest](../../.orion/project.json) identifies a derived Teluni project, initialized from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. [API composition](../../apps/api/src/modules.ts) is empty; [web composition](../../apps/web/src/modules.tsx) contains the core shell/portal only. There are no product tables/migrations, player application, media service, deployment manifests, or tenant workflows. The API runtime has health routes, configuration, telemetry, PostgreSQL infrastructure, and optional JWT access-token verification. These are foundation capabilities, not a working SaaS sign-in or tenant system.
+The [manifest](../../.orion/project.json) identifies a derived Teluni project, initialized from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. [API composition](../../apps/api/src/modules.ts) and [web composition](../../apps/web/src/modules.tsx) contain `identity` and `organizations`: sign-in, server-managed sessions, OTP step-up, company creation with creator membership/responsibility, scoped standard-role access, branches and atomic audit. Their tables and references exist; their local tests use disposable Keycloak and PostgreSQL. Membership administration and the broader identity/access scope remain in progress in PJ-03/PJ-24. No player application, media service, deployment manifest or provisioned real environment exists.
 
 This documentation stage does not authorize implementation, deployment, external publication, or acquisition of paid services. The [plan](implementation-plan.md#phase-sequence-and-exit-criteria) identifies the next review and delivery gates.

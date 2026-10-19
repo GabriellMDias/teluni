@@ -1,0 +1,127 @@
+{
+  "kind": "database",
+  "name": "principals",
+  "description": "Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.",
+  "owner": "Identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created at first verified login; never deleted by the runtime. Disablement is a state change. Retention and erasure follow PH-13.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Application-generated immutable principal UUID, written to the provider's administrator-only attribute and asserted by access tokens as orion_principal_id.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "issuer",
+      "PostgreSQL type": "character varying(512)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Exact OIDC issuer that authenticated this principal; together with subject it is the provider association.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "subject",
+      "PostgreSQL type": "character varying(255)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Provider-assigned stable subject identifier at the issuer; never used as the application identity.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"PrincipalStatus\"",
+      "Nullable": "no",
+      "Default": "'ACTIVE'::\"PrincipalStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "ACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of principal provisioning.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "disabled_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of global disablement.",
+      "Null meaning": "The principal is active.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "display_name",
+      "PostgreSQL type": "character varying(200)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Presentation name from the last verified login; never used as identity or authorization evidence.",
+      "Null meaning": "No bounded display name has been obtained from a verified login.",
+      "Unit": "—"
+    },
+    {
+      "Column": "verified_email",
+      "PostgreSQL type": "character varying(320)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Presentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations.",
+      "Null meaning": "No bounded verified email snapshot has been obtained.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "principals_disabled_state",
+      "Physical definition": "CHECK (((status = 'DISABLED'::\"PrincipalStatus\") = (disabled_at IS NOT NULL)))",
+      "Purpose": "A disablement instant exists exactly for disabled principals."
+    },
+    {
+      "Object": "principals_display_name_nonblank",
+      "Physical definition": "CHECK (((display_name IS NULL) OR (btrim((display_name)::text) <> ''::text)))",
+      "Purpose": "A presentation name, when present, cannot be blank."
+    },
+    {
+      "Object": "principals_issuer_nonblank",
+      "Physical definition": "CHECK (((issuer)::text ~ '^https?://[^[:space:]]+$'::text))",
+      "Purpose": "Issuer is an absolute HTTP(S) URL without whitespace."
+    },
+    {
+      "Object": "principals_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique immutable application principal identity."
+    },
+    {
+      "Object": "principals_subject_nonblank",
+      "Physical definition": "CHECK (((subject)::text ~ '[^[:space:]]'::text))",
+      "Purpose": "Provider subject cannot be blank."
+    },
+    {
+      "Object": "principals_verified_email_nonblank",
+      "Physical definition": "CHECK (((verified_email IS NULL) OR (btrim((verified_email)::text) <> ''::text)))",
+      "Purpose": "A verified-login email snapshot, when present, cannot be blank."
+    },
+    {
+      "Object": "principals_issuer_subject_key",
+      "Physical definition": "CREATE UNIQUE INDEX principals_issuer_subject_key ON public.principals USING btree (issuer, subject)",
+      "Purpose": "One application principal per provider identity; concurrent first logins converge on one row."
+    }
+  ]
+}
