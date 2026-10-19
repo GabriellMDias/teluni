@@ -1,5 +1,41 @@
 [
   {
+    "id": "repository/docs/setup",
+    "title": "Development Setup",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Try sign-in locally",
+    "anchor": "try-sign-in-locally",
+    "text": "Try sign-in locally\nThe identity workflow needs a Keycloak that the API calls back, so it runs as a disposable stack rather than with `.env.local`. With Docker running, from the repository root:\npnpm db:generate\npnpm -C apps/api build\nnode apps/web/test/e2e/identity/manual.ts\n\nIt starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It also configures the API's mail relay to Mailpit. It prints the panel URL, the Mailpit inbox URL and the email and password of a synthetic user and of a synthetic invitee; invitations sent from a company's Invitations view arrive in Mailpit, and you can also create an account on the Keycloak sign-in page and read its verification email there. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).\n"
+  },
+  {
+    "id": "repository/docs/setup",
+    "title": "Development Setup",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Exercise automated workflows",
+    "anchor": "exercise-automated-workflows",
+    "text": "Exercise automated workflows\nAutomated workflows use disposable databases and synthetic identities. No seed data or external account is needed:\npnpm build\npnpm smoke\npnpm test:e2e\n\n`pnpm smoke` exercises the emitted API process, then any module process smokes. `pnpm test:e2e` runs the emitted API and the Vite web app for the shared documentation and shell journeys; module journeys start their own migrated PostgreSQL and synthetic issuer through the shared [end-to-end stack helpers](../apps/web/test/e2e/stack.ts). These fixtures are disposable and are not release or production data.\n"
+  },
+  {
+    "id": "repository/docs/setup",
+    "title": "Development Setup",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Validate, regenerate, and build",
+    "anchor": "validate-regenerate-and-build",
+    "text": "Validate, regenerate, and build\nRun the full, non-mutating tracked-source gate after changes:\npnpm validate\n\nIt checks format, lint, types, dependency boundaries, documentation, `.env.example` against API configuration metadata, migration release history, project provenance, current generated references, real PostgreSQL and browser tests, builds, and process smokes. `pnpm references:check` diagnoses generated API/database/SDK drift independently; it migrates a fresh PostgreSQL for the physical database reference and does not repair tracked files. To intentionally change those references, edit their canonical TypeBox/schema/metadata sources and run `pnpm -C apps/api references:write`, then `pnpm -C packages/sdk generate` after an OpenAPI change. Review the generated diff and rerun `pnpm references:check`.\nAfter intentional repository Markdown, API, database, or component-metadata changes, run `pnpm docs:references:write` and review the generated component Markdown, catalog, detail pages, and search shards. Vite serves/emits the existing API, database, error, and component artifacts without committing duplicate copies. `pnpm docs:references:check` is non-mutating and fails on drift, missing component metadata, or known secret patterns; it runs within `pnpm validate` and CI. Do not edit either generated layer directly.\n`pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.\n"
+  },
+  {
+    "id": "repository/docs/validation",
+    "title": "Validation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Validation",
+    "anchor": "validation",
+    "text": "Validation\n"
+  },
+  {
     "id": "repository/docs/validation",
     "title": "Validation",
     "group": "Project guides",
@@ -114,7 +150,7 @@
     "kind": "repository",
     "heading": "Current state",
     "anchor": "current-state",
-    "text": "Current state\nThis repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It contains the foundation's architecture, policies, accepted ADRs, tooling, validation gate, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). The API and web application compose `identity` (Keycloak login, server-managed human sessions and OTP step-up) and the first `organizations` increments (companies, creator memberships, scoped standard-role access, branches, company settings, paginated change history, member administration, role grants, responsibility transfer and email invitations), with a `mail` module that delivers transactional email through a PostgreSQL outbox. The [identity/access policies](docs/project/identity-and-access.md) and D-01/D-02 designs are owner-approved. Tests use disposable Keycloak/PostgreSQL; real-environment provisioning and qualification remain pending.\nThe [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\nThe initial product brief is documented. Real email sending (the D-13 [invitation and email delivery design](docs/project/invitation-delivery-design.md) is implemented locally with Mailpit; a real sender awaits PH-17), custom profiles, identity recovery qualification, media/programming/publication modules, the Android TV player and production deployment remain unfinished. The owner accepted the [product architecture directions](docs/project/architecture.md) in ADR-0018–ADR-0021 and ADR-0023–ADR-0025 on 2026-10-18. The D-01 [tenant data](docs/project/tenant-data-design.md) and D-02 [identity/session](docs/project/identity-session-design.md) designs were approved that day with an explicit request to implement PJ-24/PJ-03. Their implementation status and remaining work are recorded in the designs and plan; other detailed designs and release-readiness checks remain pending. No real-environment deployment is authorized by those approvals.\n"
+    "text": "Current state\nThis repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It contains the foundation's architecture, policies, accepted ADRs, tooling, validation gate, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). The API and web application compose `identity` (Keycloak login, server-managed human sessions and OTP step-up) and the first `organizations` increments (companies, creator memberships, scoped standard-role access, branches, company settings, paginated change history, member administration, role grants, responsibility transfer and email invitations), with a `mail` module that delivers transactional email through a PostgreSQL outbox, and `devices` (screen pairing with temporary codes and device-generated credentials, configuration, moves and unlinking with erasure tracking). The [identity/access policies](docs/project/identity-and-access.md) and D-01/D-02 designs are owner-approved. Tests use disposable Keycloak/PostgreSQL; real-environment provisioning and qualification remain pending.\nThe [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\nThe initial product brief is documented. Real email sending (the D-13 [invitation and email delivery design](docs/project/invitation-delivery-design.md) is implemented locally with Mailpit; a real sender awaits PH-17), custom profiles, identity recovery qualification, media/programming/publication modules, the Android TV player and production deployment remain unfinished. The owner accepted the [product architecture directions](docs/project/architecture.md) in ADR-0018–ADR-0021 and ADR-0023–ADR-0025 on 2026-10-18. The D-01 [tenant data](docs/project/tenant-data-design.md) and D-02 [identity/session](docs/project/identity-session-design.md) designs were approved that day with an explicit request to implement PJ-24/PJ-03. Their implementation status and remaining work are recorded in the designs and plan; other detailed designs and release-readiness checks remain pending. No real-environment deployment is authorized by those approvals.\n"
   },
   {
     "id": "repository/README",

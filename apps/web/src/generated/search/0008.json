@@ -4,6 +4,24 @@
     "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "API description",
+    "anchor": "api-description",
+    "text": "API description\nOrion will generate **OpenAPI 3.x descriptions**, with **OpenAPI 3.1.x as the initial baseline**.\nThe exact patch release will be determined by toolchain compatibility rather than permanently fixed by this ADR.\nA future OpenAPI minor-version upgrade does not require a new ADR when it preserves the API-description strategy established here.\nThe generated OpenAPI description must remain reproducible from canonical repository sources.\nIt must never become an independently edited source of truth.\nEach externally exposed API operation must define a **stable and unique `operationId`**.\nFor example:\ncreateCustomer\ngetCustomer\ncancelOrder\n\nStable operation identifiers support:\ndocumentation;\ngenerated clients;\ncontract analysis;\nAI discoverability;\nfuture tool generation;\ncompatibility analysis;\nconsistent identification independent of route implementation structure.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "TypeScript SDK generation",
+    "anchor": "typescript-sdk-generation",
+    "text": "TypeScript SDK generation\nWhen an Orion application has a TypeScript consumer that benefits from a shared SDK, the default SDK generation strategy will use:\nOpenAPI\n    ↓\nopenapi-typescript\n    ↓\ngenerated TypeScript API types\n    ↓\nopenapi-fetch\n    ↓\nthin typed HTTP client\n\n`openapi-typescript` will generate TypeScript representations from the generated OpenAPI contract.\n`openapi-fetch` will provide the default thin typed HTTP client for TypeScript consumers.\nThe initial strategy intentionally favors generated types and a small generic HTTP runtime rather than generating a large application-specific client implementation.\nThe generated TypeScript client contract must depend on OpenAPI rather than importing server implementation types directly.\nTherefore, first-party web applications should not bypass the API boundary by importing server-side contract implementations merely because both applications reside in the same monorepo.\nThe intended dependency flow is:\nauthored contracts\n    ↓\nOpenAPI\n    ↓\ngenerated client types\n    ↓\ntyped HTTP client\n    ↓\nconsumer application\n\nThis keeps the API boundary continuously testable as a real interoperable contract.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Other-language SDKs",
     "anchor": "other-language-sdks",
     "text": "Other-language SDKs\nOrion will not select a universal SDK generator for every programming language before concrete consumers exist.\nOpenAPI will remain the language-independent SDK input.\nIf a future application requires a Kotlin, Swift, C#, Python, Go, or other client, an appropriate generator may be selected for that consumer.\nThe choice of language-specific generator is not itself an architectural change as long as OpenAPI remains the canonical interoperable API description.\n"

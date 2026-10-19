@@ -1,0 +1,30 @@
+.devices-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 1rem 0;
+}
+.devices-panel .pairing-code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.devices-panel .checkbox-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.devices-danger {
+  border-top: 1px solid #d7e0e7;
+  padding-top: 1rem;
+}
+.devices-panel .button-danger {
+  background: #a3261b;
+  border-color: #a3261b;
+  color: #fff;
+}
+.devices-panel .button-danger:disabled {
+  opacity: 0.55;
+}
