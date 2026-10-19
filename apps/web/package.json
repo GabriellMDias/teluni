@@ -9,7 +9,7 @@
     "identity:write": "node scripts/generate-touch-icon.mjs",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
-    "bundle:check": "node scripts/check-bundle.mjs",
+    "bundle:check": "node scripts/check-bundle.mjs && node scripts/check-public-bundle.mjs",
     "test:browser": "vitest run --config vitest.browser.config.ts",
     "test:unit": "vitest run --config vitest.node.config.ts",
     "test:e2e": "playwright test"

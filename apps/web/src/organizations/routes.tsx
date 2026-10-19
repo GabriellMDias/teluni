@@ -1,4 +1,6 @@
-import { createRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { createRoute, Link, useRouterState } from "@tanstack/react-router";
+import { sessionQuery } from "../identity/api.js";
 import { rootRoute } from "../shell.js";
 import { AcceptInvitationPage } from "./invitations.js";
 import {
@@ -76,9 +78,18 @@ export const organizationRoutes = [
   acceptInvitationRoute,
 ] as const;
 
-/** Header and home-page entry to the companies workspace; makes no API call. */
+/** Header entry to the companies workspace, shown to signed-in people. */
 export function OrganizationsNavigation() {
   const { locale, t } = useOrganizationMessages();
+  // The portal makes no API calls while browsing, so it neither queries
+  // nor shows the session.
+  const isDocumentation = useRouterState({
+    select: (state) =>
+      state.location.pathname === "/docs" ||
+      state.location.pathname.startsWith("/docs/"),
+  });
+  const session = useQuery({ ...sessionQuery, enabled: !isDocumentation });
+  if (isDocumentation || !session.data) return null;
   return (
     <Link to="/companies" lang={locale}>
       {t.navCompanies}

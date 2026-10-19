@@ -63,3 +63,67 @@
 .two-step h2 {
   font-size: 1.05rem;
 }
+.sign-in-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 28rem) minmax(0, 24rem);
+  justify-content: center;
+  align-items: center;
+  gap: 2.5rem;
+  min-height: calc(100vh - 12rem);
+}
+.sign-in-panel {
+  padding: 2.2rem;
+}
+.sign-in-panel img {
+  width: 56px;
+  height: 56px;
+  padding: 6px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.sign-in-panel h1 {
+  font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+  line-height: 1.2;
+  margin: 0.2rem 0 0.6rem;
+}
+.sign-in-panel > p {
+  color: #334155;
+  line-height: 1.5;
+}
+.sign-in-panel .notice {
+  margin: 1rem 0;
+}
+.sign-in-button {
+  display: block;
+  text-align: center;
+  margin: 1.4rem 0 0.8rem;
+  padding: 0.85rem 1rem;
+}
+.sign-in-aside {
+  color: #0f172a;
+}
+.sign-in-aside h2 {
+  font-size: 1.35rem;
+  line-height: 1.3;
+  margin: 0 0 1rem;
+}
+.sign-in-aside ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  color: #334155;
+  line-height: 1.5;
+}
+.sign-in-aside li::marker {
+  color: #14b8a6;
+}
+@media (max-width: 760px) {
+  .sign-in-layout {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: 1.5rem;
+  }
+}

@@ -4,6 +4,15 @@
     "title": "ADR-0002: Select pnpm for Package and Workspace Management",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nContributors and execution environments must have the repository-selected pnpm version available rather than relying only on npm bundled with Node.js.\npnpm's dependency layout and workspace semantics require contributors to understand some pnpm-specific behavior.\nSome packages or tools that implicitly assume traditional npm dependency layouts may require compatibility configuration.\nA single workspace lockfile can produce larger lockfile changes as the repository grows.\nCatalogs, workspace protocols, filtering, and other pnpm-specific capabilities increase coupling to pnpm if used extensively.\nWithout a dedicated task runner, Orion initially does not receive advanced computation caching, automatic affected-project analysis, remote caching, or distributed task execution.\nRepository-wide validation may perform more work than necessary as the monorepo grows until task orchestration is reconsidered.\nTask dependencies must initially remain simple enough to be managed without a dedicated task graph.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
     "text": "Operational or Migration Impact\nOrion does not currently have an established package manager or application workspace that must be migrated.\nRepository implementation must pin the selected pnpm version mechanically and establish the workspace configuration and shared lockfile.\nLocal development and CI must use the pinned package-manager version to minimize environment-specific dependency-resolution differences.\nChanges to the pnpm patch or supported major version do not require a new ADR when they preserve the package and workspace strategy established here.\nAdding catalogs, filters, or other pnpm-native mechanisms does not inherently require a new ADR when they remain implementation details consistent with this decision.\nIntroducing a dedicated monorepo task runner may require a new ADR if it establishes a significant repository-wide execution, caching, or CI abstraction.\nReplacing pnpm as the package or workspace manager would be an architectural change and should supersede this ADR.\n"
@@ -970,23 +979,5 @@
     "heading": "tRPC as the Primary API Contract",
     "anchor": "trpc-as-the-primary-api-contract",
     "text": "tRPC as the Primary API Contract\ntRPC provides excellent TypeScript developer experience and end-to-end type inference without traditional code generation.\nIt is particularly effective when server and consumers are all TypeScript applications that intentionally share the same type system.\nIt was not selected as Orion's primary API strategy because Orion must support consumers that may not use TypeScript and because the external contract should remain independent from backend implementation types.\nThe primary interoperability boundary would become more TypeScript-specific than Orion's long-term goals justify.\ntRPC may still be introduced for a scoped internal TypeScript-only boundary when the coupling is intentional and provides a concrete benefit.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "GraphQL",
-    "anchor": "graphql",
-    "text": "GraphQL\nGraphQL provides a strongly typed schema and allows clients to select the precise shape of data they require.\nIt can provide substantial value for systems with many clients requiring flexible traversal of highly connected data.\nIt was not selected as Orion's default because this flexibility introduces additional concerns around query complexity, resolver performance, N+1 access patterns, authorization granularity, caching, cost control, and operational observability.\nOrion does not currently have a concrete requirement that justifies introducing those concerns as part of the default foundation.\nGraphQL may be introduced later when demonstrated client-query requirements make its additional complexity worthwhile.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "gRPC",
-    "anchor": "grpc",
-    "text": "gRPC\ngRPC provides strongly typed service contracts, efficient binary communication, code generation, streaming, and strong service-to-service characteristics.\nIt can be appropriate for specialized internal communication or high-performance service boundaries.\nIt was not selected as Orion's primary general application API because HTTP/JSON with OpenAPI provides a more broadly accessible default for browsers, third-party integrations, human inspection, and heterogeneous external consumers.\ngRPC may be introduced later for specialized internal communication requirements.\n"
   }
 ]

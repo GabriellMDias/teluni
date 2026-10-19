@@ -36,8 +36,12 @@ const ptBR = {
   signInButton: "Entrar com segurança",
   signInHint:
     "Você será levado à página de acesso do Teluni e voltará para cá depois de entrar.",
-  alreadySignedIn: "Você já está conectado.",
-  manageSessions: "Gerenciar sessões",
+  productTitle: "Sinalização digital para o seu negócio",
+  productPoints: [
+    "Organize empresas, filiais e equipes com acessos separados.",
+    "Convide pessoas por e-mail e defina o que cada uma pode fazer.",
+    "Telas, mídias e programação chegam nas próximas versões.",
+  ],
   loginErrors: {
     login_failed: "Não foi possível concluir a entrada. Tente novamente.",
     login_expired:
@@ -106,8 +110,12 @@ const enUS: IdentityMessages = {
   signInButton: "Sign in securely",
   signInHint:
     "You will go to the Teluni sign-in page and return here after signing in.",
-  alreadySignedIn: "You are already signed in.",
-  manageSessions: "Manage sessions",
+  productTitle: "Digital signage for your business",
+  productPoints: [
+    "Organize companies, branches and teams with separate access.",
+    "Invite people by email and decide what each one can do.",
+    "Screens, media and programming arrive in upcoming versions.",
+  ],
   loginErrors: {
     login_failed: "Sign-in could not be completed. Try again.",
     login_expired:

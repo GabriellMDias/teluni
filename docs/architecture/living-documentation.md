@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md) · [Portal setup](../setup.md#living-documentation-portal) · [Contributing](../contributing.md)
 
-The Living Documentation portal is the repository's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.
+The Living Documentation portal is the repository's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Its routes and header link are composed in each repository's `modules.tsx`; a product may mount them only in development builds so its public build carries no repository knowledge. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.
 
 ## Information architecture
 

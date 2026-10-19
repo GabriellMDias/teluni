@@ -41,7 +41,7 @@ Start the web development server in another terminal:
 pnpm -C apps/web dev
 ```
 
-Open the URL printed by Vite, normally `http://127.0.0.1:5173`. Vite forwards `/api` to the local API by default and loads its own `apps/web/.env.local` if web-specific `VITE_` values are needed. Do not copy the root API `.env.local` into the web app: server-only values must not enter a browser build. The home page lists the workflows that [web modules](../apps/web/README.md#modules) compose.
+Open the URL printed by Vite, normally `http://127.0.0.1:5173`. Vite forwards `/api` to the local API by default and loads its own `apps/web/.env.local` if web-specific `VITE_` values are needed. Do not copy the root API `.env.local` into the web app: server-only values must not enter a browser build. Teluni's entry page sends visitors to sign-in and shows signed-in people their [home page](../apps/web/README.md#entry-and-home-page).
 
 ## Local database and authentication
 
@@ -55,7 +55,7 @@ The portal needs no API, database, identity provider, or `.env.local`. After the
 
 To try an API route, also run the API as described above, open an API operation, enter declared inputs and a token when the operation requires one, then select **Send request**. Writes require explicit acknowledgement. Tokens and responses remain in memory; no request executes automatically. Cancellation/timeouts do not prove a write was undone. Without the API, reading remains available and request failures are shown safely.
 
-After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Build with `pnpm -C apps/web build`; preview with `pnpm -C apps/web exec vite preview --host 127.0.0.1`, then open `/docs` on the printed port. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.
+After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Teluni's production build (`pnpm -C apps/web build`) deliberately excludes the portal, so read it through the development server; `vite preview` serves the product build only. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.
 
 ## Try sign-in locally
 

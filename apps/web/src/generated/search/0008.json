@@ -1,5 +1,59 @@
 [
   {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Web player first:** remains a possible future platform, but browser lifecycle, storage and unattended playback would need separate validation. It is not the requested MVP target.\n**Other Smart TV or dedicated-computer players:** could expand coverage later; validating multiple platforms now would widen MVP support and test obligations without pilot evidence.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nGives the first player a clear device-specific owner and keeps interoperable contracts with Orion.\nAllows targeted validation of local storage, playback and restart behavior on pilot hardware.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nAdds Android build/signing/distribution, hardware testing and old-client compatibility responsibilities.\nMedia capability and unattended behavior must be verified per supported device; TypeScript tooling cannot establish them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nSupported-device/release qualification under PH-08/PJ-12/PJ-14 requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Product components and pending decisions](../project/architecture.md)\n[MVP acceptance](../project/mvp.md)\n[Additional runtime boundaries](../architecture/application-boundaries.md#additional-runtime-boundaries)\n"
+  },
+  {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
     "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
@@ -1186,23 +1240,5 @@
     "heading": "Creating a New Application Boundary",
     "anchor": "creating-a-new-application-boundary",
     "text": "Creating a New Application Boundary\nBefore creating or splitting an application, identify:\nThe runtime/product responsibility and why an existing application cannot own it.\nNeeded scaling, deployment/distribution independence, security, failure isolation, or operational ownership.\nExposed/consumed contracts, shared packages, persistent-data ownership, and trust boundaries.\nConfiguration, lifecycle, telemetry, compatibility, and new failure modes.\nWhether the value justifies its operational complexity and requires an ADR.\nEstablish a logical modular boundary before extracting another process. Size alone does not justify splitting; merging is appropriate when separate applications add no meaningful independence. Microservices are not a default goal, and serverless deployment units do not determine domain boundaries. Prefer modular ownership within one backend until separation has a concrete benefit.\nLocal [README and agent instructions](repository-structure.md#local-agent-instructions) make each application independently understandable without repeating repository policy. When placement is unclear, distinguish runtime-specific behavior, genuinely shared domain meaning, shared wire contracts, development tooling, and operational infrastructure before creating a new owner.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Boundary Enforcement",
-    "anchor": "boundary-enforcement",
-    "text": "Boundary Enforcement\nThe existing [dependency checks](dependency-rules.md#mechanical-enforcement) reject cross-application imports and other forbidden edges. They do not prove runtime trust, data ownership, or contract compatibility. When a boundary obstructs a legitimate requirement, identify the correct owner, try its existing public contract, then deliberately extend or revise the boundary and its tests/enforcement. Document significant changes through the ADR process; do not bypass constraints silently.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend Execution and Generated Artifacts",
-    "anchor": "backend-execution-and-generated-artifacts",
-    "text": "Backend Execution and Generated Artifacts\n[Documentation index](../README.md) · [Validation availability](../validation.md) · [Local setup](../setup.md)\nThis page owns API execution and generated-artifact storage conventions. The implemented pipeline follows [TypeScript/Node.js](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md), [pnpm](../adr/0002-select-pnpm-for-package-and-workspace-management.md), [API generation](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md), [Prisma/PostgreSQL](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [validation](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) decisions. [Setup](../setup.md#validate-regenerate-and-build) owns the regeneration sequence; [validation](../validation.md) lists current commands and prerequisites.\n"
   }
 ]

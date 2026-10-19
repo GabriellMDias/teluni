@@ -1,7 +1,6 @@
 import {
   createRootRoute,
   createRoute,
-  lazyRouteComponent,
   Link,
   Outlet,
   useRouterState,
@@ -33,7 +32,6 @@ function Shell() {
             {navigation.map((Item, index) => (
               <Item key={index} />
             ))}
-            <Link to="/docs">Documentation</Link>
           </nav>
         </div>
       </header>
@@ -55,36 +53,9 @@ const homeRoute = createRoute({
   path: "/",
   component: HomePage,
 });
-const documentationSearch = (
-  search: Record<string, unknown>,
-): { q?: string; scope?: string; group?: string; page?: number } => ({
-  ...(typeof search.q === "string" ? { q: search.q.slice(0, 200) } : {}),
-  ...(typeof search.scope === "string" ? { scope: search.scope } : {}),
-  ...(typeof search.group === "string" ? { group: search.group } : {}),
-  ...(Number.isSafeInteger(Number(search.page)) && Number(search.page) > 1
-    ? { page: Math.min(Number(search.page), 100000) }
-    : {}),
-});
-const documentationComponent = lazyRouteComponent(
-  () => import("./documentation.js"),
-  "DocumentationPage",
-);
-const documentationRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs",
-  component: documentationComponent,
-  validateSearch: documentationSearch,
-});
-const documentationDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/$",
-  component: documentationComponent,
-  validateSearch: documentationSearch,
-});
-
-/** Routes every application shell provides; modules add theirs beside them. */
-export const coreRoutes = [
-  homeRoute,
-  documentationRoute,
-  documentationDetailRoute,
-] as const;
+/**
+ * The shell's generic home page. A product may mount its own `/` route in
+ * `modules.tsx` instead; the documentation portal's routes live in
+ * `documentation-routes.tsx` so a product can decide where it is served.
+ */
+export const coreRoutes = [homeRoute] as const;

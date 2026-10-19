@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Navigate, useNavigate } from "@tanstack/react-router";
+import brandMark from "../assets/brand-mark.svg";
 import {
   listSessions,
   loginHref,
@@ -31,37 +32,43 @@ export function SignInPage({
 }) {
   const { locale, t } = useIdentityMessages();
   const session = useQuery(sessionQuery);
+  // A signed-in person has nothing to do here; send them on.
+  if (session.data) return <Navigate to={returnTo ?? "/"} replace />;
   return (
-    <section
-      className="panel identity-panel"
-      aria-labelledby="sign-in-title"
-      lang={locale}
-    >
-      <p className="eyebrow">{t.signInEyebrow}</p>
-      <h1 id="sign-in-title">{t.signInTitle}</h1>
-      <p>{t.signInLead}</p>
-      {error && (
-        <div role="alert" className="notice notice-error">
-          {t.loginErrors[error]}
-        </div>
-      )}
-      {session.data ? (
-        <p>
-          {t.alreadySignedIn}{" "}
-          <Link to="/account/sessions">{t.manageSessions}</Link>
-        </p>
-      ) : (
-        <>
-          <a
-            className="button-link button-primary"
-            href={loginHref(returnTo ?? "/")}
-          >
-            {t.signInButton}
-          </a>
-          <p className="hint">{t.signInHint}</p>
-        </>
-      )}
-    </section>
+    <div className="sign-in-layout" lang={locale}>
+      <section className="panel sign-in-panel" aria-labelledby="sign-in-title">
+        <img src={brandMark} alt="" width="56" height="56" />
+        <p className="eyebrow">{t.signInEyebrow}</p>
+        <h1 id="sign-in-title">{t.signInTitle}</h1>
+        <p>{t.signInLead}</p>
+        {error && (
+          <div role="alert" className="notice notice-error">
+            {t.loginErrors[error]}
+          </div>
+        )}
+        {session.isPending ? (
+          <p className="hint">{t.loading}</p>
+        ) : (
+          <>
+            <a
+              className="button-link button-primary sign-in-button"
+              href={loginHref(returnTo ?? "/")}
+            >
+              {t.signInButton}
+            </a>
+            <p className="hint">{t.signInHint}</p>
+          </>
+        )}
+      </section>
+      <aside className="sign-in-aside" aria-label={t.productTitle}>
+        <h2>{t.productTitle}</h2>
+        <ul>
+          {t.productPoints.map((point) => (
+            <li key={point}>{point}</li>
+          ))}
+        </ul>
+      </aside>
+    </div>
   );
 }
 

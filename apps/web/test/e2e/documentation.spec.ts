@@ -95,18 +95,19 @@ test("documentation sections isolate details and preserve deep links and browser
   );
 });
 
-test("the application shell presents the project identity and documentation", async ({
+test("the application shell presents the project identity and the development portal", async ({
   page,
 }) => {
+  // Teluni's entry sends a visitor to sign-in. The portal is a development
+  // aid that only the development server mounts (owner direction).
   await page.goto(webUrl());
-  await expect(
-    page.getByRole("heading", { level: 1, name: projectName, exact: true }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(`${webUrl()}/sign-in`);
   await expect(page).toHaveTitle(projectName);
   await expect(page.locator(".brand")).toContainText(projectName);
-  await page
-    .getByRole("link", { name: "Read the living documentation" })
-    .click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: `Sign in to ${projectName}` }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Documentation", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     overviewTitle,
   );
@@ -116,12 +117,9 @@ test("the application shell presents the project identity and documentation", as
   await expect(page).toHaveURL(
     (url) =>
       url.origin === new URL(webUrl()).origin &&
-      url.pathname === "/" &&
+      url.pathname === "/sign-in" &&
       !url.search,
   );
-  await expect(
-    page.getByRole("heading", { level: 1, name: projectName, exact: true }),
-  ).toBeVisible();
 });
 
 test("repository documentation reads locally with heading links and unknown-page recovery", async ({

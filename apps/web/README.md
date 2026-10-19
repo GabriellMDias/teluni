@@ -8,7 +8,8 @@ This React/Vite application provides the application shell, a home page, compose
 
 | Concern | Source |
 | --- | --- |
-| Shell, shared routes, and home page | [`src/shell.tsx`](src/shell.tsx), [`src/home.tsx`](src/home.tsx), [`src/main.tsx`](src/main.tsx) |
+| Shell, shared routes, and home page | [`src/shell.tsx`](src/shell.tsx), [`src/home.tsx`](src/home.tsx), [`src/main.tsx`](src/main.tsx); the portal's routes in [`src/documentation-routes.tsx`](src/documentation-routes.tsx) |
+| Teluni's entry and home page | [`src/workspace/`](src/workspace/routes.tsx) |
 | Module composition | [`src/modules.tsx`](src/modules.tsx), [`src/module-navigation.tsx`](src/module-navigation.tsx) |
 | API client and failure wording | [`src/api-client.ts`](src/api-client.ts) |
 | Client configuration and build identity | [`src/config.ts`](src/config.ts), [`vite.config.ts`](vite.config.ts), [`scripts/project-identity.ts`](scripts/project-identity.ts) |
@@ -20,6 +21,12 @@ This React/Vite application provides the application shell, a home page, compose
 A web module is the browser side of a product capability. It defines its routes as children of the shared root route, keeps its pages, client calls, styles, and wording in its own `src/<module>/` folder, and exports a navigation link component. [`src/modules.tsx`](src/modules.tsx) is the only composition point: it adds the module's routes to the route tree and its link to the header and home page. Shared shell and portal code never import a module. Module browser journeys belong in `test/e2e/<module>/` and may start their own disposable stack with the shared [end-to-end stack helpers](test/e2e/stack.ts). [Orion's reference implementation](../../docs/project-derivation.md#orions-reference-implementation) is a complete example.
 
 Use the shared [`ErrorNotice`](src/components.tsx) and [`api-client.ts`](src/api-client.ts) for public API failures: pass a module's own stable codes when unwrapping responses and its own wording for them. A failed or lost write is an unknown outcome, never proof that nothing changed.
+
+## Entry and home page
+
+Teluni composes its own `/` route from the [`workspace` web module](src/workspace/routes.tsx) instead of the shell's generic home page. A visitor without a session (or when the session service is unavailable) goes to `/sign-in`; a signed-in person sees the home page with their first companies, a path to create the first company, and the session's two-step verification state. `/sign-in` sends a signed-in person on to `returnTo` or the home page, and presents the product beside the sign-in action. The header shows Home, Companies, the session entry and, in development only, Documentation.
+
+The Living Documentation Portal is a development aid, not part of the product (owner direction, 2026-10-19). [`src/modules.tsx`](src/modules.tsx) mounts its routes and header link only when `import.meta.env.DEV` is true, so the Vite development server serves `/docs` while production builds drop the portal's code and generated pages; [`scripts/check-public-bundle.mjs`](scripts/check-public-bundle.mjs), part of `bundle:check`, fails when portal content reaches `dist/`.
 
 ## Identity
 
@@ -45,7 +52,7 @@ Company creation retains its idempotency key across a retry. Branch renames and 
 
 ## Living Documentation Portal
 
-The public `/docs` hub provides separate API, data dictionary, component, and repository-documentation collections, nested local pages, breadcrumbs, page outlines, and full-text search. Reading and synthetic previews need no token, API process, or database. The API explorer sends only explicit requests to the configured same-origin API, keeps tokens in memory, and asks for acknowledgement before writes. See [portal setup](../../docs/setup.md#living-documentation-portal) to run it.
+In Teluni the portal is served by the development server only (see [entry and home page](#entry-and-home-page)). The `/docs` hub provides separate API, data dictionary, component, and repository-documentation collections, nested local pages, breadcrumbs, page outlines, and full-text search. Reading and synthetic previews need no token, API process, or database. The API explorer sends only explicit requests to the configured same-origin API, keeps tokens in memory, and asks for acknowledgement before writes. See [portal setup](../../docs/setup.md#living-documentation-portal) to run it.
 
 Shared component examples/descriptions belong in [`components.docs.json`](src/components.docs.json) beside the real exports in `components.tsx`. `pnpm docs:references:write` produces [component Markdown](../../docs/generated/components/web.md) and a lightweight catalog, separately loaded pages, and search shards. All `docs/` Markdown and repository README/instruction files are rendered locally; normal documentation links stay in the portal. Regenerate after authored documentation edits too. API/database/error references come from their respective canonical generators. The portal is a presentation of those facts, not another authoring source.
 

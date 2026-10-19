@@ -4,6 +4,15 @@
     "title": "Testing Strategy",
     "group": "Architecture",
     "kind": "repository",
+    "heading": "Test Selection",
+    "anchor": "test-selection",
+    "text": "Test Selection\nPrefer focused tests for local rules, real integration for infrastructure semantics, browser component tests for browser behavior, and a small set of representative critical E2E success/failure journeys. A rigid numerical pyramid is not required. Do not use a browser for a pure calculation, a mock for a database constraint, or a full stack for a component interaction a smaller test can prove.\nA unit is a cohesive responsibility, not necessarily one function/class/file. Test stable public behavior; avoid private-helper choreography, framework-dependent domain code, test-only production APIs, and interfaces created only to make everything mockable. Explicit dependencies improve testability when they reflect real architecture.\nBefore changing behavior, inspect existing tests and contracts, identify failure risks and missing coverage, and select meaningful layers. Fixes should reproduce the defect with a test that fails before and passes after where practical; otherwise document the reason and verification. Low-impact prose/formatting changes need appropriate checks, not ceremonial behavior tests. Security, data loss, financial impact, irreversibility, compatibility, and rollout complexity warrant stronger complementary evidence.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
     "heading": "Real Database Tests",
     "anchor": "real-database-tests",
     "text": "Real Database Tests\nUse PostgreSQL when correctness depends on constraints, SQL/types, indexes, ORM mapping, locking, transactions, or custom migrations. SQLite, mocked Prisma, or an in-memory repository cannot prove those semantics. Create isolated disposable infrastructure using committed migrations; never rely on a manually maintained shared database or silently skip core checks when the container runtime is unavailable.\nCurrent helpers own disposable PostgreSQL and separate migration/runtime roles. Preserve reliable isolation when reordering, selecting, or parallelizing tests. Rollback wrappers can hide commits, multiple connections, background work, and transaction boundaries; use them only when suitable. Choose reset/schema/database/unique-data strategies by correctness first, then measured cost.\nMigration validation covers fresh creation and, when an actual supported release exists, upgrade from that exact baseline with representative permitted data and supported old/new application combinations. A fresh database is not upgrade proof. [Migration policy](../database/migrations.md) governs verified unreleased history versus immutable released history; [release evolution](../database/release-evolution.md) owns the procedure.\n"

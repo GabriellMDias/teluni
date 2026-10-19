@@ -1,5 +1,23 @@
 [
   {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Boundary Enforcement",
+    "anchor": "boundary-enforcement",
+    "text": "Boundary Enforcement\nThe existing [dependency checks](dependency-rules.md#mechanical-enforcement) reject cross-application imports and other forbidden edges. They do not prove runtime trust, data ownership, or contract compatibility. When a boundary obstructs a legitimate requirement, identify the correct owner, try its existing public contract, then deliberately extend or revise the boundary and its tests/enforcement. Document significant changes through the ADR process; do not bypass constraints silently.\n"
+  },
+  {
+    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
+    "title": "Backend Execution and Generated Artifacts",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Backend Execution and Generated Artifacts",
+    "anchor": "backend-execution-and-generated-artifacts",
+    "text": "Backend Execution and Generated Artifacts\n[Documentation index](../README.md) · [Validation availability](../validation.md) · [Local setup](../setup.md)\nThis page owns API execution and generated-artifact storage conventions. The implemented pipeline follows [TypeScript/Node.js](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md), [pnpm](../adr/0002-select-pnpm-for-package-and-workspace-management.md), [API generation](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md), [Prisma/PostgreSQL](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [validation](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) decisions. [Setup](../setup.md#validate-regenerate-and-build) owns the regeneration sequence; [validation](../validation.md) lists current commands and prerequisites.\n"
+  },
+  {
     "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
     "title": "Backend Execution and Generated Artifacts",
     "group": "Architecture",
@@ -474,7 +492,7 @@
     "kind": "repository",
     "heading": "Living Documentation",
     "anchor": "living-documentation",
-    "text": "Living Documentation\n[Documentation index](../README.md) · [Portal setup](../setup.md#living-documentation-portal) · [Contributing](../contributing.md)\nThe Living Documentation portal is the repository's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.\n"
+    "text": "Living Documentation\n[Documentation index](../README.md) · [Portal setup](../setup.md#living-documentation-portal) · [Contributing](../contributing.md)\nThe Living Documentation portal is the repository's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Its routes and header link are composed in each repository's `modules.tsx`; a product may mount them only in development builds so its public build carries no repository knowledge. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.\n"
   },
   {
     "id": "repository/docs/architecture/living-documentation",
@@ -1168,14 +1186,5 @@
     "heading": "Test Categories",
     "anchor": "test-categories",
     "text": "Test Categories\nBoundary/risk\nExecution and existing location\nPure domain, parser, client logic\nVitest in Node; API tests under `apps/api/test/`, web API tests under `apps/web/test/`.\nAPI transport/application\nFastify request injection with real owned behavior; real sockets when listener, network, or process lifecycle is the subject.\nPostgreSQL persistence/transactions\nVitest with Testcontainers and committed migrations; API integration/failure tests use the migrated-database helper.\nBrowser components\nVitest Browser Mode with Playwright, `apps/web/test/*.browser.test.tsx`; Windows uses installed Edge, other environments use Chromium.\nFull user journeys\nPlaywright Test, `apps/web/test/e2e/`; the real built API and web app for the shell and portal, plus migrated PostgreSQL and synthetic signed identities in module journeys under `test/e2e/<module>/`.\nEmitted runtime\nAPI process and feature smoke scripts verify startup/lifecycle and the real feature flow.\nStructure and generation\nType/lint/import checks, documentation links/metadata, environment example, release-history checks, API/SDK/portal freshness.\nCoverage, performance/load/stress, mutation testing, additional browser matrices, external provider sandboxes, and deployment smoke/monitoring are introduced only when their risk or product requirement exists. Performance tests need measurable targets; stable microbenchmarks can inform critical algorithms but do not replace realistic system measurements. Chromium is the routine E2E baseline; browser support must not be guessed globally. V8 is the selected Vitest coverage provider when coverage becomes useful, with no initial global coverage threshold.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Test Selection",
-    "anchor": "test-selection",
-    "text": "Test Selection\nPrefer focused tests for local rules, real integration for infrastructure semantics, browser component tests for browser behavior, and a small set of representative critical E2E success/failure journeys. A rigid numerical pyramid is not required. Do not use a browser for a pure calculation, a mock for a database constraint, or a full stack for a component interaction a smaller test can prove.\nA unit is a cohesive responsibility, not necessarily one function/class/file. Test stable public behavior; avoid private-helper choreography, framework-dependent domain code, test-only production APIs, and interfaces created only to make everything mockable. Explicit dependencies improve testability when they reflect real architecture.\nBefore changing behavior, inspect existing tests and contracts, identify failure risks and missing coverage, and select meaningful layers. Fixes should reproduce the defect with a test that fails before and passes after where practical; otherwise document the reason and verification. Low-impact prose/formatting changes need appropriate checks, not ceremonial behavior tests. Security, data loss, financial impact, irreversibility, compatibility, and rollout complexity warrant stronger complementary evidence.\n"
   }
 ]
