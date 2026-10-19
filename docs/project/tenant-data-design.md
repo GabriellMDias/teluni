@@ -10,13 +10,13 @@ The inherited [database principles](../database/principles.md), [authorization p
 
 ## Table categories
 
-| Category                   | First-slice examples                                                                                                                       | Rule                                                                                                                                                               |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Global identity            | Principals and human sessions, owned by the identity capability                                                                            | No `company_id`. Never read through a tenant query except by joining an authorized membership. A company administrator cannot list a principal's other memberships |
-| Tenant root                | Companies                                                                                                                                  | `id` is the tenant identifier. Lifecycle is a state (active, suspended), not deletion; hard deletion waits for PH-13 retention rules                               |
-| Tenant-owned               | Branches, memberships, access profiles, grants and organization audit events; later devices, media, programming, catalogs and publications | Immutable `company_id uuid NOT NULL` and a tenant key `UNIQUE (company_id, id)`                                                                                    |
-| Branch-scoped tenant-owned | Grant branch scopes; later devices and branch overrides                                                                                    | Tenant-owned plus `branch_id` referencing the branch through the tenant key                                                                                        |
-| Platform operational       | None in the first slice                                                                                                                    | Separate platform capability and accounts (P11); lifecycle metadata only, never implicit tenant-content reads                                                      |
+| Category | First-slice examples | Rule |
+| --- | --- | --- |
+| Global identity | Principals and human sessions, owned by the identity capability | No `company_id`. Never read through a tenant query except by joining an authorized membership. A company administrator cannot list a principal's other memberships |
+| Tenant root | Companies | `id` is the tenant identifier. Lifecycle is a state (active, suspended), not deletion; hard deletion waits for PH-13 retention rules |
+| Tenant-owned | Branches, memberships, access profiles, grants and organization audit events; later devices, media, programming, catalogs and publications | Immutable `company_id uuid NOT NULL` and a tenant key `UNIQUE (company_id, id)` |
+| Branch-scoped tenant-owned | Grant branch scopes; later devices and branch overrides | Tenant-owned plus `branch_id` referencing the branch through the tenant key |
+| Platform operational | None in the first slice | Separate platform capability and accounts (P11); lifecycle metadata only, never implicit tenant-content reads |
 
 ## Keys and relational constraints
 
@@ -55,13 +55,13 @@ Company-scoped operations carry the requested company in the path, for example `
 
 ADR-0018 requires evaluating PostgreSQL row-level security (RLS) before relying on it or rejecting it. The evaluated mechanism was: enable RLS on each tenant-owned table with a policy such as `USING (company_id = current_setting('teluni.company_id', true)::uuid)`, keep the runtime role a non-owner (already true, because migrations own the tables), and set the tenant per transaction with `set_config('teluni.company_id', $1, true)`.
 
-| Concern                 | Finding                                                                                                                                                                                                                                                             |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mixed-tenant references | PostgreSQL performs foreign-key checks without applying RLS policies, so RLS alone does not prevent a row from referencing another company's identifier. Composite tenant keys are required either way                                                              |
-| Connection pooling      | The tenant setting is safe with the pooled Prisma/`pg` adapter only when transaction-local, so every tenant request must run inside an interactive transaction: extra `BEGIN`/`set_config`/`COMMIT` round trips and a pooled connection held for the whole callback |
-| Principal-centric flows | Listing a principal's companies, accepting an invitation before a membership exists and public signup creating a company need extra policy keys or `SECURITY DEFINER` functions, enlarging the reviewed surface                                                     |
-| Roles and migrations    | The runtime role is not the owner, so policies apply without `FORCE`; the migration owner bypasses them for migrations/backfills. Integration tests already run as the runtime role, so policies would be exercised                                                 |
-| Failure mode            | A missing setting yields no rows, which fails closed                                                                                                                                                                                                                |
+| Concern | Finding |
+| --- | --- |
+| Mixed-tenant references | PostgreSQL performs foreign-key checks without applying RLS policies, so RLS alone does not prevent a row from referencing another company's identifier. Composite tenant keys are required either way |
+| Connection pooling | The tenant setting is safe with the pooled Prisma/`pg` adapter only when transaction-local, so every tenant request must run inside an interactive transaction: extra `BEGIN`/`set_config`/`COMMIT` round trips and a pooled connection held for the whole callback |
+| Principal-centric flows | Listing a principal's companies, accepting an invitation before a membership exists and public signup creating a company need extra policy keys or `SECURITY DEFINER` functions, enlarging the reviewed surface |
+| Roles and migrations | The runtime role is not the owner, so policies apply without `FORCE`; the migration owner bypasses them for migrations/backfills. Integration tests already run as the runtime role, so policies would be exercised |
+| Failure mode | A missing setting yields no rows, which fails closed |
 
 **Approved outcome: do not adopt RLS for the first slice.** The compensating controls are the composite tenant keys, immutable `company_id` grants, the mandatory scope parameter, per-request access resolution, the structural catalog test and the two-company adversarial suite below. **Reevaluate before PJ-14 admits real customer data or public signup**, when a second database consumer (worker, report or raw SQL path) appears, or immediately after any cross-tenant defect. Adapters already receive the scope, so adopting RLS later needs a new ADR, policy migrations and a transaction-local context in adapters, not contract changes.
 

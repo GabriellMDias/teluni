@@ -6,14 +6,14 @@
 
 This document owns Teluni's current brand/domain direction and approved Connected Tiles visual identity. The owner approved the name/domain direction and selected Connected Tiles for project integration on 2026-10-17. Domain choice is distinct from registration, DNS control or trademark clearance.
 
-| Item                    | Recorded direction                                 | Evidence / limit                                                                                               |
-| ----------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Product name            | **Decided:** Teluni                                | Explicit owner instruction                                                                                     |
-| Visual identity         | **Approved:** Connected Tiles                      | Explicit owner selection and authorization to integrate it                                                     |
-| Principal domain        | **Decided:** `teluni.app`                          | Approved product address; registration/control evidence has not been supplied                                  |
-| Brazil defensive domain | **Decided option:** `teluni.com.br`                | Owner reports availability; secondary/defensive option, not a completed registration or spending authorization |
-| `.com` domain           | **Outside current scope:** `teluni.com`            | Owner reports unavailable/premium and unsuitable for the current budget                                        |
-| Trademark               | **In progress:** preliminary research has advanced | Owner report; no final clearance/registration evidence is inferred                                             |
+| Item | Recorded direction | Evidence / limit |
+| --- | --- | --- |
+| Product name | **Decided:** Teluni | Explicit owner instruction |
+| Visual identity | **Approved:** Connected Tiles | Explicit owner selection and authorization to integrate it |
+| Principal domain | **Decided:** `teluni.app` | Approved product address; registration/control evidence has not been supplied |
+| Brazil defensive domain | **Decided option:** `teluni.com.br` | Owner reports availability; secondary/defensive option, not a completed registration or spending authorization |
+| `.com` domain | **Outside current scope:** `teluni.com` | Owner reports unavailable/premium and unsuitable for the current budget |
+| Trademark | **In progress:** preliminary research has advanced | Owner report; no final clearance/registration evidence is inferred |
 
 No registrar purchase, DNS change or application endpoint reconfiguration is performed as part of visual identity integration. Orion provenance and technical configuration names remain unchanged.
 
@@ -25,15 +25,15 @@ The wordmark is titlecase **Teluni**, set in **Plus Jakarta Sans Semibold**. The
 
 ## Palette and surfaces
 
-| Role                              | Color                           | Usage                                                                        |
-| --------------------------------- | ------------------------------- | ---------------------------------------------------------------------------- |
-| Primary                           | `#2563EB`                       | Main screen, links, selected navigation and focus emphasis                   |
-| Accent                            | `#14B8A6`                       | Companion screen and restrained visual accents                               |
-| Secondary / dark-surface emphasis | `#60A5FA`                       | Companion screen, dark-surface brand variants and suitable blue text on navy |
-| Dark surface / primary ink        | `#0F172A`                       | Header, dark applications, primary text on light surfaces                    |
-| Light surface                     | `#F8FAFC`                       | Page, navigation and touch-icon background                                   |
-| Light ink                         | `#E2E8F0`                       | Wordmark/text on navy                                                        |
-| Supporting neutrals               | `#334155`, `#64748B`, `#CBD5E1` | Supporting text, borders and separation as appropriate to contrast           |
+| Role | Color | Usage |
+| --- | --- | --- |
+| Primary | `#2563EB` | Main screen, links, selected navigation and focus emphasis |
+| Accent | `#14B8A6` | Companion screen and restrained visual accents |
+| Secondary / dark-surface emphasis | `#60A5FA` | Companion screen, dark-surface brand variants and suitable blue text on navy |
+| Dark surface / primary ink | `#0F172A` | Header, dark applications, primary text on light surfaces |
+| Light surface | `#F8FAFC` | Page, navigation and touch-icon background |
+| Light ink | `#E2E8F0` | Wordmark/text on navy |
+| Supporting neutrals | `#334155`, `#64748B`, `#CBD5E1` | Supporting text, borders and separation as appropriate to contrast |
 
 **Light application:** navy text with blue/teal screen tiles on off-white. **Dark application:** light text with brighter-blue/teal tiles on navy. The actual shell uses a dark header and a light page; the header symbol sits on an off-white tile. These brand variants do not imply that a full application dark-mode switch exists.
 
@@ -41,20 +41,20 @@ Use teal as an accent or a background with dark text, rather than small text on 
 
 ## Canonical sources and asset kit
 
-| Asset                                                                                                                               | Owner / use                                                                         |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| [Runtime brand mark](../../../apps/web/src/assets/brand-mark.svg)                                                                   | Canonical Connected Tiles symbol; shell, portal and SVG favicon consume this source |
-| [Runtime touch icon](../../../apps/web/src/assets/brand-touch-icon.png)                                                             | Derived 180×180 PNG generated from the runtime SVG on `#F8FAFC`                     |
-| [Light logo](assets/connected-tiles/logo-light.svg) / [dark logo](assets/connected-tiles/logo-dark.svg)                             | Outlined institutional lockups; live app text remains accessible                    |
-| [Wordmark](assets/connected-tiles/wordmark.svg)                                                                                     | Outlined lettering for standalone brand use                                         |
-| [Monochrome symbol](assets/connected-tiles/symbol-monochrome.svg)                                                                   | Single-ink applications with preserved tile gaps                                    |
-| [Identity board](assets/connected-tiles/identity-board.png)                                                                         | Approved visual reference; illustrative panels do not implement product workflows   |
-| [Light application](assets/connected-tiles/application-light.png) / [dark application](assets/connected-tiles/application-dark.png) | Fixed visual brand proofs                                                           |
-| [Small-size proof](assets/connected-tiles/small-size-proof.png)                                                                     | Actual-size symbol review                                                           |
-| [Desktop app](assets/connected-tiles/web-home-desktop.png) / [documentation](assets/connected-tiles/web-docs-desktop.png)           | Actual local web integration screenshots                                            |
-| [Mobile app](assets/connected-tiles/web-home-mobile.png) / [documentation](assets/connected-tiles/web-docs-mobile.png)              | Actual local mobile integration screenshots                                         |
-| [Light/dark surfaces](assets/connected-tiles/symbol-surfaces.png)                                                                   | Runtime SVG inspected against both brand surfaces                                   |
-| [Asset inventory](assets.json)                                                                                                      | Selected kit's SVG/PNG exports and runtime source locations                         |
+| Asset | Owner / use |
+| --- | --- |
+| [Runtime brand mark](../../../apps/web/src/assets/brand-mark.svg) | Canonical Connected Tiles symbol; shell, portal and SVG favicon consume this source |
+| [Runtime touch icon](../../../apps/web/src/assets/brand-touch-icon.png) | Derived 180×180 PNG generated from the runtime SVG on `#F8FAFC` |
+| [Light logo](assets/connected-tiles/logo-light.svg) / [dark logo](assets/connected-tiles/logo-dark.svg) | Outlined institutional lockups; live app text remains accessible |
+| [Wordmark](assets/connected-tiles/wordmark.svg) | Outlined lettering for standalone brand use |
+| [Monochrome symbol](assets/connected-tiles/symbol-monochrome.svg) | Single-ink applications with preserved tile gaps |
+| [Identity board](assets/connected-tiles/identity-board.png) | Approved visual reference; illustrative panels do not implement product workflows |
+| [Light application](assets/connected-tiles/application-light.png) / [dark application](assets/connected-tiles/application-dark.png) | Fixed visual brand proofs |
+| [Small-size proof](assets/connected-tiles/small-size-proof.png) | Actual-size symbol review |
+| [Desktop app](assets/connected-tiles/web-home-desktop.png) / [documentation](assets/connected-tiles/web-docs-desktop.png) | Actual local web integration screenshots |
+| [Mobile app](assets/connected-tiles/web-home-mobile.png) / [documentation](assets/connected-tiles/web-docs-mobile.png) | Actual local mobile integration screenshots |
+| [Light/dark surfaces](assets/connected-tiles/symbol-surfaces.png) | Runtime SVG inspected against both brand surfaces |
+| [Asset inventory](assets.json) | Selected kit's SVG/PNG exports and runtime source locations |
 
 The kit's standalone symbol is an export of the runtime mark; do not evolve it independently. Logo/application SVGs are exact-color vector artwork with outlined wordmark lettering. PNGs are derived review exports. The generated reference board can contain approximate typography/color annotations; the runtime SVG, outlined exports and palette above define the current identity.
 

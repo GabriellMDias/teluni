@@ -4,41 +4,41 @@ This is the entry point for Teluni-specific product and architecture planning. T
 
 ## Reading routes and ownership
 
-| Question                                                                                                 | Canonical document                                                                    |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| What is Teluni, who uses it, and what is the commercial hypothesis?                                      | [Product vision](product.md)                                                          |
-| What name/domains and visual identity are approved?                                                      | [Teluni brand identity](branding/README.md)                                           |
-| What belongs in the initial release, and how will it be accepted?                                        | [Release requirements and acceptance](mvp.md)                                         |
-| Which product policies were selected, including the PH-09 questionnaire and delegated choices?           | [Release policies](release-policies.md)                                               |
-| What numeric limits and qualification goals were selected, and which measurements remain pending?        | [Release acceptance targets](release-targets.md)                                      |
-| Which pilot/trial, pricing, license, quota, support and cancellation policies are approved?              | [Initial commercial policies](commercial-policies.md)                                 |
-| What are the accepted architecture directions, proposed module details and unresolved technical choices? | [Product architecture](architecture.md)                                               |
-| How must publication, local playback, and recovery behave?                                               | [Offline playback and synchronization](playback-and-sync.md)                          |
-| How can the residential pilot operate and later move to another host?                                    | [Deployment and migration planning](operations.md)                                    |
-| What must tenancy, identity, data protection, and localization protect?                                  | [Security and internationalization](security-and-i18n.md)                             |
-| Which human login, recovery, session and permission policies did the owner select?                       | [Human identity and access](identity-and-access.md)                                   |
-| What evidence supports the accepted identity provider, and what remains unqualified?                     | [Identity-provider evaluation](identity-provider-evaluation.md)                       |
-| How will tenant-owned data be constrained and scoped in persistence (approved D-01)?                     | [Tenant data ownership and access design](tenant-data-design.md)                      |
-| How will Keycloak, principals, browser sessions and assurance integrate with the API (approved D-02)?    | [Human identity and session integration design](identity-session-design.md)           |
-| How will company invitations and durable transactional email work (approved D-13)?                       | [Company invitation and durable email delivery design](invitation-delivery-design.md) |
-| How will screens be enrolled, authenticated, moved and unlinked (approved D-03 server side)?             | [Device enrollment and lifecycle design](device-enrollment-design.md)                 |
-| How are media files uploaded, validated, converted, stored and deleted (approved D-05)?                  | [Media library design](media-library-design.md)                                       |
-| How are playlists, groups and schedules modeled, validated and evaluated in local time (approved D-06)?  | [Programming design](programming-design.md)                                           |
-| What could prevent delivery or safe operation?                                                           | [Risks and dependencies](risks.md)                                                    |
-| What is the phase sequence and current execution state?                                                  | [Implementation plan](implementation-plan.md)                                         |
-| Which decisions or external prerequisites need a human?                                                  | [Human actions](human-actions.md)                                                     |
+| Question | Canonical document |
+| --- | --- |
+| What is Teluni, who uses it, and what is the commercial hypothesis? | [Product vision](product.md) |
+| What name/domains and visual identity are approved? | [Teluni brand identity](branding/README.md) |
+| What belongs in the initial release, and how will it be accepted? | [Release requirements and acceptance](mvp.md) |
+| Which product policies were selected, including the PH-09 questionnaire and delegated choices? | [Release policies](release-policies.md) |
+| What numeric limits and qualification goals were selected, and which measurements remain pending? | [Release acceptance targets](release-targets.md) |
+| Which pilot/trial, pricing, license, quota, support and cancellation policies are approved? | [Initial commercial policies](commercial-policies.md) |
+| What are the accepted architecture directions, proposed module details and unresolved technical choices? | [Product architecture](architecture.md) |
+| How must publication, local playback, and recovery behave? | [Offline playback and synchronization](playback-and-sync.md) |
+| How can the residential pilot operate and later move to another host? | [Deployment and migration planning](operations.md) |
+| What must tenancy, identity, data protection, and localization protect? | [Security and internationalization](security-and-i18n.md) |
+| Which human login, recovery, session and permission policies did the owner select? | [Human identity and access](identity-and-access.md) |
+| What evidence supports the accepted identity provider, and what remains unqualified? | [Identity-provider evaluation](identity-provider-evaluation.md) |
+| How will tenant-owned data be constrained and scoped in persistence (approved D-01)? | [Tenant data ownership and access design](tenant-data-design.md) |
+| How will Keycloak, principals, browser sessions and assurance integrate with the API (approved D-02)? | [Human identity and session integration design](identity-session-design.md) |
+| How will company invitations and durable transactional email work (approved D-13)? | [Company invitation and durable email delivery design](invitation-delivery-design.md) |
+| How will screens be enrolled, authenticated, moved and unlinked (approved D-03 server side)? | [Device enrollment and lifecycle design](device-enrollment-design.md) |
+| How are media files uploaded, validated, converted, stored and deleted (approved D-05)? | [Media library design](media-library-design.md) |
+| How are playlists, groups and schedules modeled, validated and evaluated in local time (approved D-06)? | [Programming design](programming-design.md) |
+| What could prevent delivery or safe operation? | [Risks and dependencies](risks.md) |
+| What is the phase sequence and current execution state? | [Implementation plan](implementation-plan.md) |
+| Which decisions or external prerequisites need a human? | [Human actions](human-actions.md) |
 
 The owning contributor updates each document with changes to its subject, links related requirements rather than copying them, and regenerates the documentation portal through the [contributing workflow](../contributing.md). Stable requirement, decision, risk, task, and human-action IDs support traceability; they are documentation references, not implemented registries or API identifiers.
 
 ## Meaning of status
 
-| Product/design status | Meaning                                                                                                                                                                                                     |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Decided**           | A product requirement or inherited accepted direction agreed for planning. It does not mean implemented.                                                                                                    |
-| **Proposed**          | A candidate solution or acceptance policy requiring evaluation/review. New ADRs start as `proposed` and become accepted only through explicit review/approval under the [ADR process](../adr/authoring.md). |
-| **Pending**           | An unanswered choice or investigation; no default has been silently selected.                                                                                                                               |
-| **Future**            | Outside the approved initial release and not authorized for immediate implementation.                                                                                                                       |
-| **Implemented**       | Supported by repository code and verification evidence.                                                                                                                                                     |
+| Product/design status | Meaning |
+| --- | --- |
+| **Decided** | A product requirement or inherited accepted direction agreed for planning. It does not mean implemented. |
+| **Proposed** | A candidate solution or acceptance policy requiring evaluation/review. New ADRs start as `proposed` and become accepted only through explicit review/approval under the [ADR process](../adr/authoring.md). |
+| **Pending** | An unanswered choice or investigation; no default has been silently selected. |
+| **Future** | Outside the approved initial release and not authorized for immediate implementation. |
+| **Implemented** | Supported by repository code and verification evidence. |
 
 Task statuses (`pending`, `in progress`, `completed`, `blocked`, `changed`) have the separate meaning defined by the implementation plan. A completed documentation task establishes a specification, not a completed product capability.
 

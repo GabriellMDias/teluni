@@ -10,15 +10,15 @@ Follow inherited [production access](../security/production-access.md), [secrets
 
 ## Accepted initial topology and unverified readiness
 
-| Concern                             | Candidate responsibility                                                              | Validation required                                                                                                                                 |
-| ----------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HTTPS ingress                       | Reverse proxy serves panel and routes API/private media access                        | Certificate issuance/renewal, domain ownership, proxy trust and origin/access policy                                                                |
-| Backend and web artifacts           | Existing application builds in a simple single-host composition                       | Image/build/update procedure, readiness, startup ordering, restart and migration handling                                                           |
-| PostgreSQL                          | Persistent database on an internal container network with restricted runtime identity | No public listener; privileged migration credentials kept out of normal runtime; restore validation                                                 |
-| Human identity and browser sessions | Accepted self-hosted Keycloak and backend session direction                           | PH-10/PH-15 capacity and restricted management; reviewed/pinned provider, persistent identity/session state, revocation-safe recovery; not deployed |
-| Identity email and Google login     | Verified sender and owner-controlled Google OAuth registration                        | PH-16/PH-17; safe configuration/callbacks, reliable delivery, protected secrets and independent recovery; no recurring procurement authorized       |
-| Local media                         | Durable mounted storage outside disposable containers                                 | Capacity, permissions, atomic/durable object lifecycle, reference reconciliation and private delivery                                               |
-| Operations                          | Backups, redacted logs/metrics and disk/process/certificate checks                    | Independent backup destination, bounded retention and useful failure notifications                                                                  |
+| Concern | Candidate responsibility | Validation required |
+| --- | --- | --- |
+| HTTPS ingress | Reverse proxy serves panel and routes API/private media access | Certificate issuance/renewal, domain ownership, proxy trust and origin/access policy |
+| Backend and web artifacts | Existing application builds in a simple single-host composition | Image/build/update procedure, readiness, startup ordering, restart and migration handling |
+| PostgreSQL | Persistent database on an internal container network with restricted runtime identity | No public listener; privileged migration credentials kept out of normal runtime; restore validation |
+| Human identity and browser sessions | Accepted self-hosted Keycloak and backend session direction | PH-10/PH-15 capacity and restricted management; reviewed/pinned provider, persistent identity/session state, revocation-safe recovery; not deployed |
+| Identity email and Google login | Verified sender and owner-controlled Google OAuth registration | PH-16/PH-17; safe configuration/callbacks, reliable delivery, protected secrets and independent recovery; no recurring procurement authorized |
+| Local media | Durable mounted storage outside disposable containers | Capacity, permissions, atomic/durable object lifecycle, reference reconciliation and private delivery |
+| Operations | Backups, redacted logs/metrics and disk/process/certificate checks | Independent backup destination, bounded retention and useful failure notifications |
 
 Do not add queues, multiple backend services, a managed object store, CDN, Kubernetes, or vendor-specific services without measured need. Single-host failure remains a deliberate pilot risk, not solved by container restart policy.
 

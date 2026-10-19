@@ -51,18 +51,18 @@ Initial pairing/synchronization requires backend access. With no valid installed
 
 ## Failure and recovery acceptance
 
-| Condition                                                        | Required observable outcome / evidence                                                                                                                                     |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Server/network outage after sync                                 | Local media/catalog/region scheduling continues within AT-10/AT-15/AT-16; verify expected neutral state at expiry/uncertain time                                           |
-| Interrupted download or expired access                           | Safe bounded retry/resume only when verified; active generation continues; no partial asset activation                                                                     |
-| Invalid schema, binding, manifest, media or incompatible profile | Reject staging with bounded actionable diagnostics; keep active valid output; no infinite hot retry or cross-tenant reference                                              |
-| Insufficient storage/memory                                      | Respect AT-05, refuse unsafe preparation and preserve active/recovery assets; do not remove functions silently                                                             |
-| Power/process failure at prepare/switch                          | Recover a complete eligible generation and reconcile partial/orphan staging; qualify AT-06–AT-10 on representative devices                                                 |
-| Duplicate/reordered/concurrent price/publication work            | Reconcile idempotently; exclude unrelated drafts, stale-price rollback and mixed generations                                                                               |
-| Regional runtime failure or no-match                             | Isolate the affected output under policy, retain other geometry/output and report actual degradation                                                                       |
-| Date/DST/clock/promotion boundary                                | Preview/player fixture agreement and AT-13/AT-16; never revive expired output through fallback or rollback                                                                 |
-| Revoked/unlinked/unreachable device                              | Reject future protected access; enforce local authorization deadline; distinguish pending/confirmed erasure and require cleanup before reassignment                        |
-| Incompatible generation or failed player update                  | Follow AT-26 support window; preserve allowed playback, report incompatibility, use qualified update/rollback recovery                                                     |
-| Host move or database/media restore                              | Reconcile device intent, ownership/revocation and publication resources in an isolated rehearsal; never leak credentials or point devices at an untested recovery endpoint |
+| Condition | Required observable outcome / evidence |
+| --- | --- |
+| Server/network outage after sync | Local media/catalog/region scheduling continues within AT-10/AT-15/AT-16; verify expected neutral state at expiry/uncertain time |
+| Interrupted download or expired access | Safe bounded retry/resume only when verified; active generation continues; no partial asset activation |
+| Invalid schema, binding, manifest, media or incompatible profile | Reject staging with bounded actionable diagnostics; keep active valid output; no infinite hot retry or cross-tenant reference |
+| Insufficient storage/memory | Respect AT-05, refuse unsafe preparation and preserve active/recovery assets; do not remove functions silently |
+| Power/process failure at prepare/switch | Recover a complete eligible generation and reconcile partial/orphan staging; qualify AT-06–AT-10 on representative devices |
+| Duplicate/reordered/concurrent price/publication work | Reconcile idempotently; exclude unrelated drafts, stale-price rollback and mixed generations |
+| Regional runtime failure or no-match | Isolate the affected output under policy, retain other geometry/output and report actual degradation |
+| Date/DST/clock/promotion boundary | Preview/player fixture agreement and AT-13/AT-16; never revive expired output through fallback or rollback |
+| Revoked/unlinked/unreachable device | Reject future protected access; enforce local authorization deadline; distinguish pending/confirmed erasure and require cleanup before reassignment |
+| Incompatible generation or failed player update | Follow AT-26 support window; preserve allowed playback, report incompatibility, use qualified update/rollback recovery |
+| Host move or database/media restore | Reconcile device intent, ownership/revocation and publication resources in an isolated rehearsal; never leak credentials or point devices at an untested recovery endpoint |
 
 Every interruption boundary needs automated contract/security fixtures and physical hardware/network/power evidence, not only happy-path mocks. All future product target measurements remain pending. PH-08/PJ-12/PJ-14 own device qualification; PH-10/PJ-13 own host/restore/migration readiness.

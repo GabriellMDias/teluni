@@ -6,15 +6,15 @@ This React/Vite application provides the application shell, a home page, compose
 
 ## Find the owning implementation
 
-| Concern                                           | Source                                                                                                                                                                                  |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shell, shared routes, and home page               | [`src/shell.tsx`](src/shell.tsx), [`src/home.tsx`](src/home.tsx), [`src/main.tsx`](src/main.tsx); the portal's routes in [`src/documentation-routes.tsx`](src/documentation-routes.tsx) |
-| Teluni's entry and home page                      | [`src/workspace/`](src/workspace/routes.tsx)                                                                                                                                            |
-| Module composition                                | [`src/modules.tsx`](src/modules.tsx), [`src/module-navigation.tsx`](src/module-navigation.tsx)                                                                                          |
-| API client and failure wording                    | [`src/api-client.ts`](src/api-client.ts)                                                                                                                                                |
-| Client configuration and build identity           | [`src/config.ts`](src/config.ts), [`vite.config.ts`](vite.config.ts), [`scripts/project-identity.ts`](scripts/project-identity.ts)                                                      |
-| Exported shared components and canonical examples | [`src/components.tsx`](src/components.tsx), [`src/components.docs.json`](src/components.docs.json)                                                                                      |
-| Documentation presentation                        | [`src/documentation.tsx`](src/documentation.tsx) under [portal ownership](../../docs/architecture/living-documentation.md)                                                              |
+| Concern | Source |
+| --- | --- |
+| Shell, shared routes, and home page | [`src/shell.tsx`](src/shell.tsx), [`src/home.tsx`](src/home.tsx), [`src/main.tsx`](src/main.tsx); the portal's routes in [`src/documentation-routes.tsx`](src/documentation-routes.tsx) |
+| Teluni's entry and home page | [`src/workspace/`](src/workspace/routes.tsx) |
+| Module composition | [`src/modules.tsx`](src/modules.tsx), [`src/module-navigation.tsx`](src/module-navigation.tsx) |
+| API client and failure wording | [`src/api-client.ts`](src/api-client.ts) |
+| Client configuration and build identity | [`src/config.ts`](src/config.ts), [`vite.config.ts`](vite.config.ts), [`scripts/project-identity.ts`](scripts/project-identity.ts) |
+| Exported shared components and canonical examples | [`src/components.tsx`](src/components.tsx), [`src/components.docs.json`](src/components.docs.json) |
+| Documentation presentation | [`src/documentation.tsx`](src/documentation.tsx) under [portal ownership](../../docs/architecture/living-documentation.md) |
 
 ## Modules
 

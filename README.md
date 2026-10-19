@@ -16,20 +16,20 @@ The initial product brief is documented. Real email sending (the D-13 [invitatio
 
 ## Start here
 
-| Task                                                                                       | Entry point                                                                                                                                                                                       |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Understand Teluni's product, release policies/targets, proposed modules, risks and roadmap | [Product documentation](docs/project/README.md)                                                                                                                                                   |
-| Find the policy for a change                                                               | [Documentation task index](docs/README.md)                                                                                                                                                        |
-| Understand contributor and agent obligations                                               | [Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)                                              |
-| Understand architecture and code placement                                                 | [Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)                                                                                  |
-| Add a product capability                                                                   | [API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)              |
-| Find a selected technology or its rationale                                                | [Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)                                                                                                      |
-| Determine available verification                                                           | [Validation](docs/validation.md)                                                                                                                                                                  |
-| Reproduce the local workflow                                                               | [Development setup](docs/setup.md)                                                                                                                                                                |
-| Explore local guides, architecture, API routes, data, and components                       | [Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data) |
-| Find outstanding work or required owner decisions                                          | The plan and human actions linked from [Current state](#current-state)                                                                                                                            |
-| Inspect provenance or adopt a newer Orion revision                                         | [Project derivation](docs/project-derivation.md)                                                                                                                                                  |
-| Create an operational procedure                                                            | [Runbooks](docs/runbooks/README.md)                                                                                                                                                               |
+| Task | Entry point |
+| --- | --- |
+| Understand Teluni's product, release policies/targets, proposed modules, risks and roadmap | [Product documentation](docs/project/README.md) |
+| Find the policy for a change | [Documentation task index](docs/README.md) |
+| Understand contributor and agent obligations | [Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md) |
+| Understand architecture and code placement | [Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md) |
+| Add a product capability | [API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation) |
+| Find a selected technology or its rationale | [Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md) |
+| Determine available verification | [Validation](docs/validation.md) |
+| Reproduce the local workflow | [Development setup](docs/setup.md) |
+| Explore local guides, architecture, API routes, data, and components | [Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data) |
+| Find outstanding work or required owner decisions | The plan and human actions linked from [Current state](#current-state) |
+| Inspect provenance or adopt a newer Orion revision | [Project derivation](docs/project-derivation.md) |
+| Create an operational procedure | [Runbooks](docs/runbooks/README.md) |
 
 Accepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.
 

@@ -10,58 +10,58 @@ Ingestion limits are configurable engineering defaults, not plan quotas. Device 
 
 ## Media and rendering targets
 
-| ID    | Selected limit / qualification target                                                                                                                                                                                                                                    | Requirement / source                                 |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| AT-01 | Image item duration 1–3,600 seconds inclusive; default 10 seconds. Coordinated pages use their reviewed page-duration rule instead                                                                                                                                       | FR-05/FR-10; earlier owner default and delegated P16 |
-| AT-02 | Image file at most 20 MiB; each decoded axis at most 8,192 px and total at most 32,000,000 pixels. Enforce all bounds, not only compressed size                                                                                                                          | FR-04/NF-02; delegated P16                           |
-| AT-03 | Video file at most 1 GiB and duration at most 60 minutes. Exact allowed/convertible formats and decoder limits remain D-05 qualification                                                                                                                                 | FR-04/FR-05; delegated P16                           |
-| AT-04 | Reference qualification: 1080p output, at least 6 concurrent areas and 2 simultaneous 1080p/30 fps videos; remaining areas show images/catalog views. Test supported orientation, audio mix, sustained playback and recovery. Higher profiles require their own evidence | FR-03/FR-08/FR-10/FR-11; owner P18                   |
-| AT-05 | Keep active and previous valid generations plus new staging; preserve free reserve of at least max(1 GiB, 10% of the media volume) after planned resource use. Count shared immutable files once. Refuse unsafe staging/activation without deleting protected resources  | FR-07/FR-08/NF-02; owner P19                         |
+| ID | Selected limit / qualification target | Requirement / source |
+| --- | --- | --- |
+| AT-01 | Image item duration 1–3,600 seconds inclusive; default 10 seconds. Coordinated pages use their reviewed page-duration rule instead | FR-05/FR-10; earlier owner default and delegated P16 |
+| AT-02 | Image file at most 20 MiB; each decoded axis at most 8,192 px and total at most 32,000,000 pixels. Enforce all bounds, not only compressed size | FR-04/NF-02; delegated P16 |
+| AT-03 | Video file at most 1 GiB and duration at most 60 minutes. Exact allowed/convertible formats and decoder limits remain D-05 qualification | FR-04/FR-05; delegated P16 |
+| AT-04 | Reference qualification: 1080p output, at least 6 concurrent areas and 2 simultaneous 1080p/30 fps videos; remaining areas show images/catalog views. Test supported orientation, audio mix, sustained playback and recovery. Higher profiles require their own evidence | FR-03/FR-08/FR-10/FR-11; owner P18 |
+| AT-05 | Keep active and previous valid generations plus new staging; preserve free reserve of at least max(1 GiB, 10% of the media volume) after planned resource use. Count shared immutable files once. Refuse unsafe staging/activation without deleting protected resources | FR-07/FR-08/NF-02; owner P19 |
 
 ## Reliability and synchronization targets
 
-| ID    | Qualification target                                                                                                                                                                                                                                                 | Requirement / source                                |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| AT-06 | First valid cached output within 10 seconds after the OS hands execution to the player                                                                                                                                                                               | FR-08/NF-02; delegated P20                          |
-| AT-07 | Recover a failed player process within 30 seconds on a qualified supervised-restart profile                                                                                                                                                                          | FR-08/NF-02; delegated P20                          |
-| AT-08 | Full device reboot to content: target at most 120 seconds, conditional on model/OS/autostart validation                                                                                                                                                              | FR-08/NF-02; delegated P20; PH-08 evidence required |
-| AT-09 | At least 20 physical power-interruption cycles distributed across download, preparation, activation and playback; no incomplete/mixed active generation                                                                                                              | FR-07/FR-08/NF-02; delegated P20                    |
-| AT-10 | Seven-day offline endurance with reboots, checking local schedules/catalog validity and the expected neutral transition at authorization expiry. Never count expired-authorization output as a successful playback guarantee                                         | FR-08/NF-02; delegated P20, owner P22               |
-| AT-11 | Detect an available desired publication within 30 seconds when backend/connectivity are available; measure network/file transfer separately                                                                                                                          | FR-07/NF-03; delegated P21                          |
-| AT-12 | Activate within 5 seconds after all required resources are available/validated and the version is eligible for activation                                                                                                                                            | FR-07/NF-02; delegated P21                          |
-| AT-13 | Scheduled output change within 500 ms of its boundary relative to the trusted player clock; qualify separately from absolute clock uncertainty                                                                                                                       | FR-06/FR-10/NF-02; delegated P21                    |
-| AT-14 | Panel reflects an observed player acknowledgement within 10 seconds of receiving it; server intent alone is not activation evidence                                                                                                                                  | FR-09/NF-05; delegated P21                          |
-| AT-15 | Offline authorization expires no later than 7 days after its last successful online renewal. At the deadline show neutral output and require reconnection; server revocation cannot instantly erase an unreachable cache                                             | FR-02/FR-08/NF-01/NF-02; owner P22                  |
-| AT-16 | Maximum intended trusted-time uncertainty for commercial scheduling: 60 seconds. Detected incompatible jumps or insufficient trustworthy reference suspend time-dependent commercial output and report the condition; proof of estimation/detection remains required | FR-06/FR-08/NF-02/NF-06; owner P23                  |
+| ID | Qualification target | Requirement / source |
+| --- | --- | --- |
+| AT-06 | First valid cached output within 10 seconds after the OS hands execution to the player | FR-08/NF-02; delegated P20 |
+| AT-07 | Recover a failed player process within 30 seconds on a qualified supervised-restart profile | FR-08/NF-02; delegated P20 |
+| AT-08 | Full device reboot to content: target at most 120 seconds, conditional on model/OS/autostart validation | FR-08/NF-02; delegated P20; PH-08 evidence required |
+| AT-09 | At least 20 physical power-interruption cycles distributed across download, preparation, activation and playback; no incomplete/mixed active generation | FR-07/FR-08/NF-02; delegated P20 |
+| AT-10 | Seven-day offline endurance with reboots, checking local schedules/catalog validity and the expected neutral transition at authorization expiry. Never count expired-authorization output as a successful playback guarantee | FR-08/NF-02; delegated P20, owner P22 |
+| AT-11 | Detect an available desired publication within 30 seconds when backend/connectivity are available; measure network/file transfer separately | FR-07/NF-03; delegated P21 |
+| AT-12 | Activate within 5 seconds after all required resources are available/validated and the version is eligible for activation | FR-07/NF-02; delegated P21 |
+| AT-13 | Scheduled output change within 500 ms of its boundary relative to the trusted player clock; qualify separately from absolute clock uncertainty | FR-06/FR-10/NF-02; delegated P21 |
+| AT-14 | Panel reflects an observed player acknowledgement within 10 seconds of receiving it; server intent alone is not activation evidence | FR-09/NF-05; delegated P21 |
+| AT-15 | Offline authorization expires no later than 7 days after its last successful online renewal. At the deadline show neutral output and require reconnection; server revocation cannot instantly erase an unreachable cache | FR-02/FR-08/NF-01/NF-02; owner P22 |
+| AT-16 | Maximum intended trusted-time uncertainty for commercial scheduling: 60 seconds. Detected incompatible jumps or insufficient trustworthy reference suspend time-dependent commercial output and report the condition; proof of estimation/detection remains required | FR-06/FR-08/NF-02/NF-06; owner P23 |
 
 ## Retention targets
 
-| ID    | Selected operational retention                                                                                                           | Requirement / source                                                                     |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| ID | Selected operational retention | Requirement / source |
+| --- | --- | --- |
 | AT-17 | Recoverable archive/trash for at least 30 days before purging media or archived catalog records/definitions with no protected references | FR-04/FR-11/NF-02; delegated P26 and lifecycle defaults for the custom-catalog expansion |
-| AT-18 | Inactive publication history recoverable for at least 90 days                                                                            | FR-07/NF-02; delegated P26                                                               |
-| AT-19 | Player retains active and previous valid generations and resources of a valid staging attempt                                            | FR-07/FR-08/NF-02; owner P19 and delegated P26                                           |
-| AT-20 | Detailed operational reports: 30-day default, minimized/redacted and subject to the separate privacy/retention review                    | FR-09/NF-05; delegated P26; PH-13                                                        |
+| AT-18 | Inactive publication history recoverable for at least 90 days | FR-07/NF-02; delegated P26 |
+| AT-19 | Player retains active and previous valid generations and resources of a valid staging attempt | FR-07/FR-08/NF-02; owner P19 and delegated P26 |
+| AT-20 | Detailed operational reports: 30-day default, minimized/redacted and subject to the separate privacy/retention review | FR-09/NF-05; delegated P26; PH-13 |
 
 These periods never permit deleting an active, staging, recovery or otherwise protected referenced resource. Reconciliation, the offline authorization envelope and safe garbage collection remain mandatory. A restored publication still obeys content expiry and authorization. These are operational selections, not a legal retention policy for personal data or security audit; PH-13 remains pending.
 
 ## Capacity and observability targets
 
-| ID    | Reference load / measurement target                                                                                                                                                                              | Requirement / source                   |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| AT-21 | Load qualification with 10 companies, 30 branches, 100 connected displays and 20 concurrent panel operators. This is a benchmark profile, not a fleet/tenant ceiling or a claim about the residential server     | FR-01/FR-09/NF-03/NF-09; delegated P27 |
-| AT-22 | Usual metadata API operations p95 at most 500 ms under the recorded reference load; exclude media transfer/processing. Record operation mix, pagination, dataset, measurement window and host/network conditions | NF-03; delegated P27                   |
-| AT-23 | Main panel workflows usable within 3 seconds in the documented reference browser/network/data profile                                                                                                            | NF-03/NF-07; delegated P27             |
-| AT-24 | State communication every 30 seconds; stale after 90 seconds without contact and offline after 120 seconds. Always show the last observed timestamp and distinguish connectivity, sync and playback failure      | FR-09/NF-05; delegated P28             |
+| ID | Reference load / measurement target | Requirement / source |
+| --- | --- | --- |
+| AT-21 | Load qualification with 10 companies, 30 branches, 100 connected displays and 20 concurrent panel operators. This is a benchmark profile, not a fleet/tenant ceiling or a claim about the residential server | FR-01/FR-09/NF-03/NF-09; delegated P27 |
+| AT-22 | Usual metadata API operations p95 at most 500 ms under the recorded reference load; exclude media transfer/processing. Record operation mix, pagination, dataset, measurement window and host/network conditions | NF-03; delegated P27 |
+| AT-23 | Main panel workflows usable within 3 seconds in the documented reference browser/network/data profile | NF-03/NF-07; delegated P27 |
+| AT-24 | State communication every 30 seconds; stale after 90 seconds without contact and offline after 120 seconds. Always show the last observed timestamp and distinguish connectivity, sync and playback failure | FR-09/NF-05; delegated P28 |
 
 Latency percentiles require a recorded sample distribution; one successful request is not qualification. Host/processing/network capacity still requires PH-10 review. Retain company/branch isolation tests under load; performance must not weaken authorization, validation or telemetry controls.
 
 ## Usability and compatibility targets
 
-| ID    | Qualification target                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Requirement / source                               |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| ID | Qualification target | Requirement / source |
+| --- | --- | --- |
 | AT-25 | Ten nontechnical participants; at least nine complete the core pairing/catalog/composition/preview/publication journey unaided within 15 minutes after the same introductory orientation of at most 5 minutes. Use recorded synthetic assets/tasks. A familiar operator saves and distributes a price update within 2 minutes under the connected reference scenario. Verify keyboard, responsive operation and automated plus manual accessibility checks following the existing web strategy | FR-01/FR-02/FR-07/FR-10/FR-11/NF-07; delegated P29 |
-| AT-26 | Support the current and previous protocol generation for at least 90 days after a transition, with controlled distribution, configured update windows and verified install/recovery/rollback. Urgent security exceptions require explicit review; no untested data/app downgrade is authorized                                                                                                                                                                                                 | FR-08/NF-08; delegated P30                         |
+| AT-26 | Support the current and previous protocol generation for at least 90 days after a transition, with controlled distribution, configured update windows and verified install/recovery/rollback. Urgent security exceptions require explicit review; no untested data/app downgrade is authorized | FR-08/NF-08; delegated P30 |
 
 Accessibility scans are evidence for their checked cases, not certification. No protocol generation number, installer/store or player rollback mechanism is selected by AT-26.
 

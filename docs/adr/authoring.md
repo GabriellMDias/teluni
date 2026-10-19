@@ -12,12 +12,12 @@ An ADR records a sufficiently concrete architectural conclusion, not every discu
 
 ## Lifecycle and historical integrity
 
-| Status       | Meaning                                                                                                                            |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `proposed`   | Under active consideration; implementation must not assume finality unless explicitly exploratory                                  |
-| `accepted`   | Approved architectural direction; implementation and current documentation should align, allowing an explicit migration period     |
-| `rejected`   | Considered and deliberately not adopted                                                                                            |
-| `superseded` | Previously accepted, then replaced by another decision; link the replacement                                                       |
+| Status | Meaning |
+| --- | --- |
+| `proposed` | Under active consideration; implementation must not assume finality unless explicitly exploratory |
+| `accepted` | Approved architectural direction; implementation and current documentation should align, allowing an explicit migration period |
+| `rejected` | Considered and deliberately not adopted |
+| `superseded` | Previously accepted, then replaced by another decision; link the replacement |
 | `deprecated` | Historically relevant but no longer appropriate for new architecture; use sparingly when replacement is transitional or incomplete |
 
 Do not add statuses without a clear need. Normal transitions are proposed to accepted/rejected and accepted to superseded/deprecated. Do not normally revert historical decisions to proposed; create a new record when reconsidering them.

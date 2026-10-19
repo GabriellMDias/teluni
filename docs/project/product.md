@@ -6,10 +6,10 @@
 
 **Decided:** Teluni is a multi-tenant digital signage SaaS for centralized management of visual content on televisions, monitors, and other display devices. It should combine simple operation, reliable local playback, freeform simultaneous presentation and configurable data-driven content. Brazil is the initial market, with international commercialization anticipated. The owner selected initial capabilities for product quality rather than limiting them solely by the MVP label.
 
-| Locale  | Intended slogan                   |
-| ------- | --------------------------------- |
+| Locale | Intended slogan |
+| --- | --- |
 | `pt-BR` | Todas as suas telas. Um só lugar. |
-| `en-US` | Every screen. One place.          |
+| `en-US` | Every screen. One place. |
 
 **Decided:** the owner approved Teluni as the product name and `teluni.app` as the principal domain. `teluni.com.br` is the secondary/defensive Brazil option (availability reported by the owner); unavailable/premium `teluni.com` is outside the current budget and scope. [Branding](branding/README.md) owns these decisions and the approved Connected Tiles identity. Preliminary trademark research has advanced, but registration/control and final clearance are not inferred. Connected Tiles is integrated into the web shell, portal and favicon, with the selected locally served font and derived touch icon. [PH-07](human-actions.md#ph-07) remains in progress for domain registration/control and trademark evidence.
 
@@ -21,15 +21,15 @@ The owner's experience with PDT Display provides conceptual learning only. Telun
 
 ## Audience and use cases
 
-| Segment                                   | Representative use case                                       |
-| ----------------------------------------- | ------------------------------------------------------------- |
-| Restaurants, snack bars, pizzerias, cafes | Menus, featured products, opening-period promotions           |
-| Supermarkets and retail                   | Offers, prices, announcements, local campaigns                |
-| Gyms and sports centers                   | Class schedules, instructions, promotions                     |
-| Clinics, practices, hospitals             | General service information and approved public announcements |
-| Hotels and hospitality                    | Guest information, services, events                           |
-| Offices and corporate environments        | Internal communications and visual announcements              |
-| Chains and franchises                     | Central publication with authorized branch-level operation    |
+| Segment | Representative use case |
+| --- | --- |
+| Restaurants, snack bars, pizzerias, cafes | Menus, featured products, opening-period promotions |
+| Supermarkets and retail | Offers, prices, announcements, local campaigns |
+| Gyms and sports centers | Class schedules, instructions, promotions |
+| Clinics, practices, hospitals | General service information and approved public announcements |
+| Hotels and hospitality | Guest information, services, events |
+| Offices and corporate environments | Internal communications and visual announcements |
+| Chains and franchises | Central publication with authorized branch-level operation |
 
 These are target use cases, not implemented integrations or an invitation to process sensitive patient or employee records. Sector-specific needs belong in specialized features without making the signage core restaurant-specific. One company with one branch must remain simple to operate; many branches and large device fleets must fit the conceptual ownership model, with supported capacity established through measurement.
 
@@ -49,17 +49,17 @@ Acceptance of these journeys is specified in [release requirements](mvp.md). The
 
 ## Product objectives
 
-| Objective                       | Intended outcome                                                                                                                                          | Verification owner                                                    |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Centralized remote operation    | Manage displays, reusable media, playlists, and scheduling from one panel                                                                                 | MVP acceptance                                                        |
-| Reliable presentation           | Continuous local playback with controlled publication and recovery                                                                                        | Playback/sync acceptance                                              |
-| Simultaneous presentation       | Freeform regional content/schedules, optional page coordination, multiple videos/audio and isolated recovery on one TV                                    | FR-10 acceptance and qualified device profile                         |
+| Objective | Intended outcome | Verification owner |
+| --- | --- | --- |
+| Centralized remote operation | Manage displays, reusable media, playlists, and scheduling from one panel | MVP acceptance |
+| Reliable presentation | Continuous local playback with controlled publication and recovery | Playback/sync acceptance |
+| Simultaneous presentation | Freeform regional content/schedules, optional page coordination, multiple videos/audio and isolated recovery on one TV | FR-10 acceptance and qualified device profile |
 | Configurable structured content | Users define catalog fields/records and bind products/prices, weekly agendas or other approved data into layouts; designated prices publish automatically | FR-11 acceptance, schema/reference safety and consistent publications |
-| Simple commercial use           | A nontechnical pilot operator can complete the core journey                                                                                               | Pilot usability session                                               |
-| Tenant and branch ownership     | Support independent companies and authorized branch scopes                                                                                                | Security acceptance                                                   |
-| Operational visibility          | Explain stale devices and synchronization failures safely                                                                                                 | Monitoring acceptance                                                 |
-| Sustainable growth              | Measure storage, traffic, processing, support, and capacity before expansion                                                                              | Pilot operating review                                                |
-| Extensibility                   | Extend presentation authoring, dynamic prices, integrations, and player platforms without coupling the core to one sector                                 | Architecture review                                                   |
+| Simple commercial use | A nontechnical pilot operator can complete the core journey | Pilot usability session |
+| Tenant and branch ownership | Support independent companies and authorized branch scopes | Security acceptance |
+| Operational visibility | Explain stale devices and synchronization failures safely | Monitoring acceptance |
+| Sustainable growth | Measure storage, traffic, processing, support, and capacity before expansion | Pilot operating review |
+| Extensibility | Extend presentation authoring, dynamic prices, integrations, and player platforms without coupling the core to one sector | Architecture review |
 
 The [release targets](release-targets.md) select task-time, continuity, rendering, storage and reference-fleet goals under completed PH-09. Actual pilot/hardware/load results remain pending; no supported-device capacity, SLA, unlimited resources or operating-cost result is promised. [Release policies](release-policies.md) own the approved behaviors and owner/delegated decision provenance.
 

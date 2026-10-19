@@ -36,12 +36,12 @@ The single initial plan includes the approved capabilities that have actually be
 
 P16 selected delegation of numerical dimensioning, **not unconditional approval of the questionnaire's example paid quotas**. The following finite reference envelope is retained as a **proposed qualification baseline**. It must be measured/adjusted under PH-10/PH-18/PJ-27 before it becomes a published production entitlement. The trial quantities above are selected product limits, also subject to actual admission capacity. No production-capacity result or unlimited resource claim follows from either table.
 
-| Resource                            | Trial reference                        | Two-screen paid reference              | Each additional license           |
-| ----------------------------------- | -------------------------------------- | -------------------------------------- | --------------------------------- |
-| Original media                      | 2 GiB/company                          | 10 GiB/company                         | +2 GiB                            |
-| Media transfers to players          | 10 GiB/trial                           | 50 GiB/billing cycle                   | +20 GiB/cycle                     |
-| Video input admitted for conversion | 60 minutes/trial                       | 120 minutes/cycle                      | +60 minutes/cycle                 |
-| Concurrent company conversions      | At most one, only within host capacity | At most one, only within host capacity | No automatic concurrency increase |
+| Resource | Trial reference | Two-screen paid reference | Each additional license |
+| --- | --- | --- | --- |
+| Original media | 2 GiB/company | 10 GiB/company | +2 GiB |
+| Media transfers to players | 10 GiB/trial | 50 GiB/billing cycle | +20 GiB/cycle |
+| Video input admitted for conversion | 60 minutes/trial | 120 minutes/cycle | +60 minutes/cycle |
+| Concurrent company conversions | At most one, only within host capacity | At most one, only within host capacity | No automatic concurrency increase |
 
 These reference allowances do not decide codec/resolution/rendition processing profiles, source-file acceptance, CPU quotas, global concurrency, aggregate tenant admission, disk reserve or control/telemetry budgets. Input minutes are not CPU minutes. Actual bounds and configuration/contracts remain D-05/D-12, PH-10/PH-18 and PJ-27. Public admission and quota-dependent operations must remain unavailable until safe finite limits and resource reservations are defined and verified; unknown capacity is not an unlimited default.
 
@@ -85,83 +85,83 @@ Use an **at least 70% steady-state contribution-margin target** as an owner-appr
 
 At BRL 79.90 and a 70% target, the deductible-cost budget would be BRL 23.97/month/company. This is arithmetic, not a measured cost or proven profit. The pilot must determine whether actual taxes, transfer/processing, support and other attributable costs fit; revise price/offer before expanding if they do not. Unknown taxes or own labor are never zero by default. Qualified fiscal/legal review precedes charging/public terms; source Apache-2.0 licensing does not replace SaaS terms or fiscal documentation.
 
-| Fact / evidence                                             | Current state                                       | Required owner / task    |
-| ----------------------------------------------------------- | --------------------------------------------------- | ------------------------ |
-| Pilot participation and customer acceptance                 | Unknown; only Teluni's proposed conditions approved | PH-08/PH-18; PJ-14       |
-| Physical screen/player models and real support profile      | Unknown/unqualified                                 | PH-08; PJ-12/PJ-14       |
-| Actual support coverage/calendar                            | Unknown; no fixed-hours promise                     | PH-18; PJ-14             |
-| Incremental energy/server cost                              | Unknown, not zero                                   | PH-10/PH-18              |
-| Uplink/traffic/ISP incremental cost                         | Unknown                                             | PH-10/PH-18              |
-| Off-host backup cost/capacity and recovery                  | Unknown/unverified                                  | PH-10/PH-18; PJ-13       |
-| Domain acquisition/renewal expense                          | Unknown; domain control still unverified            | PH-07/PH-18              |
-| Identity/email cost and capacity                            | Unknown/unverified                                  | PH-15/PH-17/PH-18        |
-| Physical storage, conversion and transfer per pilot company | Not measured                                        | PH-18; PJ-13/PJ-14/PJ-27 |
-| Onboarding/recurring support hours                          | Not measured                                        | PH-18; PJ-14             |
-| Payment fees and applicable fiscal costs                    | Unknown                                             | PH-18/PH-19              |
-| Billing issuer, fiscal process and reviewed terms           | Not established by this approval                    | PH-19/PH-13              |
+| Fact / evidence | Current state | Required owner / task |
+| --- | --- | --- |
+| Pilot participation and customer acceptance | Unknown; only Teluni's proposed conditions approved | PH-08/PH-18; PJ-14 |
+| Physical screen/player models and real support profile | Unknown/unqualified | PH-08; PJ-12/PJ-14 |
+| Actual support coverage/calendar | Unknown; no fixed-hours promise | PH-18; PJ-14 |
+| Incremental energy/server cost | Unknown, not zero | PH-10/PH-18 |
+| Uplink/traffic/ISP incremental cost | Unknown | PH-10/PH-18 |
+| Off-host backup cost/capacity and recovery | Unknown/unverified | PH-10/PH-18; PJ-13 |
+| Domain acquisition/renewal expense | Unknown; domain control still unverified | PH-07/PH-18 |
+| Identity/email cost and capacity | Unknown/unverified | PH-15/PH-17/PH-18 |
+| Physical storage, conversion and transfer per pilot company | Not measured | PH-18; PJ-13/PJ-14/PJ-27 |
+| Onboarding/recurring support hours | Not measured | PH-18; PJ-14 |
+| Payment fees and applicable fiscal costs | Unknown | PH-18/PH-19 |
+| Billing issuer, fiscal process and reviewed terms | Not established by this approval | PH-19/PH-13 |
 
 ## Required commercial verification
 
 These cases are **specified, not executed**. They extend the release journey without selecting a commercial engine/schema or authorizing implementation. D-12 must review concrete state/entitlement/quota consistency and record a significant architectural choice through the normal ADR process when made; accepted ADRs remain unchanged.
 
-| Case  | Required result before applicable use                                                                                                                                                           |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CP-01 | Eligible verified public activation starts one isolated, visibly bounded trial; identity/domain similarity cannot claim an existing company or obtain repeated free evaluations implicitly      |
-| CP-02 | Fixed purchased licenses are independent from heartbeat; regional functions do not add fees; unauthorized/cross-company seat use fails                                                          |
-| CP-03 | Replacement has explicit attribution and bounded old-lease overlap; repeated transfers cannot create unlimited extra playback; cross-company cleanup remains mandatory                          |
-| CP-04 | Commercial capacity and actual quota admission are checked server-side with safe concurrent reservations and reconciliation; no unknown/unlimited fallback or surprise charge                   |
+| Case | Required result before applicable use |
+| --- | --- |
+| CP-01 | Eligible verified public activation starts one isolated, visibly bounded trial; identity/domain similarity cannot claim an existing company or obtain repeated free evaluations implicitly |
+| CP-02 | Fixed purchased licenses are independent from heartbeat; regional functions do not add fees; unauthorized/cross-company seat use fails |
+| CP-03 | Replacement has explicit attribution and bounded old-lease overlap; repeated transfers cannot create unlimited extra playback; cross-company cleanup remains mandatory |
+| CP-04 | Commercial capacity and actual quota admission are checked server-side with safe concurrent reservations and reconciliation; no unknown/unlimited fallback or surprise charge |
 | CP-05 | Accounting distinguishes originals, retained/rendition/backup space, transfer bytes and processing; platform retries do not double-charge and protected references are not purged to fit quotas |
-| CP-06 | Planned downloads do not get cut off solely at a counter threshold; refused staging preserves valid output and explains desired versus active state                                             |
-| CP-07 | Confirmed increases/proration and renewal reductions are explicit, auditable and money/calendar-consistent; downgrades neither pick arbitrary TVs nor destroy protected content                 |
-| CP-08 | Manual payment reconciliation, duplicate/unknown payment outcomes and commercial state changes remain attributable without weakening identity/security state                                    |
-| CP-09 | Trial/paid/grace expiry, offline leases and reconnect use the shorter known deadline without claiming instantaneous offline revocation or bypass through a restored snapshot                    |
-| CP-10 | Commercial restriction permits only intended authorized regularization/export paths; security suspension still denies its protected operations                                                  |
-| CP-11 | Cancellation/reactivation/export and retention reconcile PH-09/PH-13 without future charges or premature deletion; support retains consent/scope/expiry                                         |
-| CP-12 | Pilot customer acceptance, actual coverage, measured costs/margin and fiscal/billing readiness are safely recorded before applicable offers; unknown facts are not accepted evidence            |
+| CP-06 | Planned downloads do not get cut off solely at a counter threshold; refused staging preserves valid output and explains desired versus active state |
+| CP-07 | Confirmed increases/proration and renewal reductions are explicit, auditable and money/calendar-consistent; downgrades neither pick arbitrary TVs nor destroy protected content |
+| CP-08 | Manual payment reconciliation, duplicate/unknown payment outcomes and commercial state changes remain attributable without weakening identity/security state |
+| CP-09 | Trial/paid/grace expiry, offline leases and reconnect use the shorter known deadline without claiming instantaneous offline revocation or bypass through a restored snapshot |
+| CP-10 | Commercial restriction permits only intended authorized regularization/export paths; security suspension still denies its protected operations |
+| CP-11 | Cancellation/reactivation/export and retention reconcile PH-09/PH-13 without future charges or premature deletion; support retains consent/scope/expiry |
+| CP-12 | Pilot customer acceptance, actual coverage, measured costs/margin and fiscal/billing readiness are safely recorded before applicable offers; unknown facts are not accepted evidence |
 
 ## PH-12 decision record
 
 Evidence: on **2026-10-18**, the owner instructed the agent to proceed with **all suggested recommendations** and close PH-12. This approves the recommendations rather than answering every question A: P10 recommends B, P16 C/delegation, P32 B, and P23/P24 depend on actual coverage. No measured-cost worksheet or customer acceptance was supplied. Numerical delegation and conditional availability are recorded separately below rather than invented as owner facts.
 
-| Question | Approved disposition             | Canonical outcome                                                                                                      |
-| -------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| P01      | A                                | 30-day accompanied pilot from functional setup/operator start                                                          |
-| P02      | A                                | First software pilot free for up to two screens; extra services/hardware separate                                      |
-| P03      | A                                | Upfront stated intended paid conditions; explicit acceptance and first payment to convert                              |
-| P04      | A                                | Collect usability, reliability, hardware, cost/support and commercial evidence                                         |
-| P05      | A                                | 14-day automatic eligible trial, two screens, no card or permanent free plan                                           |
-| P06      | A                                | Trial starts at verified company activation; visible deadline, no automatic extension                                  |
-| P07      | A, capacity-conditional          | Trial: two screens, one branch, five members, 2 GiB originals and 10 GiB media transfers                               |
-| P08      | A                                | Explicit limited commercial access at expiry; proportionate repeated-trial controls                                    |
-| P09      | A                                | License per independent authorized player output, not per region/function                                              |
-| P10      | B, with explicit allocation      | Fixed purchased license package, not connection-based billing                                                          |
-| P11      | A                                | No extra replacement fee; one pending replacement/seat and bounded prior-lease overlap                                 |
-| P12      | A, validation price              | BRL 79.90/company/month including up to two licenses                                                                   |
-| P13      | A, validation price              | BRL 29.90 per additional monthly license                                                                               |
-| P14      | A                                | One initial plan containing approved delivered capabilities; fundamental security not upsold                           |
-| P15      | A                                | Table offer up to ten licenses; larger fleets need qualified quote, no automatic discount                              |
-| P16      | C, delegated dimensioning        | Retain finite questionnaire envelope as proposed qualification baseline; validate production quotas before publication |
-| P17      | A                                | No initial per-member/branch fee; finite explicit qualified technical bounds still required                            |
-| P18      | A                                | 80%/100% notices, reject new excess work or explicitly accepted expansion; no surprise fees/purge                      |
-| P19      | A                                | Confirmed prorated increases; explicit next-renewal reductions and safe over-quota handling                            |
-| P20      | A                                | Customer hardware/network, qualified support matrix, no initial hardware resale/lease                                  |
-| P21      | A                                | One remote onboarding session up to 60 minutes; onsite/extras separately quoted                                        |
-| P22      | A                                | Tools/guidance included, recurring human artwork/content operation separately scoped                                   |
-| P23      | Conditional recommendation       | Email/form baseline; WhatsApp only with verified coverage, not an assumed live channel                                 |
-| P24      | Conditional recommendation       | Coverage-compatible support; actual window unknown under PH-18, scheduled pilot support until established              |
-| P25      | A, operational target            | Useful first response within one verified-calendar business day; no fixed resolution deadline                          |
-| P26      | A                                | Disclose residential limitations; no initial formal availability SLA                                                   |
-| P27      | A                                | Monthly prepayment, explicit dates and manually reconciled Pix/transfer                                                |
-| P28      | A                                | Seven-day commercial late-payment grace, safe restricted access and bounded playback authorization                     |
-| P29      | A, reviewed terms required       | Simple monthly cancellation, no minimum-stay penalty; normal paid-period continuation and reviewed refund conditions   |
-| P30      | A, reference/privacy-conditional | 30-day product reactivation/export window, not automatic day-31 data purge                                             |
-| P31      | A                                | Monthly only initially, no annual discount/prepayment offer                                                            |
-| P32      | B                                | No financial referral incentive until margin evidence; partner interest may be recorded                                |
-| P33      | A                                | No new recurring procurement; separately approve evidence-based operating/migration budgets                            |
-| P34      | A, validation target             | At least 70% steady-state contribution goal, separate fixed/onboarding costs and measured inputs                       |
-| P35      | A, assumption                    | BRL 50/hour analytical owner-time value; actual costs/hours remain unknown                                             |
-| P36      | A, external readiness            | Qualified fiscal/billing/terms preparation before charging; no inferred legal issuer/tax regime                        |
-| P37      | A                                | Brazil/BRL first, technical internationalization retained; qualify foreign commercial expansion separately             |
-| P38      | A, explicit scope split          | Close owner policy selection; PH-18/PH-19 and delivery tasks preserve all original unverified evidence                 |
+| Question | Approved disposition | Canonical outcome |
+| --- | --- | --- |
+| P01 | A | 30-day accompanied pilot from functional setup/operator start |
+| P02 | A | First software pilot free for up to two screens; extra services/hardware separate |
+| P03 | A | Upfront stated intended paid conditions; explicit acceptance and first payment to convert |
+| P04 | A | Collect usability, reliability, hardware, cost/support and commercial evidence |
+| P05 | A | 14-day automatic eligible trial, two screens, no card or permanent free plan |
+| P06 | A | Trial starts at verified company activation; visible deadline, no automatic extension |
+| P07 | A, capacity-conditional | Trial: two screens, one branch, five members, 2 GiB originals and 10 GiB media transfers |
+| P08 | A | Explicit limited commercial access at expiry; proportionate repeated-trial controls |
+| P09 | A | License per independent authorized player output, not per region/function |
+| P10 | B, with explicit allocation | Fixed purchased license package, not connection-based billing |
+| P11 | A | No extra replacement fee; one pending replacement/seat and bounded prior-lease overlap |
+| P12 | A, validation price | BRL 79.90/company/month including up to two licenses |
+| P13 | A, validation price | BRL 29.90 per additional monthly license |
+| P14 | A | One initial plan containing approved delivered capabilities; fundamental security not upsold |
+| P15 | A | Table offer up to ten licenses; larger fleets need qualified quote, no automatic discount |
+| P16 | C, delegated dimensioning | Retain finite questionnaire envelope as proposed qualification baseline; validate production quotas before publication |
+| P17 | A | No initial per-member/branch fee; finite explicit qualified technical bounds still required |
+| P18 | A | 80%/100% notices, reject new excess work or explicitly accepted expansion; no surprise fees/purge |
+| P19 | A | Confirmed prorated increases; explicit next-renewal reductions and safe over-quota handling |
+| P20 | A | Customer hardware/network, qualified support matrix, no initial hardware resale/lease |
+| P21 | A | One remote onboarding session up to 60 minutes; onsite/extras separately quoted |
+| P22 | A | Tools/guidance included, recurring human artwork/content operation separately scoped |
+| P23 | Conditional recommendation | Email/form baseline; WhatsApp only with verified coverage, not an assumed live channel |
+| P24 | Conditional recommendation | Coverage-compatible support; actual window unknown under PH-18, scheduled pilot support until established |
+| P25 | A, operational target | Useful first response within one verified-calendar business day; no fixed resolution deadline |
+| P26 | A | Disclose residential limitations; no initial formal availability SLA |
+| P27 | A | Monthly prepayment, explicit dates and manually reconciled Pix/transfer |
+| P28 | A | Seven-day commercial late-payment grace, safe restricted access and bounded playback authorization |
+| P29 | A, reviewed terms required | Simple monthly cancellation, no minimum-stay penalty; normal paid-period continuation and reviewed refund conditions |
+| P30 | A, reference/privacy-conditional | 30-day product reactivation/export window, not automatic day-31 data purge |
+| P31 | A | Monthly only initially, no annual discount/prepayment offer |
+| P32 | B | No financial referral incentive until margin evidence; partner interest may be recorded |
+| P33 | A | No new recurring procurement; separately approve evidence-based operating/migration budgets |
+| P34 | A, validation target | At least 70% steady-state contribution goal, separate fixed/onboarding costs and measured inputs |
+| P35 | A, assumption | BRL 50/hour analytical owner-time value; actual costs/hours remain unknown |
+| P36 | A, external readiness | Qualified fiscal/billing/terms preparation before charging; no inferred legal issuer/tax regime |
+| P37 | A | Brazil/BRL first, technical internationalization retained; qualify foreign commercial expansion separately |
+| P38 | A, explicit scope split | Close owner policy selection; PH-18/PH-19 and delivery tasks preserve all original unverified evidence |
 
 PH-12 records completed planning decisions only. PH-18/PH-19, PH-08/PH-10/PH-13/PH-15–PH-17 and PJ-14/PJ-27 remain mandatory where applicable; no external validation, sale or product implementation is claimed.

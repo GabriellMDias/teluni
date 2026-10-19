@@ -1,5 +1,68 @@
 [
   {
+    "id": "repository/docs/project/product",
+    "title": "Teluni Product Vision",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Actors and core journeys",
+    "anchor": "actors-and-core-journeys",
+    "text": "Actors and core journeys\nThe [security model](security-and-i18n.md#actors-and-authorization) routes to the selected human access policies and their pending technical enforcement. The product journeys are:\nA verified eligible registrant creates a new company through public automatic activation and becomes its responsible administrator, subject to commercial/privacy/abuse readiness. The platform retains a controlled assisted-enrollment path without claiming existing companies by name or domain.\nA company administrator creates branches and delegates permitted operations to members.\nAn authorized operator pairs a display using a temporary code shown by the player and assigns it to the correct branch.\nAn authorized publisher uploads media, configures typed catalogs/fields/records (for example products or a weekly agenda), composes regional content/schedules, previews and publishes.\nAuthorized price saves automatically publish affected already-published data bindings, without releasing unrelated drafts or recreating artwork. Other draft edits retain explicit publication.\nThe player stages complete consistent versions and continues local media/catalog rendering through the selected offline/clock envelope, with independent areas or optional coordinated pages.\nA scoped operator sees last contact, synchronization progress and actionable failures without unrestricted remote access. Actual player observation is distinct from server intent.\nAcceptance of these journeys is specified in [release requirements](mvp.md). The owner selected [human identity/access policies](identity-and-access.md), including public signup with automatic company activation, Google-only external login, multi-company memberships, a responsible administrator and customizable scoped profiles. The owner accepted the architecture ADRs and completed PH-11 decision selection; actual Keycloak/session qualification and external readiness remain pending; no signup/session flow is implemented.\n"
+  },
+  {
+    "id": "repository/docs/project/product",
+    "title": "Teluni Product Vision",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Product objectives",
+    "anchor": "product-objectives",
+    "text": "Product objectives\nObjective\nIntended outcome\nVerification owner\nCentralized remote operation\nManage displays, reusable media, playlists, and scheduling from one panel\nMVP acceptance\nReliable presentation\nContinuous local playback with controlled publication and recovery\nPlayback/sync acceptance\nSimultaneous presentation\nFreeform regional content/schedules, optional page coordination, multiple videos/audio and isolated recovery on one TV\nFR-10 acceptance and qualified device profile\nConfigurable structured content\nUsers define catalog fields/records and bind products/prices, weekly agendas or other approved data into layouts; designated prices publish automatically\nFR-11 acceptance, schema/reference safety and consistent publications\nSimple commercial use\nA nontechnical pilot operator can complete the core journey\nPilot usability session\nTenant and branch ownership\nSupport independent companies and authorized branch scopes\nSecurity acceptance\nOperational visibility\nExplain stale devices and synchronization failures safely\nMonitoring acceptance\nSustainable growth\nMeasure storage, traffic, processing, support, and capacity before expansion\nPilot operating review\nExtensibility\nExtend presentation authoring, dynamic prices, integrations, and player platforms without coupling the core to one sector\nArchitecture review\nThe [release targets](release-targets.md) select task-time, continuity, rendering, storage and reference-fleet goals under completed PH-09. Actual pilot/hardware/load results remain pending; no supported-device capacity, SLA, unlimited resources or operating-cost result is promised. [Release policies](release-policies.md) own the approved behaviors and owner/delegated decision provenance.\n"
+  },
+  {
+    "id": "repository/docs/project/product",
+    "title": "Teluni Product Vision",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Commercial hypotheses",
+    "anchor": "commercial-hypotheses",
+    "text": "Commercial hypotheses\n**Decided for planning on 2026-10-18:** the owner approved all PH-12 questionnaire recommendations. [Commercial policies](commercial-policies.md) own the 30-day accompanied pilot, 14-day automatic public trial, per-output license definition, single initial monthly offer, BRL validation prices, delegated quota qualification, support and cancellation conditions. PH-12 owner policy selection is complete; actual cost/support, customer acceptance and offer readiness remain PH-18, with fiscal/billing readiness PH-19.\nThe selected validation price is BRL 79.90/company/month for up to two licenses and BRL 29.90 per additional license. This is an approved validation hypothesis, not a public offer, profitable operation or accepted customer contract. Public automatic signup receives the bounded trial only after capacity/security/privacy readiness; P16 delegates dimensioning, so the proposed paid resource table must not be sold as qualified capacity. Conditional support channels/hours do not establish actual coverage.\nBasic manual commercial authorization/licensing is an initial-release requirement under PJ-27; automatic billing, payment-gateway integration, annual offers, financial referral incentives and foreign sales remain future evaluation. The pilot must collect actual costs and willingness to continue. International presentation follows the [localization requirements](security-and-i18n.md#internationalization).\nThere is currently no cloud-service budget. Residential hosting is the accepted entry architecture with explicit [operational gates and risks](operations.md), not a commitment to production availability.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Teluni Programming Design",
+    "anchor": "teluni-programming-design",
+    "text": "Teluni Programming Design\n[Release policies](release-policies.md#time-and-scheduling) · [Assignment and publication](release-policies.md#assignment-and-publication) · [Acceptance targets](release-targets.md) · [Playback and synchronization](playback-and-sync.md#time-and-regional-scheduling) · [Identity and access policies](identity-and-access.md#permission-model-and-default-matrix) · [Tenant data design](tenant-data-design.md) · [Media library design](media-library-design.md) · [Device enrollment design](device-enrollment-design.md) · [ADR-0029](../adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md) · [PH-24](human-actions.md#ph-24)\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Status and scope",
+    "anchor": "status-and-scope",
+    "text": "Status and scope\n**Approved detailed design for D-06 and the time-zone part of D-10, 2026-10-19.** The owner approved all eleven [decisions for review](#decisions-for-review) as proposed under [PH-24](human-actions.md#ph-24), including ADR-0029, after asking for development to continue autonomously. Approval authorizes implementation of PJ-10 in local and CI environments; the player's use of the fixtures remains PJ-12.\nIn scope: playlists and their items, persistent programming groups, the programming source of each screen (group or individual), schedule rules with dates, weekdays, local hours, overnight windows and all-day windows, optional defaults, conflict validation, the time-zone and DST rules, the evaluator that turns a programming source into a timeline for one screen, the shared fixtures, the preview, permissions, limits, reference guards, audit, data, contracts, panel and verification (FR-05, FR-06).\nOut of scope, with their owners: publication, the immutable snapshot that carries the rules to screens and the confirmation that applies an assignment on a screen (D-04, PJ-11); playback, trusted time and fixture execution on the device (D-07, PJ-12); layouts with several areas, coordinated pages and their regional schedules (D-11, PJ-20), which reuse the rule model and evaluator defined here per area; catalog data and price validity (PJ-21); qualification of fades or any other transition on hardware (PH-08). The design claims none of them.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Policy inputs",
+    "anchor": "policy-inputs",
+    "text": "Policy inputs\nThe design applies these selected policies without changing them, except for the one refinement named in decision 5:\nA screen belongs to zero or one company-owned programming group, which may span authorized branches. A grouped screen follows its group unless an authorized person explicitly selects individual programming, which replaces the whole group programming and keeps the membership; returning to the group is explicit ([assignment](release-policies.md#assignment-and-publication)).\nEvery edit is a draft until deliberately published; confirming an assignment or source change requests the destination's latest published programming, and an intentionally unpublished destination needs a clear indication before confirmation.\nUse per-device local business time: the device's explicit time zone, otherwise its branch's. Never inherit the server's time zone. Starts are inclusive and ends exclusive; overlapping schedules for the same output are rejected without implicit priority; overnight windows are anchored to their starting weekday; a final date includes that whole local day and clips at the next local midnight; equal start and end times are rejected in favor of an explicit all-day option ([time and scheduling](release-policies.md#time-and-scheduling)).\nIn a DST gap, use the first valid instant; in a repeated hour, the earlier occurrence for a start and the later for an end; show the resolved result in preview and validate conflicts after resolving it. Backend preview and the player share fixtures.\nImage items last 1 to 3,600 seconds, 10 by default (AT-01); videos play their whole duration; a schedule boundary interrupts the current item (AT-13 for timing on the device). An output with no applicable schedule uses its optional default, otherwise neutral output; a group default is never borrowed while individual programming is selected.\nAuthoring playlists and schedules is allowed to administrators company-wide, branch managers in their branches and operators in their branches as drafts; publishing to managers and administrators ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)).\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Concepts",
+    "anchor": "concepts",
+    "text": "Concepts\nA **playlist** is an ordered, looping list of media items owned by a company or one branch, like media. It is reusable: several programs may schedule the same playlist.\nA **programming group** belongs to a company and names the branches it may span: either the whole company or a fixed set of one or more branches.\nA **program** is the draft programming of one source: a group, or one screen. It has one output today, the full screen (`screen`); PJ-20 adds layout areas as further outputs with their own rules and defaults, evaluated by the same functions. Each output has a set of **schedule rules** and an optional **default playlist**.\nA screen's **programming source** is its group's program when it belongs to a group and individual programming is not selected; otherwise its own program. A screen without a group is always programmed individually.\n"
+  },
+  {
     "id": "repository/docs/project/programming-design",
     "title": "Teluni Programming Design",
     "group": "Project guides",
@@ -565,77 +628,5 @@
     "heading": "Find the smallest useful context",
     "anchor": "find-the-smallest-useful-context",
     "text": "Find the smallest useful context\nRead the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.\nFollow the owner to its canonical source and relevant tests. For a complete implemented example, see [Orion's reference implementation](project-derivation.md#orions-reference-implementation). For commands, use [setup](setup.md) and [validation](validation.md).\nConsult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.\nIf implementation and policy disagree, record the discrepancy and resolve it within the task's scope. Do not infer that a requirement is implemented or weaken it to match a gap.\n[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The implementation plan owns execution status and the human-action checklist owns actual owner/access prerequisites; the README's [Current state](../README.md#current-state) links this repository's copies. Neither activates conditional deployment work.\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Architecture and implementation",
-    "anchor": "architecture-and-implementation",
-    "text": "Architecture and implementation\nTask\nAuthoritative policy\nUnderstand Teluni's vision, MVP, proposed architecture, offline behavior and delivery phases\n[Teluni product documentation](project/README.md)\nExecute or track implementation work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nStart a new project from Orion, check its provenance, or upgrade its Orion baseline\n[Start and upgrade a project from Orion](project-derivation.md)\nName a stable Orion foundation release or assess derived-project compatibility\n[Foundation versioning](versioning.md)\nChange agent instruction files or tool compatibility adapters\n[Agent instructions](architecture/agent-instructions.md)\nReproduce development setup, local execution, and the validation gate\n[Development setup](setup.md)\nRun the living API/data/component portal and understand its architecture\n[Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md)\nResolve owner decisions, external access, or other human prerequisites\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nAdd an API module or web workflow\n[API runtime](../apps/api/README.md#modules), [web workflow](../apps/web/README.md#modules)\nStudy a complete implemented example across database, API, SDK, and UI\n[Orion's reference implementation](project-derivation.md#orions-reference-implementation)\nEvaluate architectural tradeoffs or exceptions\n[Principles](architecture/principles.md)\nFind selected technology decisions\n[Technology decisions](architecture/technology-decisions.md)\nPlace code or create an application/package\n[Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md)\nAdd imports or shared dependencies\n[Dependency rules](architecture/dependency-rules.md)\nModel failures and translate boundaries\n[Error handling](architecture/error-handling.md)\nAdd configuration\n[Configuration](architecture/configuration.md)\nChoose test coverage and execution layers\n[Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md)\nChange independently deployed or persisted contracts\n[Versioning and compatibility](architecture/versioning-and-compatibility.md)\nHandle delivery, retries, and external side effects\n[Delivery and side effects](architecture/delivery-and-side-effects.md)\nImplement CI or dependency automation\n[Continuous integration](architecture/continuous-integration.md)\nChange backend execution or regenerate derived references\n[Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md)\nRun or extend the current API feature\n[API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json)\nRun or extend the web workflow or generated SDK\n[Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts)\nChange the SDK public surface or generated types\n[SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md)\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "APIs and data",
-    "anchor": "apis-and-data",
-    "text": "APIs and data\nTask\nAuthoritative policy\nDesign an operation or generate a client\n[API principles](api/principles.md)\nExpose an error\n[API error contract](api/error-contract.md)\nEvolve, deprecate, or retire an API contract\n[API versioning](api/versioning.md)\nModel persistent data and ownership\n[Database principles](database/principles.md)\nChange durable schema or migration history\n[Migrations](database/migrations.md)\nEstablish release status, test upgrades, or plan application/database recovery\n[Release and evolution workflow](database/release-evolution.md)\nDocument or generate database reference\n[Schema documentation](database/schema-documentation.md)\nInspect the migrated database schema\n[Generated database reference](generated/database/schema.md)\nFind the current machine-readable API contract and public errors\n[OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md)\nInspect API configuration names, types, defaults, and visibility\n[Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md)\nFind the generated frontend component reference\n[Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json)\nProtect atomicity or concurrent writes\n[Transactions and concurrency](database/transactions-and-concurrency.md)\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Reliability",
-    "anchor": "reliability",
-    "text": "Reliability\nTask\nAuthoritative policy\nSelect or integrate diagnostic signals\n[Observability](reliability/observability.md)\nAdd structured events\n[Logging](reliability/logging.md)\nInstrument causal execution and propagation\n[Tracing](reliability/tracing.md)\nAdd measurements and bounded dimensions\n[Metrics](reliability/metrics.md)\nCapture and group unexpected failures\n[Error reporting](reliability/error-reporting.md)\nChange startup, liveness, readiness, or shutdown\n[Health checks](reliability/health-checks.md)\nCreate actionable alerts\n[Alerting](reliability/alerting.md)\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Security and operations",
-    "anchor": "security-and-operations",
-    "text": "Security and operations\nTask\nAuthoritative policy\nClassify, expose, copy, or export data\n[Data classification](security/data-classification.md)\nCapture telemetry fields or payloads\n[Telemetry redaction](security/telemetry-redaction.md)\nIntroduce, deliver, rotate, or revoke credentials\n[Secrets management](security/secrets-management.md)\nVerify identity or manage authentication state\n[Authentication](security/authentication.md)\nEnforce capabilities and tenant/resource isolation\n[Authorization](security/authorization.md)\nAccess production or perform privileged actions\n[Production access](security/production-access.md)\nRetain, delete, restore, or propagate deletion\n[Data retention](security/data-retention.md)\nContain an incident and verify recovery\n[Incident response](security/incident-response.md)\nFollow or author an operational procedure\n[Runbook index](runbooks/README.md), [authoring](runbooks/authoring.md), [template](runbooks/template.md)\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Decisions and documentation",
-    "anchor": "decisions-and-documentation",
-    "text": "Decisions and documentation\n[ADR index](adr/README.md): significant decisions and their rationale; status belongs to each ADR.\n[ADR authoring](adr/authoring.md) and [template](adr/template.md): proposals, acceptance, historical integrity, and supersession.\n[Contributing](contributing.md): change workflow, documentation ownership, canonical sources, maintenance, and review.\n[Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes for every contributor and agent; [agent instructions](architecture/agent-instructions.md) owns tool compatibility.\nCurrent policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, database, and web components. The portal renders these sources in the existing web application. No production runbook exists without a selected environment.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Alerting",
-    "anchor": "alerting",
-    "text": "Alerting\nThis policy owns actionable alert conditions, severity, ownership, notification, and rule maintenance. [Metrics](metrics.md) owns measurement semantics; [incident response](../security/incident-response.md) owns incidents; [runbooks](../runbooks/README.md) own executable procedures. Alerts direct human or automated attention to a condition requiring action, rather than notifying merely because a signal exists.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Current scope",
-    "anchor": "current-scope",
-    "text": "Current scope\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) leaves the observability backend and deployment alerting infrastructure application-specific. The API has runtime telemetry and health checks, but no deployed alert rules, paging provider, on-call schedule, service objectives, or alert-as-code validation. This policy establishes constraints for introducing them; it does not authorize or start deployment work.\nProvider, severity taxonomy, channels/escalation, SLO tooling and burn-rate thresholds, ownership metadata, maintenance windows, and rollback integration must follow actual team structure, topology, service expectations, and operational tooling. Significant architectural choices require an ADR. Do not invent deployment thresholds or missing capabilities to fill documentation.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Alert severity and response",
-    "anchor": "alert-severity-and-response",
-    "text": "Alert severity and response\nUse a small consistent severity model whose levels determine response time, channel, and escalation. Severity reflects impact and urgency, not alarming wording or one HTTP error. The following is conceptual guidance, not a selected severity taxonomy or response-time commitment.\nImpact\nAppropriate response\nMajor outage, data integrity/security risk, critical workflow unavailable, widespread failure without recovery\nMay require immediate paging.\nSubstantial degradation, increasing failure rate, important dependency failure, or backlog threatening objectives\nPrompt action; page only when it cannot safely wait.\nLimited degradation with workaround or actionable capacity trend\nBusiness-hours notification or owned work item may fit.\nNoncritical trend, deprecation use, or an isolated automatically recovered instance\nDashboard/periodic review; avoid competing with urgent alerts.\nPaging is for a reliable condition requiring action before the next normal working period, with an authorized recipient who can mitigate it. Safe automatic recovery may eliminate the need to page. Critical unacknowledged alerts need an escalation path; broadcasting to everyone is not ownership. Email suits slower risks; critical incidents must not rely only on easily missed chat notifications.\nProduction and non-production must be distinguishable. Staging may notify development/release owners; local development should not generate operational alerts, and ordinary test failures should fail CI rather than page production responders.\n"
   }
 ]
