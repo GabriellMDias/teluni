@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { resolve } from "node:path";
 import { GenericContainer, Wait, type StartedNetwork } from "testcontainers";
 
 // Pinned by digest: the identity design qualifies this exact Keycloak build.
@@ -6,6 +7,47 @@ export const keycloakImage =
   "quay.io/keycloak/keycloak:26.8.1@sha256:79c623a22abacf3fe6c00a5fb30f5b7843d717b234033b80995891c06116d244";
 export const mailpitImage =
   "axllent/mailpit:v1.31.3@sha256:ed9b00c609e77e99c79b93f1178255ebc271868920f2c69a8d166bd5634ed10d";
+
+const repositoryRoot = resolve(import.meta.dirname, "../../..");
+const themeRoot = "/opt/keycloak/themes/teluni/login";
+
+/**
+ * Files of the Teluni login theme and where Keycloak expects them. The
+ * theme's own styles live in apps/api/keycloak/themes/teluni; the brand mark
+ * and typeface come from their canonical web copies (branding guide) rather
+ * than duplicates.
+ */
+export function teluniThemeFiles(): { source: string; target: string }[] {
+  const theme = resolve(
+    repositoryRoot,
+    "apps/api/keycloak/themes/teluni/login",
+  );
+  return [
+    {
+      source: resolve(theme, "theme.properties"),
+      target: `${themeRoot}/theme.properties`,
+    },
+    {
+      source: resolve(theme, "resources/css/teluni.css"),
+      target: `${themeRoot}/resources/css/teluni.css`,
+    },
+    {
+      source: resolve(repositoryRoot, "apps/web/src/assets/brand-mark.svg"),
+      target: `${themeRoot}/resources/img/brand-mark.svg`,
+    },
+    {
+      source: resolve(
+        repositoryRoot,
+        "apps/web/public/fonts/plus-jakarta-sans.ttf",
+      ),
+      target: `${themeRoot}/resources/fonts/plus-jakarta-sans.ttf`,
+    },
+    {
+      source: resolve(repositoryRoot, "apps/web/public/fonts/OFL.txt"),
+      target: `${themeRoot}/resources/fonts/OFL.txt`,
+    },
+  ];
+}
 
 export type KeycloakAdmin = Readonly<{
   /** Base URL reachable from this process, without a trailing slash. */
@@ -70,6 +112,7 @@ export async function withKeycloak<T>(
       KC_HEALTH_ENABLED: "true",
     })
     .withExposedPorts(8080, 9000)
+    .withCopyFilesToContainer(teluniThemeFiles())
     .withWaitStrategy(Wait.forHttp("/health/ready", 9000))
     .withStartupTimeout(180_000);
   if (options.network) {

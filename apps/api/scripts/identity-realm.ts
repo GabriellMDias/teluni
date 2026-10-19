@@ -22,6 +22,7 @@ export type TeluniRealmOptions = Readonly<{
 export const webClientId = "teluni-web";
 export const provisionerClientId = "teluni-provisioner";
 export const principalAttribute = "orion_principal_id";
+export const teluniLoginTheme = "teluni";
 export { assuranceLevels };
 /**
  * Versioned browser flow. A structural change creates a new alias and rebinds
@@ -44,6 +45,10 @@ function realmSettings(
   return {
     realm: options.realm,
     enabled: true,
+    displayName: "Teluni",
+    // The Teluni sign-in pages (apps/api/keycloak/themes/teluni); every
+    // Keycloak that serves this realm installs that theme.
+    loginTheme: teluniLoginTheme,
     // Public signup with mandatory email verification (P06/P07).
     registrationAllowed: true,
     registrationEmailAsUsername: true,

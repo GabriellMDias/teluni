@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env.local --import tsx --watch src/main.ts",
+    "dev:services": "tsx scripts/dev-services.ts",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit -p tsconfig.json",
