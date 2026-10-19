@@ -86,7 +86,7 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   await afterNavigation(page).toHaveURL(`${companyUrl}/media`);
   await expect(page.getByText("Nenhuma mídia aqui ainda.")).toBeVisible();
   await page
-    .getByLabel("Arquivos")
+    .getByLabel("Arquivos", { exact: true })
     .setInputFiles([join(fixtures, "logo.png"), join(fixtures, "vitrine.mp4")]);
   await page.getByRole("button", { name: "Enviar", exact: true }).click();
   await expect(
