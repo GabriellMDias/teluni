@@ -1094,6 +1094,16 @@
       "file": "pages/repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.json"
     },
     {
+      "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+      "kind": "repository",
+      "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+      "group": "Decisions",
+      "source": "docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md",
+      "summary": "Teluni screens are Android TV players without a keyboard that must be paired to one company and branch by a person who is already signed in to the panel (FR-02). Policies…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -1452,6 +1462,16 @@
       "summary": "Decided for planning on 2026-10-18: the owner explicitly approved all recommendations in the 38-question PH-12 working questionnaire and requested completion of the action.…",
       "headings": [],
       "file": "pages/repository/docs/project/commercial-policies.json"
+    },
+    {
+      "id": "repository/docs/project/device-enrollment-design",
+      "kind": "repository",
+      "title": "Teluni Device Enrollment and Lifecycle Design",
+      "group": "Project guides",
+      "source": "docs/project/device-enrollment-design.md",
+      "summary": "Proposed detailed design for the server side of D-03, 2026-10-19, for owner review under PH-22. Nothing here is implemented, and implementation of PJ-08 waits for the owner's…",
+      "headings": [],
+      "file": "pages/repository/docs/project/device-enrollment-design.json"
     },
     {
       "id": "repository/docs/project/human-actions",
@@ -1888,16 +1908,16 @@
       { "file": "search/0005.json", "count": 109, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 121, "kinds": ["repository"] },
       { "file": "search/0007.json", "count": 159, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 138, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 132, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 88, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 59, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 74, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 55, "kinds": ["repository"] }
+      { "file": "search/0008.json", "count": 144, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 134, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 63, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 56, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 86, "kinds": ["repository"] }
     ],
-    "count": 1287
+    "count": 1319
   }
 }

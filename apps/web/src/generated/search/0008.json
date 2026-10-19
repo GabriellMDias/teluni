@@ -639,6 +639,123 @@
     "text": "References\n[Invitation and email delivery design (D-13)](../project/invitation-delivery-design.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Identity and access policies](../project/identity-and-access.md)\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md), [ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\n[PH-17](../project/human-actions.md#ph-17), [PH-21](../project/human-actions.md#ph-21)\n"
   },
   {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "anchor": "adr-0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "text": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment\n**Status:** proposed\n**Date:** 2026-10-19\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nTeluni screens are Android TV players without a keyboard that must be paired to one company and branch by a person who is already signed in to the panel (FR-02). Policies require temporary, single-use, rate-limited codes that are safe under concurrent claims, a separate revocable identity per device that is never a human principal, revocation that denies future server access, and no custom cryptography or token schemes ([security requirements](../project/security-and-i18n.md#pairing-and-device-lifecycle), [release policies](../project/release-policies.md#offline-authorization-and-clock-trust)). Keycloak holds only human identities ([ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)), and the pilot runs on a single host ([ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)).\nThis record decides how a device is enrolled and how it authenticates afterward. The detailed rules, limits, data and contracts are in the [device enrollment and lifecycle design](../project/device-enrollment-design.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nTeluni will enroll devices with an application-owned flow shaped like the OAuth 2.0 Device Authorization Grant (RFC 8628) and authenticate them with a device-generated bearer credential:\nThe player generates a 256-bit credential from the platform CSPRNG, keeps it in Android Keystore-backed storage and sends only its SHA-256 when it starts an enrollment. The API answers with a short user code to display and an enrollment ID to poll.\nA signed-in, authorized person enters the user code in the panel; one conditional transaction claims the enrollment and creates the device in the chosen company and branch.\nThe device then presents the credential as a bearer token on device routes only. The API stores only the hash, resolves it on every request without caching, and revokes it by state change. Human routes never accept it and device routes never accept a human session.\nUser codes are short-lived, single-use, stored only as a keyed HMAC and protected by attempt limits.\nThe API's devices module owns the flow; the shared runtime gains only a `device` operation access kind. No identity provider, certificate authority or proof-of-possession library is introduced now.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nRFC 8628 is the established pattern for input-constrained devices, so the user-facing shape and its code guidance (alphabet, length, expiry, rate limits) come from a reviewed standard rather than invention. Generating the credential on the device means no secret is ever returned by the server, so a lost response at any step is retried without issuing anything and without a re-issue path. A 256-bit random value needs only a plain hash for storage and lookup. A bearer credential over HTTPS fits the single-host pilot and the existing Fastify/PostgreSQL stack.\nThe accepted cost is that a copied credential is usable until revoked, unlike a key that never leaves hardware. Revocation on the next request, rotation and the `device` access kind as a single seam keep a later move to proof of possession contained.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Server-issued credential returned at pairing",
+    "anchor": "server-issued-credential-returned-at-pairing",
+    "text": "Server-issued credential returned at pairing\nReturning the only copy of a secret in one response makes a lost response either a stuck device or a reason to add a re-issue path with more secret-bearing responses.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Device key pair with signed requests or mutual TLS",
+    "anchor": "device-key-pair-with-signed-requests-or-mutual-tls",
+    "text": "Device key pair with signed requests or mutual TLS\nDPoP (RFC 9449) or client certificates would keep the private key in hardware and resist copying. They add proof verification or certificate issuance and renewal without a measured threat that requires them in the pilot. They remain the preferred upgrade if PH-08 devices offer usable hardware-backed keys and the threat model calls for it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Keycloak device grant and service accounts",
+    "anchor": "keycloak-device-grant-and-service-accounts",
+    "text": "Keycloak device grant and service accounts\nIt reuses an established server, but makes each screen a Keycloak client or user, couples player operation to Keycloak availability and mixes device and human identities that the policies keep apart.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nNo secret leaves the server, and every enrollment step is safely retryable.\nRevocation is immediate for reachable devices and needs no token lists or expiry windows.\nDevice and human authentication stay separate at the operation level.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nA credential copied from a compromised or rooted device works until revoked; physical control of a player remains a residual risk, as the security requirements already state.\nTeluni owns the enrollment endpoints, limits and their tests instead of relying on an identity provider.\nA new `RESTRICTED` key ring for user-code HMACs must be configured and rotated.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nHost migration and restore must preserve credential hashes so devices keep working, without ever exporting the credentials themselves.\nMoving to proof of possession later requires a player update and an overlap period in which both schemes are accepted for already-paired devices.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Propose Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Device enrollment and lifecycle design](../project/device-enrollment-design.md)\n[Security requirements: pairing and device lifecycle](../project/security-and-i18n.md#pairing-and-device-lifecycle)\n[Release policies: offline authorization](../project/release-policies.md#offline-authorization-and-clock-trust)\n[ADR-0020](0020-propose-a-native-android-tv-player.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -726,7 +843,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nPropose Device-Generated Credentials and Code-Based Enrollment\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1177,68 +1294,5 @@
     "heading": "Application Boundaries",
     "anchor": "application-boundaries",
     "text": "Application Boundaries\n[Documentation index](../README.md) · [Repository placement](repository-structure.md) · [Dependency rules](dependency-rules.md)\nApplications are executable boundaries with explicit ownership; sharing a monorepo does not merge their runtime, trust, or persistence responsibilities. This page owns runtime separation and composition. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) governs the API adapter and [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) the web stack.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Types of Boundaries",
-    "anchor": "types-of-boundaries",
-    "text": "Types of Boundaries\nBoundary\nRequired reasoning\nRuntime/process\nSeparate processes are distributed participants even when deployed together. Use explicit protocols and account for network failure, timeouts, partial results, retries, and duplicate requests. Remote operations are not local function calls.\nDeployment/distribution\nVersions may coexist. Define supported old/new combinations and migration requirements under [compatibility policy](versioning-and-compatibility.md).\nTrust\nValidate data crossing security contexts, including external-provider responses. Client applications remain untrusted regardless of repository proximity.\nPersistence\nAccess follows explicit application/domain ownership. A shared database client does not authorize every module to access every table.\nApplications must not import another application's internal implementation. Share genuinely common capabilities through public package APIs and communicate through deliberate runtime contracts. A package must not become an indirect way to bypass another application's boundary.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend API Application",
-    "anchor": "backend-api-application",
-    "text": "Backend API Application\nThe implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validation, authentication integration, authorization enforcement, correlation, transport error mapping, application orchestration, dependency composition, telemetry, and health endpoints. Plugins organize runtime integration; they do not define business domains.\nKeep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.\nThe API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Web Application",
-    "anchor": "web-application",
-    "text": "Web Application\nThe implemented `apps/web` is a React/Vite client-first SPA. TanStack Router owns URLs/navigation, TanStack Query owns server state through the generated SDK, and React state/context owns local UI state. The accepted direction includes React Compiler when compatible. No general global-state library or full-stack web framework is selected by default; server rendering requires product justification. Fastify retains authoritative backend responsibilities.\nThe web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.\nThe browser can be inspected, modified, bypassed, replayed, or automated. Client validation and hidden/disabled controls improve experience; trusted backend boundaries still enforce validation, identity, permissions, and business invariants. Clients receive neither database credentials nor privileged server secrets. See [authentication](../security/authentication.md) and [authorization](../security/authorization.md).\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Shared Contracts",
-    "anchor": "shared-contracts",
-    "text": "Shared Contracts\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Composition and Ownership",
-    "anchor": "composition-and-ownership",
-    "text": "Composition and Ownership\nExecutable applications select and wire concrete adapters at bootstrap. Dependencies should be visible through explicit composition; a dependency-injection framework is not required. Minimize mutable globals and service locators. Process-scoped connection pools and telemetry providers are reasonable when lifecycle and access are intentional.\nBusiness capabilities have one identifiable home regardless of how many applications expose them. Delivery-specific feature directories do not authorize cross-application imports or independent reimplementation of core rules. Workers and administrative CLIs must preserve the same invariants as equivalent API operations.\nThe default data path is client → trusted backend → owned persistence → database. Multiple trusted runtimes may share controlled persistence when they belong to an explicitly shared logical ownership model. Modifying another service's owned tables is architectural coupling, not a shortcut. See [database ownership](../database/principles.md).\nExternal providers should be isolated enough to contain meaningful provider-specific risk and ownership. Do not spread a provider SDK throughout business behavior, but do not wrap every third-party library without benefit. A Backend for Frontend requires a concrete client orchestration, latency, identity, aggregation, or independent-evolution need; multiple clients alone do not justify it.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Additional Runtime Boundaries",
-    "anchor": "additional-runtime-boundaries",
-    "text": "Additional Runtime Boundaries\nThese are conditional rules, not implemented applications:\nRuntime\nLocal responsibility and additional obligations\nMobile\nDevice capabilities, native UI/navigation, secure local storage, offline behavior, notifications, permissions, and lifecycle. It remains an untrusted client; installed old versions may require a documented longer API support window.\nDesktop\nOS/filesystem integration, local caching, credential storage, updates, UI, and lifecycle. Possession of a binary does not confer backend trust.\nWorker\nQueue/schedule/event processing or long-running work. Define retries, idempotency, duplicate delivery, ordering, dead letters, poison messages, concurrency, timeouts, telemetry, and graceful shutdown; never assume exactly-once execution without evidence.\nCLI\nCommand parsing, terminal interaction/output, command lifecycle, and identity integration. Administrative convenience cannot bypass domain or access controls.\nEvents must describe meaningful facts or integration signals with owned schemas, delivery guarantees, ordering, and compatibility. Follow [delivery and side effects](delivery-and-side-effects.md) for reliable processing. Remote calls need deliberate bounded timeout/retry behavior; evaluate whether an error is transient, effects can repeat safely, and retry load will worsen the failure.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Creating a New Application Boundary",
-    "anchor": "creating-a-new-application-boundary",
-    "text": "Creating a New Application Boundary\nBefore creating or splitting an application, identify:\nThe runtime/product responsibility and why an existing application cannot own it.\nNeeded scaling, deployment/distribution independence, security, failure isolation, or operational ownership.\nExposed/consumed contracts, shared packages, persistent-data ownership, and trust boundaries.\nConfiguration, lifecycle, telemetry, compatibility, and new failure modes.\nWhether the value justifies its operational complexity and requires an ADR.\nEstablish a logical modular boundary before extracting another process. Size alone does not justify splitting; merging is appropriate when separate applications add no meaningful independence. Microservices are not a default goal, and serverless deployment units do not determine domain boundaries. Prefer modular ownership within one backend until separation has a concrete benefit.\nLocal [README and agent instructions](repository-structure.md#local-agent-instructions) make each application independently understandable without repeating repository policy. When placement is unclear, distinguish runtime-specific behavior, genuinely shared domain meaning, shared wire contracts, development tooling, and operational infrastructure before creating a new owner.\n"
   }
 ]

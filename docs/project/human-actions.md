@@ -257,6 +257,17 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0026 accepted, complete PJ-30 and resume the PJ-03 invitation increments. A rejected or changed item updates the design and, where it changes the delivery mechanism, ADR-0026 or a new ADR.
 **Evidence / blocker:** 2026-10-18: the owner asked for this design for approval; the design and ADR-0026 were drafted and linked from the plan, the product architecture and the decision index. The same day the owner explicitly approved all ten decisions as proposed, including ADR-0026, in chat, and asked to proceed to implementing invitations. This approves the design and the delivery mechanism for local and CI work with synthetic addresses and Mailpit. It does not choose the real provider or sender (PH-17), set legal retention (PH-13) or authorize sending to real people.
 
+## PH-22
+
+- [ ] **Review and approve the proposed server-side D-03 device enrollment and lifecycle design and ADR-0027.**
+
+**Status:** pending. **Owner:** project owner, with engineering/security review.
+**Dependency / trigger:** [PJ-33](implementation-plan.md#current-work); blocks [PJ-08](implementation-plan.md#current-work), which every screen pairing needs, and through it PJ-10/PJ-11/PJ-12.
+**Request and reason:** Read the [device enrollment and lifecycle design](device-enrollment-design.md) and the proposed [ADR-0027](../adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md), then approve, reject or adjust each of the design's [nine decisions for review](device-enrollment-design.md#decisions-for-review): (1) an RFC 8628-style code flow owned by the API, without Keycloak for devices; (2) a device-generated 256-bit credential sent only as a hash and accepted as a bearer token on device routes only; (3) eight-consonant codes valid 10 minutes, single use, stored as a keyed HMAC; (4) the enrollment, claim and polling limits; (5) a seven-day `authorizedUntil` statement at check-in, with signing and device enforcement left to PJ-11/PJ-12; (6) rotations of 0/90/180/270 degrees limited to reported support; (7) irreversible unlink with pending, confirmed or recorded-reset erasure and new identities for reassignment; (8) `devices.view`/`devices.manage` permissions; (9) provisional retention. These are security choices with long-lived consequences for every paired screen that the repository requires the owner, not an agent, to approve.
+**Configuration:** none now. The design names one new `RESTRICTED` key ring for user-code HMACs; its setting is added to the canonical configuration schema when implemented. Local and CI work uses generated keys and simulated players.
+**Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0027 accepted, complete PJ-33 and start PJ-08. A rejected or changed item updates the design and, where it changes the mechanism, ADR-0027.
+**Evidence / blocker:** 2026-10-19: design proposed in the PJ-08 pull request; awaiting the owner's decisions.
+
 ## New action template
 
 Allocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the blocked or conditional plan task.

@@ -1,5 +1,284 @@
 [
   {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Collection, ownership, and copies",
+    "anchor": "collection-ownership-and-copies",
+    "text": "Collection, ownership, and copies\nCollect only data with a concrete product, operational, security, or legal purpose. Identify the owner of semantics, schema changes, access, retention, and incident response. Before adding a field, determine purpose, sensitivity, consumers, storage duration, telemetry eligibility, compliance implications, and whether a less sensitive representation suffices. A new use of existing data needs deliberate review.\nEvery copy retains its handling obligations: database dumps, exports, caches, search indexes, warehouse/analytics records, backups, generated artifacts, screenshots, chat messages, support evidence, and AI prompts. Derived profiles, risk scores, embeddings, or aggregated behavior may remain identifying. Pseudonymization and hashing do not automatically anonymize data; predictable identifiers can be enumerated. Anonymity requires that re-identification is not reasonably possible in context. Partial masking may be useful for permitted non-secret data; remove authentication secrets entirely.\nTemporary storage still needs bounded access and deletion. Do not let downloaded logs, exports, local databases, scratch files, or tool caches become indefinite uncontrolled copies. Soft deletion retains data and is not a substitute for actual removal. [Retention policy](data-retention.md) covers deletion propagation and backup restoration; understand real capability before making external deletion promises.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Access, storage, and transport",
+    "anchor": "access-storage-and-transport",
+    "text": "Access, storage, and transport\nApply least privilege to users, services, support, administrators, CI, and AI agents. Technical availability is not authorization. Routine development must not depend on unrestricted production database access. Encryption supplements access control; confidential/restricted data crossing untrusted networks must use protected transport without silent downgrade.\nChoose storage, backup, device, and any field-level encryption against the threat model. Application-level encryption is justified only by meaningful added protection and must account for key rotation, search limitations, migration, recovery, and operations; significant strategy requires an ADR. Minimize sensitive local client data and use platform-protected storage for credentials as required by [authentication policy](authentication.md).\nAuthorize exports, minimize fields, use secure delivery, avoid unnecessary persistence, and audit where appropriate. Bulk access deserves additional scrutiny. Support access does not imply unrestricted customer/telemetry access. Email is not a safe channel for arbitrary restricted data; minimize transactional email and prefer authenticated flows where appropriate. Notifications can appear on lock screens/shared devices and must not disclose highly sensitive content without an explicit design.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "APIs, providers, and generated artifacts",
+    "anchor": "apis-providers-and-generated-artifacts",
+    "text": "APIs, providers, and generated artifacts\nUse deliberate request/response/event schemas. Do not serialize whole entities, publish complete provider payloads, or forward arbitrary JSON merely for convenience. Known important data should use explicit schemas; generic metadata needs conservative controls before logging, indexing, tracing, or provider transmission. Generated SDKs must contain only supported client contracts, never server-only restricted fields.\nExternal providers create data-processing boundaries. Before transmission, determine required fields and purpose, security, access, retention/deletion, residency, and relevant subprocessors. Send only the needed subset. Apply this to analytics, search, webhooks, error reporting, file processing, and AI providers. A warehouse or cache does not reduce sensitivity or remove authorization requirements.\nSchema comments and documentation describe semantics with fictional examples, not real customer records, credentials, production identifiers, or infrastructure addresses. Generated artifacts inherit source classification; inspect generators for unintended exposure. Configuration templates use placeholders and document the source of a value, not its secret contents. Environment variables are not automatically secure: never dump them into startup logs, build output, diagnostics, or telemetry.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Telemetry and AI access",
+    "anchor": "telemetry-and-ai-access",
+    "text": "Telemetry and AI access\n[Telemetry redaction](telemetry-redaction.md) governs collection: public/internal fields may be captured when useful, confidential fields only with justified minimized controls, and restricted data never intentionally. Review SDK defaults, including locals, breadcrumbs, requests, and context. Metrics should remain aggregate and avoid personal/entity-specific dimensions. Audit records have distinct integrity/access/retention requirements but must still omit credentials and unnecessary payloads.\nAI tooling follows the same classification and authorization boundaries as other consumers. Approved project agents may use authorized internal repository context. Confidential data requires an authorized task and an environment approved for that data; minimize context. Restricted data must not be supplied by default: any exceptional interaction requires an explicitly designed, approved workflow with suitable controls, never incidental exposure through environment dumps or logs.\nPrefer investigation through a safe error ID, sanitized metadata, traces, redacted logs, and relevant source rather than customer records and raw requests. Screenshots, replay, and diagnostic attachments are separate collection capabilities, not automatic debugging entitlements.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Development, testing, and exposure",
+    "anchor": "development-testing-and-exposure",
+    "text": "Development, testing, and exposure\nUse synthetic or purpose-created development, test, seed, demo, and documentation data. Tests must not contain real credentials or customer records; synthetic secrets must be clearly non-production and incapable of granting real access. Production data must not be copied to development/test by default. A justified exception should prefer synthetic reproduction, minimal extraction, redaction, or appropriately anonymized/pseudonymized data before raw copies.\nCI secrets must be scoped to jobs that need them; less-trusted pull requests must not receive privileged credentials. Never commit restricted secrets, including into Git history. If a credential is exposed, deleting the current file or log does not restore secrecy: treat it as potentially compromised and follow [secrets management](secrets-management.md) and [incident response](incident-response.md) for containment, revocation/rotation, usage review, and recurrence prevention. Evaluate confidential-data exposure by scope, subjects, access, duration, and applicable notification obligations.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Classification review and enforcement",
+    "anchor": "classification-review-and-enforcement",
+    "text": "Classification review and enforcement\nReview classification when field meaning, boundaries, providers, telemetry, AI access, or retention changes. New restricted/personal-data collection, bulk exports, credentials, encryption strategies, or production access paths warrant security review. Use clear sensitive-field names and keep classification near canonical schema/configuration metadata where practical; [schema documentation](../database/schema-documentation.md) and [configuration](../architecture/configuration.md) describe current metadata sources.\nMechanical checks can extend protection against unsafe serialization, telemetry, generated output, secret imports, and production fixtures, but metadata is not evidence of end-to-end enforcement. Consult [validation](../validation.md) for available checks. Do not claim a universal classification/redaction engine exists or create speculative registries before their consumers and ownership are clear.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Data Retention",
+    "anchor": "data-retention",
+    "text": "Data Retention\nThis policy owns data lifecycle, retention, deletion, archival, and recovery requirements. [Classification](data-classification.md) determines sensitivity; domain owners define purpose and meaning. Deployment-specific schedules, legal durations, provider lifecycle rules, legal-hold tooling, and recovery objectives have not been selected here. Undefined retention is a visible design gap, not permission to keep data forever.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Data lifecycle",
+    "anchor": "data-lifecycle",
+    "text": "Data lifecycle\nSchema and product design must consider creation, updates, active use, retention, deletion/anonymization/archival, derived copies, and backups. Collect only necessary data before deciding how long to keep it. Retain for an identified product, security, legal, or operational purpose; a new use requires review. More sensitive data needs stronger justification, tighter access, and shorter retention where possible.\nRetention and disposition are a contract: why data exists, who owns it, what begins/ends retention, what happens afterward, and how copies converge. Do not invent a universal duration or legal obligation. Indefinite retention needs explicit justification such as a durable ledger or permanent product artifact, not missing cleanup. Cancellation or another domain state does not imply an undocumented deletion rule.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Retention policy metadata",
+    "anchor": "retention-policy-metadata",
+    "text": "Retention policy metadata\nFor important datasets, document category, owner, classification, purpose, canonical source, trigger, justified duration or lifecycle condition, whether limits are minimum/maximum, disposition, derived systems/providers, backup behavior, and monitoring. Keep policy meaning at its owner and reference it from canonical schemas; avoid copying the whole policy onto every table. A generated data inventory/registry can help when real consumers justify one, but this document does not claim such governance tooling exists.\nTriggers may be creation, last activity, account/contract termination, incident closure, export generation, job completion, or credential expiration. State them unambiguously. Changes need rationale, affected scope, retroactivity, treatment of existing older data, copy/provider changes, and migration/cleanup plans. Shortening retention can affect recovery, support, analytics, and obligations; extending it increases privacy, security, and cost exposure.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Deletion and soft delete",
+    "anchor": "deletion-and-soft-delete",
+    "text": "Deletion and soft delete\nHard deletion removes active records; other systems may still retain copies until their documented convergence/expiry. Soft deletion retains the row and is not a privacy deletion. Use it only for concrete restore, audit, or lifecycle needs, with deliberate query filtering, authorization, uniqueness, restore window, and eventual hard-delete/anonymization/archive behavior. Do not add `deletedAt` to every table by default.\nArchival changes storage/access, not classification or deletion obligations; define queryability, security, recovery, and later disposition. Tombstones should retain only the minimum required to represent nonexistence or distributed consistency. Anonymization must address reasonable re-identification; renaming a user while keeping email/IP/external IDs is insufficient. Pseudonymization, hashes, and small/precise aggregates can remain personal data.\nPreserve referential integrity and intentional ownership through cascade, restrict, nulling, anonymized references, or tombstones. Account deletion must not automatically cascade through unrelated business history. Account, organization, and shared-content deletion need distinct domain semantics: revoke credentials, remove private profiles/content, preserve organization-owned or legally required records, and retain only necessary historical attribution. Audit purpose does not justify retaining unrelated sensitive content. Intentional orphan records need documented meaning and lifecycle.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Data classes and copies",
+    "anchor": "data-classes-and-copies",
+    "text": "Data classes and copies\nData\nLifecycle requirements\nCredentials and identity\nRemove obsolete hashes and expired/revoked sessions when no longer needed; define refresh rotation/replay retention. Invalidate used/revoked recovery credentials immediately without retaining secret history. Current authorization state and audit history are separate datasets.\nAudit/security/financial records\nDefine purpose-specific retention and integrity independently. Financial/legal durations come from actual obligations; security/fraud evidence needs separate justification from analytics. Prefer provider-owned/tokenized payment credentials.\nUser content and objects\nInclude original objects, versions, incomplete multipart uploads, staging, thumbnails/previews, converted media, and derived files. Derivatives normally follow the source unless a separate purpose justifies another lifecycle.\nCaches and search\nIdentify canonical source, rebuildability, expiration, and deletion/invalidation propagation. A cache is not permanent storage; use explicit invalidation when TTL exceeds acceptable deletion delay.\nClient storage\nInclude local databases/files/offline caches and operating-system backups. Logout must define credential/sensitive cache removal without assuming all non-sensitive offline product data must be erased.\nLogs/traces/errors/metrics\nSeparate diagnostics, audit/security, debug data, raw high-resolution records, and long-term aggregates. Match diagnostic/SLO/capacity/regression value, privacy, and cost. Traces are not permanent execution history. Temporary verbose diagnostics need expiration.\nExports/reports/support bundles\nDefine both access-link lifetime and underlying-file deletion; expiring a URL does not delete the file. Minimize fields, authorize and protect delivery, and avoid indefinite personal-workstation/shared-folder/email copies.\nTemporary/job artifacts\nClean after success, failure, and cancellation where practical; incomplete uploads and scratch files must not persist by omission.\nQueues/events/DLQs/replay archives\nInclude expected processing delay, retries, dead-letter and replay windows, and privacy. Minimize payloads. A DLQ is not a permanent archive; event sourcing is not a default and requires resolving immutable-history/deletion conflicts.\nAnalytics/warehouses/data lakes\nDistinguish raw events, identifiable derived records, and aggregates. Every dataset has ownership and lifecycle; analytical copies are not exempt from deletion.\nAI datasets/embeddings/prompts\nTraining/evaluation/retrieval use is not authorized by ordinary collection. Define policy before ingestion, including provider retention/training and deletion limits. Source deletion may require vector/embedding removal; investigation transcripts inherit included sensitivity.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Deletion is a distributed workflow",
+    "anchor": "deletion-is-a-distributed-workflow",
+    "text": "Deletion is a distributed workflow\nInventory meaningful copies in primary stores, caches, search, object derivatives, analytics, exports, replicas, and providers. For asynchronous deletion define convergence expectations, retries, reconciliation, failure monitoring, and completion evidence. Prefer idempotent operations; after timeout inspect actual state rather than blindly repeating an unsafe action. Partial failure must remain visible and retryable, not silently marked complete.\nUse the same inventory for applicable access, correction, portability, and deletion requests. Determine high-risk completion evidence from actual obligations. Provider evaluation must address stored fields, default/configurable retention, per-record deletion, backup/subprocessor behavior, and compatibility with this policy. Offboarding may require export, deletion confirmation, and credential revocation. Deleting the application's primary record does not automatically delete provider copies.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Cleanup and verification",
+    "anchor": "cleanup-and-verification",
+    "text": "Cleanup and verification\nRetention jobs should be bounded, idempotent, observable, and safely retryable. Use batches and efficient indexed expiry selection when workloads justify them; avoid unbounded destructive transactions that create locks, replication pressure, or long rollbacks. Expiration fields represent lifecycle meaning. Storage TTL must not silently bypass required audit, domain effects, or derived deletion.\nObserve failures, overdue age, backlog, and backup-expiry failures when relevant; alerts must reflect real obligations or risk. Log safe scope, count, duration, result, and bounded reason categories rather than deleted contents. Required deletion audit records capture actor/system, operation, scope, time, and result without preserving the sensitive payload.\nManual/bulk production deletion follows [production access](production-access.md) and a real [runbook](../runbooks/authoring.md): use purpose-built workflows, scope previews, appropriate authorization, batching, verification, and recovery planning. Tests should cover expiry selection, filtering, propagation, idempotency, partial failure, and restoration semantics where applicable.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Backups, restore, and deletion replay",
+    "anchor": "backups-restore-and-deletion-replay",
+    "text": "Backups, restore, and deletion replay\nBackups inherit source classification and need encryption, access control, retention/expiry, and restore tests. Choose frequency/generations against actual Recovery Point Objective (acceptable loss) and Recovery Time Objective (restoration time), cost, and obligations; do not invent strict objectives prematurely or keep backups forever because storage is cheap.\nDeleted live data may remain until backup expiry. Document that limit and never promise immediate total deletion when old copies remain. Restoration may reintroduce deleted/expired records or credentials: reconcile current lifecycle state and reapply applicable deletions, retention changes, and revocations. A minimal durable deletion ledger may be justified. Restore tests must verify usable recovery and retention correctness, not merely backup creation success.\nBackups must not bypass ordinary access controls. Snapshots, offline/cross-region copies, migration/forensic/restore-test copies, and detached or lagging replicas need explicit scope, owner, access, and expiry. Production snapshots are not default development data; any authorized copy needs minimization/anonymization, restricted access, and bounded retention.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Non-production and collaboration",
+    "anchor": "non-production-and-collaboration",
+    "text": "Non-production and collaboration\nPreview environments and their storage should expire when their purpose ends. Synthetic isolated test databases need cleanup; CI logs/reports/screenshots/artifacts, development logs, and tool/AI caches need appropriate lifetimes. Retention cannot make secret-bearing artifacts safe.\nGit, documentation, issues, pull requests, and chat are durable surfaces, not stores for production samples, exports, or customer records. Use sanitized references. Incident records can retain useful learning without copying raw sensitive evidence; minimize/redact screenshots. Follow [incident response](incident-response.md) for leaked sensitive data rather than waiting for ordinary expiration.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Holds and exceptions",
+    "anchor": "holds-and-exceptions",
+    "text": "Holds and exceptions\nApplicable legal minimums and maximums must be identified from actual jurisdiction/product requirements; a minimum does not justify indefinite retention. Legal holds suspend deletion only for authorized, scoped records/categories and need authority, start, review, release, and auditability. After release, resume normal retention and remove already-expired data as required.\nSecurity/incident or other exceptions need data scope, purpose, owner, authority, duration/review, affected backups/providers, and disposition at expiry. They must not default to permanence or a system-wide hold. This policy does not select legal-hold tooling or grant authority for operational actions.\n"
+  },
+  {
+    "id": "repository/docs/security/data-retention",
+    "title": "Data Retention",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New persistent data checklist",
+    "anchor": "new-persistent-data-checklist",
+    "text": "New persistent data checklist\nBefore adding a field, record, file, event, or provider copy, identify purpose, owner, classification, canonical source, trigger/duration/disposition, derived copies, backup/restore effect, deletion propagation, partial-failure detection, and tests. Before soft delete, explain why hard deletion is insufficient and how filtering, uniqueness, restoration, and eventual removal work. Surface unknown product/operational requirements explicitly; do not silently substitute “forever” or promise unavailable deletion/recovery capabilities.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Incident Response",
+    "anchor": "incident-response",
+    "text": "Incident Response\nThis policy owns coordinated response to material reliability, security, and data incidents. It defines requirements, not deployed incident tooling or authority. Paging/escalation channels, concrete roles, severity names, legal notifications, forensic storage, and exercise schedules must follow actual product, organization, jurisdiction, and infrastructure decisions. Real repeatable procedures belong in [runbooks](../runbooks/README.md).\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Declaration and ownership",
+    "anchor": "declaration-and-ownership",
+    "text": "Declaration and ownership\nAn incident requires coordinated action because service behavior, trust, confidentiality, integrity, or data lifecycle may be materially violated. Reliability, security, and data classes can overlap. An isolated transient timeout, recovered job, or replaced replica is not automatically an incident; assess impact, risk, investigation, mitigation, and coordination needs.\nDetection can come from [alerts](../reliability/alerting.md), error reports, support/customers, providers, operators, or integrity checks. Declare serious incidents explicitly without waiting for perfect root cause. Every active incident must have an owner. Significant incidents may divide coordination, technical response, communication, security, and scribing; small teams can combine these responsibilities without inventing organizational roles.\nRecord the observed signal, environment, affected service/operation/data, first known impact, scope, trend, active release, and relevant recent changes. Maintain a useful timeline with consistent absolute timestamps and important decisions/rationale. Use one authoritative status location rather than conflicting chat threads.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Severity",
+    "anchor": "severity",
+    "text": "Severity\nUse a small consistent severity model based on user impact, scope, urgency, data classification, privilege/trust risk, and recovery complexity. Do not confuse technical difficulty or error count with severity. A single signing-key leak can be more urgent than many benign failures. Unknown scope can justify higher urgency until evidence narrows it; change severity explicitly as facts improve.\nA possible future scale distinguishes critical widespread outage/active privileged compromise/severe corruption, major workflow degradation or suspected serious compromise, localized recoverable impact, and minor contained anomalies. These categories are guidance, not a selected `SEV-*` contract or response-time promise.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Triage and containment",
+    "anchor": "triage-and-containment",
+    "text": "Triage and containment\nDetermine what is failing, who is affected, whether impact is increasing, what changed, and whether security or data is at risk. Prefer scoped reversible containment where safe, but broader containment can be justified by high risk and uncertain scope. Stop active harm before perfecting diagnosis or preserving every artifact.\nContainment may disable a capability, remove traffic, pause workers/writes/deletion/exports, revoke access, or isolate affected data. These are conditional options, not authorization to execute them. Establish target scope, needed privilege, data-loss/evidence risks, reversibility, success criteria, and recovery before action where practical. Preserve evidence when safe without delaying urgent containment.\nInspect deployment, migration, configuration, feature-flag, infrastructure, and provider changes as clues. Temporal correlation is not proof. Roll back only when the earlier version remains compatible and reversal is safe; irreversible database changes, data-loss risk, or incompatible old releases may require a forward fix. A temporary freeze on unrelated changes can reduce confusion but must not block necessary mitigation.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Evidence and credentials",
+    "anchor": "evidence-and-credentials",
+    "text": "Evidence and credentials\nUse relevant logs, traces, errors, audit, deployments, configuration, provider, and access records. For important forensic artifacts preserve source, collection time, collector, and scope without unnecessary modification. Copies remain classified production data with restricted access, secure storage, and [retention](data-retention.md). Prefer authorized references over raw records in chat, issues, PRs, email, or documentation. Minimize/redact screenshots.\nDisk images, database exports, memory dumps, and network captures can contain credentials and broad private data. Require scoped, authorized, bounded collection and suitable protection. Incident urgency does not suspend privacy or justify unrestricted exports, secrets in incident channels, or indefinite raw evidence retention. Authorized holds/extensions must remain scoped under retention policy.\nTreat potentially exposed credentials as compromised according to risk; absence of observed abuse is not proof of safety. Follow [secrets management](secrets-management.md#secret-rotation). Depending on active harm, either revoke immediately or introduce replacement, update consumers, verify, then revoke old material. Consider dependent user/admin/service/refresh sessions, signing-key compatibility, and invalidation. Review access, permission changes, affected resources, and attacker persistence. Deleting leaked files or telemetry does not restore credential secrecy.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Correction and recovery",
+    "anchor": "correction-and-recovery",
+    "text": "Correction and recovery\nContainment reduces harm; eradication removes cause or malicious persistence. Track temporary mitigations separately from permanent fixes. Correct the actual defect, vulnerable dependency, unauthorized account/grant, injected configuration, or broken lifecycle rather than declaring a feature disablement a permanent solution.\nRestore normal operation only with reasonable evidence that harm is contained, critical invariants hold, and dependencies/monitoring and renewed containment options are ready. Recovery may need canaries, gradual traffic, controlled queue resume, rate limits, priority, or batching. Backlog processing must account for duplicate/stale messages, idempotency, current authorization, and provider side effects.\nDistinguish provider failure from application integration defects; provider status pages are supporting evidence, not proof of application behavior. Provider compromise can require rotation, exposure assessment, disablement, and coordinated communication.\nFor corruption/loss, choose the smallest correct repair or restore. A production restore can overwrite current data and requires explicit authorization plus recovery-point/data-loss, schema compatibility, and retention/deletion analysis. Point-in-time recovery, if supported, still needs scoped verification and reconciliation. Follow [data retention and restoration](data-retention.md#backups-restore-and-deletion-replay) and applicable migration/compatibility policy.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Recovery verification and incident closure",
+    "anchor": "recovery-verification-and-incident-closure",
+    "text": "Recovery verification and incident closure\nA cleared alert or successful command alone does not establish recovery. Verify affected user behavior, relevant error/latency/progress/health signals, backlog control, data counts/invariants/reconciliation, and security properties. Confirm compromised credentials are unusable, unauthorized permissions/persistence are removed, and protective controls work. High-impact recovery may need a justified observation period to detect relapse.\nClose only after impact has ended, safe operation and critical recovery are verified, final scope/severity are understood, required communication is complete, evidence is safely stored, and emergency access is revoked or handled under its explicit expiry. Any unresolved cause or temporary mitigation needs owned follow-up; do not silently leave it as permanent architecture.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Communication and authority",
+    "anchor": "communication-and-authority",
+    "text": "Communication and authority\nShare accurate, timely, audience-appropriate updates when impact/severity/scope changes, major mitigation occurs, recovery begins, or resolution is verified. State confirmed facts, working hypotheses, and open questions separately. Include affected function, impact onset, current mitigation, and required user action where appropriate without exposing secrets or unnecessary active-vulnerability detail.\nCoordinate relevant responders, support, customers, partners, leadership, and security/legal stakeholders according to real need; not every incident reaches every audience. External disclosure timing and legal notification obligations depend on actual jurisdiction, data, scope, contracts, and organization. This document invents neither deadlines nor authority to send messages.\n[Production access](production-access.md) still applies during incidents. Scoped temporary elevation and emergency timing do not create universal administration. Break-glass is for genuine normal-control-path failure/insufficiency and must be reviewed afterward. Reconcile emergency repository-managed configuration or infrastructure changes back into source control.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "AI assistance and automation",
+    "anchor": "ai-assistance-and-automation",
+    "text": "AI assistance and automation\nAuthorized agents can correlate safe evidence, synthesize timelines, inspect source, find runbooks, and propose hypotheses. An incident does not grant an agent extra production authority. Keep raw secrets outside its context and prefer sanitized evidence to broad exports. Plausible AI explanations remain hypotheses until supported; never execute destructive mitigation solely because one sounds convincing. Agent recommendations/actions need the same authorization and verification as human actions.\nAutomation can collect safe diagnostics or perform explicit bounded actions when tested. High-impact automated containment requires confidence and acceptable false-positive risk; prefer reversibility. Repeated self-healing may expose underlying instability and should be observable. Do not introduce automated containment, arbitrary incident channels, or new operational tooling as a documentation placeholder.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Post-incident review",
+    "anchor": "post-incident-review",
+    "text": "Post-incident review\nSignificant incidents need a durable proportional review of impact/timeline, detection, cause/contributors, response/recovery, what worked, friction, and where luck limited harm. Avoid blame and simplistic “human error” conclusions: identify why unsafe action was possible, detection delayed, and recovery hard. Blameless review still requires accountable owners and corrections.\nPrioritize concrete actions by recurrence risk, impact reduction, and effort. Prefer tests, schema constraints, safer defaults/permissions, CI checks, bounded repair tools, better alerts, and tested recovery over reminders or many low-value tasks. Confirmed software defects should receive meaningful regression tests whenever practical. Add targeted safe telemetry rather than dumping payloads after an investigation gap.\nIncident histories may live in the incident system; durable policy, tests, tooling, runbooks, and significant ADR decisions belong in the repository. Update recurring-response runbooks only for real repeatable conditions. Track temporary mitigation removal, detection gaps, access/redaction/retention improvements, and completion ownership.\nIncident metrics may assess detection, containment, recovery, and recurrence, but must define ambiguous terms such as MTTR and not rank individuals simplistically. Averages hide distributions; incident count alone ignores severity. Exercise relevant response through safe tabletop scenarios, synthetic security cases, restore/rotation drills, or controlled failure injection as maturity permits. Untested recovery capabilities must not be assumed reliable.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Incident response checklist",
+    "anchor": "incident-response-checklist",
+    "text": "Incident response checklist\nAt declaration, identify owner, impact/time/environment, scope/severity, security/data risk, current trend, safe containment, evidence, relevant changes, and communication audience. For security, include affected identity/credential/boundary, continuing access/persistence, revocation and verification. For data, include affected subjects/copies, safe writes, restore/reconciliation and obligations. For reliability, include user capability, dependencies, release compatibility, backlog, and recovery evidence.\nBefore closure, verify service/security/data recovery, temporary-access handling, evidence retention, communication, and owned mitigation/corrective follow-up. Significant lessons must update their canonical policy or implementation rather than remaining only in incident prose.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Production Access",
+    "anchor": "production-access",
+    "text": "Production Access\nThis policy owns privileged operational access. [Authentication](authentication.md), [authorization](authorization.md), [secrets](secrets-management.md), and [classification](data-classification.md) supply the underlying controls. [Incident response](incident-response.md) and [runbooks](../runbooks/README.md) do not expand anyone's authority.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Scope and current availability",
+    "anchor": "scope-and-current-availability",
+    "text": "Scope and current availability\nProduction is a separate trust boundary from local development, CI, tests, staging, and previews. Routine development and maintenance should work through local/synthetic environments and sanitized observability without broad production access. Human access requires an operational purpose and the minimum capability for the necessary time.\nProvider IAM, concrete operational roles, just-in-time access, approval/break-glass workflows, bastions/private networking, device trust, and session recording remain deployment-specific decisions. [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) governs accepted CI/supply-chain direction; it does not mean production access tooling is deployed. Do not invent provider commands or begin deployment work to complete this policy.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Identities, privilege, and access request",
+    "anchor": "identities-privilege-and-access-request",
+    "text": "Identities, privilege, and access request\nUse attributable identities and distinguish humans from service, CI, and deployment actors. Shared human accounts and borrowing an automation identity undermine audit/revocation and should be avoided. Match authentication strength and any recent/step-up requirement to risk. Named cloud-console access must use narrow roles; provider root/owner accounts are break-glass capabilities, not routine accounts.\nSeparate observation, data read/write, deployment, infrastructure, IAM/security administration, and secret administration where practical. An actor who grants privileges need not hold every resource permission. Deploying must not imply viewing raw credentials. Prefer delegated use, workload identity, temporary credentials, or controlled tooling over secret disclosure. Scope by system, resource, operation, environment, time, and classification; add region/tenant scope only where needed.\nAn access request should identify actor, task/reason, target environment/resource, minimum capability, duration, related incident/work item, data classification, and whether safer telemetry/read-only tools suffice. Temporary access should expire automatically where supported; standing privilege needs operational justification, narrow scope, and review. Bounded sessions/idle timeouts reduce unattended access risk; concurrency/device/session-recording controls are requirement-driven, not mandated products.\n"
+  },
+  {
     "id": "repository/docs/security/production-access",
     "title": "Production Access",
     "group": "Security",
