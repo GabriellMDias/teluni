@@ -26,6 +26,13 @@ const capability = Type.Union([
   Type.Literal("devices.view"),
   Type.Literal("devices.manage"),
 ]);
+const delegableCapability = Type.Union([
+  Type.Literal("branches.view"),
+  Type.Literal("invitations.manage"),
+  Type.Literal("audit.view"),
+  Type.Literal("devices.view"),
+  Type.Literal("devices.manage"),
+]);
 const limit = Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }));
 const cursor = Type.Optional(Type.String({ minLength: 1, maxLength: 1024 }));
 const companyParams = Type.Object(
@@ -52,7 +59,12 @@ const grantScope = Type.Union([
 export const grantSchema = Type.Object(
   {
     id: uuid,
-    role,
+    /** The standard role, or null when the grant carries an access profile. */
+    role: Type.Union([role, Type.Null()]),
+    profile: Type.Union([
+      Type.Object({ id: uuid, name }, { additionalProperties: false }),
+      Type.Null(),
+    ]),
     scope: grantScope,
     branches: Type.Array(
       Type.Object({ id: uuid, name }, { additionalProperties: false }),
@@ -62,6 +74,53 @@ export const grantSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+const profileStatus = Type.Union([
+  Type.Literal("ACTIVE"),
+  Type.Literal("ARCHIVED"),
+]);
+export const profileSchema = Type.Object(
+  {
+    id: uuid,
+    name,
+    capabilities: Type.Array(delegableCapability),
+    status: profileStatus,
+    version,
+    createdAt: instant,
+    updatedAt: instant,
+    memberCount: Type.Integer({ minimum: 0 }),
+    grantCount: Type.Integer({ minimum: 0 }),
+  },
+  { additionalProperties: false },
+);
+const profileDetailSchema = Type.Object(
+  {
+    profile: profileSchema,
+    holders: Type.Array(
+      Type.Object(
+        {
+          grantId: uuid,
+          membershipId: uuid,
+          membershipStatus: membershipStatus,
+          displayName: Type.Union([Type.String(), Type.Null()]),
+          email: Type.Union([Type.String(), Type.Null()]),
+          scope: grantScope,
+          branches: Type.Array(
+            Type.Object({ id: uuid, name }, { additionalProperties: false }),
+          ),
+          expiresAt: Type.Union([instant, Type.Null()]),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    holdersTruncated: Type.Boolean(),
+  },
+  { additionalProperties: false },
+);
+const profileCapabilities = Type.Array(delegableCapability, {
+  minItems: 1,
+  maxItems: 5,
+  uniqueItems: true,
+});
 export const transferSchema = Type.Object(
   {
     id: uuid,
@@ -101,6 +160,8 @@ const memberPageSchema = Type.Object(
 export const accessSchema = Type.Object(
   {
     roles: Type.Array(role),
+    /** Names of the customized access profiles the caller holds. */
+    profiles: Type.Array(name),
     responsible: Type.Boolean(),
     capabilities: Type.Array(capability),
     capabilitiesAfterStrongAuthentication: Type.Array(capability),
@@ -229,6 +290,10 @@ const creationKey = Type.Object({
   }),
 });
 
+const profileParams = Type.Object(
+  { companyId: uuid, profileId: uuid },
+  { additionalProperties: false },
+);
 const grantParams = Type.Object(
   { companyId: uuid, membershipId: uuid, grantId: uuid },
   { additionalProperties: false },
@@ -245,12 +310,13 @@ export const organizationOperations = [
     operationId: "addMemberGrant",
     access: "session",
     description:
-      "Grant a standard role to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
+      "Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
     schema: {
       params: memberParams,
       body: Type.Object(
         {
-          role,
+          role: Type.Optional(role),
+          profileId: Type.Optional(uuid),
           scope: grantScope,
           branchIds: Type.Optional(
             Type.Array(uuid, { minItems: 1, maxItems: 100 }),
@@ -559,7 +625,7 @@ export const organizationOperations = [
     operationId: "listCompanyAuditEvents",
     access: "session",
     description:
-      "List the company's organization audit events, newest first. Requires company administration and two-step verification.",
+      "List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch. Requires two-step verification.",
     schema: {
       params: companyParams,
       querystring: Type.Object(
@@ -573,6 +639,109 @@ export const organizationOperations = [
       "PERMISSION_DENIED",
       "STRONG_AUTHENTICATION_REQUIRED",
     ],
+  },
+  {
+    method: "GET",
+    url: "/companies/:companyId/access-profiles",
+    operationId: "listAccessProfiles",
+    access: "session",
+    description:
+      "List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification.",
+    schema: {
+      params: companyParams,
+      querystring: Type.Object(
+        { includeArchived: Type.Optional(Type.Boolean()) },
+        { additionalProperties: false },
+      ),
+      response: {
+        200: Type.Object(
+          { items: Type.Array(profileSchema) },
+          { additionalProperties: false },
+        ),
+        ...common,
+      },
+    },
+    expectedErrors: [
+      ...scoped,
+      "PERMISSION_DENIED",
+      "STRONG_AUTHENTICATION_REQUIRED",
+    ],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/access-profiles",
+    operationId: "createAccessProfile",
+    access: "session",
+    description:
+      "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
+    schema: {
+      params: companyParams,
+      body: Type.Object(
+        { name, capabilities: profileCapabilities },
+        { additionalProperties: false },
+      ),
+      response: { 201: profileSchema, ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "PROFILE_NAME_IN_USE",
+      "PROFILE_LIMIT_REACHED",
+    ],
+  },
+  {
+    method: "GET",
+    url: "/companies/:companyId/access-profiles/:profileId",
+    operationId: "getAccessProfile",
+    access: "session",
+    description:
+      "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration and two-step verification.",
+    schema: {
+      params: profileParams,
+      response: { 200: profileDetailSchema, ...common },
+    },
+    expectedErrors: [
+      ...scoped,
+      "PERMISSION_DENIED",
+      "STRONG_AUTHENTICATION_REQUIRED",
+    ],
+  },
+  {
+    method: "PATCH",
+    url: "/companies/:companyId/access-profiles/:profileId",
+    operationId: "updateAccessProfile",
+    access: "session",
+    description:
+      "Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration and two-step verification.",
+    schema: {
+      params: profileParams,
+      body: Type.Object(
+        {
+          expectedVersion: version,
+          name: Type.Optional(name),
+          capabilities: Type.Optional(profileCapabilities),
+        },
+        { additionalProperties: false },
+      ),
+      response: { 200: profileSchema, ...common },
+    },
+    expectedErrors: [...mutation, "PROFILE_NAME_IN_USE", "PROFILE_ARCHIVED"],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/access-profiles/:profileId/archive",
+    operationId: "archiveAccessProfile",
+    access: "session",
+    description:
+      "Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration and two-step verification.",
+    schema: {
+      params: profileParams,
+      body: Type.Object(
+        { expectedVersion: version },
+        { additionalProperties: false },
+      ),
+      response: { 200: profileSchema, ...common },
+    },
+    expectedErrors: [...mutation, "PROFILE_IN_USE", "PROFILE_ARCHIVED"],
   },
 ] as const;
 

@@ -30,6 +30,7 @@ import {
 import { organizationMessages, timeZoneChoices } from "./messages.js";
 import { CompanyMembers, formatInstant } from "./members.js";
 import { CompanyInvitations } from "./invitations.js";
+import { CompanyProfiles } from "./profiles.js";
 import { ResponsibilityTransferNotice } from "./responsibility.js";
 
 export function useOrganizationMessages() {
@@ -636,21 +637,30 @@ function CompanySettings({ company }: { company: Company }) {
 function CompanyHistory({
   companyId,
   principalId,
+  administrator,
+  accessScope,
   cursor,
 }: {
   companyId: string;
   principalId: string;
+  /** Administrators read every event; branch managers only their branches'. */
+  administrator: boolean;
+  /** Identifies the viewer's current access, so pages never cross scopes. */
+  accessScope: string;
   cursor?: string;
 }) {
   const { locale, t } = useOrganizationMessages();
+  // Pages are cached per access scope and dropped once the view closes, so a
+  // narrowed access never renders events read under a wider one.
   const events = useQuery({
-    queryKey: [...auditKey(companyId), cursor ?? null],
+    queryKey: [...auditKey(companyId), accessScope, cursor ?? null],
     queryFn: () => listAuditEvents(companyId, cursor),
+    gcTime: 0,
   });
   return (
     <section aria-labelledby="company-history-title">
       <h2 id="company-history-title">{t.historyTitle}</h2>
-      <p>{t.historyLead}</p>
+      <p>{administrator ? t.historyLead : t.historyLeadBranches}</p>
       {events.isPending ? (
         <p>{t.loading}</p>
       ) : events.isError ? (
@@ -667,7 +677,15 @@ function CompanyHistory({
             const fields = Array.isArray(event.details.fields)
               ? event.details.fields
                   .filter((field): field is string => typeof field === "string")
-                  .map((field) => t.historyFields[field])
+                  .map(
+                    (field) =>
+                      t.historyFields[
+                        event.targetType === "access_profile" &&
+                        field === "name"
+                          ? "profileName"
+                          : field
+                      ],
+                  )
                   .filter((field): field is string => typeof field === "string")
               : [];
             const action = t.historyActions[event.action];
@@ -683,6 +701,11 @@ function CompanyHistory({
                       {t.roles[event.details.role as keyof typeof t.roles]}
                     </span>
                   )}
+                {typeof event.details.profileName === "string" && (
+                  <span>
+                    {t.historyProfile}: {event.details.profileName}
+                  </span>
+                )}
                 {event.targetType === "branch" &&
                   typeof event.details.branchName === "string" && (
                     <span>
@@ -732,7 +755,7 @@ export function CompanyPage({
 }: {
   companyId: string;
   cursor?: string;
-  view?: "settings" | "history" | "members" | "invitations";
+  view?: "settings" | "history" | "members" | "invitations" | "profiles";
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -794,7 +817,11 @@ export function CompanyPage({
       </p>
       <h1 id="company-title">{company.data.company.displayName}</h1>
       <p className="hint">
-        {t.yourAccess}: {access.roles.map((role) => t.roles[role]).join(", ")}
+        {t.yourAccess}:{" "}
+        {[
+          ...access.roles.map((role) => t.roles[role]),
+          ...access.profiles,
+        ].join(", ")}
         {access.responsible ? ` · ${t.responsible}` : ""}
       </p>
       {needsStepUp && <StepUpPrompt returnTo={returnTo} />}
@@ -847,6 +874,16 @@ export function CompanyPage({
             {t.membersTitle}
           </Link>
         )}
+        {access.capabilities.includes("members.manage") && (
+          <Link
+            to="/companies/$companyId"
+            params={{ companyId }}
+            search={{ view: "profiles" }}
+            aria-current={view === "profiles" ? "page" : undefined}
+          >
+            {t.profilesTitle}
+          </Link>
+        )}
         {access.capabilities.includes("invitations.manage") && (
           <Link
             to="/companies/$companyId"
@@ -885,6 +922,14 @@ export function CompanyPage({
             {t.errors.PERMISSION_DENIED}
           </p>
         )
+      ) : view === "profiles" ? (
+        access.capabilities.includes("members.manage") ? (
+          <CompanyProfiles companyId={companyId} returnTo={returnTo} t={t} />
+        ) : (
+          <p role="alert" className="notice notice-error">
+            {t.errors.PERMISSION_DENIED}
+          </p>
+        )
       ) : view === "invitations" ? (
         access.capabilities.includes("invitations.manage") ? (
           <CompanyInvitations
@@ -914,6 +959,12 @@ export function CompanyPage({
           <CompanyHistory
             companyId={companyId}
             principalId={session.data.principalId}
+            administrator={access.capabilities.includes("members.manage")}
+            accessScope={JSON.stringify([
+              access.roles,
+              access.profiles,
+              access.capabilities,
+            ])}
             cursor={cursor}
           />
         ) : (

@@ -445,9 +445,40 @@ Lifecycle: Created with the company; moves to another active administrator only 
 | `company_responsibilities_pkey` | `PRIMARY KEY (company_id)` | Exactly one responsible administrator per company. |
 | `company_responsibilities_membership_key` | `CREATE UNIQUE INDEX company_responsibilities_membership_key ON public.company_responsibilities USING btree (company_id, membership_id)` | Supports the composite reference to the responsible membership. |
 
+## access_profiles
+
+Company-customized access profile: a named set of delegable business capabilities that grants can carry instead of a standard role.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Created ACTIVE; edited with expected versions, so every holder's access follows the current capabilities; archived rather than deleted, and only when no effective grant holds it.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable profile UUID; public resource ID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Owning company; immutable (tenant key). | — | — |
+| `name` | `character varying(120)` | no | — | CONFIDENTIAL | Profile name, unique among the company's active profiles regardless of case. | — | — |
+| `capabilities` | `text[]` | no | — | INTERNAL | Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile. | — | — |
+| `status` | `"AccessProfileStatus"` | no | `'ACTIVE'::"AccessProfileStatus"` | INTERNAL | ACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change; not audit history. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `access_profiles_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A profile belongs to an existing company. |
+| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text])))` | A profile names at least one capability, all of them delegable. |
+| `access_profiles_name_nonblank` | `CHECK ((btrim((name)::text) <> ''::text))` | Profile name cannot be blank. |
+| `access_profiles_pkey` | `PRIMARY KEY (id)` | Unique profile identity. |
+| `access_profiles_version_positive` | `CHECK ((version >= 1))` | Rejects invalid concurrency versions. |
+| `access_profiles_company_active_name_unique` | `CREATE UNIQUE INDEX access_profiles_company_active_name_unique ON public.access_profiles USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::"AccessProfileStatus")` | Active profile names are unique within a company, ignoring case. |
+| `access_profiles_company_id_id_key` | `CREATE UNIQUE INDEX access_profiles_company_id_id_key ON public.access_profiles USING btree (company_id, id)` | Tenant key that grants target. |
+
 ## membership_grants
 
-A standard role granted to a membership over the whole company or explicit branches; grants combine additively.
+A standard role or a company-customized access profile granted to a membership over the whole company or explicit branches; grants combine additively.
 
 Owner: Organizations. Classification: CONFIDENTIAL.
 
@@ -458,13 +489,14 @@ Lifecycle: Effective from starts_at until expires_at or revoked_at; company admi
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated grant UUID. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Company of the grant; immutable (tenant key). | — | — |
 | `membership_id` | `uuid` | no | — | INTERNAL | Membership that holds the grant. | — | — |
-| `role` | `"AccessRole"` | no | — | INTERNAL | Standard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application. | — | — |
+| `role` | `"AccessRole"` | yes | — | INTERNAL | Standard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application. | The grant carries an access profile instead. | — |
 | `scope` | `"GrantScope"` | no | — | INTERNAL | COMPANY covers every branch, including future ones; BRANCHES covers only the listed branches. | — | — |
 | `starts_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | Instant the grant becomes effective. | — | UTC instant, millisecond precision |
 | `expires_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant a temporary grant stops being effective; no automatic renewal. | The grant does not expire. | UTC instant, millisecond precision |
 | `granted_by_membership_id` | `uuid` | yes | — | INTERNAL | Membership that granted it, for attribution. | Granted by company creation. | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
 | `revoked_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant a company administrator revoked the grant; revocation is terminal. | The grant has not been revoked. | UTC instant, millisecond precision |
+| `profile_id` | `uuid` | yes | — | INTERNAL | Company-customized access profile whose current capabilities the grant confers. | The grant carries a standard role instead. | — |
 
 ### Constraints and indexes
 
@@ -473,11 +505,14 @@ Lifecycle: Effective from starts_at until expires_at or revoked_at; company admi
 | `membership_grants_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A grant belongs to an existing company. |
 | `membership_grants_company_id_granted_by_membership_id_fkey` | `FOREIGN KEY (company_id, granted_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The grantor, when present, is a membership of the same company. |
 | `membership_grants_company_id_membership_id_fkey` | `FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The holder is a membership of the same company. |
+| `membership_grants_company_id_profile_id_fkey` | `FOREIGN KEY (company_id, profile_id) REFERENCES access_profiles(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The profile belongs to the same company; mixed-company profiles are unrepresentable. |
 | `membership_grants_company_role_scope` | `CHECK (((role <> 'COMPANY_ADMINISTRATOR'::"AccessRole") OR (scope = 'COMPANY'::"GrantScope")))` | Company administration is always company-wide. |
 | `membership_grants_expiry_after_start` | `CHECK (((expires_at IS NULL) OR (expires_at > starts_at)))` | A temporary grant expires after it starts. |
 | `membership_grants_pkey` | `PRIMARY KEY (id)` | Unique grant identity. |
+| `membership_grants_role_or_profile` | `CHECK ((num_nonnulls(role, profile_id) = 1))` | A grant carries exactly one standard role or one access profile. |
 | `membership_grants_company_id_id_key` | `CREATE UNIQUE INDEX membership_grants_company_id_id_key ON public.membership_grants USING btree (company_id, id)` | Tenant key that branch scopes target. |
 | `membership_grants_membership_idx` | `CREATE INDEX membership_grants_membership_idx ON public.membership_grants USING btree (company_id, membership_id)` | Supports resolving a membership's grants. |
+| `membership_grants_profile_idx` | `CREATE INDEX membership_grants_profile_idx ON public.membership_grants USING btree (company_id, profile_id)` | Supports finding the grants that hold a profile. |
 
 ## membership_grant_branches
 
@@ -536,6 +571,30 @@ Lifecycle: Never updated or deleted by the runtime; retention follows PH-13.
 | `organization_audit_events_target_type_format` | `CHECK (((target_type)::text ~ '^[a-z_]+$'::text))` | Target types use lowercase identifiers. |
 | `organization_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX organization_audit_events_company_id_id_key ON public.organization_audit_events USING btree (company_id, id)` | Tenant key for future references to events. |
 | `organization_audit_events_company_time_idx` | `CREATE INDEX organization_audit_events_company_time_idx ON public.organization_audit_events USING btree (company_id, occurred_at DESC, id DESC)` | Supports company-scoped newest-first audit pagination. |
+
+## organization_audit_event_branches
+
+Branches an organization audit event concerns; branch managers read only events whose branches all lie within their own branches.
+
+Owner: Organizations. Classification: CONFIDENTIAL.
+
+Lifecycle: Written with the event; never updated or deleted by the runtime. An event without rows is a company-level operation.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company shared by the event and the branch. | — | — |
+| `event_id` | `uuid` | no | — | INTERNAL | Audit event that concerns the branch. | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch the event concerns. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `organization_audit_event_branches_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company; mixed-company audit scopes are unrepresentable. |
+| `organization_audit_event_branches_company_id_event_id_fkey` | `FOREIGN KEY (company_id, event_id) REFERENCES organization_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The event belongs to the same company. |
+| `organization_audit_event_branches_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The row belongs to an existing company. |
+| `organization_audit_event_branches_pkey` | `PRIMARY KEY (event_id, branch_id)` | A branch appears at most once per event. |
+| `organization_audit_event_branches_branch_idx` | `CREATE INDEX organization_audit_event_branches_branch_idx ON public.organization_audit_event_branches USING btree (company_id, branch_id)` | Supports finding the events that concern a branch. |
 
 ## responsibility_transfers
 
@@ -648,6 +707,7 @@ Lifecycle: Created with its invitation and never changed.
 
 | Enum | Values | Meaning |
 | --- | --- | --- |
+| `AccessProfileStatus` | ACTIVE, ARCHIVED | Access profile state: ACTIVE or ARCHIVED. |
 | `AccessRole` | COMPANY_ADMINISTRATOR, BRANCH_MANAGER, OPERATOR | Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR. |
 | `BranchStatus` | ACTIVE, ARCHIVED | Branch state: ACTIVE or ARCHIVED. |
 | `CompanyStatus` | ACTIVE, SUSPENDED | Company state: ACTIVE or SUSPENDED. |

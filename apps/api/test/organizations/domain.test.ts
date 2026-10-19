@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderInvitationEmail } from "../../src/features/organizations/invitation-email.js";
 import {
+  auditVisibility,
   branchReach,
   companyAccess,
   decide,
@@ -9,6 +10,8 @@ import {
   invitationVisibility,
   isTimeZone,
   OrganizationFailure,
+  profileCapabilities,
+  reachableWithStrongAuthentication,
   requireCapability,
   type Grant,
 } from "../../src/features/organizations/domain.js";
@@ -149,6 +152,88 @@ describe("organization access decisions", () => {
       branches: ["north"],
     });
     expect(invitationVisibility(access([operator], true))).toBeNull();
+  });
+
+  it("limits branch managers' audit to their branches and hides it from operators", () => {
+    const admin: Grant = { role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" };
+    expect(auditVisibility(access([admin], true))).toEqual({ kind: "all" });
+    expect(auditVisibility(access([manager, operator], true))).toEqual({
+      kind: "branches",
+      branches: ["north"],
+    });
+    expect(
+      auditVisibility(
+        access([{ role: "BRANCH_MANAGER", scope: "COMPANY" }], true),
+      ),
+    ).toEqual({ kind: "branches", branches: "all" });
+    // Without strong authentication or as an operator, nothing is visible.
+    expect(auditVisibility(access([admin]))).toBeNull();
+    expect(auditVisibility(access([manager]))).toBeNull();
+    expect(auditVisibility(access([operator], true))).toBeNull();
+    // A branch grant never turns into company-level audit access.
+    expect(decide(access([manager], true), "audit.view")).toBe("deny");
+  });
+
+  it("confers a profile's capabilities with per-capability assurance and never administration", () => {
+    const auditor: Grant = {
+      profileId: "profile",
+      profileName: "Auditor",
+      capabilities: new Set(["branches.view", "audit.view"]),
+      scope: "BRANCHES",
+      branchIds: new Set(["north"]),
+    };
+    // Every profile sees basic company information; read-only capabilities
+    // work in a standard session while sensitive ones need two steps.
+    expect(decide(access([auditor]), "company.view")).toBe("allow");
+    expect(decide(access([auditor]), "branches.view", "north")).toBe("allow");
+    expect(decide(access([auditor]), "branches.view", "south")).toBe("deny");
+    expect(auditVisibility(access([auditor]))).toBeNull();
+    expect(
+      reachableWithStrongAuthentication(access([auditor]), "audit.view"),
+    ).toBe(true);
+    expect(auditVisibility(access([auditor], true))).toEqual({
+      kind: "branches",
+      branches: ["north"],
+    });
+    expect(invitationVisibility(access([auditor], true))).toBeNull();
+    // An operator's additional grant to pair screens needs two steps; viewing
+    // screens does not.
+    const screens: Grant = {
+      profileId: "screens",
+      profileName: "Screens",
+      capabilities: new Set(["devices.view", "devices.manage"]),
+      scope: "BRANCHES",
+      branchIds: new Set(["north"]),
+    };
+    expect(decide(access([screens]), "devices.view", "north")).toBe("allow");
+    expect(decide(access([screens]), "devices.manage", "north")).toBe(
+      "strong_required",
+    );
+    expect(decide(access([screens], true), "devices.manage", "north")).toBe(
+      "allow",
+    );
+    expect(decide(access([screens], true), "devices.manage", "south")).toBe(
+      "deny",
+    );
+    for (const capability of [
+      "members.manage",
+      "branches.manage",
+      "company.settings.manage",
+    ] as const)
+      expect(decide(access([auditor], true), capability)).toBe("deny");
+  });
+
+  it("accepts only delegable, distinct profile capabilities in a stable order", () => {
+    expect(
+      profileCapabilities(["devices.manage", "audit.view", "branches.view"]),
+    ).toEqual(["branches.view", "audit.view", "devices.manage"]);
+    for (const requested of [
+      [],
+      ["members.manage"],
+      ["company.view"],
+      ["audit.view", "audit.view"],
+    ])
+      expect(() => profileCapabilities(requested)).toThrow(OrganizationFailure);
   });
 
   it("renders the invitation email with escaped names and one panel link", () => {

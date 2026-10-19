@@ -16,6 +16,7 @@ import {
 } from "./domain.js";
 import { respond } from "./errors.js";
 import type { BranchRecord, CompanyRecord } from "./prisma-repository.js";
+import type { ProfileRecord } from "./profile-repository.js";
 import type { OrganizationService, TransferView } from "./service.js";
 
 const transferWire = (transfer: TransferView) => ({
@@ -24,6 +25,11 @@ const transferWire = (transfer: TransferView) => ({
   expiresAt: transfer.expiresAt.toISOString(),
 });
 const companyWire = (item: CompanyRecord) => ({
+  ...item,
+  createdAt: item.createdAt.toISOString(),
+  updatedAt: item.updatedAt.toISOString(),
+});
+const profileWire = (item: ProfileRecord) => ({
   ...item,
   createdAt: item.createdAt.toISOString(),
   updatedAt: item.updatedAt.toISOString(),
@@ -104,11 +110,13 @@ export function registerOrganizationRoutes(
             membershipId?: string;
             grantId?: string;
             transferId?: string;
+            profileId?: string;
           };
           const body = (request.body ?? {}) as Record<string, unknown>;
           const query = (request.query ?? {}) as {
             limit?: number;
             cursor?: string;
+            includeArchived?: boolean;
           };
           const companyId = params.companyId ?? "";
           const branchId = params.branchId ?? "";
@@ -127,7 +135,8 @@ export function registerOrganizationRoutes(
                   companyId,
                   params.membershipId ?? "",
                   body as {
-                    role: AccessRole;
+                    role?: AccessRole;
+                    profileId?: string;
                     scope: "COMPANY" | "BRANCHES";
                     branchIds?: string[];
                     expiresAt?: string;
@@ -291,6 +300,70 @@ export function registerOrganizationRoutes(
                       context,
                       companyId,
                       branchId,
+                      body.expectedVersion as number,
+                      { archive: true },
+                    ),
+                  ),
+                );
+              case "listAccessProfiles":
+                return reply.send({
+                  items: (
+                    await service.listAccessProfiles(
+                      context,
+                      companyId,
+                      query.includeArchived ?? false,
+                    )
+                  ).map(profileWire),
+                });
+              case "createAccessProfile":
+                return reply.code(201).send(
+                  profileWire(
+                    await service.createAccessProfile(context, companyId, {
+                      name: body.name as string,
+                      capabilities: body.capabilities as string[],
+                    }),
+                  ),
+                );
+              case "getAccessProfile": {
+                const found = await service.getAccessProfile(
+                  context,
+                  companyId,
+                  params.profileId ?? "",
+                );
+                return reply.send({
+                  profile: profileWire(found.profile),
+                  holders: found.holders.map((holder) => ({
+                    ...holder,
+                    expiresAt: holder.expiresAt?.toISOString() ?? null,
+                  })),
+                  holdersTruncated: found.holdersTruncated,
+                });
+              }
+              case "updateAccessProfile": {
+                const { expectedVersion, ...changes } = body as {
+                  expectedVersion: number;
+                  name?: string;
+                  capabilities?: string[];
+                };
+                return reply.send(
+                  profileWire(
+                    await service.updateAccessProfile(
+                      context,
+                      companyId,
+                      params.profileId ?? "",
+                      expectedVersion,
+                      changes,
+                    ),
+                  ),
+                );
+              }
+              case "archiveAccessProfile":
+                return reply.send(
+                  profileWire(
+                    await service.updateAccessProfile(
+                      context,
+                      companyId,
+                      params.profileId ?? "",
                       body.expectedVersion as number,
                       { archive: true },
                     ),

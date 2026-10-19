@@ -56,6 +56,7 @@ function company(capabilities: string[], afterStrong: string[] = []) {
     company: { id: companyId, displayName: "Synthetic company" },
     access: {
       roles: ["COMPANY_ADMINISTRATOR"],
+      profiles: [],
       responsible: true,
       capabilities: ["company.view", "branches.view", ...capabilities],
       capabilitiesAfterStrongAuthentication: afterStrong,

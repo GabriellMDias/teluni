@@ -194,10 +194,62 @@
         "company_responsibilities_membership_key": "Supports the composite reference to the responsible membership."
       }
     },
+    "access_profiles": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Company-customized access profile: a named set of delegable business capabilities that grants can carry instead of a standard role.",
+      "lifecycle": "Created ACTIVE; edited with expected versions, so every holder's access follows the current capabilities; archived rather than deleted, and only when no effective grant holds it.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable profile UUID; public resource ID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Owning company; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "name": {
+          "description": "Profile name, unique among the company's active profiles regardless of case.",
+          "classification": "CONFIDENTIAL"
+        },
+        "capabilities": {
+          "description": "Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile.",
+          "classification": "INTERNAL"
+        },
+        "status": {
+          "description": "ACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution.",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency token incremented once per successful change.",
+          "classification": "INTERNAL",
+          "unit": "successful writes"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock creation instant.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the latest change; not audit history.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "access_profiles_pkey": "Unique profile identity.",
+        "access_profiles_company_id_fkey": "A profile belongs to an existing company.",
+        "access_profiles_company_id_id_key": "Tenant key that grants target.",
+        "access_profiles_company_active_name_unique": "Active profile names are unique within a company, ignoring case.",
+        "access_profiles_name_nonblank": "Profile name cannot be blank.",
+        "access_profiles_delegable_capabilities": "A profile names at least one capability, all of them delegable.",
+        "access_profiles_version_positive": "Rejects invalid concurrency versions."
+      }
+    },
     "membership_grants": {
       "owner": "Organizations",
       "classification": "CONFIDENTIAL",
-      "description": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
+      "description": "A standard role or a company-customized access profile granted to a membership over the whole company or explicit branches; grants combine additively.",
       "lifecycle": "Effective from starts_at until expires_at or revoked_at; company administrators revoke grants, never delete them, and expired or revoked grants are retained for attribution.",
       "columns": {
         "id": {
@@ -214,7 +266,13 @@
         },
         "role": {
           "description": "Standard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application.",
-          "classification": "INTERNAL"
+          "classification": "INTERNAL",
+          "nullMeaning": "The grant carries an access profile instead."
+        },
+        "profile_id": {
+          "description": "Company-customized access profile whose current capabilities the grant confers.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The grant carries a standard role instead."
         },
         "scope": {
           "description": "COMPANY covers every branch, including future ones; BRANCHES covers only the listed branches.",
@@ -256,7 +314,10 @@
         "membership_grants_company_id_id_key": "Tenant key that branch scopes target.",
         "membership_grants_membership_idx": "Supports resolving a membership's grants.",
         "membership_grants_expiry_after_start": "A temporary grant expires after it starts.",
-        "membership_grants_company_role_scope": "Company administration is always company-wide."
+        "membership_grants_company_role_scope": "Company administration is always company-wide.",
+        "membership_grants_company_id_profile_id_fkey": "The profile belongs to the same company; mixed-company profiles are unrepresentable.",
+        "membership_grants_role_or_profile": "A grant carries exactly one standard role or one access profile.",
+        "membership_grants_profile_idx": "Supports finding the grants that hold a profile."
       }
     },
     "membership_grant_branches": {
@@ -341,6 +402,33 @@
         "organization_audit_events_action_format": "Actions use the stable dotted identifier format.",
         "organization_audit_events_target_type_format": "Target types use lowercase identifiers.",
         "organization_audit_events_details_object": "Details are always a JSON object."
+      }
+    },
+    "organization_audit_event_branches": {
+      "owner": "Organizations",
+      "classification": "CONFIDENTIAL",
+      "description": "Branches an organization audit event concerns; branch managers read only events whose branches all lie within their own branches.",
+      "lifecycle": "Written with the event; never updated or deleted by the runtime. An event without rows is a company-level operation.",
+      "columns": {
+        "company_id": {
+          "description": "Company shared by the event and the branch.",
+          "classification": "INTERNAL"
+        },
+        "event_id": {
+          "description": "Audit event that concerns the branch.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch the event concerns.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "organization_audit_event_branches_pkey": "A branch appears at most once per event.",
+        "organization_audit_event_branches_company_id_fkey": "The row belongs to an existing company.",
+        "organization_audit_event_branches_company_id_event_id_fkey": "The event belongs to the same company.",
+        "organization_audit_event_branches_company_id_branch_id_fkey": "The branch belongs to the same company; mixed-company audit scopes are unrepresentable.",
+        "organization_audit_event_branches_branch_idx": "Supports finding the events that concern a branch."
       }
     },
     "responsibility_transfers": {
@@ -532,6 +620,7 @@
     "AccessRole": "Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR.",
     "GrantScope": "Grant scope: COMPANY or explicit BRANCHES.",
     "ResponsibilityTransferStatus": "Responsibility transfer state: PENDING, ACCEPTED, DECLINED, CANCELLED or EXPIRED.",
-    "InvitationStatus": "Invitation state: PENDING, ACCEPTED, REVOKED, REPLACED or EXPIRED."
+    "InvitationStatus": "Invitation state: PENDING, ACCEPTED, REVOKED, REPLACED or EXPIRED.",
+    "AccessProfileStatus": "Access profile state: ACTIVE or ARCHIVED."
   }
 }

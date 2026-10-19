@@ -1,13 +1,16 @@
 import { createHash } from "node:crypto";
 import type { HumanContext, HumanProfilePort } from "../identity/public.js";
 import {
+  auditVisibility,
   branchReach,
   companyAccess,
   decide,
   grantRequest,
+  grantScope,
   isTimeZone,
   normalizeName,
   OrganizationFailure,
+  profileCapabilities,
   reachableWithStrongAuthentication,
   requireCapability,
   type AccessRole,
@@ -25,6 +28,11 @@ import type {
   GrantRecord,
   PrismaOrganizationRepository,
 } from "./prisma-repository.js";
+import {
+  profileHolderLimit,
+  type PrismaProfileRepository,
+  type ProfileRecord,
+} from "./profile-repository.js";
 
 /** A pending responsibility transfer as seen by one of its two parties. */
 export type TransferView = Readonly<{
@@ -52,6 +60,8 @@ const capabilities: readonly Capability[] = [
 
 export type AccessSummary = Readonly<{
   roles: AccessRole[];
+  /** Names of the access profiles the caller holds. */
+  profiles: string[];
   responsible: boolean;
   /** Capabilities usable in the current session. */
   capabilities: Capability[];
@@ -148,13 +158,16 @@ function validTimeZone(value: string): string {
 /** Application operations; every one resolves current access first. */
 export class OrganizationService {
   readonly #repository: PrismaOrganizationRepository;
+  readonly #accessProfiles: PrismaProfileRepository;
   readonly #profiles: HumanProfilePort;
 
   constructor(
     repository: PrismaOrganizationRepository,
+    accessProfiles: PrismaProfileRepository,
     profiles: HumanProfilePort,
   ) {
     this.#repository = repository;
+    this.#accessProfiles = accessProfiles;
     this.#profiles = profiles;
   }
 
@@ -228,7 +241,8 @@ export class OrganizationService {
     companyId: string,
     memberId: string,
     input: {
-      role: AccessRole;
+      role?: AccessRole;
+      profileId?: string;
       scope: GrantScopeName;
       branchIds?: string[];
       expiresAt?: string;
@@ -236,7 +250,12 @@ export class OrganizationService {
   ) {
     const access = await this.access(context, companyId);
     requireCapability(access, "members.manage");
-    const request = grantRequest(input);
+    // A grant carries exactly one standard role or one access profile.
+    if ((input.role === undefined) === (input.profileId === undefined))
+      throw new OrganizationFailure("VALIDATION_FAILED");
+    const branchIds = input.role
+      ? grantRequest({ ...input, role: input.role }).branchIds
+      : grantScope(input.scope, input.branchIds);
     const expiresAt =
       input.expiresAt === undefined ? null : new Date(input.expiresAt);
     if (expiresAt && Number.isNaN(expiresAt.getTime()))
@@ -245,10 +264,108 @@ export class OrganizationService {
       { principalId: context.principalId, membershipId: access.membershipId },
       companyId,
       memberId,
-      { ...request, expiresAt },
+      {
+        role: input.role ?? null,
+        profileId: input.profileId ?? null,
+        scope: input.scope,
+        branchIds,
+        expiresAt,
+      },
       context.strongAuthenticatedAt,
     );
     return { grant: grantWire(result.grant), created: result.created };
+  }
+
+  async listAccessProfiles(
+    context: HumanContext,
+    companyId: string,
+    includeArchived: boolean,
+  ): Promise<ProfileRecord[]> {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    return this.#accessProfiles.list(companyId, { includeArchived });
+  }
+
+  /** A profile with the members it affects, so an edit shows its reach first. */
+  async getAccessProfile(
+    context: HumanContext,
+    companyId: string,
+    profileId: string,
+  ) {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    const found = await this.#accessProfiles.get(companyId, profileId);
+    const holders = await this.#accessProfiles.holders(
+      companyId,
+      profileId,
+      profileHolderLimit + 1,
+    );
+    const listed = holders.slice(0, profileHolderLimit);
+    // Only principals selected through this company's grants reach the port.
+    const people = new Map(
+      (
+        await this.#profiles.getMany([
+          ...new Set(listed.map((holder) => holder.principalId)),
+        ])
+      ).map((person) => [person.principalId, person]),
+    );
+    return {
+      profile: found,
+      holders: listed.map(({ principalId, ...holder }) => ({
+        ...holder,
+        displayName: people.get(principalId)?.displayName ?? null,
+        email: people.get(principalId)?.email ?? null,
+      })),
+      holdersTruncated: holders.length > profileHolderLimit,
+    };
+  }
+
+  async createAccessProfile(
+    context: HumanContext,
+    companyId: string,
+    input: { name: string; capabilities: string[] },
+  ): Promise<ProfileRecord> {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    return this.#accessProfiles.create(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      {
+        name: validName(input.name),
+        capabilities: profileCapabilities(input.capabilities),
+      },
+    );
+  }
+
+  async updateAccessProfile(
+    context: HumanContext,
+    companyId: string,
+    profileId: string,
+    expectedVersion: number,
+    changes: { name?: string; capabilities?: string[] } | { archive: true },
+  ): Promise<ProfileRecord> {
+    const access = await this.access(context, companyId);
+    requireCapability(access, "members.manage");
+    const valid =
+      "archive" in changes
+        ? changes
+        : {
+            ...(changes.name === undefined
+              ? {}
+              : { name: validName(changes.name) }),
+            ...(changes.capabilities === undefined
+              ? {}
+              : { capabilities: profileCapabilities(changes.capabilities) }),
+          };
+    if (Object.keys(valid).length === 0)
+      throw new OrganizationFailure("VALIDATION_FAILED");
+    return this.#accessProfiles.update(
+      { principalId: context.principalId, membershipId: access.membershipId },
+      companyId,
+      profileId,
+      expectedVersion,
+      valid,
+    );
   }
 
   async revokeGrant(
@@ -379,7 +496,20 @@ export class OrganizationService {
       return reach === "all" || reach.size > 0;
     };
     return {
-      roles: [...new Set(access.grants.map((grant) => grant.role))].sort(),
+      roles: [
+        ...new Set(
+          access.grants.flatMap((grant) =>
+            "role" in grant ? [grant.role] : [],
+          ),
+        ),
+      ].sort(),
+      profiles: [
+        ...new Set(
+          access.grants.flatMap((grant) =>
+            "profileName" in grant ? [grant.profileName] : [],
+          ),
+        ),
+      ].sort(),
       responsible: access.responsible,
       capabilities: capabilities.filter(usable),
       capabilitiesAfterStrongAuthentication: capabilities.filter(
@@ -617,19 +747,41 @@ export class OrganizationService {
     options: { limit: number; cursor?: string },
   ): Promise<{ items: AuditRecord[]; nextCursor: string | null }> {
     const access = await this.access(context, companyId);
-    requireCapability(access, "audit.view");
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    const visibility = auditVisibility(access);
+    if (!visibility)
+      throw new OrganizationFailure(
+        !access.strong &&
+          reachableWithStrongAuthentication(access, "audit.view")
+          ? "STRONG_AUTHENTICATION_REQUIRED"
+          : "PERMISSION_DENIED",
+      );
+    // A cursor is valid only for the scope that produced it.
+    const scope =
+      visibility.kind === "all"
+        ? "company"
+        : `branches:${branchScope(
+            visibility.branches === "all"
+              ? "all"
+              : new Set(visibility.branches),
+          )}`;
     const cursor = decodeCursor(options.cursor, {
       company: companyId,
       principal: context.principalId,
       kind: "audit",
-      scope: "company",
+      scope,
     });
-    const items = await this.#repository.listAuditEvents(companyId, {
-      limit: options.limit + 1,
-      ...(cursor
-        ? { before: { occurredAt: new Date(cursor.t), id: cursor.i } }
-        : {}),
-    });
+    const items = await this.#repository.listAuditEvents(
+      companyId,
+      visibility,
+      {
+        limit: options.limit + 1,
+        ...(cursor
+          ? { before: { occurredAt: new Date(cursor.t), id: cursor.i } }
+          : {}),
+      },
+    );
     const page = items.slice(0, options.limit);
     const last = page.at(-1);
     return {
@@ -640,7 +792,7 @@ export class OrganizationService {
               c: companyId,
               p: context.principalId,
               k: "audit",
-              r: "company",
+              r: scope,
               t: last.occurredAt.toISOString(),
               i: last.id,
             })

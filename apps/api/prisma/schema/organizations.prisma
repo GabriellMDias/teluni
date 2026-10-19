@@ -19,6 +19,11 @@ enum MembershipStatus {
   REMOVED
 }
 
+enum AccessProfileStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 enum AccessRole {
   COMPANY_ADMINISTRATOR
   BRANCH_MANAGER
@@ -65,6 +70,8 @@ model Company {
   grants                  MembershipGrant[]
   grantBranches           MembershipGrantBranch[]
   auditEvents             OrganizationAuditEvent[]
+  auditEventBranches      OrganizationAuditEventBranch[]
+  accessProfiles          AccessProfile[]
   responsibilityTransfers ResponsibilityTransfer[]
   invitations             CompanyInvitation[]
   invitationBranches      CompanyInvitationBranch[]
@@ -89,6 +96,7 @@ model Branch {
   company            Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   grantBranches      MembershipGrantBranch[]
   invitationBranches CompanyInvitationBranch[]
+  auditEventBranches OrganizationAuditEventBranch[]
   devices            Device[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
@@ -139,7 +147,8 @@ model MembershipGrant {
   id                    String                  @id @db.Uuid
   companyId             String                  @map("company_id") @db.Uuid
   membershipId          String                  @map("membership_id") @db.Uuid
-  role                  AccessRole
+  role                  AccessRole?
+  profileId             String?                 @map("profile_id") @db.Uuid
   scope                 GrantScope
   startsAt              DateTime                @default(now()) @map("starts_at") @db.Timestamptz(3)
   expiresAt             DateTime?               @map("expires_at") @db.Timestamptz(3)
@@ -149,11 +158,29 @@ model MembershipGrant {
   company               Company                 @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   membership            Membership              @relation("GrantHolder", fields: [companyId, membershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   grantedBy             Membership?             @relation("GrantGrantor", fields: [companyId, grantedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  profile               AccessProfile?          @relation(fields: [companyId, profileId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   branches              MembershipGrantBranch[]
 
   @@unique([companyId, id], map: "membership_grants_company_id_id_key")
   @@index([companyId, membershipId], map: "membership_grants_membership_idx")
+  @@index([companyId, profileId], map: "membership_grants_profile_idx")
   @@map("membership_grants")
+}
+
+model AccessProfile {
+  id           String              @id @db.Uuid
+  companyId    String              @map("company_id") @db.Uuid
+  name         String              @db.VarChar(120)
+  capabilities String[]
+  status       AccessProfileStatus @default(ACTIVE)
+  version      Int                 @default(1)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime            @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grants       MembershipGrant[]
+
+  @@unique([companyId, id], map: "access_profiles_company_id_id_key")
+  @@map("access_profiles")
 }
 
 model MembershipGrantBranch {
@@ -182,10 +209,24 @@ model OrganizationAuditEvent {
   company           Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   actor             Principal   @relation("AuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   actorMembership   Membership? @relation(fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branches          OrganizationAuditEventBranch[]
 
   @@unique([companyId, id], map: "organization_audit_events_company_id_id_key")
   @@index([companyId, occurredAt(sort: Desc), id(sort: Desc)], map: "organization_audit_events_company_time_idx")
   @@map("organization_audit_events")
+}
+
+model OrganizationAuditEventBranch {
+  companyId String                 @map("company_id") @db.Uuid
+  eventId   String                 @map("event_id") @db.Uuid
+  branchId  String                 @map("branch_id") @db.Uuid
+  company   Company                @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  event     OrganizationAuditEvent @relation(fields: [companyId, eventId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branch    Branch                 @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([eventId, branchId], map: "organization_audit_event_branches_pkey")
+  @@index([companyId, branchId], map: "organization_audit_event_branches_branch_idx")
+  @@map("organization_audit_event_branches")
 }
 
 model ResponsibilityTransfer {

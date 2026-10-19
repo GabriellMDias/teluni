@@ -6,6 +6,7 @@ import {
   PrismaOrganizationRepository,
   type BranchArchiveGuard,
 } from "./prisma-repository.js";
+import { PrismaProfileRepository } from "./profile-repository.js";
 import type { CompanyAccessPort } from "./public.js";
 import { registerOrganizationRoutes } from "./routes.js";
 import { OrganizationService } from "./service.js";
@@ -59,7 +60,11 @@ export function createOrganizationsModule(options: {
       // Activation guarantees the database and the identity module.
       repository = new PrismaOrganizationRepository(database!);
       for (const guard of guards) repository.addBranchArchiveGuard(guard);
-      const active = new OrganizationService(repository, options.profiles);
+      const active = new OrganizationService(
+        repository,
+        new PrismaProfileRepository(database!),
+        options.profiles,
+      );
       service = active;
       return {
         name: "organizations",

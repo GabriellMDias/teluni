@@ -111,6 +111,7 @@
                         "required": [
                           "id",
                           "role",
+                          "profile",
                           "scope",
                           "branches",
                           "startsAt",
@@ -124,11 +125,41 @@
                           "role": {
                             "anyOf": [
                               {
-                                "type": "string",
-                                "const": "COMPANY_ADMINISTRATOR"
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "COMPANY_ADMINISTRATOR"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "BRANCH_MANAGER"
+                                  },
+                                  { "type": "string", "const": "OPERATOR" }
+                                ]
                               },
-                              { "type": "string", "const": "BRANCH_MANAGER" },
-                              { "type": "string", "const": "OPERATOR" }
+                              { "type": "null" }
+                            ]
+                          },
+                          "profile": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": ["id", "name"],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120,
+                                    "pattern": ".*\\S.*"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
                             ]
                           },
                           "scope": {
@@ -243,6 +274,7 @@
                     "required": [
                       "id",
                       "role",
+                      "profile",
                       "scope",
                       "branches",
                       "startsAt",
@@ -256,11 +288,38 @@
                       "role": {
                         "anyOf": [
                           {
-                            "type": "string",
-                            "const": "COMPANY_ADMINISTRATOR"
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "COMPANY_ADMINISTRATOR"
+                              },
+                              { "type": "string", "const": "BRANCH_MANAGER" },
+                              { "type": "string", "const": "OPERATOR" }
+                            ]
                           },
-                          { "type": "string", "const": "BRANCH_MANAGER" },
-                          { "type": "string", "const": "OPERATOR" }
+                          { "type": "null" }
+                        ]
+                      },
+                      "profile": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": ["id", "name"],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 120,
+                                "pattern": ".*\\S.*"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          { "type": "null" }
                         ]
                       },
                       "scope": {
@@ -352,7 +411,12 @@
         },
         {
           "name": "items[].grants[].role",
-          "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "type": "\"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\" | null",
+          "required": true
+        },
+        {
+          "name": "items[].grants[].profile",
+          "type": "object | null",
           "required": true
         },
         {

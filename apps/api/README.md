@@ -65,7 +65,7 @@ The [`mail` module](src/features/mail/AGENTS.md) owns the transactional outbound
 
 The `invitations` module, composed from the organizations feature, requires organizations and mail and owns company invitations under [D-13](../../docs/project/invitation-delivery-design.md#implementation-status): administrators and branch managers invite by email, and the person signed in with the invited verified address accepts with the credential from the email link in a request body. Organizations keeps working without it when mail is not configured.
 
-The [two-company suite](test/organizations/integration.test.ts) runs against migrated PostgreSQL as the restricted runtime role; its synthetic session port is confined to the test. The [organizations browser journeys](../web/test/e2e/organizations/companies.spec.ts) use the real identity stack. Invitations, membership/grant administration, responsibility transfer, custom profiles and platform/support access remain pending in PJ-03/PJ-24.
+The [two-company suite](test/organizations/integration.test.ts) runs against migrated PostgreSQL as the restricted runtime role; its synthetic session port is confined to the test. The [organizations browser journeys](../web/test/e2e/organizations/companies.spec.ts) use the real identity stack. Platform/support access and bulk operations remain pending in PJ-03/PJ-24.
 
 ## Devices
 

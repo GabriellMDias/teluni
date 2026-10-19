@@ -24,6 +24,10 @@ export const organizationErrorCodes: ReadonlySet<string> = new Set([
   "INVITATION_NO_LONGER_VALID",
   "INVITATION_RECIPIENT_MISMATCH",
   "MEMBERSHIP_SUSPENDED",
+  "PROFILE_NAME_IN_USE",
+  "PROFILE_ARCHIVED",
+  "PROFILE_IN_USE",
+  "PROFILE_LIMIT_REACHED",
 ]);
 
 export type CompanyWithAccess =
@@ -44,6 +48,11 @@ export type Grant = Member["grants"][number];
 export type GrantInput = NonNullable<
   paths["/companies/{companyId}/members/{membershipId}/grants"]["post"]["requestBody"]
 >["content"]["application/json"];
+export type AccessProfile =
+  paths["/companies/{companyId}/access-profiles"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
+export type AccessProfileDetail =
+  paths["/companies/{companyId}/access-profiles/{profileId}"]["get"]["responses"][200]["content"]["application/json"];
+export type DelegableCapability = AccessProfile["capabilities"][number];
 export type Invitation =
   paths["/companies/{companyId}/invitations"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
 export type InvitationInput = NonNullable<
@@ -65,6 +74,8 @@ export const membersKey = (id: string) =>
   ["organizations", "members", id] as const;
 export const invitationsKey = (id: string) =>
   ["organizations", "invitations", id] as const;
+export const profilesKey = (id: string) =>
+  ["organizations", "profiles", id] as const;
 
 const client = sessionApiClient;
 
@@ -76,6 +87,7 @@ export function invalidateCompany(queries: QueryClient, companyId: string) {
     queries.invalidateQueries({ queryKey: companiesKey }),
     queries.invalidateQueries({ queryKey: auditKey(companyId) }),
     queries.invalidateQueries({ queryKey: invitationsKey(companyId) }),
+    queries.invalidateQueries({ queryKey: profilesKey(companyId) }),
   ]);
 }
 
@@ -135,6 +147,76 @@ export async function revokeMemberGrant(
       "/companies/{companyId}/members/{membershipId}/grants/{grantId}/revoke",
       { params: { path: { companyId, membershipId: memberId, grantId } } },
     ),
+  );
+}
+
+export async function listAccessProfiles(
+  companyId: string,
+  includeArchived = false,
+): Promise<AccessProfile[]> {
+  return unwrap(
+    await client().GET("/companies/{companyId}/access-profiles", {
+      params: {
+        path: { companyId },
+        query: includeArchived ? { includeArchived } : {},
+      },
+    }),
+    organizationErrorCodes,
+  ).items;
+}
+
+export async function getAccessProfile(
+  companyId: string,
+  profileId: string,
+): Promise<AccessProfileDetail> {
+  return unwrap(
+    await client().GET("/companies/{companyId}/access-profiles/{profileId}", {
+      params: { path: { companyId, profileId } },
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function createAccessProfile(
+  companyId: string,
+  input: { name: string; capabilities: DelegableCapability[] },
+): Promise<AccessProfile> {
+  return unwrap(
+    await client().POST("/companies/{companyId}/access-profiles", {
+      params: { path: { companyId } },
+      body: input,
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function updateAccessProfile(
+  companyId: string,
+  profile: Pick<AccessProfile, "id" | "version">,
+  changes: { name?: string; capabilities?: DelegableCapability[] },
+): Promise<AccessProfile> {
+  return unwrap(
+    await client().PATCH("/companies/{companyId}/access-profiles/{profileId}", {
+      params: { path: { companyId, profileId: profile.id } },
+      body: { expectedVersion: profile.version, ...changes },
+    }),
+    organizationErrorCodes,
+  );
+}
+
+export async function archiveAccessProfile(
+  companyId: string,
+  profile: Pick<AccessProfile, "id" | "version">,
+): Promise<AccessProfile> {
+  return unwrap(
+    await client().POST(
+      "/companies/{companyId}/access-profiles/{profileId}/archive",
+      {
+        params: { path: { companyId, profileId: profile.id } },
+        body: { expectedVersion: profile.version },
+      },
+    ),
+    organizationErrorCodes,
   );
 }
 

@@ -1,7 +1,7 @@
 {
   "kind": "database",
   "name": "membership_grants",
-  "description": "A standard role granted to a membership over the whole company or explicit branches; grants combine additively.",
+  "description": "A standard role or a company-customized access profile granted to a membership over the whole company or explicit branches; grants combine additively.",
   "owner": "Organizations",
   "classification": "CONFIDENTIAL",
   "lifecycle": "Effective from starts_at until expires_at or revoked_at; company administrators revoke grants, never delete them, and expired or revoked grants are retained for attribution.",
@@ -39,11 +39,11 @@
     {
       "Column": "role",
       "PostgreSQL type": "\"AccessRole\"",
-      "Nullable": "no",
+      "Nullable": "yes",
       "Default": "—",
       "Classification": "INTERNAL",
       "Meaning": "Standard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application.",
-      "Null meaning": "—",
+      "Null meaning": "The grant carries an access profile instead.",
       "Unit": "—"
     },
     {
@@ -105,6 +105,16 @@
       "Meaning": "Instant a company administrator revoked the grant; revocation is terminal.",
       "Null meaning": "The grant has not been revoked.",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "profile_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company-customized access profile whose current capabilities the grant confers.",
+      "Null meaning": "The grant carries a standard role instead.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -124,6 +134,11 @@
       "Purpose": "The holder is a membership of the same company."
     },
     {
+      "Object": "membership_grants_company_id_profile_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, profile_id) REFERENCES access_profiles(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The profile belongs to the same company; mixed-company profiles are unrepresentable."
+    },
+    {
       "Object": "membership_grants_company_role_scope",
       "Physical definition": "CHECK (((role <> 'COMPANY_ADMINISTRATOR'::\"AccessRole\") OR (scope = 'COMPANY'::\"GrantScope\")))",
       "Purpose": "Company administration is always company-wide."
@@ -139,6 +154,11 @@
       "Purpose": "Unique grant identity."
     },
     {
+      "Object": "membership_grants_role_or_profile",
+      "Physical definition": "CHECK ((num_nonnulls(role, profile_id) = 1))",
+      "Purpose": "A grant carries exactly one standard role or one access profile."
+    },
+    {
       "Object": "membership_grants_company_id_id_key",
       "Physical definition": "CREATE UNIQUE INDEX membership_grants_company_id_id_key ON public.membership_grants USING btree (company_id, id)",
       "Purpose": "Tenant key that branch scopes target."
@@ -147,6 +167,11 @@
       "Object": "membership_grants_membership_idx",
       "Physical definition": "CREATE INDEX membership_grants_membership_idx ON public.membership_grants USING btree (company_id, membership_id)",
       "Purpose": "Supports resolving a membership's grants."
+    },
+    {
+      "Object": "membership_grants_profile_idx",
+      "Physical definition": "CREATE INDEX membership_grants_profile_idx ON public.membership_grants USING btree (company_id, profile_id)",
+      "Purpose": "Supports finding the grants that hold a profile."
     }
   ]
 }

@@ -1,5 +1,5 @@
 import type { Locale } from "../locale.js";
-import type { Role } from "./api.js";
+import type { DelegableCapability, Role } from "./api.js";
 
 // Localized copy for companies and branches. Keys and role identifiers are
 // stable code; only the text varies by locale.
@@ -90,6 +90,43 @@ const ptBR = {
   grantExpiry: "Válido até (opcional)",
   grantExpiryHint:
     "Sem data, o papel vale até ser revogado. Papéis temporários não são renovados automaticamente.",
+  grantRoleOrProfile: "Papel ou perfil",
+  grantRolesGroup: "Papéis padrão",
+  grantProfilesGroup: "Perfis personalizados",
+  grantProfile: "Perfil",
+  grantProfileIncludes: "Este perfil permite",
+  grantProfilesUnavailable:
+    "Não foi possível carregar os perfis personalizados. Os papéis padrão continuam disponíveis.",
+  capabilities: {
+    "branches.view": "Ver filiais",
+    "invitations.manage": "Convidar pessoas",
+    "audit.view": "Ver o histórico de alterações",
+    "devices.view": "Ver telas",
+    "devices.manage": "Parear e gerenciar telas",
+  } satisfies Record<DelegableCapability, string>,
+  profilesTitle: "Perfis de acesso",
+  profilesLead:
+    "Combine permissões em perfis com o nome que fizer sentido para a empresa e conceda-os aos membros, para toda a empresa ou para filiais. Administrar a empresa nunca faz parte de um perfil.",
+  profilesEmpty: "Nenhum perfil criado ainda.",
+  profileCreateTitle: "Criar perfil",
+  profileName: "Nome do perfil",
+  profileCapabilities: "Permissões",
+  profileCapabilitiesHint:
+    "Convidar pessoas, ver o histórico e gerenciar telas exigem verificação em duas etapas de quem recebe o perfil.",
+  profileCreate: "Criar perfil",
+  profileEdit: "Editar perfil",
+  profileHolders: "Quem tem este perfil",
+  profileNoHolders: "Nenhum membro tem este perfil agora.",
+  profileHoldersTruncated: "Mostrando os primeiros 500 acessos.",
+  profileChangeConfirmation: (members: number) =>
+    members === 1
+      ? "A mudança de permissões vale imediatamente para 1 membro com este perfil. Confirme para salvar."
+      : `A mudança de permissões vale imediatamente para ${members} membros com este perfil. Confirme para salvar.`,
+  profileChangeConfirm: "Confirmar mudança",
+  profileUsage: (members: number, grants: number) =>
+    `${members} ${members === 1 ? "membro" : "membros"} · ${grants} ${grants === 1 ? "acesso em vigor" : "acessos em vigor"}`,
+  profileArchiveInUse:
+    "Revogue os acessos em vigor com este perfil antes de arquivá-lo.",
   grantRevoke: "Revogar papel",
   grantRevokeConfirmation:
     "A revogação encerra este papel imediatamente. Para restaurá-lo, conceda-o de novo.",
@@ -165,10 +202,13 @@ const ptBR = {
   historyEmpty: "Nenhuma alteração registrada.",
   historyLead:
     "Alterações na empresa e nas filiais, das mais recentes para as mais antigas.",
+  historyLeadBranches:
+    "Alterações que envolvem apenas as filiais que você gerencia, das mais recentes para as mais antigas.",
   historyYou: "Por você",
   historyMember: "Por outro membro",
   historyUnknown: "Organização alterada",
   historyRole: "Papel",
+  historyProfile: "Perfil",
   historyActions: {
     "membership.status_changed": "Acesso de membro alterado",
     "grant.created": "Papel concedido",
@@ -189,12 +229,17 @@ const ptBR = {
     "branch.created": "Filial criada",
     "branch.updated": "Filial alterada",
     "branch.archived": "Filial arquivada",
+    "profile.created": "Perfil de acesso criado",
+    "profile.updated": "Perfil de acesso alterado",
+    "profile.archived": "Perfil de acesso arquivado",
   } as Record<string, string>,
   historyFields: {
     displayName: "Nome da empresa",
     defaultLocale: "Idioma padrão",
     timeZone: "Fuso horário",
     name: "Nome da filial",
+    profileName: "Nome do perfil",
+    capabilities: "Permissões",
   } as Record<string, string>,
   loading: "Carregando…",
   reload: "Recarregar",
@@ -245,6 +290,12 @@ const ptBR = {
     CSRF_VALIDATION_FAILED:
       "Não foi possível verificar a solicitação. Recarregue a página.",
     SESSION_LIMIT_REACHED: "Encerre outra sessão para continuar nesta.",
+    PROFILE_NAME_IN_USE: "Já existe um perfil ativo com esse nome.",
+    PROFILE_ARCHIVED: "Este perfil está arquivado e não pode ser alterado.",
+    PROFILE_IN_USE:
+      "Este perfil ainda tem acessos em vigor. Revogue-os antes de arquivá-lo.",
+    PROFILE_LIMIT_REACHED:
+      "A empresa atingiu o limite de 50 perfis ativos. Arquive um perfil sem uso antes de criar outro.",
   } as Record<string, string>,
   network: "Não foi possível conectar. Verifique a conexão e tente novamente.",
   unknownCreate:
@@ -342,6 +393,43 @@ const enUS: OrganizationMessages = {
   grantExpiry: "Valid until (optional)",
   grantExpiryHint:
     "Without a date, the role lasts until revoked. Temporary roles are never renewed automatically.",
+  grantRoleOrProfile: "Role or profile",
+  grantRolesGroup: "Standard roles",
+  grantProfilesGroup: "Custom profiles",
+  grantProfile: "Profile",
+  grantProfileIncludes: "This profile allows",
+  grantProfilesUnavailable:
+    "Custom profiles could not be loaded. Standard roles remain available.",
+  capabilities: {
+    "branches.view": "View branches",
+    "invitations.manage": "Invite people",
+    "audit.view": "View the change history",
+    "devices.view": "View screens",
+    "devices.manage": "Pair and manage screens",
+  },
+  profilesTitle: "Access profiles",
+  profilesLead:
+    "Combine permissions into profiles named the way your company works and grant them to members, company-wide or for branches. Company administration is never part of a profile.",
+  profilesEmpty: "No profiles yet.",
+  profileCreateTitle: "Create a profile",
+  profileName: "Profile name",
+  profileCapabilities: "Permissions",
+  profileCapabilitiesHint:
+    "Inviting people, viewing the history and managing screens require two-step verification from whoever holds the profile.",
+  profileCreate: "Create profile",
+  profileEdit: "Edit profile",
+  profileHolders: "Who holds this profile",
+  profileNoHolders: "No member holds this profile now.",
+  profileHoldersTruncated: "Showing the first 500 grants.",
+  profileChangeConfirmation: (members: number) =>
+    members === 1
+      ? "The permission change applies immediately to 1 member with this profile. Confirm to save."
+      : `The permission change applies immediately to ${members} members with this profile. Confirm to save.`,
+  profileChangeConfirm: "Confirm change",
+  profileUsage: (members: number, grants: number) =>
+    `${members} ${members === 1 ? "member" : "members"} · ${grants} ${grants === 1 ? "current grant" : "current grants"}`,
+  profileArchiveInUse:
+    "Revoke the current grants of this profile before archiving it.",
   grantRevoke: "Revoke role",
   grantRevokeConfirmation:
     "Revocation ends this role immediately. To restore it, grant it again.",
@@ -415,10 +503,13 @@ const enUS: OrganizationMessages = {
   historyTitle: "Change history",
   historyEmpty: "No changes recorded.",
   historyLead: "Changes to the company and branches, from newest to oldest.",
+  historyLeadBranches:
+    "Changes that involve only the branches you manage, from newest to oldest.",
   historyYou: "By you",
   historyMember: "By another member",
   historyUnknown: "Organization updated",
   historyRole: "Role",
+  historyProfile: "Profile",
   historyActions: {
     "membership.status_changed": "Member access changed",
     "grant.created": "Role granted",
@@ -436,12 +527,17 @@ const enUS: OrganizationMessages = {
     "branch.created": "Branch created",
     "branch.updated": "Branch changed",
     "branch.archived": "Branch archived",
+    "profile.created": "Access profile created",
+    "profile.updated": "Access profile changed",
+    "profile.archived": "Access profile archived",
   },
   historyFields: {
     displayName: "Company name",
     defaultLocale: "Default language",
     timeZone: "Time zone",
     name: "Branch name",
+    profileName: "Profile name",
+    capabilities: "Permissions",
   },
   loading: "Loading…",
   reload: "Reload",
@@ -490,6 +586,12 @@ const enUS: OrganizationMessages = {
     CSRF_VALIDATION_FAILED:
       "The request could not be verified. Reload the page.",
     SESSION_LIMIT_REACHED: "End another session to continue in this one.",
+    PROFILE_NAME_IN_USE: "Another active profile already uses that name.",
+    PROFILE_ARCHIVED: "This profile is archived and cannot change.",
+    PROFILE_IN_USE:
+      "This profile still has current grants. Revoke them before archiving it.",
+    PROFILE_LIMIT_REACHED:
+      "The company reached the limit of 50 active profiles. Archive an unused profile before creating another.",
   },
   network:
     "The service could not be reached. Check the connection and try again.",

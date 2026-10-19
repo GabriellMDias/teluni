@@ -158,6 +158,7 @@
                 "type": "object",
                 "required": [
                   "roles",
+                  "profiles",
                   "responsible",
                   "capabilities",
                   "capabilitiesAfterStrongAuthentication"
@@ -171,6 +172,15 @@
                         { "type": "string", "const": "BRANCH_MANAGER" },
                         { "type": "string", "const": "OPERATOR" }
                       ]
+                    }
+                  },
+                  "profiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": ".*\\S.*"
                     }
                   },
                   "responsible": { "type": "boolean" },
@@ -317,6 +327,7 @@
             "type": "object",
             "required": [
               "roles",
+              "profiles",
               "responsible",
               "capabilities",
               "capabilitiesAfterStrongAuthentication"
@@ -330,6 +341,15 @@
                     { "type": "string", "const": "BRANCH_MANAGER" },
                     { "type": "string", "const": "OPERATOR" }
                   ]
+                }
+              },
+              "profiles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": ".*\\S.*"
                 }
               },
               "responsible": { "type": "boolean" },
@@ -464,6 +484,11 @@
         {
           "name": "access.roles",
           "type": "array of \"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "required": true
+        },
+        {
+          "name": "access.profiles",
+          "type": "array of string (min length 1, max length 120, pattern .*\\S.*)",
           "required": true
         },
         { "name": "access.responsible", "type": "boolean", "required": true },
@@ -543,6 +568,7 @@
                 "type": "object",
                 "required": [
                   "roles",
+                  "profiles",
                   "responsible",
                   "capabilities",
                   "capabilitiesAfterStrongAuthentication"
@@ -556,6 +582,15 @@
                         { "type": "string", "const": "BRANCH_MANAGER" },
                         { "type": "string", "const": "OPERATOR" }
                       ]
+                    }
+                  },
+                  "profiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": ".*\\S.*"
                     }
                   },
                   "responsible": { "type": "boolean" },
@@ -702,6 +737,7 @@
             "type": "object",
             "required": [
               "roles",
+              "profiles",
               "responsible",
               "capabilities",
               "capabilitiesAfterStrongAuthentication"
@@ -715,6 +751,15 @@
                     { "type": "string", "const": "BRANCH_MANAGER" },
                     { "type": "string", "const": "OPERATOR" }
                   ]
+                }
+              },
+              "profiles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": ".*\\S.*"
                 }
               },
               "responsible": { "type": "boolean" },
@@ -849,6 +894,11 @@
         {
           "name": "access.roles",
           "type": "array of \"COMPANY_ADMINISTRATOR\" | \"BRANCH_MANAGER\" | \"OPERATOR\"",
+          "required": true
+        },
+        {
+          "name": "access.profiles",
+          "type": "array of string (min length 1, max length 120, pattern .*\\S.*)",
           "required": true
         },
         { "name": "access.responsible", "type": "boolean", "required": true },

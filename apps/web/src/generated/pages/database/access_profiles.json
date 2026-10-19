@@ -1,0 +1,127 @@
+{
+  "kind": "database",
+  "name": "access_profiles",
+  "description": "Company-customized access profile: a named set of delegable business capabilities that grants can carry instead of a standard role.",
+  "owner": "Organizations",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created ACTIVE; edited with expected versions, so every holder's access follows the current capabilities; archived rather than deleted, and only when no effective grant holds it.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable profile UUID; public resource ID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Owning company; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Profile name, unique among the company's active profiles regardless of case.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "capabilities",
+      "PostgreSQL type": "text[]",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage); company administration is never delegable through a profile.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "\"AccessProfileStatus\"",
+      "Nullable": "no",
+      "Default": "'ACTIVE'::\"AccessProfileStatus\"",
+      "Classification": "INTERNAL",
+      "Meaning": "ACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency token incremented once per successful change.",
+      "Null meaning": "—",
+      "Unit": "successful writes"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the latest change; not audit history.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "access_profiles_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A profile belongs to an existing company."
+    },
+    {
+      "Object": "access_profiles_delegable_capabilities",
+      "Physical definition": "CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text])))",
+      "Purpose": "A profile names at least one capability, all of them delegable."
+    },
+    {
+      "Object": "access_profiles_name_nonblank",
+      "Physical definition": "CHECK ((btrim((name)::text) <> ''::text))",
+      "Purpose": "Profile name cannot be blank."
+    },
+    {
+      "Object": "access_profiles_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique profile identity."
+    },
+    {
+      "Object": "access_profiles_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Rejects invalid concurrency versions."
+    },
+    {
+      "Object": "access_profiles_company_active_name_unique",
+      "Physical definition": "CREATE UNIQUE INDEX access_profiles_company_active_name_unique ON public.access_profiles USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"AccessProfileStatus\")",
+      "Purpose": "Active profile names are unique within a company, ignoring case."
+    },
+    {
+      "Object": "access_profiles_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX access_profiles_company_id_id_key ON public.access_profiles USING btree (company_id, id)",
+      "Purpose": "Tenant key that grants target."
+    }
+  ]
+}
