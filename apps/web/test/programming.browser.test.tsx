@@ -344,7 +344,9 @@ test("deletes a playlist only after confirmation and explains use", async () => 
   const { screen } = await open(`${base}/playlists/${playlistId}`);
   const remove = screen.getByRole("button", { name: t.deletePlaylist });
   await expect.element(remove).toBeDisabled();
-  await screen.getByLabelText(t.deletePlaylistConfirm("Manhã")).click();
+  await screen
+    .getByRole("checkbox", { name: t.deletePlaylistConfirm("Manhã") })
+    .click();
   await remove.click();
   await expect
     .element(screen.getByText(t.errors.PLAYLIST_IN_USE))
@@ -461,7 +463,7 @@ test("assigns a screen to a group only after confirming the neutral screen", asy
   await screen.getByLabelText(t.groupLabel).selectOptions("Vitrines");
   const save = screen.getByRole("button", { name: t.assign });
   await expect.element(save).toBeDisabled();
-  await screen.getByLabelText(t.confirmUnpublished).click();
+  await screen.getByRole("checkbox", { name: t.confirmUnpublished }).click();
   await save.click();
   await expect.element(screen.getByText(t.assigned)).toBeVisible();
   expect(await sent("PUT", "/assignment")).toEqual({
