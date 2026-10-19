@@ -24,6 +24,7 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | How will screens be enrolled, authenticated, moved and unlinked (approved D-03 server side)? | [Device enrollment and lifecycle design](device-enrollment-design.md) |
 | How are media files uploaded, validated, converted, stored and deleted (approved D-05)? | [Media library design](media-library-design.md) |
 | How are playlists, groups and schedules modeled, validated and evaluated in local time (approved D-06)? | [Programming design](programming-design.md) |
+| How are programs published, and how do screens synchronize, verify and report them (proposed D-04 server side)? | [Publication and synchronization design](publication-sync-design.md) |
 | What could prevent delivery or safe operation? | [Risks and dependencies](risks.md) |
 | What is the phase sequence and current execution state? | [Implementation plan](implementation-plan.md) |
 | Which decisions or external prerequisites need a human? | [Human actions](human-actions.md) |

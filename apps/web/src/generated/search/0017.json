@@ -369,6 +369,141 @@
     "text": "References\n[Programming design](../project/programming-design.md)\n[Release policies: time and scheduling](../project/release-policies.md#time-and-scheduling)\n[Playback and synchronization](../project/playback-and-sync.md#time-and-regional-scheduling)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md)\n"
   },
   {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "anchor": "adr-0030-synchronize-screens-by-polling-with-signed-authorization-statements",
+    "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements\n**Status:** proposed\n**Date:** 2026-10-19\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The policies require that a screen detect a new desired publication within 30 seconds (AT-11), report its state every 30 seconds (AT-24), never be rolled back by stale or reordered messages, keep playing valid content offline for at most seven days after its last renewal (AT-15) and suspend time-dependent output when its clock cannot be trusted (AT-16). Screens authenticate with a device-generated bearer credential under ADR-0027, and the device enrollment design left a tamper-evident form of the offline deadline to this decision. The pilot runs one API process on one host (ADR-0021).\nThis record decides how screens learn their desired publication, how they obtain and verify its manifest and media, and how the server states, verifiably, what a screen may play and until when. The details are in the [publication and synchronization design](../project/publication-sync-design.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nScreens **poll**. Every 30 seconds a screen calls `POST /device/sync` with its state report and receives its status, time zone, desired publication and a new authorization statement. The server computes the desired publication from current rows at each call; it keeps no push channel and no per-screen delivery queue.\nA publication's **manifest** is UTF-8 JSON produced in a fixed key order, stored as exact bytes and identified by their SHA-256. Media are delivered as display renditions identified by SHA-256. Manifests and media are downloadable only for the screen's current desired publication; superseded work coalesces by synchronizing again.\nEach sync response carries an **authorization statement**: a compact JWS signed with ECDSA P-256 and SHA-256 (`ES256`) by the first key of a configured key ring. It names the screen and company, the server time of issue, an expiry seven days later and the publications (ID and manifest SHA-256) the screen may activate or keep active until then. The key set's public halves are served to screens, which pin them after pairing.\nManifests and exchanges carry a **protocol** number; the server answers with the highest protocol both sides support and serializes publications in the current and previous protocol for at least 90 days after a new one (AT-26).\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nPolling at 30 seconds meets AT-11 and doubles as the AT-24 heartbeat with one request per screen, uses only the HTTPS path the device credential already protects, and survives proxies, restarts and the single-host deployment without connection state. Deriving desired state from authoritative rows makes ordering a property of the database rather than of message delivery, so no acknowledgement or crash can roll a screen back or lose an assignment. Exact stored bytes give the manifest an identity that a statement can sign; a structure regenerated or normalized on each request could not. A per-screen statement binds entitlement, expiry and a signed server time in one object the player can check offline and store next to its active generation, which makes the seven-day deadline and the choice of content tamper-evident on the device and gives the trusted clock a server reference. ECDSA P-256 is implemented by Node.js and by Android's standard security providers, so neither side needs a new cryptographic dependency.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Push through WebSocket, server-sent events or a broker",
+    "anchor": "push-through-websocket-server-sent-events-or-a-broker",
+    "text": "Push through WebSocket, server-sent events or a broker\nDetection within seconds, but AT-11 allows 30, and a persistent channel adds connection management, proxy configuration and reconnection on the pilot host. A push hint can be added later without changing the state model.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fan-out of desired state into per-screen rows",
+    "anchor": "fan-out-of-desired-state-into-per-screen-rows",
+    "text": "Fan-out of desired state into per-screen rows\nSimple reads, but a crash between a publication and its fan-out needs a durable queue, and fan-out races with concurrent assignments. Computing from authoritative rows is always consistent and costs one indexed query per poll.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "TLS only, without signed statements",
+    "anchor": "tls-only-without-signed-statements",
+    "text": "TLS only, without signed statements\nTLS authenticates the server during transfer but leaves the stored deadline and content choice as plain local files. It also gives the player no signed time reference.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Signing manifests at publication",
+    "anchor": "signing-manifests-at-publication",
+    "text": "Signing manifests at publication\nAuthenticates content once, but not which screen may play it or until when; a statement per screen covers both.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Ed25519 or a shared HMAC key",
+    "anchor": "ed25519-or-a-shared-hmac-key",
+    "text": "Ed25519 or a shared HMAC key\nEd25519 is compact but not provided by older Android versions without an added library; an HMAC would require a secret on every screen, so any one screen could forge statements.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nScreens converge on the latest authorized publication within one polling interval, with no message ordering assumptions.\nThe player can verify offline which content it may show and until when, and anchor its clock to a signed server time.\nNo new infrastructure or cryptographic dependency on either side.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nEvery screen makes a request every 30 seconds whether or not anything changed; the reference load of 100 screens is about 3.3 requests per second.\nThe signing key ring is a new production secret with rotation duties.\nDetection is bounded by the polling interval, not immediate.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\n`TELUNI_SYNC_SIGNING_KEYS` must be provisioned and backed up with the other secrets (PJ-13). Rotation adds a key at the front and keeps the previous one for at least seven days.\nRestoring a database backup restores publications and desired state together; screens reconcile at their next poll. Pointing screens at a different host needs the same signing keys or a published key transition.\nA future protocol needs dual serialization for the support window.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Publication and synchronization design](../project/publication-sync-design.md)\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -456,7 +591,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1024,77 +1159,5 @@
     "heading": "Canonical Configuration Schema",
     "anchor": "canonical-configuration-schema",
     "text": "Canonical Configuration Schema\nEach application owns a canonical schema with derived types where practical. Define each setting's name, type, purpose, required/optional state, default, validation constraints, classification, secret status, client visibility, and operational consequences. Document the owner, permitted changes, environment scope, and whether a restart is required. Descriptions explain semantics rather than repeat the name.\nCurrent sources are:\nApplication\nCanonical input and representation\nAPI\n[`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty.\nWeb\n[`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md).\nThe API metadata records type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.\nAvoid independent definitions in code, READMEs, examples, and deployment files when they can derive from the schema. Generated references must never contain actual secrets. Changes to the API source require regeneration through [artifact tooling](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage); new applications need their own schema and explicit example/check.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration Validation",
-    "anchor": "configuration-validation",
-    "text": "Configuration Validation\nParse raw strings into meaningful booleans, numbers, durations, URLs, enums, lists, or objects at the boundary. A nonempty `\"false\"` must not become true. Names/types must make units explicit, use clear positive boolean semantics, and group related settings coherently. Prefer one validated mode over conflicting enable/disable booleans.\nValidate required values, cross-field invariants, conditional requirements, ranges, protocols, and mutually exclusive modes before use. Missing or invalid required configuration normally prevents startup. Diagnostics should name the key and expected requirement where practical without echoing restricted values. After successful parsing, components can rely on the declared schema.\nDefaults must be safe, predictable, documented, and unambiguous. Require explicit configuration when no safe default exists; never silently disable expected authentication or select an unintended production database. Isolate development-only conveniences. The current API explicitly permits health-only operation in development/test, requires the database and token settings together to enable the feature, and requires that feature configuration in production.\nUnknown keys can indicate typos or obsolete deployment settings; detect them where practical, with warnings/errors appropriate to the source. The current API selects known environment keys into a validated object; it does not reject every unrelated variable in the process environment.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration Precedence",
-    "anchor": "configuration-precedence",
-    "text": "Configuration Precedence\nSources and precedence must be deterministic and documented. Use the smallest set of mechanisms that satisfies real needs; do not add overlapping files, CLI overrides, or remote systems speculatively.\nThe API development command optionally loads the root ignored `.env.local`; existing shell environment values win. The production start command receives process environment and does not implicitly load that file. Vite owns the web application's environment loading and embeds its public build-time values. Disposable end-to-end and module stacks supply their own temporary configuration. [Setup](../setup.md#load-local-configuration) is the canonical procedure; no global remote configuration hierarchy or deployment platform is selected.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Centralized Ingestion",
-    "anchor": "centralized-ingestion",
-    "text": "Centralized Ingestion\nResolve raw configuration near bootstrap/composition, then pass narrow validated inputs to components. Do not scatter direct environment reads, pass every setting to every service, or let shared packages discover application environment implicitly. A library should accept simple parameters unless environment ingestion is its explicit responsibility. Keep provider-specific settings near that integration.\nStable domain invariants should not become deployment switches. Configuration controls intentional operational variability; business records, per-user preferences, and frequently edited business settings often belong in application data. Choose ownership according to meaning, who changes it, and frequency. Share schemas/settings across applications only when their semantics match, and distinguish sharing a schema from sharing an actual value.\nEnvironment identity is not a generic feature flag. Use a small explicit environment model and name actual capabilities/modes when controlling behavior. Necessary production differences, such as diagnostic limits or real provider integration, must be intentional and testable. Avoid platform-specific settings when a useful application concept exists, without inventing portability abstractions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration and Secrets",
-    "anchor": "configuration-and-secrets",
-    "text": "Configuration and Secrets\nThe schema may describe a secret requirement; secret delivery, storage, rotation, and revocation follow [secret policy](../security/secrets-management.md). Secret references may be useful where infrastructure supports them, but resolved values remain restricted in memory. Agents must understand requirements from schemas, safe placeholders, and descriptions without needing real credentials.\nBuild-time values can remain embedded in browser/mobile/desktop artifacts or image layers and are accessible to recipients. Never embed server-only secrets. Client-visible settings must be explicitly safe; environment-variable delivery alone does not make them public. Keep server credentials, private tokens/keys, and privileged internal endpoints out of client artifacts and shared public configuration.\nDo not serialize or log entire configuration objects in startup logs, errors, health endpoints, debug output, or support bundles. Use explicit safe projections, such as whether a dependency is configured. Even nonsecret fields obey [data classification](../security/data-classification.md) and [telemetry redaction](../security/telemetry-redaction.md). Safe configuration summaries/fingerprints may help diagnose drift only when useful and excluding secrets.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Evolution and Operational Changes",
-    "anchor": "evolution-and-operational-changes",
-    "text": "Evolution and Operational Changes\nConfiguration changes can break deployment or rollback even without code changes. For a rename/removal, identify old/new applications, supported rolling/rollback combinations, CI, local examples, deployment scripts, secret stores, and documentation. Introduce replacements, support both temporarily if required, migrate consumers, then remove old usage/configuration/secrets. Do not remove keys while a supported old version still requires them or retain unused keys indefinitely. Follow [compatibility policy](versioning-and-compatibility.md), including coordinated database/configuration transitions.\nA separate configuration schema version is justified only if independently managed configuration needs it; application releases and Git may suffice. Deployment definitions, when introduced, should expose requirements and reject invalid mandatory configuration before activation. Validate secret presence/references without exposing values.\nPrefer static startup configuration initially. Dynamic/remote configuration creates availability, authentication, caching, fallback, consistency, concurrency, rollback, auditability, and test obligations. If introduced, distinguish startup-only, reloadable, and process-immutable values. High-impact changes need risk-appropriate safe audit context (key, actor/system, time), not secret old/new values. Feature flags need explicit rollout/removal criteria unless they are permanent product settings; they are not automatically ordinary environment variables.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Verification and Enforcement",
-    "anchor": "verification-and-enforcement",
-    "text": "Verification and Enforcement\nTests construct explicit configuration and synthetic credentials instead of relying on machine state. Unit tests inject the minimum values; parser tests exercise missing/invalid input, defaults, secret-safe errors, conditional modes, and cross-field behavior. Integration tests exercise the actual ingestion boundary with isolated resources. CI jobs receive only the settings/credentials they require, never unrelated production access.\nClient builds must reject attempts to import or embed server-only/restricted configuration. Implemented checks include API parser tests, generated-reference freshness, `pnpm env:example:check`, and the web [bundle marker check](../../apps/web/scripts/check-bundle.mjs). The example check compares safe placeholders/defaults with API metadata; it does not validate deployed environments. The bundle check detects known server-only markers, not every possible leak. Direct environment access outside approved modules and full secret/classification metadata coverage remain review responsibilities; no dedicated lint rule or deployed-configuration validator currently proves them. These limits do not relax the policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "New Configuration Checklist",
-    "anchor": "new-configuration-checklist",
-    "text": "New Configuration Checklist\nBefore adding a setting, establish its concrete variability requirement, owning application, consumers, type/units, required/default behavior, classification/secret/client visibility, environment scope, change/restart behavior, validation, tests, documentation, and compatibility impact. Consider whether the value belongs in application data or can remain fixed. Every option expands the behavior space; keep only justified configuration and update its canonical source and derived representations together.\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Continuous Integration",
-    "anchor": "continuous-integration",
-    "text": "Continuous Integration\nThis page owns the map from repository CI configuration to the accepted policy in [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md). See [validation availability](../validation.md) for local commands. Effective remote settings and completed-run evidence have a separate owner in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
   }
 ]

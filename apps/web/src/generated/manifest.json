@@ -2197,6 +2197,16 @@
       "file": "pages/repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.json"
     },
     {
+      "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+      "kind": "repository",
+      "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+      "group": "Decisions",
+      "source": "docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md",
+      "summary": "ADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -2687,6 +2697,16 @@
       "file": "pages/repository/docs/project/programming-design.json"
     },
     {
+      "id": "repository/docs/project/publication-sync-design",
+      "kind": "repository",
+      "title": "Teluni Publication and Synchronization Design",
+      "group": "Project guides",
+      "source": "docs/project/publication-sync-design.md",
+      "summary": "Proposed detailed design for D-04 (server side) and the basic monitoring of FR-09, 2026-10-19, for owner review under PH-25 with ADR-0030. It is drafted after the owner asked…",
+      "headings": [],
+      "file": "pages/repository/docs/project/publication-sync-design.json"
+    },
+    {
       "id": "repository/docs/project/README",
       "kind": "repository",
       "title": "Teluni Product Documentation",
@@ -3030,18 +3050,18 @@
       { "file": "search/0014.json", "count": 110, "kinds": ["repository"] },
       { "file": "search/0015.json", "count": 130, "kinds": ["repository"] },
       { "file": "search/0016.json", "count": 177, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 122, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 131, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 79, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 73, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 129, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 132, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 82, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 72, "kinds": ["repository"] },
       { "file": "search/0021.json", "count": 65, "kinds": ["repository"] },
-      { "file": "search/0022.json", "count": 43, "kinds": ["repository"] },
-      { "file": "search/0023.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0024.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0025.json", "count": 101, "kinds": ["repository"] },
-      { "file": "search/0026.json", "count": 92, "kinds": ["repository"] },
-      { "file": "search/0027.json", "count": 7, "kinds": ["repository"] }
+      { "file": "search/0022.json", "count": 48, "kinds": ["repository"] },
+      { "file": "search/0023.json", "count": 60, "kinds": ["repository"] },
+      { "file": "search/0024.json", "count": 79, "kinds": ["repository"] },
+      { "file": "search/0025.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0026.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0027.json", "count": 40, "kinds": ["repository"] }
     ],
-    "count": 1547
+    "count": 1585
   }
 }
