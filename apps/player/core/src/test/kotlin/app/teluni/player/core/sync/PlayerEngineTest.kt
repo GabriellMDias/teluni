@@ -14,7 +14,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import java.util.Collections
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -48,7 +52,11 @@ class PlayerEngineTest {
     private var space = PlayerStore.Space(free = 64L shl 30, total = 128L shl 30)
     private val report = DeviceReport("1.0.0", 1, "Synthetic", "TV", "14", DeviceReport.Display(1920, 1080), listOf(0))
 
-    private fun engine() = PlayerEngine(PlayerStore(root, space = { space }), server, vault, clock, "1.0.0-test")
+    /** Waits the engine asked for; tests never really sleep. */
+    private val slept: MutableList<Long> = Collections.synchronizedList(mutableListOf())
+
+    private fun engine(store: PlayerStore = PlayerStore(root, space = { space })) =
+        PlayerEngine(store, server, vault, clock, "1.0.0-test", sleep = { slept += it })
 
     private fun paired(): PlayerEngine = engine().also { engine ->
         val started = engine.startEnrollment(report)
@@ -141,7 +149,7 @@ class PlayerEngineTest {
         val budget = du() + 6_500 + 4_000
         space = PlayerStore.Space(free = (1L shl 30) + budget, total = 2L shl 30)
         val measured = { PlayerStore.Space(free = (1L shl 30) + budget - du(), total = 2L shl 30) }
-        val constrained = PlayerEngine(PlayerStore(root, space = measured), server, vault, clock, "1.0.0-test")
+        val constrained = engine(PlayerStore(root, space = measured))
         server.publish(publication("pub-b", seed = 2))
         server.failMediaAfter = 1_500
         assertIs<StagingOutcome.Failed>(constrained.syncAndStage())
@@ -312,13 +320,92 @@ class PlayerEngineTest {
         server.publish(publication("pub-a"))
         engine.syncAndStage()
         server.status = "unlinked"
-        assertEquals(SyncOutcome.ClearRequired, engine.sync())
-        assertTrue(engine.erase())
+        // The engine erases itself before confirming; nothing is left behind.
+        assertEquals(SyncOutcome.Cleared(confirmed = true), engine.sync())
         assertEquals(1, server.erasures)
+        assertEquals(emptyList(), files())
         assertNull(vault.value)
         assertNull(engine.identity())
         assertEquals(SyncOutcome.NotPaired, engine.sync())
         assertEquals(PlaybackCondition.AUTHORIZATION_EXPIRED, assertIs<Plan.Neutral>(engine.plan()).condition)
+    }
+
+    private fun files(): List<Path> =
+        Files.walk(root).use { paths -> paths.filter(Files::isRegularFile).toList() }
+
+    @Test
+    fun `erases while a staging attempt runs and leaves nothing behind`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        val unlinked = CountDownLatch(1)
+        val once = AtomicBoolean(false)
+        var cleared: SyncOutcome? = null
+        server.onMedia = {
+            if (once.compareAndSet(false, true)) {
+                server.status = "unlinked"
+                thread { cleared = engine.sync().also { unlinked.countDown() } }
+            }
+        }
+        assertIs<SyncOutcome.Synced>(engine.sync())
+        engine.stage()
+        assertTrue(unlinked.await(30, TimeUnit.SECONDS))
+        assertEquals(SyncOutcome.Cleared(confirmed = true), cleared)
+        assertEquals(emptyList(), files())
+        assertNull(vault.value)
+    }
+
+    @Test
+    fun `activates a schedule-only change on a volume below the reserve`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        // The same media under a new publication: nothing to download.
+        val same = FakeServer.publication("pub-b", server.companyId, seed = 1)
+        server.publish(same)
+        space = PlayerStore.Space(free = (1L shl 30) - 1, total = 8L shl 30)
+        assertEquals(StagingOutcome.Activated("pub-b"), engine.syncAndStage())
+    }
+
+    @Test
+    fun `waits as the API says when media requests are rate limited`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        server.rateLimitedMedia.set(3)
+        assertEquals(StagingOutcome.Activated("pub-a"), engine.syncAndStage())
+        assertEquals(3, slept.count { it == 3_000L })
+    }
+
+    @Test
+    fun `spaces media requests to leave room for synchronization`() {
+        val engine = paired()
+        server.publish(FakeServer.publication("pub-a", server.companyId, images = 3, videos = 0))
+        assertEquals(StagingOutcome.Activated("pub-a"), engine.syncAndStage())
+        // The clock stands still in this test, so each request waits one more interval.
+        assertEquals(listOf(700L, 1_400L), slept.sorted())
+    }
+
+    @Test
+    fun `forgets an attempt the screen no longer needs`() {
+        val engine = paired()
+        val first = publication("pub-a")
+        server.publish(first)
+        engine.syncAndStage()
+        server.publish(publication("pub-b", seed = 2))
+        server.failMediaAfter = 600
+        assertIs<StagingOutcome.Failed>(engine.syncAndStage())
+        server.failMediaAfter = null
+
+        // The destination goes back to the active publication.
+        server.desired = first
+        val synced = assertIs<SyncOutcome.Synced>(engine.sync())
+        assertTrue(synced.stagingNeeded)
+        assertEquals(StagingOutcome.Idle, engine.stage())
+        val store = PlayerStore(root)
+        assertNull(store.state().staging)
+        assertNull(engine.report().staging)
+        for (bytes in server.publications.getValue("pub-b").media.values) {
+            assertTrue(!Files.exists(store.partialFile(sha256Hex(bytes))) && !Files.exists(store.mediaFile(sha256Hex(bytes))))
+        }
     }
 
     @Test

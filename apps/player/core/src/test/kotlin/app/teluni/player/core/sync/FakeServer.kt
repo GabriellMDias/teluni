@@ -20,6 +20,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.Base64
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
@@ -54,6 +55,9 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
     var failMediaAfter: Long? = null
     var corruptMedia = false
     var onMedia: () -> Unit = {}
+
+    /** How many next media requests answer RATE_LIMITED with a three-second Retry-After. */
+    val rateLimitedMedia = AtomicInteger(0)
     var keyFetches = 0
     var erasures = 0
     private var credentialHash: String? = null
@@ -157,6 +161,9 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
 
     override fun media(credential: String, mediaId: String, offset: Long, body: (InputStream) -> Unit) {
         authorize(credential)
+        if (rateLimitedMedia.getAndUpdate { maxOf(it - 1, 0) } > 0) {
+            throw ApiFailure(429, "RATE_LIMITED", Duration.ofSeconds(3))
+        }
         mediaRequests += mediaId to offset
         onMedia()
         val wanted = desired ?: throw ApiFailure(404, "RESOURCE_NOT_FOUND", null)

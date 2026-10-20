@@ -27,6 +27,7 @@ import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -68,11 +69,14 @@ public data class SyncRecord(
 )
 
 public sealed interface SyncOutcome {
-    /** Synchronized; staging is needed when the desired publication is not active. */
+    /** Synchronized; staging is needed when the desired publication is not active or an old attempt remains. */
     public data class Synced(val next: Duration, val stagingNeeded: Boolean) : SyncOutcome
 
-    /** The screen was unlinked: erase, confirm and enroll again. */
-    public data object ClearRequired : SyncOutcome
+    /**
+     * The screen was unlinked: it stopped staging, erased everything it kept
+     * and, when `confirmed`, the server recorded the erasure. Enroll again.
+     */
+    public data class Cleared(val confirmed: Boolean) : SyncOutcome
 
     /** The API no longer recognizes the credential; keep playing until the statement expires. */
     public data object Unauthorized : SyncOutcome
@@ -111,6 +115,8 @@ public class PlayerEngine(
     private val clockSource: ClockSource,
     private val appVersion: String,
     private val random: SecureRandom = SecureRandom(),
+    /** Waits between media requests and after `RATE_LIMITED`; replaceable in tests. */
+    private val sleep: (Long) -> Unit = { Thread.sleep(it) },
 ) {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -127,6 +133,13 @@ public class PlayerEngine(
 
     @Volatile
     private var failures = 0
+
+    /** Set while an erasure waits for staging to stop. */
+    @Volatile
+    private var erasing = false
+
+    private val pacing = Any()
+    private var nextMediaRequest = Long.MIN_VALUE
 
     /** What the renderer shows, reported in each sync. */
     @Volatile
@@ -234,8 +247,14 @@ public class PlayerEngine(
         )
     }
 
-    /** One exchange at a time; concurrent callers wait for each other. */
-    public fun sync(): SyncOutcome = synchronized(syncing) { exchange() }
+    /**
+     * One exchange at a time; concurrent callers wait for each other. An
+     * unlinked screen erases itself here, after the exchange releases its lock.
+     */
+    public fun sync(): SyncOutcome {
+        val outcome = synchronized(syncing) { exchange() }
+        return if (outcome is SyncOutcome.Cleared) SyncOutcome.Cleared(erase()) else outcome
+    }
 
     private fun exchange(): SyncOutcome {
         val identity = identity() ?: return SyncOutcome.NotPaired
@@ -260,7 +279,7 @@ public class PlayerEngine(
         }
         clock.anchor(serverTime, timed.sentMonotonic, timed.receivedMonotonic)
         checkpoint()
-        if (answer.clearRequired || answer.status == "unlinked") return SyncOutcome.ClearRequired
+        if (answer.clearRequired || answer.status == "unlinked") return SyncOutcome.Cleared(confirmed = false)
         saveRecord(
             PlayerStore.Record.SYNC,
             SyncRecord.serializer(),
@@ -269,7 +288,9 @@ public class PlayerEngine(
         answer.authorization?.let { accept(it, identity, credential) }
         val state = store.state()
         val desired = answer.desired?.publicationId
-        val stagingNeeded = desired != null && desired != state.active?.publicationId
+        // A leftover attempt for anything else is cleared by the next stage.
+        val stagingNeeded = (desired != null && desired != state.active?.publicationId) ||
+            (state.staging != null && state.staging.publicationId != desired)
         return SyncOutcome.Synced(Duration.ofSeconds(answer.nextSyncSeconds.toLong().coerceIn(5, 3600)), stagingNeeded)
     }
 
@@ -342,10 +363,13 @@ public class PlayerEngine(
     public fun stage(): StagingOutcome = synchronized(staging) { stageDesired() }
 
     private fun stageDesired(): StagingOutcome {
-        val desired = syncRecord()?.desired ?: return StagingOutcome.Idle
         val identity = identity() ?: return StagingOutcome.Idle
         val credential = credential() ?: return StagingOutcome.Idle
-        if (store.state().active?.publicationId == desired.publicationId) return StagingOutcome.Idle
+        val desired = syncRecord()?.desired
+        if (desired == null || store.state().active?.publicationId == desired.publicationId) {
+            dropStaging()
+            return StagingOutcome.Idle
+        }
         val target = StoredGeneration(desired.publicationId, desired.manifestSha256)
         synchronized(lock) { store.saveState(store.state().copy(staging = target)) }
         progress = SyncReport.Staging(desired.publicationId, "DOWNLOADING", null, 0, 0)
@@ -365,13 +389,29 @@ public class PlayerEngine(
         } catch (_: Superseded) {
             progress = null
             StagingOutcome.Superseded
+        } catch (_: IOException) {
+            // Storage errors outside a download, such as storing the manifest.
+            progress = progress?.copy(state = "FAILED", failure = StagingFailureCode.DOWNLOAD_FAILED.name)
+            StagingOutcome.Failed(StagingFailureCode.DOWNLOAD_FAILED)
+        }
+    }
+
+    /** Forgets an attempt that is no longer desired, with the files only it used. */
+    private fun dropStaging() {
+        synchronized(lock) {
+            val state = store.state()
+            if (state.staging == null) return
+            val cleared = state.copy(staging = null)
+            store.saveState(cleared)
+            progress = null
+            collect(cleared)
         }
     }
 
     private class Superseded : Exception()
 
     private fun stillDesired(publicationId: String) {
-        if (syncRecord()?.desired?.publicationId != publicationId) throw Superseded()
+        if (erasing || syncRecord()?.desired?.publicationId != publicationId) throw Superseded()
     }
 
     private fun fetchManifest(desired: SyncAnswer.Desired, identity: Identity, credential: String): Publication {
@@ -403,8 +443,13 @@ public class PlayerEngine(
         return if (file.isFile && file.length() <= size) file.length() else 0
     }
 
-    /** AT-05: keep at least max(1 GiB, 10% of the volume) free after the planned downloads. */
+    /**
+     * AT-05: keep at least max(1 GiB, 10% of the volume) free after the planned
+     * downloads. A generation whose media are all stored needs no room, so a
+     * schedule-only change activates even on a volume already below the reserve.
+     */
     private fun preflight(bytes: Long) {
+        if (bytes <= 0) return
         val space = store.space()
         val reserve = maxOf(1L shl 30, space.total / 10)
         if (space.free - bytes < reserve) {
@@ -475,38 +520,29 @@ public class PlayerEngine(
             digest = MessageDigest.getInstance("SHA-256")
             offset = 0
         }
-        try {
-            FileChannel.open(partial, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)
-                .use { channel ->
-                    api.media(credential, media.id, offset) { input ->
-                        val buffer = ByteArray(64 * 1024)
-                        var written = offset
-                        while (true) {
-                            if (Thread.currentThread().isInterrupted) throw InterruptedIOException()
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            if (written + read > media.size) {
-                                throw StagingFailure(StagingFailureCode.INTEGRITY_FAILED, "Media is longer than declared")
-                            }
-                            digest.update(buffer, 0, read)
-                            val chunk = ByteBuffer.wrap(buffer, 0, read)
-                            while (chunk.hasRemaining()) channel.write(chunk)
-                            written += read
-                            onBytes(read.toLong())
-                        }
-                    }
-                    channel.force(true)
+        var limited = 0
+        while (true) {
+            awaitMediaTurn(publicationId)
+            try {
+                requestMedia(partial, media, credential, offset, digest, onBytes)
+                break
+            } catch (failure: ApiFailure) {
+                if (failure.status == 404) throw Superseded()
+                // The API counts each credential's requests; wait as it says, then resume.
+                if (failure.status == 429 && limited < MAX_RATE_LIMITED_RETRIES) {
+                    limited += 1
+                    sleep(minOf(failure.retryAfter?.toMillis() ?: DEFAULT_RETRY_MILLIS, MAX_RETRY_MILLIS))
+                    continue
                 }
-        } catch (failure: ApiFailure) {
-            if (failure.status == 404) throw Superseded()
-            stillDesired(publicationId)
-            throw StagingFailure(StagingFailureCode.DOWNLOAD_FAILED, "Media download failed")
-        } catch (failure: StagingFailure) {
-            Files.deleteIfExists(partial)
-            throw failure
-        } catch (_: IOException) {
-            // The partial file stays for the next attempt to resume.
-            throw StagingFailure(StagingFailureCode.DOWNLOAD_FAILED, "Media download failed")
+                stillDesired(publicationId)
+                throw StagingFailure(StagingFailureCode.DOWNLOAD_FAILED, "Media download failed")
+            } catch (failure: StagingFailure) {
+                Files.deleteIfExists(partial)
+                throw failure
+            } catch (_: IOException) {
+                // The partial file stays for the next attempt to resume.
+                throw StagingFailure(StagingFailureCode.DOWNLOAD_FAILED, "Media download failed")
+            }
         }
         if (file.length() < media.size) {
             throw StagingFailure(StagingFailureCode.DOWNLOAD_FAILED, "The download ended early")
@@ -516,6 +552,54 @@ public class PlayerEngine(
             throw StagingFailure(StagingFailureCode.INTEGRITY_FAILED, "Media does not match its SHA-256")
         }
         store.commitMedia(media.sha256)
+    }
+
+    /**
+     * Spaces media requests to at most one per [MEDIA_REQUEST_INTERVAL_MILLIS],
+     * so a large publication never takes the requests a sync needs under the
+     * API's per-credential limit (120 per minute).
+     */
+    private fun awaitMediaTurn(publicationId: String) {
+        val wait = synchronized(pacing) {
+            val now = clockSource.monotonicMillis()
+            val turn = maxOf(now, nextMediaRequest)
+            nextMediaRequest = turn + MEDIA_REQUEST_INTERVAL_MILLIS
+            turn - now
+        }
+        if (wait > 0) sleep(wait)
+        stillDesired(publicationId)
+    }
+
+    /** One media request, appending to the partial file and the digest. */
+    private fun requestMedia(
+        partial: Path,
+        media: Manifest.Media,
+        credential: String,
+        offset: Long,
+        digest: MessageDigest,
+        onBytes: (Long) -> Unit,
+    ) {
+        FileChannel.open(partial, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)
+            .use { channel ->
+                api.media(credential, media.id, offset) { input ->
+                    val buffer = ByteArray(64 * 1024)
+                    var written = offset
+                    while (true) {
+                        if (erasing || Thread.currentThread().isInterrupted) throw InterruptedIOException()
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        if (written + read > media.size) {
+                            throw StagingFailure(StagingFailureCode.INTEGRITY_FAILED, "Media is longer than declared")
+                        }
+                        digest.update(buffer, 0, read)
+                        val chunk = ByteBuffer.wrap(buffer, 0, read)
+                        while (chunk.hasRemaining()) channel.write(chunk)
+                        written += read
+                        onBytes(read.toLong())
+                    }
+                }
+                channel.force(true)
+            }
     }
 
     private fun hex(digest: MessageDigest): String = digest.digest().joinToString("") { "%02x".format(it) }
@@ -621,28 +705,44 @@ public class PlayerEngine(
 
     /**
      * Erases everything private, then confirms the erasure with the credential
-     * still in memory (device enrollment design). Returns whether the server
-     * confirmed; the player enrolls again either way.
+     * still in memory (device enrollment design). A staging attempt stops and
+     * no exchange runs meanwhile, so nothing is written after the erasure.
+     * Returns whether the server confirmed; the player enrolls again either way.
      */
     public fun erase(): Boolean {
-        val credential = credential()
-        synchronized(lock) {
-            store.eraseAll()
-            vault.erase()
-            statement = null
-            publications.clear()
-            progress = null
-        }
-        if (credential == null) return false
-        return try {
-            api.confirmErasure(credential)
-            true
-        } catch (_: IOException) {
-            false
+        erasing = true
+        try {
+            synchronized(staging) {
+                synchronized(syncing) {
+                    val credential = credential()
+                    synchronized(lock) {
+                        store.eraseAll()
+                        vault.erase()
+                        statement = null
+                        publications.clear()
+                        progress = null
+                    }
+                    if (credential == null) return false
+                    return try {
+                        api.confirmErasure(credential)
+                        true
+                    } catch (_: IOException) {
+                        false
+                    }
+                }
+            }
+        } finally {
+            erasing = false
         }
     }
 
     private companion object {
         const val MAX_DOWNLOADS = 2
+
+        /** About 85 media requests per minute, leaving room for syncs under 120. */
+        const val MEDIA_REQUEST_INTERVAL_MILLIS = 700L
+        const val MAX_RATE_LIMITED_RETRIES = 5
+        const val DEFAULT_RETRY_MILLIS = 5_000L
+        const val MAX_RETRY_MILLIS = 60_000L
     }
 }

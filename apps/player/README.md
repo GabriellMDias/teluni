@@ -33,8 +33,10 @@ The wrapper pins Gradle 8.14.3 with its SHA-256. Dependencies are pinned in [`gr
 
 ```sh
 ./gradlew :core:dependencies --write-locks
-./gradlew --write-verification-metadata sha256 check
+./gradlew --no-configuration-cache --write-verification-metadata sha256 check
 ```
+
+Write the verification metadata without the configuration cache and preferably from an empty Gradle cache (`GRADLE_USER_HOME` pointing to a new directory). A cached configuration skips resolutions, and the metadata then misses artifacts that a clean build, such as CI's, needs.
 
 ## Environment notes
 
