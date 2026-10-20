@@ -1,6 +1,7 @@
 // The devices module's public capability surface. Modules that configure
 // screens (programming, publications) import only this file: they read the
-// screens they decide about and react to moves inside the move transaction.
+// screens they decide about, react to moves inside the move transaction and
+// authenticate screens on their own device routes.
 import type { Prisma } from "../../generated/prisma/client.js";
 import type { DeviceStatus } from "./domain.js";
 
@@ -31,6 +32,24 @@ export type DeviceMoveHook = (
   }>,
 ) => Promise<void>;
 
+/**
+ * A screen that presented a valid device credential, as `GET /device/self`
+ * describes it: unlinked screens must clear themselves, a suspended
+ * company renews nothing.
+ */
+export type ScreenSession = Readonly<{
+  deviceId: string;
+  companyId: string;
+  branchId: string;
+  status: "active" | "suspended" | "unlinked";
+  /** The screen's own zone, otherwise its branch's; null when unlinked. */
+  timeZone: string | null;
+  /** The offline deadline a renewal grants now (AT-15); null without one. */
+  authorizedUntil: Date | null;
+  /** The database clock when the screen was authenticated. */
+  serverTime: Date;
+}>;
+
 export type DevicePort = Readonly<{
   /** Registers a move hook; register before activation. */
   onMove(hook: DeviceMoveHook): void;
@@ -44,4 +63,10 @@ export type DevicePort = Readonly<{
     companyId: string,
     deviceIds: readonly string[],
   ): Promise<DeviceFacts[]>;
+  /**
+   * Resolves a bearer device credential like the devices module's own
+   * routes, recording the contact. Throws DeviceFailure
+   * DEVICE_UNAUTHORIZED for anything that is not a known credential.
+   */
+  authenticate(authorization: string | undefined): Promise<ScreenSession>;
 }>;

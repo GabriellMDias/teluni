@@ -63,6 +63,7 @@ const capabilities: readonly Capability[] = [
   "programming.view",
   "programming.edit",
   "programming.assign",
+  "publications.publish",
 ];
 
 export type AccessSummary = Readonly<{

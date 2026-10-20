@@ -19,16 +19,20 @@ import {
   getDevice,
   latestAuthorization,
   listDevices,
+  listScreenStates,
   moveDevice,
   pairDevice,
   recordDeviceReset,
   rotations,
+  screenStatesKey,
+  syncRefreshMs,
   unlinkDevice,
   type Device,
   type DeviceFilter,
   type Rotation,
 } from "./api.js";
 import { deviceMessages } from "./messages.js";
+import { ScreenSync, syncSummary } from "./sync.js";
 
 export function useDeviceMessages() {
   const locale = useMemo(browserLocale, []);
@@ -305,6 +309,15 @@ function ScreenList({
     queryKey: [...devicesKey(companyId), filter],
     queryFn: () => listDevices(companyId, filter),
   });
+  const active = (devices.data?.items ?? [])
+    .filter((device) => device.status === "ACTIVE")
+    .map((device) => device.id);
+  const states = useQuery({
+    queryKey: screenStatesKey(companyId, active),
+    queryFn: () => listScreenStates(companyId, active),
+    enabled: active.length > 0,
+    refetchInterval: syncRefreshMs,
+  });
   const setFilter = (next: DeviceFilter) =>
     void navigate({
       to: "/companies/$companyId/screens",
@@ -378,6 +391,11 @@ function ScreenList({
                   ? `${t.lastSeen}: ${formatInstant(locale, device.lastSeenAt)}`
                   : t.neverSeen}
               </span>
+              {states.data?.get(device.id) && (
+                <span className="hint">
+                  {syncSummary(states.data.get(device.id)!, t)}
+                </span>
+              )}
             </li>
           ))}
         </ul>
@@ -844,6 +862,9 @@ function ScreenDetail({
             </p>
           )}
       </section>
+      {screen.status === "ACTIVE" && (
+        <ScreenSync companyId={companyId} deviceId={deviceId} />
+      )}
       {manage && screen.status === "ACTIVE" && (
         <>
           <ConfigureForm

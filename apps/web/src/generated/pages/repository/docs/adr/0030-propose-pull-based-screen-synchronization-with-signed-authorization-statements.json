@@ -1,0 +1,55 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md",
+  "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-20</p>\n<p><strong>Acceptance scope:</strong> The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance establishes the direction for local and CI implementation of PJ-11, not the player's conformance (PJ-12), hardware qualification (PH-08) or the provisioning of signing keys in a real environment (PJ-13).</p>\n<h2 id=\"context\">Context</h2>\n<p>ADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The policies require that a screen detect a new desired publication within 30 seconds (AT-11), report its state every 30 seconds (AT-24), never be rolled back by stale or reordered messages, keep playing valid content offline for at most seven days after its last renewal (AT-15) and suspend time-dependent output when its clock cannot be trusted (AT-16). Screens authenticate with a device-generated bearer credential under ADR-0027, and the device enrollment design left a tamper-evident form of the offline deadline to this decision. The pilot runs one API process on one host (ADR-0021).</p>\n<p>This record decides how screens learn their desired publication, how they obtain and verify its manifest and media, and how the server states, verifiably, what a screen may play and until when. The details are in the <a href=\"/docs/repository/docs/project/publication-sync-design\">publication and synchronization design</a>.</p>\n<h2 id=\"decision\">Decision</h2>\n<ul>\n<li>Screens <strong>poll</strong>. Every 30 seconds a screen calls <code>POST /device/sync</code> with its state report and receives its status, time zone, desired publication and a new authorization statement. The server computes the desired publication from current rows at each call; it keeps no push channel and no per-screen delivery queue.</li>\n<li>A publication's <strong>manifest</strong> is UTF-8 JSON produced in a fixed key order, stored as exact bytes and identified by their SHA-256. Media are delivered as display renditions identified by SHA-256. Manifests and media are downloadable only for the screen's current desired publication; superseded work coalesces by synchronizing again.</li>\n<li>Each sync response carries an <strong>authorization statement</strong>: a compact JWS signed with ECDSA P-256 and SHA-256 (<code>ES256</code>) by the first key of a configured key ring. It names the screen and company, the server time of issue, an expiry seven days later and the publications (ID and manifest SHA-256) the screen may activate or keep active until then. The key set's public halves are served to screens, which pin them after pairing.</li>\n<li>Manifests and exchanges carry a <strong>protocol</strong> number; the server answers with the highest protocol both sides support and serializes publications in the current and previous protocol for at least 90 days after a new one (AT-26).</li>\n</ul>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Polling at 30 seconds meets AT-11 and doubles as the AT-24 heartbeat with one request per screen, uses only the HTTPS path the device credential already protects, and survives proxies, restarts and the single-host deployment without connection state. Deriving desired state from authoritative rows makes ordering a property of the database rather than of message delivery, so no acknowledgement or crash can roll a screen back or lose an assignment. Exact stored bytes give the manifest an identity that a statement can sign; a structure regenerated or normalized on each request could not. A per-screen statement binds entitlement, expiry and a signed server time in one object the player can check offline and store next to its active generation, which makes the seven-day deadline and the choice of content tamper-evident on the device and gives the trusted clock a server reference. ECDSA P-256 is implemented by Node.js and by Android's standard security providers, so neither side needs a new cryptographic dependency.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"push-through-websocket-server-sent-events-or-a-broker\">Push through WebSocket, server-sent events or a broker</h3>\n<p>Detection within seconds, but AT-11 allows 30, and a persistent channel adds connection management, proxy configuration and reconnection on the pilot host. A push hint can be added later without changing the state model.</p>\n<h3 id=\"fan-out-of-desired-state-into-per-screen-rows\">Fan-out of desired state into per-screen rows</h3>\n<p>Simple reads, but a crash between a publication and its fan-out needs a durable queue, and fan-out races with concurrent assignments. Computing from authoritative rows is always consistent and costs one indexed query per poll.</p>\n<h3 id=\"tls-only-without-signed-statements\">TLS only, without signed statements</h3>\n<p>TLS authenticates the server during transfer but leaves the stored deadline and content choice as plain local files. It also gives the player no signed time reference.</p>\n<h3 id=\"signing-manifests-at-publication\">Signing manifests at publication</h3>\n<p>Authenticates content once, but not which screen may play it or until when; a statement per screen covers both.</p>\n<h3 id=\"ed25519-or-a-shared-hmac-key\">Ed25519 or a shared HMAC key</h3>\n<p>Ed25519 is compact but not provided by older Android versions without an added library; an HMAC would require a secret on every screen, so any one screen could forge statements.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Screens converge on the latest authorized publication within one polling interval, with no message ordering assumptions.</li>\n<li>The player can verify offline which content it may show and until when, and anchor its clock to a signed server time.</li>\n<li>No new infrastructure or cryptographic dependency on either side.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Every screen makes a request every 30 seconds whether or not anything changed; the reference load of 100 screens is about 3.3 requests per second.</li>\n<li>The signing key ring is a new production secret with rotation duties.</li>\n<li>Detection is bounded by the polling interval, not immediate.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li><code>TELUNI_SYNC_SIGNING_KEYS</code> must be provisioned and backed up with the other secrets (PJ-13). Rotation adds a key at the front and keeps the previous one for at least seven days.</li>\n<li>Restoring a database backup restores publications and desired state together; screens reconcile at their next poll. Pointing screens at a different host needs the same signing keys or a published key transition.</li>\n<li>A future protocol needs dual serialization for the support window.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/project/publication-sync-design\">Publication and synchronization design</a></li>\n<li><a href=\"/docs/repository/docs/project/playback-and-sync\">Offline playback and synchronization</a></li>\n<li><a href=\"/docs/repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation\">ADR-0019</a>, <a href=\"/docs/repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage\">ADR-0021</a>, <a href=\"/docs/repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment\">ADR-0027</a></li>\n<li><a href=\"/docs/repository/docs/architecture/delivery-and-side-effects\">Delivery and side effects</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0030-synchronize-screens-by-polling-with-signed-authorization-statements",
+      "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "push-through-websocket-server-sent-events-or-a-broker",
+      "text": "Push through WebSocket, server-sent events or a broker",
+      "level": 3
+    },
+    {
+      "id": "fan-out-of-desired-state-into-per-screen-rows",
+      "text": "Fan-out of desired state into per-screen rows",
+      "level": 3
+    },
+    {
+      "id": "tls-only-without-signed-statements",
+      "text": "TLS only, without signed statements",
+      "level": 3
+    },
+    {
+      "id": "signing-manifests-at-publication",
+      "text": "Signing manifests at publication",
+      "level": 3
+    },
+    {
+      "id": "ed25519-or-a-shared-hmac-key",
+      "text": "Ed25519 or a shared HMAC key",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

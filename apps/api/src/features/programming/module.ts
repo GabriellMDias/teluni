@@ -6,6 +6,7 @@ import type { CompanyAccessPort } from "../organizations/public.js";
 import { programmingOperations } from "./contracts.js";
 import { programmingErrors } from "./errors.js";
 import { PrismaProgrammingRepository } from "./prisma-repository.js";
+import type { ProgrammingPort, PublicationFacts } from "./public.js";
 import {
   registerProgrammingRoutes,
   type ProgrammingRouteLimits,
@@ -17,7 +18,8 @@ import { ProgrammingService } from "./service.js";
  * programming design, ADR-0029) over the organizations, devices and media
  * ports. Playlists protect their media from deletion, group spans protect
  * their branches from archiving, and a screen moved outside its group's span
- * leaves the group in the move's transaction.
+ * leaves the group in the move's transaction. Publications use the
+ * returned port to snapshot programs and register publication facts.
  */
 export function createProgrammingModule(options: {
   sessions: HumanSessionPort;
@@ -25,8 +27,26 @@ export function createProgrammingModule(options: {
   devices: DevicePort;
   media: MediaPort;
   limits?: ProgrammingRouteLimits;
-}): ApiModule {
+}): { module: ApiModule; programming: ProgrammingPort } {
   let service: ProgrammingService | undefined;
+  let publicationFacts: PublicationFacts | undefined;
+  const require = () => {
+    if (!service) throw new Error("The programming module is not active");
+    return service;
+  };
+  const programming: ProgrammingPort = {
+    onPublicationFacts(facts) {
+      publicationFacts = facts;
+      service?.onPublicationFacts(facts);
+    },
+    target: (tx, access, source, capability) =>
+      require().publicationTarget(tx, access, source, capability),
+    snapshot: (tx, access, source, capability) =>
+      require().publicationSnapshot(tx, access, source, capability),
+    currentProgram: (companyId, deviceId) =>
+      require().currentProgram(companyId, deviceId),
+    followers: (companyId, source) => require().followers(companyId, source),
+  };
   options.media.registerReferenceGuard("playlist-draft", (tx, companyId, id) =>
     service ? service.mediaReferences(tx, companyId, id) : Promise.resolve([]),
   );
@@ -38,7 +58,7 @@ export function createProgrammingModule(options: {
   options.devices.onMove(async (tx, move) => {
     if (service) await service.onDeviceMoved(tx, move);
   });
-  return {
+  const module: ApiModule = {
     name: "programming",
     tag: "Programming",
     requires: ["database"],
@@ -53,6 +73,7 @@ export function createProgrammingModule(options: {
         devices: options.devices,
         media: options.media,
       });
+      if (publicationFacts) active.onPublicationFacts(publicationFacts);
       service = active;
       return {
         name: "programming",
@@ -66,4 +87,5 @@ export function createProgrammingModule(options: {
       };
     },
   };
+  return { module, programming };
 }

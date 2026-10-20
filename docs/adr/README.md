@@ -37,3 +37,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md) | Adopt Device-Generated Credentials and Code-Based Enrollment |
 | [ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md) | Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing |
 | [ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md) | Evaluate Schedules with the Temporal API and Shared Fixtures |
+| [ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md) | Synchronize Screens by Polling with Signed Authorization Statements |

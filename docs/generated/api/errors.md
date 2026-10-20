@@ -62,3 +62,6 @@
 | `SCHEDULE_CONFLICT` | 409 | conflict | no | Two schedules of the same screen output overlap. Check the schedules to find them. |
 | `ASSIGNMENT_CONFIRMATION_REQUIRED` | 409 | conflict | no | The chosen programming is not published yet, so the screen will show neutral output. Confirm to continue. |
 | `TIMELINE_TOO_LARGE` | 400 | validation | no | This period has too many schedule changes to show at once. Choose a shorter period. |
+| `PUBLICATION_INVALID` | 409 | conflict | no | This programming cannot be published as it is. Check it to see what must change first. |
+| `PUBLICATION_NOT_RESTORABLE` | 409 | conflict | no | This publication is no longer kept and cannot be restored. Publish the current programming instead. |
+| `PROTOCOL_UNSUPPORTED` | 409 | conflict | no | This player supports no synchronization protocol the server offers. Update the player. |

@@ -6,6 +6,7 @@ import { createMediaModule } from "./features/media/module.js";
 import { createInvitationsModule } from "./features/organizations/invitations-module.js";
 import { createOrganizationsModule } from "./features/organizations/module.js";
 import { createProgrammingModule } from "./features/programming/module.js";
+import { createPublicationsModule } from "./features/publications/module.js";
 
 // Composition owned by this repository. Add each API module here; the shared
 // runtime activates the ones whose requirements are configured. A module that
@@ -36,6 +37,13 @@ const programming = createProgrammingModule({
   devices: devices.devices,
   media: media.media,
 });
+const publications = createPublicationsModule({
+  sessions: identity.sessions,
+  companies: organizations.companies,
+  devices: devices.devices,
+  media: media.media,
+  programming: programming.programming,
+});
 
 export const apiModules: readonly ApiModule[] = [
   identity.module,
@@ -44,5 +52,6 @@ export const apiModules: readonly ApiModule[] = [
   invitations,
   devices.module,
   media.module,
-  programming,
+  programming.module,
+  publications.module,
 ];

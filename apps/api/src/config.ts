@@ -1,3 +1,4 @@
+import { createPrivateKey, type KeyObject } from "node:crypto";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
 
@@ -61,6 +62,7 @@ export const serverConfigSchema = Type.Object(
     mediaFfmpegPath: Type.String({ minLength: 1, maxLength: 1024 }),
     mediaFfprobePath: Type.String({ minLength: 1, maxLength: 1024 }),
     mediaProcessingConcurrency: Type.Integer({ minimum: 1, maximum: 4 }),
+    syncSigningKeys: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
@@ -427,6 +429,18 @@ export const configReference = Object.freeze([
     secret: false,
     purpose: "Media processing jobs this API process runs at once.",
   },
+  {
+    key: "syncSigningKeys",
+    name: "TELUNI_SYNC_SIGNING_KEYS",
+    type: "comma-separated id:base64url PKCS#8 DER EC P-256 private keys, newest first",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Key ring that signs screen authorization statements (ADR-0030); the first key signs, and every key's public half stays available to screens during rotation. Enables the publications module.",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
 
 const keyRingEntryPattern = /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9_-]{43}$/;
@@ -448,6 +462,47 @@ export function parseKeyRing(
     if (key.length !== 32)
       throw new Error(`Invalid API configuration: ${label}`);
     return Object.freeze({ id, key });
+  });
+  return Object.freeze(keys);
+}
+
+const signingKeyIdPattern = /^[A-Za-z0-9_-]{1,32}$/;
+
+/**
+ * Parses the synchronization signing key ring: `id:base64url(PKCS#8 DER)`
+ * EC P-256 private keys, newest first, with unique IDs.
+ */
+export function parseSigningKeyRing(
+  value: string,
+): readonly Readonly<{ id: string; privateKey: KeyObject }>[] {
+  const label = "Invalid API configuration: sync signing keys";
+  const ids = new Set<string>();
+  const keys = value.split(",").map((entry) => {
+    const [id, encoded, ...rest] = entry.trim().split(":");
+    if (
+      rest.length > 0 ||
+      !signingKeyIdPattern.test(id ?? "") ||
+      !/^[A-Za-z0-9_-]+$/.test(encoded ?? "") ||
+      ids.has(id)
+    )
+      throw new Error(label);
+    ids.add(id);
+    let privateKey: KeyObject;
+    try {
+      privateKey = createPrivateKey({
+        key: Buffer.from(encoded, "base64url"),
+        format: "der",
+        type: "pkcs8",
+      });
+    } catch {
+      throw new Error(label);
+    }
+    if (
+      privateKey.asymmetricKeyType !== "ec" ||
+      privateKey.asymmetricKeyDetails?.namedCurve !== "prime256v1"
+    )
+      throw new Error(label);
+    return Object.freeze({ id, privateKey });
   });
   return Object.freeze(keys);
 }
@@ -545,6 +600,9 @@ export function parseServerConfig(
       env.TELUNI_MEDIA_PROCESSING_CONCURRENCY,
       1,
     ),
+    ...(env.TELUNI_SYNC_SIGNING_KEYS === undefined
+      ? {}
+      : { syncSigningKeys: env.TELUNI_SYNC_SIGNING_KEYS }),
   };
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
@@ -682,6 +740,8 @@ export function parseServerConfig(
   }
   if (candidate.deviceCodeKeys !== undefined)
     parseKeyRing(candidate.deviceCodeKeys, "device code keys");
+  if (candidate.syncSigningKeys !== undefined)
+    parseSigningKeyRing(candidate.syncSigningKeys);
   // Tools run without a shell; a name is looked up on PATH, a path is used
   // as given. Neither may carry arguments.
   for (const tool of [candidate.mediaFfmpegPath, candidate.mediaFfprobePath])

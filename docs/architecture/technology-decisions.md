@@ -24,7 +24,7 @@ This is a navigation summary, not an independent technology specification. Each 
 
 ## Accepted Teluni product directions
 
-The owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. ADR-0027 was accepted on 2026-10-19 under PH-22 and ADR-0028 the same day under PH-23; ADR-0029 the same day under PH-24. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).
+The owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. ADR-0027 was accepted on 2026-10-19 under PH-22 and ADR-0028 the same day under PH-23; ADR-0029 the same day under PH-24; ADR-0030 on 2026-10-20 under PH-25. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).
 
 | Governing decision | Accepted direction | Current policy / remaining gate |
 | --- | --- | --- |
@@ -39,6 +39,7 @@ The owner explicitly accepted the seven pending product ADRs on 2026-10-18, and 
 | [ADR-0027](../adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md) | Code-based device enrollment shaped like RFC 8628 and device-generated bearer credentials stored only as hashes, separate from human sessions | [Device enrollment design](../project/device-enrollment-design.md); accepted 2026-10-19 under PH-22; Android player PJ-12 and hardware PH-08 pending |
 | [ADR-0028](../adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md) | Immutable per-company content-addressed media objects on the media volume, parsed and converted only by FFmpeg in isolated child processes under a PostgreSQL-leased processor | [Media library design](../project/media-library-design.md); accepted 2026-10-19 under PH-23; device profiles PH-08, production image PJ-13 and malware scanning PH-13 pending |
 | [ADR-0029](../adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md) | Schedules evaluated per screen zone by a pure API evaluator over the Temporal API (`temporal-polyfill` until Node.js ships it), verified with canonical JSON fixtures that the player also runs | [Programming design](../project/programming-design.md); accepted 2026-10-19 under PH-24; player implementation PJ-12 pending |
+| [ADR-0030](../adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md) | Screens poll `POST /device/sync` every 30 seconds for a desired publication computed from current rows, download exact-byte manifests and SHA-256-identified renditions of that publication only, and receive ES256 JWS authorization statements with a seven-day expiry and signed server time | [Publication and synchronization design](../project/publication-sync-design.md); accepted 2026-10-20 under PH-25; player conformance PJ-12 and key provisioning PJ-13 pending |
 
 ## Deliberately unresolved or conditional choices
 

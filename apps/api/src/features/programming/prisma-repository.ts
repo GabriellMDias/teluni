@@ -311,12 +311,13 @@ export class PrismaProgrammingRepository {
   async items(
     companyId: string,
     playlistIds: readonly string[],
+    tx?: Prisma.TransactionClient,
   ): Promise<Map<string, ItemRecord[]>> {
     const found = new Map<string, ItemRecord[]>(
       playlistIds.map((id) => [id, []]),
     );
     if (playlistIds.length === 0) return found;
-    const rows = await this.#db.$queryRaw<
+    const rows = await (tx ?? this.#db).$queryRaw<
       {
         playlist_id: string;
         position: number;
@@ -709,18 +710,27 @@ export class PrismaProgrammingRepository {
       : Prisma.sql`device_id = ${source.deviceId}::uuid`;
   }
 
-  /** The program of a source; absent for a screen never programmed. */
+  /**
+   * The program of a source; absent for a source never programmed. `lock`
+   * true takes the row for update, "share" share-locks it.
+   */
   async program(
     companyId: string,
     source: ProgramSource,
     tx?: Prisma.TransactionClient,
-    lock = false,
+    lock: boolean | "share" = false,
   ): Promise<ProgramRecord | null> {
     const db = tx ?? this.#db;
     const [head] = await db.$queryRaw<{ id: string; version: number }[]>`
       SELECT id, version FROM programs
       WHERE company_id = ${companyId}::uuid AND ${this.#sourceFilter(source)}
-      ${lock ? Prisma.sql`FOR UPDATE` : Prisma.empty}`;
+      ${
+        lock === "share"
+          ? Prisma.sql`FOR SHARE`
+          : lock
+            ? Prisma.sql`FOR UPDATE`
+            : Prisma.empty
+      }`;
     if (!head) return null;
     const outputs = await db.$queryRaw<
       { output_key: OutputKey; default_playlist_id: string | null }[]
@@ -764,6 +774,28 @@ export class PrismaProgrammingRepository {
           })),
       });
     return { id: head.id, version: head.version, outputs: map };
+  }
+
+  /** The ID of a source's program, if it was ever programmed. */
+  async programId(
+    companyId: string,
+    source: ProgramSource,
+    tx?: Prisma.TransactionClient,
+  ): Promise<string | null> {
+    const [row] = await (tx ?? this.#db).$queryRaw<{ id: string }[]>`
+      SELECT id FROM programs
+      WHERE company_id = ${companyId}::uuid AND ${this.#sourceFilter(source)}`;
+    return row?.id ?? null;
+  }
+
+  /** Screens of a group that follow it (individual programming not selected). */
+  async groupFollowers(companyId: string, groupId: string): Promise<string[]> {
+    const rows = await this.#db.$queryRaw<{ device_id: string }[]>`
+      SELECT device_id FROM programming_device_settings
+      WHERE company_id = ${companyId}::uuid AND group_id = ${groupId}::uuid
+        AND NOT individual
+      ORDER BY device_id`;
+    return rows.map((row) => row.device_id);
   }
 
   /** Replaces one output's default and rules, creating the program if needed. */

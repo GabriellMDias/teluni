@@ -29,6 +29,7 @@ import {
   transition as normalizeTransition,
   weekdayMask,
   type ItemInput,
+  outputKeys,
   type OutputKey,
   type RuleInput,
   type Transition,
@@ -43,9 +44,17 @@ import type {
   ProgramSource,
   SettingRecord,
 } from "./prisma-repository.js";
+import type {
+  ProgramSnapshot,
+  ProgramTarget,
+  PublicationFacts,
+  PublishableRule,
+} from "./public.js";
 import {
   evaluate,
   findConflicts,
+  formatTime,
+  ruleIssue,
   TimelineTooLarge,
   type Conflict,
   type ResolutionNote,
@@ -268,6 +277,7 @@ export class ProgrammingService {
   readonly #companies: CompanyAccessPort;
   readonly #devices: DevicePort;
   readonly #media: MediaPort;
+  #publicationFacts: PublicationFacts | undefined;
 
   constructor(options: {
     repository: PrismaProgrammingRepository;
@@ -981,9 +991,6 @@ export class ProgrammingService {
   ): Promise<DeviceProgrammingView> {
     if (input.groupId === null && input.individual)
       throw new ProgrammingFailure("VALIDATION_FAILED");
-    // No destination is published before publications exist (PJ-11).
-    if (!input.confirmUnpublished)
-      throw new ProgrammingFailure("ASSIGNMENT_CONFIRMATION_REQUIRED");
     const [beforeDevice] = await this.#devices.describe(null, companyId, [
       deviceId,
     ]);
@@ -1022,6 +1029,23 @@ export class ProgrammingService {
         if (!group.allBranches && !group.branchIds.includes(found.branchId))
           throw new ProgrammingFailure("GROUP_SPAN_EXCLUDES_DEVICE");
       }
+      // A destination without a publication shows neutral output until it
+      // is published, which the person must confirm.
+      const destination: ProgramSource =
+        input.groupId && !input.individual
+          ? { kind: "group", groupId: input.groupId }
+          : { kind: "device", deviceId };
+      const programId = await this.#repository.programId(
+        companyId,
+        destination,
+        tx,
+      );
+      const published =
+        programId !== null && this.#publicationFacts
+          ? await this.#publicationFacts(tx, companyId, programId)
+          : false;
+      if (!published && !input.confirmUnpublished)
+        throw new ProgrammingFailure("ASSIGNMENT_CONFIRMATION_REQUIRED");
       const setting = await this.#repository.writeSetting(
         tx,
         actorOf(context, locked.access),
@@ -1075,6 +1099,173 @@ export class ProgrammingService {
       "device.left_group_on_move",
     );
   };
+
+  // Publication collaboration (the public port)
+
+  onPublicationFacts(facts: PublicationFacts): void {
+    this.#publicationFacts = facts;
+  }
+
+  async #publicationTarget(
+    tx: Prisma.TransactionClient | null,
+    access: CompanyAccess,
+    source: ProgramSource,
+    capability: Capability,
+  ): Promise<ProgramTarget & { program: ProgramRecord | null }> {
+    const companyId = access.companyId;
+    let reach: Reach;
+    let branchIds: readonly string[];
+    if (source.kind === "group") {
+      const group = tx
+        ? await this.#repository.lockGroup(
+            tx,
+            companyId,
+            source.groupId,
+            "share",
+          )
+        : await this.#repository.findGroup(companyId, source.groupId);
+      if (!group) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+      requireGroup(access, capability, group);
+      reach = spanReach(group);
+      branchIds = group.branchIds;
+    } else {
+      const [device] = await this.#devices.describe(tx, companyId, [
+        source.deviceId,
+      ]);
+      const found = requireDevice(access, capability, device);
+      reach = new Set([found.branchId]);
+      branchIds = [found.branchId];
+    }
+    const program = await this.#repository.program(
+      companyId,
+      source,
+      tx ?? undefined,
+      tx ? "share" : false,
+    );
+    return {
+      programId: program?.id ?? null,
+      programVersion: program?.version ?? 0,
+      reach: reach === "all" ? "all" : [...reach],
+      branchIds,
+      program,
+    };
+  }
+
+  async publicationTarget(
+    tx: Prisma.TransactionClient | null,
+    access: CompanyAccess,
+    source: ProgramSource,
+    capability: Capability,
+  ): Promise<ProgramTarget> {
+    const target = await this.#publicationTarget(
+      tx,
+      access,
+      source,
+      capability,
+    );
+    return {
+      programId: target.programId,
+      programVersion: target.programVersion,
+      reach: target.reach,
+      branchIds: target.branchIds,
+    };
+  }
+
+  async publicationSnapshot(
+    tx: Prisma.TransactionClient,
+    access: CompanyAccess,
+    source: ProgramSource,
+    capability: Capability,
+  ): Promise<ProgramSnapshot> {
+    const { program, ...target } = await this.#publicationTarget(
+      tx,
+      access,
+      source,
+      capability,
+    );
+    const outputs = outputKeys.flatMap((key) => {
+      const output = program?.outputs.get(key);
+      return output ? [{ key, output }] : [];
+    });
+    const playlistIds = [
+      ...new Set(
+        outputs.flatMap(({ output }) => [
+          ...output.rules.map((rule) => rule.playlistId),
+          ...(output.defaultPlaylistId ? [output.defaultPlaylistId] : []),
+        ]),
+      ),
+    ];
+    const playlists = await this.#repository.sharePlaylists(
+      tx,
+      access.companyId,
+      playlistIds,
+    );
+    const items = await this.#repository.items(
+      access.companyId,
+      playlistIds,
+      tx,
+    );
+    const reach: Reach = target.reach === "all" ? "all" : new Set(target.reach);
+    return {
+      ...target,
+      outputs: outputs.map(({ key, output }) => ({
+        key,
+        defaultPlaylistId: output.defaultPlaylistId,
+        rules: output.rules.map(publishableRule),
+        valid:
+          output.rules.every((rule) => ruleIssue(rule) === null) &&
+          findConflicts(output.rules).length === 0,
+      })),
+      playlists: playlists.map((item) => ({
+        id: item.id,
+        branchId: item.branchId,
+        transition: item.transition,
+        fadeMs: item.fadeMs,
+        usable: usable(item, reach),
+        items: (items.get(item.id) ?? []).map((entry) => ({
+          mediaAssetId: entry.mediaAssetId,
+          durationMs: entry.durationMs,
+        })),
+      })),
+    };
+  }
+
+  async currentProgram(
+    companyId: string,
+    deviceId: string,
+  ): Promise<{ source: "group" | "individual"; programId: string | null }> {
+    const setting = await this.#repository.setting(companyId, deviceId);
+    const source: ProgramSource =
+      setting.groupId && !setting.individual
+        ? { kind: "group", groupId: setting.groupId }
+        : { kind: "device", deviceId };
+    return {
+      source: source.kind === "group" ? "group" : "individual",
+      programId: await this.#repository.programId(companyId, source),
+    };
+  }
+
+  async followers(companyId: string, source: ProgramSource): Promise<string[]> {
+    let candidates: string[];
+    if (source.kind === "group")
+      candidates = await this.#repository.groupFollowers(
+        companyId,
+        source.groupId,
+      );
+    else {
+      const setting = await this.#repository.setting(
+        companyId,
+        source.deviceId,
+      );
+      candidates =
+        setting.groupId && !setting.individual ? [] : [source.deviceId];
+    }
+    const screens = await this.#devices.describe(null, companyId, candidates);
+    return screens
+      .filter((screen) => screen.status === "ACTIVE")
+      .map((screen) => screen.id)
+      .sort();
+  }
 
   // Timelines
 
@@ -1381,6 +1572,24 @@ export class ProgrammingService {
       version: setting.version,
     };
   }
+}
+
+/** A stored rule in the shared fixtures' representation, numbered from 1. */
+function publishableRule(rule: ScheduleRule, index: number): PublishableRule {
+  return {
+    id: `r${index + 1}`,
+    playlistId: rule.playlistId,
+    weekdays: [...rule.weekdays],
+    allDay: rule.allDay,
+    ...(rule.allDay
+      ? {}
+      : {
+          startTime: formatTime(rule.startMinute!),
+          endTime: formatTime(rule.endMinute!),
+        }),
+    startsOn: rule.startsOn,
+    endsOn: rule.endsOn,
+  };
 }
 
 function itemView(item: ItemRecord, fact: MediaFacts | undefined): ItemView {

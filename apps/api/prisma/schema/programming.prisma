@@ -74,18 +74,20 @@ model ProgrammingGroupBranch {
 }
 
 model Program {
-  id        String            @id @db.Uuid
-  companyId String            @map("company_id") @db.Uuid
-  groupId   String?           @map("group_id") @db.Uuid
-  deviceId  String?           @map("device_id") @db.Uuid
-  version   Int               @default(1)
-  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company   Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  group     ProgrammingGroup? @relation(fields: [companyId, groupId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
-  device    Device?           @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
-  outputs   ProgramOutput[]
-  rules     ScheduleRule[]
+  id           String            @id @db.Uuid
+  companyId    String            @map("company_id") @db.Uuid
+  groupId      String?           @map("group_id") @db.Uuid
+  deviceId     String?           @map("device_id") @db.Uuid
+  version      Int               @default(1)
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  group        ProgrammingGroup? @relation(fields: [companyId, groupId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  device       Device?           @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  outputs      ProgramOutput[]
+  rules        ScheduleRule[]
+  // Back-relation of the publications module; never traversed across modules.
+  publications Publication[]
 
   @@unique([companyId, id], map: "programs_company_id_id_key")
   @@unique([companyId, groupId], map: "programs_group_key")

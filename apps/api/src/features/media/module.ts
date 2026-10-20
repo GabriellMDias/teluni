@@ -51,6 +51,14 @@ export function createMediaModule(options: {
       require().service.requireSelectable(tx, access, assetIds),
     describe: (companyId, assetIds) =>
       require().service.describe(companyId, assetIds),
+    describeForPublication: (tx, companyId, assetIds) =>
+      require().service.describeForPublication(tx, companyId, assetIds),
+    openObject: (companyId, sha256, range) =>
+      require().service.openObject(
+        companyId,
+        Buffer.from(sha256, "hex"),
+        range,
+      ),
   };
   const module: ApiModule = {
     name: "media",

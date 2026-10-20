@@ -1,3 +1,4 @@
+import type { KeyObject } from "node:crypto";
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
 import type { FastifyInstance } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
@@ -55,7 +56,8 @@ export type ModuleRequirement =
   | "humanIdentity"
   | "mail"
   | "deviceEnrollment"
-  | "mediaStorage";
+  | "mediaStorage"
+  | "syncSigning";
 
 /** Validated settings of the server-managed human session boundary. */
 export type HumanIdentitySettings = Readonly<{
@@ -102,6 +104,12 @@ export type MediaStorageSettings = Readonly<{
   concurrency: number;
 }>;
 
+/** Validated key ring of screen authorization statements (ADR-0030). */
+export type SyncSigningSettings = Readonly<{
+  /** EC P-256 private keys, newest first; the first key signs. */
+  keys: readonly Readonly<{ id: string; privateKey: KeyObject }>[];
+}>;
+
 export type ModuleResources = Readonly<{
   database?: Database;
   verifier?: AccessTokenVerifier;
@@ -109,6 +117,7 @@ export type ModuleResources = Readonly<{
   mail?: MailSettings;
   deviceEnrollment?: DeviceEnrollmentSettings;
   mediaStorage?: MediaStorageSettings;
+  syncSigning?: SyncSigningSettings;
 }>;
 
 /** A module whose dependencies are satisfied and whose routes can mount. */
@@ -159,6 +168,7 @@ export function activateModules(
     mail: resources.mail !== undefined,
     deviceEnrollment: resources.deviceEnrollment !== undefined,
     mediaStorage: resources.mediaStorage !== undefined,
+    syncSigning: resources.syncSigning !== undefined,
   };
   const active: RegisteredModule[] = [];
   const activated = new Set<string>();

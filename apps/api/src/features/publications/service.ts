@@ -1,0 +1,997 @@
+import { randomUUID } from "node:crypto";
+import type { Readable } from "node:stream";
+import type { Prisma } from "../../generated/prisma/client.js";
+import { DeviceFailure, type DevicePort } from "../devices/public.js";
+import type { HumanContext } from "../identity/public.js";
+import type { MediaPort, PublishableMedia } from "../media/public.js";
+import {
+  decide,
+  OrganizationFailure,
+  type CompanyAccess,
+  type CompanyAccessPort,
+} from "../organizations/public.js";
+import type {
+  ProgramSnapshot,
+  ProgramSource,
+  ProgramTarget,
+  ProgrammingPort,
+} from "../programming/public.js";
+import {
+  agreedProtocol,
+  authorizedPublications,
+  canonicalContent,
+  connection,
+  contentDigest,
+  manifestBytes,
+  publicationPolicy,
+  PublicationFailure,
+  type AuthorizedPublication,
+  type Connection,
+  type ManifestMedia,
+  type ManifestPlaylist,
+  type PublicationContent,
+  type PublicationProblem,
+} from "./domain.js";
+import type {
+  Actor,
+  DeliveredMedia,
+  DeviceEventKind,
+  PrismaPublicationRepository,
+  PublicationRecord,
+  StateRecord,
+} from "./prisma-repository.js";
+import {
+  publicKeySet,
+  signStatement,
+  type PublicKeySet,
+  type SigningKey,
+} from "./statements.js";
+
+export type PublicationView = PublicationRecord &
+  Readonly<{
+    state: "current" | "retained" | "pruned";
+    isCaller: boolean;
+  }>;
+
+export type CheckView = Readonly<{
+  problems: readonly PublicationProblem[];
+  counts: PublicationRecord["counts"];
+  contentDigest: string;
+  unchanged: boolean;
+  latest: PublicationView | null;
+  followers: number;
+}>;
+
+export type ScreenStateView = Readonly<{
+  deviceId: string;
+  connection: Connection;
+  lastContactAt: Date | null;
+  source: "group" | "individual";
+  desired: Readonly<{ publicationId: string; generation: number }> | null;
+  publication:
+    "up_to_date" | "updating" | "pending" | "failed" | "neutral" | "unknown";
+  reported:
+    | (StateRecord & {
+        activeGeneration: number | null;
+        stagingGeneration: number | null;
+      })
+    | null;
+}>;
+
+/** What a screen reports at each synchronization. */
+export type SyncReport = Readonly<{
+  protocols: readonly number[];
+  appVersion: string;
+  active: Readonly<{ publicationId: string; activatedAt: string }> | null;
+  recovery: Readonly<{ publicationId: string }> | null;
+  staging: Readonly<{
+    publicationId: string;
+    state: "DOWNLOADING" | "VERIFYING" | "READY" | "FAILED";
+    failure: string | null;
+    bytesDone: number;
+    bytesTotal: number;
+  }> | null;
+  playback: string;
+  storage: Readonly<{ freeBytes: number; totalBytes: number }> | null;
+  deviceTime: string | null;
+}>;
+
+export type SyncAnswer = Readonly<{
+  protocol: number;
+  serverTime: Date;
+  status: "active" | "suspended" | "unlinked";
+  clearRequired: boolean;
+  timeZone: string | null;
+  desired: Readonly<{
+    publicationId: string;
+    generation: number;
+    manifestSha256: string;
+    manifestSize: number;
+    source: "group" | "individual";
+  }> | null;
+  authorization: string | null;
+  nextSyncSeconds: number;
+}>;
+
+type Built = Readonly<{
+  target: ProgramTarget;
+  content: PublicationContent;
+  playlists: readonly Readonly<{ id: string; branchId: string | null }>[];
+  problems: PublicationProblem[];
+  counts: PublicationRecord["counts"];
+  digest: Buffer;
+}>;
+
+const publish = "publications.publish";
+
+const encodeCursor = (generation: number) =>
+  Buffer.from(JSON.stringify({ g: generation }), "utf8").toString("base64url");
+
+function decodeCursor(cursor: string): number {
+  try {
+    const parsed: unknown = JSON.parse(
+      Buffer.from(cursor, "base64url").toString("utf8"),
+    );
+    const generation =
+      parsed && typeof parsed === "object" && "g" in parsed
+        ? parsed.g
+        : undefined;
+    if (
+      typeof generation === "number" &&
+      Number.isSafeInteger(generation) &&
+      generation >= 1
+    )
+      return generation;
+  } catch {
+    // Malformed cursors answer like invalid ones.
+  }
+  throw new PublicationFailure("VALIDATION_FAILED");
+}
+
+const actorOf = (context: HumanContext, access: CompanyAccess): Actor => ({
+  principalId: context.principalId,
+  membershipId: access.membershipId,
+});
+
+/** Whether a playlist owned by `branchId` fits every branch of the reach. */
+function fits(branchId: string | null, reach: ProgramTarget["reach"]): boolean {
+  return (
+    branchId === null ||
+    (reach !== "all" && reach.length === 1 && reach[0] === branchId)
+  );
+}
+
+/** Publications over the organizations, devices, media and programming ports. */
+export class PublicationService {
+  readonly #repository: PrismaPublicationRepository;
+  readonly #companies: CompanyAccessPort;
+  readonly #devices: DevicePort;
+  readonly #media: MediaPort;
+  readonly #programming: ProgrammingPort;
+  readonly #keys: readonly SigningKey[];
+  #keySet: Promise<PublicKeySet> | undefined;
+  readonly #downloads = new Map<string, number>();
+
+  constructor(options: {
+    repository: PrismaPublicationRepository;
+    companies: CompanyAccessPort;
+    devices: DevicePort;
+    media: MediaPort;
+    programming: ProgrammingPort;
+    keys: readonly SigningKey[];
+  }) {
+    this.#repository = options.repository;
+    this.#companies = options.companies;
+    this.#devices = options.devices;
+    this.#media = options.media;
+    this.#programming = options.programming;
+    this.#keys = options.keys;
+  }
+
+  // Publishing
+
+  async list(
+    context: HumanContext,
+    companyId: string,
+    source: ProgramSource,
+    query: { limit: number; cursor?: string },
+  ): Promise<{ items: PublicationView[]; nextCursor: string | null }> {
+    const access = await this.#companies.resolve(context, companyId);
+    const target = await this.#programming.target(
+      null,
+      access,
+      source,
+      "programming.view",
+    );
+    if (!target.programId) return { items: [], nextCursor: null };
+    const before = query.cursor ? decodeCursor(query.cursor) : undefined;
+    const rows = await this.#repository.list(companyId, target.programId, {
+      limit: query.limit + 1,
+      ...(before === undefined ? {} : { beforeGeneration: before }),
+    });
+    const page = rows.slice(0, query.limit);
+    return {
+      items: page.map((row) => this.#view(row, access)),
+      nextCursor:
+        rows.length > query.limit
+          ? encodeCursor(page[page.length - 1].generation)
+          : null,
+    };
+  }
+
+  async check(
+    context: HumanContext,
+    companyId: string,
+    source: ProgramSource,
+  ): Promise<CheckView> {
+    const result = await this.#withLocks(
+      context,
+      companyId,
+      source,
+      async (tx, access) => {
+        const built = await this.#build(tx, access, source);
+        const latest = built.target.programId
+          ? await this.#repository.latest(companyId, built.target.programId, tx)
+          : null;
+        return { built, latest, access };
+      },
+    );
+    const { built, latest, access } = result;
+    return {
+      problems: built.problems,
+      counts: built.counts,
+      contentDigest: built.digest.toString("hex"),
+      unchanged: latest !== null && latest.contentSha256.equals(built.digest),
+      latest: latest ? this.#view(latest, access) : null,
+      followers: (await this.#programming.followers(companyId, source)).length,
+    };
+  }
+
+  async publish(
+    context: HumanContext,
+    companyId: string,
+    source: ProgramSource,
+    expectedDigest: string,
+  ): Promise<{ publication: PublicationView; created: boolean }> {
+    const result = await this.#withLocks(
+      context,
+      companyId,
+      source,
+      async (tx, access) => {
+        const built = await this.#build(tx, access, source);
+        if (built.problems.length > 0)
+          throw new PublicationFailure("PUBLICATION_INVALID");
+        if (built.digest.toString("hex") !== expectedDigest)
+          throw new PublicationFailure("RESOURCE_VERSION_CONFLICT");
+        const programId = built.target.programId!;
+        return {
+          access,
+          ...(await this.#record(tx, actorOf(context, access), companyId, {
+            programId,
+            branchIds: built.target.branchIds,
+            content: built.content,
+            digest: built.digest,
+            counts: built.counts,
+            playlists: built.playlists,
+            restoredFromGeneration: null,
+          })),
+        };
+      },
+    );
+    return {
+      publication: this.#view(result.publication, result.access),
+      created: result.created,
+    };
+  }
+
+  async restore(
+    context: HumanContext,
+    companyId: string,
+    source: ProgramSource,
+    publicationId: string,
+  ): Promise<{ publication: PublicationView; created: boolean }> {
+    const result = await this.#withLocks(
+      context,
+      companyId,
+      source,
+      async (tx, access) => {
+        const target = await this.#programming.target(
+          tx,
+          access,
+          source,
+          publish,
+        );
+        const earlier = await this.#repository.find(
+          companyId,
+          publicationId,
+          tx,
+        );
+        if (!earlier || earlier.programId !== target.programId)
+          throw new PublicationFailure("RESOURCE_NOT_FOUND");
+        const manifest = earlier.prunedAt
+          ? null
+          : await this.#repository.manifest(companyId, publicationId, tx);
+        if (!manifest)
+          throw new PublicationFailure("PUBLICATION_NOT_RESTORABLE");
+        const stored = JSON.parse(manifest.toString("utf8")) as {
+          outputs: PublicationContent["outputs"];
+          playlists: ManifestPlaylist[];
+          media: ManifestMedia[];
+        };
+        const playlists = await this.#repository.playlists(
+          tx,
+          companyId,
+          publicationId,
+        );
+        // The copy keeps its content, but a narrower reach or deleted media
+        // must still refuse it.
+        if (playlists.some((item) => !fits(item.branchId, target.reach)))
+          throw new PublicationFailure("PUBLICATION_INVALID");
+        const media = await this.#media.describeForPublication(
+          tx,
+          companyId,
+          stored.media.map((item) => item.id),
+        );
+        const current = new Map(media.map((item) => [item.id, item]));
+        if (
+          stored.media.some((item) => {
+            const found = current.get(item.id);
+            return (
+              !found ||
+              !publishable(found) ||
+              found.display?.sha256 !== item.sha256
+            );
+          })
+        )
+          throw new PublicationFailure("PUBLICATION_INVALID");
+        const content: PublicationContent = {
+          outputs: stored.outputs,
+          playlists: stored.playlists,
+          media: stored.media,
+        };
+        return {
+          access,
+          ...(await this.#record(tx, actorOf(context, access), companyId, {
+            programId: earlier.programId,
+            branchIds: target.branchIds,
+            content,
+            digest: earlier.contentSha256,
+            counts: earlier.counts,
+            playlists,
+            restoredFromGeneration: earlier.generation,
+          })),
+        };
+      },
+    );
+    return {
+      publication: this.#view(result.publication, result.access),
+      created: result.created,
+    };
+  }
+
+  /**
+   * Resolves the program's branches without locks for the organization lock
+   * set, then runs the work after the organization locks.
+   */
+  async #withLocks<T>(
+    context: HumanContext,
+    companyId: string,
+    source: ProgramSource,
+    work: (tx: Prisma.TransactionClient, access: CompanyAccess) => Promise<T>,
+  ): Promise<T> {
+    const access = await this.#companies.resolve(context, companyId);
+    const before = await this.#programming.target(
+      null,
+      access,
+      source,
+      publish,
+    );
+    return this.#repository.transaction(async (tx) => {
+      const locked = await this.#companies.lockForWrite(
+        tx,
+        context,
+        companyId,
+        before.branchIds,
+      );
+      return work(tx, locked.access);
+    });
+  }
+
+  /** Builds the content of a program's current draft and its problems. */
+  async #build(
+    tx: Prisma.TransactionClient,
+    access: CompanyAccess,
+    source: ProgramSource,
+  ): Promise<Built> {
+    const snapshot: ProgramSnapshot = await this.#programming.snapshot(
+      tx,
+      access,
+      source,
+      publish,
+    );
+    const problems: PublicationProblem[] = [];
+    if (!snapshot.programId) problems.push({ code: "NOTHING_TO_PUBLISH" });
+    if (snapshot.outputs.some((output) => !output.valid))
+      problems.push({ code: "SCHEDULE_INVALID" });
+    for (const playlist of snapshot.playlists) {
+      if (!playlist.usable)
+        problems.push({
+          code: "PLAYLIST_OUT_OF_SCOPE",
+          playlistId: playlist.id,
+        });
+      if (playlist.transition === "FADE")
+        problems.push({
+          code: "TRANSITION_UNSUPPORTED",
+          playlistId: playlist.id,
+        });
+    }
+    const mediaIds = [
+      ...new Set(
+        snapshot.playlists.flatMap((playlist) =>
+          playlist.items.map((item) => item.mediaAssetId),
+        ),
+      ),
+    ];
+    const itemCount = snapshot.playlists.reduce(
+      (sum, playlist) => sum + playlist.items.length,
+      0,
+    );
+    if (
+      itemCount > publicationPolicy.maxItems ||
+      mediaIds.length > publicationPolicy.maxMedia
+    )
+      problems.push({ code: "TOO_LARGE" });
+    const described =
+      mediaIds.length > publicationPolicy.maxMedia
+        ? []
+        : await this.#media.describeForPublication(
+            tx,
+            access.companyId,
+            mediaIds,
+          );
+    const found = new Map(described.map((item) => [item.id, item]));
+    const media: ManifestMedia[] = [];
+    for (const id of mediaIds) {
+      const item = found.get(id);
+      if (!item || !publishable(item) || !item.display) {
+        if (mediaIds.length <= publicationPolicy.maxMedia)
+          problems.push({ code: "MEDIA_UNAVAILABLE", mediaId: id });
+        continue;
+      }
+      media.push({
+        id: item.id,
+        kind: item.kind,
+        contentType: item.display.contentType,
+        size: item.display.size,
+        sha256: item.display.sha256,
+        width: item.width,
+        height: item.height,
+        durationMs: item.durationMs,
+        hasAudio: item.hasAudio,
+      });
+    }
+    const content: PublicationContent = canonicalContent({
+      outputs: snapshot.outputs.map((output) => ({
+        key: output.key,
+        defaultPlaylistId: output.defaultPlaylistId,
+        rules: output.rules,
+      })),
+      playlists: snapshot.playlists.map((playlist) => ({
+        id: playlist.id,
+        transition:
+          playlist.transition === "FADE"
+            ? { kind: "FADE", durationMs: playlist.fadeMs ?? 0 }
+            : { kind: "CUT" },
+        items: playlist.items.map((item) => ({
+          mediaId: item.mediaAssetId,
+          durationMs: item.durationMs,
+        })),
+      })),
+      media,
+    });
+    return {
+      target: snapshot,
+      content,
+      playlists: snapshot.playlists.map((playlist) => ({
+        id: playlist.id,
+        branchId: playlist.branchId,
+      })),
+      problems,
+      counts: {
+        rules: snapshot.outputs.reduce(
+          (sum, output) => sum + output.rules.length,
+          0,
+        ),
+        playlists: snapshot.playlists.length,
+        items: itemCount,
+        media: media.length,
+        mediaBytes: media.reduce((sum, item) => sum + item.size, 0),
+      },
+      digest: contentDigest(content),
+    };
+  }
+
+  /**
+   * Under the company's publication lock: returns the latest publication
+   * when its content is the same, otherwise checks the limits and records
+   * the next generation.
+   */
+  async #record(
+    tx: Prisma.TransactionClient,
+    actor: Actor,
+    companyId: string,
+    input: {
+      programId: string;
+      branchIds: readonly string[];
+      content: PublicationContent;
+      digest: Buffer;
+      counts: PublicationRecord["counts"];
+      playlists: readonly Readonly<{ id: string; branchId: string | null }>[];
+      restoredFromGeneration: number | null;
+    },
+  ): Promise<{ publication: PublicationRecord; created: boolean }> {
+    await this.#repository.lockCompany(tx, companyId);
+    const latest = await this.#repository.latest(
+      companyId,
+      input.programId,
+      tx,
+    );
+    if (latest?.contentSha256.equals(input.digest))
+      return { publication: latest, created: false };
+    const recent = await this.#repository.recentCounts(
+      tx,
+      companyId,
+      input.programId,
+    );
+    if (
+      recent.programHour >= publicationPolicy.maxPerProgramPerHour ||
+      recent.companyDay >= publicationPolicy.maxPerCompanyPerDay
+    )
+      throw new PublicationFailure("RATE_LIMITED");
+    const id = randomUUID();
+    const generation = (latest?.generation ?? 0) + 1;
+    const publishedAt = new Date();
+    const manifest = manifestBytes(
+      {
+        publicationId: id,
+        companyId,
+        programId: input.programId,
+        generation,
+        publishedAt,
+      },
+      input.content,
+    );
+    const publication = await this.#repository.insert(
+      tx,
+      actor,
+      companyId,
+      {
+        id,
+        programId: input.programId,
+        branchIds: input.branchIds,
+        generation,
+        contentSha256: input.digest,
+        manifest: manifest.bytes,
+        manifestSha256: manifest.sha256,
+        counts: input.counts,
+        restoredFromGeneration: input.restoredFromGeneration,
+        publishedAt,
+        playlists: input.playlists,
+        media: input.content.media.map((item) => ({
+          id: item.id,
+          sha256: Buffer.from(item.sha256, "hex"),
+          size: item.size,
+          contentType: item.contentType,
+        })),
+      },
+      input.restoredFromGeneration === null
+        ? "publication.published"
+        : "publication.restored",
+      {
+        publicationId: id,
+        generation,
+        ...(input.restoredFromGeneration === null
+          ? {}
+          : { restoredFromGeneration: input.restoredFromGeneration }),
+        rules: input.counts.rules,
+        playlists: input.counts.playlists,
+        items: input.counts.items,
+        media: input.counts.media,
+      },
+    );
+    return { publication, created: true };
+  }
+
+  #view(row: PublicationRecord, access: CompanyAccess): PublicationView {
+    return {
+      ...row,
+      state: row.prunedAt
+        ? "pruned"
+        : row.supersededAt
+          ? "retained"
+          : "current",
+      isCaller: row.publishedByMembershipId === access.membershipId,
+    };
+  }
+
+  // Screen states for the panel
+
+  async syncState(
+    context: HumanContext,
+    companyId: string,
+    deviceId: string,
+  ): Promise<ScreenStateView> {
+    const access = await this.#companies.resolve(context, companyId);
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    const [device] = await this.#devices.describe(null, companyId, [deviceId]);
+    if (!device || decide(access, "devices.view", device.branchId) !== "allow")
+      throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    if (device.status !== "ACTIVE") throw new DeviceFailure("DEVICE_UNLINKED");
+    const states = await this.#repository.states(companyId, [deviceId]);
+    return this.#stateView(companyId, deviceId, states.get(deviceId) ?? null);
+  }
+
+  async screenStates(
+    context: HumanContext,
+    companyId: string,
+    deviceIds: readonly string[],
+  ): Promise<ScreenStateView[]> {
+    if (deviceIds.length > publicationPolicy.maxStateQuery)
+      throw new PublicationFailure("VALIDATION_FAILED");
+    const access = await this.#companies.resolve(context, companyId);
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    const devices = await this.#devices.describe(null, companyId, deviceIds);
+    const visible = devices
+      .filter(
+        (device) =>
+          device.status === "ACTIVE" &&
+          decide(access, "devices.view", device.branchId) === "allow",
+      )
+      .map((device) => device.id)
+      .sort();
+    const states = await this.#repository.states(companyId, visible);
+    return Promise.all(
+      visible.map((id) =>
+        this.#stateView(companyId, id, states.get(id) ?? null),
+      ),
+    );
+  }
+
+  async #stateView(
+    companyId: string,
+    deviceId: string,
+    stored: StateRecord | null,
+  ): Promise<ScreenStateView> {
+    const current = await this.#programming.currentProgram(companyId, deviceId);
+    const desired = current.programId
+      ? await this.#repository.latest(companyId, current.programId)
+      : null;
+    const reportedIds = [
+      stored?.activePublicationId,
+      stored?.staging?.publicationId,
+    ].filter((id): id is string => Boolean(id));
+    const known = new Map(
+      (await this.#repository.findMany(companyId, reportedIds)).map((row) => [
+        row.id,
+        row.generation,
+      ]),
+    );
+    let publication: ScreenStateView["publication"];
+    if (!stored) publication = "unknown";
+    else if (!desired) publication = "neutral";
+    else if (stored.activePublicationId === desired.id)
+      publication = "up_to_date";
+    else if (stored.staging?.publicationId === desired.id)
+      publication = stored.staging.state === "FAILED" ? "failed" : "updating";
+    else publication = "pending";
+    return {
+      deviceId,
+      connection: connection(stored?.receivedAt ?? null, new Date()),
+      lastContactAt: stored?.receivedAt ?? null,
+      source: current.source,
+      desired: desired
+        ? { publicationId: desired.id, generation: desired.generation }
+        : null,
+      publication,
+      reported: stored
+        ? {
+            ...stored,
+            activeGeneration: stored.activePublicationId
+              ? (known.get(stored.activePublicationId) ?? null)
+              : null,
+            stagingGeneration: stored.staging
+              ? (known.get(stored.staging.publicationId) ?? null)
+              : null,
+          }
+        : null,
+    };
+  }
+
+  // Screens
+
+  async sync(
+    authorization: string | undefined,
+    report: SyncReport,
+  ): Promise<SyncAnswer> {
+    const screen = await this.#devices.authenticate(authorization);
+    const protocol = agreedProtocol(report.protocols);
+    if (screen.status === "unlinked")
+      return {
+        protocol: protocol ?? publicationPolicy.protocols[0],
+        serverTime: screen.serverTime,
+        status: "unlinked",
+        clearRequired: true,
+        timeZone: null,
+        desired: null,
+        authorization: null,
+        nextSyncSeconds: publicationPolicy.syncIntervalSeconds,
+      };
+    if (protocol === null) throw new PublicationFailure("PROTOCOL_UNSUPPORTED");
+    const active = screen.status === "active";
+    const current = await this.#programming.currentProgram(
+      screen.companyId,
+      screen.deviceId,
+    );
+    const desired =
+      active && current.programId
+        ? await this.#repository.latest(screen.companyId, current.programId)
+        : null;
+    await this.#repository.transaction(async (tx) => {
+      const before = await this.#repository.state(
+        screen.companyId,
+        screen.deviceId,
+        tx,
+        true,
+      );
+      const next: Omit<StateRecord, "receivedAt"> = {
+        deviceId: screen.deviceId,
+        protocol,
+        appVersion: report.appVersion,
+        // A suspended company receives no answer to keep.
+        desiredPublicationId: active
+          ? (desired?.id ?? null)
+          : (before?.desiredPublicationId ?? null),
+        activePublicationId: report.active?.publicationId ?? null,
+        activeSince: report.active ? new Date(report.active.activatedAt) : null,
+        recoveryPublicationId: report.recovery?.publicationId ?? null,
+        staging: report.staging
+          ? {
+              publicationId: report.staging.publicationId,
+              state: report.staging.state,
+              failure:
+                report.staging.state === "FAILED"
+                  ? (report.staging.failure ?? "DOWNLOAD_FAILED")
+                  : null,
+              bytesDone: report.staging.bytesDone,
+              bytesTotal: report.staging.bytesTotal,
+            }
+          : null,
+        playback: report.playback,
+        storage:
+          report.storage &&
+          report.storage.freeBytes <= report.storage.totalBytes
+            ? report.storage
+            : null,
+        deviceTime: report.deviceTime ? new Date(report.deviceTime) : null,
+      };
+      await this.#repository.writeState(
+        tx,
+        screen.companyId,
+        next,
+        transitions(before, next, active),
+      );
+    });
+    let statement: string | null = null;
+    if (active && screen.authorizedUntil) {
+      const reported = (
+        await this.#repository.findMany(
+          screen.companyId,
+          [report.active?.publicationId, report.recovery?.publicationId].filter(
+            (id): id is string => Boolean(id),
+          ),
+        )
+      )
+        .filter((row) => !row.prunedAt)
+        .map((row): AuthorizedPublication => ({
+          id: row.id,
+          sha256: row.manifestSha256.toString("hex"),
+        }));
+      statement = await signStatement(this.#keys, {
+        sub: screen.deviceId,
+        company: screen.companyId,
+        iat: Math.floor(screen.serverTime.getTime() / 1000),
+        exp: Math.floor(screen.authorizedUntil.getTime() / 1000),
+        publications: authorizedPublications(
+          desired
+            ? { id: desired.id, sha256: desired.manifestSha256.toString("hex") }
+            : null,
+          report.active?.publicationId ?? null,
+          reported,
+        ),
+      });
+    }
+    return {
+      protocol,
+      serverTime: screen.serverTime,
+      status: screen.status,
+      clearRequired: false,
+      timeZone: screen.timeZone,
+      desired: desired
+        ? {
+            publicationId: desired.id,
+            generation: desired.generation,
+            manifestSha256: desired.manifestSha256.toString("hex"),
+            manifestSize: desired.manifestSize,
+            source: current.source,
+          }
+        : null,
+      authorization: statement,
+      nextSyncSeconds: publicationPolicy.syncIntervalSeconds,
+    };
+  }
+
+  /** The current desired publication of an active screen, or not found. */
+  async #desiredFor(
+    authorization: string | undefined,
+    publicationId?: string,
+  ): Promise<{
+    companyId: string;
+    deviceId: string;
+    publication: PublicationRecord;
+  }> {
+    const screen = await this.#devices.authenticate(authorization);
+    if (screen.status !== "active")
+      throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    const current = await this.#programming.currentProgram(
+      screen.companyId,
+      screen.deviceId,
+    );
+    const desired = current.programId
+      ? await this.#repository.latest(screen.companyId, current.programId)
+      : null;
+    if (
+      !desired ||
+      (publicationId !== undefined && desired.id !== publicationId)
+    )
+      throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    return {
+      companyId: screen.companyId,
+      deviceId: screen.deviceId,
+      publication: desired,
+    };
+  }
+
+  async manifest(
+    authorization: string | undefined,
+    publicationId: string,
+  ): Promise<{ bytes: Buffer; sha256: string }> {
+    const { companyId, publication } = await this.#desiredFor(
+      authorization,
+      publicationId,
+    );
+    const bytes = await this.#repository.manifest(companyId, publication.id);
+    if (!bytes) throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    return { bytes, sha256: publication.manifestSha256.toString("hex") };
+  }
+
+  /**
+   * Admits one media download of the current desired publication. The
+   * caller streams `open` and must call `release` when the response ends.
+   */
+  async media(
+    authorization: string | undefined,
+    mediaId: string,
+  ): Promise<
+    DeliveredMedia & {
+      open(range?: { start: number; end: number }): Readable;
+      release(): void;
+    }
+  > {
+    const { companyId, deviceId, publication } =
+      await this.#desiredFor(authorization);
+    const delivered = await this.#repository.deliveredMedia(
+      companyId,
+      publication.id,
+      mediaId,
+    );
+    if (!delivered) throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    const running = this.#downloads.get(deviceId) ?? 0;
+    if (running >= publicationPolicy.maxConcurrentDownloads)
+      throw new PublicationFailure("RATE_LIMITED");
+    this.#downloads.set(deviceId, running + 1);
+    let released = false;
+    return {
+      ...delivered,
+      open: (range) =>
+        this.#media.openObject(
+          companyId,
+          delivered.sha256.toString("hex"),
+          range,
+        ),
+      release: () => {
+        if (released) return;
+        released = true;
+        const left = (this.#downloads.get(deviceId) ?? 1) - 1;
+        if (left > 0) this.#downloads.set(deviceId, left);
+        else this.#downloads.delete(deviceId);
+      },
+    };
+  }
+
+  async keys(authorization: string | undefined): Promise<PublicKeySet> {
+    await this.#devices.authenticate(authorization);
+    this.#keySet ??= publicKeySet(this.#keys);
+    return this.#keySet;
+  }
+
+  // Collaboration
+
+  /** Prunes publications past their retention and old report transitions. */
+  async maintain(): Promise<{ pruned: number; events: number }> {
+    const pruned = await this.#repository.prune();
+    const events = await this.#repository.purgeEvents();
+    return { pruned, events };
+  }
+}
+
+function publishable(item: PublishableMedia): boolean {
+  return (
+    (item.status === "READY" || item.status === "ARCHIVED") &&
+    item.display !== null
+  );
+}
+
+/** The report transitions worth keeping (AT-20). */
+function transitions(
+  before: StateRecord | null,
+  next: Omit<StateRecord, "receivedAt">,
+  answered: boolean,
+): {
+  kind: DeviceEventKind;
+  publicationId: string | null;
+  detail: string | null;
+}[] {
+  const events: {
+    kind: DeviceEventKind;
+    publicationId: string | null;
+    detail: string | null;
+  }[] = [];
+  if (
+    answered &&
+    (!before || before.desiredPublicationId !== next.desiredPublicationId)
+  )
+    events.push({
+      kind: "DESIRED_DELIVERED",
+      publicationId: next.desiredPublicationId,
+      detail: null,
+    });
+  if (
+    next.activePublicationId &&
+    before?.activePublicationId !== next.activePublicationId
+  )
+    events.push({
+      kind: "ACTIVATED",
+      publicationId: next.activePublicationId,
+      detail: null,
+    });
+  if (
+    next.staging?.state === "FAILED" &&
+    (before?.staging?.state !== "FAILED" ||
+      before.staging.publicationId !== next.staging.publicationId ||
+      before.staging.failure !== next.staging.failure)
+  )
+    events.push({
+      kind: "STAGING_FAILED",
+      publicationId: next.staging.publicationId,
+      detail: next.staging.failure,
+    });
+  if (before && before.playback !== next.playback)
+    events.push({
+      kind: "PLAYBACK_CHANGED",
+      publicationId: null,
+      detail: next.playback,
+    });
+  return events;
+}

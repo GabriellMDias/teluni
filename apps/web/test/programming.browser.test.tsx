@@ -16,6 +16,7 @@ import type {
   Group,
   Playlist,
   Program,
+  Publication,
 } from "../src/programming/api.js";
 import { programmingMessages } from "../src/programming/messages.js";
 
@@ -620,4 +621,282 @@ test("offers every page of playlists and marks the ones outside the caller's acc
   await expect
     .element(screen.getByRole("cell", { name: t.hiddenPlaylist }))
     .toBeVisible();
+});
+
+const publicationId = "00000000-0000-4000-8000-0000000000b1";
+const olderPublicationId = "00000000-0000-4000-8000-0000000000b2";
+
+function publication(
+  generation: number,
+  overrides: Partial<Publication> = {},
+): Publication {
+  return {
+    id: generation === 2 ? publicationId : olderPublicationId,
+    generation,
+    protocol: 1,
+    publishedAt: "2026-10-19T12:00:00.000Z",
+    publishedBy: {
+      membershipId: "00000000-0000-4000-8000-0000000000a9",
+      isCaller: false,
+    },
+    restoredFromGeneration: null,
+    counts: { rules: 1, playlists: 1, items: 1, media: 1, mediaBytes: 2e6 },
+    manifestSha256: "a".repeat(64),
+    state: generation === 2 ? "current" : "retained",
+    supersededAt: generation === 2 ? null : "2026-10-19T13:00:00.000Z",
+    ...overrides,
+  };
+}
+
+const review = {
+  publishable: true,
+  problems: [],
+  counts: { rules: 2, playlists: 1, items: 3, media: 2, mediaBytes: 4_500_000 },
+  contentDigest: "c".repeat(64),
+  unchanged: false,
+  latest: null,
+  followers: 3,
+};
+
+const publisher = [...editor, "publications.publish"];
+
+test("publishes exactly the reviewed draft of a group", async () => {
+  let published = false;
+  respond(publisher, (url, request) => {
+    if (url.pathname.endsWith(`/groups/${groupId}/publications/check`))
+      return { body: review };
+    if (
+      url.pathname.endsWith(`/groups/${groupId}/publications`) &&
+      request.method === "POST"
+    ) {
+      published = true;
+      return {
+        status: 201,
+        body: { publication: publication(2), created: true },
+      };
+    }
+    if (url.pathname.endsWith(`/groups/${groupId}/publications`))
+      return {
+        body: {
+          items: published ? [publication(2), publication(1)] : [],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith(`/groups/${groupId}/program`))
+      return { body: emptyProgram };
+    if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [], nextCursor: null } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/groups/${groupId}`);
+  await expect.element(screen.getByText(t.publication.never)).toBeVisible();
+  await screen.getByRole("button", { name: t.publication.review }).click();
+  await expect
+    .element(screen.getByText(t.publication.followers(3)))
+    .toBeVisible();
+  await screen.getByRole("button", { name: t.publication.publish }).click();
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(t.publication.published(2));
+  expect(await sent("POST", `/groups/${groupId}/publications`)).toEqual({
+    contentDigest: "c".repeat(64),
+  });
+  const history = screen.getByRole("list", {
+    name: t.publication.historyTitle,
+  });
+  await expect
+    .element(history.getByText(t.publication.generation(2)))
+    .toBeVisible();
+  await expect
+    .element(history.getByText(t.publication.generation(1)))
+    .toBeVisible();
+});
+
+test("shows what blocks a publication and a draft changed after review", async () => {
+  let blocked = true;
+  respond(publisher, (url, request) => {
+    if (url.pathname.endsWith(`/groups/${groupId}/publications/check`))
+      return {
+        body: blocked
+          ? {
+              ...review,
+              publishable: false,
+              problems: [
+                { code: "TRANSITION_UNSUPPORTED", playlistId },
+                { code: "MEDIA_UNAVAILABLE", mediaId: assetId },
+              ],
+            }
+          : review,
+      };
+    if (
+      url.pathname.endsWith(`/groups/${groupId}/publications`) &&
+      request.method === "POST"
+    )
+      return {
+        status: 409,
+        body: {
+          error: { code: "RESOURCE_VERSION_CONFLICT", message: "Changed" },
+        },
+      };
+    if (url.pathname.endsWith(`/groups/${groupId}/publications`))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith(`/groups/${groupId}/program`))
+      return { body: emptyProgram };
+    if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [], nextCursor: null } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/groups/${groupId}`);
+  await screen.getByRole("button", { name: t.publication.review }).click();
+  await expect
+    .element(screen.getByText(t.publication.problems.TRANSITION_UNSUPPORTED))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText(t.publication.problems.MEDIA_UNAVAILABLE))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: t.publication.publish }))
+    .toBeDisabled();
+  await screen.getByRole("button", { name: t.publication.cancel }).click();
+  blocked = false;
+  await screen.getByRole("button", { name: t.publication.review }).click();
+  await screen.getByRole("button", { name: t.publication.publish }).click();
+  await expect
+    .element(screen.getByText(t.publication.changedSinceReview))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: t.publication.publish }))
+    .toBeDisabled();
+});
+
+test("restores a retained generation only after confirmation", async () => {
+  respond(publisher, (url, request) => {
+    if (url.pathname.endsWith(`/publications/${olderPublicationId}/restore`))
+      return {
+        status: 201,
+        body: {
+          publication: publication(3, {
+            id: "00000000-0000-4000-8000-0000000000b3",
+            restoredFromGeneration: 1,
+            state: "current",
+          }),
+          created: true,
+        },
+      };
+    if (
+      url.pathname.endsWith(`/groups/${groupId}/publications`) &&
+      request.method === "GET"
+    )
+      return {
+        body: { items: [publication(2), publication(1)], nextCursor: null },
+      };
+    if (url.pathname.endsWith(`/groups/${groupId}/program`))
+      return { body: emptyProgram };
+    if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [], nextCursor: null } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/groups/${groupId}`);
+  // Only a retained generation offers restore.
+  const restore = screen.getByRole("button", { name: t.publication.restore });
+  await expect.element(restore).toBeVisible();
+  await restore.click();
+  await expect
+    .element(screen.getByText(t.publication.restoreConfirm(1)))
+    .toBeVisible();
+  expect(sentCount("POST", "/restore")).toBe(0);
+  await screen.getByRole("button", { name: t.publication.restoreYes }).click();
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(t.publication.restored(3));
+});
+
+test("assigns a screen to a published group without the neutral-screen confirmation", async () => {
+  const current: DeviceProgramming = {
+    device: {
+      id: deviceId,
+      name: "Entrada",
+      branch: { id: branchA, name: "Centro", timeZone: "America/Sao_Paulo" },
+      timeZone: null,
+    },
+    group: null,
+    individual: false,
+    source: "individual",
+    version: 0,
+  };
+  respond([...editor, "programming.assign"], (url) => {
+    if (url.pathname.endsWith(`/groups/${groupId}/publications`))
+      return { body: { items: [publication(2)], nextCursor: null } };
+    if (url.pathname.endsWith(`/devices/${deviceId}/publications`))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith(`/devices/${deviceId}/assignment`))
+      return {
+        body: {
+          ...current,
+          group: { id: groupId, name: "Vitrines" },
+          source: "group",
+          version: 1,
+        },
+      };
+    if (url.pathname.endsWith(`/devices/${deviceId}/program`))
+      return { body: emptyProgram };
+    if (url.pathname.endsWith(`/devices/${deviceId}`)) return { body: current };
+    if (url.pathname.endsWith("/programming/groups"))
+      return { body: { items: [group()] } };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [], nextCursor: null } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/screens/${deviceId}`);
+  await expect
+    .element(screen.getByRole("checkbox", { name: t.confirmUnpublished }))
+    .toBeVisible();
+  await screen.getByLabelText(t.groupLabel).selectOptions("Vitrines");
+  await expect
+    .element(screen.getByText(t.publishedDestination(2)))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("checkbox", { name: t.confirmUnpublished }))
+    .not.toBeInTheDocument();
+  await screen.getByRole("button", { name: t.assign }).click();
+  await expect.element(screen.getByText(t.assigned)).toBeVisible();
+  expect(await sent("PUT", "/assignment")).toEqual({
+    expectedVersion: 0,
+    groupId,
+    individual: false,
+    confirmUnpublished: false,
+  });
+});
+
+test("offers two-step verification to members who may publish only after it", async () => {
+  respond([], (url) => {
+    if (url.pathname.endsWith(`/companies/${companyId}`))
+      return { body: company(editor, ["publications.publish"]) };
+    if (url.pathname.endsWith(`/groups/${groupId}/publications`))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith(`/groups/${groupId}/program`))
+      return { body: emptyProgram };
+    if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [], nextCursor: null } };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/groups/${groupId}`);
+  await expect
+    .element(screen.getByText(t.publication.stepUp, { exact: false }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("link", { name: t.stepUpButton }))
+    .toHaveAttribute(
+      "href",
+      expect.stringContaining(
+        encodeURIComponent(`${base}/groups/${groupId}`),
+      ) as string,
+    );
+  await expect
+    .element(screen.getByRole("button", { name: t.publication.review }))
+    .not.toBeInTheDocument();
 });

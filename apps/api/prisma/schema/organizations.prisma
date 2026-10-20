@@ -88,28 +88,32 @@ model Company {
   programmingGroups       ProgrammingGroup[]
   programs                Program[]
   programmingAuditEvents  ProgrammingAuditEvent[]
+  // Back-relations of the publications module; never traversed across modules.
+  publications            Publication[]
+  publicationAuditEvents  PublicationAuditEvent[]
 
   @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
   @@map("companies")
 }
 
 model Branch {
-  id                 String                         @id @db.Uuid
-  companyId          String                         @map("company_id") @db.Uuid
-  name               String                         @db.VarChar(120)
-  timeZone           String                         @map("time_zone") @db.VarChar(64)
-  status             BranchStatus                   @default(ACTIVE)
-  version            Int                            @default(1)
-  createdAt          DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime                       @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company            Company                        @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  grantBranches      MembershipGrantBranch[]
-  invitationBranches CompanyInvitationBranch[]
-  auditEventBranches OrganizationAuditEventBranch[]
-  devices            Device[]
-  mediaAssets        MediaAsset[]
-  playlists          Playlist[]
-  programmingGroups  ProgrammingGroupBranch[]
+  id                   String                         @id @db.Uuid
+  companyId            String                         @map("company_id") @db.Uuid
+  name                 String                         @db.VarChar(120)
+  timeZone             String                         @map("time_zone") @db.VarChar(64)
+  status               BranchStatus                   @default(ACTIVE)
+  version              Int                            @default(1)
+  createdAt            DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                       @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company              Company                        @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  grantBranches        MembershipGrantBranch[]
+  invitationBranches   CompanyInvitationBranch[]
+  auditEventBranches   OrganizationAuditEventBranch[]
+  devices              Device[]
+  mediaAssets          MediaAsset[]
+  playlists            Playlist[]
+  programmingGroups    ProgrammingGroupBranch[]
+  publicationPlaylists PublicationPlaylist[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
   @@index([companyId, status, name], map: "branches_company_status_name_idx")
@@ -139,6 +143,8 @@ model Membership {
   createdMedia      MediaAsset[]             @relation("MediaCreator")
   mediaAuditEvents  MediaAuditEvent[]        @relation("MediaAuditActorMembership")
   programmingAudit  ProgrammingAuditEvent[]  @relation("ProgrammingAuditActorMembership")
+  publications      Publication[]            @relation("PublicationPublisherMembership")
+  publicationAudit  PublicationAuditEvent[]  @relation("PublicationAuditActorMembership")
 
   // One current (not REMOVED) membership per principal and company is a
   // partial unique index in the reviewed SQL, which Prisma cannot express.

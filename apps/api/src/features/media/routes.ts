@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import type { AppInstance } from "../../module.js";
+import { parseRange } from "../../byte-range.js";
 import { currentTraceId } from "../../request-context.js";
 import {
   SessionFailure,
@@ -86,30 +87,6 @@ const extensions: Readonly<Record<string, string>> = {
   "video/webm": "webm",
   "video/x-matroska": "mkv",
 };
-
-/** Parses one `bytes=` range of an object; null when absent or unusable. */
-function parseRange(
-  header: string | undefined,
-  size: number,
-): { start: number; end: number } | "unsatisfiable" | null {
-  if (!header) return null;
-  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
-  if (!match || (match[1] === "" && match[2] === "")) return null;
-  let start: number;
-  let end: number;
-  if (match[1] === "") {
-    const suffix = Number(match[2]);
-    if (suffix === 0) return "unsatisfiable";
-    start = Math.max(0, size - suffix);
-    end = size - 1;
-  } else {
-    start = Number(match[1]);
-    end = match[2] === "" ? size - 1 : Math.min(Number(match[2]), size - 1);
-  }
-  if (!Number.isSafeInteger(start) || start >= size || end < start)
-    return "unsatisfiable";
-  return { start, end };
-}
 
 export function registerMediaRoutes(
   app: AppInstance,

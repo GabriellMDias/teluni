@@ -31,6 +31,7 @@ import type {
   MediaFacts,
   MediaReference,
   MediaReferenceGuard,
+  PublishableMedia,
   SelectableMedia,
 } from "./public.js";
 import { UploadIdle, UploadTooLong, type MediaObjectStore } from "./storage.js";
@@ -552,6 +553,40 @@ export class MediaService {
       branchId: item.branchId,
       durationMs: item.durationMs,
     }));
+  }
+
+  /** The public port's description of items a publication copies. */
+  async describeForPublication(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    assetIds: readonly string[],
+  ): Promise<PublishableMedia[]> {
+    const described: PublishableMedia[] = [];
+    for (const id of [...new Set(assetIds)].sort()) {
+      const item = await this.#repository.share(tx, companyId, id);
+      if (!item) continue;
+      const display = item.displaySha256
+        ? await this.#repository.object(companyId, item.displaySha256)
+        : null;
+      described.push({
+        id: item.id,
+        kind: item.kind,
+        status: item.status,
+        branchId: item.branchId,
+        width: item.width ?? 0,
+        height: item.height ?? 0,
+        durationMs: item.durationMs,
+        hasAudio: item.hasAudio ?? false,
+        display: display
+          ? {
+              sha256: display.sha256.toString("hex"),
+              size: display.byteSize,
+              contentType: display.contentType,
+            }
+          : null,
+      });
+    }
+    return described;
   }
 
   /** The public port's selection of media for a new reference. */

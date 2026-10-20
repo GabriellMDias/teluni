@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { createInterface } from "node:readline";
@@ -125,6 +125,11 @@ export async function startIdentityStack(): Promise<IdentityStack> {
     const sessionKeys = `e2e:${randomBytes(32).toString("base64url")}`;
     const mailKeys = `e2e:${randomBytes(32).toString("base64url")}`;
     const deviceCodeKeys = `e2e:${randomBytes(32).toString("base64url")}`;
+    const syncSigningKeys = `e2e:${generateKeyPairSync("ec", {
+      namedCurve: "P-256",
+    })
+      .privateKey.export({ format: "der", type: "pkcs8" })
+      .toString("base64url")}`;
     // A disposable media volume; processing needs FFmpeg on PATH.
     const mediaRoot = await mkdtemp(join(tmpdir(), "teluni-e2e-media-"));
     resources.push({
@@ -137,6 +142,7 @@ export async function startIdentityStack(): Promise<IdentityStack> {
       sessionKeys,
       mailKeys,
       deviceCodeKeys,
+      syncSigningKeys,
       user.password,
       member.password,
       guest.password,
@@ -163,6 +169,7 @@ export async function startIdentityStack(): Promise<IdentityStack> {
         TELUNI_MAIL_KEYS: mailKeys,
         TELUNI_DEVICE_CODE_KEYS: deviceCodeKeys,
         TELUNI_MEDIA_STORAGE_PATH: mediaRoot,
+        TELUNI_SYNC_SIGNING_KEYS: syncSigningKeys,
       },
     });
     resources.unshift(api);

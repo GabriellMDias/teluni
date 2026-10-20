@@ -1,0 +1,67 @@
+{
+  "kind": "database",
+  "name": "publication_playlists",
+  "description": "Each playlist copied into a publication, with the branch that owned it when it was published, so a restore can check the program's current reach.",
+  "owner": "Publications",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted with its publication; never updated. Deleted with its publication.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the publication; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication that copied the playlist.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "playlist_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Copied playlist; not a foreign key, so the copy outlives the playlist.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch that owned the playlist when it was published.",
+      "Null meaning": "The playlist belonged to the whole company.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "publication_playlists_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The owning branch belongs to the same company."
+    },
+    {
+      "Object": "publication_playlists_company_id_publication_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The publication belongs to the same company; rows go with it."
+    },
+    {
+      "Object": "publication_playlists_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, publication_id, playlist_id)",
+      "Purpose": "One row per playlist and publication."
+    }
+  ]
+}

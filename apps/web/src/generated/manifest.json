@@ -129,6 +129,40 @@
       "file": "pages/api/assignDeviceProgramming.json"
     },
     {
+      "id": "api/checkDevicePublication",
+      "kind": "api",
+      "title": "checkDevicePublication",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/devices/{deviceId}/publications/check",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/publications/check",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/checkDevicePublication.json"
+    },
+    {
+      "id": "api/checkGroupPublication",
+      "kind": "api",
+      "title": "checkGroupPublication",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/groups/{groupId}/publications/check",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/groups/{groupId}/publications/check",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/checkGroupPublication.json"
+    },
+    {
       "id": "api/checkScheduleRules",
       "kind": "api",
       "title": "checkScheduleRules",
@@ -481,6 +515,57 @@
       "file": "pages/api/getDeviceEnrollmentStatus.json"
     },
     {
+      "id": "api/getDeviceKeys",
+      "kind": "api",
+      "title": "getDeviceKeys",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /device/keys",
+      "method": "GET",
+      "path": "/device/keys",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceKeys.json"
+    },
+    {
+      "id": "api/getDeviceManifest",
+      "kind": "api",
+      "title": "getDeviceManifest",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /device/publications/{publicationId}/manifest",
+      "method": "GET",
+      "path": "/device/publications/{publicationId}/manifest",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceManifest.json"
+    },
+    {
+      "id": "api/getDeviceMedia",
+      "kind": "api",
+      "title": "getDeviceMedia",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /device/media/{mediaId}",
+      "method": "GET",
+      "path": "/device/media/{mediaId}",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceMedia.json"
+    },
+    {
       "id": "api/getDeviceProgram",
       "kind": "api",
       "title": "getDeviceProgram",
@@ -530,6 +615,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getDeviceSelf.json"
+    },
+    {
+      "id": "api/getDeviceSyncState",
+      "kind": "api",
+      "title": "getDeviceSyncState",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/devices/{deviceId}/sync-state",
+      "method": "GET",
+      "path": "/companies/{companyId}/devices/{deviceId}/sync-state",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getDeviceSyncState.json"
     },
     {
       "id": "api/getDeviceTimeline",
@@ -804,6 +906,23 @@
       "file": "pages/api/listCompanyMembers.json"
     },
     {
+      "id": "api/listDevicePublications",
+      "kind": "api",
+      "title": "listDevicePublications",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/devices/{deviceId}/publications",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/publications",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listDevicePublications.json"
+    },
+    {
       "id": "api/listDevices",
       "kind": "api",
       "title": "listDevices",
@@ -819,6 +938,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/listDevices.json"
+    },
+    {
+      "id": "api/listGroupPublications",
+      "kind": "api",
+      "title": "listGroupPublications",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/groups/{groupId}/publications",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/groups/{groupId}/publications",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listGroupPublications.json"
     },
     {
       "id": "api/listInvitations",
@@ -887,6 +1023,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/listProgrammingGroups.json"
+    },
+    {
+      "id": "api/listScreenStates",
+      "kind": "api",
+      "title": "listScreenStates",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/publications/screen-states",
+      "method": "GET",
+      "path": "/companies/{companyId}/publications/screen-states",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listScreenStates.json"
     },
     {
       "id": "api/listSessions",
@@ -975,6 +1128,42 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/previewInvitation.json"
+    },
+    {
+      "id": "api/publishDevice",
+      "kind": "api",
+      "title": "publishDevice",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/devices/{deviceId}/publications",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/publications",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/publishDevice.json"
+    },
+    {
+      "id": "api/publishGroup",
+      "kind": "api",
+      "title": "publishGroup",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/groups/{groupId}/publications",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/groups/{groupId}/publications",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/publishGroup.json"
     },
     {
       "id": "api/receiveBackchannelLogout",
@@ -1120,6 +1309,40 @@
       "file": "pages/api/restoreDeletedMedia.json"
     },
     {
+      "id": "api/restoreDevicePublication",
+      "kind": "api",
+      "title": "restoreDevicePublication",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/devices/{deviceId}/publications/{publicationId}/restore",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/devices/{deviceId}/publications/{publicationId}/restore",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/restoreDevicePublication.json"
+    },
+    {
+      "id": "api/restoreGroupPublication",
+      "kind": "api",
+      "title": "restoreGroupPublication",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/groups/{groupId}/publications/{publicationId}/restore",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/groups/{groupId}/publications/{publicationId}/restore",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/restoreGroupPublication.json"
+    },
+    {
       "id": "api/restoreMedia",
       "kind": "api",
       "title": "restoreMedia",
@@ -1223,6 +1446,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/startLogin.json"
+    },
+    {
+      "id": "api/syncDevice",
+      "kind": "api",
+      "title": "syncDevice",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /device/sync",
+      "method": "POST",
+      "path": "/device/sync",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/syncDevice.json"
     },
     {
       "id": "api/terminateAllSessions",
@@ -1767,6 +2008,66 @@
       "file": "pages/database/programs.json"
     },
     {
+      "id": "database/publication_audit_events",
+      "kind": "database",
+      "title": "publication_audit_events",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Append-only record of publications and restores, with the acting member and the branches each program concerns.",
+      "headings": [],
+      "file": "pages/database/publication_audit_events.json"
+    },
+    {
+      "id": "database/publication_device_events",
+      "kind": "database",
+      "title": "publication_device_events",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Transitions in screens' synchronization reports: a newly desired publication delivered, an activation, a failed staging attempt or a playback change (AT-20).",
+      "headings": [],
+      "file": "pages/database/publication_device_events.json"
+    },
+    {
+      "id": "database/publication_device_states",
+      "kind": "database",
+      "title": "publication_device_states",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The latest synchronization report of each screen as the screen stated it, with the time the server received it and the desired publication it answered. Reported publication IDs are untrusted.",
+      "headings": [],
+      "file": "pages/database/publication_device_states.json"
+    },
+    {
+      "id": "database/publication_media",
+      "kind": "database",
+      "title": "publication_media",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Each media item of a retained publication with the display rendition delivered to screens; the publication media guard keeps these items from being deleted or purged.",
+      "headings": [],
+      "file": "pages/database/publication_media.json"
+    },
+    {
+      "id": "database/publication_playlists",
+      "kind": "database",
+      "title": "publication_playlists",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Each playlist copied into a publication, with the branch that owned it when it was published, so a restore can check the program's current reach.",
+      "headings": [],
+      "file": "pages/database/publication_playlists.json"
+    },
+    {
+      "id": "database/publications",
+      "kind": "database",
+      "title": "publications",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One immutable generation of a program (a group's or a screen's): its exact manifest bytes, their SHA-256, a digest of its content and counts, its publisher and time.",
+      "headings": [],
+      "file": "pages/database/publications.json"
+    },
+    {
       "id": "database/responsibility_transfers",
       "kind": "database",
       "title": "responsibility_transfers",
@@ -1885,6 +2186,16 @@
       "summary": "This module owns playlists, programming groups, the draft programs of groups and screens, schedule rules, screen assignments and timelines under the programming design and…",
       "headings": [],
       "file": "pages/repository/apps/api/src/features/programming/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/publications/AGENTS",
+      "kind": "repository",
+      "title": "Publications Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/publications/AGENTS.md",
+      "summary": "This module owns publications (immutable generations of programs), the screen synchronization exchange, manifest and media delivery to screens, signed authorization statements…",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/publications/AGENTS.json"
     },
     {
       "id": "repository/apps/web/AGENTS",
@@ -2195,6 +2506,16 @@
       "summary": "Acceptance scope: The owner explicitly approved this decision and the eleven decisions of the programming design on 2026-10-19 under PH-24. Acceptance establishes the direction…",
       "headings": [],
       "file": "pages/repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.json"
+    },
+    {
+      "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+      "kind": "repository",
+      "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+      "group": "Decisions",
+      "source": "docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md",
+      "summary": "Acceptance scope: The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -2687,6 +3008,16 @@
       "file": "pages/repository/docs/project/programming-design.json"
     },
     {
+      "id": "repository/docs/project/publication-sync-design",
+      "kind": "repository",
+      "title": "Teluni Publication and Synchronization Design",
+      "group": "Project guides",
+      "source": "docs/project/publication-sync-design.md",
+      "summary": "Approved detailed design for D-04 (server side) and the basic monitoring of FR-09, 2026-10-20. The owner approved all ten decisions for review as proposed under PH-25,…",
+      "headings": [],
+      "file": "pages/repository/docs/project/publication-sync-design.json"
+    },
+    {
       "id": "repository/docs/project/README",
       "kind": "repository",
       "title": "Teluni Product Documentation",
@@ -3010,38 +3341,41 @@
   "search": {
     "shards": [
       { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0001.json", "count": 13, "kinds": ["api"] },
       { "file": "search/0002.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0003.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 14, "kinds": ["api"] },
-      { "file": "search/0005.json", "count": 16, "kinds": ["api"] },
-      { "file": "search/0006.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0007.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0006.json", "count": 15, "kinds": ["api"] },
+      { "file": "search/0007.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0008.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0009.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0010.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0011.json", "count": 18, "kinds": ["api", "database"] },
+      { "file": "search/0009.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0010.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0011.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0012.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0013.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0014.json", "count": 25, "kinds": ["database"] },
       {
-        "file": "search/0012.json",
-        "count": 34,
+        "file": "search/0015.json",
+        "count": 48,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0013.json", "count": 89, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 110, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 130, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 177, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 122, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 131, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 79, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 73, "kinds": ["repository"] },
-      { "file": "search/0021.json", "count": 65, "kinds": ["repository"] },
-      { "file": "search/0022.json", "count": 43, "kinds": ["repository"] },
-      { "file": "search/0023.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0024.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0025.json", "count": 101, "kinds": ["repository"] },
-      { "file": "search/0026.json", "count": 92, "kinds": ["repository"] },
-      { "file": "search/0027.json", "count": 7, "kinds": ["repository"] }
+      { "file": "search/0016.json", "count": 98, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 114, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 134, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 182, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0021.json", "count": 118, "kinds": ["repository"] },
+      { "file": "search/0022.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0023.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0024.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0025.json", "count": 47, "kinds": ["repository"] },
+      { "file": "search/0026.json", "count": 65, "kinds": ["repository"] },
+      { "file": "search/0027.json", "count": 77, "kinds": ["repository"] },
+      { "file": "search/0028.json", "count": 80, "kinds": ["repository"] },
+      { "file": "search/0029.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0030.json", "count": 30, "kinds": ["repository"] }
     ],
-    "count": 1547
+    "count": 1631
   }
 }

@@ -26,7 +26,7 @@ const generated = [
       "",
       "[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)",
       "",
-      "No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. The devices module additionally requires `TELUNI_DEVICE_CODE_KEYS`. API modules that require the database, bearer authentication, human identity, mail or device code keys stay unmounted until those settings exist, and production startup fails instead.",
+      "No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. The devices module additionally requires `TELUNI_DEVICE_CODE_KEYS`, the media module `TELUNI_MEDIA_STORAGE_PATH` and the publications module `TELUNI_SYNC_SIGNING_KEYS`. API modules that require the database, bearer authentication, human identity, mail, device code keys, media storage or signing keys stay unmounted until those settings exist, and production startup fails instead.",
       "",
       "| Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |",
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
