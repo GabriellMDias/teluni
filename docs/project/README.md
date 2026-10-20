@@ -26,6 +26,7 @@ This is the entry point for Teluni-specific product and architecture planning. T
 | How are playlists, groups and schedules modeled, validated and evaluated in local time (approved D-06)? | [Programming design](programming-design.md) |
 | How are programs published, and how do screens synchronize, verify and report them (approved D-04 server side)? | [Publication and synchronization design](publication-sync-design.md) |
 | How does the Android TV player store, verify, schedule and play publications, keep time and update (decided D-07)? | [Player design](player-design.md) |
+| How do catalogs, prices, promotions, layouts and automatic price publication work (decided D-11)? | [Catalog and composition design](catalog-composition-design.md) |
 | What could prevent delivery or safe operation? | [Risks and dependencies](risks.md) |
 | What is the phase sequence and current execution state? | [Implementation plan](implementation-plan.md) |
 | Which decisions or external prerequisites need a human? | [Human actions](human-actions.md) |

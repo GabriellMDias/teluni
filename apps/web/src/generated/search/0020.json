@@ -324,6 +324,123 @@
     "text": "References\n[Player design](../project/player-design.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md), [ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md), [ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\n[Offline playback and synchronization](../project/playback-and-sync.md), [acceptance targets](../project/release-targets.md)\n"
   },
   {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "anchor": "adr-0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "text": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together with the [catalog and composition design](../project/catalog-composition-design.md); merging the pull request that adds it is the repository review. It settles the monetary representation that D-10 left open for catalogs, prices, publications and the player. It does not select a currency conversion service, because the policies forbid conversion.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nCatalogs need monetary fields for prices, with company base values, branch overrides and promotions (FR-11, P06, P07). Several runtimes must agree exactly on those amounts:\nthe TypeScript API, which validates, stores and snapshots them;\nthe web panel, which edits and previews them in the person's locale;\nthe Kotlin player, which shows them offline.\nThe policies require explicit currency, exact representation, no automatic conversion, and locale-independent meaning. D-10 left the representation open. PostgreSQL `numeric`, JavaScript numbers and JSON numbers all differ in precision or parsing, and currencies differ in minor units: BRL has 2, JPY 0, KWD 3.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAn amount is an integer count of the currency's minor units: `1990` BRL is R$ 19,90, and `1990` JPY is ¥1,990. It is stored as PostgreSQL `bigint` and transported in JSON as an integer within ±(2^53 − 1) and in practice far below. The API refuses values outside 0 to 10^12 minor units.\nThe currency is an ISO 4217 alphabetic code fixed on the money field when the field is created. Every value, override and promotion of that field uses it. A field's currency never changes; changing currency means adding a field.\nThe number of minor units comes from a table in the API, checked against `Intl.NumberFormat` in tests and copied to the player. The input `\"19,9\"` in `pt-BR` or `\"19.90\"` in `en-US` is parsed by the panel into minor units, rejecting more decimals than the currency has.\nFormatting for people uses the locale, through `Intl.NumberFormat` in the web panel and `java.text.NumberFormat`/`Currency` on the player, with the field's currency. Locale never changes the amount or the currency. Amounts are never converted between currencies.\nNon-monetary decimals (`number` fields) are canonical decimal strings with a fixed number of places, never floats.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nInteger minor units are exact, compare and sort trivially, and mean the same in SQL, JSON, TypeScript and Kotlin without a decimal library.\nA currency per field rules out mixing currencies inside one price list by construction. That is the common case for a business operating in one country, and the policies forbid conversion anyway.\nThe cost is that a business pricing the same product in two currencies needs two fields, which is honest about the meaning.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "PostgreSQL numeric and decimal strings everywhere",
+    "anchor": "postgresql-numeric-and-decimal-strings-everywhere",
+    "text": "PostgreSQL numeric and decimal strings everywhere\nExact, but every runtime then needs a decimal implementation and a rule for scale. A value like `19.9` versus `19.90` invites accidental inequality. Minor units carry the scale in the currency.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A currency on each value",
+    "anchor": "a-currency-on-each-value",
+    "text": "A currency on each value\nMore flexible, but it allows a price list in mixed currencies that cannot be compared or validated, and nothing in the product needs it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Floating-point numbers",
+    "anchor": "floating-point-numbers",
+    "text": "Floating-point numbers\nCannot represent most decimal amounts exactly, so totals and comparisons drift. Rejected.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nPrices are exact and identical in the API, the panel preview, the publication snapshot and the player.\nValidation and promotion comparisons are integer operations.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe currency table must stay aligned across the API and the player; a test checks the API table against `Intl`, and the player's copy is checked by the protocol fixtures.\nChanging a field's currency requires a new field and copying values.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo existing data. The first catalog migration creates `bigint` amount columns and a currency column on money fields.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Catalog and composition design](../project/catalog-composition-design.md)\n[Configurable catalogs policy](../project/release-policies.md#configurable-catalogs)\n[Security and internationalization](../project/security-and-i18n.md)\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -411,7 +528,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1015,50 +1132,5 @@
     "heading": "Configuration and Secrets",
     "anchor": "configuration-and-secrets",
     "text": "Configuration and Secrets\nThe schema may describe a secret requirement; secret delivery, storage, rotation, and revocation follow [secret policy](../security/secrets-management.md). Secret references may be useful where infrastructure supports them, but resolved values remain restricted in memory. Agents must understand requirements from schemas, safe placeholders, and descriptions without needing real credentials.\nBuild-time values can remain embedded in browser/mobile/desktop artifacts or image layers and are accessible to recipients. Never embed server-only secrets. Client-visible settings must be explicitly safe; environment-variable delivery alone does not make them public. Keep server credentials, private tokens/keys, and privileged internal endpoints out of client artifacts and shared public configuration.\nDo not serialize or log entire configuration objects in startup logs, errors, health endpoints, debug output, or support bundles. Use explicit safe projections, such as whether a dependency is configured. Even nonsecret fields obey [data classification](../security/data-classification.md) and [telemetry redaction](../security/telemetry-redaction.md). Safe configuration summaries/fingerprints may help diagnose drift only when useful and excluding secrets.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Evolution and Operational Changes",
-    "anchor": "evolution-and-operational-changes",
-    "text": "Evolution and Operational Changes\nConfiguration changes can break deployment or rollback even without code changes. For a rename/removal, identify old/new applications, supported rolling/rollback combinations, CI, local examples, deployment scripts, secret stores, and documentation. Introduce replacements, support both temporarily if required, migrate consumers, then remove old usage/configuration/secrets. Do not remove keys while a supported old version still requires them or retain unused keys indefinitely. Follow [compatibility policy](versioning-and-compatibility.md), including coordinated database/configuration transitions.\nA separate configuration schema version is justified only if independently managed configuration needs it; application releases and Git may suffice. Deployment definitions, when introduced, should expose requirements and reject invalid mandatory configuration before activation. Validate secret presence/references without exposing values.\nPrefer static startup configuration initially. Dynamic/remote configuration creates availability, authentication, caching, fallback, consistency, concurrency, rollback, auditability, and test obligations. If introduced, distinguish startup-only, reloadable, and process-immutable values. High-impact changes need risk-appropriate safe audit context (key, actor/system, time), not secret old/new values. Feature flags need explicit rollout/removal criteria unless they are permanent product settings; they are not automatically ordinary environment variables.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Verification and Enforcement",
-    "anchor": "verification-and-enforcement",
-    "text": "Verification and Enforcement\nTests construct explicit configuration and synthetic credentials instead of relying on machine state. Unit tests inject the minimum values; parser tests exercise missing/invalid input, defaults, secret-safe errors, conditional modes, and cross-field behavior. Integration tests exercise the actual ingestion boundary with isolated resources. CI jobs receive only the settings/credentials they require, never unrelated production access.\nClient builds must reject attempts to import or embed server-only/restricted configuration. Implemented checks include API parser tests, generated-reference freshness, `pnpm env:example:check`, and the web [bundle marker check](../../apps/web/scripts/check-bundle.mjs). The example check compares safe placeholders/defaults with API metadata; it does not validate deployed environments. The bundle check detects known server-only markers, not every possible leak. Direct environment access outside approved modules and full secret/classification metadata coverage remain review responsibilities; no dedicated lint rule or deployed-configuration validator currently proves them. These limits do not relax the policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "New Configuration Checklist",
-    "anchor": "new-configuration-checklist",
-    "text": "New Configuration Checklist\nBefore adding a setting, establish its concrete variability requirement, owning application, consumers, type/units, required/default behavior, classification/secret/client visibility, environment scope, change/restart behavior, validation, tests, documentation, and compatibility impact. Consider whether the value belongs in application data or can remain fixed. Every option expands the behavior space; keep only justified configuration and update its canonical source and derived representations together.\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Continuous Integration",
-    "anchor": "continuous-integration",
-    "text": "Continuous Integration\nThis page owns the map from repository CI configuration to the accepted policy in [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md). See [validation availability](../validation.md) for local commands. Effective remote settings and completed-run evidence have a separate owner in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Current implementation and activation",
-    "anchor": "current-implementation-and-activation",
-    "text": "Current implementation and activation\nThe [repository workflow](../../.github/workflows/ci.yml) validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It uses repository-pinned Node.js/pnpm and frozen installation, installs Playwright Chromium/system libraries and the distribution FFmpeg used by media tests, and runs `pnpm validate` on GitHub-hosted Ubuntu. It fetches Git history and supplies the base commit for release-history validation. A separate **Player** job sets up JDK 17, validates the Gradle wrapper and runs `./gradlew check` in [`apps/player`](../../apps/player/README.md), whose dependencies are locked and checksum-verified. The stable branch-protection check name is **Orion required gate**; it fails if validation or the player job fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded. Future uploads need bounded retention and must exclude secrets/sensitive data.\nThe workflow passes the PR base SHA, merge-group base SHA, or `github.event.before` unchanged to the release-history validator. That shared validator handles GitHub's first-push zero-SHA sentinel under the [release-history rules](../database/release-evolution.md#record-the-first-durable-migration-boundary), so local and CI checks enforce the same missing-base and append-only protections. Manual dispatches without an explicit base use the validator's local Git-base discovery.\nThe dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=true` and blocks newly introduced high/critical vulnerabilities. The aggregate gate treats an enabled review that fails or skips as a failure. The repository's human actions record dated evidence and how to reverify the variable, security settings, and actual review execution.\nThe [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. The repository's human actions own app activation/Dashboard and effective branch-protection evidence.\nCommitted workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#content-ownership). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.\n"
   }
 ]

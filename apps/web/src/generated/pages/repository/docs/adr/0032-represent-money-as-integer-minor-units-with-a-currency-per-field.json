@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md",
+  "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-20</p>\n<p><strong>Acceptance scope:</strong> The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together with the <a href=\"/docs/repository/docs/project/catalog-composition-design\">catalog and composition design</a>; merging the pull request that adds it is the repository review. It settles the monetary representation that D-10 left open for catalogs, prices, publications and the player. It does not select a currency conversion service, because the policies forbid conversion.</p>\n<h2 id=\"context\">Context</h2>\n<p>Catalogs need monetary fields for prices, with company base values, branch overrides and promotions (FR-11, P06, P07). Several runtimes must agree exactly on those amounts:</p>\n<ul>\n<li>the TypeScript API, which validates, stores and snapshots them;</li>\n<li>the web panel, which edits and previews them in the person's locale;</li>\n<li>the Kotlin player, which shows them offline.</li>\n</ul>\n<p>The policies require explicit currency, exact representation, no automatic conversion, and locale-independent meaning. D-10 left the representation open. PostgreSQL <code>numeric</code>, JavaScript numbers and JSON numbers all differ in precision or parsing, and currencies differ in minor units: BRL has 2, JPY 0, KWD 3.</p>\n<h2 id=\"decision\">Decision</h2>\n<ul>\n<li>An amount is an integer count of the currency's minor units: <code>1990</code> BRL is R$ 19,90, and <code>1990</code> JPY is ¥1,990. It is stored as PostgreSQL <code>bigint</code> and transported in JSON as an integer within ±(2^53 − 1) and in practice far below. The API refuses values outside 0 to 10^12 minor units.</li>\n<li>The currency is an ISO 4217 alphabetic code fixed on the money field when the field is created. Every value, override and promotion of that field uses it. A field's currency never changes; changing currency means adding a field.</li>\n<li>The number of minor units comes from a table in the API, checked against <code>Intl.NumberFormat</code> in tests and copied to the player. The input <code>&quot;19,9&quot;</code> in <code>pt-BR</code> or <code>&quot;19.90&quot;</code> in <code>en-US</code> is parsed by the panel into minor units, rejecting more decimals than the currency has.</li>\n<li>Formatting for people uses the locale, through <code>Intl.NumberFormat</code> in the web panel and <code>java.text.NumberFormat</code>/<code>Currency</code> on the player, with the field's currency. Locale never changes the amount or the currency. Amounts are never converted between currencies.</li>\n<li>Non-monetary decimals (<code>number</code> fields) are canonical decimal strings with a fixed number of places, never floats.</li>\n</ul>\n<h2 id=\"rationale\">Rationale</h2>\n<ul>\n<li>Integer minor units are exact, compare and sort trivially, and mean the same in SQL, JSON, TypeScript and Kotlin without a decimal library.</li>\n<li>A currency per field rules out mixing currencies inside one price list by construction. That is the common case for a business operating in one country, and the policies forbid conversion anyway.</li>\n<li>The cost is that a business pricing the same product in two currencies needs two fields, which is honest about the meaning.</li>\n</ul>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"postgresql-numeric-and-decimal-strings-everywhere\">PostgreSQL numeric and decimal strings everywhere</h3>\n<p>Exact, but every runtime then needs a decimal implementation and a rule for scale. A value like <code>19.9</code> versus <code>19.90</code> invites accidental inequality. Minor units carry the scale in the currency.</p>\n<h3 id=\"a-currency-on-each-value\">A currency on each value</h3>\n<p>More flexible, but it allows a price list in mixed currencies that cannot be compared or validated, and nothing in the product needs it.</p>\n<h3 id=\"floating-point-numbers\">Floating-point numbers</h3>\n<p>Cannot represent most decimal amounts exactly, so totals and comparisons drift. Rejected.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Prices are exact and identical in the API, the panel preview, the publication snapshot and the player.</li>\n<li>Validation and promotion comparisons are integer operations.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>The currency table must stay aligned across the API and the player; a test checks the API table against <code>Intl</code>, and the player's copy is checked by the protocol fixtures.</li>\n<li>Changing a field's currency requires a new field and copying values.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>No existing data. The first catalog migration creates <code>bigint</code> amount columns and a currency column on money fields.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/project/catalog-composition-design\">Catalog and composition design</a></li>\n<li><a href=\"/docs/repository/docs/project/release-policies#configurable-catalogs\">Configurable catalogs policy</a></li>\n<li><a href=\"/docs/repository/docs/project/security-and-i18n\">Security and internationalization</a></li>\n<li><a href=\"/docs/repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications\">ADR-0023</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+      "text": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "postgresql-numeric-and-decimal-strings-everywhere",
+      "text": "PostgreSQL numeric and decimal strings everywhere",
+      "level": 3
+    },
+    {
+      "id": "a-currency-on-each-value",
+      "text": "A currency on each value",
+      "level": 3
+    },
+    {
+      "id": "floating-point-numbers",
+      "text": "Floating-point numbers",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

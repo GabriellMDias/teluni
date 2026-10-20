@@ -39,3 +39,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md) | Evaluate Schedules with the Temporal API and Shared Fixtures |
 | [ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md) | Synchronize Screens by Polling with Signed Authorization Statements |
 | [ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md) | Build the Player on a Portable Core with File-Based Atomic State and Managed Installation |
+| [ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md) | Represent Money as Integer Minor Units with a Currency per Field |
