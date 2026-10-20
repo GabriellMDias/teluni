@@ -176,7 +176,7 @@ Scope follows the programming design: a group's program needs the capability on 
 
 ## Abuse limits
 
-At most 30 publications per program per hour and 300 per company per day (`RATE_LIMITED`; an unchanged publication counts for neither). Snapshots of at most 2,000 items and 1,000 distinct media. Sync requests share the device request limit; at most two concurrent media downloads per screen. Reports are bounded by request validation.
+At most 30 publications per program per hour and 300 per company per day (`RATE_LIMITED`; an unchanged publication counts for neither). Snapshots of at most 2,000 items and 1,000 distinct media. Sync requests share the device request limit, which counts each presented credential, not each client address, under a ceiling of 6,000 requests per address per minute, because screens behind one router or the ingress proxy share an address; at most two concurrent media downloads per screen. Reports are bounded by request validation.
 
 ## Audit
 
@@ -232,6 +232,8 @@ Increment 2, the same day:
 
 - The panel's Publicação section on group pages and on the programming of screens with individual programming ([`publications.tsx`](../../apps/web/src/programming/publications.tsx)), the assignment form that asks for confirmation only for unpublished destinations, member screen states on group pages, and the screen's synchronization section and list states in Telas ([`sync.tsx`](../../apps/web/src/devices/sync.tsx)).
 - Browser component tests for the review, problems, a draft changed after review, restore, the published-destination assignment and the synchronization section, and the [publication journey](../../apps/web/test/e2e/publications/journey.spec.ts) with a simulated player that verifies its statement, manifest and media.
+
+Follow-up on 2026-10-20: the screen routes of this module and of `devices` count their pre-authentication limit (120 requests per minute) per presented credential under a ceiling of 6,000 per client address. Counted per address, it let about 60 screens behind one address, below the reference load of 100, exhaust it and appear offline.
 
 Pending: increment 3.
 

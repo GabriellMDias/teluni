@@ -1,6 +1,10 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import { parseRange } from "../../byte-range.js";
+import {
+  deviceAddressCeiling,
+  registerDeviceRequestLimits,
+} from "../../device-request-limits.js";
 import type { AppInstance } from "../../module.js";
 import { currentTraceId } from "../../request-context.js";
 import { DeviceFailure } from "../devices/public.js";
@@ -29,8 +33,10 @@ import type {
 export type PublicationRouteLimits = Readonly<{
   /** Requests per client address and window on human routes. */
   requests: { max: number; timeWindow: number };
-  /** Requests per client address and window on screen routes. */
+  /** Requests per presented credential and window on screen routes. */
   devices: { max: number; timeWindow: number };
+  /** Requests per client address and window on screen routes. */
+  deviceAddresses?: { max: number; timeWindow: number };
 }>;
 
 const defaultLimits: PublicationRouteLimits = {
@@ -265,11 +271,14 @@ export function registerPublicationRoutes(
   // Screen routes authenticate the device credential through the devices
   // port on every request.
   void app.register(async (feature) => {
-    await feature.register(rateLimit, {
-      ...limits.devices,
-      hook: "onRequest",
-      ...quietHeaders,
-    });
+    await registerDeviceRequestLimits(
+      feature,
+      {
+        perCredential: limits.devices,
+        perAddress: limits.deviceAddresses ?? deviceAddressCeiling,
+      },
+      quietHeaders,
+    );
     for (const operation of publicationOperations.filter(
       (item) => item.access === "device",
     ))
