@@ -216,8 +216,18 @@ const ptBR = {
     problemsTitle: "Corrija antes de publicar",
     problems: {
       NOTHING_TO_PUBLISH: "Esta programação ainda não tem horários nem padrão.",
-      LAYOUT_NOT_PUBLISHABLE:
-        "Programações com layout serão publicadas pelo protocolo 2 das telas, que ainda não está disponível.",
+      LAYOUT_OUT_OF_SCOPE:
+        "O layout é de uma filial que esta programação não cobre, como a filial anterior da tela. Escolha outro layout.",
+      CATALOG_UNAVAILABLE:
+        "O catálogo desta área foi arquivado. Restaure-o ou troque a visão do layout.",
+      CATALOG_FIELD_UNAVAILABLE:
+        "Um campo que a visão mostra foi arquivado. Ajuste os campos da visão no layout.",
+      CATALOG_OVERFLOW:
+        "Algum item do catálogo não cabe na área. Veja o encaixe no layout e encurte o texto ou aumente a área.",
+      CATALOG_PAGE_MISSING:
+        "Uma página do layout mostra uma página da visão que os itens não preenchem mais.",
+      CATALOG_GROUP_OVERFLOW:
+        "Um grupo que uma página do layout mostra não cabe em uma página da área.",
       SCHEDULE_INVALID:
         "Os horários salvos não passam mais na validação. Revise-os e salve de novo.",
       PLAYLIST_OUT_OF_SCOPE:
@@ -225,8 +235,10 @@ const ptBR = {
       MEDIA_UNAVAILABLE: "Uma mídia de uma playlist não está mais disponível.",
       TRANSITION_UNSUPPORTED:
         "Uma playlist usa a transição Esmaecer, que ainda não foi qualificada nas telas. Use Corte seco para publicar.",
-      TOO_LARGE: "A publicação passa de 2.000 itens ou 1.000 mídias.",
+      TOO_LARGE:
+        "A publicação passa de 2.000 itens de playlist, 1.000 mídias ou 10.000 itens de catálogo.",
     } as Record<string, string>,
+    areaProblem: (area: string, text: string) => `Área “${area}”: ${text}`,
     publish: "Publicar agora",
     publishing: "Publicando…",
     cancel: "Cancelar",
@@ -730,8 +742,18 @@ const enUS: Messages = {
     problemsTitle: "Fix before publishing",
     problems: {
       NOTHING_TO_PUBLISH: "This programming has no schedules or default yet.",
-      LAYOUT_NOT_PUBLISHABLE:
-        "Programming with a layout publishes through the screens' protocol 2, which is not available yet.",
+      LAYOUT_OUT_OF_SCOPE:
+        "The layout belongs to a branch this programming does not cover, such as the screen's previous branch. Choose another layout.",
+      CATALOG_UNAVAILABLE:
+        "This area's catalog was archived. Restore it or change the layout's view.",
+      CATALOG_FIELD_UNAVAILABLE:
+        "A field the view shows was archived. Adjust the view's fields in the layout.",
+      CATALOG_OVERFLOW:
+        "A catalog item does not fit the area. See the layout's fit and shorten the text or enlarge the area.",
+      CATALOG_PAGE_MISSING:
+        "A layout page shows a view page the items no longer fill.",
+      CATALOG_GROUP_OVERFLOW:
+        "A group a layout page shows does not fit one page of the area.",
       SCHEDULE_INVALID:
         "The saved schedules no longer pass validation. Review and save them again.",
       PLAYLIST_OUT_OF_SCOPE:
@@ -739,8 +761,10 @@ const enUS: Messages = {
       MEDIA_UNAVAILABLE: "A media item of a playlist is no longer available.",
       TRANSITION_UNSUPPORTED:
         "A playlist uses the Fade transition, which screens are not qualified for yet. Use Cut to publish.",
-      TOO_LARGE: "The publication exceeds 2,000 items or 1,000 media items.",
+      TOO_LARGE:
+        "The publication exceeds 2,000 playlist items, 1,000 media items or 10,000 catalog items.",
     },
+    areaProblem: (area: string, text: string) => `Area “${area}”: ${text}`,
     publish: "Publish now",
     publishing: "Publishing…",
     cancel: "Cancel",

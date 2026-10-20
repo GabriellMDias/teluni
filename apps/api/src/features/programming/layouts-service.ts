@@ -38,6 +38,11 @@ import type {
   PrismaLayoutRepository,
 } from "./layouts-repository.js";
 import type { Actor } from "./prisma-repository.js";
+import type {
+  CatalogSnapshot,
+  LayoutSnapshot,
+  LayoutSnapshotProblem,
+} from "./public.js";
 
 export type AreaFit = Readonly<{
   areaKey: string;
@@ -518,6 +523,255 @@ export class LayoutService {
     (await this.#repository.layoutsUsingMedia(tx, companyId, assetId)).map(
       (row) => ({ kind: "layout-draft", branchId: row.branchId }),
     );
+
+  /**
+   * A layout as a publication carries it for a program's reach, read in the
+   * publication's transaction after the layout's share lock: each view is
+   * paginated now with the renderer contract's measure, and problems name
+   * what blocks publication (unavailable catalogs or fields, overflowing
+   * records, pages a view no longer has, groups beyond one page).
+   */
+  async publicationSnapshot(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    layoutId: string,
+    reach: "all" | ReadonlySet<string>,
+  ): Promise<LayoutSnapshot | null> {
+    const item = await this.#repository.findLayout(companyId, layoutId);
+    if (!item) return null;
+    const definition = await this.#repository.definition(item, tx);
+    const reaches = (branchId: string) =>
+      reach === "all" || reach.has(branchId);
+    const problems: LayoutSnapshotProblem[] = [];
+    const data = new Map<string, CatalogViewData | null>();
+    const bound = new Map<string, Set<string>>();
+    const media = new Set(
+      definition.pages.flatMap((page) =>
+        page.contents.flatMap((content) =>
+          content.mediaAssetId ? [content.mediaAssetId] : [],
+        ),
+      ),
+    );
+    const areas: LayoutSnapshot["areas"][number][] = [];
+    for (const area of definition.areas) {
+      const shared = {
+        key: area.key,
+        x: area.x,
+        y: area.y,
+        width: area.width,
+        height: area.height,
+        z: area.z,
+        background: area.background,
+        fit: area.fit,
+        muted: area.muted,
+        volume: area.volume,
+        kind: area.kind,
+        pageControlled: area.pageControlled,
+      };
+      const view = area.view;
+      if (!view) {
+        areas.push({ ...shared, view: null });
+        continue;
+      }
+      if (!data.has(view.catalogId))
+        data.set(
+          view.catalogId,
+          await this.#catalogs.viewData(companyId, view.catalogId),
+        );
+      const catalog = data.get(view.catalogId) ?? null;
+      const fields = new Map(
+        catalog?.catalog.fields.map((field) => [field.id, field]),
+      );
+      const usableView =
+        catalog !== null && catalog.catalog.status === "ACTIVE";
+      if (!usableView)
+        problems.push({ code: "CATALOG_UNAVAILABLE", areaKey: area.key });
+      else if (
+        view.fields.some((field) => fields.get(field.fieldId)?.archived ?? true)
+      )
+        problems.push({ code: "CATALOG_FIELD_UNAVAILABLE", areaKey: area.key });
+      const records = usableView ? fitRecords(view, catalog) : [];
+      const fit = fitView(view, area, records);
+      if (fit.overflow.length > 0)
+        problems.push({ code: "CATALOG_OVERFLOW", areaKey: area.key });
+      // Groups are choice IDs, or ISO weekdays for an agenda.
+      const groupField = view.fields.find((field) => field.role === "group");
+      const choices = groupField
+        ? (fields.get(groupField.fieldId)?.choices ?? [])
+        : [];
+      const groupId = (group: number | null): string | null =>
+        group === null
+          ? null
+          : view.presentation === "agenda"
+            ? String(group)
+            : (choices[group]?.id ?? null);
+      const groupIndex = (id: string) =>
+        view.presentation === "agenda"
+          ? Number(id)
+          : choices.findIndex((choice) => choice.id === id);
+      const contents = definition.pages.flatMap((page) =>
+        page.contents.filter((content) => content.areaKey === area.key),
+      );
+      if (
+        contents.some(
+          (content) =>
+            content.viewPage !== null && content.viewPage > fit.entries.length,
+        )
+      )
+        problems.push({ code: "CATALOG_PAGE_MISSING", areaKey: area.key });
+      const groups = [
+        ...new Set(
+          contents.flatMap((content) =>
+            content.groupChoiceId ? [content.groupChoiceId] : [],
+          ),
+        ),
+      ].map((group) => {
+        const index = groupIndex(group);
+        const alone = fitView(
+          view,
+          area,
+          records.filter((record) => record.group === index),
+        );
+        if (alone.entries.length > 1)
+          problems.push({ code: "CATALOG_GROUP_OVERFLOW", areaKey: area.key });
+        return {
+          group,
+          recordIds: (alone.entries[0] ?? []).map((entry) => entry.recordId),
+        };
+      });
+      const fieldIds = bound.get(view.catalogId) ?? new Set<string>();
+      for (const field of view.fields) fieldIds.add(field.fieldId);
+      bound.set(view.catalogId, fieldIds);
+      if (catalog)
+        for (const field of view.fields)
+          if (fields.get(field.fieldId)?.type === "media")
+            for (const record of catalog.records) {
+              const value = record.values[field.fieldId];
+              if (typeof value === "string") media.add(value);
+            }
+      areas.push({
+        ...shared,
+        view: {
+          catalogId: view.catalogId,
+          fields: view.fields.map((field) => ({
+            fieldId: field.fieldId,
+            role: field.role,
+          })),
+          presentation: view.presentation,
+          textSize: view.textSize,
+          unavailable: view.unavailable,
+          pageSeconds: view.pageSeconds,
+          pages: fit.entries.map((page) =>
+            page.map((entry) => ({
+              recordId: entry.recordId,
+              group: groupId(entry.group),
+            })),
+          ),
+          groups,
+        },
+      });
+    }
+    const catalogs: CatalogSnapshot[] = [];
+    for (const [catalogId, fieldIds] of bound) {
+      const catalog = data.get(catalogId);
+      if (!catalog) continue;
+      const fields = catalog.catalog.fields.filter((field) =>
+        fieldIds.has(field.id),
+      );
+      const money = fields.filter((field) => field.type === "money");
+      catalogs.push({
+        id: catalogId,
+        fields: fields.map((field) => ({
+          id: field.id,
+          type: field.type,
+          label: field.label,
+          ...(field.type === "money" && field.currency
+            ? { currency: field.currency }
+            : {}),
+          ...(field.type === "selection"
+            ? {
+                choices: field.choices.map((choice) => ({
+                  id: choice.id,
+                  label: choice.label,
+                })),
+              }
+            : {}),
+        })),
+        records: catalog.records.map((record) => ({
+          id: record.id,
+          available: record.available,
+          values: Object.fromEntries(
+            fields.flatMap((field) => {
+              const value = record.values[field.id];
+              if (field.type === "money" || value === undefined) return [];
+              // A reference shows the referenced item's title.
+              return [
+                [
+                  field.id,
+                  field.type === "reference" && typeof value === "string"
+                    ? (catalog.referenceTitles.get(value) ?? null)
+                    : value,
+                ],
+              ];
+            }),
+          ),
+        })),
+        prices: catalog.records.flatMap((record) =>
+          money.flatMap((field) => {
+            const facts = catalog.prices.get(record.id)?.get(field.id);
+            if (!facts) return [];
+            return [
+              {
+                recordId: record.id,
+                fieldId: field.id,
+                base: facts.base,
+                overrides: [...facts.overrides]
+                  .filter(([branchId]) => reaches(branchId))
+                  .map(([branchId, amount]) => ({ branchId, amount })),
+                promotions: facts.promotions
+                  .filter(
+                    (promotion) =>
+                      promotion.branchId === null ||
+                      reaches(promotion.branchId),
+                  )
+                  .map((promotion) => ({
+                    id: promotion.id,
+                    branchId: promotion.branchId,
+                    amount: promotion.amount,
+                    startsAt: promotion.startsAt,
+                    endsAt: promotion.endsAt,
+                  })),
+              },
+            ];
+          }),
+        ),
+      });
+    }
+    const canvas = canvasOf(item);
+    return {
+      id: item.id,
+      usable:
+        item.branchId === null ||
+        (reach !== "all" && reach.size === 1 && reach.has(item.branchId)),
+      orientation: item.orientation,
+      width: canvas.width,
+      height: canvas.height,
+      audioMixConfirmed: definition.audioMixConfirmed,
+      areas,
+      pages: definition.pages.map((page) => ({
+        durationSeconds: page.durationSeconds,
+        contents: page.contents.map((content) => ({
+          areaKey: content.areaKey,
+          mediaId: content.mediaAssetId,
+          viewPage: content.viewPage,
+          groupChoiceId: content.groupChoiceId,
+        })),
+      })),
+      catalogs,
+      mediaIds: [...media].sort(),
+      problems,
+    };
+  }
 
   // Shared steps
 

@@ -151,7 +151,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
   );
 
   // A group program chooses the layout; each area has its own schedules,
-  // and publication waits for the screens' protocol 2.
+  // and it publishes with protocol 2, catalog snapshot included.
   await page.goto(`${companyUrl}/programming?view=groups`);
   await page.getByLabel("Nome", { exact: true }).fill("Lojas");
   await page.getByLabel("Centro", { exact: true }).check();
@@ -176,7 +176,13 @@ test("creates a product catalog with a branch price and a promotion and reads th
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Revisar para publicar" }).click();
+  await page.getByRole("button", { name: "Publicar agora" }).click();
   await expect(
-    page.getByText("serão publicadas pelo protocolo 2", { exact: false }),
+    page.getByRole("status").filter({ hasText: "Geração 1 publicada." }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("list", { name: "Gerações publicadas" })
+      .getByText("Geração 1"),
   ).toBeVisible();
 });

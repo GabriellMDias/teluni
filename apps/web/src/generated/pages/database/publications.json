@@ -62,7 +62,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Synchronization protocol the manifest is serialized in.",
+      "Meaning": "Synchronization protocol the manifest is serialized in: 1 for a program without a layout, 2 for a program with one.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -270,8 +270,8 @@
     },
     {
       "Object": "publications_protocol_known",
-      "Physical definition": "CHECK ((protocol = 1))",
-      "Purpose": "Only protocol 1 exists."
+      "Physical definition": "CHECK ((protocol = ANY (ARRAY[1, 2])))",
+      "Purpose": "Only protocols 1 and 2 exist."
     },
     {
       "Object": "publications_pruned_after_superseded",

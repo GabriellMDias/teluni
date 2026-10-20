@@ -154,7 +154,7 @@ Protected output plays only while trusted time is before the stored statement's 
 
 ## Updates and compatibility
 
-- **Manifests.** The player declares its supported protocols in every sync. An incompatible manifest fails staging and keeps the active generation, and the report names the incompatibility. When protocol 2 arrives, a new player supports 1 and 2 for at least 90 days (AT-26).
+- **Manifests.** The player declares its supported protocols in every sync. An incompatible manifest fails staging and keeps the active generation, and the report names the incompatibility. Protocol 2, for programs with a layout, is served beside protocol 1 rather than replacing it, so a player that supports 2 keeps supporting 1; `desired.protocol` lets an older player report `INCOMPATIBLE` without downloading. A protocol that replaces another is supported beside it for at least 90 days (AT-26).
 - **Local state.** `state.json` carries a format version. Each release migrates older formats forward when it starts. A format the release does not know is not read: the player keeps the credential, discards content state and synchronizes again, which costs downloads but never mixes formats.
 - **Releases (increment 4).** The API serves the release approved for the screen through two device operations: the release description (version code, size, SHA-256) and the APK. The player downloads it like media.
 - **Installation.** The player verifies the APK's SHA-256 and that its signing certificate equals the installed one. It then installs through `PackageInstaller` inside the update window, by default 03:00 to 05:00 local business time, unless a release is marked urgent. Android refuses a lower version code, so the player never downgrades.
@@ -171,6 +171,7 @@ PJ-11 increment 3 adds two fields to the `POST /device/sync` response, both comp
 The API also publishes protocol conformance fixtures in [`conformance.json`](../../apps/api/test/publications/conformance.json):
 
 - a protocol 1 manifest as exact bytes with its SHA-256;
+- a protocol 2 manifest as exact bytes with its SHA-256, with page cycles and effective prices to evaluate ([catalog and composition design](catalog-composition-design.md#publication-protocol-2));
 - a key set and statements signed with throwaway keys whose private halves are discarded, including a rotated key and a tampered payload, stored in flattened JWS JSON serialization (RFC 7515) so secret scanners do not take these test vectors for live tokens;
 - zone offsets with local-time resolutions, including gaps, repeated hours and a half-hour transition;
 - the zone offsets of every shared schedule fixture.
@@ -229,6 +230,8 @@ Increment 1, started 2026-10-20 in [PJ-12](implementation-plan.md#current-work):
   - the engine (enrollment, synchronization, key rotation, staging with resumable verified downloads and the AT-05 reserve, superseding, activation, startup recovery, erasure);
   - the playback planner.
 - **Tests.** 79 JVM tests, including the engine against an in-memory API that signs real statements.
+
+With protocol 2 (the [catalog and composition design](catalog-composition-design.md#implementation-status), increment 3), the same day: the device API reads the sync answer's `branchId` and `desired.protocol`; `core` declares protocols 1 and 2, refuses a desired publication of another protocol as `INCOMPATIBLE` before downloading it, parses and checks protocol 2 manifests strictly, and plans what each area of a layout shows (schedules, the page cycle, catalog view pages and effective prices for the screen's branch). A failed staging attempt now returns only after its other downloads stop, so a retry never writes the same partial file at the same time. 90 JVM tests. Drawing layouts, catalog text and mixed audio is the Android `app` (increment 2) and its qualification (increment 3).
 
 Not yet implemented: the Android `app` module and everything that needs a device (increment 2, blocked in the cloud environment by [PH-26](human-actions.md#ph-26)), qualification on hardware (increment 3, [PH-08](human-actions.md#ph-08)), and updates and credential rotation (increment 4, [PH-27](human-actions.md#ph-27)). Also pending: the background scrub that re-hashes stored media, and the system clock's skew and the crash count in the report.
 

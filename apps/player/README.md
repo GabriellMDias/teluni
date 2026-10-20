@@ -9,11 +9,12 @@ Only `core`, the first delivery increment, exists. It is a Kotlin library for th
 | Package in `core/src/main/kotlin/app/teluni/player/core/` | Responsibility |
 | --- | --- |
 | `schedule/` | The schedule evaluator ported from the API, rule validation, and resolution of local times against the zone offsets the server sends |
-| `protocol/` | Strict protocol 1 manifest parsing and ES256 statement verification with Nimbus JOSE + JWT |
+| `protocol/` | Strict parsing and checks of protocol 1 manifests and of protocol 2 manifests with layouts and catalog snapshots (another protocol is refused as incompatible), and ES256 statement verification with Nimbus JOSE + JWT |
+| `catalog/` | Effective prices of protocol 2 catalogs, ported from the API |
 | `time/` | Trusted time: a monotonic anchor from each sync, a persisted lower bound, and the system clock after a reboot only when it is plausible |
 | `store/` | App-private storage: atomically replaced records, exact manifests and write-once media named by SHA-256 |
 | `sync/` | The device API over OkHttp, and the engine for enrollment, synchronization, staging with resumable verified downloads, activation, recovery and erasure |
-| `playback/` | What plays now and until when, or which neutral output and why |
+| `playback/` | What plays now and until when, or which neutral output and why; for a layout, what each area shows, with the coordinated page cycle, catalog view pages and prices for the screen's branch |
 
 ## Commands
 

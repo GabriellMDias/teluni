@@ -1,6 +1,8 @@
 // Writes the player protocol conformance fixtures of the player design
 // (docs/project/player-design.md#server-additions) from the API's own
 // serializer, signer and zone rules: a protocol 1 manifest as exact bytes,
+// a protocol 2 manifest (catalog and composition design) with the page
+// cycles and effective prices screens evaluate,
 // statements signed by throwaway keys whose private halves are discarded
 // (in flattened JWS JSON serialization),
 // zone offsets with local-time resolutions, and the zone offsets of every
@@ -12,11 +14,19 @@ import { resolve } from "node:path";
 import prettier from "prettier";
 import { Temporal } from "temporal-polyfill";
 import {
+  conformanceLayoutManifest,
   conformanceManifest,
+  conformancePageCycles,
+  conformancePrices,
   conformanceZones,
   scheduleFixtureOffsets,
 } from "../test/publications/conformance.js";
-import { manifestBytes } from "../src/features/publications/domain.js";
+import { effectivePrice } from "../src/features/catalogs/domain.js";
+import { pageAt } from "../src/features/programming/layouts.js";
+import {
+  layoutManifestBytes,
+  manifestBytes,
+} from "../src/features/publications/domain.js";
 import {
   publicKeySet,
   signStatement,
@@ -94,16 +104,48 @@ const zones = conformanceZones.map((zone) => ({
   }),
 }));
 
+const layout = layoutManifestBytes(
+  conformanceLayoutManifest.header,
+  conformanceLayoutManifest.content,
+);
+
 const fixtures = {
   description:
     "Player protocol conformance fixtures (docs/project/player-design.md#server-additions), written by apps/api/scripts/conformance.ts from the API's serializer, signer and zone rules and verified by apps/api/test/publications/conformance.test.ts. The keys are throwaway test keys whose private halves were discarded. Do not edit by hand.",
-  version: 1,
+  version: 2,
   manifest: {
     header: { ...header, publishedAt: header.publishedAt.toISOString() },
     content,
     bytes: manifest.bytes.toString("utf8"),
     sha256,
   },
+  layoutManifest: {
+    header: {
+      ...conformanceLayoutManifest.header,
+      publishedAt: conformanceLayoutManifest.header.publishedAt.toISOString(),
+    },
+    content: conformanceLayoutManifest.content,
+    bytes: layout.bytes.toString("utf8"),
+    sha256: layout.sha256.toString("hex"),
+  },
+  pageCycles: conformancePageCycles.map((cycle) => ({
+    ...cycle,
+    position: pageAt(cycle.durations, cycle.secondOfDay),
+  })),
+  prices: conformancePrices.map((entry) => ({
+    id: entry.id,
+    facts: {
+      base: entry.facts.base,
+      overrides: [...entry.facts.overrides].map(([branchId, amount]) => ({
+        branchId,
+        amount,
+      })),
+      promotions: entry.facts.promotions,
+    },
+    branchId: entry.branchId,
+    at: entry.at,
+    price: effectivePrice(entry.facts, entry.branchId, entry.at),
+  })),
   keys: await publicKeySet([newest, older]),
   // Flattened JWS JSON serialization (RFC 7515, section 7.2.2): the compact
   // form a screen receives is `protected.payload.signature`. Kept apart so

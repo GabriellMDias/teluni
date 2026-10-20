@@ -886,6 +886,8 @@ test("shows what blocks a publication and a draft changed after review", async (
               problems: [
                 { code: "TRANSITION_UNSUPPORTED", playlistId },
                 { code: "MEDIA_UNAVAILABLE", mediaId: assetId },
+                { code: "CATALOG_OVERFLOW", areaKey: "prices" },
+                { code: "CATALOG_OVERFLOW", areaKey: "prices" },
               ],
             }
           : review,
@@ -916,6 +918,17 @@ test("shows what blocks a publication and a draft changed after review", async (
     .toBeVisible();
   await expect
     .element(screen.getByText(t.publication.problems.MEDIA_UNAVAILABLE))
+    .toBeVisible();
+  // Catalog problems name their area, once per area.
+  await expect
+    .element(
+      screen.getByText(
+        t.publication.areaProblem(
+          "prices",
+          t.publication.problems.CATALOG_OVERFLOW,
+        ),
+      ),
+    )
     .toBeVisible();
   await expect
     .element(screen.getByRole("button", { name: t.publication.publish }))

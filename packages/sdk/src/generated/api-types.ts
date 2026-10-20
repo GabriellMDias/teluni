@@ -1437,7 +1437,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
+        /** @description Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
         post: operations["checkGroupPublication"];
         delete?: never;
         options?: never;
@@ -1489,7 +1489,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
+        /** @description Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
         post: operations["checkDevicePublication"];
         delete?: never;
         options?: never;
@@ -1557,7 +1557,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone with that zone's UTC offsets, configured rotation, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself. */
+        /** @description Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (2 for players that support it), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself. */
         post: operations["syncDevice"];
         delete?: never;
         options?: never;
@@ -27016,9 +27016,10 @@ export interface operations {
                     "application/json": {
                         publishable: boolean;
                         problems: {
-                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE" | "LAYOUT_NOT_PUBLISHABLE";
+                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE" | "LAYOUT_OUT_OF_SCOPE" | "CATALOG_UNAVAILABLE" | "CATALOG_FIELD_UNAVAILABLE" | "CATALOG_OVERFLOW" | "CATALOG_PAGE_MISSING" | "CATALOG_GROUP_OVERFLOW";
                             playlistId?: string;
                             mediaId?: string;
+                            areaKey?: string;
                         }[];
                         counts: {
                             rules: number;
@@ -28039,9 +28040,10 @@ export interface operations {
                     "application/json": {
                         publishable: boolean;
                         problems: {
-                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE" | "LAYOUT_NOT_PUBLISHABLE";
+                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE" | "LAYOUT_OUT_OF_SCOPE" | "CATALOG_UNAVAILABLE" | "CATALOG_FIELD_UNAVAILABLE" | "CATALOG_OVERFLOW" | "CATALOG_PAGE_MISSING" | "CATALOG_GROUP_OVERFLOW";
                             playlistId?: string;
                             mediaId?: string;
+                            areaKey?: string;
                         }[];
                         counts: {
                             rules: number;
@@ -29082,9 +29084,11 @@ export interface operations {
                             }[];
                         } | null;
                         rotation: 0 | 90 | 180 | 270 | null;
+                        branchId: string | null;
                         desired: {
                             publicationId: string;
                             generation: number;
+                            protocol: number;
                             manifestSha256: string;
                             manifestSize: number;
                             source: "group" | "individual";

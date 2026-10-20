@@ -1,6 +1,6 @@
 {
   "description": "Player protocol conformance fixtures (docs/project/player-design.md#server-additions), written by apps/api/scripts/conformance.ts from the API's serializer, signer and zone rules and verified by apps/api/test/publications/conformance.test.ts. The keys are throwaway test keys whose private halves were discarded. Do not edit by hand.",
-  "version": 1,
+  "version": 2,
   "manifest": {
     "header": {
       "publicationId": "2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e",
@@ -100,13 +100,546 @@
     "bytes": "{\"format\":\"teluni.publication\",\"protocol\":1,\"publicationId\":\"2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e\",\"companyId\":\"0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c\",\"programId\":\"1c8e0b63-69b5-4b46-8a64-7d2f3a4b5c6d\",\"generation\":3,\"publishedAt\":\"2026-10-19T12:00:00.000Z\",\"outputs\":[{\"key\":\"screen\",\"defaultPlaylistId\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"rules\":[{\"id\":\"r1\",\"playlistId\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"weekdays\":[1,2,3,4,5],\"allDay\":false,\"startTime\":\"08:00\",\"endTime\":\"18:00\",\"startsOn\":\"2026-10-20\",\"endsOn\":null},{\"id\":\"r2\",\"playlistId\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"weekdays\":[5],\"allDay\":false,\"startTime\":\"22:00\",\"endTime\":\"02:00\",\"startsOn\":\"2026-10-20\",\"endsOn\":\"2026-12-31\"},{\"id\":\"r3\",\"playlistId\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"weekdays\":[6,7],\"allDay\":true,\"startsOn\":\"2026-10-24\",\"endsOn\":null}]}],\"playlists\":[{\"id\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":10000},{\"mediaId\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"durationMs\":null}]},{\"id\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":15000}]}],\"media\":[{\"id\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"kind\":\"IMAGE\",\"contentType\":\"image/jpeg\",\"size\":482113,\"sha256\":\"8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4\",\"width\":1920,\"height\":1080,\"durationMs\":null,\"hasAudio\":false},{\"id\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"kind\":\"VIDEO\",\"contentType\":\"video/mp4\",\"size\":18734002,\"sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"width\":1920,\"height\":1080,\"durationMs\":31500,\"hasAudio\":true}]}",
     "sha256": "34526633a97cb0df97ef25b71a2413f4c29df3d00e7415b3ecf5f3cf0223ef52"
   },
+  "layoutManifest": {
+    "header": {
+      "publicationId": "83f572da-d02c-42bd-81db-e49001122334",
+      "companyId": "0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c",
+      "programId": "72e461c9-cf1b-41ac-80ca-d38f90011223",
+      "generation": 1,
+      "publishedAt": "2026-10-20T12:00:00.000Z"
+    },
+    "content": {
+      "layout": {
+        "orientation": "landscape",
+        "width": 1920,
+        "height": 1080,
+        "audioMixConfirmed": false,
+        "areas": [
+          {
+            "key": "video",
+            "x": 0,
+            "y": 0,
+            "width": 1280,
+            "height": 1080,
+            "z": 0,
+            "background": "#000000",
+            "fit": "contain",
+            "muted": true,
+            "volume": 100,
+            "kind": "media",
+            "pageControlled": true,
+            "view": null
+          },
+          {
+            "key": "menu",
+            "x": 1280,
+            "y": 0,
+            "width": 640,
+            "height": 1080,
+            "z": 1,
+            "background": "#1F2933",
+            "fit": "contain",
+            "muted": true,
+            "volume": 100,
+            "kind": "catalog",
+            "pageControlled": false,
+            "view": {
+              "catalogId": "94a683eb-e13d-43ce-82ec-f5a011223345",
+              "fields": [
+                {
+                  "fieldId": "a5b794fc-f24e-44df-83fd-06b122334456",
+                  "role": "title"
+                },
+                {
+                  "fieldId": "b6c8a50d-035f-45e0-84ae-17c233445567",
+                  "role": "price"
+                },
+                {
+                  "fieldId": "c7d9b61e-1460-46f1-85bf-28d344556678",
+                  "role": "group"
+                }
+              ],
+              "presentation": "menu",
+              "textSize": 40,
+              "unavailable": "hide",
+              "pageSeconds": 10,
+              "pages": [
+                [
+                  {
+                    "recordId": "fa0ce941-4793-4924-88e2-5b067788990b",
+                    "group": "d8eac72f-2571-4702-86c0-39e455667789"
+                  },
+                  {
+                    "recordId": "0b1dfa52-58a4-4a35-89f3-6c178899aa1c",
+                    "group": "d8eac72f-2571-4702-86c0-39e455667789"
+                  },
+                  {
+                    "recordId": "1c2e0b63-69b5-4b46-8a04-7d2899aabb2d",
+                    "group": "e9fbd830-3682-4813-87d1-4af56677889a"
+                  }
+                ]
+              ],
+              "groups": []
+            }
+          }
+        ],
+        "pages": [
+          {
+            "durationSeconds": 15,
+            "contents": [
+              {
+                "areaKey": "video",
+                "mediaId": "50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001",
+                "viewPage": null,
+                "groupChoiceId": null
+              }
+            ]
+          },
+          {
+            "durationSeconds": 45,
+            "contents": [
+              {
+                "areaKey": "video",
+                "mediaId": "61d350b8-be0a-409b-9fb9-c27e8f900112",
+                "viewPage": null,
+                "groupChoiceId": null
+              }
+            ]
+          }
+        ]
+      },
+      "outputs": [
+        {
+          "key": "video",
+          "default": null,
+          "rules": [
+            {
+              "id": "r1",
+              "playlistId": "3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f",
+              "weekdays": [1, 2, 3, 4, 5],
+              "allDay": false,
+              "startTime": "12:00",
+              "endTime": "14:00",
+              "startsOn": "2026-10-20",
+              "endsOn": null
+            }
+          ]
+        },
+        { "key": "menu", "default": { "view": true }, "rules": [] }
+      ],
+      "catalogs": [
+        {
+          "id": "94a683eb-e13d-43ce-82ec-f5a011223345",
+          "fields": [
+            {
+              "id": "a5b794fc-f24e-44df-83fd-06b122334456",
+              "type": "text",
+              "label": "Nome"
+            },
+            {
+              "id": "b6c8a50d-035f-45e0-84ae-17c233445567",
+              "type": "money",
+              "label": "Preço",
+              "currency": "BRL"
+            },
+            {
+              "id": "c7d9b61e-1460-46f1-85bf-28d344556678",
+              "type": "selection",
+              "label": "Seção",
+              "choices": [
+                {
+                  "id": "d8eac72f-2571-4702-86c0-39e455667789",
+                  "label": "Bebidas"
+                },
+                {
+                  "id": "e9fbd830-3682-4813-87d1-4af56677889a",
+                  "label": "Lanches"
+                }
+              ]
+            }
+          ],
+          "records": [
+            {
+              "id": "fa0ce941-4793-4924-88e2-5b067788990b",
+              "available": true,
+              "values": {
+                "a5b794fc-f24e-44df-83fd-06b122334456": "Café",
+                "c7d9b61e-1460-46f1-85bf-28d344556678": "d8eac72f-2571-4702-86c0-39e455667789"
+              }
+            },
+            {
+              "id": "1c2e0b63-69b5-4b46-8a04-7d2899aabb2d",
+              "available": true,
+              "values": {
+                "a5b794fc-f24e-44df-83fd-06b122334456": "Pão de queijo",
+                "c7d9b61e-1460-46f1-85bf-28d344556678": "e9fbd830-3682-4813-87d1-4af56677889a"
+              }
+            },
+            {
+              "id": "0b1dfa52-58a4-4a35-89f3-6c178899aa1c",
+              "available": true,
+              "values": {
+                "a5b794fc-f24e-44df-83fd-06b122334456": "Suco",
+                "c7d9b61e-1460-46f1-85bf-28d344556678": "d8eac72f-2571-4702-86c0-39e455667789"
+              }
+            }
+          ],
+          "prices": [
+            {
+              "recordId": "fa0ce941-4793-4924-88e2-5b067788990b",
+              "fieldId": "b6c8a50d-035f-45e0-84ae-17c233445567",
+              "base": 500,
+              "overrides": [
+                {
+                  "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f",
+                  "amount": 450
+                }
+              ],
+              "promotions": [
+                {
+                  "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+                  "branchId": null,
+                  "amount": 400,
+                  "startsAt": "2026-10-26T08:00",
+                  "endsAt": "2026-10-26T12:00"
+                }
+              ]
+            },
+            {
+              "recordId": "1c2e0b63-69b5-4b46-8a04-7d2899aabb2d",
+              "fieldId": "b6c8a50d-035f-45e0-84ae-17c233445567",
+              "base": 750,
+              "overrides": [],
+              "promotions": []
+            },
+            {
+              "recordId": "0b1dfa52-58a4-4a35-89f3-6c178899aa1c",
+              "fieldId": "b6c8a50d-035f-45e0-84ae-17c233445567",
+              "base": null,
+              "overrides": [],
+              "promotions": []
+            }
+          ]
+        }
+      ],
+      "playlists": [
+        {
+          "id": "3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f",
+          "transition": { "kind": "CUT" },
+          "items": [
+            {
+              "mediaId": "50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001",
+              "durationMs": 10000
+            },
+            {
+              "mediaId": "61d350b8-be0a-409b-9fb9-c27e8f900112",
+              "durationMs": null
+            }
+          ]
+        },
+        {
+          "id": "4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90",
+          "transition": { "kind": "CUT" },
+          "items": [
+            {
+              "mediaId": "50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001",
+              "durationMs": 15000
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "id": "50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001",
+          "kind": "IMAGE",
+          "contentType": "image/jpeg",
+          "size": 482113,
+          "sha256": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4",
+          "width": 1920,
+          "height": 1080,
+          "durationMs": null,
+          "hasAudio": false
+        },
+        {
+          "id": "61d350b8-be0a-409b-9fb9-c27e8f900112",
+          "kind": "VIDEO",
+          "contentType": "video/mp4",
+          "size": 18734002,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "width": 1920,
+          "height": 1080,
+          "durationMs": 31500,
+          "hasAudio": true
+        }
+      ]
+    },
+    "bytes": "{\"format\":\"teluni.publication\",\"protocol\":2,\"publicationId\":\"83f572da-d02c-42bd-81db-e49001122334\",\"companyId\":\"0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c\",\"programId\":\"72e461c9-cf1b-41ac-80ca-d38f90011223\",\"generation\":1,\"publishedAt\":\"2026-10-20T12:00:00.000Z\",\"layout\":{\"orientation\":\"landscape\",\"width\":1920,\"height\":1080,\"audioMixConfirmed\":false,\"areas\":[{\"key\":\"video\",\"x\":0,\"y\":0,\"width\":1280,\"height\":1080,\"z\":0,\"background\":\"#000000\",\"fit\":\"contain\",\"muted\":true,\"volume\":100,\"kind\":\"media\",\"pageControlled\":true,\"view\":null},{\"key\":\"menu\",\"x\":1280,\"y\":0,\"width\":640,\"height\":1080,\"z\":1,\"background\":\"#1F2933\",\"fit\":\"contain\",\"muted\":true,\"volume\":100,\"kind\":\"catalog\",\"pageControlled\":false,\"view\":{\"catalogId\":\"94a683eb-e13d-43ce-82ec-f5a011223345\",\"fields\":[{\"fieldId\":\"a5b794fc-f24e-44df-83fd-06b122334456\",\"role\":\"title\"},{\"fieldId\":\"b6c8a50d-035f-45e0-84ae-17c233445567\",\"role\":\"price\"},{\"fieldId\":\"c7d9b61e-1460-46f1-85bf-28d344556678\",\"role\":\"group\"}],\"presentation\":\"menu\",\"textSize\":40,\"unavailable\":\"hide\",\"pageSeconds\":10,\"pages\":[[{\"recordId\":\"fa0ce941-4793-4924-88e2-5b067788990b\",\"group\":\"d8eac72f-2571-4702-86c0-39e455667789\"},{\"recordId\":\"0b1dfa52-58a4-4a35-89f3-6c178899aa1c\",\"group\":\"d8eac72f-2571-4702-86c0-39e455667789\"},{\"recordId\":\"1c2e0b63-69b5-4b46-8a04-7d2899aabb2d\",\"group\":\"e9fbd830-3682-4813-87d1-4af56677889a\"}]],\"groups\":[]}}],\"pages\":[{\"durationSeconds\":15,\"contents\":[{\"areaKey\":\"video\",\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"viewPage\":null,\"groupChoiceId\":null}]},{\"durationSeconds\":45,\"contents\":[{\"areaKey\":\"video\",\"mediaId\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"viewPage\":null,\"groupChoiceId\":null}]}]},\"outputs\":[{\"key\":\"video\",\"default\":null,\"rules\":[{\"id\":\"r1\",\"playlistId\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"weekdays\":[1,2,3,4,5],\"allDay\":false,\"startTime\":\"12:00\",\"endTime\":\"14:00\",\"startsOn\":\"2026-10-20\",\"endsOn\":null}]},{\"key\":\"menu\",\"default\":{\"view\":true},\"rules\":[]}],\"catalogs\":[{\"id\":\"94a683eb-e13d-43ce-82ec-f5a011223345\",\"fields\":[{\"id\":\"a5b794fc-f24e-44df-83fd-06b122334456\",\"type\":\"text\",\"label\":\"Nome\"},{\"id\":\"b6c8a50d-035f-45e0-84ae-17c233445567\",\"type\":\"money\",\"label\":\"Preço\",\"currency\":\"BRL\"},{\"id\":\"c7d9b61e-1460-46f1-85bf-28d344556678\",\"type\":\"selection\",\"label\":\"Seção\",\"choices\":[{\"id\":\"d8eac72f-2571-4702-86c0-39e455667789\",\"label\":\"Bebidas\"},{\"id\":\"e9fbd830-3682-4813-87d1-4af56677889a\",\"label\":\"Lanches\"}]}],\"records\":[{\"id\":\"fa0ce941-4793-4924-88e2-5b067788990b\",\"available\":true,\"values\":{\"a5b794fc-f24e-44df-83fd-06b122334456\":\"Café\",\"c7d9b61e-1460-46f1-85bf-28d344556678\":\"d8eac72f-2571-4702-86c0-39e455667789\"}},{\"id\":\"1c2e0b63-69b5-4b46-8a04-7d2899aabb2d\",\"available\":true,\"values\":{\"a5b794fc-f24e-44df-83fd-06b122334456\":\"Pão de queijo\",\"c7d9b61e-1460-46f1-85bf-28d344556678\":\"e9fbd830-3682-4813-87d1-4af56677889a\"}},{\"id\":\"0b1dfa52-58a4-4a35-89f3-6c178899aa1c\",\"available\":true,\"values\":{\"a5b794fc-f24e-44df-83fd-06b122334456\":\"Suco\",\"c7d9b61e-1460-46f1-85bf-28d344556678\":\"d8eac72f-2571-4702-86c0-39e455667789\"}}],\"prices\":[{\"recordId\":\"0b1dfa52-58a4-4a35-89f3-6c178899aa1c\",\"fieldId\":\"b6c8a50d-035f-45e0-84ae-17c233445567\",\"base\":null,\"overrides\":[],\"promotions\":[]},{\"recordId\":\"1c2e0b63-69b5-4b46-8a04-7d2899aabb2d\",\"fieldId\":\"b6c8a50d-035f-45e0-84ae-17c233445567\",\"base\":750,\"overrides\":[],\"promotions\":[]},{\"recordId\":\"fa0ce941-4793-4924-88e2-5b067788990b\",\"fieldId\":\"b6c8a50d-035f-45e0-84ae-17c233445567\",\"base\":500,\"overrides\":[{\"branchId\":\"3e402d85-8bd7-4d68-8c26-9f4abbccdd4f\",\"amount\":450}],\"promotions\":[{\"id\":\"2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e\",\"branchId\":null,\"amount\":400,\"startsAt\":\"2026-10-26T08:00\",\"endsAt\":\"2026-10-26T12:00\"}]}]}],\"playlists\":[{\"id\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":10000},{\"mediaId\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"durationMs\":null}]},{\"id\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":15000}]}],\"media\":[{\"id\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"kind\":\"IMAGE\",\"contentType\":\"image/jpeg\",\"size\":482113,\"sha256\":\"8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4\",\"width\":1920,\"height\":1080,\"durationMs\":null,\"hasAudio\":false},{\"id\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"kind\":\"VIDEO\",\"contentType\":\"video/mp4\",\"size\":18734002,\"sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"width\":1920,\"height\":1080,\"durationMs\":31500,\"hasAudio\":true}]}",
+    "sha256": "9777b3e2225c2775bfc958644f816da8878d1d1970c32b2000f01929985a54dd"
+  },
+  "pageCycles": [
+    {
+      "id": "midnight",
+      "durations": [15, 45],
+      "secondOfDay": 0,
+      "position": { "page": 0, "startsAt": 0, "endsAt": 15 }
+    },
+    {
+      "id": "second-page",
+      "durations": [15, 45],
+      "secondOfDay": 20,
+      "position": { "page": 1, "startsAt": 15, "endsAt": 60 }
+    },
+    {
+      "id": "next-cycle",
+      "durations": [15, 45],
+      "secondOfDay": 75,
+      "position": { "page": 1, "startsAt": 75, "endsAt": 120 }
+    },
+    {
+      "id": "morning",
+      "durations": [15, 45],
+      "secondOfDay": 28814,
+      "position": { "page": 0, "startsAt": 28800, "endsAt": 28815 }
+    },
+    {
+      "id": "view-pages",
+      "durations": [10, 10, 10],
+      "secondOfDay": 43225,
+      "position": { "page": 2, "startsAt": 43220, "endsAt": 43230 }
+    },
+    {
+      "id": "cut-at-midnight",
+      "durations": [7, 70],
+      "secondOfDay": 86399,
+      "position": { "page": 0, "startsAt": 86394, "endsAt": 86400 }
+    },
+    {
+      "id": "one-page",
+      "durations": [30],
+      "secondOfDay": 3601,
+      "position": { "page": 0, "startsAt": 3600, "endsAt": 3630 }
+    }
+  ],
+  "prices": [
+    {
+      "id": "base",
+      "facts": {
+        "base": 500,
+        "overrides": [
+          { "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f", "amount": 450 }
+        ],
+        "promotions": [
+          {
+            "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+            "branchId": null,
+            "amount": 400,
+            "startsAt": "2026-10-26T08:00",
+            "endsAt": "2026-10-26T12:00"
+          },
+          {
+            "id": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002",
+            "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+            "amount": 350,
+            "startsAt": "2026-10-27T00:00",
+            "endsAt": "2026-10-28T00:00"
+          }
+        ]
+      },
+      "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+      "at": "2026-10-25T09:00",
+      "price": { "amount": 500, "source": "base", "promotionId": null }
+    },
+    {
+      "id": "override",
+      "facts": {
+        "base": 500,
+        "overrides": [
+          { "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f", "amount": 450 }
+        ],
+        "promotions": [
+          {
+            "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+            "branchId": null,
+            "amount": 400,
+            "startsAt": "2026-10-26T08:00",
+            "endsAt": "2026-10-26T12:00"
+          },
+          {
+            "id": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002",
+            "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+            "amount": 350,
+            "startsAt": "2026-10-27T00:00",
+            "endsAt": "2026-10-28T00:00"
+          }
+        ]
+      },
+      "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f",
+      "at": "2026-10-25T09:00",
+      "price": { "amount": 450, "source": "override", "promotionId": null }
+    },
+    {
+      "id": "promotion-start",
+      "facts": {
+        "base": 500,
+        "overrides": [
+          { "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f", "amount": 450 }
+        ],
+        "promotions": [
+          {
+            "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+            "branchId": null,
+            "amount": 400,
+            "startsAt": "2026-10-26T08:00",
+            "endsAt": "2026-10-26T12:00"
+          },
+          {
+            "id": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002",
+            "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+            "amount": 350,
+            "startsAt": "2026-10-27T00:00",
+            "endsAt": "2026-10-28T00:00"
+          }
+        ]
+      },
+      "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f",
+      "at": "2026-10-26T08:00",
+      "price": {
+        "amount": 400,
+        "source": "promotion",
+        "promotionId": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e"
+      }
+    },
+    {
+      "id": "promotion-end-excluded",
+      "facts": {
+        "base": 500,
+        "overrides": [
+          { "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f", "amount": 450 }
+        ],
+        "promotions": [
+          {
+            "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+            "branchId": null,
+            "amount": 400,
+            "startsAt": "2026-10-26T08:00",
+            "endsAt": "2026-10-26T12:00"
+          },
+          {
+            "id": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002",
+            "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+            "amount": 350,
+            "startsAt": "2026-10-27T00:00",
+            "endsAt": "2026-10-28T00:00"
+          }
+        ]
+      },
+      "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f",
+      "at": "2026-10-26T12:00",
+      "price": { "amount": 450, "source": "override", "promotionId": null }
+    },
+    {
+      "id": "branch-promotion",
+      "facts": {
+        "base": 500,
+        "overrides": [
+          { "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f", "amount": 450 }
+        ],
+        "promotions": [
+          {
+            "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+            "branchId": null,
+            "amount": 400,
+            "startsAt": "2026-10-26T08:00",
+            "endsAt": "2026-10-26T12:00"
+          },
+          {
+            "id": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002",
+            "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+            "amount": 350,
+            "startsAt": "2026-10-27T00:00",
+            "endsAt": "2026-10-28T00:00"
+          }
+        ]
+      },
+      "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+      "at": "2026-10-27T10:00",
+      "price": {
+        "amount": 350,
+        "source": "promotion",
+        "promotionId": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002"
+      }
+    },
+    {
+      "id": "other-branch-promotion",
+      "facts": {
+        "base": 500,
+        "overrides": [
+          { "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f", "amount": 450 }
+        ],
+        "promotions": [
+          {
+            "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+            "branchId": null,
+            "amount": 400,
+            "startsAt": "2026-10-26T08:00",
+            "endsAt": "2026-10-26T12:00"
+          },
+          {
+            "id": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002",
+            "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+            "amount": 350,
+            "startsAt": "2026-10-27T00:00",
+            "endsAt": "2026-10-28T00:00"
+          }
+        ]
+      },
+      "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f",
+      "at": "2026-10-27T10:00",
+      "price": { "amount": 450, "source": "override", "promotionId": null }
+    },
+    {
+      "id": "whole-scope",
+      "facts": {
+        "base": 500,
+        "overrides": [
+          { "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f", "amount": 450 }
+        ],
+        "promotions": [
+          {
+            "id": "2d3f1c74-7ac6-4c57-8b15-8e39aabbcc3e",
+            "branchId": null,
+            "amount": 400,
+            "startsAt": "2026-10-26T08:00",
+            "endsAt": "2026-10-26T12:00"
+          },
+          {
+            "id": "5a624fa7-adf9-4f8a-8ea8-b16d7e8f9002",
+            "branchId": "4f513e96-9ce8-4e79-8d37-a05bccddee50",
+            "amount": 350,
+            "startsAt": "2026-10-27T00:00",
+            "endsAt": "2026-10-28T00:00"
+          }
+        ]
+      },
+      "branchId": null,
+      "at": "2026-10-27T10:00",
+      "price": { "amount": 500, "source": "base", "promotionId": null }
+    },
+    {
+      "id": "no-price",
+      "facts": { "base": null, "overrides": [], "promotions": [] },
+      "branchId": "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f",
+      "at": "2026-10-25T09:00",
+      "price": { "amount": null, "source": "none", "promotionId": null }
+    }
+  ],
   "keys": {
     "keys": [
       {
         "kty": "EC",
         "crv": "P-256",
-        "x": "Dhkp6Sk0SL5Kv6dpVRqbdX2khXjal5kSbVKU9daFL3k",
-        "y": "8spacqoT-D_Lo4JUYHHxhytXs4Jjsq_3SBDZLLH86WU",
+        "x": "O1uYr9Lo-hPidas50TOVUNczuwaKjfebMcxe1c0oHX0",
+        "y": "Axnu6yAfey0vyGjqxSIiFy32z26vUR0eMpP3gOwMVxc",
         "kid": "conformance-2",
         "use": "sig",
         "alg": "ES256"
@@ -114,8 +647,8 @@
       {
         "kty": "EC",
         "crv": "P-256",
-        "x": "U0MFACDgffPDj89ApLSod_A1RRY0umdjmDajuTlGECw",
-        "y": "Eo-d0Ql5lRzAFwVchr1t30G6Y5ZdH8xZZx_PLsptVTo",
+        "x": "t77vCFvUtC6dnn03__XqpYcu6h4OJRWyP6w35lUbGZc",
+        "y": "9cUIWfoF1dA2ix7c2xpZN-HxdvnuzuEX7C3BkDpV0vA",
         "kid": "conformance-1",
         "use": "sig",
         "alg": "ES256"
@@ -127,7 +660,7 @@
       "id": "current-key",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
-      "signature": "0V8irQV3L6_DLaANd8rCQPGMsUGnFW1YMHmD0wp73wBcGkCs5MBigFelk1qQ53t4TGKqpu3lytt_OSU2a1Pwmg",
+      "signature": "B-Y_xZXXxJV_pzGnaYNGAZpIDPqM3MLlou6vX39FC9BUxaRqr8uD3gSwjC9Cqm8qAIJE_AZE48JLDxy49cR3aA",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -146,7 +679,7 @@
       "id": "rotated-key",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTEiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
-      "signature": "qLgQsMY-fccBSxUAO8EKwc6A_ZMeXv7trK7gRoiVu7TVHGe9nuyzNQ56D1OB2gPtlfHJi3a0ruVYIXpeoPV76A",
+      "signature": "d0zGVjFVYuy6f7HHqR8FvR4cxf8JheNeWDDaovwzzp___i3CptPpTQRWwzV_hIrPZDGUdsLE4snpgNZsaiJotg",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -165,7 +698,7 @@
       "id": "unpublished-source",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W119",
-      "signature": "82N6mePpqla-VkefRiXmYPHNtm-2ycrpzf0EmJegIMIXWBu662Cpgq1Zv2Yd-IYYhBfmsH5R3YPBN3kZlRUjpg",
+      "signature": "RUPc6qkMcJ9TUySk1JO2XHcfeUa6v306vOIK41XA2vNYxDlRceGgf4wB1PGW1O3mmi3HlLWtwkvIn3n1ZOGrvQ",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -179,7 +712,7 @@
       "id": "tampered-payload",
       "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
       "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxODg4MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
-      "signature": "0V8irQV3L6_DLaANd8rCQPGMsUGnFW1YMHmD0wp73wBcGkCs5MBigFelk1qQ53t4TGKqpu3lytt_OSU2a1Pwmg",
+      "signature": "B-Y_xZXXxJV_pzGnaYNGAZpIDPqM3MLlou6vX39FC9BUxaRqr8uD3gSwjC9Cqm8qAIJE_AZE48JLDxy49cR3aA",
       "valid": false,
       "claims": null
     }

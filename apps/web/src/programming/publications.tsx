@@ -211,7 +211,18 @@ function PublishReview({
         </button>
       </div>
     );
-  const codes = [...new Set(review.problems.map((problem) => problem.code))];
+  // One line per problem kind, and per layout area for catalog problems.
+  const problems = [
+    ...new Map(
+      review.problems.map((problem) => {
+        const text = p.problems[problem.code] ?? t.generic;
+        return [
+          `${problem.code}:${problem.areaKey ?? ""}`,
+          problem.areaKey ? p.areaProblem(problem.areaKey, text) : text,
+        ];
+      }),
+    ),
+  ];
   return (
     <div
       className="form-stack"
@@ -230,12 +241,12 @@ function PublishReview({
         )}
       </p>
       <p>{p.followers(review.followers)}</p>
-      {codes.length > 0 && (
+      {problems.length > 0 && (
         <div role="alert" className="notice notice-error">
           <strong>{p.problemsTitle}</strong>
           <ul>
-            {codes.map((code) => (
-              <li key={code}>{p.problems[code] ?? t.generic}</li>
+            {problems.map(([key, text]) => (
+              <li key={key}>{text}</li>
             ))}
           </ul>
         </div>

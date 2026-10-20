@@ -189,9 +189,9 @@ A program without a layout keeps publishing protocol 1, byte for byte, so curren
   - each money field's base price, branch overrides and promotions limited to the branches the program reaches;
   - media referenced by `media` fields, in the publication's media list.
 
-A screen receives the program's single manifest. To resolve overrides and promotions for its branch, it needs its `branchId`, which the sync response gains next to `rotation`. Effective prices, availability, pagination and pages are evaluated on the screen from the snapshot, trusted time and zone offsets, with fixtures shared by the API's preview and the player, like schedules.
+A screen receives the program's single manifest. To resolve overrides and promotions for its branch, it needs its `branchId`, which the sync response gains next to `rotation`. Effective prices and the page cycle are evaluated on the screen from the snapshot, trusted time and zone offsets, with fixtures shared by the API's preview and the player, like schedules. Pagination is computed once, at publication, with the layout's text measure: each view carries its pages of records (with each record's group) and, for groups that layout pages name, the records of each group, so screens never measure text to decide what a page holds.
 
-Protocol negotiation is unchanged. A screen that supports only protocol 1 and desires a protocol 2 publication reports `INCOMPATIBLE` and keeps its active generation, and the panel shows why.
+Protocol negotiation is unchanged. The sync answer's `desired` names the desired publication's protocol, so a screen that supports only protocol 1 and desires a protocol 2 publication reports `INCOMPATIBLE` without downloading it and keeps its active generation, and the panel shows why.
 
 ## Automatic price publication
 
@@ -315,7 +315,7 @@ Increment 2 adds the **Layouts** editor under Programação: a canvas preview wi
   - audit rows.
 - **Browser component tests** for the field editor, the record editor with prices and promotions, and the effective-price preview.
 - **An end-to-end journey** that creates a product catalog with a branch override and a promotion and reads the effective prices.
-- **Later increments** add layout validation, pagination and overflow fixtures, the protocol 2 manifest bytes, the price-publication processor with crash points, and the player's conformance tests.
+- **Later increments** add layout validation, pagination and overflow fixtures, the protocol 2 manifest bytes, page cycles and effective prices in the conformance fixtures, the price-publication processor with crash points, and the player's conformance tests.
 
 ## Delivery increments
 
@@ -375,9 +375,46 @@ Implementation decisions, taken under the owner's delegation:
 - Choosing a layout is its own versioned operation (`PUT .../program/layout`); outputs keep their key, so an area of the new layout with the key of a former output keeps its schedules. Empty outputs are dropped silently; outputs with schedules or a default, and a catalog area's former default playlist, are dropped only when the request confirms it, after an answer that names each one. A layout save that removes such areas from programs needs the same confirmation, and counts the programs each output affects.
 - A layout and its programs lock in that order, so a program operation share-locks the layout before its program.
 - A catalog area's output refuses a default playlist with `VALIDATION_FAILED`, because its default is its view; its timeline shows the view where nothing else plays.
-- Until protocol 2 (increment 3), the publication check reports `LAYOUT_NOT_PUBLISHABLE` for a program with a layout rather than publishing only part of it. The coordinated page cycle moves to increment 3 with the fixtures that the preview and the player share.
+- Until protocol 2 (increment 3), the publication check reports `LAYOUT_NOT_PUBLISHABLE` for a program with a layout rather than publishing only part of it. The coordinated page cycle moves to increment 3 with the fixtures that the preview and the player share. Increment 3, part A replaced that problem with protocol 2.
 
-Increments 3 to 5 are not implemented.
+**Increment 3, part A (protocol 2 publication, PJ-20 with PJ-11) is implemented, 2026-10-20:**
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| A forward migration lets publications record protocol 2 | [migration](../../apps/api/prisma/migrations/20261020030000_publication_protocol_2/migration.sql), [metadata](../../apps/api/prisma/metadata/publications.json) | The tenant structure test and the generated [database reference](../generated/database/schema.md) |
+| Pagination that keeps each page's records with their group, and the coordinated page cycle anchored at local midnight | [`layouts.ts`](../../apps/api/src/features/programming/layouts.ts) | [Layout domain tests](../../apps/api/test/programming/layouts.test.ts) |
+| The protocol 2 manifest and content digest: the layout copy, per-area outputs with the view default, catalog snapshots with bound fields, records, prices limited to the branches reached, and the playlists and media of protocol 1 | [publications `domain.ts`](../../apps/api/src/features/publications/domain.ts) | [Publication domain tests](../../apps/api/test/publications/domain.test.ts) |
+| The programming port's layout snapshot under the program's locks, with the catalogs read through their port and the problems that block publication | [`layouts-service.ts`](../../apps/api/src/features/programming/layouts-service.ts), [`service.ts`](../../apps/api/src/features/programming/service.ts) | The [publications suite](../../apps/api/test/publications/integration.test.ts) against PostgreSQL as the runtime role |
+| Publication, restore and synchronization of protocol 2: the check's area problems, catalog media in the publication's media (so the `publication` media guard keeps them), the sync answer's `branchId` and `desired.protocol` | [publications service](../../apps/api/src/features/publications/service.ts), [contracts](../../apps/api/src/features/publications/contracts.ts) | The publications suite: exact outputs, pages, records and branch prices in the served manifest, protocol agreement with old and new players, restore within reach, overflow and missing pages |
+| The protocol 2 manifest bytes, page cycles and effective prices in the player's conformance fixtures | [`conformance.json`](../../apps/api/test/publications/conformance.json), [writer](../../apps/api/scripts/conformance.ts) | The [conformance test](../../apps/api/test/publications/conformance.test.ts) keeps the file in step with the API's code |
+| The panel's publication review names catalog problems by area | [`publications.tsx`](../../apps/web/src/programming/publications.tsx) | [Programming browser component tests](../../apps/web/test/programming.browser.test.tsx) |
+
+Implementation decisions, taken under the owner's delegation:
+
+- **Pagination at publication.** The API paginates each view with the layout's text measure and the records of the time, and carries the result: pages of `{recordId, group}` entries and, for groups a layout page names, their records. The measure therefore has one implementation, and every screen shows the same pages. Hidden unavailable records are left out of the pages.
+- **The page cycle** is a pure function of the page durations and the local wall-clock second of the day: cycles start at local midnight, and the last cycle of the day is cut there, so a day with a daylight-saving change still starts at page 1.
+- **Publication problems.** A program with a layout that no longer fits its reach reports `LAYOUT_OUT_OF_SCOPE`. Catalog views report `CATALOG_UNAVAILABLE` (missing or not active), `CATALOG_FIELD_UNAVAILABLE` (a bound field archived or removed), `CATALOG_OVERFLOW` (a record does not fit), `CATALOG_PAGE_MISSING` (a layout page names a view page the records do not fill) and `CATALOG_GROUP_OVERFLOW` (a named group needs more than one page), each with the area's key. A publication carries at most 10,000 catalog records over all views; more is `TOO_LARGE`.
+- **Snapshot values.** Each catalog is read through the catalogs port in one repeatable-read snapshot, so a save committed meanwhile is either wholly in the publication or left for the next one. Records keep the values of bound fields other than money; a `reference` value becomes the referenced record's title, and a `media` value's item joins the publication's media. Prices carry the base amount and only the overrides and promotions of branches the program reaches (company-wide promotions included).
+- **Synchronization.** The sync answer always carries the screen's `branchId` (null only in the answer to an unlinked screen) and `desired.protocol`. A player that supports only protocol 1 still agrees on protocol 1 and learns from `desired.protocol` that it cannot stage the publication.
+- **Restore.** A protocol 2 publication is restored only while the program's reach stays within the branches it was published for, because its prices were limited to them; otherwise the restore answers `PUBLICATION_INVALID`.
+
+**Increment 3, part B (the player `core`'s protocol 2, PJ-12) is implemented, 2026-10-20:**
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| Strict parsing and checks of protocol 2 manifests: canvas and area geometry, stacking, audio confirmation, views, pages and what they show, outputs per area, catalog fields, records, media values and prices | [`LayoutManifest.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/protocol/LayoutManifest.kt), [`Manifest.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/protocol/Manifest.kt) | [Layout manifest tests](../../apps/player/core/src/test/kotlin/app/teluni/player/core/protocol/LayoutManifestTest.kt) over the API's conformance bytes and edits of them |
+| The page cycle and effective prices, ported from the API | [`Pages.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/playback/Pages.kt), [`Prices.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/catalog/Prices.kt) | [Composition tests](../../apps/player/core/src/test/kotlin/app/teluni/player/core/playback/CompositionTest.kt) against every shared page cycle and price case |
+| A composed plan: what each area shows, in stacking order, until the next schedule, page, view page or price change | [`Planner.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/playback/Planner.kt) | Composition tests: the page cycle by local time, a regional schedule over a page-controlled area, branch prices and a promotion's start |
+| Protocols 1 and 2 declared in the sync report, the screen's branch kept with the sync record (older records still read) | [`PlayerEngine.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/sync/PlayerEngine.kt) | [Engine tests](../../apps/player/core/src/test/kotlin/app/teluni/player/core/sync/PlayerEngineTest.kt) |
+
+Implementation decisions, taken under the owner's delegation:
+
+- **What an area shows.** A rule of the area's output wins while it lasts. Otherwise a page-controlled area shows what the current page names (a media item, a view page or a group), and other areas show their default: a playlist, the catalog view, or nothing.
+- **A catalog view's own pages** advance every `pageSeconds` with the same cycle as layout pages, anchored at local midnight, so screens of a group page together.
+- **Prices** are evaluated for the screen's branch from the sync answer at the local minute, and the plan is made again at the next promotion start or end of a record it shows.
+- **Strictness.** Anything the API would never publish fails as `INVALID_MANIFEST`, and fades stay `INCOMPATIBLE`, as in protocol 1. Drawing areas, catalog text, images and mixed audio is the Android `app`'s, qualified on [PH-08](human-actions.md#ph-08) hardware (increment 5).
+
+Increments 4 and 5 are not implemented.
 
 ## Decisions
 

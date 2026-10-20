@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "checkGroupPublication",
   "summary": "",
-  "description": "Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
+  "description": "Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -76,7 +76,15 @@
                         { "type": "string", "const": "MEDIA_UNAVAILABLE" },
                         { "type": "string", "const": "TRANSITION_UNSUPPORTED" },
                         { "type": "string", "const": "TOO_LARGE" },
-                        { "type": "string", "const": "LAYOUT_NOT_PUBLISHABLE" }
+                        { "type": "string", "const": "LAYOUT_OUT_OF_SCOPE" },
+                        { "type": "string", "const": "CATALOG_UNAVAILABLE" },
+                        {
+                          "type": "string",
+                          "const": "CATALOG_FIELD_UNAVAILABLE"
+                        },
+                        { "type": "string", "const": "CATALOG_OVERFLOW" },
+                        { "type": "string", "const": "CATALOG_PAGE_MISSING" },
+                        { "type": "string", "const": "CATALOG_GROUP_OVERFLOW" }
                       ]
                     },
                     "playlistId": {
@@ -86,6 +94,10 @@
                     "mediaId": {
                       "type": "string",
                       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "areaKey": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{0,15}$"
                     }
                   },
                   "additionalProperties": false
@@ -241,7 +253,12 @@
                     { "type": "string", "const": "MEDIA_UNAVAILABLE" },
                     { "type": "string", "const": "TRANSITION_UNSUPPORTED" },
                     { "type": "string", "const": "TOO_LARGE" },
-                    { "type": "string", "const": "LAYOUT_NOT_PUBLISHABLE" }
+                    { "type": "string", "const": "LAYOUT_OUT_OF_SCOPE" },
+                    { "type": "string", "const": "CATALOG_UNAVAILABLE" },
+                    { "type": "string", "const": "CATALOG_FIELD_UNAVAILABLE" },
+                    { "type": "string", "const": "CATALOG_OVERFLOW" },
+                    { "type": "string", "const": "CATALOG_PAGE_MISSING" },
+                    { "type": "string", "const": "CATALOG_GROUP_OVERFLOW" }
                   ]
                 },
                 "playlistId": {
@@ -251,6 +268,10 @@
                 "mediaId": {
                   "type": "string",
                   "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                },
+                "areaKey": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,15}$"
                 }
               },
               "additionalProperties": false
@@ -370,7 +391,7 @@
         { "name": "problems", "type": "array of object", "required": true },
         {
           "name": "problems[].code",
-          "type": "\"NOTHING_TO_PUBLISH\" | \"SCHEDULE_INVALID\" | \"PLAYLIST_OUT_OF_SCOPE\" | \"MEDIA_UNAVAILABLE\" | \"TRANSITION_UNSUPPORTED\" | \"TOO_LARGE\" | \"LAYOUT_NOT_PUBLISHABLE\"",
+          "type": "\"NOTHING_TO_PUBLISH\" | \"SCHEDULE_INVALID\" | \"PLAYLIST_OUT_OF_SCOPE\" | \"MEDIA_UNAVAILABLE\" | \"TRANSITION_UNSUPPORTED\" | \"TOO_LARGE\" | \"LAYOUT_OUT_OF_SCOPE\" | \"CATALOG_UNAVAILABLE\" | \"CATALOG_FIELD_UNAVAILABLE\" | \"CATALOG_OVERFLOW\" | \"CATALOG_PAGE_MISSING\" | \"CATALOG_GROUP_OVERFLOW\"",
           "required": true
         },
         {
@@ -381,6 +402,11 @@
         {
           "name": "problems[].mediaId",
           "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": false
+        },
+        {
+          "name": "problems[].areaKey",
+          "type": "string (pattern ^[a-z][a-z0-9-]{0,15}$)",
           "required": false
         },
         { "name": "counts", "type": "object", "required": true },

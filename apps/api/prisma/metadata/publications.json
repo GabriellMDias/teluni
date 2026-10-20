@@ -28,7 +28,7 @@
           "classification": "INTERNAL"
         },
         "protocol": {
-          "description": "Synchronization protocol the manifest is serialized in.",
+          "description": "Synchronization protocol the manifest is serialized in: 1 for a program without a layout, 2 for a program with one.",
           "classification": "INTERNAL"
         },
         "content_sha256": {
@@ -112,7 +112,7 @@
         "publications_company_id_published_by_membership_id_fkey": "The publishing membership belongs to the same company.",
         "publications_branch_ids_present": "The branch list is present and bounded.",
         "publications_generation_positive": "Generations start at 1.",
-        "publications_protocol_known": "Only protocol 1 exists.",
+        "publications_protocol_known": "Only protocols 1 and 2 exist.",
         "publications_digests": "Digests are 32-byte SHA-256 values.",
         "publications_manifest_until_pruned": "The manifest is kept exactly until the publication is pruned.",
         "publications_manifest_size": "The recorded size matches the stored manifest.",

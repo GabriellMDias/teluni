@@ -22,13 +22,17 @@ import {
   agreedProtocol,
   authorizedPublications,
   canonicalContent,
+  canonicalLayoutContent,
   connection,
   contentDigest,
+  layoutContentDigest,
+  layoutManifestBytes,
   manifestBytes,
   publicationPolicy,
   PublicationFailure,
   type AuthorizedPublication,
   type Connection,
+  type LayoutPublicationContent,
   type ManifestMedia,
   type ManifestPlaylist,
   type PublicationContent,
@@ -107,9 +111,12 @@ export type SyncAnswer = Readonly<{
   /** The zone's UTC offsets around `serverTime`; null without a zone. */
   zoneOffsets: ZoneOffsets | null;
   rotation: 0 | 90 | 180 | 270 | null;
+  /** The screen's branch, for branch prices of protocol 2 catalogs. */
+  branchId: string | null;
   desired: Readonly<{
     publicationId: string;
     generation: number;
+    protocol: number;
     manifestSha256: string;
     manifestSize: number;
     source: "group" | "individual";
@@ -118,9 +125,22 @@ export type SyncAnswer = Readonly<{
   nextSyncSeconds: number;
 }>;
 
+/**
+ * What a publication serializes: protocol 1 for programs without a layout,
+ * byte for byte as before, and protocol 2 for programs with one.
+ */
+type Payload =
+  | Readonly<{ protocol: 1; content: PublicationContent }>
+  | Readonly<{ protocol: 2; content: LayoutPublicationContent }>;
+
+const digestOf = (payload: Payload) =>
+  payload.protocol === 2
+    ? layoutContentDigest(payload.content)
+    : contentDigest(payload.content);
+
 type Built = Readonly<{
   target: ProgramTarget;
-  content: PublicationContent;
+  payload: Payload;
   playlists: readonly Readonly<{ id: string; branchId: string | null }>[];
   problems: PublicationProblem[];
   counts: PublicationRecord["counts"];
@@ -158,6 +178,20 @@ const actorOf = (context: HumanContext, access: CompanyAccess): Actor => ({
   principalId: context.principalId,
   membershipId: access.membershipId,
 });
+
+/**
+ * Whether a program's reach stays inside the branches an earlier
+ * publication concerned: none recorded means the whole company.
+ */
+function withinReach(
+  reach: ProgramTarget["reach"],
+  earlier: readonly string[],
+): boolean {
+  if (earlier.length === 0) return true;
+  return (
+    reach !== "all" && reach.every((branchId) => earlier.includes(branchId))
+  );
+}
 
 /** Whether a playlist owned by `branchId` fits every branch of the reach. */
 function fits(branchId: string | null, reach: ProgramTarget["reach"]): boolean {
@@ -275,7 +309,7 @@ export class PublicationService {
           ...(await this.#record(tx, actorOf(context, access), companyId, {
             programId,
             branchIds: built.target.branchIds,
-            content: built.content,
+            payload: built.payload,
             digest: built.digest,
             counts: built.counts,
             playlists: built.playlists,
@@ -319,11 +353,20 @@ export class PublicationService {
           : await this.#repository.manifest(companyId, publicationId, tx);
         if (!manifest)
           throw new PublicationFailure("PUBLICATION_NOT_RESTORABLE");
-        const stored = JSON.parse(manifest.toString("utf8")) as {
-          outputs: PublicationContent["outputs"];
+        const stored = JSON.parse(manifest.toString("utf8")) as Partial<
+          LayoutPublicationContent & PublicationContent
+        > & {
+          protocol: 1 | 2;
           playlists: ManifestPlaylist[];
           media: ManifestMedia[];
         };
+        // Protocol 2 prices and catalogs were limited to the reach of the
+        // time: a copy may serve no branch beyond it.
+        if (
+          stored.protocol === 2 &&
+          !withinReach(target.reach, earlier.branchIds)
+        )
+          throw new PublicationFailure("PUBLICATION_INVALID");
         const playlists = await this.#repository.playlists(
           tx,
           companyId,
@@ -350,17 +393,33 @@ export class PublicationService {
           })
         )
           throw new PublicationFailure("PUBLICATION_INVALID");
-        const content: PublicationContent = {
-          outputs: stored.outputs,
-          playlists: stored.playlists,
-          media: stored.media,
-        };
+        const payload: Payload =
+          stored.protocol === 2
+            ? {
+                protocol: 2,
+                content: {
+                  layout: stored.layout!,
+                  outputs:
+                    stored.outputs as LayoutPublicationContent["outputs"],
+                  catalogs: stored.catalogs!,
+                  playlists: stored.playlists,
+                  media: stored.media,
+                },
+              }
+            : {
+                protocol: 1,
+                content: {
+                  outputs: stored.outputs as PublicationContent["outputs"],
+                  playlists: stored.playlists,
+                  media: stored.media,
+                },
+              };
         return {
           access,
           ...(await this.#record(tx, actorOf(context, access), companyId, {
             programId: earlier.programId,
             branchIds: target.branchIds,
-            content,
+            payload,
             digest: earlier.contentSha256,
             counts: earlier.counts,
             playlists,
@@ -417,9 +476,13 @@ export class PublicationService {
     );
     const problems: PublicationProblem[] = [];
     if (!snapshot.programId) problems.push({ code: "NOTHING_TO_PUBLISH" });
-    // Layouts publish with protocol 2 (catalog and composition design,
-    // increment 3); protocol 1 has only the screen output.
-    if (snapshot.layoutId) problems.push({ code: "LAYOUT_NOT_PUBLISHABLE" });
+    // A program with a layout publishes protocol 2 (catalog and composition
+    // design): its layout must still fit its reach, and its views publish.
+    const layout = snapshot.layout;
+    if (snapshot.layoutId && (!layout || !layout.usable))
+      problems.push({ code: "LAYOUT_OUT_OF_SCOPE" });
+    for (const problem of layout?.problems ?? [])
+      problems.push({ code: problem.code, areaKey: problem.areaKey });
     if (snapshot.outputs.some((output) => !output.valid))
       problems.push({ code: "SCHEDULE_INVALID" });
     for (const playlist of snapshot.playlists) {
@@ -435,19 +498,25 @@ export class PublicationService {
         });
     }
     const mediaIds = [
-      ...new Set(
-        snapshot.playlists.flatMap((playlist) =>
+      ...new Set([
+        ...snapshot.playlists.flatMap((playlist) =>
           playlist.items.map((item) => item.mediaAssetId),
         ),
-      ),
+        ...(layout?.mediaIds ?? []),
+      ]),
     ];
     const itemCount = snapshot.playlists.reduce(
       (sum, playlist) => sum + playlist.items.length,
       0,
     );
+    const recordCount = (layout?.catalogs ?? []).reduce(
+      (sum, catalog) => sum + catalog.records.length,
+      0,
+    );
     if (
       itemCount > publicationPolicy.maxItems ||
-      mediaIds.length > publicationPolicy.maxMedia
+      mediaIds.length > publicationPolicy.maxMedia ||
+      recordCount > publicationPolicy.maxRecords
     )
       problems.push({ code: "TOO_LARGE" });
     const described =
@@ -479,13 +548,8 @@ export class PublicationService {
         hasAudio: item.hasAudio,
       });
     }
-    const content: PublicationContent = canonicalContent({
-      outputs: snapshot.outputs.map((output) => ({
-        key: output.key,
-        defaultPlaylistId: output.defaultPlaylistId,
-        rules: output.rules,
-      })),
-      playlists: snapshot.playlists.map((playlist) => ({
+    const playlists: ManifestPlaylist[] = snapshot.playlists.map(
+      (playlist) => ({
         id: playlist.id,
         transition:
           playlist.transition === "FADE"
@@ -495,12 +559,57 @@ export class PublicationService {
           mediaId: item.mediaAssetId,
           durationMs: item.durationMs,
         })),
-      })),
-      media,
-    });
+      }),
+    );
+    const outputs = new Map(
+      snapshot.outputs.map((output) => [output.key, output]),
+    );
+    const payload: Payload = layout
+      ? {
+          protocol: 2,
+          content: canonicalLayoutContent({
+            layout: {
+              orientation: layout.orientation,
+              width: layout.width,
+              height: layout.height,
+              audioMixConfirmed: layout.audioMixConfirmed,
+              areas: layout.areas,
+              pages: layout.pages,
+            },
+            // Every area is an output; a catalog area defaults to its view.
+            outputs: layout.areas.map((area) => {
+              const output = outputs.get(area.key);
+              return {
+                key: area.key,
+                default:
+                  area.kind === "catalog"
+                    ? { view: true }
+                    : output?.defaultPlaylistId
+                      ? { playlistId: output.defaultPlaylistId }
+                      : null,
+                rules: output?.rules ?? [],
+              };
+            }),
+            catalogs: layout.catalogs,
+            playlists,
+            media,
+          }),
+        }
+      : {
+          protocol: 1,
+          content: canonicalContent({
+            outputs: snapshot.outputs.map((output) => ({
+              key: output.key,
+              defaultPlaylistId: output.defaultPlaylistId,
+              rules: output.rules,
+            })),
+            playlists,
+            media,
+          }),
+        };
     return {
       target: snapshot,
-      content,
+      payload,
       playlists: snapshot.playlists.map((playlist) => ({
         id: playlist.id,
         branchId: playlist.branchId,
@@ -516,7 +625,7 @@ export class PublicationService {
         media: media.length,
         mediaBytes: media.reduce((sum, item) => sum + item.size, 0),
       },
-      digest: contentDigest(content),
+      digest: digestOf(payload),
     };
   }
 
@@ -532,7 +641,7 @@ export class PublicationService {
     input: {
       programId: string;
       branchIds: readonly string[];
-      content: PublicationContent;
+      payload: Payload;
       digest: Buffer;
       counts: PublicationRecord["counts"];
       playlists: readonly Readonly<{ id: string; branchId: string | null }>[];
@@ -560,16 +669,17 @@ export class PublicationService {
     const id = randomUUID();
     const generation = (latest?.generation ?? 0) + 1;
     const publishedAt = new Date();
-    const manifest = manifestBytes(
-      {
-        publicationId: id,
-        companyId,
-        programId: input.programId,
-        generation,
-        publishedAt,
-      },
-      input.content,
-    );
+    const header = {
+      publicationId: id,
+      companyId,
+      programId: input.programId,
+      generation,
+      publishedAt,
+    };
+    const manifest =
+      input.payload.protocol === 2
+        ? layoutManifestBytes(header, input.payload.content)
+        : manifestBytes(header, input.payload.content);
     const publication = await this.#repository.insert(
       tx,
       actor,
@@ -579,6 +689,7 @@ export class PublicationService {
         programId: input.programId,
         branchIds: input.branchIds,
         generation,
+        protocol: input.payload.protocol,
         contentSha256: input.digest,
         manifest: manifest.bytes,
         manifestSha256: manifest.sha256,
@@ -586,7 +697,7 @@ export class PublicationService {
         restoredFromGeneration: input.restoredFromGeneration,
         publishedAt,
         playlists: input.playlists,
-        media: input.content.media.map((item) => ({
+        media: input.payload.content.media.map((item) => ({
           id: item.id,
           sha256: Buffer.from(item.sha256, "hex"),
           size: item.size,
@@ -735,6 +846,7 @@ export class PublicationService {
         timeZone: null,
         zoneOffsets: null,
         rotation: null,
+        branchId: null,
         desired: null,
         authorization: null,
         nextSyncSeconds: publicationPolicy.syncIntervalSeconds,
@@ -843,10 +955,12 @@ export class PublicationService {
           )
         : null,
       rotation: screen.rotation,
+      branchId: screen.branchId,
       desired: desired
         ? {
             publicationId: desired.id,
             generation: desired.generation,
+            protocol: desired.protocol,
             manifestSha256: desired.manifestSha256.toString("hex"),
             manifestSize: desired.manifestSize,
             source: current.source,

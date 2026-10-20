@@ -218,6 +218,13 @@ export class PrismaCatalogRepository {
     return this.#db.$transaction(work);
   }
 
+  /** Reads that must see one snapshot, such as a catalog a publication copies. */
+  snapshot<T>(work: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
+    return this.#db.$transaction(work, {
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+    });
+  }
+
   async audit(
     tx: Prisma.TransactionClient,
     companyId: string,
@@ -310,9 +317,10 @@ export class PrismaCatalogRepository {
   async findCatalogs(
     companyId: string,
     catalogIds: readonly string[],
+    tx?: Prisma.TransactionClient,
   ): Promise<CatalogData[]> {
     if (catalogIds.length === 0) return [];
-    const rows = await this.#db.$queryRaw<CatalogRow[]>`
+    const rows = await (tx ?? this.#db).$queryRaw<CatalogRow[]>`
       SELECT ${catalogColumns} FROM catalogs
       WHERE company_id = ${companyId}::uuid AND id IN (${uuidList(catalogIds)})
       ORDER BY id`;
@@ -744,8 +752,9 @@ export class PrismaCatalogRepository {
   async allRecords(
     companyId: string,
     catalogId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<RecordData[]> {
-    const rows = await this.#db.$queryRaw<RecordRow[]>`
+    const rows = await (tx ?? this.#db).$queryRaw<RecordRow[]>`
       SELECT ${recordColumns} FROM catalog_records
       WHERE company_id = ${companyId}::uuid AND catalog_id = ${catalogId}::uuid
       ORDER BY position, id`;
@@ -835,10 +844,11 @@ export class PrismaCatalogRepository {
   async titles(
     companyId: string,
     recordIds: readonly string[],
+    tx?: Prisma.TransactionClient,
   ): Promise<Map<string, string | null>> {
     const found = new Map<string, string | null>();
     if (recordIds.length === 0) return found;
-    const rows = await this.#db.$queryRaw<
+    const rows = await (tx ?? this.#db).$queryRaw<
       { id: string; title: string | null }[]
     >`
       SELECT r.id, r.field_values ->> (
@@ -895,8 +905,9 @@ export class PrismaCatalogRepository {
   async catalogOverrides(
     companyId: string,
     catalogId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<OverrideData[]> {
-    const rows = await this.#db.$queryRaw<
+    const rows = await (tx ?? this.#db).$queryRaw<
       {
         record_id: string;
         field_id: string;
@@ -917,13 +928,15 @@ export class PrismaCatalogRepository {
   async catalogPromotions(
     companyId: string,
     catalogId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PromotionData[]> {
-    const rows = await this.#db.$queryRaw<{ record_id: string }[]>`
+    const rows = await (tx ?? this.#db).$queryRaw<{ record_id: string }[]>`
       SELECT DISTINCT record_id FROM catalog_promotions
       WHERE company_id = ${companyId}::uuid AND catalog_id = ${catalogId}::uuid`;
     return this.promotions(
       companyId,
       rows.map((row) => row.record_id),
+      tx,
     );
   }
 

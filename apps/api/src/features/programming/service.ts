@@ -50,6 +50,7 @@ import type {
 } from "./layouts-repository.js";
 import { layoutVisible } from "./layouts-service.js";
 import type {
+  LayoutSnapshot,
   ProgramSnapshot,
   ProgramTarget,
   PublicationFacts,
@@ -328,6 +329,13 @@ const actorOf = (context: HumanContext, access: CompanyAccess): Actor => ({
   membershipId: access.membershipId,
 });
 
+export type LayoutSnapshots = (
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  layoutId: string,
+  reach: Reach,
+) => Promise<LayoutSnapshot | null>;
+
 export type PlaylistQuery = Readonly<{
   limit: number;
   cursor?: string;
@@ -342,6 +350,7 @@ export class ProgrammingService {
   readonly #devices: DevicePort;
   readonly #media: MediaPort;
   readonly #layouts: PrismaLayoutRepository;
+  readonly #layoutSnapshot: LayoutSnapshots;
   #publicationFacts: PublicationFacts | undefined;
 
   constructor(options: {
@@ -350,12 +359,15 @@ export class ProgrammingService {
     devices: DevicePort;
     media: MediaPort;
     layouts: PrismaLayoutRepository;
+    /** The layout service's publication snapshot. */
+    layoutSnapshot: LayoutSnapshots;
   }) {
     this.#repository = options.repository;
     this.#companies = options.companies;
     this.#devices = options.devices;
     this.#media = options.media;
     this.#layouts = options.layouts;
+    this.#layoutSnapshot = options.layoutSnapshot;
   }
 
   // Playlists
@@ -1422,12 +1434,19 @@ export class ProgrammingService {
       reach = new Set([found.branchId]);
       branchIds = [found.branchId];
     }
+    // Layouts lock before programs: share-lock the layout the program
+    // names, then the program, and check that it still names it.
+    const prior = tx ? await this.#repository.program(companyId, source) : null;
+    if (tx && prior?.layoutId)
+      await this.#layouts.lockLayout(tx, companyId, prior.layoutId, "share");
     const program = await this.#repository.program(
       companyId,
       source,
       tx ?? undefined,
       tx ? "share" : false,
     );
+    if (tx && (program?.layoutId ?? null) !== (prior?.layoutId ?? null))
+      throw new ProgrammingFailure("RESOURCE_VERSION_CONFLICT");
     return {
       programId: program?.id ?? null,
       programVersion: program?.version ?? 0,
@@ -1500,6 +1519,14 @@ export class ProgrammingService {
     return {
       ...target,
       layoutId: program?.layoutId ?? null,
+      layout: program?.layoutId
+        ? await this.#layoutSnapshot(
+            tx,
+            access.companyId,
+            program.layoutId,
+            reach,
+          )
+        : null,
       outputs: outputs.map(({ key, output }) => ({
         key,
         defaultPlaylistId: output.defaultPlaylistId,

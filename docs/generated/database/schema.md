@@ -1559,7 +1559,7 @@ Lifecycle: Inserted when a person publishes or restores; never edited. Supersede
 | `program_id` | `uuid` | no | — | INTERNAL | Program this publication is a generation of; immutable. | — | — |
 | `branch_ids` | `uuid[]` | yes | `ARRAY[]::uuid[]` | INTERNAL | Branches the program concerned when it was published (a group's explicit span or the screen's branch), so the media guard discloses only references the caller may see; empty for a whole-company group. | Never null; an empty array means the program reached the whole company. | — |
 | `generation` | `integer` | no | — | INTERNAL | Generation number within the program, from 1, increasing. | — | — |
-| `protocol` | `smallint` | no | — | INTERNAL | Synchronization protocol the manifest is serialized in. | — | — |
+| `protocol` | `smallint` | no | — | INTERNAL | Synchronization protocol the manifest is serialized in: 1 for a program without a layout, 2 for a program with one. | — | — |
 | `content_sha256` | `bytea` | no | — | INTERNAL | SHA-256 of the canonical outputs, playlists and media, equal for equal content; republishing unchanged content returns the latest publication. | — | — |
 | `manifest` | `bytea` | yes | — | CONFIDENTIAL | Exact UTF-8 JSON bytes served to screens, with schedules and media identifiers. | The publication was pruned and can no longer be delivered or restored. | — |
 | `manifest_sha256` | `bytea` | no | — | INTERNAL | SHA-256 of the manifest bytes, which authorization statements name. | — | — |
@@ -1590,7 +1590,7 @@ Lifecycle: Inserted when a person publishes or restores; never edited. Supersede
 | `publications_manifest_size` | `CHECK (((manifest_size > 0) AND ((manifest IS NULL) OR (octet_length(manifest) = manifest_size))))` | The recorded size matches the stored manifest. |
 | `publications_manifest_until_pruned` | `CHECK (((manifest IS NULL) = (pruned_at IS NOT NULL)))` | The manifest is kept exactly until the publication is pruned. |
 | `publications_pkey` | `PRIMARY KEY (id)` | Unique publication identity. |
-| `publications_protocol_known` | `CHECK ((protocol = 1))` | Only protocol 1 exists. |
+| `publications_protocol_known` | `CHECK ((protocol = ANY (ARRAY[1, 2])))` | Only protocols 1 and 2 exist. |
 | `publications_pruned_after_superseded` | `CHECK (((pruned_at IS NULL) OR (superseded_at IS NOT NULL)))` | Only a superseded publication can be pruned. |
 | `publications_published_by_principal_id_fkey` | `FOREIGN KEY (published_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The publisher is a known principal. |
 | `publications_restored_from` | `CHECK (((restored_from_generation IS NULL) OR ((restored_from_generation >= 1) AND (restored_from_generation <= (generation - 1)))))` | A restore names an earlier generation. |

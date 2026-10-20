@@ -460,9 +460,17 @@ export type Overflow = Readonly<{
     "TITLE_OVERFLOW" | "PRICE_OVERFLOW" | "DETAIL_OVERFLOW" | "ROW_TOO_TALL";
 }>;
 
+/** A record on a view page, with the group it is shown under. */
+export type PageEntry = Readonly<{ recordId: string; group: number | null }>;
+
 export type ViewFit = Readonly<{
   /** Pages of records the area cycles through (0 with no records). */
   pages: number;
+  /**
+   * The records of each page in display order; a record too tall for the
+   * area is on none. Group headings open each group and repeat atop a page.
+   */
+  entries: readonly (readonly PageEntry[])[];
   /** Records shown, after hiding unavailable ones when the view does. */
   records: number;
   overflow: readonly Overflow[];
@@ -563,7 +571,7 @@ export function fitView(
     return Math.max(lines * line, imageSide);
   });
   // Greedy pages; a group heading opens each group and repeats atop a page.
-  let pages = records.length > 0 ? 1 : 0;
+  const entries: PageEntry[][] = records.length > 0 ? [[]] : [];
   let used = 0;
   let previous: number | null | undefined;
   records.forEach((record, index) => {
@@ -574,16 +582,18 @@ export function fitView(
       return;
     }
     if (used > 0 && used + heading + height > inner.height) {
-      pages += 1;
+      entries.push([]);
       used = 0;
     }
     // A grouped page always opens with one heading: the group's own or,
     // when the group continues from the previous page, its repetition.
     used += (used === 0 && grouped ? line : heading) + height;
+    entries.at(-1)?.push({ recordId: record.id, group: record.group });
     previous = record.group;
   });
   return {
-    pages,
+    pages: entries.length,
+    entries,
     records: records.length,
     overflow: [
       ...new Map(
@@ -610,6 +620,43 @@ export function rowsPerPage(
       (area.height - 2 * viewPadding(size)) / (lines * lineHeight(size)),
     ),
   );
+}
+
+// Coordinated pages
+
+/** Seconds in a local day as the cycle counts them. */
+export const daySeconds = 86_400;
+
+export type PagePosition = Readonly<{
+  /** Index of the page shown, from 0. */
+  page: number;
+  /** Local seconds of the day when this page started and when it ends. */
+  startsAt: number;
+  endsAt: number;
+}>;
+
+/**
+ * The page a cycle of durations (seconds) shows at a local time of day
+ * (seconds since local midnight, by the wall clock). The cycle restarts at
+ * every local midnight, so every screen of a group shows the same page at
+ * the same local time; the day's last cycle may end early. A daylight
+ * saving change moves the position with the wall clock. Null without pages.
+ */
+export function pageAt(
+  durations: readonly number[],
+  secondOfDay: number,
+): PagePosition | null {
+  const total = durations.reduce((sum, seconds) => sum + seconds, 0);
+  if (durations.length === 0 || total <= 0) return null;
+  const second = Math.min(Math.max(Math.floor(secondOfDay), 0), daySeconds - 1);
+  let start = Math.floor(second / total) * total;
+  for (const [page, seconds] of durations.entries()) {
+    const end = start + seconds;
+    if (second < end)
+      return { page, startsAt: start, endsAt: Math.min(end, daySeconds) };
+    start = end;
+  }
+  throw new Error("A page cycle position was not found");
 }
 
 // Text representation

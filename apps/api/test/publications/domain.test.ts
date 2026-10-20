@@ -12,6 +12,8 @@ import {
   authorizedPublications,
   connection,
   contentDigest,
+  layoutContentDigest,
+  layoutManifestBytes,
   manifestBytes,
   type PublicationContent,
 } from "../../src/features/publications/domain.js";
@@ -20,6 +22,7 @@ import {
   signStatement,
   statementType,
 } from "../../src/features/publications/statements.js";
+import { conformanceLayoutManifest } from "./conformance.js";
 
 const media = {
   id: "00000000-0000-4000-8000-0000000000aa",
@@ -161,6 +164,58 @@ describe("protocol 1 manifest", () => {
   });
 });
 
+describe("protocol 2 manifest", () => {
+  const { header: layoutHeader, content: layoutContent } =
+    conformanceLayoutManifest;
+
+  it("names protocol 2 and keeps the layout before outputs and catalogs", () => {
+    const manifest = JSON.parse(
+      layoutManifestBytes(layoutHeader, layoutContent).bytes.toString("utf8"),
+    ) as Record<string, unknown>;
+    expect(Object.keys(manifest)).toEqual([
+      "format",
+      "protocol",
+      "publicationId",
+      "companyId",
+      "programId",
+      "generation",
+      "publishedAt",
+      "layout",
+      "outputs",
+      "catalogs",
+      "playlists",
+      "media",
+    ]);
+    expect(manifest.protocol).toBe(2);
+  });
+
+  it("digests content independently of identifier order but not of display order", () => {
+    const digest = layoutContentDigest(layoutContent);
+    const [catalog] = layoutContent.catalogs;
+    expect(
+      layoutContentDigest({
+        ...layoutContent,
+        catalogs: [{ ...catalog, prices: [...catalog.prices].reverse() }],
+        media: [...layoutContent.media].reverse(),
+      }).equals(digest),
+    ).toBe(true);
+    expect(
+      layoutContentDigest({
+        ...layoutContent,
+        catalogs: [{ ...catalog, records: [...catalog.records].reverse() }],
+      }).equals(digest),
+    ).toBe(false);
+    // Protocol 1 and protocol 2 digests never coincide for the same media.
+    expect(
+      contentDigest({
+        outputs: [],
+        playlists: layoutContent.playlists,
+        media: layoutContent.media,
+      }).equals(digest),
+    ).toBe(false);
+  });
+});
+
 describe("authorization statements", () => {
   const key = (id: string) => ({
     id,
@@ -227,7 +282,8 @@ describe("synchronization rules", () => {
 
   it("agrees on the highest protocol both sides support", () => {
     expect(agreedProtocol([1])).toBe(1);
-    expect(agreedProtocol([2, 1])).toBe(1);
-    expect(agreedProtocol([2])).toBeNull();
+    expect(agreedProtocol([1, 2])).toBe(2);
+    expect(agreedProtocol([2])).toBe(2);
+    expect(agreedProtocol([3])).toBeNull();
   });
 });
