@@ -575,8 +575,10 @@ export function fitView(
     }
     if (used > 0 && used + heading + height > inner.height) {
       pages += 1;
-      used = grouped ? line : 0;
+      used = 0;
     }
+    // A grouped page always opens with one heading: the group's own or,
+    // when the group continues from the previous page, its repetition.
     used += (used === 0 && grouped ? line : heading) + height;
     previous = record.group;
   });

@@ -365,6 +365,24 @@ describe("catalog view fit", () => {
     expect(fit).toEqual({ pages: 2, records: 3, overflow: [] });
   });
 
+  it("counts one heading atop a page that opens a new group", () => {
+    const grouped = {
+      ...view,
+      fields: [...view.fields, { fieldId: groupField, role: "group" as const }],
+    };
+    // 200 units of content hold four lines: the first group's heading and
+    // rows fill page one; the second group's heading and rows fill page two.
+    const fit = fitView(grouped, { width: 640, height: 240 }, [
+      record(1, { group: 0 }),
+      record(2, { group: 0 }),
+      record(3, { group: 0 }),
+      record(4, { group: 1 }),
+      record(5, { group: 1 }),
+      record(6, { group: 1 }),
+    ]);
+    expect(fit).toEqual({ pages: 2, records: 6, overflow: [] });
+  });
+
   it("orders an agenda by weekday then time", () => {
     const agenda = {
       ...view,

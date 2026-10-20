@@ -424,7 +424,7 @@ export const layoutOperations = [
     url: "/companies/:companyId/programming/layouts/:layoutId",
     operationId: "updateLayout",
     access: "session",
-    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys stay as given, so programs keep their outputs. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
+    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
     schema: {
       params: layoutParams,
       body: Type.Object(
