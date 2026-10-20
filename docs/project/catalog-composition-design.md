@@ -89,12 +89,15 @@ The design applies these policies without changing them:
 | `media` | — | an image asset the catalog's scope may select (media port `requireSelectable`) |
 | `reference` | target catalog of the same company | a record identifier of that catalog |
 
-A required field must have a value on every record. Text values are trimmed, and empty text counts as absent. A schema allows at most 60 fields.
+A required field must have a value on every record. Text values are trimmed, and empty text counts as absent. A schema allows at most 60 fields, archived ones included. Money fields are never required, because prices are saved apart from other values by people who may edit prices.
 
 **Schema changes** are saved as the whole ordered field list with the expected catalog version, like rules.
 
 - New fields get identifiers.
-- A field's type and currency never change. To change either, a person adds a new field and archives the old one.
+- A field's type, currency, decimal places and reference target never change. To change one, a person adds a new field and archives the old one.
+- Leaving a field out of the list deletes it only while no record, branch price or promotion holds a value for it; otherwise the save is refused with the count, and the field must be archived.
+- Labels are unique among active fields, ignoring case. Shortening a text field's maximum length or narrowing a number's range is refused while stored values would break it, with their count.
+- A reference field's target must be an active catalog whose scope covers the field's catalog: a company catalog for any catalog, or a catalog of the same branch.
 - Archiving a field keeps its values and hides it from editing and new bindings. Published versions keep their own schema copy.
 - A field bound by a layout draft cannot be archived until the binding is removed; the error names the layouts.
 - Making a field required is refused while any record lacks a value for it, and the error says how many records lack one.
@@ -105,17 +108,18 @@ A required field must have a value on every record. Text values are trimmed, and
 - A record's values are a map from field identifier to value, validated against the current schema.
 - Unknown and archived field identifiers are refused.
 - References must point to an existing record of the target catalog that the caller may see.
-- Records are listed in their stored order, with a cursor. Moving a record between positions is its own versioned operation.
+- Records are listed in their stored order, with a cursor. Moving a record after another one, or to the top, is its own versioned operation.
+- A record's title is the value of the catalog's first active text field; lists and references show it.
 - A record whose identifier another record references cannot be deleted (`CATALOG_RECORD_REFERENCED`); the error counts the referring records.
 - Availability is a built-in flag, not a field. A view hides unavailable records unless it shows them as unavailable.
 - A catalog holds at most 5,000 records, and a record's values at most 16 KiB of JSON.
 
-**Prices.** A money value on the record is the **base price**. Overrides and promotions are separate rows, so each change is attributable and checked on its own:
+**Prices.** A money value on the record is the **base price**. Overrides and promotions are separate rows, so each change is attributable and checked on its own. The base price and each branch override are saved one at a time with the record's version, which every price save increments:
 
 - **Branch overrides** set an amount for one branch of the catalog's scope. They are possible only on company catalogs, because a branch catalog already has one branch.
 - **Promotions** set an amount for a local window `[start, end)` (`YYYY-MM-DDTHH:MM`, evaluated in each screen's local time like schedules), for the whole scope or for one branch.
   - Two promotions of the same record and field are refused when their windows overlap and their branch scopes intersect. A company-wide promotion intersects every branch.
-  - A promotion that already ended can be removed but not edited.
+  - Promotions are never edited: a person removes one and adds another. They do not change the record's version.
 - **Effective price** for a branch at a local instant: an applicable promotion, otherwise the branch override, otherwise the base price. When a record has no base price and no override for the branch, the price is absent, and a view shows the field as empty.
 
 Every price change (base, override or promotion) is a **price save** under the access policies: it needs `prices.edit` on the scope it affects and strong authentication. Increment 4 adds automatic publication. Until then, price saves are drafts like any other edit, because no published content binds catalogs yet.
@@ -241,33 +245,37 @@ Layout and program-layout changes use the programming audit with their own event
 | `catalogs` | Company, owning branch (null for the company), name, status (`ACTIVE`/`ARCHIVED`), version, schema version |
 | `catalog_fields` | Catalog, stable identifier, label, type, required, position, options (JSON, validated), archived time |
 | `catalog_records` | Catalog, position, availability, values (JSONB, validated), version, creator and updater memberships |
-| `catalog_price_overrides` | Record, field, branch, amount in minor units, version |
+| `catalog_price_overrides` | Record, field, branch, amount in minor units; saved under the record's version |
 | `catalog_promotions` | Record, field, branch (null for the whole scope), amount, local start and end, creator |
+| `catalog_record_media`, `catalog_record_references` | The media and records that record values name, mirrored in the same transaction so media deletion and record deletion can be guarded |
 | `catalog_audit_events` | Append-only audit with the branches each event concerns |
 | `layouts`, `layout_areas`, `layout_pages` (increment 2) | Layout drafts as validated rows plus the exported JSON schema version |
 | `price_publication_intents` (increment 4) | Program, catalog, price sequence, author, state, attempts, lease |
 
-Every table carries `company_id` with composite tenant references ([tenant data design](tenant-data-design.md)). Record values are `CONFIDENTIAL` business data, and catalogs keep no personal data fields by design. A field labeled with personal meaning is still only text, and the panel warns against it.
+Every table carries `company_id` with composite tenant references to `(company_id, id)` ([tenant data design](tenant-data-design.md)). Price and link rows also carry their record's catalog; the module keeps it and their field's catalog equal to the record's, because a tenant reference never targets a wider key. Record values are `CONFIDENTIAL` business data, and catalogs keep no personal data fields by design. A field labeled with personal meaning is still only text, and the panel warns against it.
 
 ## Contracts
 
 Versioned JSON operations under `/companies/{companyId}/catalogs`:
 
-- list (scope and name filters, cursor), create, get, rename, archive, restore, delete (empty catalogs only);
+- list (scope, name and status filters, cursor), create (optionally with the first fields), get, update (rename, archive or restore; an archived catalog is read-only), delete (empty catalogs that no other catalog's field targets);
 - `PUT .../schema` with the whole field list and expected version;
 - records: list (cursor, text search over text fields), create, get, update, move and delete;
-- prices: `PUT .../records/{recordId}/prices/{fieldId}` with the base amount and the full set of branch overrides, and the expected record version;
+- prices: `PUT .../records/{recordId}/prices/{fieldId}` with the base amount, and `PUT .../records/{recordId}/prices/{fieldId}/branches/{branchId}` with one branch's amount, each with the expected record version and `null` to clear, so each save is authorized on exactly the scope it changes;
 - promotions: list, create and delete per record and field;
-- `GET .../records/{recordId}/effective-prices?at=YYYY-MM-DDTHH:MM` for the preview of every branch.
+- `GET .../records/{recordId}/effective-prices?at=YYYY-MM-DDTHH:MM` for the preview: the whole scope's price, and each visible branch with its own price or promotion.
 
 New errors:
 
 - `CATALOG_SCHEMA_INVALID` (with the field and reason codes);
 - `CATALOG_RECORD_INVALID` (with field reason codes);
-- `CATALOG_RECORD_REFERENCED`;
+- `CATALOG_RECORD_REFERENCED` (counting the referring records);
 - `CATALOG_PROMOTION_CONFLICT`;
 - `CATALOG_LIMIT_REACHED`;
+- `CATALOG_ARCHIVED`, `CATALOG_NOT_EMPTY` and `CATALOG_IN_USE` for archived and deletable catalogs;
 - from increment 4, `PRICE_TARGET_FORBIDDEN`.
+
+Field and record problems travel in the error envelope's bounded `issues` list (a JSON Pointer path, a stable reason and, for problems caused by stored data, a count), defined by the [error contract](../api/error-contract.md#validation-errors).
 
 These come with the existing access, `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CONFLICT`, `RATE_LIMITED` and `VALIDATION_FAILED`. The SDK and OpenAPI document are regenerated.
 
@@ -319,7 +327,24 @@ Increment 2 adds the **Layouts** editor under Programação: a canvas preview wi
 
 ## Implementation status
 
-Not implemented. Increment 1 starts with this design.
+**Increment 1 (catalogs, PJ-21) is implemented, 2026-10-20:**
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| Capabilities `catalogs.view`, `catalogs.edit`, `catalogs.manage` and `prices.edit` in the role presets, delegable through profiles; `prices.edit` always needs strong authentication | [organizations domain](../../apps/api/src/features/organizations/domain.ts) | [organizations tests](../../apps/api/test/organizations/domain.test.ts) |
+| Reviewed migration, runtime grants and metadata for the eight catalog tables | [migration](../../apps/api/prisma/migrations/20261020000000_catalogs/migration.sql), [grants](../../apps/api/prisma/runtime-grants/catalogs.sql), [metadata](../../apps/api/prisma/metadata/catalogs.json) | The tenant structure test and the generated [database reference](../generated/database/schema.md) |
+| Field types, schema plans with checks against stored records, value validation, money and the currency table, promotion overlap and the effective price | [`domain.ts`](../../apps/api/src/features/catalogs/domain.ts) | [Domain tests](../../apps/api/test/catalogs/domain.test.ts), including the currency table against `Intl.NumberFormat` |
+| The `catalogs` API module: catalogs, schemas, records, order, base and branch prices, promotions, the effective-price preview, the `catalog-record` media guard and audit | [`src/features/catalogs/`](../../apps/api/src/features/catalogs/module.ts) | A [two-company integration suite](../../apps/api/test/catalogs/integration.test.ts) against PostgreSQL as the runtime role: scope and role denials, strong authentication for prices, version conflicts, schema checks with counts, references and deletion guards, media guards, promotions, effective prices, the catalog limit under concurrency and audit rows |
+| The panel's Catálogos pages: list and creation with presets, the field editor, items with per-type editors, prices in the person's locale, branch prices, promotions and the effective-price preview | [`apps/web/src/catalogs/`](../../apps/web/src/catalogs/pages.tsx) | [Browser component tests](../../apps/web/test/catalogs.browser.test.tsx), [money tests](../../apps/web/test/catalogs-money.node.test.ts) and an [end-to-end journey](../../apps/web/test/e2e/catalogs/journey.spec.ts) |
+
+Implementation decisions, taken under the owner's delegation:
+
+- Base and branch prices are separate operations rather than one save with every override, so a branch manager's save is authorized on their branch only.
+- Money fields are never required; record edits never carry prices.
+- Record values and nullable amounts use JSON Schemas with several types, and the API's validator allows them, because request coercion inside `anyOf` would turn `null` into `0` and a boolean into text.
+- Field removal is allowed while nothing holds a value for it; otherwise archiving is the only way.
+
+Increments 2 to 5 are not implemented.
 
 ## Decisions
 

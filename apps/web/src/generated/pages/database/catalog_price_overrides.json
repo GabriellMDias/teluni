@@ -1,0 +1,122 @@
+{
+  "kind": "database",
+  "name": "catalog_price_overrides",
+  "description": "The price of one record's MONEY field for one branch of a company catalog, replacing the base price there.",
+  "owner": "Catalogs",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Set, changed or removed one branch at a time with the record's observed version, which each change bumps; deleted with the record.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the catalog (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "record_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Record whose price is overridden.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "field_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "MONEY field whose price is overridden.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch where the override applies.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "amount",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Price in the field currency's minor units, 0 to 10^12.",
+      "Null meaning": "—",
+      "Unit": "minor units of the field's ISO 4217 currency"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_price_overrides_amount_range",
+      "Physical definition": "CHECK (((amount >= 0) AND (amount <= '1000000000000'::bigint)))",
+      "Purpose": "Amounts are 0 to 10^12 minor units."
+    },
+    {
+      "Object": "catalog_price_overrides_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The branch belongs to the same company."
+    },
+    {
+      "Object": "catalog_price_overrides_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The catalog belongs to the same company."
+    },
+    {
+      "Object": "catalog_price_overrides_company_id_field_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The field belongs to the same company; the module checks it belongs to the record's catalog."
+    },
+    {
+      "Object": "catalog_price_overrides_company_id_record_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The record belongs to the same company; overrides are deleted with it."
+    },
+    {
+      "Object": "catalog_price_overrides_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, record_id, field_id, branch_id)",
+      "Purpose": "One override per record, field and branch."
+    },
+    {
+      "Object": "catalog_price_overrides_branch_idx",
+      "Physical definition": "CREATE INDEX catalog_price_overrides_branch_idx ON public.catalog_price_overrides USING btree (company_id, branch_id)",
+      "Purpose": "Finds a branch's overrides."
+    },
+    {
+      "Object": "catalog_price_overrides_field_idx",
+      "Physical definition": "CREATE INDEX catalog_price_overrides_field_idx ON public.catalog_price_overrides USING btree (company_id, catalog_id, field_id)",
+      "Purpose": "Finds the overrides of a field for schema checks."
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "kind": "database",
+  "name": "catalog_fields",
+  "description": "One field of a catalog's schema: a stable identifier, a label that may change, a type that never changes, and type settings.",
+  "owner": "Catalogs",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Saved as part of the whole ordered field list. Archiving keeps the values and hides the field from editing. Deleted at runtime only while no record, override or promotion holds a value for it, and with its catalog.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated stable field UUID; record values are keyed by it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the catalog (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog whose schema holds the field; immutable.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "position",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Zero-based order in the schema, 0 to 59, unique within the catalog by the module.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "label",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display label chosen by members, trimmed, 1 to 80 characters; renaming never changes meaning.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "type",
+      "PostgreSQL type": "\"CatalogFieldType\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, TIME, WEEKDAYS, SELECTION, MONEY, MEDIA or REFERENCE; immutable.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "required",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "false",
+      "Classification": "INTERNAL",
+      "Meaning": "Whether every record must hold a value; never true for MONEY fields.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "settings",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Validated type settings: maximum length, decimal places and bounds, selection choices with stable identifiers, or whether promotions are allowed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "currency",
+      "PostgreSQL type": "character(3)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "ISO 4217 alphabetic code of a MONEY field; immutable (ADR-0032).",
+      "Null meaning": "The field is not a MONEY field.",
+      "Unit": "—"
+    },
+    {
+      "Column": "target_catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog whose records a REFERENCE field points to; immutable.",
+      "Null meaning": "The field is not a REFERENCE field.",
+      "Unit": "—"
+    },
+    {
+      "Column": "archived_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the field was archived.",
+      "Null meaning": "The field is active.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant the field was added.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_fields_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "A field belongs to a catalog of the same company and is deleted with it."
+    },
+    {
+      "Object": "catalog_fields_company_id_target_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, target_catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A reference target is a catalog of the same company that cannot be deleted while targeted."
+    },
+    {
+      "Object": "catalog_fields_currency",
+      "Physical definition": "CHECK ((((type = 'MONEY'::\"CatalogFieldType\") = (currency IS NOT NULL)) AND ((currency IS NULL) OR (currency ~ '^[A-Z]{3}$'::text))))",
+      "Purpose": "MONEY fields, and only they, carry a three-letter uppercase currency code."
+    },
+    {
+      "Object": "catalog_fields_label_trimmed",
+      "Physical definition": "CHECK ((((label)::text = btrim((label)::text)) AND (char_length((label)::text) >= 1)))",
+      "Purpose": "Labels are trimmed and not empty."
+    },
+    {
+      "Object": "catalog_fields_money_optional",
+      "Physical definition": "CHECK ((NOT ((type = 'MONEY'::\"CatalogFieldType\") AND required)))",
+      "Purpose": "MONEY fields are never required, because prices are saved separately."
+    },
+    {
+      "Object": "catalog_fields_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique field identity."
+    },
+    {
+      "Object": "catalog_fields_position_range",
+      "Physical definition": "CHECK (((\"position\" >= 0) AND (\"position\" <= 59)))",
+      "Purpose": "A schema has at most 60 positions."
+    },
+    {
+      "Object": "catalog_fields_settings_object",
+      "Physical definition": "CHECK ((jsonb_typeof(settings) = 'object'::text))",
+      "Purpose": "Settings are a JSON object."
+    },
+    {
+      "Object": "catalog_fields_target",
+      "Physical definition": "CHECK (((type = 'REFERENCE'::\"CatalogFieldType\") = (target_catalog_id IS NOT NULL)))",
+      "Purpose": "REFERENCE fields, and only they, carry a target catalog."
+    },
+    {
+      "Object": "catalog_fields_catalog_position_idx",
+      "Physical definition": "CREATE INDEX catalog_fields_catalog_position_idx ON public.catalog_fields USING btree (company_id, catalog_id, \"position\")",
+      "Purpose": "Reads a schema in order."
+    },
+    {
+      "Object": "catalog_fields_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX catalog_fields_company_id_id_key ON public.catalog_fields USING btree (company_id, id)",
+      "Purpose": "Tenant key that prices and record links reference."
+    },
+    {
+      "Object": "catalog_fields_target_idx",
+      "Physical definition": "CREATE INDEX catalog_fields_target_idx ON public.catalog_fields USING btree (company_id, target_catalog_id)",
+      "Purpose": "Finds the reference fields that target a catalog."
+    }
+  ]
+}

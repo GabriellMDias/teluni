@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { catalogRoutes } from "./catalogs/routes.js";
 import { deviceRoutes } from "./devices/routes.js";
 import { identityRoutes, IdentityNavigation } from "./identity/routes.js";
 import { mediaRoutes } from "./media/routes.js";
@@ -28,6 +29,7 @@ export const routeTree = rootRoute.addChildren([
   ...deviceRoutes,
   ...mediaRoutes,
   ...programmingRoutes,
+  ...catalogRoutes,
   ...(developerPortal?.documentationRoutes ?? []),
 ]);
 

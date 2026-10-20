@@ -864,6 +864,11 @@ export function CompanyPage({
             {t.programmingTitle}
           </Link>
         )}
+        {access.capabilities.includes("catalogs.view") && (
+          <Link to="/companies/$companyId/catalogs" params={{ companyId }}>
+            {t.catalogsTitle}
+          </Link>
+        )}
         {access.capabilities.includes("company.settings.manage") && (
           <Link
             to="/companies/$companyId"

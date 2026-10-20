@@ -1,0 +1,92 @@
+{
+  "kind": "database",
+  "name": "catalog_record_references",
+  "description": "The record a record's REFERENCE field points to, mirrored from the record values so deleting the target can be refused.",
+  "owner": "Catalogs",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced with the record's values in the same transaction; deleted with the referring record.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the catalog (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "record_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Record that holds the reference.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "field_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "REFERENCE field that holds it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "target_record_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Record the value points to, in the field's target catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_record_references_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The catalog belongs to the same company."
+    },
+    {
+      "Object": "catalog_record_references_company_id_field_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The field belongs to the same company; the module checks it belongs to the record's catalog."
+    },
+    {
+      "Object": "catalog_record_references_company_id_record_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The referring record belongs to the same company; rows are deleted with it."
+    },
+    {
+      "Object": "catalog_record_references_company_id_target_record_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, target_record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The target is a record of the same company that cannot be deleted while referenced."
+    },
+    {
+      "Object": "catalog_record_references_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, record_id, field_id)",
+      "Purpose": "One reference per record and field."
+    },
+    {
+      "Object": "catalog_record_references_target_idx",
+      "Physical definition": "CREATE INDEX catalog_record_references_target_idx ON public.catalog_record_references USING btree (company_id, target_record_id)",
+      "Purpose": "Counts the records that refer to a record."
+    }
+  ]
+}

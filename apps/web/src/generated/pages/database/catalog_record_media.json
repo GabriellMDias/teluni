@@ -1,0 +1,92 @@
+{
+  "kind": "database",
+  "name": "catalog_record_media",
+  "description": "The media item a record's MEDIA field holds, mirrored from the record values so media deletion can be guarded.",
+  "owner": "Catalogs",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced with the record's values in the same transaction; deleted with the record.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the catalog (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "record_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Record that holds the media.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "field_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "MEDIA field that holds it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "media_asset_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Media item the value names.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_record_media_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The catalog belongs to the same company."
+    },
+    {
+      "Object": "catalog_record_media_company_id_field_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The field belongs to the same company; the module checks it belongs to the record's catalog."
+    },
+    {
+      "Object": "catalog_record_media_company_id_media_asset_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The media item belongs to the same company."
+    },
+    {
+      "Object": "catalog_record_media_company_id_record_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The record belongs to the same company; rows are deleted with it."
+    },
+    {
+      "Object": "catalog_record_media_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, record_id, field_id)",
+      "Purpose": "One media item per record and field."
+    },
+    {
+      "Object": "catalog_record_media_asset_idx",
+      "Physical definition": "CREATE INDEX catalog_record_media_asset_idx ON public.catalog_record_media USING btree (company_id, media_asset_id)",
+      "Purpose": "Answers the media reference guard."
+    }
+  ]
+}

@@ -354,7 +354,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -375,7 +394,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -392,7 +430,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     },
     {
@@ -412,7 +475,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -433,7 +515,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -450,7 +551,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     },
     {
@@ -470,7 +596,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -491,7 +636,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -508,7 +672,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     },
     {
@@ -528,7 +717,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -549,7 +757,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -566,7 +793,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     },
     {
@@ -586,7 +838,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -607,7 +878,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -624,7 +914,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     },
     {
@@ -644,7 +959,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -665,7 +999,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -682,7 +1035,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     },
     {
@@ -702,7 +1080,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -723,7 +1120,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -740,7 +1156,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     },
     {
@@ -760,7 +1201,26 @@
                   "message": { "type": "string" },
                   "requestId": { "type": "string" },
                   "traceId": { "type": "string" },
-                  "errorId": { "type": "string" }
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
                 },
                 "additionalProperties": false
               }
@@ -781,7 +1241,26 @@
               "message": { "type": "string" },
               "requestId": { "type": "string" },
               "traceId": { "type": "string" },
-              "errorId": { "type": "string" }
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
             },
             "additionalProperties": false
           }
@@ -798,7 +1277,32 @@
         { "name": "error.message", "type": "string", "required": true },
         { "name": "error.requestId", "type": "string", "required": true },
         { "name": "error.traceId", "type": "string", "required": false },
-        { "name": "error.errorId", "type": "string", "required": false }
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
       ]
     }
   ]

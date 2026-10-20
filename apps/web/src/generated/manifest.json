@@ -268,6 +268,60 @@
       "file": "pages/api/createBranch.json"
     },
     {
+      "id": "api/createCatalog",
+      "kind": "api",
+      "title": "createCatalog",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/catalogs",
+      "method": "POST",
+      "path": "/companies/{companyId}/catalogs",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createCatalog.json"
+    },
+    {
+      "id": "api/createCatalogPromotion",
+      "kind": "api",
+      "title": "createCatalogPromotion",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions",
+      "method": "POST",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createCatalogPromotion.json"
+    },
+    {
+      "id": "api/createCatalogRecord",
+      "kind": "api",
+      "title": "createCatalogRecord",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/catalogs/{catalogId}/records",
+      "method": "POST",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createCatalogRecord.json"
+    },
+    {
       "id": "api/createCompany",
       "kind": "api",
       "title": "createCompany",
@@ -356,6 +410,59 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/createProgrammingGroup.json"
+    },
+    {
+      "id": "api/deleteCatalog",
+      "kind": "api",
+      "title": "deleteCatalog",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/catalogs/{catalogId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/catalogs/{catalogId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteCatalog.json"
+    },
+    {
+      "id": "api/deleteCatalogPromotion",
+      "kind": "api",
+      "title": "deleteCatalogPromotion",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions/{promotionId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions/{promotionId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteCatalogPromotion.json"
+    },
+    {
+      "id": "api/deleteCatalogRecord",
+      "kind": "api",
+      "title": "deleteCatalogRecord",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/catalogs/{catalogId}/records/{recordId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteCatalogRecord.json"
     },
     {
       "id": "api/deleteMedia",
@@ -462,6 +569,57 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getBranch.json"
+    },
+    {
+      "id": "api/getCatalog",
+      "kind": "api",
+      "title": "getCatalog",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/catalogs/{catalogId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/catalogs/{catalogId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getCatalog.json"
+    },
+    {
+      "id": "api/getCatalogEffectivePrices",
+      "kind": "api",
+      "title": "getCatalogEffectivePrices",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/catalogs/{catalogId}/records/{recordId}/effective-prices",
+      "method": "GET",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/effective-prices",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getCatalogEffectivePrices.json"
+    },
+    {
+      "id": "api/getCatalogRecord",
+      "kind": "api",
+      "title": "getCatalogRecord",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/catalogs/{catalogId}/records/{recordId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getCatalogRecord.json"
     },
     {
       "id": "api/getCompany",
@@ -855,6 +1013,57 @@
       "file": "pages/api/listBranches.json"
     },
     {
+      "id": "api/listCatalogPromotions",
+      "kind": "api",
+      "title": "listCatalogPromotions",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions",
+      "method": "GET",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listCatalogPromotions.json"
+    },
+    {
+      "id": "api/listCatalogRecords",
+      "kind": "api",
+      "title": "listCatalogRecords",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/catalogs/{catalogId}/records",
+      "method": "GET",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listCatalogRecords.json"
+    },
+    {
+      "id": "api/listCatalogs",
+      "kind": "api",
+      "title": "listCatalogs",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/catalogs",
+      "method": "GET",
+      "path": "/companies/{companyId}/catalogs",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listCatalogs.json"
+    },
+    {
       "id": "api/listCompanies",
       "kind": "api",
       "title": "listCompanies",
@@ -1076,6 +1285,24 @@
       "file": "pages/api/logout.json"
     },
     {
+      "id": "api/moveCatalogRecord",
+      "kind": "api",
+      "title": "moveCatalogRecord",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/catalogs/{catalogId}/records/{recordId}/move",
+      "method": "POST",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/move",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/moveCatalogRecord.json"
+    },
+    {
       "id": "api/moveDevice",
       "kind": "api",
       "title": "moveDevice",
@@ -1200,6 +1427,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/recordDeviceReset.json"
+    },
+    {
+      "id": "api/replaceCatalogSchema",
+      "kind": "api",
+      "title": "replaceCatalogSchema",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/catalogs/{catalogId}/schema",
+      "method": "PUT",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/schema",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/replaceCatalogSchema.json"
     },
     {
       "id": "api/replaceDeviceProgramOutput",
@@ -1413,6 +1658,42 @@
       "file": "pages/api/rotateDeviceCredential.json"
     },
     {
+      "id": "api/setCatalogBasePrice",
+      "kind": "api",
+      "title": "setCatalogBasePrice",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}",
+      "method": "PUT",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/setCatalogBasePrice.json"
+    },
+    {
+      "id": "api/setCatalogBranchPrice",
+      "kind": "api",
+      "title": "setCatalogBranchPrice",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/branches/{branchId}",
+      "method": "PUT",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/branches/{branchId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/setCatalogBranchPrice.json"
+    },
+    {
       "id": "api/startDeviceEnrollment",
       "kind": "api",
       "title": "startDeviceEnrollment",
@@ -1552,6 +1833,42 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/updateBranch.json"
+    },
+    {
+      "id": "api/updateCatalog",
+      "kind": "api",
+      "title": "updateCatalog",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/catalogs/{catalogId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/catalogs/{catalogId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateCatalog.json"
+    },
+    {
+      "id": "api/updateCatalogRecord",
+      "kind": "api",
+      "title": "updateCatalogRecord",
+      "group": "Catalogs",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/catalogs/{catalogId}/records/{recordId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}",
+      "tags": ["Catalogs"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateCatalogRecord.json"
     },
     {
       "id": "api/updateCompany",
@@ -1726,6 +2043,86 @@
       "summary": "Branch of a company: a location with its own business time zone, assigned members and, later, devices.",
       "headings": [],
       "file": "pages/database/branches.json"
+    },
+    {
+      "id": "database/catalog_audit_events",
+      "kind": "database",
+      "title": "catalog_audit_events",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Append-only record of catalog, schema, record and price changes, with the acting member and the branches each change concerns.",
+      "headings": [],
+      "file": "pages/database/catalog_audit_events.json"
+    },
+    {
+      "id": "database/catalog_fields",
+      "kind": "database",
+      "title": "catalog_fields",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One field of a catalog's schema: a stable identifier, a label that may change, a type that never changes, and type settings.",
+      "headings": [],
+      "file": "pages/database/catalog_fields.json"
+    },
+    {
+      "id": "database/catalog_price_overrides",
+      "kind": "database",
+      "title": "catalog_price_overrides",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The price of one record's MONEY field for one branch of a company catalog, replacing the base price there.",
+      "headings": [],
+      "file": "pages/database/catalog_price_overrides.json"
+    },
+    {
+      "id": "database/catalog_promotions",
+      "kind": "database",
+      "title": "catalog_promotions",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A promotional price of one record's MONEY field within a local wall-clock window, for the whole catalog scope or one branch.",
+      "headings": [],
+      "file": "pages/database/catalog_promotions.json"
+    },
+    {
+      "id": "database/catalog_record_media",
+      "kind": "database",
+      "title": "catalog_record_media",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The media item a record's MEDIA field holds, mirrored from the record values so media deletion can be guarded.",
+      "headings": [],
+      "file": "pages/database/catalog_record_media.json"
+    },
+    {
+      "id": "database/catalog_record_references",
+      "kind": "database",
+      "title": "catalog_record_references",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The record a record's REFERENCE field points to, mirrored from the record values so deleting the target can be refused.",
+      "headings": [],
+      "file": "pages/database/catalog_record_references.json"
+    },
+    {
+      "id": "database/catalog_records",
+      "kind": "database",
+      "title": "catalog_records",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One entry of a catalog: its values keyed by field identifier, including the base price of each MONEY field, its availability and its position.",
+      "headings": [],
+      "file": "pages/database/catalog_records.json"
+    },
+    {
+      "id": "database/catalogs",
+      "kind": "database",
+      "title": "catalogs",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A user-defined typed collection, such as products, a menu or a weekly agenda, owned by a company or one branch.",
+      "headings": [],
+      "file": "pages/database/catalogs.json"
     },
     {
       "id": "database/companies",
@@ -2126,6 +2523,16 @@
       "summary": "The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma,…",
       "headings": [],
       "file": "pages/repository/apps/api/README.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/catalogs/AGENTS",
+      "kind": "repository",
+      "title": "Catalogs Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/catalogs/AGENTS.md",
+      "summary": "This module owns typed catalogs, their fields, items (records), base prices, branch prices and promotions under the catalog and composition design and ADR-0032. Read both…",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/catalogs/AGENTS.json"
     },
     {
       "id": "repository/apps/api/src/features/devices/AGENTS",
@@ -2873,7 +3280,7 @@
       "title": "Database Reference",
       "group": "Generated references",
       "source": "docs/generated/database/schema.md",
-      "summary": "A screen's request to be paired: the hash of the credential the player generated, the HMAC of the short code it shows and its report. Platform-scoped until a member claims the…",
+      "summary": "A user-defined typed collection, such as products, a menu or a weekly agenda, owned by a company or one branch.",
       "headings": [],
       "file": "pages/repository/docs/generated/database/schema.json"
     },
@@ -3400,43 +3807,56 @@
   ],
   "search": {
     "shards": [
-      { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0000.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0001.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0003.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0006.json", "count": 15, "kinds": ["api"] },
-      { "file": "search/0007.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0008.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0006.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0007.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0008.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0009.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0010.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0011.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0010.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0011.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0012.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0013.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0014.json", "count": 25, "kinds": ["database"] },
+      { "file": "search/0013.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0014.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0015.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0016.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0017.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0018.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0019.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0020.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0021.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0022.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0023.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0024.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0025.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0026.json", "count": 22, "kinds": ["api", "database"] },
+      { "file": "search/0027.json", "count": 25, "kinds": ["database"] },
       {
-        "file": "search/0015.json",
-        "count": 49,
+        "file": "search/0028.json",
+        "count": 55,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0016.json", "count": 95, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 132, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 179, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0021.json", "count": 131, "kinds": ["repository"] },
-      { "file": "search/0022.json", "count": 81, "kinds": ["repository"] },
-      { "file": "search/0023.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0024.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0025.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0026.json", "count": 50, "kinds": ["repository"] },
-      { "file": "search/0027.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0028.json", "count": 73, "kinds": ["repository"] },
-      { "file": "search/0029.json", "count": 96, "kinds": ["repository"] },
-      { "file": "search/0030.json", "count": 94, "kinds": ["repository"] },
-      { "file": "search/0031.json", "count": 14, "kinds": ["repository"] }
+      { "file": "search/0029.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0030.json", "count": 118, "kinds": ["repository"] },
+      { "file": "search/0031.json", "count": 145, "kinds": ["repository"] },
+      { "file": "search/0032.json", "count": 177, "kinds": ["repository"] },
+      { "file": "search/0033.json", "count": 118, "kinds": ["repository"] },
+      { "file": "search/0034.json", "count": 117, "kinds": ["repository"] },
+      { "file": "search/0035.json", "count": 79, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 61, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 64, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 47, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 84, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 20, "kinds": ["repository"] }
     ],
-    "count": 1705
+    "count": 1853
   }
 }

@@ -1,0 +1,152 @@
+{
+  "kind": "database",
+  "name": "catalog_audit_events",
+  "description": "Append-only record of catalog, schema, record and price changes, with the acting member and the branches each change concerns.",
+  "owner": "Catalogs",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated event UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company the change belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog the event concerns; not a foreign key, so events outlive deleted catalogs.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "record_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Record the event concerns; not a foreign key.",
+      "Null meaning": "The event concerns the catalog or its schema.",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_ids",
+      "PostgreSQL type": "uuid[]",
+      "Nullable": "yes",
+      "Default": "ARRAY[]::uuid[]",
+      "Classification": "INTERNAL",
+      "Meaning": "Branches the change concerns, for branch-scoped audit reads; empty for company-wide changes.",
+      "Null meaning": "Never null; an empty array means the change is company-wide.",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "actor_principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Principal that made the change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "actor_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership through which the change was made.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "action",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Event name such as catalog.created, catalog.schema_changed, catalog.record_updated, catalog.price_changed, catalog.price_override_changed or catalog.promotion_changed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "details",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Bounded summary: names, field identifiers, counts, versions, IDs, and old and new amounts with their currency for price events; never record values.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_audit_events_actor_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The actor is a known principal."
+    },
+    {
+      "Object": "catalog_audit_events_branch_ids_present",
+      "Physical definition": "CHECK (((branch_ids IS NOT NULL) AND (cardinality(branch_ids) <= 100)))",
+      "Purpose": "The branch list is present and bounded."
+    },
+    {
+      "Object": "catalog_audit_events_company_id_actor_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The acting membership belongs to the same company."
+    },
+    {
+      "Object": "catalog_audit_events_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An event belongs to an existing company."
+    },
+    {
+      "Object": "catalog_audit_events_details_object",
+      "Physical definition": "CHECK ((jsonb_typeof(details) = 'object'::text))",
+      "Purpose": "Details are a JSON object."
+    },
+    {
+      "Object": "catalog_audit_events_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique event identity."
+    },
+    {
+      "Object": "catalog_audit_events_catalog_idx",
+      "Physical definition": "CREATE INDEX catalog_audit_events_catalog_idx ON public.catalog_audit_events USING btree (company_id, catalog_id, occurred_at DESC, id DESC)",
+      "Purpose": "Reads a catalog's history newest first."
+    },
+    {
+      "Object": "catalog_audit_events_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX catalog_audit_events_company_id_id_key ON public.catalog_audit_events USING btree (company_id, id)",
+      "Purpose": "Tenant key for events."
+    }
+  ]
+}

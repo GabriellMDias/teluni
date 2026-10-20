@@ -1,0 +1,177 @@
+{
+  "kind": "database",
+  "name": "catalog_promotions",
+  "description": "A promotional price of one record's MONEY field within a local wall-clock window, for the whole catalog scope or one branch.",
+  "owner": "Catalogs",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created and deleted, never edited; windows of the same price whose branch scopes intersect never overlap. Deleted with the record.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable promotion UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the catalog (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "record_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Record whose price is promoted.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "field_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "MONEY field whose price is promoted.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch where the promotion applies.",
+      "Null meaning": "The promotion applies to the whole catalog scope.",
+      "Unit": "—"
+    },
+    {
+      "Column": "amount",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Promotional price in the field currency's minor units, 0 to 10^12.",
+      "Null meaning": "—",
+      "Unit": "minor units of the field's ISO 4217 currency"
+    },
+    {
+      "Column": "starts_at",
+      "PostgreSQL type": "timestamp(0) without time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Local wall-clock start, inclusive, evaluated in each screen's time zone.",
+      "Null meaning": "—",
+      "Unit": "local date and time without zone, minute precision"
+    },
+    {
+      "Column": "ends_at",
+      "PostgreSQL type": "timestamp(0) without time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Local wall-clock end, exclusive.",
+      "Null meaning": "—",
+      "Unit": "local date and time without zone, minute precision"
+    },
+    {
+      "Column": "created_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that created the promotion.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of creation.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_promotions_amount_range",
+      "Physical definition": "CHECK (((amount >= 0) AND (amount <= '1000000000000'::bigint)))",
+      "Purpose": "Amounts are 0 to 10^12 minor units."
+    },
+    {
+      "Object": "catalog_promotions_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The branch belongs to the same company."
+    },
+    {
+      "Object": "catalog_promotions_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The catalog belongs to the same company."
+    },
+    {
+      "Object": "catalog_promotions_company_id_created_by_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The creator is a membership of the same company."
+    },
+    {
+      "Object": "catalog_promotions_company_id_field_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The field belongs to the same company; the module checks it belongs to the record's catalog."
+    },
+    {
+      "Object": "catalog_promotions_company_id_record_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The record belongs to the same company; promotions are deleted with it."
+    },
+    {
+      "Object": "catalog_promotions_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique promotion identity."
+    },
+    {
+      "Object": "catalog_promotions_window",
+      "Physical definition": "CHECK (((ends_at > starts_at) AND (date_trunc('minute'::text, starts_at) = starts_at) AND (date_trunc('minute'::text, ends_at) = ends_at)))",
+      "Purpose": "Windows end after they start, at whole minutes."
+    },
+    {
+      "Object": "catalog_promotions_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX catalog_promotions_company_id_id_key ON public.catalog_promotions USING btree (company_id, id)",
+      "Purpose": "Tenant key for promotions."
+    },
+    {
+      "Object": "catalog_promotions_field_idx",
+      "Physical definition": "CREATE INDEX catalog_promotions_field_idx ON public.catalog_promotions USING btree (company_id, catalog_id, field_id)",
+      "Purpose": "Finds the promotions of a field for schema checks."
+    },
+    {
+      "Object": "catalog_promotions_price_idx",
+      "Physical definition": "CREATE INDEX catalog_promotions_price_idx ON public.catalog_promotions USING btree (company_id, record_id, field_id, starts_at)",
+      "Purpose": "Reads a price's promotions by start for overlap checks and evaluation."
+    }
+  ]
+}
