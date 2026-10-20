@@ -51,7 +51,8 @@ public data class ClockRecord(
 /**
  * Trusted time of the player design: a monotonic anchor set at each sync,
  * a persisted lower bound, and the system clock after a reboot only when it
- * is not earlier than that bound and set from the network.
+ * is not earlier than that bound and set from the network. Thread-safe: sync
+ * and the periodic checkpoint run on different threads.
  */
 public class TrustedClock(private val source: ClockSource, record: ClockRecord?) {
     private var anchor: Anchor? = null
@@ -74,6 +75,7 @@ public class TrustedClock(private val source: ClockSource, record: ClockRecord?)
      * midpoint. A slow round trip never replaces a better anchor of this boot.
      * Returns whether the anchor changed.
      */
+    @Synchronized
     public fun anchor(serverTime: Instant, sentMonotonic: Long, receivedMonotonic: Long): Boolean {
         require(receivedMonotonic >= sentMonotonic) { "The answer cannot arrive before the request" }
         val uncertainty = (receivedMonotonic - sentMonotonic + 1) / 2
@@ -88,6 +90,7 @@ public class TrustedClock(private val source: ClockSource, record: ClockRecord?)
         return true
     }
 
+    @Synchronized
     public fun now(): TrustedTime {
         val current = anchor
         if (current != null) {
@@ -103,17 +106,20 @@ public class TrustedClock(private val source: ClockSource, record: ClockRecord?)
     }
 
     /** How far the system clock is from anchored time, for diagnostics; null without an anchor. */
+    @Synchronized
     public fun systemSkew(): Duration? {
         val time = now() as? TrustedTime.Anchored ?: return null
         return Duration.ofMillis(source.wallMillis() - time.instant.toEpochMilli())
     }
 
     /** Raises the lower bound to the current trusted time; call every minute and persist the record. */
+    @Synchronized
     public fun checkpoint(): ClockRecord {
         now().instantOrNull?.let { raiseLowerBound(it.toEpochMilli()) }
         return record()
     }
 
+    @Synchronized
     public fun record(): ClockRecord {
         val current = anchor
         return ClockRecord(

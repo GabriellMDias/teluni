@@ -4,6 +4,7 @@ import app.teluni.player.core.playback.Plan
 import app.teluni.player.core.playback.PlaybackCondition
 import app.teluni.player.core.protocol.StagingFailureCode
 import app.teluni.player.core.protocol.sha256Hex
+import app.teluni.player.core.store.PlayerState
 import app.teluni.player.core.store.PlayerStore
 import app.teluni.player.core.time.FakeClock
 import app.teluni.player.core.time.TrustedTime
@@ -129,6 +130,55 @@ class PlayerEngineTest {
         server.mediaRequests.clear()
         assertEquals(StagingOutcome.Activated("pub-b"), restarted.syncAndStage())
         assertEquals(listOf("m2-1" to 1_500L), server.mediaRequests.toList())
+    }
+
+    @Test
+    fun `frees a superseded staging attempt's files before checking the reserve`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        // The volume holds the active generation plus one more publication, not two.
+        val budget = du() + 6_500 + 4_000
+        space = PlayerStore.Space(free = (1L shl 30) + budget, total = 2L shl 30)
+        val measured = { PlayerStore.Space(free = (1L shl 30) + budget - du(), total = 2L shl 30) }
+        val constrained = PlayerEngine(PlayerStore(root, space = measured), server, vault, clock, "1.0.0-test")
+        server.publish(publication("pub-b", seed = 2))
+        server.failMediaAfter = 1_500
+        assertIs<StagingOutcome.Failed>(constrained.syncAndStage())
+        server.failMediaAfter = null
+
+        server.publish(publication("pub-c", seed = 3))
+        assertEquals(StagingOutcome.Activated("pub-c"), constrained.syncAndStage())
+        val store = PlayerStore(root)
+        for (bytes in server.publications.getValue("pub-b").media.values) {
+            assertTrue(!Files.exists(store.mediaFile(sha256Hex(bytes))) && !Files.exists(store.partialFile(sha256Hex(bytes))))
+        }
+    }
+
+    private fun du(): Long = Files.walk(root).use { paths -> paths.filter(Files::isRegularFile).mapToLong(Files::size).sum() }
+
+    @Test
+    fun `erases everything when the credential can no longer be read`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        assertIs<Plan.Play>(engine.plan())
+        // A Keystore reset: the wrapped credential cannot be decrypted.
+        vault.value = null
+        assertEquals(SyncOutcome.NotPaired, engine.sync())
+        assertNull(engine.identity())
+        assertEquals(PlayerState(), PlayerStore(root).state())
+        assertEquals(PlaybackCondition.AUTHORIZATION_EXPIRED, assertIs<Plan.Neutral>(engine.plan()).condition)
+    }
+
+    @Test
+    fun `starts over from a cleared store when the credential is gone at startup`() {
+        paired().also { server.publish(publication("pub-a")) }.syncAndStage()
+        vault.value = null
+        val restarted = engine()
+        assertNull(restarted.identity())
+        assertNull(PlayerStore(root).manifest("pub-a"))
+        assertIs<Plan.Neutral>(restarted.plan())
     }
 
     @Test

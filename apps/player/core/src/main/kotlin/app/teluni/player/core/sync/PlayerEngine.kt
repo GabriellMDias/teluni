@@ -135,6 +135,7 @@ public class PlayerEngine(
     public val clock: TrustedClock = TrustedClock(clockSource, readRecord(PlayerStore.Record.CLOCK, ClockRecord.serializer()))
 
     init {
+        forgetWithoutCredential()
         reconcile()
     }
 
@@ -159,17 +160,48 @@ public class PlayerEngine(
 
     public fun syncRecord(): SyncRecord? = readRecord(PlayerStore.Record.SYNC, SyncRecord.serializer())
 
-    private fun credential(): String? = vault.load()?.let { Base64.getUrlEncoder().withoutPadding().encodeToString(it) }
+    private fun credential(): String? {
+        val credential = vault.load() ?: return null.also { forgetWithoutCredential() }
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(credential)
+    }
+
+    /**
+     * A paired screen whose credential cannot be read back (for example after
+     * a Keystore reset) erases everything it kept, so neither content nor a
+     * stale identity outlives the credential; it then enrolls again.
+     */
+    private fun forgetWithoutCredential() {
+        if (store.record(PlayerStore.Record.IDENTITY) == null || vault.load() != null) return
+        synchronized(lock) {
+            store.eraseAll()
+            vault.erase()
+            statement = null
+            publications.clear()
+            progress = null
+        }
+    }
 
     /** Persists the trusted clock's record; the app calls this every minute. */
     public fun checkpoint() {
-        saveRecord(PlayerStore.Record.CLOCK, ClockRecord.serializer(), clock.checkpoint())
+        // One writer at a time, so an older record never overwrites a newer bound.
+        synchronized(clock) {
+            saveRecord(PlayerStore.Record.CLOCK, ClockRecord.serializer(), clock.checkpoint())
+        }
     }
 
     // Enrollment
 
-    /** Starts an enrollment with a new credential; an expired code always starts a new one. */
+    /**
+     * Starts an enrollment with a new credential, from an empty store as the
+     * device enrollment design requires; an expired code always starts a new one.
+     */
     public fun startEnrollment(report: DeviceReport): EnrollmentStarted {
+        synchronized(lock) {
+            store.eraseAll()
+            statement = null
+            publications.clear()
+            progress = null
+        }
         val credential = ByteArray(32).also(random::nextBytes)
         vault.save(credential)
         val hash = MessageDigest.getInstance("SHA-256").digest(credential)
@@ -319,6 +351,8 @@ public class PlayerEngine(
         progress = SyncReport.Staging(desired.publicationId, "DOWNLOADING", null, 0, 0)
         return try {
             val publication = fetchManifest(desired, identity, credential)
+            // A superseded attempt's files are no longer protected: free their space first.
+            synchronized(lock) { collect(store.state()) }
             val needed = publication.media.values.filter { !store.hasMedia(it.sha256, it.size) }.distinctBy { it.sha256 }
             val total = needed.sumOf { it.size }
             preflight(needed.sumOf { it.size - partialSize(it.sha256, it.size) })

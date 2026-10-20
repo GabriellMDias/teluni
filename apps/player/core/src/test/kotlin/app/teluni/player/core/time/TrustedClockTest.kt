@@ -111,6 +111,30 @@ class TrustedClockTest {
     }
 
     @Test
+    fun `never lowers the bound when anchors and checkpoints race`() {
+        val source = FakeClock()
+        val clock = TrustedClock(source, null)
+        val anchors = Thread {
+            for (second in 1..2_000L) clock.anchor(server.plusSeconds(second), source.monotonic, source.monotonic)
+        }
+        var lowest = Long.MAX_VALUE
+        var previous = Long.MIN_VALUE
+        val checkpoints = Thread {
+            repeat(2_000) {
+                val bound = clock.checkpoint().lowerBoundMillis ?: return@repeat
+                if (bound < previous) lowest = minOf(lowest, bound)
+                previous = bound
+            }
+        }
+        anchors.start()
+        checkpoints.start()
+        anchors.join()
+        checkpoints.join()
+        assertEquals(Long.MAX_VALUE, lowest, "a checkpoint persisted a lower bound than an earlier one")
+        assertEquals(server.plusSeconds(2_000).toEpochMilli(), clock.record().lowerBoundMillis)
+    }
+
+    @Test
     fun `ignores an anchor from a monotonic reading in the future`() {
         val source = FakeClock(monotonic = 100)
         val record = ClockRecord("boot-1", server.toEpochMilli(), 5_000, 10, server.toEpochMilli())
