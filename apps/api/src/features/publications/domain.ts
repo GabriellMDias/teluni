@@ -212,14 +212,18 @@ export type AuthorizedPublication = Readonly<{ id: string; sha256: string }>;
 /**
  * What a statement authorizes: the desired publication and, while the
  * screen has not activated it, the active and recovery generations it
- * reported (already resolved to unpruned publications of its company). An
- * unpublished source authorizes nothing, so the screen shows neutral output.
+ * reported (already resolved to unpruned publications of its company). Once
+ * the desired one is active, superseded generations get no new authority.
+ * An unpublished source authorizes nothing, so the screen shows neutral
+ * output.
  */
 export function authorizedPublications(
   desired: AuthorizedPublication | null,
+  activeId: string | null,
   reported: readonly AuthorizedPublication[],
 ): AuthorizedPublication[] {
   if (!desired) return [];
+  if (activeId === desired.id) return [desired];
   const list = [desired];
   for (const item of reported)
     if (!list.some((known) => known.id === item.id)) list.push(item);

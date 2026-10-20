@@ -3,13 +3,10 @@ import type { Readable } from "node:stream";
 import type { Prisma } from "../../generated/prisma/client.js";
 import { DeviceFailure, type DevicePort } from "../devices/public.js";
 import type { HumanContext } from "../identity/public.js";
-import type {
-  MediaPort,
-  MediaReference,
-  PublishableMedia,
-} from "../media/public.js";
+import type { MediaPort, PublishableMedia } from "../media/public.js";
 import {
   decide,
+  OrganizationFailure,
   type CompanyAccess,
   type CompanyAccessPort,
 } from "../organizations/public.js";
@@ -625,6 +622,8 @@ export class PublicationService {
     deviceId: string,
   ): Promise<ScreenStateView> {
     const access = await this.#companies.resolve(context, companyId);
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
     const [device] = await this.#devices.describe(null, companyId, [deviceId]);
     if (!device || decide(access, "devices.view", device.branchId) !== "allow")
       throw new PublicationFailure("RESOURCE_NOT_FOUND");
@@ -641,6 +640,8 @@ export class PublicationService {
     if (deviceIds.length > publicationPolicy.maxStateQuery)
       throw new PublicationFailure("VALIDATION_FAILED");
     const access = await this.#companies.resolve(context, companyId);
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
     const devices = await this.#devices.describe(null, companyId, deviceIds);
     const visible = devices
       .filter(
@@ -806,6 +807,7 @@ export class PublicationService {
           desired
             ? { id: desired.id, sha256: desired.manifestSha256.toString("hex") }
             : null,
+          report.active?.publicationId ?? null,
           reported,
         ),
       });
@@ -925,27 +927,6 @@ export class PublicationService {
   }
 
   // Collaboration
-
-  /** The programming port's publication facts. */
-  isPublished = (
-    tx: Prisma.TransactionClient,
-    companyId: string,
-    programId: string,
-  ): Promise<boolean> => this.#repository.isPublished(tx, companyId, programId);
-
-  /** The media guard: retained publications protect their media. */
-  async mediaReferences(
-    tx: Prisma.TransactionClient,
-    companyId: string,
-    mediaId: string,
-  ): Promise<MediaReference[]> {
-    const rows = await this.#repository.mediaReferences(tx, companyId, mediaId);
-    return rows.flatMap((row): MediaReference[] =>
-      row.branchIds.length === 0
-        ? [{ kind: "publication", branchId: null }]
-        : row.branchIds.map((branchId) => ({ kind: "publication", branchId })),
-    );
-  }
 
   /** Prunes publications past their retention and old report transitions. */
   async maintain(): Promise<{ pruned: number; events: number }> {

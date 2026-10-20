@@ -1,12 +1,16 @@
 import type { ApiModule } from "../../module.js";
 import type { DevicePort } from "../devices/public.js";
 import type { HumanSessionPort } from "../identity/public.js";
-import type { MediaPort } from "../media/public.js";
+import type { MediaPort, MediaReference } from "../media/public.js";
 import type { CompanyAccessPort } from "../organizations/public.js";
 import type { ProgrammingPort } from "../programming/public.js";
 import { publicationOperations } from "./contracts.js";
 import { publicationErrors } from "./errors.js";
-import { PrismaPublicationRepository } from "./prisma-repository.js";
+import {
+  PrismaPublicationRepository,
+  programIsPublished,
+  publicationMediaReferences,
+} from "./prisma-repository.js";
 import {
   registerPublicationRoutes,
   type PublicationRouteLimits,
@@ -19,7 +23,9 @@ const maintenanceIntervalMs = 60 * 60_000;
  * Composes publications and screen synchronization (the publication and
  * synchronization design, ADR-0030) over the organizations, devices, media
  * and programming ports. Retained publications protect their media from
- * deletion, and assignments ask whether a destination is published. Hourly
+ * deletion, and assignments ask whether a destination is published; both
+ * hooks query in the caller's transaction, so they hold even while this
+ * module is unmounted for lack of signing keys. Hourly
  * maintenance prunes publications past their retention and old report
  * transitions; `manual` leaves it to tests.
  */
@@ -37,14 +43,20 @@ export function createPublicationsModule(options: {
   maintain(): Promise<{ pruned: number; events: number }>;
 } {
   let service: PublicationService | undefined;
-  options.media.registerReferenceGuard("publication", (tx, companyId, id) =>
-    service ? service.mediaReferences(tx, companyId, id) : Promise.resolve([]),
+  options.media.registerReferenceGuard(
+    "publication",
+    async (tx, companyId, id) =>
+      (await publicationMediaReferences(tx, companyId, id)).flatMap(
+        (row): MediaReference[] =>
+          row.branchIds.length === 0
+            ? [{ kind: "publication", branchId: null }]
+            : row.branchIds.map((branchId) => ({
+                kind: "publication",
+                branchId,
+              })),
+      ),
   );
-  options.programming.onPublicationFacts((tx, companyId, programId) =>
-    service
-      ? service.isPublished(tx, companyId, programId)
-      : Promise.resolve(false),
-  );
+  options.programming.onPublicationFacts(programIsPublished);
   const module: ApiModule = {
     name: "publications",
     tag: "Publications",

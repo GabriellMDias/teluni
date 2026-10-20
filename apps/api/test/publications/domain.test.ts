@@ -202,12 +202,14 @@ describe("authorization statements", () => {
   it("authorizes the desired publication and still-valid reported ones", () => {
     const desired = { id: "d", sha256: "1".repeat(64) };
     const active = { id: "a", sha256: "2".repeat(64) };
-    expect(authorizedPublications(null, [active])).toEqual([]);
-    expect(authorizedPublications(desired, [])).toEqual([desired]);
-    expect(authorizedPublications(desired, [active, desired, active])).toEqual([
-      desired,
-      active,
-    ]);
+    const recovery = { id: "r", sha256: "3".repeat(64) };
+    expect(authorizedPublications(null, "a", [active])).toEqual([]);
+    expect(authorizedPublications(desired, null, [])).toEqual([desired]);
+    expect(
+      authorizedPublications(desired, "a", [active, desired, recovery, active]),
+    ).toEqual([desired, active, recovery]);
+    // Once the desired generation is active, older ones get no new authority.
+    expect(authorizedPublications(desired, "d", [recovery])).toEqual([desired]);
   });
 });
 

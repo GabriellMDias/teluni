@@ -19,6 +19,10 @@ import { createMediaModule } from "../../src/features/media/module.js";
 import { createOrganizationsModule } from "../../src/features/organizations/module.js";
 import { createProgrammingModule } from "../../src/features/programming/module.js";
 import { createPublicationsModule } from "../../src/features/publications/module.js";
+import type { DevicePort } from "../../src/features/devices/public.js";
+import type { MediaReferenceGuard } from "../../src/features/media/public.js";
+import type { CompanyAccessPort } from "../../src/features/organizations/public.js";
+import type { PublicationFacts } from "../../src/features/programming/public.js";
 import { activateModules, type ApiModule } from "../../src/module.js";
 import { withMigratedDatabase } from "../../scripts/migrated-database.js";
 import { createFixtures, type Fixtures } from "../media/fixtures.js";
@@ -1029,6 +1033,17 @@ describe("publications: publishing, synchronization and retention", () => {
       ]),
     );
 
+    // Once the new generation is active, the old one gets no new authority
+    // even if the screen keeps reporting it.
+    const activated = await sync(tv, {
+      active: { publicationId: second.id, activatedAt },
+      recovery: { publicationId: first.id },
+      playback: "PLAYING",
+    });
+    expect((await verified(activated.body.authorization)).publications).toEqual(
+      [{ id: second.id, sha256: second.manifestSha256 }],
+    );
+
     // Individual programming without a publication means neutral output:
     // the statement authorizes nothing.
     expect(
@@ -1087,6 +1102,24 @@ describe("publications: publishing, synchronization and retention", () => {
         desired: null,
         authorization: null,
       });
+      expect(
+        code(
+          await call(
+            "aAdmin",
+            "GET",
+            `/companies/${companyA}/devices/${tv.id}/sync-state`,
+          ),
+        ),
+      ).toBe("COMPANY_SUSPENDED");
+      expect(
+        code(
+          await call(
+            "aAdmin",
+            "GET",
+            `/companies/${companyA}/publications/screen-states?deviceId=${tv.id}`,
+          ),
+        ),
+      ).toBe("COMPANY_SUSPENDED");
     } finally {
       await sql.query("UPDATE companies SET status = 'ACTIVE' WHERE id = $1", [
         companyA,
@@ -1244,6 +1277,45 @@ describe("publications: publishing, synchronization and retention", () => {
         ),
       ),
     ).toBe("MEDIA_IN_USE");
+    // The guard and the publication facts query through the caller's
+    // transaction, so they hold even while the module is unmounted.
+    let guard: MediaReferenceGuard | undefined;
+    let facts: PublicationFacts | undefined;
+    const unmounted = (): never => {
+      throw new Error("not active");
+    };
+    createPublicationsModule({
+      sessions,
+      companies: {} as CompanyAccessPort,
+      devices: {} as DevicePort,
+      media: {
+        registerReferenceGuard: (_kind, registered) => (guard = registered),
+        requireSelectable: unmounted,
+        describe: unmounted,
+        describeForPublication: unmounted,
+        openObject: unmounted,
+      },
+      programming: {
+        onPublicationFacts: (registered) => (facts = registered),
+        target: unmounted,
+        snapshot: unmounted,
+        currentProgram: unmounted,
+        followers: unmounted,
+      },
+    });
+    const protectedBy = await database.$transaction((tx) =>
+      guard!(tx, companyA, special),
+    );
+    expect(protectedBy).toEqual([{ kind: "publication", branchId: a2.id }]);
+    const programId = (
+      await sql.query<{ program_id: string }>(
+        "SELECT program_id FROM publications WHERE id = $1",
+        [first.id],
+      )
+    ).rows[0].program_id;
+    expect(
+      await database.$transaction((tx) => facts!(tx, companyA, programId)),
+    ).toBe(true);
 
     // At most 30 publications per program per hour.
     await sql.query(

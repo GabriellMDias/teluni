@@ -194,6 +194,40 @@ const uuidList = (ids: readonly string[]) =>
   Prisma.join([...new Set(ids)].sort().map((id) => Prisma.sql`${id}::uuid`));
 
 /**
+ * Whether a program has a publication. It runs in the caller's transaction
+ * (an assignment's) and needs no activated module, so assignments ask for
+ * confirmation correctly even while publications are unmounted.
+ */
+export async function programIsPublished(
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  programId: string,
+): Promise<boolean> {
+  const [row] = await tx.$queryRaw<{ found: boolean }[]>`
+    SELECT EXISTS (SELECT 1 FROM publications
+      WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid) AS found`;
+  return row?.found ?? false;
+}
+
+/**
+ * The branches of each retained publication that references a media item.
+ * It runs in the deleting or purging transaction and needs no activated
+ * module, so the media guard fails closed while publications are unmounted.
+ */
+export async function publicationMediaReferences(
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  mediaId: string,
+): Promise<{ branchIds: string[] }[]> {
+  const rows = await tx.$queryRaw<{ branch_ids: string[] }[]>`
+    SELECT DISTINCT COALESCE(p.branch_ids::text[], '{}') AS branch_ids
+    FROM publication_media m
+    JOIN publications p ON p.company_id = m.company_id AND p.id = m.publication_id
+    WHERE m.company_id = ${companyId}::uuid AND m.media_asset_id = ${mediaId}::uuid`;
+  return rows.map((row) => ({ branchIds: row.branch_ids }));
+}
+
+/**
  * PostgreSQL persistence of publications. Publishing runs inside a
  * transaction that first takes the organization locks and the programming
  * and media share locks through the ports, then the per-company
@@ -236,17 +270,6 @@ export class PrismaPublicationRepository {
       WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid
       ORDER BY generation DESC LIMIT 1`;
     return row ? publication(row) : null;
-  }
-
-  async isPublished(
-    tx: Prisma.TransactionClient,
-    companyId: string,
-    programId: string,
-  ): Promise<boolean> {
-    const [row] = await tx.$queryRaw<{ found: boolean }[]>`
-      SELECT EXISTS (SELECT 1 FROM publications
-        WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid) AS found`;
-    return row?.found ?? false;
   }
 
   async find(
@@ -424,20 +447,6 @@ export class PrismaPublicationRepository {
           contentType: row.content_type,
         }
       : null;
-  }
-
-  /** Retained publications that protect a media item (the media guard). */
-  async mediaReferences(
-    tx: Prisma.TransactionClient,
-    companyId: string,
-    mediaId: string,
-  ): Promise<{ branchIds: string[] }[]> {
-    const rows = await tx.$queryRaw<{ branch_ids: string[] }[]>`
-      SELECT DISTINCT COALESCE(p.branch_ids::text[], '{}') AS branch_ids
-      FROM publication_media m
-      JOIN publications p ON p.company_id = m.company_id AND p.id = m.publication_id
-      WHERE m.company_id = ${companyId}::uuid AND m.media_asset_id = ${mediaId}::uuid`;
-    return rows.map((row) => ({ branchIds: row.branch_ids }));
   }
 
   // Screen states
