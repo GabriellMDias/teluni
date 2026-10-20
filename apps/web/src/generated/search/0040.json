@@ -1,5 +1,14 @@
 [
   {
+    "id": "repository/docs/project/invitation-delivery-design",
+    "title": "Teluni Company Invitation and Durable Email Delivery Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Alternatives considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives considered\nAlternative\nReason not proposed\nSending email directly in the request, after commit\nA crash or relay outage after commit loses the email silently; the delivery policy requires recorded intent for required side effects\nAn existing PostgreSQL job library (for example pg-boss)\nIt owns its schema and migrations, which would need adapting to the reviewed-migration, metadata and least-privilege grant rules, for a need a small owned table covers\nA broker or Redis-backed queue\nNew stateful infrastructure on the single residential host for low volume; PostgreSQL already provides transactional claiming\nA provider HTTP API with webhooks\nCouples the code to one provider before PH-17 selects one and contradicts the no-recurring-procurement constraint; SMTP keeps providers interchangeable\nKeycloak sending invitations\nKeycloak sends only its own account flows; invitations, grants and memberships are application-owned (ADR-0025), and Keycloak Organizations was rejected\nA credential derived from the invitation ID with a server key\nAvoids storing the encrypted copy, but keeps every pending link recomputable from the database plus one key for the whole validity; the erased encrypted copy limits that window to the delivery period\nNarrowing an invitation when a branch is archived\nSilent narrowing grants something different from what the inviter chose; failing and re-inviting keeps the grant explicit\n"
+  },
+  {
     "id": "repository/docs/project/media-library-design",
     "title": "Teluni Media Library Design",
     "group": "Project guides",
@@ -655,14 +664,5 @@
     "heading": "Concepts",
     "anchor": "concepts",
     "text": "Concepts\nA **playlist** is an ordered, looping list of media items owned by a company or one branch, like media. It is reusable: several programs may schedule the same playlist.\nA **programming group** belongs to a company and names the branches it may span: either the whole company or a fixed set of one or more branches.\nA **program** is the draft programming of one source: a group, or one screen. It has one output today, the full screen (`screen`); PJ-20 adds layout areas as further outputs with their own rules and defaults, evaluated by the same functions. Each output has a set of **schedule rules** and an optional **default playlist**.\nA screen's **programming source** is its group's program when it belongs to a group and individual programming is not selected; otherwise its own program. A screen without a group is always programmed individually.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Playlists",
-    "anchor": "playlists",
-    "text": "Playlists\nA playlist has a name (1 to 120 characters), an owning scope (company or one branch), a transition and 0 to 500 items.\nEach item references one media asset that is `READY`, not archived, and visible to the playlist's scope: a company playlist may use company media only; a branch playlist may use company media and that branch's media. An image item has a duration from 1 to 3,600 whole seconds, 10 by default; a video item has no duration and plays its whole display rendition. Items play in order and the playlist loops while its schedule window lasts; a boundary interrupts the current item. The same asset may appear more than once.\nThe transition is `CUT` (default) or `FADE` with a duration from 250 to 2,000 ms. A fade is stored and previewed, but publication (PJ-11) accepts it only for screens whose profile is qualified for fades and otherwise rejects it with an actionable reason instead of dropping it; at a schedule boundary that ends commercial content the player cuts.\nSaving items replaces the whole ordered list with an expected version, so reordering is one atomic change. An archived asset already in a playlist stays and keeps playing; it cannot be added again. The panel shows the playlist's total duration and its video count.\n"
   }
 ]
