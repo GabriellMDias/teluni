@@ -27,6 +27,14 @@ class LayoutManifestTest {
         val layout = requireNotNull(publication.layout)
         assertEquals(listOf("video", "menu"), layout.areas.map { it.key })
         assertEquals(listOf(AreaKind.MEDIA, AreaKind.CATALOG), layout.areas.map { it.kind })
+        // Areas come back to front, whatever their order in the manifest.
+        val swapped = parsed()
+            .at(listOf("layout", "areas", 0, "z")) { JsonPrimitive(2) }
+            .toString().encodeToByteArray()
+        assertEquals(
+            listOf("menu", "video"),
+            ManifestParser.parse(swapped, sha256Hex(swapped)).layout?.areas?.map { it.key },
+        )
         assertEquals(listOf(15, 45), layout.pages.map { it.durationSeconds })
         assertEquals(publication.media.keys.sorted(), layout.pages.map { (it.contents.getValue("video") as PageContent.Media).mediaId })
 
@@ -80,13 +88,15 @@ class LayoutManifestTest {
         assertFailure(invalid) { put("layout", key = "extra", value = JsonPrimitive(1)) }
         assertFailure(invalid) { set("layout", "areas", 1, "width", value = JsonPrimitive(700)) }
         assertFailure(invalid) { set("layout", "areas", 1, "z", value = JsonPrimitive(0)) }
-        assertFailure(invalid) {
-            parseEdited("layout") { layout ->
-                layout
-                    .at(listOf("areas", 0, "muted")) { JsonPrimitive(false) }
-                    .at(listOf("areas", 1, "muted")) { JsonPrimitive(false) }
-            }
+        fun unmuted(volume: Int) = parseEdited("layout") { layout ->
+            layout
+                .at(listOf("areas", 0, "muted")) { JsonPrimitive(false) }
+                .at(listOf("areas", 1, "muted")) { JsonPrimitive(false) }
+                .at(listOf("areas", 1, "volume")) { JsonPrimitive(volume) }
         }
+        assertFailure(invalid) { unmuted(volume = 40) }
+        // An unmuted area at volume 0 is silent, so nothing mixes.
+        unmuted(volume = 0)
         // Pages must name what each page-controlled area shows, from the manifest.
         assertFailure(invalid) { set("layout", "pages", 0, "contents", value = JsonArray(emptyList())) }
         assertFailure(invalid) { set("layout", "pages", 0, "contents", 0, "mediaId", value = JsonPrimitive("missing")) }

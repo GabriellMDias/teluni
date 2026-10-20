@@ -241,7 +241,7 @@ internal object LayoutManifestChecks {
         val catalogs = ManifestParser.unique(manifest.catalogs) { it.id }.mapValues { (_, catalog) -> catalog(catalog, media) }
         val layout = layout(manifest.layout, catalogs, media)
 
-        if (manifest.outputs.map { it.key } != layout.areas.map { it.key }) {
+        if (manifest.outputs.map { it.key } != manifest.layout.areas.map { it.key }) {
             throw invalid("Every area needs exactly one output, in area order")
         }
         val areas = layout.areas.associateBy { it.key }
@@ -277,7 +277,10 @@ internal object LayoutManifestChecks {
         val areas = layout.areas.map { area(it, width, height, catalogs, layout.pages.isNotEmpty()) }
         ManifestParser.unique(areas) { it.key }
         if (areas.map { it.z }.toSet().size != areas.size) throw invalid("Stacking orders must be unique")
-        if (areas.count { !it.muted } > 1 && !layout.audioMixConfirmed) throw invalid("Mixed audio needs confirmation")
+        // Audible as the API counts it: unmuted with some volume.
+        if (areas.count { !it.muted && it.volume > 0 } > 1 && !layout.audioMixConfirmed) {
+            throw invalid("Mixed audio needs confirmation")
+        }
 
         val byKey = areas.associateBy { it.key }
         val controlled = areas.filter { it.pageControlled }.map { it.key }.toSet()
@@ -290,7 +293,7 @@ internal object LayoutManifestChecks {
             if (contents.keys != controlled) throw invalid("Every page names what each page-controlled area shows")
             Page(page.durationSeconds, contents)
         }
-        return Layout(layout.orientation, width, height, layout.audioMixConfirmed, areas, pages, catalogs)
+        return Layout(layout.orientation, width, height, layout.audioMixConfirmed, areas.sortedBy { it.z }, pages, catalogs)
     }
 
     private fun area(

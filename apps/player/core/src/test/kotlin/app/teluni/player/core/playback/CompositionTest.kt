@@ -116,6 +116,7 @@ class CompositionTest {
         // 09:00:20 on a Tuesday: the second page (45 s) shows the video.
         val plan = planAt("2026-10-20T09:00:20")
         assertEquals(listOf("video", "menu"), plan.areas.map { it.area.key })
+        assertEquals(listOf(0, 1), plan.areas.map { it.area.z })
         val still = assertIs<AreaPlan.Still>(plan.area("video"))
         assertEquals("61d350b8-be0a-409b-9fb9-c27e8f900112", still.media.id)
         val menu = assertIs<AreaPlan.Catalog>(plan.area("menu"))
