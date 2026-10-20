@@ -1,4 +1,10 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useDeferredValue,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure, type ApiIssue } from "../api-client.js";
@@ -1166,44 +1172,103 @@ function fromDraftValue(field: Field, draft: Draft, locale: Locale): Value {
 const editable = (catalog: Catalog) =>
   catalog.fields.filter((field) => !field.archived && field.type !== "money");
 
+/** A search box that narrows a picker's choices on the server. */
+function PickerSearch({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <input
+      type="search"
+      aria-label={label}
+      maxLength={120}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      onKeyDown={(event) => {
+        // Searching never submits the surrounding form.
+        if (event.key === "Enter") event.preventDefault();
+      }}
+    />
+  );
+}
+
+/** Up to 100 items of a catalog, narrowed by text, for item pickers. */
+function useRecordChoices(companyId: string, catalogId: string, text: string) {
+  const query = useDeferredValue(text.trim());
+  return useQuery({
+    queryKey: [...recordsKey(companyId, catalogId), "choices", query],
+    queryFn: () =>
+      listRecords(companyId, catalogId, {
+        limit: 100,
+        ...(query ? { text: query } : {}),
+      }),
+    enabled: Boolean(catalogId),
+  });
+}
+
 function MediaChoice({
   companyId,
+  scope,
   field,
   record,
   value,
   onChange,
 }: {
   companyId: string;
+  /** The catalog's branch; null for a company catalog. */
+  scope: string | null;
   field: Field;
   record: CatalogRecord | null;
   value: string;
   onChange: (value: string) => void;
 }) {
   const { t } = useCatalogMessages();
+  const [text, setText] = useState("");
+  const query = useDeferredValue(text.trim());
   const images = useQuery({
-    queryKey: ["catalogs", "images", companyId],
-    queryFn: () => listSelectableImages(companyId, undefined),
+    queryKey: ["catalogs", "images", companyId, scope, query],
+    queryFn: () =>
+      listSelectableImages(
+        companyId,
+        query || undefined,
+        scope === null ? "company" : undefined,
+      ),
   });
   const current = record?.media.find((entry) => entry.fieldId === field.id);
-  const items = images.data?.items ?? [];
+  // Only company images and images of the catalog's own branch fit it.
+  const items = (images.data?.items ?? []).filter(
+    (item) => item.branch === null || item.branch.id === scope,
+  );
   return (
-    <select
-      id={`value-${field.id}`}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    >
-      <option value="">{t.chooseMedia}</option>
-      {current && !items.some((item) => item.id === current.mediaAssetId) && (
-        <option value={current.mediaAssetId}>
-          {t.currentValue(current.name ?? current.mediaAssetId)}
-        </option>
-      )}
-      {items.map((item) => (
-        <option key={item.id} value={item.id}>
-          {item.name}
-        </option>
-      ))}
-    </select>
+    <span className="catalog-picker">
+      <PickerSearch
+        label={`${t.searchImages}: ${field.label}`}
+        value={text}
+        onChange={setText}
+      />
+      <select
+        id={`value-${field.id}`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">{t.chooseMedia}</option>
+        {current && !items.some((item) => item.id === current.mediaAssetId) && (
+          <option value={current.mediaAssetId}>
+            {t.currentValue(current.name ?? current.mediaAssetId)}
+          </option>
+        )}
+        {items.map((item) => (
+          <option key={item.id} value={item.id}>
+            {item.name}
+          </option>
+        ))}
+      </select>
+    </span>
   );
 }
 
@@ -1221,45 +1286,54 @@ function ReferenceChoice({
   onChange: (value: string) => void;
 }) {
   const { t } = useCatalogMessages();
-  const target = field.targetCatalogId ?? "";
-  const records = useQuery({
-    queryKey: [...recordsKey(companyId, target), "choices"],
-    queryFn: () => listRecords(companyId, target, { limit: 100 }),
-    enabled: Boolean(target),
-  });
+  const [text, setText] = useState("");
+  const records = useRecordChoices(
+    companyId,
+    field.targetCatalogId ?? "",
+    text,
+  );
   const current = record?.references.find(
     (entry) => entry.fieldId === field.id,
   );
   const items = records.data?.items ?? [];
   return (
-    <select
-      id={`value-${field.id}`}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    >
-      <option value="">{t.chooseRecord}</option>
-      {current && !items.some((item) => item.id === current.recordId) && (
-        <option value={current.recordId}>
-          {t.currentValue(current.title ?? t.untitled)}
-        </option>
-      )}
-      {items.map((item) => (
-        <option key={item.id} value={item.id}>
-          {item.title ?? t.untitled}
-        </option>
-      ))}
-    </select>
+    <span className="catalog-picker">
+      <PickerSearch
+        label={`${t.searchRecords}: ${field.label}`}
+        value={text}
+        onChange={setText}
+      />
+      <select
+        id={`value-${field.id}`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        <option value="">{t.chooseRecord}</option>
+        {current && !items.some((item) => item.id === current.recordId) && (
+          <option value={current.recordId}>
+            {t.currentValue(current.title ?? t.untitled)}
+          </option>
+        )}
+        {items.map((item) => (
+          <option key={item.id} value={item.id}>
+            {item.title ?? t.untitled}
+          </option>
+        ))}
+      </select>
+    </span>
   );
 }
 
 function ValueInput({
   companyId,
+  scope,
   field,
   record,
   value,
   onChange,
 }: {
   companyId: string;
+  scope: string | null;
   field: Field;
   record: CatalogRecord | null;
   value: Draft;
@@ -1352,6 +1426,7 @@ function ValueInput({
       return (
         <MediaChoice
           companyId={companyId}
+          scope={scope}
           field={field}
           record={record}
           value={text}
@@ -1448,6 +1523,7 @@ export function ValuesForm({
           </label>
           <ValueInput
             companyId={companyId}
+            scope={catalog.branch?.id ?? null}
             field={field}
             record={record}
             value={drafts[field.id] ?? ""}
@@ -2284,10 +2360,8 @@ function MoveForm({
 }) {
   const { t } = useCatalogMessages();
   const [after, setAfter] = useState("");
-  const records = useQuery({
-    queryKey: [...recordsKey(companyId, record.catalogId), "choices"],
-    queryFn: () => listRecords(companyId, record.catalogId, { limit: 100 }),
-  });
+  const [text, setText] = useState("");
+  const records = useRecordChoices(companyId, record.catalogId, text);
   const move = useMutation({
     mutationFn: (target: string | null) =>
       moveRecord(companyId, record, target),
@@ -2311,6 +2385,11 @@ function MoveForm({
         {t.moveTop}
       </button>
       <label htmlFor="catalog-move-after">{t.moveAfter}</label>
+      <PickerSearch
+        label={`${t.searchRecords}: ${t.moveAfter}`}
+        value={text}
+        onChange={setText}
+      />
       <select
         id="catalog-move-after"
         value={after}

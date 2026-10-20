@@ -416,10 +416,14 @@ export async function getEffectivePrices(
   );
 }
 
-/** Ready images the catalog may name, for media fields. */
+/**
+ * Ready images for media fields, optionally only the company's (`scope`
+ * "company"), as a company catalog may name no branch image.
+ */
 export async function listSelectableImages(
   companyId: string,
   text: string | undefined,
+  scope?: "company",
 ) {
   return unwrap(
     await client().GET("/companies/{companyId}/media", {
@@ -430,6 +434,7 @@ export async function listSelectableImages(
           view: "selectable",
           kind: "IMAGE",
           ...(text ? { text } : {}),
+          ...(scope ? { scope } : {}),
         },
       },
     }),

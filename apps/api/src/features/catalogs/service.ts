@@ -541,7 +541,8 @@ export class CatalogService {
     const cursor = decodeCursor(
       query.cursor,
       { company: companyId, principal: context.principalId, scope },
-      (raw) => /^\d{1,10}$/.test(raw),
+      // Positions are PostgreSQL integers; a larger forged one is invalid.
+      (raw) => /^\d{1,10}$/.test(raw) && Number(raw) <= 2_147_483_647,
     );
     const textFields = fields
       .filter(

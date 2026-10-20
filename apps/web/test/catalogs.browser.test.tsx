@@ -344,6 +344,95 @@ test("shows item value problems beside their fields", async () => {
   });
 });
 
+test("offers only images that fit the catalog and searches items to refer to", async () => {
+  const photoField = "00000000-0000-4000-8000-0000000000f4";
+  const linkField = "00000000-0000-4000-8000-0000000000f5";
+  const targetId = "00000000-0000-4000-8000-0000000000c2";
+  const companyImage = "00000000-0000-4000-8000-0000000000b1";
+  const branchImage = "00000000-0000-4000-8000-0000000000b2";
+  const withLinks = catalog({
+    fields: [
+      ...catalog().fields,
+      {
+        id: photoField,
+        label: "Foto",
+        type: "media",
+        required: false,
+        archived: false,
+      },
+      {
+        id: linkField,
+        label: "Bebida",
+        type: "reference",
+        required: false,
+        archived: false,
+        targetCatalogId: targetId,
+      },
+    ],
+  });
+  respond(manager, (url) => {
+    if (url.pathname.endsWith("/media"))
+      return {
+        body: {
+          items: [
+            { id: companyImage, name: "Logo", branch: null },
+            {
+              id: branchImage,
+              name: "Fachada",
+              branch: { id: branchA, name: "Centro" },
+            },
+          ],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith(`/catalogs/${targetId}/records`))
+      return {
+        body: {
+          items: [
+            record({
+              id: "00000000-0000-4000-8000-0000000000d9",
+              catalogId: targetId,
+              title: url.searchParams.get("text") ? "Suco de uva" : "Água",
+            }),
+          ],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith(`/catalogs/${catalogId}/records`))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith(`/catalogs/${catalogId}`))
+      return { body: withLinks };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/${catalogId}`);
+  const photo = screen.getByLabelText("Foto", { exact: true });
+  await expect
+    .element(photo.getByRole("option", { name: "Logo" }))
+    .toBeInTheDocument();
+  await expect
+    .element(photo.getByRole("option", { name: "Fachada" }))
+    .not.toBeInTheDocument();
+  const mediaRequest = vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => input)
+    .find(
+      (input): input is Request =>
+        input instanceof Request &&
+        new URL(input.url).pathname.endsWith("/media"),
+    );
+  expect(new URL(mediaRequest!.url).searchParams.get("scope")).toBe("company");
+  const drink = screen.getByLabelText("Bebida", { exact: true });
+  await expect
+    .element(drink.getByRole("option", { name: "Água" }))
+    .toBeInTheDocument();
+  await screen
+    .getByRole("searchbox", { name: `${t.searchRecords}: Bebida` })
+    .fill("uva");
+  await expect
+    .element(drink.getByRole("option", { name: "Suco de uva" }))
+    .toBeInTheDocument();
+});
+
 test("saves prices in the person's locale and previews the price in effect", async () => {
   let current = record();
   respond(manager, (url, request) => {

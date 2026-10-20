@@ -708,6 +708,27 @@ describe("catalogs: schemas, items, prices and promotions", () => {
       "Chá",
       "Café",
     ]);
+    // A cursor whose position was forged past the integer range is refused.
+    const paged = await call(
+      "aAdmin",
+      "GET",
+      `${base}/${products.id}/records?limit=1`,
+    );
+    const cursor = JSON.parse(
+      Buffer.from(paged.body.nextCursor as string, "base64url").toString(),
+    ) as Record<string, string>;
+    const forged = Buffer.from(
+      JSON.stringify({ ...cursor, k: "9999999999" }),
+    ).toString("base64url");
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "GET",
+          `${base}/${products.id}/records?limit=1&cursor=${forged}`,
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
     const searched = await call(
       "aAdmin",
       "GET",
