@@ -7,13 +7,16 @@ import {
   ScreenProgrammingPage,
   type ProgrammingFilter,
 } from "./pages.js";
+import { LayoutPage } from "./layouts.js";
 import "./programming.css";
 
 const overviewRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/programming",
   validateSearch: (search: Record<string, unknown>): ProgrammingFilter => ({
-    ...(search.view === "groups" ? { view: search.view } : {}),
+    ...(search.view === "groups" || search.view === "layouts"
+      ? { view: search.view }
+      : {}),
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
     search.cursor.length <= 1024
@@ -44,6 +47,21 @@ const playlistRoute = createRoute({
         key={`${companyId}/${playlistId}`}
         companyId={companyId}
         playlistId={playlistId}
+      />
+    );
+  },
+});
+
+const layoutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/companies/$companyId/programming/layouts/$layoutId",
+  component: function LayoutRoute() {
+    const { companyId, layoutId } = layoutRoute.useParams();
+    return (
+      <LayoutPage
+        key={`${companyId}/${layoutId}`}
+        companyId={companyId}
+        layoutId={layoutId}
       />
     );
   },
@@ -82,6 +100,7 @@ const screenRoute = createRoute({
 export const programmingRoutes = [
   overviewRoute,
   playlistRoute,
+  layoutRoute,
   groupRoute,
   screenRoute,
 ] as const;

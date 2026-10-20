@@ -835,6 +835,105 @@ describe("layouts: areas, catalog views, pages and their guards", () => {
     expect(await audit(imported.body.id)).toEqual(["layout.imported"]);
   });
 
+  it("pages name an agenda's weekday or a selection choice as the group", async () => {
+    const classes = await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/catalogs`,
+      {
+        body: {
+          name: "Aulas",
+          branchId: null,
+          fields: [
+            { label: "Aula", type: "text", required: true },
+            { label: "Dias", type: "weekdays" },
+            {
+              label: "Sala",
+              type: "selection",
+              choices: [{ label: "Sala 1" }, { label: "Sala 2" }],
+            },
+          ],
+        },
+      },
+    );
+    expect(classes.status, JSON.stringify(classes.body)).toBe(201);
+    const [name, days, room] = (
+      classes.body as Body & {
+        fields: (Field & { choices: { id: string }[] })[];
+      }
+    ).fields;
+    const grouped = (
+      presentation: string,
+      group: Field,
+      choices: string[],
+    ) => ({
+      orientation: "landscape",
+      areas: [
+        menuArea(classes.body.id, {
+          pageControlled: true,
+          view: {
+            catalogId: classes.body.id,
+            fields: [
+              { fieldId: name.id, role: "title" },
+              { fieldId: group.id, role: "group" },
+            ],
+            presentation,
+            textSize: 40,
+          },
+        }),
+      ],
+      pages: choices.map((groupChoiceId) => ({
+        durationSeconds: 10,
+        contents: [{ areaKey: "menu", groupChoiceId }],
+      })),
+    });
+    expect(
+      issues(
+        await call("aAdmin", "POST", base, {
+          body: {
+            name: "Agenda",
+            branchId: null,
+            definition: grouped("agenda", days, ["1", "8"]),
+          },
+        }),
+      ),
+    ).toEqual(["/pages/1/contents/0/groupChoiceId GROUP_UNKNOWN"]);
+    const agenda = await call("aAdmin", "POST", base, {
+      body: {
+        name: "Agenda",
+        branchId: null,
+        definition: grouped("agenda", days, ["1", "7"]),
+      },
+    });
+    expect(agenda.status, JSON.stringify(agenda.body)).toBe(201);
+    const rooms = await call("aAdmin", "POST", base, {
+      body: {
+        name: "Salas",
+        branchId: null,
+        definition: grouped(
+          "list",
+          room,
+          room.choices.map((choice) => choice.id),
+        ),
+      },
+    });
+    expect(rooms.status, JSON.stringify(rooms.body)).toBe(201);
+    expect(
+      issues(
+        await call("aAdmin", "POST", base, {
+          body: {
+            name: "Salas",
+            branchId: null,
+            definition: grouped("list", room, ["1", "2"]),
+          },
+        }),
+      ),
+    ).toEqual([
+      "/pages/0/contents/0/groupChoiceId GROUP_UNKNOWN",
+      "/pages/1/contents/0/groupChoiceId GROUP_UNKNOWN",
+    ]);
+  });
+
   it("holds the layout limit under concurrent creation", async () => {
     const companyC = await createCompany("bAdmin", "Limite C");
     for (let index = 0; index < 499; index++)

@@ -225,6 +225,11 @@ export class LayoutService {
       requireCapability(locked.access, "programming.edit", scope);
       if (input.branchId && !locked.activeBranchIds.has(input.branchId))
         throw new ProgrammingFailure("VALIDATION_FAILED");
+      if (
+        (await this.#repository.countLayouts(tx, companyId)) >=
+        programmingPolicy.maxLayoutsPerCompany
+      )
+        throw new ProgrammingFailure("PROGRAMMING_LIMIT_REACHED");
       await this.#checkReferences(
         tx,
         locked.access,
@@ -233,11 +238,6 @@ export class LayoutService {
         null,
         input.prefix ?? "",
       );
-      if (
-        (await this.#repository.countLayouts(tx, companyId)) >=
-        programmingPolicy.maxLayoutsPerCompany
-      )
-        throw new ProgrammingFailure("PROGRAMMING_LIMIT_REACHED");
       const item = await this.#repository.createLayout(tx, {
         companyId,
         branchId: input.branchId,
@@ -592,9 +592,14 @@ export class LayoutService {
         else if (!roleAccepts(bound.role, view.presentation, field.type))
           issues.push({ path: `${at}/role`, reason: "ROLE_TYPE_MISMATCH" });
         else if (bound.role === "group")
+          // An agenda's groups are ISO weekdays, named "1" to "7".
           groupChoices.set(
             area.key,
-            new Set(field.choices.map((choice) => choice.id)),
+            new Set(
+              field.type === "weekdays"
+                ? weekdayNames.map((_, day) => String(day + 1))
+                : field.choices.map((choice) => choice.id),
+            ),
           );
       });
     });

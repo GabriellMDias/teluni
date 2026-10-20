@@ -1,0 +1,92 @@
+{
+  "kind": "database",
+  "name": "layout_view_fields",
+  "description": "One catalog field a view binds, in order, with its role: title, subtitle, price, image, detail or group.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced with the whole definition on every save; deleted with its area.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the layout (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "area_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog area whose view binds the field.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "position",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Zero-based order in the view, 0 to 7.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "field_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Bound catalog field; it cannot be deleted or archived while bound.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "role",
+      "PostgreSQL type": "character varying(8)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "How the view shows the field: title, subtitle, price, image, detail or group.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "layout_view_fields_company_id_area_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, area_id) REFERENCES layout_areas(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The area belongs to the same company; bindings are deleted with it."
+    },
+    {
+      "Object": "layout_view_fields_company_id_field_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The field belongs to the same company and cannot be deleted while bound."
+    },
+    {
+      "Object": "layout_view_fields_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, area_id, \"position\")",
+      "Purpose": "One field per view position."
+    },
+    {
+      "Object": "layout_view_fields_position_range",
+      "Physical definition": "CHECK (((\"position\" >= 0) AND (\"position\" <= 7)))",
+      "Purpose": "A view binds at most eight fields."
+    },
+    {
+      "Object": "layout_view_fields_role",
+      "Physical definition": "CHECK (((role)::text = ANY ((ARRAY['title'::character varying, 'subtitle'::character varying, 'price'::character varying, 'image'::character varying, 'detail'::character varying, 'group'::character varying])::text[])))",
+      "Purpose": "Roles come from a closed set."
+    },
+    {
+      "Object": "layout_view_fields_field_idx",
+      "Physical definition": "CREATE INDEX layout_view_fields_field_idx ON public.layout_view_fields USING btree (company_id, field_id)",
+      "Purpose": "Finds the layouts that bind a field."
+    }
+  ]
+}

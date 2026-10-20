@@ -158,7 +158,7 @@ Every price change (base, override or promotion) is a **price save** under the a
 - A layout with pages has explicit page durations (1–600 seconds).
 - When the page-controlled media areas use a playlist, the check suggests a duration that covers its longest video, and rejects a duration shorter than any video those areas play on that page.
 - A page-controlled media area names, for each page, one media item from the layout's scope. A shorter video holds its last frame.
-- A page-controlled catalog area names the view page or the group to show.
+- A page-controlled catalog area names the view page or the group to show: a `selection` choice, or an agenda's ISO weekday (`"1"` for Monday to `"7"`).
 - Independent areas ignore pages.
 - A regional schedule on a page-controlled area overrides that area only while it lasts; the area then returns to the current page.
 
@@ -249,7 +249,7 @@ Layout and program-layout changes use the programming audit with their own event
 | `catalog_promotions` | Record, field, branch (null for the whole scope), amount, local start and end, creator |
 | `catalog_record_media`, `catalog_record_references` | The media and records that record values name, mirrored in the same transaction so media deletion and record deletion can be guarded |
 | `catalog_audit_events` | Append-only audit with the branches each event concerns |
-| `layouts`, `layout_areas`, `layout_pages` (increment 2) | Layout drafts as validated rows plus the exported JSON schema version |
+| `layouts`, `layout_areas`, `layout_view_fields`, `layout_pages`, `layout_page_contents` (increment 2) | Layout drafts as validated rows: areas with their catalog view, the view's bound fields, pages, and what each page-controlled area shows |
 | `price_publication_intents` (increment 4) | Program, catalog, price sequence, author, state, attempts, lease |
 
 Every table carries `company_id` with composite tenant references to `(company_id, id)` ([tenant data design](tenant-data-design.md)). Price and link rows also carry their record's catalog; the module keeps it and their field's catalog equal to the record's, because a tenant reference never targets a wider key. Record values are `CONFIDENTIAL` business data, and catalogs keep no personal data fields by design. A field labeled with personal meaning is still only text, and the panel warns against it.
@@ -296,7 +296,7 @@ A **Catálogos** area per company (en-US "Catalogs"), shown with `catalogs.view`
 
   Amounts are typed and shown in the field's currency with the person's locale. Copy is in `pt-BR` and `en-US`.
 
-Increment 2 adds the **Layouts** editor under Programação: a canvas preview with drag and resize, plus numeric inputs for keyboard users; the area list; the view editor with live pagination preview and overflow errors; pages; and JSON import and export.
+Increment 2 adds the **Layouts** editor under Programação: a canvas preview with drag and resize, plus numeric inputs and arrow keys for keyboard users; the area list; the view editor; the fit report with overflow by record; pages; and JSON import and export.
 
 ## Verification
 
@@ -344,7 +344,25 @@ Implementation decisions, taken under the owner's delegation:
 - Record values and nullable amounts use JSON Schemas with several types, and the API's validator allows them, because request coercion inside `anyOf` would turn `null` into `0` and a boolean into text.
 - Field removal is allowed while nothing holds a value for it; otherwise archiving is the only way.
 
-Increments 2 to 5 are not implemented.
+**Increment 2, part A (layouts, PJ-20) is implemented, 2026-10-20:**
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| Reviewed migration, runtime grants and metadata for the five layout tables, with `layout` as a programming audit subject | [migration](../../apps/api/prisma/migrations/20261020010000_layouts/migration.sql), [grants](../../apps/api/prisma/runtime-grants/programming.sql), [metadata](../../apps/api/prisma/metadata/programming.json) | The tenant structure test and the generated [database reference](../generated/database/schema.md) |
+| Layout rules: canvas geometry, stacking, audio, catalog views by role, pages and what they show, the conservative text measure, fit and overflow, and the `teluni.layout` schema 1 document | [`layouts.ts`](../../apps/api/src/features/programming/layouts.ts) | [Layout domain tests](../../apps/api/test/programming/layouts.test.ts) |
+| Layouts in the programming API module: list, create, import, get, save, delete and export, with catalog, field and media checks in the layout's scope, the seconds that cover each page's videos, the fit report and audit; the catalogs module's port with usage guards (`CATALOG_IN_USE`, `FIELD_BOUND`) and the `layout-draft` media guard | [`layouts-service.ts`](../../apps/api/src/features/programming/layouts-service.ts), [catalogs port](../../apps/api/src/features/catalogs/public.ts) | A [two-company integration suite](../../apps/api/test/programming/layouts-integration.test.ts) against PostgreSQL as the runtime role: scope and role denials, the fit report and its titles, catalog, field and media guards, video durations, group choices, versions, export and import with remapping issues, audit rows and the layout limit under concurrency |
+| The panel's Layouts section under Programação: list, creation, import, the canvas editor with drag, resize and arrow keys, area settings, the catalog view editor, pages, the audio confirmation, issues named by area and page, the fit report and export | [`layouts.tsx`](../../apps/web/src/programming/layouts.tsx) | [Browser component tests](../../apps/web/test/layouts.browser.test.tsx) and the [end-to-end journey](../../apps/web/test/e2e/catalogs/journey.spec.ts) |
+
+Implementation decisions, taken under the owner's delegation:
+
+- Layouts live in the programming module: they use `programming.edit`, its audit and its company limit lock, and programs will choose them. Programming reads catalogs only through the catalogs module's port, which also lets it guard catalogs and fields that layouts bind.
+- Clients give area keys (`^[a-z][a-z0-9-]{0,15}$`), and saves keep them, because program outputs will be keyed by them. A save replaces the whole definition with the observed version.
+- The text measure is a conservative table of advance widths per character class, in ems. The screen renderer must use a font whose glyphs are never wider, which AT-04 qualifies ([PH-08](human-actions.md#ph-08)). Titles wrap to two lines, subtitles and details to three, and a price stays on one line in a column at most half the row wide.
+- The API computes the fit report on the stored layout and its current records, with record titles only for members who may view the catalog. The panel shows it after each save rather than a live preview, so the measure has one implementation. Because records change after a layout is saved, a save reports overflow and publication (increment 3) refuses it.
+- An import never keeps a catalog, field or media item the importer cannot use; it reports each one as an issue to replace.
+- The panel keeps the orientation chosen at creation or import.
+
+Increment 2, part B (programs with layouts and per-area outputs) and increments 3 to 5 are not implemented.
 
 ## Decisions
 

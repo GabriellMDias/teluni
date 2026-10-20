@@ -520,3 +520,126 @@ export async function restorePublication(
     publicationErrorCodes,
   );
 }
+
+// Layouts (D-11 increment 2): areas on a canvas, catalog views and pages.
+
+export const layoutErrorCodes: ReadonlySet<string> = new Set([
+  ...programmingErrorCodes,
+  "LAYOUT_INVALID",
+]);
+
+export type LayoutList = Json<
+  paths["/companies/{companyId}/programming/layouts"]["get"]
+>;
+export type LayoutSummary = LayoutList["items"][number];
+export type Layout = Json<
+  paths["/companies/{companyId}/programming/layouts/{layoutId}"]["get"]
+>;
+export type LayoutDocument = Json<
+  paths["/companies/{companyId}/programming/layouts/{layoutId}/export"]["get"]
+>;
+export type LayoutDefinition = NonNullable<
+  paths["/companies/{companyId}/programming/layouts"]["post"]["requestBody"]
+>["content"]["application/json"]["definition"];
+export type AreaInput = LayoutDefinition["areas"][number];
+export type ViewInput = NonNullable<AreaInput["view"]>;
+export type PageInput = NonNullable<LayoutDefinition["pages"]>[number];
+export type ImportedDocument = NonNullable<
+  paths["/companies/{companyId}/programming/layouts/import"]["post"]["requestBody"]
+>["content"]["application/json"]["document"];
+
+export const layoutsKey = (companyId: string) =>
+  ["programming", "layouts", companyId] as const;
+export const layoutKey = (companyId: string, layoutId: string) =>
+  ["programming", "layout", companyId, layoutId] as const;
+
+export async function listLayouts(
+  companyId: string,
+  filter: { cursor?: string; text?: string },
+) {
+  return unwrap(
+    await client().GET("/companies/{companyId}/programming/layouts", {
+      params: { path: { companyId }, query: { limit: 50, ...filter } },
+    }),
+    layoutErrorCodes,
+  );
+}
+
+export async function getLayout(companyId: string, layoutId: string) {
+  return unwrap(
+    await client().GET(
+      "/companies/{companyId}/programming/layouts/{layoutId}",
+      { params: { path: { companyId, layoutId } } },
+    ),
+    layoutErrorCodes,
+  );
+}
+
+export async function createLayout(
+  companyId: string,
+  input: {
+    name: string;
+    branchId: string | null;
+    definition: LayoutDefinition;
+  },
+) {
+  return unwrap(
+    await client().POST("/companies/{companyId}/programming/layouts", {
+      params: { path: { companyId } },
+      body: input,
+    }),
+    layoutErrorCodes,
+  );
+}
+
+export async function importLayout(
+  companyId: string,
+  input: { branchId: string | null; document: ImportedDocument },
+) {
+  return unwrap(
+    await client().POST("/companies/{companyId}/programming/layouts/import", {
+      params: { path: { companyId } },
+      body: input,
+    }),
+    layoutErrorCodes,
+  );
+}
+
+export async function updateLayout(
+  companyId: string,
+  layout: Layout,
+  input: { name?: string; definition?: LayoutDefinition },
+) {
+  return unwrap(
+    await client().PATCH(
+      "/companies/{companyId}/programming/layouts/{layoutId}",
+      {
+        params: { path: { companyId, layoutId: layout.id } },
+        body: { expectedVersion: layout.version, ...input },
+      },
+    ),
+    layoutErrorCodes,
+  );
+}
+
+export async function deleteLayout(companyId: string, layout: Layout) {
+  const { error, response } = await client().DELETE(
+    "/companies/{companyId}/programming/layouts/{layoutId}",
+    {
+      params: { path: { companyId, layoutId: layout.id } },
+      body: { expectedVersion: layout.version },
+    },
+  );
+  if (response.status === 204) return;
+  unwrap({ error, response }, layoutErrorCodes);
+}
+
+export async function exportLayout(companyId: string, layoutId: string) {
+  return unwrap(
+    await client().GET(
+      "/companies/{companyId}/programming/layouts/{layoutId}/export",
+      { params: { path: { companyId, layoutId } } },
+    ),
+    layoutErrorCodes,
+  );
+}

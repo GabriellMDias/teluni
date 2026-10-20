@@ -1,0 +1,107 @@
+{
+  "kind": "database",
+  "name": "layout_page_contents",
+  "description": "What one page-controlled area shows on one page: a media item, a view page or a group of the view.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced with the whole definition on every save; deleted with its page or area.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the layout (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "page_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Page the content belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "area_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Page-controlled area the content fills.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "media_asset_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Media item a media area shows on the page; it cannot be deleted while named.",
+      "Null meaning": "The area is a catalog area.",
+      "Unit": "—"
+    },
+    {
+      "Column": "view_page",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "View page, from 1, a catalog area shows on the page.",
+      "Null meaning": "The content is a media item or a group.",
+      "Unit": "—"
+    },
+    {
+      "Column": "group_choice_id",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Selection choice whose group a catalog area shows on the page.",
+      "Null meaning": "The content is a media item or a view page.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "layout_page_contents_company_id_area_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, area_id) REFERENCES layout_areas(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The area belongs to the same company; contents are deleted with it."
+    },
+    {
+      "Object": "layout_page_contents_company_id_media_asset_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The media item belongs to the same company and cannot be deleted while named."
+    },
+    {
+      "Object": "layout_page_contents_company_id_page_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, page_id) REFERENCES layout_pages(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The page belongs to the same company; contents are deleted with it."
+    },
+    {
+      "Object": "layout_page_contents_one_choice",
+      "Physical definition": "CHECK (((num_nonnulls(media_asset_id, view_page, group_choice_id) = 1) AND ((view_page IS NULL) OR ((view_page >= 1) AND (view_page <= 1000)))))",
+      "Purpose": "Each content names exactly one media item, view page or group, with view pages from 1."
+    },
+    {
+      "Object": "layout_page_contents_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, page_id, area_id)",
+      "Purpose": "One content per page and area."
+    },
+    {
+      "Object": "layout_page_contents_area_idx",
+      "Physical definition": "CREATE INDEX layout_page_contents_area_idx ON public.layout_page_contents USING btree (company_id, area_id)",
+      "Purpose": "Finds an area's page contents."
+    },
+    {
+      "Object": "layout_page_contents_media_idx",
+      "Physical definition": "CREATE INDEX layout_page_contents_media_idx ON public.layout_page_contents USING btree (company_id, media_asset_id)",
+      "Purpose": "Answers the media reference guard."
+    }
+  ]
+}
