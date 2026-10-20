@@ -4,6 +4,33 @@
     "title": "Database Reference",
     "group": "Generated references",
     "kind": "repository",
+    "heading": "oidc_login_attempts",
+    "anchor": "oidc_login_attempts",
+    "text": "oidc_login_attempts\nSingle-use binding between a browser login-attempt cookie and the OIDC state, nonce and PKCE verifier of one authorization request.\nOwner: Identity. Classification: RESTRICTED.\nLifecycle: Created when a login starts, consumed once by the callback and expired after 10 minutes; expired rows are retained until a cleanup rule is approved.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated attempt UUID that binds the sealed secrets.\n—\n—\n`handle_hash`\n`bytea`\nno\n—\nRESTRICTED\nSHA-256 of the random login-attempt cookie value.\n—\n—\n`state`\n`character varying(128)`\nno\n—\nINTERNAL\nOIDC state value expected back at the callback.\n—\n—\n`secrets`\n`bytea`\nno\n—\nRESTRICTED\nPKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID.\n—\n—\n`return_to`\n`character varying(2048)`\nno\n—\nINTERNAL\nValidated same-origin relative path to open after a successful login.\n—\n—\n`requested_assurance`\n`character varying(64)`\nyes\n—\nINTERNAL\nAuthentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.\nA standard login without a requested level.\n—\n`max_age_seconds`\n`integer`\nyes\n—\nINTERNAL\nMaximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.\nNo maximum age was requested.\nseconds\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the login started.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the callback can no longer consume the attempt.\n—\nUTC instant, millisecond precision\n`consumed_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant the callback consumed the attempt; a second use is rejected.\nThe attempt has not been used.\nUTC instant, millisecond precision\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes-6",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`oidc_login_attempts_expiry_bounds`\n`CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))`\nAn attempt expires after creation and within 10 minutes.\n`oidc_login_attempts_handle_sha256`\n`CHECK ((octet_length(handle_hash) = 32))`\nHandle hash is exactly one SHA-256 digest.\n`oidc_login_attempts_max_age_bounds`\n`CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))`\nRequested maximum authentication age cannot be negative.\n`oidc_login_attempts_pkey`\n`PRIMARY KEY (id)`\nUnique attempt identity.\n`oidc_login_attempts_return_relative`\n`CHECK (((return_to)::text ~ '^/'::text))`\nReturn path is relative to the panel origin.\n`oidc_login_attempts_state_nonblank`\n`CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))`\nState uses the base64url alphabet and cannot be blank.\n`oidc_login_attempts_handle_hash_key`\n`CREATE UNIQUE INDEX oidc_login_attempts_handle_hash_key ON public.oidc_login_attempts USING btree (handle_hash)`\nOne attempt per browser handle; supports consumption by handle.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "backchannel_logout_replays",
+    "anchor": "backchannel_logout_replays",
+    "text": "backchannel_logout_replays\nIdentifiers of accepted provider logout tokens, kept to reject a replayed token.\nOwner: Identity. Classification: INTERNAL.\nLifecycle: Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti`\n`character varying(255)`\nno\n—\nINTERNAL\nUnique identifier (jti) of an accepted logout token.\n—\n—\n`received_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the token was accepted.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the token would fail the five-minute age check, so its record is no longer needed.\n—\nUTC instant, millisecond precision\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-7",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
@@ -619,23 +646,5 @@
     "heading": "Prerequisites",
     "anchor": "prerequisites",
     "text": "Prerequisites\nGit with `user.name` and `user.email` configured, Node.js 24.13.0, and pnpm 11.25.0.\nA running Testcontainers-compatible container runtime: initialization regenerates the database reference from a migrated PostgreSQL.\nPlaywright Chromium for the browser tests in `pnpm validate` ([setup](setup.md#prepare-a-clean-checkout)).\nA fresh, full clone of Orion that contains no other work. Shallow clones cannot preserve Orion's ancestry.\nPermission to create the product repository before publishing. Initialization never contacts the product repository: it creates no repositories and pushes nothing.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Start a new project",
-    "anchor": "start-a-new-project",
-    "text": "Start a new project\nClone Orion and install its dependencies. To start from an older published Orion revision, run `git reset --hard <commit>` on `main` before initializing.\ngit clone https://github.com/GabriellMDias/Orion.git acme-ledger\ncd acme-ledger\npnpm install --frozen-lockfile\n\nRun a dry run. It checks every precondition and lists the actions without changing anything.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git\n\nInitialize. Add `--package-scope @acme` to choose a scope other than the default.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git --apply\n\nVerify the result. `pnpm orion:status` shows the identity, package scope, and recorded Orion commits; the last commit is `Initialize Acme Ledger from Orion <commit>` on top of Orion's history.\npnpm orion:status\ngit log --oneline -2\npnpm validate\n\nCreate an empty repository at the URL you supplied, without a generated README, license, or ignore file (project human action PH-01), and publish:\ngit push -u origin main\n\nInitialization refuses, without changing anything, when:\nthe checkout is not the repository root, is shallow, or has uncommitted or untracked changes (ignored files such as `node_modules/` and `.env.local` are allowed);\nthe manifest already describes a project, `docs/project/` exists, or an `orion-upstream` remote exists;\n`main` is not checked out, any configured `origin` URL does not identify the canonical Orion repository, or `HEAD` has commits that are not on `origin/main`;\nthe project name is invalid, the package scope is not a valid npm scope or equals the foundation scope, the repository URL embeds credentials, uses a non-default SSH port (see [repository identities](#remote-rules)), or identifies the Orion repository;\nthe derivation contract is invalid or a template is missing;\nthe migration release registry records durable releases, which would describe another deployment;\nGit has no committer identity.\nWith `--apply`, it:\nwrites the project manifest;\nremoves every foundation-only path;\nrenders the project-owned files with the project name, repository, package scope, date, and Orion baseline;\nrenames the workspace package scope in package manifests, `pnpm-lock.yaml`, and source, and names the root package after the scope (authored Markdown and ADRs are not rewritten);\nregenerates workspace links, the Prisma client, API and database references, SDK types, and portal data;\ncommits `Initialize <name> from Orion <commit>` on top of Orion's history, renames `origin` to the protected `orion-upstream`, and adds the project repository as `origin`.\nIt never creates remote repositories or pushes. If a step before the commit fails, it restores the clean checkout; run `pnpm install --frozen-lockfile` before retrying.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "What carries over, what is removed, and what is adapted",
-    "anchor": "what-carries-over-what-is-removed-and-what-is-adapted",
-    "text": "What carries over, what is removed, and what is adapted\nOutcome\nContent\nPreserved from the foundation\nArchitecture, principles, policies, accepted ADRs, setup and validation guides, runbook guidance, and this guide; the validation gate, agent instructions, CI workflow, and Renovate configuration; the API runtime (configuration, telemetry, health, error registry, module contract, PostgreSQL client, optional JWT verification); the web shell and Living Documentation Portal; the SDK package; the derivation tooling and contract; Orion's full Git history\nRemoved as foundation-only\nOrion's Approval Request reference implementation: its API feature, Prisma models, migration, metadata, runtime grants, smoke, tests, web module, browser tests and journeys, and domain documentation. Orion's own implementation plan, human actions, and acceptance and release history\nAdapted or created for the project\nThe manifest (`kind: project`, name, package scope, provenance); `README.md`; the API and web composition files, which compose no modules; a neutral brand mark and touch icon; the project's plan and human actions in `docs/project/`; workspace package names, the lockfile, and imports; generated OpenAPI, SDK types, configuration, error, and database references, and portal data; the remotes `origin` and `orion-upstream`\nKept as the foundation's technical namespace\n`ORION_*` configuration names, `orion_*` token claims and database role names, the `Orion required gate` check name, the `.orion/` directory, the `orion:*` commands, and the `orion-upstream` remote. Renaming them would touch shared files throughout the repository and conflict on every upgrade; the check name is also referenced by branch protection. Accepted ADRs keep their original wording\nThe [content ownership](#content-ownership) contract defines these categories precisely and how each behaves during upgrades.\n"
   }
 ]

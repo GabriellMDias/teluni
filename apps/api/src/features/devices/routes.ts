@@ -1,5 +1,9 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
+import {
+  deviceAddressCeiling,
+  registerDeviceRequestLimits,
+} from "../../device-request-limits.js";
 import type { AppInstance } from "../../module.js";
 import { currentTraceId } from "../../request-context.js";
 import {
@@ -21,8 +25,13 @@ import type { DeviceIdentity } from "./prisma-repository.js";
 import type { DeviceService, DeviceView } from "./service.js";
 
 export type DeviceRouteLimits = Readonly<{
-  /** Requests per client address and window on human and device routes. */
+  /**
+   * Requests per window: per client address on human routes, per presented
+   * credential on device routes.
+   */
   requests: { max: number; timeWindow: number };
+  /** Requests per client address and window on device routes. */
+  deviceAddresses?: { max: number; timeWindow: number };
   /** Enrollment starts per client address and window (design: 20 per hour). */
   enrollmentStarts: { max: number; timeWindow: number };
 }>;
@@ -139,11 +148,14 @@ export function registerDeviceRoutes(
 
   // Device routes authenticate the bearer device credential on every request.
   void app.register(async (feature) => {
-    await feature.register(rateLimit, {
-      ...limits.requests,
-      hook: "onRequest",
-      ...quietHeaders,
-    });
+    await registerDeviceRequestLimits(
+      feature,
+      {
+        perCredential: limits.requests,
+        perAddress: limits.deviceAddresses ?? deviceAddressCeiling,
+      },
+      quietHeaders,
+    );
     feature.addHook("onSend", async (_request, reply) => {
       reply.header("cache-control", "no-store");
     });

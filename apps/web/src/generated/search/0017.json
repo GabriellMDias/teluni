@@ -4,6 +4,15 @@
     "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Architectural boundary",
+    "anchor": "architectural-boundary",
+    "text": "Architectural boundary\nPrisma is a **persistence infrastructure concern**.\nThe intended dependency direction is:\ndomain\n    ↑\napplication\n    ↑\npersistence ports\n    ↑\nPrisma persistence adapters\n    ↓\nPostgreSQL\n\nDomain code must not depend on Prisma.\nApplication code should remain independent from Prisma-specific APIs and generated persistence types except where an explicitly scoped infrastructure concern requires otherwise.\nPrisma-generated records and types are persistence representations.\nThey are not domain entities, application models, API contracts, or UI models.\nThe architectural distinction remains:\nPrisma persistence models\n    !=\ndomain entities\n    !=\napplication models\n    !=\nAPI contracts\n    !=\nUI models\n\nPersistence adapters are responsible for translating between database representations and framework-independent application or domain representations where such translation is necessary.\nThis rule does not require ceremonial mapping layers for every trivial projection.\nThe purpose is to preserve responsibility boundaries rather than introduce abstraction for its own sake.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Prisma Schema Language",
     "anchor": "prisma-schema-language",
     "text": "Prisma Schema Language\nPrisma Schema Language will be the primary authored representation for database structures that Prisma can represent appropriately.\nThe Prisma schema should clearly describe ordinary persistence concerns such as:\ntables and models;\ncolumns and scalar types;\nnullability;\nidentifiers;\nrelations;\nuniqueness;\nindexes supported by the selected Prisma version;\nsupported database-native types;\nother schema properties that Prisma can represent reliably.\nThe Prisma schema is not considered a complete representation of every possible PostgreSQL capability.\nPostgreSQL-specific structures that cannot be represented correctly through Prisma must not be omitted merely to preserve ORM purity.\n"
@@ -1042,14 +1051,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion has one primary TypeScript test runner.\nFast unit tests provide rapid feedback for pure logic.\nReal PostgreSQL integration tests verify the database actually used in production.\nPrisma persistence behavior is tested against PostgreSQL rather than mocks.\nProduction migrations are exercised by integration-test database creation.\nCustom PostgreSQL SQL and extensions can be tested realistically.\nTestcontainers provides reproducible ephemeral infrastructure for local development and CI.\nFastify request injection enables realistic backend integration tests without unnecessary network overhead.\nReact component behavior can be tested in real browsers without requiring complete E2E environments.\nPlaywright provides a consistent browser automation foundation.\nFull E2E tests can focus on critical user journeys rather than every rule permutation.\nTests are expected to remain isolated and parallelizable.\nTest data remains local and explicit rather than relying on large implicit global fixtures.\nCoverage remains available without becoming an arbitrary quality metric.\nThe strategy can scale from small repositories to large test suites.\nIndividual test classes remain independently executable and optimizable in CI.\nFlaky tests are treated as defects rather than accepted background noise.\n"
   }
 ]

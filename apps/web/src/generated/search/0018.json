@@ -4,6 +4,15 @@
     "title": "ADR-0009: Establish Testing Strategy and Tooling",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion has one primary TypeScript test runner.\nFast unit tests provide rapid feedback for pure logic.\nReal PostgreSQL integration tests verify the database actually used in production.\nPrisma persistence behavior is tested against PostgreSQL rather than mocks.\nProduction migrations are exercised by integration-test database creation.\nCustom PostgreSQL SQL and extensions can be tested realistically.\nTestcontainers provides reproducible ephemeral infrastructure for local development and CI.\nFastify request injection enables realistic backend integration tests without unnecessary network overhead.\nReact component behavior can be tested in real browsers without requiring complete E2E environments.\nPlaywright provides a consistent browser automation foundation.\nFull E2E tests can focus on critical user journeys rather than every rule permutation.\nTests are expected to remain isolated and parallelizable.\nTest data remains local and explicit rather than relying on large implicit global fixtures.\nCoverage remains available without becoming an arbitrary quality metric.\nThe strategy can scale from small repositories to large test suites.\nIndividual test classes remain independently executable and optimizable in CI.\nFlaky tests are treated as defects rather than accepted background noise.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nOrion introduces multiple test execution modes that contributors must understand.\nTestcontainers requires a compatible container runtime in environments executing infrastructure tests.\nReal PostgreSQL integration tests are slower than database mocks or in-memory substitutes.\nMigration-based test database initialization adds execution cost.\nSharing infrastructure for performance requires careful state isolation.\nBrowser Mode tests are slower and more resource-intensive than Node-only tests.\nPlaywright requires browser binaries and corresponding CI resources.\nMaintaining separate component-browser and E2E test levels requires contributors to choose the appropriate level.\nTest isolation may require additional infrastructure code and test factories.\nNot using broad internal mocks means some integration tests will require more setup than heavily mocked alternatives.\nAbsence of a global coverage threshold provides less immediately visible numerical enforcement and requires engineering judgment.\nMulti-browser execution, when introduced, can materially increase CI cost.\n"
@@ -1177,14 +1186,5 @@
     "heading": "References",
     "anchor": "references",
     "text": "References\n[Agent instructions and tool compatibility](../architecture/agent-instructions.md)\n[Repository structure: local agent instructions](../architecture/repository-structure.md#local-agent-instructions)\n[ADR-0003: repository validation and architecture enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "anchor": "adr-0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n**Superseded by:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted\n**Superseded by:** [ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the `@orion/*` package scope; the Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
   }
 ]

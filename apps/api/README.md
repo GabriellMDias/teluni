@@ -91,6 +91,8 @@ Executable module contracts own operations, stable operation IDs, typed inputs/o
 
 A module that exposes authenticated routes should apply request limiting before token verification and database access, as the reference module does with a process-local source-IP limit; health probes stay outside it. Exhaustion returns `429 RATE_LIMITED` in the public envelope with a bounded `Retry-After`. This is resource protection, not a product quota.
 
+Screen (device credential) routes are the exception to source-IP keying, because many screens share one address behind a store's router or the ingress proxy: [`registerDeviceRequestLimits`](src/device-request-limits.ts) counts each presented credential (a digest, never the credential) on its own under a ceiling of 6,000 requests per address per minute.
+
 Process-local limiting uses the direct peer address; trusted proxies are not configured. A multi-replica or reverse-proxy deployment must define shared/edge limiting and trusted client-IP handling before promising fleet-wide or per-user limits.
 
 ## Lifecycle and diagnostics

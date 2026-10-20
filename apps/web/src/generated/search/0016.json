@@ -4,6 +4,15 @@
     "title": "Web Application",
     "group": "Workspace guides",
     "kind": "repository",
+    "heading": "Modules",
+    "anchor": "modules",
+    "text": "Modules\nA web module is the browser side of a product capability. It defines its routes as children of the shared root route, keeps its pages, client calls, styles, and wording in its own `src/<module>/` folder, and exports a navigation link component. [`src/modules.tsx`](src/modules.tsx) is the only composition point: it adds the module's routes to the route tree and its link to the header and home page. Shared shell and portal code never import a module. Module browser journeys belong in `test/e2e/<module>/` and may start their own disposable stack with the shared [end-to-end stack helpers](test/e2e/stack.ts). [Orion's reference implementation](../../docs/project-derivation.md#orions-reference-implementation) is a complete example.\nUse the shared [`ErrorNotice`](src/components.tsx) and [`api-client.ts`](src/api-client.ts) for public API failures: pass a module's own stable codes when unwrapping responses and its own wording for them. A failed or lost write is an unknown outcome, never proof that nothing changed.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
     "heading": "Entry and home page",
     "anchor": "entry-and-home-page",
     "text": "Entry and home page\nTeluni composes its own `/` route from the [`workspace` web module](src/workspace/routes.tsx) instead of the shell's generic home page. A visitor without a session (or when the session service is unavailable) goes to `/sign-in`; a signed-in person sees the home page with their first companies, a path to create the first company, and the session's two-step verification state. `/sign-in` sends a signed-in person on to `returnTo` or the home page, and presents the product beside the sign-in action. The header shows Home, Companies, the session entry and, in development only, Documentation.\nThe Living Documentation Portal is a development aid, not part of the product (owner direction, 2026-10-19). [`src/modules.tsx`](src/modules.tsx) mounts its routes and header link only when `import.meta.env.DEV` is true, so the Vite development server serves `/docs` while production builds drop the portal's code and generated pages; [`scripts/check-public-bundle.mjs`](scripts/check-public-bundle.mjs), part of `bundle:check`, fails when portal content reaches `dist/`.\n"
@@ -844,14 +853,5 @@
     "heading": "Decision",
     "anchor": "decision",
     "text": "Decision\nOrion will use **Prisma ORM as its primary database-access and persistence tooling for PostgreSQL applications**.\nThe initial Orion baseline will use the supported **Prisma ORM 7 release line**.\nPrisma ORM 8 will not be adopted as the initial baseline. It may be evaluated after its stable general-availability release and after compatibility, migration, operational, and feature requirements have been assessed.\nA compatible future upgrade from Prisma ORM 7 to Prisma ORM 8 or another Prisma major version does not require a new ADR when Prisma retains the architectural responsibilities defined here.\nThe exact Prisma versions will be pinned mechanically through the package-management strategy established by ADR-0002.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Architectural boundary",
-    "anchor": "architectural-boundary",
-    "text": "Architectural boundary\nPrisma is a **persistence infrastructure concern**.\nThe intended dependency direction is:\ndomain\n    ↑\napplication\n    ↑\npersistence ports\n    ↑\nPrisma persistence adapters\n    ↓\nPostgreSQL\n\nDomain code must not depend on Prisma.\nApplication code should remain independent from Prisma-specific APIs and generated persistence types except where an explicitly scoped infrastructure concern requires otherwise.\nPrisma-generated records and types are persistence representations.\nThey are not domain entities, application models, API contracts, or UI models.\nThe architectural distinction remains:\nPrisma persistence models\n    !=\ndomain entities\n    !=\napplication models\n    !=\nAPI contracts\n    !=\nUI models\n\nPersistence adapters are responsible for translating between database representations and framework-independent application or domain representations where such translation is necessary.\nThis rule does not require ceremonial mapping layers for every trivial projection.\nThe purpose is to preserve responsibility boundaries rather than introduce abstraction for its own sake.\n"
   }
 ]

@@ -4,6 +4,15 @@
     "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "anchor": "adr-0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n**Superseded by:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted\n**Superseded by:** [ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the `@orion/*` package scope; the Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Context",
     "anchor": "context",
     "text": "Context\nOrion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own `origin`, pull requests, CI history, human actions, product decisions, and releases, while the canonical `GabriellMDias/Orion` repository continues evolving as the upstream foundation. Projects need to know which Orion revision they contain and to adopt later Orion improvements without losing product changes.\nThe repository also contains state that cannot be inherited as true for a new repository: Orion's implementation plan and acceptance evidence describe how Orion itself was built, several completed human actions verified GitHub settings for the Orion repository only, and the Approval Request feature is an executable reference rather than a product requirement. The owner directed a workflow that preserves Git ancestry, protects the canonical repository from accidental product pushes, records machine-readable provenance, and keeps upgrades as reviewable changes.\n"
@@ -1600,23 +1609,5 @@
     "heading": "Luxon or date-fns-tz",
     "anchor": "luxon-or-date-fns-tz",
     "text": "Luxon or date-fns-tz\nMature libraries, but each has its own model of gaps and repeated hours that differs from `java.time` and from the standard on the way to Node.js, so the fixtures would encode library behavior rather than the policy.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Hand-written resolution over Intl.DateTimeFormat",
-    "anchor": "hand-written-resolution-over-intldatetimeformat",
-    "text": "Hand-written resolution over `Intl.DateTimeFormat`\nAvoids a dependency, but searching transitions and disambiguating local times is where subtle errors appear, and the code would duplicate a standard that is about to ship.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A shared evaluator package compiled for both runtimes",
-    "anchor": "a-shared-evaluator-package-compiled-for-both-runtimes",
-    "text": "A shared evaluator package compiled for both runtimes\nOne implementation for the API and the player would remove the second implementation, but the player is a native Android application; embedding a JavaScript engine to run schedules adds a runtime and its own failure modes on the device.\n"
   }
 ]

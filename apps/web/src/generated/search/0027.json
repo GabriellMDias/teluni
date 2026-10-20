@@ -709,14 +709,5 @@
     "heading": "Permissions",
     "anchor": "permissions",
     "text": "Permissions\nCapability\nCompany administrator\nBranch manager\nOperator\nDelegable\n`publications.publish`: publish and restore programs\nCompany\nBranches\nNo (additional grant)\nYes, with `programming.view`\nScope follows the programming design: a group's program needs the capability on every branch of its span (company scope for a whole-company group), a screen's program on the screen's branch. `publications.publish` always needs strong authentication, also through a profile, and works in the normal session without a recent re-authentication. A program's history and check need `programming.view` on the same scope; a screen's synchronization state needs `devices.view` on its branch.\n"
-  },
-  {
-    "id": "repository/docs/project/publication-sync-design",
-    "title": "Teluni Publication and Synchronization Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Abuse limits",
-    "anchor": "abuse-limits",
-    "text": "Abuse limits\nAt most 30 publications per program per hour and 300 per company per day (`RATE_LIMITED`; an unchanged publication counts for neither). Snapshots of at most 2,000 items and 1,000 distinct media. Sync requests share the device request limit; at most two concurrent media downloads per screen. Reports are bounded by request validation.\n"
   }
 ]

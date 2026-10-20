@@ -4,6 +4,42 @@
     "title": "Teluni Human Actions",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "PH-06",
+    "anchor": "ph-06",
+    "text": "PH-06\n[x] **Determine the product license before distribution requires it.**\n**Status:** completed. **Owner:** project owner, with legal input when needed.\n**Dependency / trigger:** Publication or distribution of Teluni.\n**Request and reason:** Record the owner's explicit Apache-2.0 selection for Teluni source and documentation. Inherited Orion rights remain intact; commercial SaaS terms remain PH-12. Named copyright/NOTICE attribution, if required for distribution, is separately tracked in PH-14 rather than invented.\n**Configuration:** none.\n**Verification:** License files, the README, and publication metadata match the recorded decision.\n**Evidence / blocker:** 2026-10-17: owner explicitly selected Apache-2.0. [ADR-0022](../adr/0022-license-teluni-under-apache-2-0.md), the root README and all four workspace `package.json` license fields record that selection. The existing canonical root `LICENSE` already contains Apache License 2.0 and is retained unmodified. No named copyright holder or fabricated NOTICE is added.\n"
+  },
+  {
+    "id": "repository/docs/project/human-actions",
+    "title": "Teluni Human Actions",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "PH-07",
+    "anchor": "ph-07",
+    "text": "PH-07\n[ ] **Verify Teluni's domain/trademark evidence and visual identity before public launch.**\n**Status:** in progress. **Owner:** project owner, with specialist input where needed.\n**Dependency / trigger:** PJ-04 and PJ-14; before external brand commitments.\n**Request and reason:** The owner approved the [Connected Tiles identity](branding/README.md) and authorized project integration. Teluni and `teluni.app` are approved; `teluni.com.br` remains the secondary/defensive Brazil option (reported available), and unavailable/premium `teluni.com` remains outside the current budget/scope. Record registration/control and final trademark evidence only when supplied or verified.\n**Configuration:** none; do not publish registrar credentials.\n**Verification:** Preserve owner-approved Connected Tiles assets and verify the integrated shell, portal, SVG favicon, derived touch icon and local font. Record dated non-secret domain-control/registration and trademark outcomes before claiming them; player/store exports are conditional on the future Android application.\n**Evidence / blocker:** 2026-10-17: owner explicitly selected Connected Tiles and requested its integration. PJ-04 completed the runtime SVG, derived touch icon, locally served font and shell/portal colors. Desktop/mobile inspection and full local `pnpm validate` passed, including 16 E2E tests; the [branding guide](branding/README.md#approved-name-and-domain-direction) and its review evidence record the approved integration. No further visual-direction choice is pending. Domain registration/control and trademark outcomes remain unverified, so PH-07 is not complete.\n"
+  },
+  {
+    "id": "repository/docs/project/human-actions",
+    "title": "Teluni Human Actions",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "PH-08",
+    "anchor": "ph-08",
+    "text": "PH-08\n[ ] **Confirm the pilot participant, physical devices and supported hardware envelope.**\n**Status:** pending. **Owner:** project owner and candidate pilot operator.\n**Dependency / trigger:** PJ-07, PJ-08, PJ-09, PJ-12, PJ-20 and PJ-14; before hardware-specific commitments and pilot acceptance.\n**Request and reason:** Confirm the snack bar's participation and core workflow, screen/device quantity and models, Android versions, connection/storage conditions, orientations and installation/update access. Qualify AT-04 and the selected startup/power/offline/timing targets with the FR-10 video/audio and FR-11 generic-catalog profiles; policy approval is not physical support evidence. A candidate customer is not a confirmed pilot or a tested hardware profile.\n**Configuration:** none yet; record model/capability facts without private access details.\n**Verification:** Approved hardware/support matrix and operator workflow, available test devices, and recorded playback/reboot/codec tests during implementation.\n**Evidence / blocker:** Owner identified a potential snack bar pilot; hardware, participation and capacity remain unverified.\n"
+  },
+  {
+    "id": "repository/docs/project/human-actions",
+    "title": "Teluni Human Actions",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "PH-09",
+    "anchor": "ph-09",
+    "text": "PH-09\n[x] **Agree product policy boundaries and measurable release acceptance targets.**\n**Status:** completed. **Owner:** product owner with delegated engineering decisions.\n**Dependency / trigger:** PJ-07 and the dependent Phase 2 slices; policy/target selection before implementation and acceptance claims.\n**Request and reason:** Consolidate the owner's questionnaire and explicitly delegated unanswered choices into [release policies](release-policies.md) and [acceptance targets](release-targets.md), including configurable catalogs beyond products, hybrid regions, automatic price publication, multi-video/audio, calendar/offline/retention rules and measurable qualification goals.\n**Configuration:** no runtime settings or schemas introduced; selected limits become canonical validated configuration/contracts only during implementation.\n**Verification:** All P01–P31 have a recorded owner or delegated disposition. AT-01–AT-26 name numeric limits/measurement boundaries and FR/NF evidence requirements. Architecture ADRs are now owner-accepted; concrete technical design and physical measurements remain PJ-07, PH-08/PH-10 and implementation/qualification tasks, without being silently marked passed.\n**Evidence / blocker:** 2026-10-18: owner supplied detailed questionnaire responses and explicitly authorized decisions for delegated or unanswered items. The [decision record](release-policies.md#ph-09-decision-record) preserves 21 direct answers and 10 delegated selections; the unfilled optional summary table does not override those answers. Product-policy/target selection is complete with no remaining PH-09 owner question. ADR-0023 was drafted as proposed and accepted by the owner on 2026-10-18; hardware, deployment, actual identity implementation, privacy and target results remain separately pending. PJ-22 tracks documentation validation, not product delivery.\n"
+  },
+  {
+    "id": "repository/docs/project/human-actions",
+    "title": "Teluni Human Actions",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "PH-10",
     "anchor": "ph-10",
     "text": "PH-10\n[ ] **Confirm residential-host feasibility, exposure and recovery commitments before a real pilot.**\n**Status:** pending. **Owner:** project owner / server and network administrator.\n**Dependency / trigger:** PJ-07/PJ-13 and before PJ-14 real-customer operation.\n**Request and reason:** Supply the host/network inventory, public access/CGNAT/ISP constraints, controlled domain/HTTPS path, safe administration, power/uplink/capacity facts, off-host backup destination, recovery-key handling and acceptable RPO/RTO/downtime/support. Review the [deployment readiness gates](operations.md#residential-exposure-and-readiness-gate). No tunnel, free DNS or home-server arrangement has been certified suitable.\n**Configuration:** only currently implemented names from the [configuration reference](../generated/configuration/api.md); new deployment keys are pending design. Put secrets only in an approved protected destination.\n**Verification:** Network/ingress/security inspection and isolated timed PostgreSQL-plus-media restore, followed by reboot/offline and endpoint-migration rehearsal with supported players.\n**Evidence / blocker:** No cloud budget; personal residential server intended. Topology, exposure, backup destination and availability/recovery targets remain unverified. No deployment authorized by this entry.\n"
