@@ -4062,9 +4062,9 @@
       { "file": "search/0039.json", "count": 75, "kinds": ["repository"] },
       { "file": "search/0040.json", "count": 55, "kinds": ["repository"] },
       { "file": "search/0041.json", "count": 65, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 48, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 76, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 47, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 73, "kinds": ["repository"] },
       { "file": "search/0045.json", "count": 95, "kinds": ["repository"] },
       { "file": "search/0046.json", "count": 94, "kinds": ["repository"] },
       { "file": "search/0047.json", "count": 14, "kinds": ["repository"] }
