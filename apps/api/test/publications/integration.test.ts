@@ -878,7 +878,7 @@ describe("publications: publishing, synchronization and retention", () => {
       publications: [{ id: first.id, sha256: first.manifestSha256 }],
     });
     expect(statement.exp - statement.iat).toBe(7 * 24 * 60 * 60);
-    // The zone's offsets cover two days before to 35 days after the
+    // The zone's offsets cover three days before to 35 days after the
     // server's time, so the screen never needs its own zone data.
     const serverTime = Date.parse(synced.body.serverTime as string);
     const offsets = synced.body.zoneOffsets as {
@@ -887,7 +887,7 @@ describe("publications: publishing, synchronization and retention", () => {
     };
     expect(Date.parse(offsets.until) - serverTime).toBe(35 * 86_400_000);
     expect(serverTime - Date.parse(offsets.periods[0].from)).toBe(
-      2 * 86_400_000,
+      3 * 86_400_000,
     );
     expect(offsets.periods).toEqual([
       { from: offsets.periods[0].from, offsetSeconds: -10_800 },

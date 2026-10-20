@@ -25,7 +25,7 @@ export const publicationPolicy = Object.freeze({
   maxConcurrentDownloads: 2,
   maxStateQuery: 100,
   /** Zone offsets a sync answer covers around its server time (D-07). */
-  zoneOffsetsBeforeDays: 2,
+  zoneOffsetsBeforeDays: 3,
   zoneOffsetsAfterDays: 35,
 });
 

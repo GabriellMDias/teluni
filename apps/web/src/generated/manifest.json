@@ -2198,6 +2198,26 @@
       "file": "pages/repository/apps/api/src/features/publications/AGENTS.json"
     },
     {
+      "id": "repository/apps/player/AGENTS",
+      "kind": "repository",
+      "title": "Player Instructions",
+      "group": "Agent instructions",
+      "source": "apps/player/AGENTS.md",
+      "summary": "Read the player guide for layout and commands, and the player design and ADR-0031 before changing behavior. Global repository instructions still apply.",
+      "headings": [],
+      "file": "pages/repository/apps/player/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/player/README",
+      "kind": "repository",
+      "title": "Teluni Android TV Player",
+      "group": "Workspace guides",
+      "source": "apps/player/README.md",
+      "summary": "The screen application of the player design under ADR-0020 and ADR-0031. It is a Gradle build outside the pnpm workspace, so pnpm validate does not build it. The Player CI job…",
+      "headings": [],
+      "file": "pages/repository/apps/player/README.json"
+    },
+    {
       "id": "repository/apps/web/AGENTS",
       "kind": "repository",
       "title": "Web Application Instructions",
@@ -3377,25 +3397,25 @@
       { "file": "search/0014.json", "count": 25, "kinds": ["database"] },
       {
         "file": "search/0015.json",
-        "count": 48,
+        "count": 50,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0016.json", "count": 98, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 114, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 134, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 182, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 115, "kinds": ["repository"] },
-      { "file": "search/0021.json", "count": 130, "kinds": ["repository"] },
-      { "file": "search/0022.json", "count": 78, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 95, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 117, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 132, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 180, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 117, "kinds": ["repository"] },
+      { "file": "search/0021.json", "count": 131, "kinds": ["repository"] },
+      { "file": "search/0022.json", "count": 80, "kinds": ["repository"] },
       { "file": "search/0023.json", "count": 71, "kinds": ["repository"] },
       { "file": "search/0024.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0025.json", "count": 53, "kinds": ["repository"] },
-      { "file": "search/0026.json", "count": 58, "kinds": ["repository"] },
+      { "file": "search/0025.json", "count": 54, "kinds": ["repository"] },
+      { "file": "search/0026.json", "count": 50, "kinds": ["repository"] },
       { "file": "search/0027.json", "count": 81, "kinds": ["repository"] },
       { "file": "search/0028.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0029.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0030.json", "count": 68, "kinds": ["repository"] }
+      { "file": "search/0029.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0030.json", "count": 80, "kinds": ["repository"] }
     ],
-    "count": 1667
+    "count": 1672
   }
 }

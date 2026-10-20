@@ -116,7 +116,7 @@ Business time never comes from the device's wall clock or time zone database alo
 - **After a reboot without a server answer.** The monotonic clock restarts, so the anchor is lost. The player then accepts the system clock only when it is not earlier than the persisted lower bound and automatic network time is enabled. It reports the clock as estimated until the next sync. Otherwise it reports `CLOCK_UNTRUSTED` and shows neutral output until a sync succeeds. As the policies say, a wrong clock without a reference cannot always be detected; PH-08 measures the devices' real-time clock behavior.
 - **Jumps.** While an anchor exists, the player uses it and ignores changes to the system clock. It reports a difference between the system clock and trusted time above 60 seconds as a diagnostic.
 
-**Zone offsets.** Many Android TV devices stay on old time zone data; for example, a device without updates since 2019 still applies daylight saving time in `America/Sao_Paulo`. The player therefore uses the server's rules: each sync response adds `zoneOffsets`, the UTC offsets of the screen's zone from two days before `serverTime` to 35 days after it, as `{ "until": instant, "periods": [{ "from": instant, "offsetSeconds": n }] }`. The API computes them with the same Temporal API its evaluator uses. Preview and player then agree by construction, and the 35 days cover the seven-day authorization with room for look-ahead. The player resolves local times against these periods with exactly the server's rules: a gap resolves to its transition instant, and a repeated hour to the earlier occurrence for a start and the later for an end. An instant outside the covered range has no business time, so the player reports `CLOCK_UNTRUSTED` and shows neutral output. Offsets are not signed: they arrive over authenticated TLS, and the statement, not the offsets, bounds what may play.
+**Zone offsets.** Many Android TV devices stay on old time zone data; for example, a device without updates since 2019 still applies daylight saving time in `America/Sao_Paulo`. The player therefore uses the server's rules: each sync response adds `zoneOffsets`, the UTC offsets of the screen's zone from three days before `serverTime` to 35 days after it, as `{ "until": instant, "periods": [{ "from": instant, "offsetSeconds": n }] }`. The API computes them with the same Temporal API its evaluator uses. Preview and player then agree by construction. Evaluation reads windows from the local day before "now", up to about 62 hours back, so three days of history suffice. The 35 days ahead cover the seven-day authorization with room for look-ahead. The player resolves local times against these periods with exactly the server's rules: a gap resolves to its transition instant, and a repeated hour to the earlier occurrence for a start and the later for an end. An instant outside the covered range has no business time, so the player reports `CLOCK_UNTRUSTED` and shows neutral output. Offsets are not signed: they arrive over authenticated TLS, and the statement, not the offsets, bounds what may play.
 
 ## Authorization
 
@@ -165,7 +165,7 @@ Protected output plays only while trusted time is before the stored statement's 
 
 PJ-11 increment 3 adds two fields to the `POST /device/sync` response, both compatible with existing clients:
 
-- `zoneOffsets`, as above, or `null` when `timeZone` is `null`;
+- `zoneOffsets`, as above (three days back, 35 days ahead), or `null` when `timeZone` is `null`;
 - `rotation`, the configured clockwise rotation (0, 90, 180 or 270).
 
 The API also publishes protocol conformance fixtures in [`conformance.json`](../../apps/api/test/publications/conformance.json):
@@ -214,7 +214,23 @@ The player sends nothing beyond the sync report and erasure confirmation; diagno
 
 ## Implementation status
 
-Not implemented. PJ-12 starts with increment 1.
+Increment 1, started 2026-10-20 in [PJ-12](implementation-plan.md#current-work):
+
+- **API.** `zoneOffsets` and `rotation` in the sync response, and the [conformance file](../../apps/api/test/publications/conformance.json) with its writer and test (see [server additions](#server-additions)).
+- **Build.** The Gradle build in [`apps/player`](../../apps/player/README.md) with its wrapper (Gradle 8.14.3), version catalog, dependency locks and SHA-256 verification metadata, and the **Player** CI job in the required gate.
+- **`core`:**
+  - the evaluator, run against every shared schedule fixture with the API's offsets;
+  - local-time resolution against offsets;
+  - the strict protocol 1 manifest parser;
+  - ES256 statement verification with Nimbus, checked against the API's statements;
+  - trusted time;
+  - the store with atomic records and fault injection at every write step;
+  - the OkHttp device API, with its field names checked against the OpenAPI document;
+  - the engine (enrollment, synchronization, key rotation, staging with resumable verified downloads and the AT-05 reserve, superseding, activation, startup recovery, erasure);
+  - the playback planner.
+- **Tests.** 69 JVM tests, including the engine against an in-memory API that signs real statements.
+
+Not yet implemented: the Android `app` module and everything that needs a device (increment 2, blocked in the cloud environment by [PH-26](human-actions.md#ph-26)), qualification on hardware (increment 3, [PH-08](human-actions.md#ph-08)), and updates and credential rotation (increment 4, [PH-27](human-actions.md#ph-27)). The diagnostic report of the system clock's skew and the crash count are not in the report yet.
 
 ## Decisions
 

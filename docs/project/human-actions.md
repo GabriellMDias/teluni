@@ -303,14 +303,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-26
 
-- [ ] **Allow the cloud development environment to reach Google's Maven repository.**
+- [ ] **Allow the cloud development environment to reach Google's Maven repository and Gradle's downloads.**
 
 **Status:** pending. **Owner:** project owner (environment settings).
-**Dependency / trigger:** [PJ-12](implementation-plan.md#current-work); blocks building and testing the player's Android `app` module in the cloud development environment. The pure-JVM `core` module and the CI job are not blocked: GitHub's runners reach the host.
-**Request and reason:** In the cloud environment's settings (the environment menu in the session's title bar, then Edit, then Network access), add `dl.google.com` to the allowed domains with the package-manager defaults kept. `https://maven.google.com` redirects every Android Gradle plugin, AndroidX and Media3 artifact to that host, and the Android SDK platforms come from it too. On 2026-10-20 the proxy refused it with 403. An agent cannot change its own network policy, and writing Android code that cannot be compiled or tested would not meet the repository's verification rules. Steps: https://code.claude.com/docs/en/cloud-environments#network-access.
+**Dependency / trigger:** [PJ-12](implementation-plan.md#current-work); blocks building and testing the player's Android `app` module in the cloud development environment, and running the Gradle wrapper there. The pure-JVM `core` module and the CI job are not blocked: GitHub's runners reach both hosts, and the environment's preinstalled Gradle matches the wrapper's version.
+**Request and reason:** In the cloud environment's settings (the environment menu in the session's title bar, then Edit, then Network access), add `dl.google.com` and `downloads.gradle.org` to the allowed domains with the package-manager defaults kept. `https://maven.google.com` redirects every Android Gradle plugin, AndroidX and Media3 artifact to `dl.google.com`, and the Android SDK platforms come from it too. `services.gradle.org` redirects Gradle distributions to `downloads.gradle.org`. On 2026-10-20 the proxy refused it with 403. An agent cannot change its own network policy, and writing Android code that cannot be compiled or tested would not meet the repository's verification rules. Steps: https://code.claude.com/docs/en/cloud-environments#network-access.
 **Configuration:** none in the repository.
-**Verification:** In a new session, `curl -sI https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml` answers 200, and `./gradlew :app:assembleDebug` in `apps/player` resolves its dependencies.
-**Evidence / blocker:** 2026-10-20: `maven.google.com` answered 301 to `dl.google.com`, and the proxy refused `dl.google.com` with 403; Maven Central, the Gradle plugin portal and the Gradle distributions were reachable. The owner was told in the session chat.
+**Verification:** In a new session, `curl -sI https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml` and `curl -sI https://downloads.gradle.org/distributions/gradle-8.14.3-bin.zip` answer 200, and `./gradlew check` in `apps/player` downloads Gradle and resolves its dependencies.
+**Evidence / blocker:** 2026-10-20: `maven.google.com` answered 301 to `dl.google.com`, and the proxy refused `dl.google.com` with 403; `services.gradle.org` answered 301 to `downloads.gradle.org`, which the proxy also refused. Maven Central and the Gradle plugin portal were reachable. The owner was told about `dl.google.com` in the session chat.
 
 ## PH-27
 

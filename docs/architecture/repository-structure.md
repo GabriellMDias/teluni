@@ -13,6 +13,7 @@ These locations exist:
 | Repository root | Repository-wide instructions, workspace/lockfile, dependency and validation configuration. Start with [README](../../README.md) and [AGENTS.md](../../AGENTS.md). |
 | `apps/api/` | Fastify executable, composed API modules, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md). |
 | `apps/web/` | React/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md). |
+| `apps/player/` | Android TV player: a Gradle build outside the pnpm workspace whose `core` module holds the screen's rules on the JVM (ADR-0031). Start with its [README](../../apps/player/README.md). |
 | `packages/sdk/` | Public API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md). |
 | `docs/` | Current policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md). |
 | `tooling/validate/` | Repository documentation, agent-instruction, environment-example, and release-history checks. |
@@ -70,7 +71,7 @@ Generated code and references must be distinguishable from authored files, repro
 
 ## Local Agent Instructions
 
-Read root [AGENTS.md](../../AGENTS.md), then each applicable nested file before editing an area. Nested instructions add local conventions, important files, commands, or prohibited patterns; they do not remove global requirements or copy repository-wide policy. Current scopes include [API](../../apps/api/AGENTS.md), [web](../../apps/web/AGENTS.md), [SDK](../../packages/sdk/AGENTS.md), [documentation](../AGENTS.md), [ADRs](../adr/AGENTS.md), and [runbooks](../runbooks/AGENTS.md).
+Read root [AGENTS.md](../../AGENTS.md), then each applicable nested file before editing an area. Nested instructions add local conventions, important files, commands, or prohibited patterns; they do not remove global requirements or copy repository-wide policy. Current scopes include [API](../../apps/api/AGENTS.md), [web](../../apps/web/AGENTS.md), [player](../../apps/player/AGENTS.md), [SDK](../../packages/sdk/AGENTS.md), [documentation](../AGENTS.md), [ADRs](../adr/AGENTS.md), and [runbooks](../runbooks/AGENTS.md).
 
 Every tool reads the same files; [agent instructions](agent-instructions.md) owns tool compatibility and forbids instruction copies. Add a local instruction file only when the area needs additional guidance. Keep commands near the owner and link canonical policy so agents receive useful context without independently maintained copies.
 

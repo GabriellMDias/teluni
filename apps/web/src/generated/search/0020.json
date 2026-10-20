@@ -1,5 +1,68 @@
 [
   {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nDeterministic, host-independent schedule results with the selected DST rules.\nOne fixture file that both the API and the player must pass.\nA direct path to native Temporal.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nA runtime dependency in the API until Node.js ships Temporal, which must be kept current with the zone database it relies on (the polyfill uses the runtime's `Intl` zone data).\nTwo implementations of the evaluator, kept equal only by the fixtures.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nZone data comes from the Node.js runtime's ICU; updating Node.js updates zone rules, and preview results for future dates can change after a zone-database update, as on the device.\nReplacing the polyfill with native Temporal removes the dependency and its import; the fixtures must still pass.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Programming design](../project/programming-design.md)\n[Release policies: time and scheduling](../project/release-policies.md#time-and-scheduling)\n[Playback and synchronization](../project/playback-and-sync.md#time-and-regional-scheduling)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "anchor": "adr-0030-synchronize-screens-by-polling-with-signed-authorization-statements",
+    "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance establishes the direction for local and CI implementation of PJ-11, not the player's conformance (PJ-12), hardware qualification (PH-08) or the provisioning of signing keys in a real environment (PJ-13).\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The policies require that a screen detect a new desired publication within 30 seconds (AT-11), report its state every 30 seconds (AT-24), never be rolled back by stale or reordered messages, keep playing valid content offline for at most seven days after its last renewal (AT-15) and suspend time-dependent output when its clock cannot be trusted (AT-16). Screens authenticate with a device-generated bearer credential under ADR-0027, and the device enrollment design left a tamper-evident form of the offline deadline to this decision. The pilot runs one API process on one host (ADR-0021).\nThis record decides how screens learn their desired publication, how they obtain and verify its manifest and media, and how the server states, verifiably, what a screen may play and until when. The details are in the [publication and synchronization design](../project/publication-sync-design.md).\n"
+  },
+  {
     "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
     "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
     "group": "Decisions",
@@ -978,7 +1041,7 @@
     "kind": "repository",
     "heading": "Current implementation and activation",
     "anchor": "current-implementation-and-activation",
-    "text": "Current implementation and activation\nThe [repository workflow](../../.github/workflows/ci.yml) validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It uses repository-pinned Node.js/pnpm and frozen installation, installs Playwright Chromium/system libraries and the distribution FFmpeg used by media tests, and runs `pnpm validate` on GitHub-hosted Ubuntu. It fetches Git history and supplies the base commit for release-history validation. The stable branch-protection check name is **Orion required gate**; it fails if validation fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded. Future uploads need bounded retention and must exclude secrets/sensitive data.\nThe workflow passes the PR base SHA, merge-group base SHA, or `github.event.before` unchanged to the release-history validator. That shared validator handles GitHub's first-push zero-SHA sentinel under the [release-history rules](../database/release-evolution.md#record-the-first-durable-migration-boundary), so local and CI checks enforce the same missing-base and append-only protections. Manual dispatches without an explicit base use the validator's local Git-base discovery.\nThe dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=true` and blocks newly introduced high/critical vulnerabilities. The aggregate gate treats an enabled review that fails or skips as a failure. The repository's human actions record dated evidence and how to reverify the variable, security settings, and actual review execution.\nThe [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. The repository's human actions own app activation/Dashboard and effective branch-protection evidence.\nCommitted workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#content-ownership). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.\n"
+    "text": "Current implementation and activation\nThe [repository workflow](../../.github/workflows/ci.yml) validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It uses repository-pinned Node.js/pnpm and frozen installation, installs Playwright Chromium/system libraries and the distribution FFmpeg used by media tests, and runs `pnpm validate` on GitHub-hosted Ubuntu. It fetches Git history and supplies the base commit for release-history validation. A separate **Player** job sets up JDK 17, validates the Gradle wrapper and runs `./gradlew check` in [`apps/player`](../../apps/player/README.md), whose dependencies are locked and checksum-verified. The stable branch-protection check name is **Orion required gate**; it fails if validation or the player job fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded. Future uploads need bounded retention and must exclude secrets/sensitive data.\nThe workflow passes the PR base SHA, merge-group base SHA, or `github.event.before` unchanged to the release-history validator. That shared validator handles GitHub's first-push zero-SHA sentinel under the [release-history rules](../database/release-evolution.md#record-the-first-durable-migration-boundary), so local and CI checks enforce the same missing-base and append-only protections. Manual dispatches without an explicit base use the validator's local Git-base discovery.\nThe dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=true` and blocks newly introduced high/critical vulnerabilities. The aggregate gate treats an enabled review that fails or skips as a failure. The repository's human actions record dated evidence and how to reverify the variable, security settings, and actual review execution.\nThe [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. The repository's human actions own app activation/Dashboard and effective branch-protection evidence.\nCommitted workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#content-ownership). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.\n"
   },
   {
     "id": "repository/docs/architecture/continuous-integration",
@@ -988,50 +1051,5 @@
     "heading": "Read for this change",
     "anchor": "read-for-this-change",
     "text": "Read for this change\nChange\nGoverning decision section\nLocal/CI command parity and incremental capabilities\n[Canonical validation contract](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#canonical-validation-contract)\nRequired PR gate, primary-branch checks, manual runs\n[Pull-request validation](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#pull-request-validation) and [required gate](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#required-ci-gate)\nRunner, versions, lockfile, caching, concurrency\n[Execution environment](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#ci-execution-environment) through [pull-request concurrency](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#pull-request-concurrency)\nIntegration/browser tests and artifacts\n[Integration infrastructure](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#integration-test-infrastructure) and [testing strategy](testing-strategy.md)\nPermissions, action pins, untrusted PRs, secrets, OIDC\n[Actions security](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#github-actions-security)\nRenovate cadence, grouping, majors, automerge, lockfiles\n[Dependency automation](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#dependency-automation)\nDependency review, scanning, feature availability, licenses\n[Dependency security alerts](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#dependency-security-alerts) and subsequent security sections\nValidation mutations, reusable workflows, CI versus CD\n[CI-generated modifications](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#ci-generated-modifications) and [continuous delivery](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#continuous-delivery)\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Policy boundaries",
-    "anchor": "policy-boundaries",
-    "text": "Policy boundaries\nGitHub Actions uses the same repository validation capabilities as local development. GitHub-hosted Linux is the initial runner, with repository-pinned versions and frozen lockfile installation. The primary branch must require the stable aggregate gate; effective activation is verified separately as described above. Validation must not silently fix tracked sources.\nRenovate owns version-update automation, with routine weekly grouping and automerge disabled initially. Dependabot vulnerability alerts are a separate capability, not a second version-update system. GitHub security features retain the availability and entitlement qualifications in the ADR; paid security features are not a mandatory architectural dependency.\nDeployment, release approvals, rollback environments, and CD remain deferred until concrete deployment requirements exist. Use [secrets management](../security/secrets-management.md), [production access](../security/production-access.md), and [retention](../security/data-retention.md) for those cross-cutting policies. Local validation commands are listed in [validation](../validation.md); remote run results and effective settings must be verified separately.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Delivery and Side Effects",
-    "anchor": "delivery-and-side-effects",
-    "text": "Delivery and Side Effects\n[Documentation index](../README.md) · [Transactions and concurrency](../database/transactions-and-concurrency.md) · [Compatibility](versioning-and-compatibility.md)\nThis page owns cross-system delivery, idempotency, retry, and crash recovery. Database atomicity, isolation, constraints, locking, and transaction retries belong to [transaction policy](../database/transactions-and-concurrency.md); HTTP representation belongs to [API principles](../api/principles.md). These requirements do not select a broker or require inboxes, outboxes, sagas, or distributed locks without a concrete need.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Idempotency",
-    "anchor": "idempotency",
-    "text": "Idempotency\nIdempotency means repeated application has no additional unintended effect, not merely an identical HTTP response. Setting a state may be naturally idempotent; incrementing a balance usually is not. Client/proxy/SDK retries and user double submission can repeat requests even when the UI disables a button. The server must protect non-repeatable operations.\nWhen using an idempotency key, define its generator, logical operation, scope (such as actor/tenant/operation), durable storage/uniqueness, concurrent-first-attempt behavior, payload mismatch handling, replay result, and tests. In-memory deduplication cannot survive multiple instances or restarts. A uniqueness constraint is stronger than an unprotected check-then-insert. Reusing a key for a materially different intention should normally fail; a canonical request fingerprint can detect this.\nA replay may return the original result or current resource state according to the operation contract. Define retention from retry windows, business risk, semantics, and storage cost under [retention policy](../security/data-retention.md). Critical idempotency guarantees must not silently expire before supported retries.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Delivery Guarantees",
-    "anchor": "delivery-guarantees",
-    "text": "Delivery Guarantees\nAt-least-once delivery permits duplicates; consumers must tolerate them. At-most-once delivery permits loss and is appropriate only if the domain accepts it. Exactly-once behavior is an end-to-end claim across delivery, durable writes, and external effects, not merely a broker setting. Claim it only with evidence for the complete workflow.\nAn inbox/processed-message record can deduplicate by atomically recording an event identity with its protected business effect. Producers and consumers need explicit event ownership, canonical schema, ordering, delivery, and compatibility. Webhooks may repeat, arrive concurrently, or arrive out of order.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Outbox Pattern",
-    "anchor": "outbox-pattern",
-    "text": "Outbox Pattern\nWhen a committed change requires eventual publication, record the state change and publication intent in the same transaction/ownership boundary, then publish that durable intent. The producing capability owns event meaning; the outbox mechanism is infrastructure. Define claiming, bounded retries, ordering, failure recovery, retention, and observability; an outbox must not grow forever without policy.\nAn outbox can publish twice after a lost acknowledgement, so consumers may still need deduplication. Introduce inbox/outbox infrastructure only when reliability requirements justify its complexity.\n"
   }
 ]

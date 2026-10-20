@@ -10,3 +10,7 @@ test-results/
 .env.*
 !.env.example
 !.env.*.example
+apps/player/**/build/
+apps/player/.gradle/
+apps/player/.kotlin/
+apps/player/local.properties

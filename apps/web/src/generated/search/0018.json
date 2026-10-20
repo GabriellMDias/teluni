@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nOrion introduces multiple test execution modes that contributors must understand.\nTestcontainers requires a compatible container runtime in environments executing infrastructure tests.\nReal PostgreSQL integration tests are slower than database mocks or in-memory substitutes.\nMigration-based test database initialization adds execution cost.\nSharing infrastructure for performance requires careful state isolation.\nBrowser Mode tests are slower and more resource-intensive than Node-only tests.\nPlaywright requires browser binaries and corresponding CI resources.\nMaintaining separate component-browser and E2E test levels requires contributors to choose the appropriate level.\nTest isolation may require additional infrastructure code and test factories.\nNot using broad internal mocks means some integration tests will require more setup than heavily mocked alternatives.\nAbsence of a global coverage threshold provides less immediately visible numerical enforcement and requires engineering judgment.\nMulti-browser execution, when introduced, can materially increase CI cost.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established testing implementation that must be migrated.\nThe initial repository testing foundation will therefore be introduced directly using:\nVitest\nTestcontainers\nVitest Browser Mode\nPlaywright\nPlaywright Test\n\nTest dependencies should only be added when the corresponding test capability exists.\nUnit and integration test scripts must be integrated with repository validation as soon as meaningful test suites exist.\nPostgreSQL integration-test infrastructure must use a PostgreSQL version compatible with the production baseline established by Orion's database tooling.\nTest databases must be initialized from committed migration history.\nContainer lifecycle and database-isolation strategies should initially favor correctness and simplicity, then be optimized using measurement when test execution time becomes material.\nFastify integration tests should use request injection by default unless real network behavior is part of the requirement.\nBrowser-dependent React tests should use Vitest Browser Mode when real browser semantics matter.\nPlaywright Test should be introduced for critical end-to-end workflows once the initial web application can be exercised through a complete running stack.\nChromium will be the initial routine E2E browser.\nAdditional browser projects should be added according to real product browser-support requirements.\nV8 coverage should be configured when coverage reporting becomes useful, without imposing an arbitrary foundation-level percentage threshold.\nCI execution strategy, including parallel jobs, container caching, browser installation, test sharding, and artifact retention, will be defined by ADR-0011.\nRoutine compatible upgrades of Vitest, Testcontainers, or Playwright do not require a new ADR when they preserve the responsibilities established here.\nReplacing the primary test runner, database integration strategy, or browser E2E framework would constitute a material testing-architecture change and should supersede this ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated ADR: [ADR-0008: Select React, Vite, and TanStack for Web Applications](0008-select-react-vite-and-tanstack-for-web-applications.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nExternal reference: Vitest documentation.\nExternal reference: Vitest Browser Mode documentation.\nExternal reference: Testcontainers for Node.js documentation.\nExternal reference: Fastify testing documentation.\nExternal reference: Playwright documentation.\n"
+  },
+  {
     "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
@@ -1159,50 +1186,5 @@
     "heading": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
     "anchor": "adr-0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
     "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n**Superseded by:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted\n**Superseded by:** [ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the `@orion/*` package scope; the Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own `origin`, pull requests, CI history, human actions, product decisions, and releases, while the canonical `GabriellMDias/Orion` repository continues evolving as the upstream foundation. Projects need to know which Orion revision they contain and to adopt later Orion improvements without losing product changes.\nThe repository also contains state that cannot be inherited as true for a new repository: Orion's implementation plan and acceptance evidence describe how Orion itself was built, several completed human actions verified GitHub settings for the Orion repository only, and the Approval Request feature is an executable reference rather than a product requirement. The owner directed a workflow that preserves Git ancestry, protects the canonical repository from accidental product pushes, records machine-readable provenance, and keeps upgrades as reviewable changes.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nA project is derived from a clean, full clone of Orion by the repository's `pnpm orion:init-project` command. After verifying preconditions, the command commits the project's initial identity on top of Orion's history, renames the canonical remote to `orion-upstream`, disables pushing to it and fetching its tags, removes local branch tracking of it, and adds the project's repository as `origin`. It creates no remote repository and pushes nothing.\n`.orion/project.json` is the versioned, schema-checked identity and provenance record. In Orion it describes the foundation. In a derived project it records the project identity, the canonical Orion repository, the immutable commit the project was initialized from, the Orion baseline currently integrated, and the disposition of the Approval Request reference implementation. The immutable Git commit is the foundation version; no separate release or version scheme is introduced.\nFoundation-owned and project-owned state are separated by file. Orion's plan, human actions, and acceptance report remain inherited foundation history in projects; initialization creates project-owned `docs/project/implementation-plan.md` and `docs/project/human-actions.md` with pending actions for the project's own repository settings. Root instructions route implementation work to the project-owned files when the manifest describes a project. The foundation namespace (`@orion/*`, `ORION_*`, `orion_*` claims, and the CI check name) is not renamed.\nThe Approval Request slice is retained in derived projects as a recorded `reference` implementation, not a product requirement. The project owner later records `adopted` or `removed`; validation keeps the disposition coherent with the source tree and refuses a durable release while it is still `reference`.\nOrion upgrades are ordinary branches that merge a chosen commit from `orion-upstream/main` with its history, resolve conflicts under review, regenerate derived artifacts, and pass validation. The recorded baseline is updated only after that commit is integrated, and validation requires it to be an ancestor of `HEAD`.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nPreserving ancestry lets Git compute the upstream changes after a baseline and perform three-way merges, which is the property that makes future upgrades practical. A GitHub template repository or a squashed snapshot would discard that ancestry and force every upgrade to become a manual diff-and-copy exercise. Keeping the canonical repository as a fetch-only remote retains that ancestry without letting ordinary `git push` or `git pull` cross the boundary.\nA small manifest makes provenance machine-checkable in local validation and CI without inventing a release system. Commit ancestry is verifiable wherever full history is available, and the recorded baseline cannot claim unintegrated upstream work.\nSeparate project-owned files avoid conflicts that would otherwise recur on every upgrade while keeping Orion's evidence intact rather than rewriting it. Retaining the reference implementation avoids a brittle, multi-artifact deletion step during initialization; the release guard ensures it cannot silently become product behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "GitHub template repository",
-    "anchor": "github-template-repository",
-    "text": "GitHub template repository\nTemplates create an unrelated history. They make project creation easy but lose the shared ancestry that three-way upgrade merges need, and they record no provenance.\n"
   }
 ]

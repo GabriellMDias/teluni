@@ -1,5 +1,50 @@
 [
   {
+    "id": "repository/docs/architecture/continuous-integration",
+    "title": "Continuous Integration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Policy boundaries",
+    "anchor": "policy-boundaries",
+    "text": "Policy boundaries\nGitHub Actions uses the same repository validation capabilities as local development. GitHub-hosted Linux is the initial runner, with repository-pinned versions and frozen lockfile installation. The primary branch must require the stable aggregate gate; effective activation is verified separately as described above. Validation must not silently fix tracked sources.\nRenovate owns version-update automation, with routine weekly grouping and automerge disabled initially. Dependabot vulnerability alerts are a separate capability, not a second version-update system. GitHub security features retain the availability and entitlement qualifications in the ADR; paid security features are not a mandatory architectural dependency.\nDeployment, release approvals, rollback environments, and CD remain deferred until concrete deployment requirements exist. Use [secrets management](../security/secrets-management.md), [production access](../security/production-access.md), and [retention](../security/data-retention.md) for those cross-cutting policies. Local validation commands are listed in [validation](../validation.md); remote run results and effective settings must be verified separately.\n"
+  },
+  {
+    "id": "repository/docs/architecture/delivery-and-side-effects",
+    "title": "Delivery and Side Effects",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Delivery and Side Effects",
+    "anchor": "delivery-and-side-effects",
+    "text": "Delivery and Side Effects\n[Documentation index](../README.md) · [Transactions and concurrency](../database/transactions-and-concurrency.md) · [Compatibility](versioning-and-compatibility.md)\nThis page owns cross-system delivery, idempotency, retry, and crash recovery. Database atomicity, isolation, constraints, locking, and transaction retries belong to [transaction policy](../database/transactions-and-concurrency.md); HTTP representation belongs to [API principles](../api/principles.md). These requirements do not select a broker or require inboxes, outboxes, sagas, or distributed locks without a concrete need.\n"
+  },
+  {
+    "id": "repository/docs/architecture/delivery-and-side-effects",
+    "title": "Delivery and Side Effects",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Idempotency",
+    "anchor": "idempotency",
+    "text": "Idempotency\nIdempotency means repeated application has no additional unintended effect, not merely an identical HTTP response. Setting a state may be naturally idempotent; incrementing a balance usually is not. Client/proxy/SDK retries and user double submission can repeat requests even when the UI disables a button. The server must protect non-repeatable operations.\nWhen using an idempotency key, define its generator, logical operation, scope (such as actor/tenant/operation), durable storage/uniqueness, concurrent-first-attempt behavior, payload mismatch handling, replay result, and tests. In-memory deduplication cannot survive multiple instances or restarts. A uniqueness constraint is stronger than an unprotected check-then-insert. Reusing a key for a materially different intention should normally fail; a canonical request fingerprint can detect this.\nA replay may return the original result or current resource state according to the operation contract. Define retention from retry windows, business risk, semantics, and storage cost under [retention policy](../security/data-retention.md). Critical idempotency guarantees must not silently expire before supported retries.\n"
+  },
+  {
+    "id": "repository/docs/architecture/delivery-and-side-effects",
+    "title": "Delivery and Side Effects",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Delivery Guarantees",
+    "anchor": "delivery-guarantees",
+    "text": "Delivery Guarantees\nAt-least-once delivery permits duplicates; consumers must tolerate them. At-most-once delivery permits loss and is appropriate only if the domain accepts it. Exactly-once behavior is an end-to-end claim across delivery, durable writes, and external effects, not merely a broker setting. Claim it only with evidence for the complete workflow.\nAn inbox/processed-message record can deduplicate by atomically recording an event identity with its protected business effect. Producers and consumers need explicit event ownership, canonical schema, ordering, delivery, and compatibility. Webhooks may repeat, arrive concurrently, or arrive out of order.\n"
+  },
+  {
+    "id": "repository/docs/architecture/delivery-and-side-effects",
+    "title": "Delivery and Side Effects",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Outbox Pattern",
+    "anchor": "outbox-pattern",
+    "text": "Outbox Pattern\nWhen a committed change requires eventual publication, record the state change and publication intent in the same transaction/ownership boundary, then publish that durable intent. The producing capability owns event meaning; the outbox mechanism is infrastructure. Define claiming, bounded retries, ordering, failure recovery, retention, and observability; an outbox must not grow forever without policy.\nAn outbox can publish twice after a lost acknowledgement, so consumers may still need deduplication. Introduce inbox/outbox infrastructure only when reliability requirements justify its complexity.\n"
+  },
+  {
     "id": "repository/docs/architecture/delivery-and-side-effects",
     "title": "Delivery and Side Effects",
     "group": "Architecture",
@@ -870,7 +915,7 @@
     "kind": "repository",
     "heading": "High-Level Structure",
     "anchor": "high-level-structure",
-    "text": "High-Level Structure\nThese locations exist:\nLocation\nResponsibility and entry point\nRepository root\nRepository-wide instructions, workspace/lockfile, dependency and validation configuration. Start with [README](../../README.md) and [AGENTS.md](../../AGENTS.md).\n`apps/api/`\nFastify executable, composed API modules, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md).\n`apps/web/`\nReact/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md).\n`packages/sdk/`\nPublic API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md).\n`docs/`\nCurrent policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md).\n`tooling/validate/`\nRepository documentation, agent-instruction, environment-example, and release-history checks.\n`tooling/documentation/`\nPortal dataset and component-reference generation.\n`tooling/project/`\nProject initialization, pruning, provenance, and Orion upgrade commands and the project-owned file templates; see [project derivation](../project-derivation.md).\n`.orion/`\n[`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance; [`derivation.json`](../../.orion/derivation.json): the clean-baseline contract of foundation-only and project-owned content.\n`.gemini/`\nGemini CLI discovery adapter only; see [agent instructions](agent-instructions.md).\n`.github/`\nGitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings.\n`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no `infra/`, mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.\nKeep the root small: application-specific implementation belongs to its application; runtime sharing belongs to a meaningful package; repository automation belongs under `tooling/`. Introduce `infra/` only for real declarative deployment/operational infrastructure, never ordinary business logic. Infrastructure may consume application artifacts and configuration requirements; runtime code must not import infrastructure definitions.\n"
+    "text": "High-Level Structure\nThese locations exist:\nLocation\nResponsibility and entry point\nRepository root\nRepository-wide instructions, workspace/lockfile, dependency and validation configuration. Start with [README](../../README.md) and [AGENTS.md](../../AGENTS.md).\n`apps/api/`\nFastify executable, composed API modules, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md).\n`apps/web/`\nReact/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md).\n`apps/player/`\nAndroid TV player: a Gradle build outside the pnpm workspace whose `core` module holds the screen's rules on the JVM (ADR-0031). Start with its [README](../../apps/player/README.md).\n`packages/sdk/`\nPublic API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md).\n`docs/`\nCurrent policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md).\n`tooling/validate/`\nRepository documentation, agent-instruction, environment-example, and release-history checks.\n`tooling/documentation/`\nPortal dataset and component-reference generation.\n`tooling/project/`\nProject initialization, pruning, provenance, and Orion upgrade commands and the project-owned file templates; see [project derivation](../project-derivation.md).\n`.orion/`\n[`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance; [`derivation.json`](../../.orion/derivation.json): the clean-baseline contract of foundation-only and project-owned content.\n`.gemini/`\nGemini CLI discovery adapter only; see [agent instructions](agent-instructions.md).\n`.github/`\nGitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings.\n`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no `infra/`, mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.\nKeep the root small: application-specific implementation belongs to its application; runtime sharing belongs to a meaningful package; repository automation belongs under `tooling/`. Introduce `infra/` only for real declarative deployment/operational infrastructure, never ordinary business logic. Infrastructure may consume application artifacts and configuration requirements; runtime code must not import infrastructure definitions.\n"
   },
   {
     "id": "repository/docs/architecture/repository-structure",
@@ -933,7 +978,7 @@
     "kind": "repository",
     "heading": "Local Agent Instructions",
     "anchor": "local-agent-instructions",
-    "text": "Local Agent Instructions\nRead root [AGENTS.md](../../AGENTS.md), then each applicable nested file before editing an area. Nested instructions add local conventions, important files, commands, or prohibited patterns; they do not remove global requirements or copy repository-wide policy. Current scopes include [API](../../apps/api/AGENTS.md), [web](../../apps/web/AGENTS.md), [SDK](../../packages/sdk/AGENTS.md), [documentation](../AGENTS.md), [ADRs](../adr/AGENTS.md), and [runbooks](../runbooks/AGENTS.md).\nEvery tool reads the same files; [agent instructions](agent-instructions.md) owns tool compatibility and forbids instruction copies. Add a local instruction file only when the area needs additional guidance. Keep commands near the owner and link canonical policy so agents receive useful context without independently maintained copies.\n"
+    "text": "Local Agent Instructions\nRead root [AGENTS.md](../../AGENTS.md), then each applicable nested file before editing an area. Nested instructions add local conventions, important files, commands, or prohibited patterns; they do not remove global requirements or copy repository-wide policy. Current scopes include [API](../../apps/api/AGENTS.md), [web](../../apps/web/AGENTS.md), [player](../../apps/player/AGENTS.md), [SDK](../../packages/sdk/AGENTS.md), [documentation](../AGENTS.md), [ADRs](../adr/AGENTS.md), and [runbooks](../runbooks/AGENTS.md).\nEvery tool reads the same files; [agent instructions](agent-instructions.md) owns tool compatibility and forbids instruction copies. Add a local instruction file only when the area needs additional guidance. Keep commands near the owner and link canonical policy so agents receive useful context without independently maintained copies.\n"
   },
   {
     "id": "repository/docs/architecture/repository-structure",
@@ -1132,41 +1177,5 @@
     "heading": "Other Compatibility Surfaces",
     "anchor": "other-compatibility-surfaces",
     "text": "Other Compatibility Surfaces\nSurface\nRequired considerations\nPackages and SDK\nInternal atomic changes usually need no compatibility layer. Independently published packages need a deliberate distribution/version policy and intentional exports. SDK programming API compatibility and SDK-to-server compatibility are distinct; generated public interfaces can become commitments even though output is rebuildable.\nAPIs and public errors\nFollow [API versioning](../api/versioning.md). Consumer-visible errors, ordering, defaults, authorization, pagination, idempotency, and side effects can break without a schema diff.\nConfiguration\nNew required keys may need provisioning before code. Renames need deterministic old/new precedence; removal must preserve rollback. Follow [configuration policy](configuration.md).\nCredentials and identity\nIssuer, audience, claim, algorithm, key, token-lifetime, and session-format changes affect existing clients/sessions. Rotation may sign with new keys while accepting previous keys temporarily under security policy. Mass logout must be deliberate.\nAuthorization/classification\nPersisted permission identifiers may need migration. Review both tighter and looser access; apply stricter current data classification to telemetry, exports, analytics, access, and retention. Required security corrections can override compatibility, with impact managed explicitly.\nCLIs and scripts\nPublic command names, arguments, output, and exit codes can be contracts. Internal scripts within one revision may evolve atomically; external CI/operations consumers may not.\nInfrastructure/providers\nCoordinate resources and permissions before dependent consumers and remove them after migration. Provider API versions are dependencies, not this API's versions; test upgrades and track deprecation deadlines near the integration.\nToolchain/dependencies\nRuntime/compiler upgrades can affect output, library compatibility, and behavior. Use repository pins, lockfile, and frozen installation; assess actual breaking impact rather than trusting labels or allowing uncontrolled upgrades.\nGenerated references\nCanonical contract semantics govern compatibility, not incidental formatting. If external automation consumes a machine-readable artifact, its intended schema becomes explicit.\nSecurity takes priority over retaining vulnerable behavior. Safe release metadata should support correlation without conflating release identity with API/schema versions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/versioning-and-compatibility",
-    "title": "Versioning and Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Deprecation and Removal",
-    "anchor": "deprecation-and-removal",
-    "text": "Deprecation and Removal\nDeprecation needs a replacement, migration path, support/removal condition, and owner. Remove compatibility complexity once the real consumer is gone, not just because current source no longer uses it. Check installed clients, external users, queued/persisted historical shapes, and rollback; source search alone may be insufficient.\nUse safe runtime usage evidence when available. Telemetry can correlate release, operation, bounded contract/error category, migration, and configuration changes; it must not create unbounded labels for arbitrary consumer/payload identities. Alerts should reflect impact from unsupported clients or deployment ordering failures. Document supported versions only where support exists; metadata such as introduced/deprecated/replacement belongs in canonical contracts only when useful, never a parallel manually duplicated manifest.\n"
-  },
-  {
-    "id": "repository/docs/architecture/versioning-and-compatibility",
-    "title": "Versioning and Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Compatibility Testing",
-    "anchor": "compatibility-testing",
-    "text": "Compatibility Testing\nTest actual supported combinations at their boundary: old request/new server, new application/transitional schema, old reader/new message, new worker/retained old job, active/deprecated configuration, or rollback application/current schema. Do not maintain arbitrary historical combinations. Use the real release baseline for migrations; fresh-install checks alone do not prove upgrade safety.\nReleased fixtures/baselines are immutable evidence, not snapshots to silently rewrite when tests fail. Add distinct historical shapes when necessary. Structural API comparisons, canonical event/schema checks, and property-based serializer tests can help where justified; semantic review remains required.\n`pnpm release:check` and its tests protect recorded migration/release history. Current API/SDK/reference freshness checks detect drift from current sources, not released-consumer compatibility. Dedicated historical API diffing, event versioning, and package-publication compatibility tooling are not selected merely by this policy.\nFail before unsafe work when a dependency/schema is unsupported and expose stable safe diagnostics. Prefer capability detection when the real dependency is a capability; numeric comparisons are appropriate only with precise version semantics. Accept supported old forms during transition, then reject removed forms explicitly rather than failing later with unrelated SQL/property errors.\n"
-  },
-  {
-    "id": "repository/docs/architecture/versioning-and-compatibility",
-    "title": "Versioning and Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Breaking Change Checklist",
-    "anchor": "breaking-change-checklist",
-    "text": "Breaking Change Checklist\nBefore completing a compatibility-sensitive change, establish:\nConsumers, release evidence, independence, persistence/replay lifetime, and required direction/window.\nStructural, semantic, behavioral, operational, and security impact; whether atomic or additive evolution is possible.\nOrdered application, schema, configuration, infrastructure, credential, and message states, including new-writer/old-reader safety.\nRollback or forward-recovery expectations and any urgent security override.\nCanonical transition state, tests for supported combinations, safe usage evidence, and completion criteria.\nOwnership and removal conditions for every temporary compatibility path.\nDo not introduce `v2`, a package major, or a payload schema version merely to avoid this analysis. Compatibility exists to protect real consumers while keeping the foundation maintainable.\n"
-  },
-  {
-    "id": "repository/docs/contributing",
-    "title": "Contributing and Documentation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Contributing and Documentation",
-    "anchor": "contributing-and-documentation",
-    "text": "Contributing and Documentation\nUse the [task index](README.md) to locate the policy relevant to a change. This guide owns the contributor workflow and documentation-maintenance rules; it does not replace the architectural policies or [accepted decisions](adr/README.md).\n"
   }
 ]

@@ -408,7 +408,7 @@ const syncSchema = Type.Object(
         {
           additionalProperties: false,
           description:
-            "The UTC offsets of `timeZone` from two days before `serverTime` to 35 days after it: the offset at the start, then one period per transition. Screens resolve local schedule times against these instead of their own time zone data.",
+            "The UTC offsets of `timeZone` from three days before `serverTime` to 35 days after it: the offset at the start, then one period per transition. Screens resolve local schedule times against these instead of their own time zone data.",
         },
       ),
       Type.Null(),

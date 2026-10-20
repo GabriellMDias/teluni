@@ -40,6 +40,32 @@ jobs:
           ORION_RELEASE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: pnpm validate
 
+  player:
+    name: Player
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up JDK 17 with the Gradle cache
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+          cache-dependency-path: |
+            apps/player/gradle/libs.versions.toml
+            apps/player/gradle/verification-metadata.xml
+            apps/player/gradle/wrapper/gradle-wrapper.properties
+            apps/player/**/gradle.lockfile
+      - name: Validate the Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Check the player
+        working-directory: apps/player
+        run: ./gradlew --no-daemon check
+
   dependency-review:
     name: Dependency review
     if: ${{ github.event_name == 'pull_request' && vars.DEPENDENCY_REVIEW_ENABLED == 'true' }}
@@ -57,7 +83,7 @@ jobs:
 
   required-gate:
     name: Orion required gate
-    needs: [validate, dependency-review]
+    needs: [validate, player, dependency-review]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -66,12 +92,17 @@ jobs:
       - name: Require all validation jobs to pass
         env:
           VALIDATE_RESULT: ${{ needs.validate.result }}
+          PLAYER_RESULT: ${{ needs.player.result }}
           DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}
           DEPENDENCY_REVIEW_ENABLED: ${{ vars.DEPENDENCY_REVIEW_ENABLED }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$VALIDATE_RESULT" != "success" ]; then
             echo "Validation job concluded: $VALIDATE_RESULT" >&2
+            exit 1
+          fi
+          if [ "$PLAYER_RESULT" != "success" ]; then
+            echo "Player job concluded: $PLAYER_RESULT" >&2
             exit 1
           fi
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$DEPENDENCY_REVIEW_ENABLED" = "true" ] && [ "$DEPENDENCY_REVIEW_RESULT" != "success" ]; then

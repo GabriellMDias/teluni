@@ -1,5 +1,41 @@
 [
   {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Deprecation and Removal",
+    "anchor": "deprecation-and-removal",
+    "text": "Deprecation and Removal\nDeprecation needs a replacement, migration path, support/removal condition, and owner. Remove compatibility complexity once the real consumer is gone, not just because current source no longer uses it. Check installed clients, external users, queued/persisted historical shapes, and rollback; source search alone may be insufficient.\nUse safe runtime usage evidence when available. Telemetry can correlate release, operation, bounded contract/error category, migration, and configuration changes; it must not create unbounded labels for arbitrary consumer/payload identities. Alerts should reflect impact from unsupported clients or deployment ordering failures. Document supported versions only where support exists; metadata such as introduced/deprecated/replacement belongs in canonical contracts only when useful, never a parallel manually duplicated manifest.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Compatibility Testing",
+    "anchor": "compatibility-testing",
+    "text": "Compatibility Testing\nTest actual supported combinations at their boundary: old request/new server, new application/transitional schema, old reader/new message, new worker/retained old job, active/deprecated configuration, or rollback application/current schema. Do not maintain arbitrary historical combinations. Use the real release baseline for migrations; fresh-install checks alone do not prove upgrade safety.\nReleased fixtures/baselines are immutable evidence, not snapshots to silently rewrite when tests fail. Add distinct historical shapes when necessary. Structural API comparisons, canonical event/schema checks, and property-based serializer tests can help where justified; semantic review remains required.\n`pnpm release:check` and its tests protect recorded migration/release history. Current API/SDK/reference freshness checks detect drift from current sources, not released-consumer compatibility. Dedicated historical API diffing, event versioning, and package-publication compatibility tooling are not selected merely by this policy.\nFail before unsafe work when a dependency/schema is unsupported and expose stable safe diagnostics. Prefer capability detection when the real dependency is a capability; numeric comparisons are appropriate only with precise version semantics. Accept supported old forms during transition, then reject removed forms explicitly rather than failing later with unrelated SQL/property errors.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Breaking Change Checklist",
+    "anchor": "breaking-change-checklist",
+    "text": "Breaking Change Checklist\nBefore completing a compatibility-sensitive change, establish:\nConsumers, release evidence, independence, persistence/replay lifetime, and required direction/window.\nStructural, semantic, behavioral, operational, and security impact; whether atomic or additive evolution is possible.\nOrdered application, schema, configuration, infrastructure, credential, and message states, including new-writer/old-reader safety.\nRollback or forward-recovery expectations and any urgent security override.\nCanonical transition state, tests for supported combinations, safe usage evidence, and completion criteria.\nOwnership and removal conditions for every temporary compatibility path.\nDo not introduce `v2`, a package major, or a payload schema version merely to avoid this analysis. Compatibility exists to protect real consumers while keeping the foundation maintainable.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contributing and Documentation",
+    "anchor": "contributing-and-documentation",
+    "text": "Contributing and Documentation\nUse the [task index](README.md) to locate the policy relevant to a change. This guide owns the contributor workflow and documentation-maintenance rules; it does not replace the architectural policies or [accepted decisions](adr/README.md).\n"
+  },
+  {
     "id": "repository/docs/contributing",
     "title": "Contributing and Documentation",
     "group": "Project guides",
@@ -682,23 +718,5 @@
     "heading": "backchannel_logout_replays",
     "anchor": "backchannel_logout_replays",
     "text": "backchannel_logout_replays\nIdentifiers of accepted provider logout tokens, kept to reject a replayed token.\nOwner: Identity. Classification: INTERNAL.\nLifecycle: Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti`\n`character varying(255)`\nno\n—\nINTERNAL\nUnique identifier (jti) of an accepted logout token.\n—\n—\n`received_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the token was accepted.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the token would fail the five-minute age check, so its record is no longer needed.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-7",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "outbound_emails",
-    "anchor": "outbound_emails",
-    "text": "outbound_emails\nTransactional outbox of email messages: a producer records the intent in its own transaction and the dispatcher delivers it through the SMTP relay at least once.\nOwner: Mail. Classification: CONFIDENTIAL.\nLifecycle: Created PENDING by a producer; becomes SENT when the relay accepts it, FAILED after a permanent rejection or the last attempt, or CANCELLED by its producer. The sealed secret is erased at the final state, and the row is deleted 30 days later (provisional until PH-13).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated message UUID; also the stable source of the email Message-ID across retries.\n—\n—\n`producer`\n`character varying(64)`\nno\n—\nINTERNAL\nCapability that enqueued the message and owns its meaning, for example organizations.invitation.\n—\n—\n`producer_reference`\n`uuid`\nno\n—\nINTERNAL\nIdentifier of the producer's record the message reports, such as an invitation ID.\n—\n—\n`template`\n`character varying(64)`\nno\n—\nINTERNAL\nProducer-registered template rendered when the message is sent.\n—\n—\n`locale`\n`character varying(16)`\nno\n—\nINTERNAL\nTemplate locale: pt-BR or en-US.\n—\n—\n`recipient`\n`character varying(254)`\nno\n—\nCONFIDENTIAL\nNormalized recipient address.\n—\n—\n`parameters`\n`jsonb`\nno\n—\nCONFIDENTIAL\nAllowlisted, non-secret template parameters as a JSON object of strings.\n—\n—\n`sealed_secret`\n`bytea`\nyes\n—\nRESTRICTED\nAES-256-GCM sealed secret parameter (such as an invitation credential) under the mail key ring, bound to the message ID.\nThe message has no secret parameter, or it reached a final state and the secret was erased.\n—\n`status`\n`\"OutboundEmailStatus\"`\nno\n`'PENDING'::\"OutboundEmailStatus\"`\nINTERNAL\nPENDING until sent, failed or cancelled.\n—\n—\n`attempts`\n`integer`\nno\n`0`\nINTERNAL\nDelivery attempts claimed so far, including an attempt interrupted by a crash.\n—\nattempts\n`next_attempt_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nEarliest instant the dispatcher may claim the pending message again.\n—\nUTC instant, millisecond precision\n`lease_expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nEnd of the current dispatcher's claim; also its ownership token when recording the outcome.\nNo dispatcher has claimed the message yet.\nUTC instant, millisecond precision\n`last_failure`\n`character varying(32)`\nyes\n—\nINTERNAL\nClass of the latest failed attempt: connection, timeout, tls, authentication, rejected or unexpected. Never raw provider text.\nNo attempt has failed.\n—\n`last_reply_code`\n`integer`\nyes\n—\nINTERNAL\nSMTP reply code of the latest failed attempt.\nNo failure, or the failure carried no SMTP reply.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the producer enqueued the message.\n—\nUTC instant, millisecond precision\n`finalized_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the message reached SENT, FAILED or CANCELLED; starts the retention period.\nThe message is still pending.\nUTC instant, millisecond precision\n"
   }
 ]
