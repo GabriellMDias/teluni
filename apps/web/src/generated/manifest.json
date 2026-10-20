@@ -2518,6 +2518,16 @@
       "file": "pages/repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.json"
     },
     {
+      "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+      "kind": "repository",
+      "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+      "group": "Decisions",
+      "source": "docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md",
+      "summary": "Acceptance scope: The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -2988,6 +2998,16 @@
       "file": "pages/repository/docs/project/playback-and-sync.json"
     },
     {
+      "id": "repository/docs/project/player-design",
+      "kind": "repository",
+      "title": "Teluni Android TV Player Design",
+      "group": "Project guides",
+      "source": "docs/project/player-design.md",
+      "summary": "Decided detailed design for D-07, 2026-10-20. The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent took the decisions below…",
+      "headings": [],
+      "file": "pages/repository/docs/project/player-design.json"
+    },
+    {
       "id": "repository/docs/project/product",
       "kind": "repository",
       "title": "Teluni Product Vision",
@@ -3364,18 +3384,18 @@
       { "file": "search/0017.json", "count": 114, "kinds": ["repository"] },
       { "file": "search/0018.json", "count": 134, "kinds": ["repository"] },
       { "file": "search/0019.json", "count": 182, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 120, "kinds": ["repository"] },
-      { "file": "search/0021.json", "count": 118, "kinds": ["repository"] },
-      { "file": "search/0022.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0023.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 115, "kinds": ["repository"] },
+      { "file": "search/0021.json", "count": 130, "kinds": ["repository"] },
+      { "file": "search/0022.json", "count": 78, "kinds": ["repository"] },
+      { "file": "search/0023.json", "count": 71, "kinds": ["repository"] },
       { "file": "search/0024.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0025.json", "count": 47, "kinds": ["repository"] },
-      { "file": "search/0026.json", "count": 65, "kinds": ["repository"] },
-      { "file": "search/0027.json", "count": 77, "kinds": ["repository"] },
-      { "file": "search/0028.json", "count": 80, "kinds": ["repository"] },
-      { "file": "search/0029.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0030.json", "count": 30, "kinds": ["repository"] }
+      { "file": "search/0025.json", "count": 53, "kinds": ["repository"] },
+      { "file": "search/0026.json", "count": 58, "kinds": ["repository"] },
+      { "file": "search/0027.json", "count": 82, "kinds": ["repository"] },
+      { "file": "search/0028.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0029.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0030.json", "count": 65, "kinds": ["repository"] }
     ],
-    "count": 1631
+    "count": 1667
   }
 }

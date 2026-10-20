@@ -117,6 +117,132 @@
     "text": "References\n[Publication and synchronization design](../project/publication-sync-design.md)\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
   },
   {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "anchor": "adr-0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "text": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together with the decisions of the [player design](../project/player-design.md); merging the pull request that adds it is the repository review. Acceptance establishes the direction for implementing PJ-12 in local and CI environments. It does not qualify any device (PH-08), select production update operations (PJ-13) or provide the release signing key (PH-27).\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0020 chose a native Kotlin and Media3 Android TV player with durable local state. It left the persistence library, startup and unattended behavior, packaging and updates open, and ADR-0019 requires atomic activation that survives power loss. The protocol of ADR-0030 gives screens exact manifests, SHA-256-identified media and signed statements with a server time, but says nothing about how the player stores them or how it gets reliable local time.\nThe pilot hardware is unknown (PH-08) and likely to include inexpensive Android TV boxes. Such boxes often run old Android versions with stale time zone data, have no battery-backed clock and offer limited launcher control. The repository's tooling is TypeScript, while the shared schedule fixtures must also run against the player. The cloud development environment cannot currently reach Google's Maven repository (PH-26).\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nThe player is one Gradle build in `apps/player`. A pure-JVM `core` module holds every rule: protocol models, statement verification, the schedule evaluator, trusted time, the local store, synchronization and playback decisions. An Android `app` module holds the activity, Media3 rendering, the Keystore vault and device integration. `core` tests run the repository's shared fixtures, and a dedicated CI job checks the build as part of the required gate.\nLocal state is plain files in app-private storage, without a database:\nwrite-once media named by their SHA-256;\nexact manifest bytes per generation;\none small state record replaced atomically (temporary file, `fsync`, rename, directory `fsync`).\nActivation is a single replacement of that record, and startup reconciles deterministically from any interruption.\nBusiness time never depends on the device's time zone data. Each sync response carries the screen zone's UTC offsets for the next 35 days, computed by the API with the same Temporal implementation as the preview. Trusted time comes from a monotonic anchor set at each sync, with a persisted lower bound across reboots.\nThe supported unattended profile makes the player the device owner on a reset device: the HOME activity in lock task mode. Updates are APKs that the API distributes, verified by SHA-256 and signing certificate and installed by the device owner inside a local window. The player never downgrades; a rollback is a roll-forward release.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nKeeping rules in a JVM module lets the evaluator, protocol parsing, cryptographic checks and store faults be tested quickly and exhaustively in CI without emulators. The same code runs on the device. It also lets that work proceed while Android tooling is unavailable in some environments.\nThe persistent state is a handful of pointers plus immutable files. Atomic file replacement has a simple failure model that can be fault-injected at every step. A database would add schema migrations that interact badly with the no-downgrade rule. Its own durability under power loss would still need the same testing.\nServer-supplied offsets remove a real failure mode: a pilot box with pre-2019 time zone data would shift `America/Sao_Paulo` schedules by an hour for months. They also make the player agree with the server's preview by construction. The cost is a small additive field in the sync response and evaluation that stops outside the covered range, which the seven-day authorization already bounds.\nOn Android 10 and later, a background `BOOT_COMPLETED` start is unreliable, and an ordinary app cannot update itself without a prompt. Device-owner mode makes boot, crash recovery and scheduled updates work without a person at the screen. In exchange, an installer must provision each device with `adb` after a reset, which is acceptable for a pilot of a few screens.\nThese are reasoned choices, not measurements. Startup, recovery, clock behavior and power-loss safety still need PH-08 hardware evidence.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Room or another embedded database",
+    "anchor": "room-or-another-embedded-database",
+    "text": "Room or another embedded database\nOffers queries and transactional updates, but adds migrations, a larger failure surface and the same need for power-cut evidence. Nothing in the state needs relational queries.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Device or bundled time zone data",
+    "anchor": "device-or-bundled-time-zone-data",
+    "text": "Device or bundled time zone data\nDevice data can be years out of date on unmanaged boxes. A bundled library (ThreeTenBP or Joda-Time) is updated only with player releases and can still disagree with the server preview.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Basic installation with Google Play updates",
+    "anchor": "basic-installation-with-google-play-updates",
+    "text": "Basic installation with Google Play updates\nStore distribution needs accounts, review and Play on every device. It does not install updates unattended inside a business window, and many commercial boxes lack Play. A basic sideloaded profile stays possible where PH-08 shows that it boots and recovers reliably.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A single Android module",
+    "anchor": "a-single-android-module",
+    "text": "A single Android module\nSimpler build files, but every rule test would need Robolectric or an emulator, and no part could be built without the Android SDK.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nRules, protocol conformance and crash recovery are tested on every pull request with the shared fixtures and the API's conformance fixtures.\nSchedules agree with the preview regardless of the device's time zone data.\nManaged devices boot into content, recover from crashes and update unattended.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe repository gains a second build system and a JVM toolchain, with its own dependency verification and Renovate coverage.\nManaged installation requires `adb` provisioning on a factory-reset device and excludes devices that cannot be made device owner from the supported profile.\nWithout a server answer after a reboot, the player depends on the system clock being at least the persisted bound and set by network time; a wrong clock without a reference cannot always be detected.\nThe API must keep serving zone offsets and conformance fixtures as part of the device contract.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nRelease signing needs a human-held key (PH-27), and production releases need an approval and update-window process (PJ-13).\nChanging the local state format requires a forward migration or a re-synchronization that keeps the credential. Rollbacks are new releases.\nBuilding the Android module in the current cloud environment requires allowing Google's Maven host (PH-26).\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Player design](../project/player-design.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md), [ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md), [ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\n[Offline playback and synchronization](../project/playback-and-sync.md), [acceptance targets](../project/release-targets.md)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -204,7 +330,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -907,176 +1033,5 @@
     "heading": "Outbox Pattern",
     "anchor": "outbox-pattern",
     "text": "Outbox Pattern\nWhen a committed change requires eventual publication, record the state change and publication intent in the same transaction/ownership boundary, then publish that durable intent. The producing capability owns event meaning; the outbox mechanism is infrastructure. Define claiming, bounded retries, ordering, failure recovery, retention, and observability; an outbox must not grow forever without policy.\nAn outbox can publish twice after a lost acknowledgement, so consumers may still need deduplication. Introduce inbox/outbox infrastructure only when reliability requirements justify its complexity.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Transactions and Domain Events",
-    "anchor": "transactions-and-domain-events",
-    "text": "Transactions and Domain Events\nPublishing before commit can expose a fact whose transaction later fails. Publishing only after commit can lose the event if the process crashes in between. Required durable events need a mechanism that covers this gap, such as transactional recording.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "After-Commit Work",
-    "anchor": "after-commit-work",
-    "text": "After-Commit Work\nAn `afterCommit` callback is best effort in the current process; it does not guarantee an external effect survives a crash. Persist intent when the effect is required durably.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Work Claiming",
-    "anchor": "work-claiming",
-    "text": "Work Claiming\nShared workers must coordinate with row locks, conditional updates, queue ownership, or leases where concurrent processing would be unsafe. Leases need explicit expiration, renewal, stale-worker, and reclaim behavior; they do not make external effects safe by themselves.\nPoison jobs must reach a bounded attempt limit and an identifiable failure/dead-letter/manual-recovery state. Distinguish transaction contention from business rejection. Stop accepting/claiming work during shutdown, and finish or safely release in-flight work according to queue semantics. A crash must not silently lose claimed work.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Queue Visibility Timeout",
-    "anchor": "queue-visibility-timeout",
-    "text": "Queue Visibility Timeout\nA queue can redeliver when processing outlives its visibility timeout or lease. Account for long work, renewal, stale ownership, and duplicate execution.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Distributed Scheduling",
-    "anchor": "distributed-scheduling",
-    "text": "Distributed Scheduling\nDefine whether each instance runs a schedule or one logical execution runs globally. Schedulers do not necessarily coordinate across instances. Singleton jobs need crash-tolerant claims/ownership; overlapping runs must be explicitly allowed, forbidden, coalesced, or queued.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Ordering and Versioned Events",
-    "anchor": "ordering-and-versioned-events",
-    "text": "Ordering and Versioned Events\nDo not assume ordering without a guarantee for the relevant partition/scope. Define the ordering key, reordering tolerance, and whether stale events are ignored, reconciled, or rejected. Correctness may require sequence numbers, versions, or state checks.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Versioned Events",
-    "anchor": "versioned-events",
-    "text": "Versioned Events\nAn aggregate version can help detect duplicate, stale, or out-of-order events; it is not mandatory for every event. Retained event/job schemas also follow [compatibility policy](versioning-and-compatibility.md).\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Unknown Outcome",
-    "anchor": "unknown-outcome",
-    "text": "Unknown Outcome\nA timeout or connection loss after sending a mutation can mean failure or success with a lost response. Preserve an unknown outcome when it affects retry safety. Resolve it through idempotency, status lookup, or reconciliation rather than treating it as a known failure.\nClassify effects as read-only, idempotent writes, non-idempotent writes, or external effects when that clarifies behavior; a formal type system is not required. A transient transport error alone does not make the business operation safe to repeat.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Application Retry Boundary",
-    "anchor": "application-retry-boundary",
-    "text": "Application Retry Boundary\nRetrying a broad application operation must not repeat payments, notifications, or other external mutations unless protected by appropriate idempotency.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Retry Ownership",
-    "anchor": "retry-ownership",
-    "text": "Retry Ownership\nNormally one layer owns retries for a given failure. Inspect driver, repository, service, SDK, proxy, and client retry behavior so nested attempts do not multiply unnoticed. Define the transient category, safe repeat conditions, bounded attempt/time budget, telemetry, and final-failure behavior.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "New Retry Checklist",
-    "anchor": "new-retry-checklist",
-    "text": "New Retry Checklist\nBefore adding retries, establish: why the failure is transient; whether the prior attempt could have succeeded; repeat safety/idempotency; existing retry owners; attempt limit; diagnostic context; and what happens after exhaustion. Retrying must not amplify an outage.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Distributed Workflows and Recovery",
-    "anchor": "distributed-workflows-and-recovery",
-    "text": "Distributed Workflows and Recovery\nA multi-system workflow must name the authority for each fact, atomic and non-atomic changes, partial failures, duplicate/retry handling, discoverable incomplete state, crash behavior, and operational recovery. Reconciliation detects and repairs divergence according to those authorities; it is a safety net, not an excuse for avoidable inconsistency.\nA saga may coordinate independently committed steps through orchestration or event choreography; neither is the default. Persist long-running workflow state when needed so incomplete work is discoverable. Compensation is a new business action, not a database rollback, and may fail. Define its trigger, idempotency, retries, failure state, and manual recovery.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Failure Windows",
-    "anchor": "failure-windows",
-    "text": "Failure Windows\nFor important workflows, inspect crashes after a durable write, before acknowledgement, and after an external effect but before local confirmation. Cover each unacceptable loss/duplication window deliberately. Database-commit/publication and external-mutation/local-write gaps are ordinary design cases.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Verification",
-    "anchor": "verification",
-    "text": "Verification\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Idempotency Tests",
-    "anchor": "idempotency-tests",
-    "text": "Idempotency Tests\nVerify the initial effect, duplicate suppression, compatible replay result, differing-payload conflict where required, and concurrent first attempts. Consumer tests must exercise duplicate delivery and stale/reordered events when relevant.\nRetry tests verify transient retry, permanent-failure rejection, bounded attempts, and no duplicate effects. High-risk workflows should exercise crash recovery, dead letters, replay, and manual recovery procedures where they exist.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Reconciliation Tests",
-    "anchor": "reconciliation-tests",
-    "text": "Reconciliation Tests\nCreate divergent external/internal states deliberately and verify the documented authority and repair behavior. Test failed compensation and incomplete workflows when those mechanisms exist.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Dependency Rules",
-    "anchor": "dependency-rules",
-    "text": "Dependency Rules\n[Documentation index](../README.md) · [Application boundaries](application-boundaries.md) · [Validation](../validation.md)\nThis page owns allowed dependency directions and their enforcement. A resolving import or passing build does not grant architectural permission. Dependencies must follow explicit ownership, public contracts, and runtime compatibility. [ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) selects the enforcement tools; the [technology map](technology-decisions.md) routes stack-specific decisions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Dependency Matrix",
-    "anchor": "dependency-matrix",
-    "text": "Dependency Matrix\nFrom\nTo\nDefault\n`apps/*`\nPublic APIs of compatible `packages/*`\nAllowed\nOne application\nAnother application's implementation\nForbidden\n`packages/*`\n`apps/*`\nForbidden\nOne package\nAnother package\nRequires aligned responsibility, public API, and no cycle\n`tooling/*`\nApplication/package source\nAllowed for repository tooling\nApplication/package runtime\n`tooling/*` or `infra/*`\nForbidden\nInfrastructure definitions\nApplication artifacts/configuration requirements\nAllowed when infrastructure exists\nDocumentation\nImplementation references\nAllowed\nOrdinary application behavior\nParsed human-authored policy\nForbidden by default; documentation-as-product is an intentional exception\nDistinguish compile-time imports, runtime communication, development-only dependencies, and generation inputs. An API runtime dependency does not justify importing its implementation. Test/build/generation tools must not leak into production execution. Generated artifacts depend on their canonical input; that input must not depend back on the output except in an explicitly designed pipeline. Rendering generated documentation in the portal does not make it the source of application behavior.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Application Internal Dependency Direction",
-    "anchor": "application-internal-dependency-direction",
-    "text": "Application Internal Dependency Direction\nOuter delivery adapters normally depend on application behavior and stable domain concepts. Infrastructure implements capabilities needed by the application; bootstrap selects and wires concrete adapters. Stable business behavior must not become dependent on HTTP, ORM records, application bootstrap, or vendor details without architectural justification.\nDirect imports are suitable for stable pure dependencies. Inject replaceable infrastructure where that clarifies ownership/testing, without introducing a framework or an interface for every class. Pass only the configuration a capability needs. Avoid ambient configuration, global registries, service locators, mutable singletons, and arbitrary initialization of unrelated infrastructure.\nClient pages/features use the SDK/client boundary rather than having generic UI components issue arbitrary backend calls. Persistence interfaces protect meaningful ownership or behavior; do not introduce a repository abstraction for every table. ORM records, domain entities, wire contracts, and view models may share a representation only when their semantics actually align.\nProvider SDKs belong near meaningful integration boundaries. An adapter should express an application capability, not duplicate a vendor API simply to hide its name. Domain telemetry must not unnecessarily couple business behavior to a particular telemetry vendor.\n"
   }
 ]

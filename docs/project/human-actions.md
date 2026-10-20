@@ -301,6 +301,28 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0030 accepted, complete PJ-36 and merge PJ-11 work. A rejected or changed item updates the design and, where it changes the mechanism, ADR-0030.
 **Evidence / blocker:** 2026-10-19: the owner asked for development to continue autonomously; the design and ADR-0030 were drafted, linked from the plan, the product architecture and the decision index, and are being implemented following the recommended options so the review can see working behavior. On 2026-10-20 the owner approved PH-25 in the session chat, which covers all ten decisions as proposed, including ADR-0030, and delegated to the agent any further decision that needs a choice. The design is marked approved, ADR-0030 accepted and PJ-36 completed; PJ-11 continues in its pull request.
 
+## PH-26
+
+- [ ] **Allow the cloud development environment to reach Google's Maven repository.**
+
+**Status:** pending. **Owner:** project owner (environment settings).
+**Dependency / trigger:** [PJ-12](implementation-plan.md#current-work); blocks building and testing the player's Android `app` module in the cloud development environment. The pure-JVM `core` module and the CI job are not blocked: GitHub's runners reach the host.
+**Request and reason:** In the cloud environment's settings (the environment menu in the session's title bar, then Edit, then Network access), add `dl.google.com` to the allowed domains with the package-manager defaults kept. `https://maven.google.com` redirects every Android Gradle plugin, AndroidX and Media3 artifact to that host, and the Android SDK platforms come from it too. On 2026-10-20 the proxy refused it with 403. An agent cannot change its own network policy, and writing Android code that cannot be compiled or tested would not meet the repository's verification rules. Steps: https://code.claude.com/docs/en/cloud-environments#network-access.
+**Configuration:** none in the repository.
+**Verification:** In a new session, `curl -sI https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml` answers 200, and `./gradlew :app:assembleDebug` in `apps/player` resolves its dependencies.
+**Evidence / blocker:** 2026-10-20: `maven.google.com` answered 301 to `dl.google.com`, and the proxy refused `dl.google.com` with 403; Maven Central, the Gradle plugin portal and the Gradle distributions were reachable. The owner was told in the session chat.
+
+## PH-27
+
+- [ ] **Create and keep the player's release signing key.**
+
+**Status:** pending. **Owner:** project owner.
+**Dependency / trigger:** [PJ-12](implementation-plan.md#current-work) increment 4 and any APK installed on a pilot screen. It does not block development or CI, which build debug or unsigned release APKs.
+**Request and reason:** Android accepts an update only when it is signed with the same key as the installed app, so the key that signs the first pilot APK must sign every later release. It must stay outside the repository and agent sessions. Create an RSA 4096 or EC P-256 key in a PKCS12 keystore (for example with `keytool -genkeypair -keystore teluni-player-release.p12 -storetype PKCS12 -alias teluni-player -keyalg RSA -keysize 4096 -validity 10000`). Keep it with two offline backups, and record only the certificate's SHA-256 fingerprint in the player's installation guide. Losing the key means every screen must be reset and reinstalled.
+**Configuration:** the release build will read the keystore path, alias and passwords from Gradle properties or environment variables that the player README names when release signing is implemented; never commit their values.
+**Verification:** The fingerprint is recorded, an APK signed by the release process verifies with `apksigner verify --print-certs` against it, and an update signed with the same key installs over the previous release on a test device.
+**Evidence / blocker:** 2026-10-20: requested by the [player design](player-design.md#updates-and-compatibility); no key exists yet.
+
 ## New action template
 
 Allocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the blocked or conditional plan task.
