@@ -4,6 +4,15 @@
     "title": "Teluni Publication and Synchronization Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Audit",
+    "anchor": "audit",
+    "text": "Audit\n`publication.published` and `publication.restored` events record the actor's membership, the program, its source kind and branches, the generation and counts, in the same transaction. Pruning is maintenance and is not attributed to a person. Device reports are operational records with 30-day retention, not audit.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Data",
     "anchor": "data",
     "text": "Data\nTable\nPurpose\n`publications`\nCompany, program (composite reference, deleted with the program), generation (unique per program), protocol, content digest, manifest bytes (null once pruned), manifest SHA-256 and size, item and media counts and bytes, restored-from publication, publisher membership, published, superseded and pruned times\n`publication_playlists`\nEach playlist copied into a publication with the branch that owned it then, for restore checks\n`publication_media`\nEach media item of a retained publication with its rendition SHA-256, size and type (composite reference to the media item); deleted when pruned\n`publication_device_states`\nOne row per screen: last report fields, time received and the desired publication answered\n`publication_device_events`\nReport transitions per screen, kept 30 days\n`publication_audit_events`\nAppend-only audit rows with the branches they concern\nEvery table carries `company_id` with composite tenant references, as the [tenant data design](tenant-data-design.md) requires; reported publication IDs are stored as reported, without references, because they are untrusted. Manifests are `CONFIDENTIAL` like the schedules they contain.\n"

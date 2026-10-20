@@ -113,6 +113,25 @@ class PlayerEngineTest {
     }
 
     @Test
+    fun `keeps what a staging attempt already downloaded across a restart`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        server.publish(publication("pub-b", seed = 2))
+        // The image (1,500 bytes) completes; the video stops after 1,500 bytes.
+        server.failMediaAfter = 1_500
+        assertIs<StagingOutcome.Failed>(engine.syncAndStage())
+
+        val restarted = engine()
+        val image = server.publications.getValue("pub-b").media.getValue("m2-0")
+        assertTrue(PlayerStore(root).hasMedia(sha256Hex(image), image.size.toLong()))
+        server.failMediaAfter = null
+        server.mediaRequests.clear()
+        assertEquals(StagingOutcome.Activated("pub-b"), restarted.syncAndStage())
+        assertEquals(listOf("m2-1" to 1_500L), server.mediaRequests.toList())
+    }
+
+    @Test
     fun `refuses corrupted media and keeps playing the active generation`() {
         val engine = paired()
         server.publish(publication("pub-a"))

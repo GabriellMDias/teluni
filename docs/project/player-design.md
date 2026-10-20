@@ -71,7 +71,7 @@ When the desired publication differs from the active one and from the staging at
 
 1. **Manifest.** Download it, check that its size and SHA-256 match `desired`, and check that the latest valid statement lists that SHA-256. Parse it strictly as protocol 1. Unknown kinds or content types, fades, or anything the player cannot interpret fail as `INVALID_MANIFEST` or `INCOMPATIBLE`.
 2. **Preflight.** Add the bytes of media not yet in the store, counting shared files once. Refuse with `STORAGE_FULL` when the free space after the download would fall below the reserve. Nothing protected is deleted to make room; the report carries the bytes needed.
-3. **Download.** Fetch the missing media, at most two at a time, into `.part` files. Resume with single ranges and the manifest's SHA-256 as the expected `ETag`. Check the length and SHA-256, flush the file to disk, then rename it into the content store and flush the directory. A `RESOURCE_NOT_FOUND` on a manifest or media request means the desired publication changed: the engine synchronizes again at once instead of retrying.
+3. **Download.** Fetch the missing media, at most two at a time, into `.part` files. Resume with single ranges from what a `.part` file holds; the API serves an immutable rendition per media item, and the final check covers resumed bytes. Check the length and SHA-256, flush the file to disk, then rename it into the content store and flush the directory. A complete `.part` file that does not match is downloaded again from the start; freshly downloaded bytes that do not match fail the attempt as `INTEGRITY_FAILED`. A `RESOURCE_NOT_FOUND` on a manifest or media request means the desired publication changed: the engine synchronizes again at once instead of retrying.
 4. **Ready.** When every file is present and verified, the attempt is `READY` and activation follows (next section). Progress is reported in bytes.
 
 ## Local storage, activation and recovery
@@ -127,7 +127,7 @@ The player trusts only statements it has verified:
 - `sub` and `company` must be the screen's own.
 - `iat` must be earlier than `exp`.
 
-Keys are pinned when the player first fetches `GET /device/keys` over TLS after pairing. A statement with an unknown `kid` triggers one fetch of the key set over TLS; a statement that still does not verify is ignored and reported. The player keeps only the latest verified statement. A statement older (by `iat`) than the stored one never replaces it, and nothing extends `exp` locally.
+Keys are pinned when the player first fetches `GET /device/keys` over TLS after pairing. A statement with an unknown `kid` triggers one fetch of the key set over TLS; a statement that still does not verify is ignored, and the previous statement stays in force until its own expiry. The player keeps only the latest verified statement. A statement older (by `iat`) than the stored one never replaces it, and nothing extends `exp` locally.
 
 Protected output plays only while trusted time is before the stored statement's `exp` and the statement lists the manifest SHA-256 of the generation being played. An empty list, an expired statement or no statement gives neutral output: `AUTHORIZATION_EXPIRED` after expiry, `NEUTRAL` for an unpublished source. This is how an assignment to an unpublished destination reaches neutral output, and how a suspended company's screens stop at the latest expiry.
 
@@ -185,7 +185,7 @@ The player sends nothing beyond the sync report and erasure confirmation; diagno
 
 - **Build.** Gradle with the Kotlin DSL, a wrapper pinned with its distribution SHA-256, a version catalog, dependency locking and Gradle dependency verification with SHA-256 checksums for every artifact. Renovate updates the catalog.
 - **Toolchain.** JDK 17. `minSdk` 26 (Android 8.0), which gives `java.time`, current Keystore APIs and `java.nio.file` without desugaring. `compileSdk` and `targetSdk` follow the newest stable platform.
-- **Dependencies.** Kotlin, kotlinx.serialization, kotlinx.coroutines, OkHttp, Nimbus JOSE + JWT and Media3. Tests use JUnit 5 and OkHttp's MockWebServer for `core`, and JUnit 4 with Robolectric for `app`.
+- **Dependencies.** `core` uses Kotlin, kotlinx.serialization, OkHttp and Nimbus JOSE + JWT, and runs its own work on blocking calls and a two-thread download pool. `app` adds Media3 and the AndroidX libraries it needs. Tests use JUnit Jupiter and OkHttp's MockWebServer for `core`, and JUnit 4 with Robolectric for `app`.
 - **CI.** A `Player` job sets up JDK 17, validates the Gradle wrapper and runs `./gradlew check` on every pull request, joining the required gate. `core` needs only the JDK. `app` adds the Android SDK that GitHub's Ubuntu runners provide, and its unsigned release build. The root `pnpm validate` does not require Android tooling; `apps/player/README.md` lists the Gradle commands.
 - **Dependency hosts.** Building `app` needs Google's Maven repository, which redirects to `dl.google.com`. The current cloud development environment refuses that host ([PH-26](human-actions.md#ph-26)), so `app` can be written and verified only after it is allowed or on a developer machine. `core` builds with Maven Central and the Gradle plugin portal.
 
@@ -228,9 +228,9 @@ Increment 1, started 2026-10-20 in [PJ-12](implementation-plan.md#current-work):
   - the OkHttp device API, with its field names checked against the OpenAPI document;
   - the engine (enrollment, synchronization, key rotation, staging with resumable verified downloads and the AT-05 reserve, superseding, activation, startup recovery, erasure);
   - the playback planner.
-- **Tests.** 69 JVM tests, including the engine against an in-memory API that signs real statements.
+- **Tests.** 70 JVM tests, including the engine against an in-memory API that signs real statements.
 
-Not yet implemented: the Android `app` module and everything that needs a device (increment 2, blocked in the cloud environment by [PH-26](human-actions.md#ph-26)), qualification on hardware (increment 3, [PH-08](human-actions.md#ph-08)), and updates and credential rotation (increment 4, [PH-27](human-actions.md#ph-27)). The diagnostic report of the system clock's skew and the crash count are not in the report yet.
+Not yet implemented: the Android `app` module and everything that needs a device (increment 2, blocked in the cloud environment by [PH-26](human-actions.md#ph-26)), qualification on hardware (increment 3, [PH-08](human-actions.md#ph-08)), and updates and credential rotation (increment 4, [PH-27](human-actions.md#ph-27)). Also pending: the background scrub that re-hashes stored media, and the system clock's skew and the crash count in the report.
 
 ## Decisions
 
@@ -246,7 +246,7 @@ The agent took these decisions on 2026-10-20 under the owner's delegation:
 8. **Staging.** Strict protocol 1 parsing, preflight against the AT-05 reserve, at most two resumable downloads verified by length and SHA-256, superseding by newer desired publications, and activation immediately when ready.
 9. **Playback.** ExoPlayer for images and videos with the next item prepared, fit without distortion, muted in protocol 1, schedule boundaries timed on the monotonic clock, and failed items skipped and reported.
 10. **Updates.** Server-distributed APKs verified by SHA-256 and signing certificate, installed by the device owner inside a local window. No downgrade: rollback is a roll-forward release (ADR-0031).
-11. **Platform floor.** `minSdk` 26 and JDK 17. Dependencies: Kotlin, kotlinx.serialization, kotlinx.coroutines, OkHttp, Nimbus JOSE + JWT and Media3, pinned and checksum-verified.
+11. **Platform floor.** `minSdk` 26 and JDK 17. Dependencies: Kotlin, kotlinx.serialization, OkHttp and Nimbus JOSE + JWT in `core`, and Media3 in `app`, all pinned and checksum-verified.
 
 ## Alternatives considered
 

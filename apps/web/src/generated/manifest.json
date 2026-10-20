@@ -3411,8 +3411,8 @@
       { "file": "search/0024.json", "count": 66, "kinds": ["repository"] },
       { "file": "search/0025.json", "count": 54, "kinds": ["repository"] },
       { "file": "search/0026.json", "count": 50, "kinds": ["repository"] },
-      { "file": "search/0027.json", "count": 81, "kinds": ["repository"] },
-      { "file": "search/0028.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0027.json", "count": 80, "kinds": ["repository"] },
+      { "file": "search/0028.json", "count": 69, "kinds": ["repository"] },
       { "file": "search/0029.json", "count": 103, "kinds": ["repository"] },
       { "file": "search/0030.json", "count": 80, "kinds": ["repository"] }
     ],

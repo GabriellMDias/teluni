@@ -533,37 +533,42 @@ public class PlayerEngine(
         }
     }
 
-    /** A stored generation with its manifest and every media file, or null when anything is missing. */
-    private fun load(generation: StoredGeneration): Publication? {
-        publications[generation.publicationId]?.let { return it }
+    /** A stored generation's parsed manifest, or null when it is missing or does not verify. */
+    private fun parsed(generation: StoredGeneration): Publication? {
+        publications[generation.publicationId]?.takeIf { it.sha256 == generation.manifestSha256 }?.let { return it }
         val bytes = store.manifest(generation.publicationId) ?: return null
         val publication = try {
             ManifestParser.parse(bytes, generation.manifestSha256)
         } catch (_: StagingFailure) {
             return null
         }
-        if (!publication.media.values.all { store.hasMedia(it.sha256, it.size) }) return null
         publications[generation.publicationId] = publication
         return publication
     }
 
+    /** A stored generation with its manifest and every media file, or null when anything is missing. */
+    private fun load(generation: StoredGeneration): Publication? =
+        parsed(generation)?.takeIf { publication -> publication.media.values.all { store.hasMedia(it.sha256, it.size) } }
+
+    /**
+     * Deletes what no kept generation needs (AT-19): the active and recovery
+     * generations and the staging attempt with the media it already has.
+     */
     private fun collect(state: PlayerState) {
         val kept = listOfNotNull(state.active, state.recovery, state.staging)
         val keepPublications = kept.map { it.publicationId }.toSet()
-        val parsed = kept.mapNotNull { publications[it.publicationId] ?: load(it) }
-        val keepMedia = parsed.flatMap { publication -> publication.media.values.map { it.sha256 } }.toSet()
+        val keepMedia = kept.mapNotNull(::parsed).flatMap { publication -> publication.media.values.map { it.sha256 } }.toSet()
         // Partial files belong to the staging attempt; while its manifest is unknown, all are kept.
-        val stagingMedia = state.staging?.let { staging ->
-            (publications[staging.publicationId] ?: return@let null).media.values.map { it.sha256 }.toSet()
-        }
+        val stagingMedia = state.staging?.let(::parsed)?.media?.values?.map { it.sha256 }?.toSet()
         store.collect(keepPublications, keepMedia, if (state.staging == null) emptySet() else stagingMedia)
         publications = publications.filterKeys { it in keepPublications }.toMutableMap()
     }
 
     /** What to show now, from the active generation, the latest statement and trusted time. */
     public fun plan(): Plan {
+        // Activation and startup reconciliation already established that the active generation is complete.
         val (active, statement) = synchronized(lock) {
-            store.state().active?.let(::load) to latestStatement()
+            store.state().active?.let(::parsed) to latestStatement()
         }
         val zone = syncRecord()?.zoneOffsets?.let(::zoneOffsets)
         return PlaybackPlanner.plan(active, statement, clock.now(), zone)
