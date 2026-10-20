@@ -1,5 +1,527 @@
 [
   {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt versioned declarative composition definitions and typed catalog definitions/records with stable field/binding identities. Customization is validated data rather than executable user code or direct database access. Catalog presets may express products/prices or agendas without making a product schema mandatory for every collection.\nCompose immutable publication snapshots from explicitly identified layout/schema/record/media revisions and the rules needed for offline evaluation. Published snapshots remain interpretable after draft schema evolution. A price save records durable intent and generates affected snapshots from published dependencies, excluding unrelated drafts; expose incomplete/retry states and prevent stale work from overwriting newer desired generations.\nKeep catalogs, layout authoring, programming and publication behind explicit module capabilities in the modular backend. No arbitrary cross-module table writes, circular imports or new generic shared framework are implied. Carry interoperable contracts to the native player rather than importing TypeScript application internals.\nBefore dependent implementation, review concrete schemas, module collaboration, import security, destructive field evolution, snapshot granularity, trusted time, rendering/media profiles and the failure/compatibility fixtures. Serialization, storage layout, libraries and processing/transport mechanisms remain intentionally unselected.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nUser-defined fields and freeform geometry need stable meaning across independent editor/player releases. A versioned declarative boundary makes validation, copying, private references and offline rendering reviewable. Immutable data snapshots preserve the existing consistency/activation direction while allowing automatic price updates without live mutation of an issued program.\nThis is reasoned architecture, not a measured renderer/storage evaluation. PH-09 policy selection alone did not accept this ADR; explicit architectural approval is recorded above. Neither establishes product availability.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Product-only fixed fields and opaque final artwork:** cannot satisfy configurable non-product catalogs, field-bound editing and independent regional presentation without rebuilding the model.\n**Read mutable live records while rendering an old publication:** makes ordinary playback depend on the server or mixes data/layout/schema revisions; obscures rollback and offline commercial validity.\n**Unversioned arbitrary catalog/layout objects:** initially flexible but leaves incompatible field changes, unsafe references and preview/player interpretation undefined. Extensibility still needs typed validation and compatibility rules.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nSupports sector-neutral catalogs, reusable textual layouts and controlled offline interpretation.\nKeeps ordinary drafts separate from explicit automatic price publication and preserves attributable generation history.\nMakes schema/reference/security and regional scheduling cases part of contract verification.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nRequires schema evolution/reference handling and qualified multi-area/video rendering across independent runtimes.\nPublication fan-out, processing and retained generations add storage/work and recovery obligations.\nDoes not remove real device limits, trusted-time uncertainty or the inability to erase an unreachable player instantly.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo product schema or deployment currently exists, so this decision adds no migration or running component. Future implementations must keep retained snapshots readable, reconcile interrupted price/publication work and qualify protocol overlap, offline/power recovery and supported device profiles. Apply accepted ADR-0019 alongside this record; neither supersedes an earlier foundation decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0023-propose-versioned-catalog-and-composition-publications",
+    "title": "ADR-0023: Adopt Versioned Catalog and Composition Publications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Release policies and PH-09 decision record](../project/release-policies.md)\n[Release acceptance targets](../project/release-targets.md)\n[Product architecture](../project/architecture.md)\n[Immutable publication decision](0019-propose-immutable-publications-and-atomic-player-activation.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "anchor": "adr-0024-adopt-keycloak-and-server-managed-human-sessions",
+    "text": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner answered PH-11's identity questionnaire, selecting self-hosted Keycloak as candidate, email/password with optional passkeys, Google as the only external login, and server-managed browser sessions. Public company activation, strong administrative assurance, safe recovery and bounded revocation must work within an initially unfunded residential deployment. A concrete provider/version has not been provisioned or qualified.\nAccepted ADR-0012 governs the existing API's signed JWT access-token boundary. Its header/claims are not ordinary provider defaults, and its current principal result does not expose session or authentication-assurance evidence. The web shell's in-memory bearer support is not a login/refresh implementation. This decision must distinguish product-policy approval from technical acceptance and implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt Keycloak as the human identity provider, self-hosted subject to PH-10 feasibility, with a server-managed browser session integrated into the modular backend where appropriate. Use established OIDC Authorization Code with PKCE and maintained session/security components; keep provider credentials server-side and an opaque protected session cookie in the browser. Do not introduce a new microservice by default or an API-owned password/cryptographic implementation.\nPreserve ADR-0012's API boundary and stable application principal. A reviewed session boundary must obtain legitimate issuer access tokens and establish trusted session/assurance context; a cookie or caller-supplied MFA/session assertion cannot bypass the existing verifier. Define protected cookies, explicit CSRF protection, OIDC state/nonce/redirect validation, session fixation defenses, refresh rotation/replay/concurrency and local/global logout reconciliation before implementation. No session library, route, schema or deployment image is selected by this decision. The pinned Keycloak source assessment in the provider evaluation is review evidence, not an installed production version.\nApply the owner's canonical identity policies, including strong/recent authentication, distinct platform accounts, recovery, inactivity/absolute expiry, session-count and 30-second revocation requirements. Current account/session/membership state must supplement JWT verification. Keep Google brokering/account linking and provider/email credentials at trusted boundaries. A human actor mapper must not accidentally make machine flows authenticate as humans.\nThe [pinned-source compatibility assessment](../project/identity-provider-evaluation.md#pinned-source-assessment) supports this architectural choice. Before integration readiness, implement and verify immutable principal mapping, every required token claim and trusted session/assurance linkage against the selected deployment version using the remaining qualification cases. Where evidence is insufficient, retain an explicit qualification task; do not modify accepted checks to make a default provider token pass. Review deployment/recovery resources separately under PH-10/PH-15. This decision neither supersedes ADR-0012 nor authorizes provisioning.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThe provider matches the owner's control/budget direction and has relevant documented identity primitives. Server-managed sessions reduce browser exposure of provider tokens and permit accountable session lifecycle controls, at the cost of persistent state and CSRF/refresh coordination. A five-minute token alone cannot enforce the selected 30-second revocation bound. Local JWT verification can remain useful without pretending it provides a complete session or authorization system.\nThe documentation review establishes plausible compatibility, including Keycloak's configurable `at+jwt` header, not passed interoperability, recovery or capacity tests. Public signup still needs commercial/privacy and abuse readiness; choosing it does not authorize a free plan or immediate public exposure.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Managed OIDC provider:** may reduce some operating responsibilities, but costs/limits/claim compatibility require evaluation beyond the current no-procurement direction. No vendor benchmark or unconditional free-tier assumption is made.\n**Browser-token SPA with Authorization Code and PKCE:** preserves a simpler server session topology but leaves browser token exposure and refresh/lifecycle tradeoffs; the owner selected server-managed sessions instead. This does not reject the client-first React/Vite application or require server rendering.\n**Another established self-hosted provider:** fallback if qualification rejects Keycloak; no unperformed comparative assessment is claimed.\n**Custom issuer/password storage or relaxed JWT checks:** violates governing controls and is not an acceptable workaround.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nKeeps human credentials with an established provider and browser tokens out of JavaScript-accessible persistence.\nPreserves provider-independent identity and explicit failure/revocation/assurance boundaries.\nDefines compatibility and operational evidence before a production integration is claimed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nSelf-hosting adds patching, resources, recovery and mail-delivery responsibilities despite no procurement budget.\nServer sessions introduce persistence, CSRF, concurrency and logout synchronization work.\nCurrent foundation principal/configuration contracts do not yet carry all needed session/assurance semantics.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo runtime, dependency, API contract, migration or deployment changes accompany this decision. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 decision acceptance is complete; PJ-24 retains every unperformed interoperability/session/assurance test.\n"
+  },
+  {
+    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
+    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Canonical identity and access policies](../project/identity-and-access.md)\n[Provider evidence and qualification gaps](../project/identity-provider-evaluation.md)\n[Existing JWT access-token decision](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\n[Authentication policy](../security/authentication.md)\n[Application boundaries](../architecture/application-boundaries.md)\n[OAuth security best current practice](https://www.rfc-editor.org/rfc/rfc9700.html)\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "anchor": "adr-0025-adopt-application-owned-scoped-access-profiles",
+    "text": "ADR-0025: Adopt Application-Owned Scoped Access Profiles\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nPH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.\nThe foundation verifies human identity but has no product membership/permission implementation. ADR-0018 establishes the accepted tenant-owned modular-data direction; its concrete constraints/enforcement remain design and implementation work. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.\nKeep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.\nEnforce resource ownership, operation, current state, assurance and scope on every protected entry point, including reads/collections, media, imports, bulk work and delayed effects. Revalidate sensitive effects and ensure the selected freshness bound. Grantors cannot delegate authority they lack, responsible-administrator approval cannot be bypassed, and local membership administration cannot reset global identities.\nAuthorize every published dependency/target affected by a price save before accepting the mutation; deny the entire out-of-scope mutation without partial publication or automatic approval fallback. Optional company approval policies distinguish a proposal from an effective saved price and prohibit self-approval where required. Pending protected work rechecks authority; an already-issued valid publication continues its delivery lifecycle unless explicitly revoked by the appropriate control.\nRoutine support uses the real support identity and a visible, expiring customer-authorized scope, read-only by default and separate write grants. No impersonation is selected. Emergency access requires a separately reviewed, exceptional controlled procedure; there is no standing unrestricted content-browsing right.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nApplication ownership keeps mutable company permissions and resources independent of provider migration and stale identity claims. Explicit capabilities/scopes accommodate both small-business presets and teams working across branches without making every operator an administrator. Attributable publication/support checks preserve the approved product behavior and tenant boundaries.\nThe owner approved policy and required allow/deny cases, not a database model or proven permission evaluator. Custom profiles, optional approvals and bounded asynchronous revocation add real implementation work and must not be claimed merely from a matrix.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Fixed roles only:** simpler, but cannot satisfy the selected customizable capability/scoping policy without revisiting the product requirements.\n**Provider roles/groups as complete authorization:** insufficient for current memberships, mutable resource relationships, publication fan-out and tenant-safe support; would couple application permission meaning to identity infrastructure.\n**General-purpose policy engine:** no measured need or evaluation justifies another dependency or distributed component at this stage. Review if actual policy complexity warrants it later.\n**Platform superuser and silent price partial success:** obscure authority and violate selected customer-content boundaries and complete price-impact validation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nMakes granted authority, tenant/resource scope, responsibility and delegated support explainable and testable.\nKeeps identity migration independent from company permission ownership.\nPreserves safe all-target publication and attributable pending-work behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nCustom profiles, shared resources and optional approvals increase UX, schema and test complexity.\nFreshness, grant races and background work require explicit consistency/invalidation design.\nA safe role matrix alone cannot prevent unsafe queries, caches or credential mapping.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo permission identifiers, schema, migration or running engine is created here. Implementation/release qualification under PJ-03/PJ-07/PJ-24 requires reviewed capability ownership, consistency/enforcement design and passing IA-01–IA-16 cases, including two-company negative fixtures and trustworthy session/assurance context. Later renaming persisted grants or broadening presets is a compatibility/security change. Audit/privacy retention and host recovery remain separate gates.\n"
+  },
+  {
+    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
+    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Selected identity policy and permission matrix](../project/identity-and-access.md)\n[Tenant-owned data decision](0018-propose-tenant-owned-data-in-the-modular-backend.md)\n[Human provider/session decision](0024-propose-keycloak-and-server-managed-human-sessions.md)\n[Authorization policy](../security/authorization.md)\n[Release publication policies](../project/release-policies.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "anchor": "adr-0026-deliver-transactional-email-through-a-postgresql-outbox-and-an-smtp-relay",
+    "text": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved this decision and the D-13 design on 2026-10-18 under PH-21. Acceptance establishes the architectural direction for local and CI implementation, not production readiness. Real sending still requires PH-17's sender, domain authentication and provider terms and PH-13's notices and retention, and the qualification evidence in the [implementation plan](../project/implementation-plan.md) remains mandatory.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nCompany invitations are the first Teluni workflow that must send email from the application: the selected identity policy requires recipient-bound, single-use invitations valid for seven days, and later notices will need the same capability. Keycloak sends its own verification and recovery messages but cannot send application messages, and memberships and grants are application-owned (ADR-0025).\nThe [delivery policy](../architecture/delivery-and-side-effects.md) requires a durable required side effect to record its intent with the state change, since sending after commit can lose the effect in a crash and sending before commit can announce a change that never happened. The API currently has no background processing, message broker or outbound-email path. Deployment is a single residential host with Docker Compose and PostgreSQL (ADR-0021), with no recurring procurement budget for identity or email services yet (P03). The real provider, sender domain and DNS authentication are not selected (PH-17), and legal retention is not set (PH-13).\nThis record decides the delivery mechanism. The invitation rules, credential handling, limits and retention proposals are specified in the [invitation and email delivery design](../project/invitation-delivery-design.md) (D-13).\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nTeluni will deliver transactional email through an application-owned outbox in PostgreSQL and an authenticated SMTP relay:\nA dedicated API capability owns an outbound-message table, a dispatcher and an SMTP adapter. Producers enqueue a message in the same database transaction as the business change it reports, through that capability's public port, and can cancel a message they enqueued. The producing capability owns the meaning of a message; the mail capability owns only delivery.\nThe dispatcher runs inside the API process. It claims due messages with row locks and `SKIP LOCKED` under expiring leases, submits them through SMTP, and records sent, failed or cancelled outcomes with bounded retries, so several instances never send one claim twice in normal operation.\nDelivery is at least once. A crash between the relay's acceptance and the local record can send a message again; consumers of the email (people following a link) must tolerate repeats, and exactly-once delivery is not claimed.\nThe SMTP client is the established `nodemailer` library. The relay is provider-neutral and configured, with TLS required in production; a provider's proprietary HTTP API or webhooks are not used in this version.\nMessage bodies are rendered from fixed templates when sent. Secret parameters are stored encrypted under a dedicated key ring only until the message is final. Recipient addresses and credentials never reach logs or telemetry.\nNo message broker, separate worker service or job-queue library is introduced. Bounce processing, delivery receipts and a separate worker deployment remain possible later without changing producers.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nPostgreSQL is already the system of record and provides transactional enqueueing and concurrent claiming, so the producer's change and its email commit or fail together without a second stateful system on the single host. In-process dispatch adds no deployment unit; when the API is down, messages wait rather than disappear, which fits low pilot volume and residential availability. Leases and `SKIP LOCKED` keep the design correct if more instances run later.\nSMTP submission is the most widely supported provider interface, which keeps PH-17 free to choose any service, including one already available to the owner, and keeps a provider change to configuration. `nodemailer` is the long-established Node.js SMTP client and avoids writing protocol code; it is a routine dependency added under the normal review and supply-chain rules.\nAt-least-once delivery is the honest guarantee for an external effect without provider-side idempotency. For invitations a repeated email contains the same still-valid link, so duplicates are harmless; later producers must state their own tolerance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Send after commit in the request",
+    "anchor": "send-after-commit-in-the-request",
+    "text": "Send after commit in the request\nSimplest, but a crash or relay outage after commit silently loses the message, and retrying inside the request ties panel latency to the relay. Rejected by the delivery policy for required effects.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "PostgreSQL job library",
+    "anchor": "postgresql-job-library",
+    "text": "PostgreSQL job library\nLibraries such as pg-boss provide queues on PostgreSQL, but they own their schema and its migrations. Fitting that schema into the repository's reviewed SQL migrations, semantic metadata and least-privilege runtime grants would need adaptation and ongoing tracking of the library's internal tables. A small owned table covers the current need with explicit semantics. This was assessed from the libraries' documented design, not by a trial integration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Broker or Redis-backed queue",
+    "anchor": "broker-or-redis-backed-queue",
+    "text": "Broker or Redis-backed queue\nAdds stateful infrastructure, backups and monitoring on the single host for low volume, and still needs an outbox to close the commit gap.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Provider HTTP API with webhooks",
+    "anchor": "provider-http-api-with-webhooks",
+    "text": "Provider HTTP API with webhooks\nOffers delivery events and bounce data, but couples code to one provider before PH-17 selects it and may require paid procurement. Can be reconsidered when a provider is chosen and bounce handling is needed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nAn email intent commits or rolls back with the change it reports, and survives restarts and relay outages.\nNo new infrastructure beyond the existing API and PostgreSQL; the provider stays replaceable through configuration.\nDelivery state is queryable, so the panel can show failures and offer resend.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nDuplicate emails are possible after a crash; every producer must tolerate them.\nDispatch stops while the API is down, and the API process gains a background loop to drain, monitor and test.\nWithout bounce processing, \"sent\" means accepted by the relay, not delivered to the mailbox.\nThe outbox holds personal data and short-lived encrypted secrets, which need retention, cleanup and key rotation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNew `RESTRICTED` settings (relay credentials and the outbound-mail key ring) and monitoring of queue age and failures. Real sending requires PH-17's sender, domain authentication and provider terms, and PH-13's notices; local and CI use a disposable Mailpit sink.\nMoving dispatch to a separate worker later reuses the same table and claiming rules; adopting a provider API later replaces only the adapter.\n"
+  },
+  {
+    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
+    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Invitation and email delivery design (D-13)](../project/invitation-delivery-design.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Identity and access policies](../project/identity-and-access.md)\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md), [ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\n[PH-17](../project/human-actions.md#ph-17), [PH-21](../project/human-actions.md#ph-21)\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "anchor": "adr-0027-adopt-device-generated-credentials-and-code-based-enrollment",
+    "text": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment\n**Status:** accepted\n**Date:** 2026-10-19\n**Acceptance scope:** The owner explicitly approved this decision and the nine decisions of the device enrollment and lifecycle design on 2026-10-19 under PH-22. Acceptance establishes the direction for local and CI implementation of PJ-08 with simulated players, not Android player delivery (PJ-12), hardware qualification (PH-08) or production readiness.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nTeluni screens are Android TV players without a keyboard that must be paired to one company and branch by a person who is already signed in to the panel (FR-02). Policies require temporary, single-use, rate-limited codes that are safe under concurrent claims, a separate revocable identity per device that is never a human principal, revocation that denies future server access, and no custom cryptography or token schemes ([security requirements](../project/security-and-i18n.md#pairing-and-device-lifecycle), [release policies](../project/release-policies.md#offline-authorization-and-clock-trust)). Keycloak holds only human identities ([ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)), and the pilot runs on a single host ([ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)).\nThis record decides how a device is enrolled and how it authenticates afterward. The detailed rules, limits, data and contracts are in the [device enrollment and lifecycle design](../project/device-enrollment-design.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nTeluni will enroll devices with an application-owned flow shaped like the OAuth 2.0 Device Authorization Grant (RFC 8628) and authenticate them with a device-generated bearer credential:\nThe player generates a 256-bit credential from the platform CSPRNG, keeps it in Android Keystore-backed storage and sends only its SHA-256 when it starts an enrollment. The API answers with a short user code to display and an enrollment ID to poll.\nA signed-in, authorized person enters the user code in the panel; one conditional transaction claims the enrollment and creates the device in the chosen company and branch.\nThe device then presents the credential as a bearer token on device routes only. The API stores only the hash, resolves it on every request without caching, and revokes it by state change. Human routes never accept it and device routes never accept a human session.\nUser codes are short-lived, single-use, stored only as a keyed HMAC and protected by attempt limits.\nThe API's devices module owns the flow; the shared runtime gains only a `device` operation access kind. No identity provider, certificate authority or proof-of-possession library is introduced now.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nRFC 8628 is the established pattern for input-constrained devices, so the user-facing shape and its code guidance (alphabet, length, expiry, rate limits) come from a reviewed standard rather than invention. Generating the credential on the device means no secret is ever returned by the server, so a lost response at any step is retried without issuing anything and without a re-issue path. A 256-bit random value needs only a plain hash for storage and lookup. A bearer credential over HTTPS fits the single-host pilot and the existing Fastify/PostgreSQL stack.\nThe accepted cost is that a copied credential is usable until revoked, unlike a key that never leaves hardware. Revocation on the next request, rotation and the `device` access kind as a single seam keep a later move to proof of possession contained.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Server-issued credential returned at pairing",
+    "anchor": "server-issued-credential-returned-at-pairing",
+    "text": "Server-issued credential returned at pairing\nReturning the only copy of a secret in one response makes a lost response either a stuck device or a reason to add a re-issue path with more secret-bearing responses.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Device key pair with signed requests or mutual TLS",
+    "anchor": "device-key-pair-with-signed-requests-or-mutual-tls",
+    "text": "Device key pair with signed requests or mutual TLS\nDPoP (RFC 9449) or client certificates would keep the private key in hardware and resist copying. They add proof verification or certificate issuance and renewal without a measured threat that requires them in the pilot. They remain the preferred upgrade if PH-08 devices offer usable hardware-backed keys and the threat model calls for it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Keycloak device grant and service accounts",
+    "anchor": "keycloak-device-grant-and-service-accounts",
+    "text": "Keycloak device grant and service accounts\nIt reuses an established server, but makes each screen a Keycloak client or user, couples player operation to Keycloak availability and mixes device and human identities that the policies keep apart.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nNo secret leaves the server, and every enrollment step is safely retryable.\nRevocation is immediate for reachable devices and needs no token lists or expiry windows.\nDevice and human authentication stay separate at the operation level.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nA credential copied from a compromised or rooted device works until revoked; physical control of a player remains a residual risk, as the security requirements already state.\nTeluni owns the enrollment endpoints, limits and their tests instead of relying on an identity provider.\nA new `RESTRICTED` key ring for user-code HMACs must be configured and rotated.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nHost migration and restore must preserve credential hashes so devices keep working, without ever exporting the credentials themselves.\nMoving to proof of possession later requires a player update and an overlap period in which both schemes are accepted for already-paired devices.\n"
+  },
+  {
+    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
+    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Device enrollment and lifecycle design](../project/device-enrollment-design.md)\n[Security requirements: pairing and device lifecycle](../project/security-and-i18n.md#pairing-and-device-lifecycle)\n[Release policies: offline authorization](../project/release-policies.md#offline-authorization-and-clock-trust)\n[ADR-0020](0020-propose-a-native-android-tv-player.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "anchor": "adr-0028-adopt-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "text": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n**Status:** accepted\n**Date:** 2026-10-19\n**Acceptance scope:** The owner explicitly approved this decision and the nine decisions of the media library design on 2026-10-19 under PH-23. Acceptance establishes the direction for local and CI implementation of PJ-09 with generated fixtures, not device profile qualification (PH-08), the production image (PJ-13) or malware scanning (PH-13).\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nTeluni stores private customer images and videos, validates them against the selected ingestion bounds and turns them into renditions that Android TV screens can play offline (FR-04, AT-02, AT-03). The pilot runs on one residential host with durable mounted storage and no cloud budget, and media storage must stay a media-owned capability with replaceable filesystem I/O ([ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)). Security requirements ask for trustworthy inspection, parser isolation and no unvalidated transcoding framework ([security requirements](../project/security-and-i18n.md#media-and-audit-protections)); the release policies require preserved originals, compatible renditions, reference-safe deletion and a recoverable trash.\nThis record decides where media bytes live, how they are named and published, and which tool parses and converts untrusted files, and how it is isolated. The detailed rules, profiles, limits, data and contracts are in the [media library design](../project/media-library-design.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nTeluni will store media as immutable content-addressed objects on a local volume and process it only with FFmpeg in isolated child processes:\nThe media module owns an object interface (`put`, `open` with an optional byte range, `delete`, `list`) implemented over a configured directory on durable storage. Each object is named by the SHA-256 of its bytes inside its company and is never modified; identical bytes are stored once per company and never shared across companies.\nObjects are written to a work directory on the same filesystem, flushed, and published by an atomic rename while a transaction-scoped PostgreSQL advisory lock on the object is held, before the referencing asset commits. PostgreSQL is the authority for which objects exist and who may read them; paths never leave the module.\nUntrusted files are parsed and converted only by the FFmpeg executables (`ffprobe`, `ffmpeg`, version 6.1 or later), run without a shell, with a scrubbed environment, a forced demuxer, the file protocol only, bounded output and timeouts, and resource limits where the host offers them. No media parser or image library runs inside the API process.\nWork is queued in PostgreSQL and claimed by an in-process processor with leases, so several API processes can share it and interrupted work resumes.\n"
+  },
+  {
     "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
     "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
     "group": "Decisions",
@@ -862,356 +1384,5 @@
     "heading": "Unknown Outcome",
     "anchor": "unknown-outcome",
     "text": "Unknown Outcome\nA timeout, disconnect, or commit error may leave the caller uncertain whether a write or external effect occurred. Retryability cannot be inferred from HTTP status or transient infrastructure failure alone. Define whether the operation is known not to have occurred, safely replayable, or requires state reconciliation. Introduce a distinct public unknown-outcome code only when consumers need different handling.\nA public retry hint, if introduced, must be machine-readable, bounded, and accurate for the operation. Rate-limit guidance must not disclose anti-abuse internals. Never imply a non-idempotent write is safe to repeat merely because the registry classifies a failure as transient. Each module's recovery conventions own its create replay and mutation reconciliation behavior.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Details and additional delivery modes",
-    "anchor": "details-and-additional-delivery-modes",
-    "text": "Details and additional delivery modes\nEvery public details object needs a typed schema and a consumer purpose. Include only information safe for that caller; omit record dumps, protected resource/tenant identifiers, authorization evaluation, credentials, and provider payloads. Cross-cutting correlation/retry metadata should remain distinguishable from domain details. Once consumed, field meaning and shape are compatibility-sensitive.\nWhen additional modes are introduced:\nMode\nError requirement\nWebhook or upload\nFollow the operation/provider contract while minimizing signature-validation or scanning details. Bound and classify upload failures explicitly.\nAsynchronous work\nA successful acceptance response does not guarantee eventual success. Externally visible job status maps worker failures to stable public semantics, never worker exceptions.\nBatch/partial success\nDefine atomic versus partial processing and item identity in an operation-specific result. Do not ambiguously overload the ordinary single-error envelope.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Diagnostics and consumer behavior",
-    "anchor": "diagnostics-and-consumer-behavior",
-    "text": "Diagnostics and consumer behavior\nReport an unexpected occurrence once at its authoritative boundary. Preserve useful internal causal evidence only within [redaction rules](../security/telemetry-redaction.md); preservation never authorizes raw exception-message or stack export. The current runtime records allowlisted diagnostic fields rather than arbitrary error content. Expected validation, business, and access failures may contribute to safe metrics/security/audit signals without becoming unexpected incidents.\nClients and SDKs must preserve structured error semantics and correlation, and provide a safe fallback for unknown codes. Application consumers should not depend on framework-specific transport exceptions for business meaning. Product code decides whether to display safe server copy or localized client text; it must not parse that copy. The current thin SDK exposes generated response/error typing without adding a separate error-class hierarchy.\nCode meaning, status mappings, details, categories where consumed, and retry behavior require [compatibility review](versioning.md). Adding a code can break exhaustive consumers; renaming/removing a code or changing meaning is potentially breaking. Optional details are only additive if actual clients tolerate them.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Change and verification checklist",
-    "anchor": "change-and-verification-checklist",
-    "text": "Change and verification checklist\nInspect the registry, similar conditions, owning operation, actual consumers, authorization/disclosure policy, and compatibility commitments.\nDefine the safe semantic mapping and outcome/retry behavior. Add details only when needed, with explicit schema and size limits.\nVerify the real transport envelope, status, code, safe message, correlation, hidden-resource handling, and relevant failure paths. Test absent/invalid/expired credentials and other lifecycle states only where that mechanism exists.\nInject unexpected failures and assert that secrets, SQL, provider data, input values, stacks, and internal paths do not escape. Verify one appropriate diagnostic event and safe retry metadata if present.\nRegenerate and check the registry/OpenAPI/SDK references through [validation](../validation.md). Preserve current checks for registered unique codes, operation declarations, and freshness; extend checks for any new detail schemas or released compatibility obligations.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Principles",
-    "anchor": "api-principles",
-    "text": "API Principles\n[Task index](../README.md) · [Error contract](error-contract.md) · [Compatibility](versioning.md) · [Validation](../validation.md)\nThis policy owns API boundary design. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) selects Fastify; [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable TypeBox wire contracts, generated OpenAPI, and the thin TypeScript SDK. These are implemented. Module-specific behavior belongs to each module's business specification and implementation conventions; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows a complete example.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Locate the authoritative source",
-    "anchor": "locate-the-authoritative-source",
-    "text": "Locate the authoritative source\nTask\nStart here\nChange an operation, request, response, or expected error\nThe owning [module](../../apps/api/README.md#modules)'s TypeBox contracts, then its application operation and tests\nInspect health contracts\n[Health schemas](../../apps/api/src/health-contracts.ts) and [health policy](../reliability/health-checks.md)\nInspect the interoperable API\n[Generated OpenAPI](../generated/api/openapi.json); author changes in executable contracts\nChange a public error\n[Error registry and envelope](../../apps/api/src/errors.ts) and [error policy](error-contract.md)\nChange a consumer\n[SDK public surface](../../packages/sdk/README.md) and [web guide](../../apps/web/README.md)\nRegenerate derived artifacts\n[Artifact workflow](../architecture/backend-execution-and-generated-artifacts.md)\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Ownership and transport boundaries",
-    "anchor": "ownership-and-transport-boundaries",
-    "text": "Ownership and transport boundaries\nAn API exposes an owned application capability, not an arbitrary database table. Each operation needs a clear domain owner, consumer, and canonical contract. Resources and explicit commands are both appropriate when they express real behavior; do not generate CRUD or generic updates for every persisted entity.\nTransport adapters own routing, request validation, authentication integration, safe request context, protocol/error mapping, and response serialization. Application operations and domain rules should not depend on HTTP objects, headers, status codes, or framework APIs unless the behavior itself is transport-specific. Pass only the trusted context an operation needs.\nPersistence records, domain entities, API payloads, events, and UI models have distinct responsibilities. Reuse a representation only when its semantics genuinely match. Explicitly map allowed inputs and outputs: never pass an untrusted body directly to persistence or serialize internal objects merely because they are available. This prevents mass assignment and accidental disclosure while allowing internal refactoring without consumer breakage.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Canonical API Contract",
-    "anchor": "canonical-api-contract",
-    "text": "Canonical API Contract\nMaintain wire-oriented TypeBox schemas and route metadata as the authored source. Fastify uses them for validation and serialization; generated OpenAPI 3.1 describes the interoperable boundary; `openapi-typescript` and `openapi-fetch` provide the default typed client. Every exposed operation must have a stable, unique `operationId`.\nDefine request/response shapes, constraints, authentication, expected errors, and non-structural semantics deliberately before exposing behavior. Do not separately maintain equivalent runtime validators, TypeScript interfaces, OpenAPI schemas, SDK types, or reference tables. Generated artifacts are reproducible representations and must not be hand-edited. Ordinary internal types need not become TypeBox schemas.\nThe API owns its contracts. Extract a shared contract package only for genuine shared ownership. Such a package must not depend on persistence, backend framework implementation, server secrets, or UI code. First-party consumers use the generated SDK and must not import server implementations or database types. The SDK may provide transport, types, credential hooks, and error decoding; it must not own backend business authorization or persistence. Successful-response runtime revalidation is not automatic; introduce it only for a demonstrated trust or reliability requirement.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Validation",
-    "anchor": "validation",
-    "text": "Validation\nTreat bodies, query/path parameters, headers, cookies, uploads, webhooks, and client identifiers as untrusted. Validate structural input at the trusted boundary before application logic relies on it. Structural validation, domain validity, authentication, and authorization remain separate checks.\nFor each field, define meaning, required/optional status, omission versus explicit `null`, type, format, bounds, allowed values, classification, and exposure. Normalize only when domain semantics require it; do not silently modify user content for convenience. Unknown-field behavior must be deliberate and compatible with the consumer contract. Separate create, replacement, partial-update, summary, detail, and privileged schemas where their semantics differ instead of building one universally optional model.\nUse meaningful text and numeric limits based on product needs and resource cost. Bounded states should use explicit enums; consider extensibility under [versioning](versioning.md). Distinguish instants, calendar dates, local times, time zones, and durations. Money requires currency, units, and precision; exact financial amounts must not rely on ambiguous floating-point representations. Use clear English names and canonical descriptions, positive boolean semantics where practical, and established domain terminology. Product localization does not change machine identifiers.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Identifiers",
-    "anchor": "identifiers",
-    "text": "Identifiers\nPublic identifiers represent stable resource identity. They may coincide with storage keys when that is an intentional contract, but must not expose sensitive structure or grant authority. Treat opaque identifiers as opaque. Client-generated IDs are allowed only when explicitly designed for an actual offline, distributed, or idempotency need. Changing storage must not accidentally change public identity.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Authentication",
-    "anchor": "authentication",
-    "text": "Authentication\nProtected operations derive identity and capabilities from the [trusted authentication boundary](../security/authentication.md) and enforce [authorization](../security/authorization.md) on the server. Caller-supplied roles, owner IDs, permissions, tenant IDs, feature flags, or UI visibility cannot grant access. A tenant path alone does not establish membership. Public operations must be explicitly public; administrative/debug capabilities require deliberate privilege, output, and environment controls.\nMake operation security requirements discoverable. Apply stronger controls where credentials, personal data, finances, or administration require them. Hidden resources may deliberately share not-found semantics with absent resources; preserve and test the disclosure policy. Keep bearer credentials out of URLs except for an explicitly designed protocol requiring a short-lived capability. Gateway authentication never replaces application authorization.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Pagination",
-    "anchor": "pagination",
-    "text": "Pagination\nPotentially growing collections must be bounded. Define default/maximum page sizes, deterministic ordering with a tie-breaker, empty results, supported filters, sorting, and search semantics. Apply authorization before pagination; counts, filters, and related-resource expansion must not reveal inaccessible data.\nChoose offset or cursor pagination according to dataset size, change frequency, query cost, and consumer needs. Cursors are opaque inputs, not authorization evidence; validate their scope and contents and protect sensitive state or integrity where needed. Document membership changes between pages instead of implying a snapshot guarantee.\nAllowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. Each module's implementation conventions own its concrete cursor and page-size choices.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Idempotency",
-    "anchor": "idempotency",
-    "text": "Idempotency\nFor state-changing operations, consider duplicate submission, concurrent execution, timeout ambiguity, and response loss. HTTP method names alone do not prove idempotency. Where supported, specify key location, scope, intent matching, reuse/different-payload behavior, retention, and replay result. Distinguish a replay from a conflicting new action.\nUpdates that must protect a previously observed state need a deliberate concurrency protocol, such as a version precondition. Stale writes should produce a stable conflict rather than silently overwrite newer state. For example, a module may require `Idempotency-Key` for creation and `expectedVersion` for edits/transitions, recording that protocol in its implementation conventions. Durable implementation requirements belong to [transactions](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md).\nErrors use the [public error contract](error-contract.md). Consumers branch on stable codes, never message text, and must not blindly retry timeouts or all `5xx` responses. Retry safety depends on operation semantics and whether the outcome is known.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Resource protection and operational behavior",
-    "anchor": "resource-protection-and-operational-behavior",
-    "text": "Resource protection and operational behavior\nBound request payloads, handler/dependency execution, and costly queries according to exposure. Technical rate limits protect resources; product quotas express entitlements and require separate semantics. Where clients need retry guidance, expose safe bounded metadata while keeping anti-abuse internals private. The [API runtime guide](../../apps/api/README.md#request-protection) describes the implemented process-local limiter and its deployment limits.\nCache policy must consider authentication, authorization, tenant scope, freshness, and privacy; protected results must not become public cache entries. Conditional requests and ETags are optional mechanisms, not foundation requirements. Health and metrics endpoints are operational contracts with appropriate exposure and safe output; they must not reveal secrets, raw configuration, or stack traces.\n[Observability](../reliability/observability.md) and [redaction](../security/telemetry-redaction.md) own telemetry rules. Use stable operation identities, route templates, method/status/duration, safe correlation, and bounded error categories. Do not log full requests/responses, raw URLs, credentials, or arbitrary exceptions. Propagate tracing through supported outbound and asynchronous boundaries without introducing high-cardinality labels.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Additional delivery modes",
-    "anchor": "additional-delivery-modes",
-    "text": "Additional delivery modes\nThese requirements apply **if the capability is introduced**; they do not imply implementations exist.\nCapability\nRequired design\nLong-running or asynchronous operation\nDistinguish accepted from completed; define status/result/failure retrieval and cancellation. Do not hold a request open indefinitely. Transport cancellation does not prove durable rollback.\nUpload/download\nDefine size/media limits, ownership, processing state, required scanning, and authorization. Delegated or pre-signed URLs need bounded scope/lifetime and must not be logged as harmless text. File content is excluded from telemetry.\nWebhook\nDefine schema, authentication, acknowledgement, retry/delivery behavior, and compatibility. Validate inbound signatures/input and handle replay, duplicates, and out-of-order delivery. Decouple long work where provider acknowledgement requires it.\nEvents\nAn event states that something happened; it is not interchangeable with an API command. Do not reuse response schemas automatically across independently evolving event contracts.\nWebSocket/streaming\nDefine authentication/reauthorization, message contracts, lifecycle, ordering, reconnection, backpressure, cancellation, and partial failure.\nGateway/BFF/GraphQL/RPC\nIntroduce only for demonstrated requirements. Preserve owned contracts and security; account for GraphQL complexity/N+1 and resolver authorization. A BFF must serve a distinct composition need. REST terminology is not a reason for unnecessary design constraints.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Compatibility and documentation",
-    "anchor": "compatibility-and-documentation",
-    "text": "Compatibility and documentation\nIdentify actual consumers and how independently they deploy. Follow [API versioning](versioning.md) for structural, semantic, authorization, error, ordering, retry, and side-effect changes. Prefer compatible evolution over new versions, and keep deprecated behavior functional until its removal conditions are satisfied. Internal consumers can have real compatibility commitments; mobile/desktop consumers can lag.\nGenerate reference facts from canonical contracts and maintain authored explanations for intent the schema cannot express. Use synthetic examples that conform to current contracts. The [Living Documentation Portal](../architecture/living-documentation.md) presents generated facts without becoming another source. A contributor should navigate operation → contract → application owner → authorization → implementation → tests without reverse engineering framework code.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "New API Operation Checklist",
-    "anchor": "new-api-operation-checklist",
-    "text": "New API Operation Checklist\nBefore adding or changing an operation:\nIdentify the capability, owner, actual consumers, and compatibility commitments; reuse existing patterns and semantic errors.\nDefine input/output field meaning, bounds, classification, omission/null behavior, stable operation identity, authentication, authorization, and expected failures.\nSpecify duplicate/concurrent/retry behavior, synchronous versus asynchronous completion, external effects, and pagination/query cost where applicable.\nImplement explicit mapping at the boundary and test validation, serialization, statuses/headers, authentication, denials, hidden resources, and relevant domain behavior through the real HTTP boundary. A policy unit test alone does not prove endpoint enforcement.\nTest security risks proportionally, including mass assignment, oversized inputs, restricted fields, and cross-tenant access where applicable. Preserve actual consumer compatibility commitments.\nRegenerate OpenAPI, SDK, and affected references; run [validation](../validation.md). Current drift checks prove alignment with current sources, not historical consumer compatibility. Review the semantic change as well as the generated diff.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Versioning",
-    "anchor": "api-versioning",
-    "text": "API Versioning\n[Task index](../README.md) · [Cross-system compatibility](../architecture/versioning-and-compatibility.md) · [Release workflow](../database/release-evolution.md) · [Error contract](error-contract.md)\nThis policy owns consumer-facing API evolution. Prefer compatible evolution; create a new API version only when a meaningful incompatibility cannot reasonably be handled within the existing contract. Versions create parallel contracts, SDKs, documentation, tests, support, and security-maintenance obligations.\n[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable contracts and generated OpenAPI/SDK tooling. The current API, SDK, and web consumer evolve together in this repository. No independently released consumer baseline, public support window, or API version-routing scheme is recorded. Current-source freshness checks exist; historical breaking-change detection is conditional on a real released baseline, recorded as a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Released Contract",
-    "anchor": "released-contract",
-    "text": "Released Contract\nA contract is a compatibility commitment once supported consumers depend on it, even when its URL has no numeric version or it is called internal. Before a change, identify consumers, deployment coordination, support promises, and actual usage. Web clients deployed together may permit tighter coordination; mobile, desktop, partner, worker, service, CLI, and other independently deployed consumers may lag. Auto-update does not prove atomic migration.\nUnreleased shapes with no consumer commitment may be refined instead of retaining development experiments. Update canonical source, tests, generated SDK, and consumers coherently. Git preserves development history; API versions preserve meaningful consumer boundaries. Unlike immutable released SQL migrations, released APIs can evolve compatibly in place.\nDo not invent support periods before actual obligations exist. Minimum supported client versions or forced upgrades require a product decision that accounts for availability and user impact; they are not shortcuts around compatibility design. Explicitly identify experimental/beta guarantees if such a lifecycle is needed, rather than relabeling an unstable production contract to evade commitments.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Breaking Change",
-    "anchor": "breaking-change",
-    "text": "Breaking Change\nA change is breaking if a previously valid consumer can fail, behave incorrectly, or misinterpret data. Review more than a structural schema diff:\nSurface\nCompatibility risks\nOperations\nRemoved/renamed operation or path; changed method, operation ID, request or response shape\nRequest fields\nNew required field, tighter limits/validation, changed omission/null/default behavior; relaxed validation may still affect downstream assumptions or security\nResponse fields\nRemoval/rename, required becoming optional, new nullability, types/ranges/formats exceeding client representations; even additive fields fail strict readers\nEnums and unions\nNew values/variants break exhaustive consumers; changed discriminator or meaning is breaking even if the type stays the same\nIdentifiers\nFormat changes affect routing, storage, parsing, and integrations; consumers must not infer structure from opaque IDs\nCollections\nScope, ordering, page-size defaults/limits, cursor or offset semantics, search/filter meaning\nErrors\nCode meaning/removal/rename, status, details, retry semantics; new error codes need client fallback\nBehavior\nIdempotency, visibility/consistency delay, side effects, accepted inputs, cancellation, timeout/unknown-outcome handling\nSecurity and operations\nAuthentication or authorization changes, materially reduced usable rate limits, timeout changes, or dependency assumptions\nAdding an operation or optional field is often compatible, not automatically safe. Evaluate actual generated clients, runtime readers, numeric precision, and unknown-field handling. Distinguish closed values from intentionally extensible enums/unions; extensible responses need safe unknown-value fallback. Do not make all enums extensible by default, or permit arbitrary request fields without a security and semantic design.\nSecurity and data-integrity fixes take precedence over preserving vulnerable or corrupting behavior. Identify and communicate the breaking impact; apply current security/data-protection rules to every supported version. Safe bug-for-bug compatibility is exceptional and requires evidence of serious consumer dependence.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Compatible evolution",
-    "anchor": "compatible-evolution",
-    "text": "Compatible evolution\nFirst consider an additive path: introduce a new capability, support old and new forms, migrate consumers, then deprecate and remove when safe. Define the canonical meaning during coexistence. Compatibility adapters should translate old requests/results at the boundary and reuse application/domain behavior where semantics match. Do not fork the entire domain because a transport version differs.\nCompatibility code, fallback reads, aliases, and dual representations need an owner, tests, dependent-consumer inventory, migration path, support window, and observable removal condition. Preserve legacy semantics intentionally when necessary; if their cost becomes disproportionate, plan retirement explicitly. Avoid indefinite legacy support by accident.\nConsider rolling backend coexistence as well as external clients: supported old/new applications may temporarily share databases, calls, or events. Backward and forward compatibility are separate questions. No universal bidirectional guarantee should be assumed.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Deprecation",
-    "anchor": "deprecation",
-    "text": "Deprecation\nDeprecation means an element remains functional but should no longer be adopted. Record the element, replacement, reason, affected consumers, migration instructions, support commitment, and removal condition or date. Mark canonical metadata and generated docs/SDK annotations where the tooling supports it. A changelog communicates relevant released changes but does not replace current contract documentation.\nRetirement requires evidence that supported consumers have migrated or that the agreed support condition has expired. Observe usage where practical with safe bounded operation/version/client-class dimensions; do not log payloads solely to discover deprecated fields. A contract with no remaining consumers need not endure a ceremonial delay. Security/correctness can require urgent retirement, with its impact recorded explicitly.\nKeep tests for deprecated behavior until retirement. Update SDKs, examples, recommended-version guidance, and migration documentation together. Retain retired consumer documentation when support or investigation obligations require it, clearly separated from current guidance.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "New versions and routing",
-    "anchor": "new-versions-and-routing",
-    "text": "New versions and routing\nBefore creating a version, establish:\nThe incompatible meaning and why additive evolution or in-place deprecation is insufficient.\nThe actual consumers requiring the old contract and the smallest understandable version boundary.\nDeterministic selection/routing, explicit unsupported-version behavior, and any cache implications.\nShared application logic versus justified semantic differences in boundary adapters.\nA support/retirement commitment, migration guide, documentation and SDK strategy, usage visibility, security maintenance, and test matrix.\nPath, header, media-type, date-based, whole-API, and per-capability schemes are alternatives, not selected defaults. Avoid per-endpoint version combinations without a real benefit. Explicit version selection is preferable when an implicit default could change consumer meaning. A mutable `latest` alias is not a stable long-term contract; retired/unsupported versions must fail predictably instead of silently receiving an incompatible newer version.\nAPI contract versions are independent of application releases, SDK package versions, and database migration identifiers. A new backend or SDK release does not automatically require a new API version. Conversely, a breaking SDK public API may require its own package compatibility change even when the server contract stays stable.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Mechanical Enforcement",
-    "anchor": "mechanical-enforcement",
-    "text": "Mechanical Enforcement\n`pnpm references:check` verifies generated OpenAPI and SDK alignment with current executable sources; it does **not** prove compatibility with historical consumers. Current server/browser tests protect the implemented contract. Follow [release and evolution](../database/release-evolution.md#review-api-and-temporary-compatibility) when a real external or independently deployed consumer activates historical obligations.\nRetain the actual released contract as a comparison baseline when needed. Structural comparison should detect removed operations, required fields, types, enum/union changes, and response changes. It complements semantic review of defaults, permissions, errors, ordering, side effects, and retry behavior. A historical snapshot is evidence, not a replacement authoring source.\nProtect real promises with contract/consumer tests; test old requests, deprecated responses/errors, version routing, unknown-value fallback, and generated-client behavior as applicable. Do not invent unsupported release combinations or update a historical fixture merely to hide a failure. Consumer-driven tests, deprecation telemetry, baseline format, and routing tooling should be added when actual topology benefits from them.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Change checklist",
-    "anchor": "change-checklist",
-    "text": "Change checklist\nBefore handing off a compatibility-sensitive change, verify the actual consumer inventory, assess every applicable surface in the breaking-change table, prefer compatible alternatives, define any migration/removal conditions, preserve security across supported versions, and update canonical contracts, generated references, consumers, and tests. Document unavailable historical checks without implying that current-source validation proves them.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Agent Instructions and Tool Compatibility",
-    "anchor": "agent-instructions-and-tool-compatibility",
-    "text": "Agent Instructions and Tool Compatibility\n[Documentation index](../README.md) · [Repository structure](repository-structure.md#local-agent-instructions) · [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nThis page owns how repository instructions reach human contributors and AI coding agents. [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) records the decision. The repository is not coupled to a particular model, agent harness, or vendor.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Canonical instruction source",
-    "anchor": "canonical-instruction-source",
-    "text": "Canonical instruction source\nThe root [AGENTS.md](../../AGENTS.md) and its nested `AGENTS.md` files are the only repository instruction source. They apply equally to every contributor, whether human or agent, and whatever tool is used. Nested files add local obligations for their directory and never remove global invariants; [repository structure](repository-structure.md#local-agent-instructions) owns their scope.\nInstructions route to canonical policy rather than restating it. Machine-enforced architecture, schemas, tests, generated artifacts, and `pnpm validate` are more authoritative than any prompt: an instruction cannot make a failing check acceptable, and a behavior that matters should be enforced mechanically where practical.\nObligations belong to the responsibility, not to a product. Write \"an agent\", \"a contributor\", or \"an authorized coding agent\" in normative text. Name a specific tool only when describing that tool's actual behavior, as below.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Tool-specific compatibility",
-    "anchor": "tool-specific-compatibility",
-    "text": "Tool-specific compatibility\nTool-specific files are thin discovery adapters. They may tell a tool to read `AGENTS.md`; they must not contain, summarize, or override repository instructions, and they are never an architectural authority. Add one only when a tool used with this repository cannot discover `AGENTS.md` otherwise, and verify the tool's current documented behavior first.\nTool\nVerified behavior (2026-09-29)\nRepository adapter\nOpenAI Codex\nReads `AGENTS.md` natively. It combines one file per directory from the project root down to the current working directory and stops at a 32 KiB default combined limit (`project_doc_max_bytes`); nested files below the working directory are not loaded automatically. `AGENTS.override.md` replaces a directory's `AGENTS.md`.\nNone\nClaude Code\nReads `AGENTS.md` natively since v2.1.277 (all session types since v2.1.281): the root and ancestor files at start, and a subdirectory's file when it reads files there. A `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` on the path replaces `AGENTS.md` by default. Verified with Claude Code 2.1.284, whose sessions in this repository load root and nested files without any `CLAUDE.md`.\nNone\nGemini CLI\nLoads `GEMINI.md` by default. Setting `context.fileName` to `AGENTS.md` makes it load the root/ancestor `AGENTS.md` files and, just in time, those of subdirectories it accesses. Project settings apply only in a trusted workspace. Verified by executing Gemini CLI 0.61.0's own discovery functions against a disposable repository.\n[`.gemini/settings.json`](../../.gemini/settings.json) sets only `context.fileName`\nTool behavior changes over time. Reverify it against current official documentation or the installed tool before changing adapters; do not copy instructions to work around an unverified limitation.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Portable instruction rules",
-    "anchor": "portable-instruction-rules",
-    "text": "Portable instruction rules\nKeep each root-to-directory chain of `AGENTS.md` files under 32 KiB so Codex loads it completely. The root file stays concise and links to policy.\nBecause some agents load only the files between the repository root and their working directory, the root file requires reading every applicable nested `AGENTS.md` before editing a directory. Nested files must not assume they were loaded automatically.\nDo not commit `CLAUDE.md`, `GEMINI.md`, `AGENTS.override.md`, `.claude/rules/`, `.github/copilot-instructions.md`, `.cursor/rules/`, or similar instruction copies. Personal, uncommitted variants also change what a tool reads: a local `CLAUDE.local.md` stops Claude Code from reading `AGENTS.md` unless its **Project instructions** setting is `claude-md-and-agents-md`, and a local `AGENTS.override.md` replaces Codex's view of that directory.\nA tool that reads `AGENTS.md` can still be misconfigured by user or organization settings outside the repository. Report such limits instead of adding repository copies.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Enforcement",
-    "anchor": "enforcement",
-    "text": "Enforcement\n`pnpm agents:check`, part of `pnpm validate`, rejects competing instruction files, requires the Gemini adapter to set exactly `context.fileName: [\"AGENTS.md\"]`, and fails when a root-to-directory instruction chain exceeds 32 KiB. `pnpm agents:test` exercises those rules against disposable Git repositories. The check cannot prove that a tool follows the instructions; review and the repository's executable validation remain the controls.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Application Boundaries",
-    "anchor": "application-boundaries",
-    "text": "Application Boundaries\n[Documentation index](../README.md) · [Repository placement](repository-structure.md) · [Dependency rules](dependency-rules.md)\nApplications are executable boundaries with explicit ownership; sharing a monorepo does not merge their runtime, trust, or persistence responsibilities. This page owns runtime separation and composition. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) governs the API adapter and [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) the web stack.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Types of Boundaries",
-    "anchor": "types-of-boundaries",
-    "text": "Types of Boundaries\nBoundary\nRequired reasoning\nRuntime/process\nSeparate processes are distributed participants even when deployed together. Use explicit protocols and account for network failure, timeouts, partial results, retries, and duplicate requests. Remote operations are not local function calls.\nDeployment/distribution\nVersions may coexist. Define supported old/new combinations and migration requirements under [compatibility policy](versioning-and-compatibility.md).\nTrust\nValidate data crossing security contexts, including external-provider responses. Client applications remain untrusted regardless of repository proximity.\nPersistence\nAccess follows explicit application/domain ownership. A shared database client does not authorize every module to access every table.\nApplications must not import another application's internal implementation. Share genuinely common capabilities through public package APIs and communicate through deliberate runtime contracts. A package must not become an indirect way to bypass another application's boundary.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend API Application",
-    "anchor": "backend-api-application",
-    "text": "Backend API Application\nThe implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validation, authentication integration, authorization enforcement, correlation, transport error mapping, application orchestration, dependency composition, telemetry, and health endpoints. Plugins organize runtime integration; they do not define business domains.\nKeep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.\nThe API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Web Application",
-    "anchor": "web-application",
-    "text": "Web Application\nThe implemented `apps/web` is a React/Vite client-first SPA. TanStack Router owns URLs/navigation, TanStack Query owns server state through the generated SDK, and React state/context owns local UI state. The accepted direction includes React Compiler when compatible. No general global-state library or full-stack web framework is selected by default; server rendering requires product justification. Fastify retains authoritative backend responsibilities.\nThe web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.\nThe browser can be inspected, modified, bypassed, replayed, or automated. Client validation and hidden/disabled controls improve experience; trusted backend boundaries still enforce validation, identity, permissions, and business invariants. Clients receive neither database credentials nor privileged server secrets. See [authentication](../security/authentication.md) and [authorization](../security/authorization.md).\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Shared Contracts",
-    "anchor": "shared-contracts",
-    "text": "Shared Contracts\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Composition and Ownership",
-    "anchor": "composition-and-ownership",
-    "text": "Composition and Ownership\nExecutable applications select and wire concrete adapters at bootstrap. Dependencies should be visible through explicit composition; a dependency-injection framework is not required. Minimize mutable globals and service locators. Process-scoped connection pools and telemetry providers are reasonable when lifecycle and access are intentional.\nBusiness capabilities have one identifiable home regardless of how many applications expose them. Delivery-specific feature directories do not authorize cross-application imports or independent reimplementation of core rules. Workers and administrative CLIs must preserve the same invariants as equivalent API operations.\nThe default data path is client → trusted backend → owned persistence → database. Multiple trusted runtimes may share controlled persistence when they belong to an explicitly shared logical ownership model. Modifying another service's owned tables is architectural coupling, not a shortcut. See [database ownership](../database/principles.md).\nExternal providers should be isolated enough to contain meaningful provider-specific risk and ownership. Do not spread a provider SDK throughout business behavior, but do not wrap every third-party library without benefit. A Backend for Frontend requires a concrete client orchestration, latency, identity, aggregation, or independent-evolution need; multiple clients alone do not justify it.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Additional Runtime Boundaries",
-    "anchor": "additional-runtime-boundaries",
-    "text": "Additional Runtime Boundaries\nThese are conditional rules, not implemented applications:\nRuntime\nLocal responsibility and additional obligations\nMobile\nDevice capabilities, native UI/navigation, secure local storage, offline behavior, notifications, permissions, and lifecycle. It remains an untrusted client; installed old versions may require a documented longer API support window.\nDesktop\nOS/filesystem integration, local caching, credential storage, updates, UI, and lifecycle. Possession of a binary does not confer backend trust.\nWorker\nQueue/schedule/event processing or long-running work. Define retries, idempotency, duplicate delivery, ordering, dead letters, poison messages, concurrency, timeouts, telemetry, and graceful shutdown; never assume exactly-once execution without evidence.\nCLI\nCommand parsing, terminal interaction/output, command lifecycle, and identity integration. Administrative convenience cannot bypass domain or access controls.\nEvents must describe meaningful facts or integration signals with owned schemas, delivery guarantees, ordering, and compatibility. Follow [delivery and side effects](delivery-and-side-effects.md) for reliable processing. Remote calls need deliberate bounded timeout/retry behavior; evaluate whether an error is transient, effects can repeat safely, and retry load will worsen the failure.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Creating a New Application Boundary",
-    "anchor": "creating-a-new-application-boundary",
-    "text": "Creating a New Application Boundary\nBefore creating or splitting an application, identify:\nThe runtime/product responsibility and why an existing application cannot own it.\nNeeded scaling, deployment/distribution independence, security, failure isolation, or operational ownership.\nExposed/consumed contracts, shared packages, persistent-data ownership, and trust boundaries.\nConfiguration, lifecycle, telemetry, compatibility, and new failure modes.\nWhether the value justifies its operational complexity and requires an ADR.\nEstablish a logical modular boundary before extracting another process. Size alone does not justify splitting; merging is appropriate when separate applications add no meaningful independence. Microservices are not a default goal, and serverless deployment units do not determine domain boundaries. Prefer modular ownership within one backend until separation has a concrete benefit.\nLocal [README and agent instructions](repository-structure.md#local-agent-instructions) make each application independently understandable without repeating repository policy. When placement is unclear, distinguish runtime-specific behavior, genuinely shared domain meaning, shared wire contracts, development tooling, and operational infrastructure before creating a new owner.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Boundary Enforcement",
-    "anchor": "boundary-enforcement",
-    "text": "Boundary Enforcement\nThe existing [dependency checks](dependency-rules.md#mechanical-enforcement) reject cross-application imports and other forbidden edges. They do not prove runtime trust, data ownership, or contract compatibility. When a boundary obstructs a legitimate requirement, identify the correct owner, try its existing public contract, then deliberately extend or revise the boundary and its tests/enforcement. Document significant changes through the ADR process; do not bypass constraints silently.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend Execution and Generated Artifacts",
-    "anchor": "backend-execution-and-generated-artifacts",
-    "text": "Backend Execution and Generated Artifacts\n[Documentation index](../README.md) · [Validation availability](../validation.md) · [Local setup](../setup.md)\nThis page owns API execution and generated-artifact storage conventions. The implemented pipeline follows [TypeScript/Node.js](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md), [pnpm](../adr/0002-select-pnpm-for-package-and-workspace-management.md), [API generation](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md), [Prisma/PostgreSQL](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [validation](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) decisions. [Setup](../setup.md#validate-regenerate-and-build) owns the regeneration sequence; [validation](../validation.md) lists current commands and prerequisites.\n"
   }
 ]

@@ -4,7 +4,7 @@
   "description": "The draft programming of one source: exactly one group or one screen.",
   "owner": "Programming",
   "classification": "INTERNAL",
-  "lifecycle": "A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its first output is saved and kept with the device record. Saving an output bumps the version.",
+  "lifecycle": "A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its layout or first output is saved and kept with the device record. Saving an output or choosing a layout bumps the version, and so does a layout save that removes outputs with content.",
   "columns": [
     {
       "Column": "id",
@@ -75,6 +75,16 @@
       "Meaning": "PostgreSQL-clock instant of the last change.",
       "Null meaning": "—",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "layout_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Layout whose areas are the program's outputs.",
+      "Null meaning": "The program has no layout and a single screen output.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -92,6 +102,11 @@
       "Object": "programs_company_id_group_id_fkey",
       "Physical definition": "FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
       "Purpose": "The group belongs to the same company; its program is deleted with it."
+    },
+    {
+      "Object": "programs_company_id_layout_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The layout belongs to the same company; a layout that programs use cannot be deleted."
     },
     {
       "Object": "programs_one_source",
@@ -122,6 +137,11 @@
       "Object": "programs_group_key",
       "Physical definition": "CREATE UNIQUE INDEX programs_group_key ON public.programs USING btree (company_id, group_id)",
       "Purpose": "A group has at most one program."
+    },
+    {
+      "Object": "programs_layout_idx",
+      "Physical definition": "CREATE INDEX programs_layout_idx ON public.programs USING btree (company_id, layout_id)",
+      "Purpose": "Finds the programs that use a layout, for layout saves and deletion."
     }
   ]
 }

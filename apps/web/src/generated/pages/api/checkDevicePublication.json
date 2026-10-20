@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "checkDevicePublication",
   "summary": "",
-  "description": "Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
+  "description": "Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -75,7 +75,8 @@
                         { "type": "string", "const": "PLAYLIST_OUT_OF_SCOPE" },
                         { "type": "string", "const": "MEDIA_UNAVAILABLE" },
                         { "type": "string", "const": "TRANSITION_UNSUPPORTED" },
-                        { "type": "string", "const": "TOO_LARGE" }
+                        { "type": "string", "const": "TOO_LARGE" },
+                        { "type": "string", "const": "LAYOUT_NOT_PUBLISHABLE" }
                       ]
                     },
                     "playlistId": {
@@ -239,7 +240,8 @@
                     { "type": "string", "const": "PLAYLIST_OUT_OF_SCOPE" },
                     { "type": "string", "const": "MEDIA_UNAVAILABLE" },
                     { "type": "string", "const": "TRANSITION_UNSUPPORTED" },
-                    { "type": "string", "const": "TOO_LARGE" }
+                    { "type": "string", "const": "TOO_LARGE" },
+                    { "type": "string", "const": "LAYOUT_NOT_PUBLISHABLE" }
                   ]
                 },
                 "playlistId": {
@@ -368,7 +370,7 @@
         { "name": "problems", "type": "array of object", "required": true },
         {
           "name": "problems[].code",
-          "type": "\"NOTHING_TO_PUBLISH\" | \"SCHEDULE_INVALID\" | \"PLAYLIST_OUT_OF_SCOPE\" | \"MEDIA_UNAVAILABLE\" | \"TRANSITION_UNSUPPORTED\" | \"TOO_LARGE\"",
+          "type": "\"NOTHING_TO_PUBLISH\" | \"SCHEDULE_INVALID\" | \"PLAYLIST_OUT_OF_SCOPE\" | \"MEDIA_UNAVAILABLE\" | \"TRANSITION_UNSUPPORTED\" | \"TOO_LARGE\" | \"LAYOUT_NOT_PUBLISHABLE\"",
           "required": true
         },
         {

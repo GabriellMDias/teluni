@@ -362,7 +362,22 @@ Implementation decisions, taken under the owner's delegation:
 - An import never keeps a catalog, field or media item the importer cannot use; it reports each one as an issue to replace.
 - The panel keeps the orientation chosen at creation or import.
 
-Increment 2, part B (programs with layouts and per-area outputs) and increments 3 to 5 are not implemented.
+**Increment 2, part B (programs with layouts, PJ-20) is implemented, 2026-10-20:**
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| A forward migration adds the program's layout (restricting layout deletion) and widens output keys from `screen` to the area key shape | [migration](../../apps/api/prisma/migrations/20261020020000_program_layouts/migration.sql), [grants](../../apps/api/prisma/runtime-grants/programming.sql), [metadata](../../apps/api/prisma/metadata/programming.json) | The tenant structure test and the generated [database reference](../generated/database/schema.md) |
+| Layout choice for group and screen programs, outputs per area (a catalog area takes no default playlist), confirmation before schedules or defaults are dropped (by a layout choice or by a layout save), scope checks on choice and on span changes, `LAYOUT_IN_USE` on deletion, per-output timelines, and publication checks that refuse programs with a layout | [`service.ts`](../../apps/api/src/features/programming/service.ts), [publications service](../../apps/api/src/features/publications/service.ts) | The [layouts suite](../../apps/api/test/programming/layouts-integration.test.ts) (choice, outputs, confirmations, timelines, scope, deletion and audit) and the [publications suite](../../apps/api/test/publications/integration.test.ts) |
+| The panel's layout choice on group and screen pages, with confirmation, schedules per area, a catalog area's view default, per-area previews and the layout editor's confirmation | [`pages.tsx`](../../apps/web/src/programming/pages.tsx), [`layouts.tsx`](../../apps/web/src/programming/layouts.tsx) | [Programming](../../apps/web/test/programming.browser.test.tsx) and [layout](../../apps/web/test/layouts.browser.test.tsx) browser component tests and the [end-to-end journey](../../apps/web/test/e2e/catalogs/journey.spec.ts) |
+
+Implementation decisions, taken under the owner's delegation:
+
+- Choosing a layout is its own versioned operation (`PUT .../program/layout`); outputs keep their key, so an area of the new layout with the key of a former output keeps its schedules. Empty outputs are dropped silently; outputs with schedules or a default, and a catalog area's former default playlist, are dropped only when the request confirms it, after an answer that names each one. A layout save that removes such areas from programs needs the same confirmation, and counts the programs each output affects.
+- A layout and its programs lock in that order, so a program operation share-locks the layout before its program.
+- A catalog area's output refuses a default playlist with `VALIDATION_FAILED`, because its default is its view; its timeline shows the view where nothing else plays.
+- Until protocol 2 (increment 3), the publication check reports `LAYOUT_NOT_PUBLISHABLE` for a program with a layout rather than publishing only part of it. The coordinated page cycle moves to increment 3 with the fixtures that the preview and the player share.
+
+Increments 3 to 5 are not implemented.
 
 ## Decisions
 

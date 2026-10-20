@@ -16,6 +16,9 @@ export const programmingErrorCodes: ReadonlySet<string> = new Set([
   "SCHEDULE_CONFLICT",
   "ASSIGNMENT_CONFIRMATION_REQUIRED",
   "TIMELINE_TOO_LARGE",
+  "LAYOUT_IN_USE",
+  "LAYOUT_SCOPE_MISMATCH",
+  "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
 ]);
 
 type Json<T> = T extends {
@@ -35,7 +38,8 @@ export type Group = Json<
 export type Program = Json<
   paths["/companies/{companyId}/programming/groups/{groupId}/program"]["get"]
 >;
-export type Rule = Program["outputs"][number]["rules"][number];
+export type ProgramOutput = Program["outputs"][number];
+export type Rule = ProgramOutput["rules"][number];
 export type RuleInput = NonNullable<
   paths["/companies/{companyId}/programming/rule-checks"]["post"]["requestBody"]
 >["content"]["application/json"]["rules"][number];
@@ -279,9 +283,10 @@ export async function getProgram(
   );
 }
 
-export async function replaceScreenOutput(
+export async function replaceOutput(
   companyId: string,
   source: ProgramSource,
+  outputKey: string,
   expectedVersion: number,
   input: { defaultPlaylistId: string | null; rules: RuleInput[] },
 ): Promise<Program> {
@@ -293,7 +298,7 @@ export async function replaceScreenOutput(
           "/companies/{companyId}/programming/groups/{groupId}/program/outputs/{outputKey}",
           {
             params: {
-              path: { companyId, groupId: source.groupId, outputKey: "screen" },
+              path: { companyId, groupId: source.groupId, outputKey },
             },
             body,
           },
@@ -302,14 +307,36 @@ export async function replaceScreenOutput(
           "/companies/{companyId}/programming/devices/{deviceId}/program/outputs/{outputKey}",
           {
             params: {
-              path: {
-                companyId,
-                deviceId: source.deviceId,
-                outputKey: "screen",
-              },
+              path: { companyId, deviceId: source.deviceId, outputKey },
             },
             body,
           },
+        ),
+    programmingErrorCodes,
+  );
+}
+
+/**
+ * Chooses a program's layout, or none; outputs that would lose schedules
+ * or defaults need `confirmRemovedOutputs`.
+ */
+export async function setProgramLayout(
+  companyId: string,
+  source: ProgramSource,
+  expectedVersion: number,
+  input: { layoutId: string | null; confirmRemovedOutputs: boolean },
+): Promise<Program> {
+  const api = client();
+  const body = { expectedVersion, ...input };
+  return unwrap(
+    source.kind === "group"
+      ? await api.PUT(
+          "/companies/{companyId}/programming/groups/{groupId}/program/layout",
+          { params: { path: { companyId, groupId: source.groupId } }, body },
+        )
+      : await api.PUT(
+          "/companies/{companyId}/programming/devices/{deviceId}/program/layout",
+          { params: { path: { companyId, deviceId: source.deviceId } }, body },
         ),
     programmingErrorCodes,
   );
@@ -372,8 +399,10 @@ export async function getTimeline(
   source: ProgramSource,
   range: { from: string; to: string },
   timeZone: string,
+  output?: string,
 ): Promise<Timeline> {
   const api = client();
+  const chosen = output ? { output } : {};
   return unwrap(
     source.kind === "group"
       ? await api.GET(
@@ -381,7 +410,7 @@ export async function getTimeline(
           {
             params: {
               path: { companyId, groupId: source.groupId },
-              query: { ...range, timeZone },
+              query: { ...range, timeZone, ...chosen },
             },
           },
         )
@@ -390,7 +419,7 @@ export async function getTimeline(
           {
             params: {
               path: { companyId, deviceId: source.deviceId },
-              query: range,
+              query: { ...range, ...chosen },
             },
           },
         ),
@@ -565,6 +594,29 @@ export async function listLayouts(
   );
 }
 
+/**
+ * Every layout the caller can see, page by page, for a program's layout
+ * choice. A company holds at most 500 layouts, so this stays bounded.
+ */
+export async function listLayoutChoices(companyId: string) {
+  const items: LayoutSummary[] = [];
+  let cursor: string | null = null;
+  do {
+    const page: LayoutList = unwrap(
+      await client().GET("/companies/{companyId}/programming/layouts", {
+        params: {
+          path: { companyId },
+          query: { limit: 100, ...(cursor ? { cursor } : {}) },
+        },
+      }),
+      layoutErrorCodes,
+    );
+    items.push(...page.items);
+    cursor = page.nextCursor;
+  } while (cursor);
+  return items;
+}
+
 export async function getLayout(companyId: string, layoutId: string) {
   return unwrap(
     await client().GET(
@@ -608,7 +660,11 @@ export async function importLayout(
 export async function updateLayout(
   companyId: string,
   layout: Layout,
-  input: { name?: string; definition?: LayoutDefinition },
+  input: {
+    name?: string;
+    definition?: LayoutDefinition;
+    confirmRemovedOutputs?: boolean;
+  },
 ) {
   return unwrap(
     await client().PATCH(

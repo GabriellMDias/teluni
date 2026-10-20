@@ -92,7 +92,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move.",
+      "Meaning": "Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, program.layout_changed, program.outputs_removed, device.assignment_changed or device.left_group_on_move.",
       "Null meaning": "—",
       "Unit": "—"
     },
