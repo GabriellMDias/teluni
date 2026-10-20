@@ -112,7 +112,11 @@ function viewsAnything(access: CompanyAccess): boolean {
 }
 
 /** Company layouts are visible to every viewer; branch ones per branch. */
-function layoutVisible(access: CompanyAccess, item: LayoutRecord): boolean {
+/** Company layouts for anyone who views programming; branch ones by grant. */
+export function layoutVisible(
+  access: CompanyAccess,
+  item: Pick<LayoutRecord, "branchId">,
+): boolean {
   return item.branchId === null
     ? viewsAnything(access)
     : decide(access, "programming.view", item.branchId) === "allow";
@@ -172,6 +176,32 @@ function priceText(amount: number, currency: string): string {
   );
 }
 
+/**
+ * What layouts need from programs, which the programming service provides:
+ * whether programs use a layout, and the outputs a save removes from them.
+ */
+export type LayoutPrograms = Readonly<{
+  layoutInUse(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    layoutId: string,
+  ): Promise<boolean>;
+  /**
+   * After the layout's lock: locks the programs that use it and drops the
+   * outputs of areas the new definition no longer has, and the defaults of
+   * areas that become catalog areas. With content to drop and no
+   * confirmation, throws LAYOUT_CHANGE_CONFIRMATION_REQUIRED naming them.
+   */
+  reconcileLayoutOutputs(
+    tx: Prisma.TransactionClient,
+    actor: Actor,
+    companyId: string,
+    layoutId: string,
+    areas: readonly { key: string; kind: "media" | "catalog" }[],
+    confirmed: boolean,
+  ): Promise<void>;
+}>;
+
 export type LayoutQuery = Readonly<{
   limit: number;
   cursor?: string;
@@ -185,17 +215,20 @@ export class LayoutService {
   readonly #companies: CompanyAccessPort;
   readonly #catalogs: CatalogPort;
   readonly #media: MediaPort;
+  readonly #programs: LayoutPrograms;
 
   constructor(options: {
     repository: PrismaLayoutRepository;
     companies: CompanyAccessPort;
     catalogs: CatalogPort;
     media: MediaPort;
+    programs: LayoutPrograms;
   }) {
     this.#repository = options.repository;
     this.#companies = options.companies;
     this.#catalogs = options.catalogs;
     this.#media = options.media;
+    this.#programs = options.programs;
   }
 
   async createLayout(
@@ -370,7 +403,11 @@ export class LayoutService {
     companyId: string,
     layoutId: string,
     expectedVersion: number,
-    changes: { name?: string; definition?: LayoutInput },
+    changes: {
+      name?: string;
+      definition?: LayoutInput;
+      confirmRemovedOutputs?: boolean;
+    },
   ): Promise<LayoutView> {
     if (changes.name === undefined && changes.definition === undefined)
       throw new ProgrammingFailure("VALIDATION_FAILED");
@@ -385,7 +422,17 @@ export class LayoutService {
       companyId,
       layoutId,
       expectedVersion,
+      "update",
       async (tx, current, locked, actor) => {
+        if (definition)
+          await this.#programs.reconcileLayoutOutputs(
+            tx,
+            actor,
+            companyId,
+            current.id,
+            definition.areas,
+            changes.confirmRemovedOutputs ?? false,
+          );
         if (definition)
           await this.#checkReferences(
             tx,
@@ -436,7 +483,10 @@ export class LayoutService {
       companyId,
       layoutId,
       expectedVersion,
+      "delete",
       async (tx, current, _access, actor) => {
+        if (await this.#programs.layoutInUse(tx, companyId, current.id))
+          throw new ProgrammingFailure("LAYOUT_IN_USE");
         await this.#repository.deleteLayout(tx, current);
         await this.#repository.audit(
           tx,
@@ -489,6 +539,7 @@ export class LayoutService {
     companyId: string,
     layoutId: string,
     expectedVersion: number,
+    mode: "update" | "delete",
     change: (
       tx: Prisma.TransactionClient,
       current: LayoutRecord,
@@ -509,6 +560,7 @@ export class LayoutService {
         tx,
         companyId,
         layoutId,
+        mode,
       );
       if (!current) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
       requireLayout(locked.access, "programming.edit", current);

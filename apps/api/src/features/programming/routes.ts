@@ -92,8 +92,11 @@ const groupWire = (group: GroupView) => ({
 
 const programWire = (program: ProgramView) => ({
   version: program.version,
+  layout: program.layout ? { ...program.layout } : null,
   outputs: program.outputs.map((output) => ({
     key: output.key,
+    kind: output.kind,
+    name: output.name,
     defaultPlaylistId: output.defaultPlaylistId,
     defaultPlaylist: output.defaultPlaylist,
     rules: output.rules.map((rule) => ({
@@ -131,6 +134,8 @@ const timelineWire = (timeline: TimelineView) => ({
     timeline.source.kind === "group"
       ? { kind: "group" as const, group: timeline.source.group }
       : { kind: "individual" as const },
+  output: { ...timeline.output },
+  outputs: timeline.outputs.map((output) => ({ ...output })),
   timeZone: timeline.timeZone,
   segments: timeline.segments.map((segment) => ({
     start: segment.start,
@@ -162,6 +167,8 @@ export function registerProgrammingRoutes(
         error.code as Parameters<typeof respond>[0],
         requestId,
         currentTraceId(),
+        undefined,
+        error instanceof ProgrammingFailure ? error.issues : undefined,
       );
       if (error.code === "RATE_LIMITED") reply.header("retry-after", "60");
       return reply.code(failure.status).send(failure.body);
@@ -371,6 +378,32 @@ export function registerProgrammingRoutes(
                   ),
                 );
               }
+              case "setGroupProgramLayout":
+              case "setDeviceProgramLayout": {
+                const source: ProgramSource =
+                  operation.operationId === "setGroupProgramLayout"
+                    ? { kind: "group", groupId }
+                    : { kind: "device", deviceId };
+                const choice = body as {
+                  layoutId: string | null;
+                  confirmRemovedOutputs?: boolean;
+                };
+                return reply.send(
+                  programWire(
+                    await service.setProgramLayout(
+                      context,
+                      companyId,
+                      source,
+                      expectedVersion,
+                      {
+                        layoutId: choice.layoutId,
+                        confirmRemovedOutputs:
+                          choice.confirmRemovedOutputs ?? false,
+                      },
+                    ),
+                  ),
+                );
+              }
               case "getDeviceProgramming":
                 return reply.send(
                   deviceWire(
@@ -408,7 +441,11 @@ export function registerProgrammingRoutes(
                       context,
                       companyId,
                       deviceId,
-                      request.query as { from: string; to: string },
+                      request.query as {
+                        from: string;
+                        to: string;
+                        output?: string;
+                      },
                     ),
                   ),
                 );
@@ -423,6 +460,7 @@ export function registerProgrammingRoutes(
                         from: string;
                         to: string;
                         timeZone: string;
+                        output?: string;
                       },
                     ),
                   ),

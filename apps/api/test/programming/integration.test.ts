@@ -611,9 +611,12 @@ describe("programming: playlists, groups, schedules and assignments", () => {
     );
     expect(program.body).toMatchObject({
       version: 1,
+      layout: null,
       outputs: [
         {
           key: "screen",
+          kind: "screen",
+          name: null,
           defaultPlaylistId: null,
           defaultPlaylist: null,
           rules: [],

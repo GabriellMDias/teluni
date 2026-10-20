@@ -25,7 +25,18 @@ const fadeMs = Type.Integer({ minimum: 250, maximum: 2000 });
 const localDate = Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" });
 const localTime = Type.String({ pattern: "^([01]\\d|2[0-3]):[0-5]\\d$" });
 const timeZone = Type.String({ minLength: 1, maxLength: 64 });
-const outputKey = Type.Literal("screen");
+// `screen` without a layout, otherwise the key of one of the layout's areas.
+const outputKey = Type.String({ pattern: "^[a-z][a-z0-9-]{0,15}$" });
+const outputKind = Type.Union([
+  Type.Literal("screen"),
+  Type.Literal("media"),
+  Type.Literal("catalog"),
+]);
+const outputOutline = {
+  key: outputKey,
+  kind: outputKind,
+  name: Type.Union([Type.String(), Type.Null()]),
+};
 const mediaStatus = Type.Union([
   Type.Literal("UPLOADING"),
   Type.Literal("PROCESSING"),
@@ -152,10 +163,24 @@ const ruleSet = Type.Array(ruleInput, { maxItems: 200 });
 export const programSchema = Type.Object(
   {
     version: observedVersion,
+    layout: Type.Union([
+      Type.Object(
+        {
+          id: uuid,
+          name: Type.String(),
+          orientation: Type.Union([
+            Type.Literal("landscape"),
+            Type.Literal("portrait"),
+          ]),
+        },
+        { additionalProperties: false },
+      ),
+      Type.Null(),
+    ]),
     outputs: Type.Array(
       Type.Object(
         {
-          key: outputKey,
+          ...outputOutline,
           defaultPlaylistId: Type.Union([uuid, Type.Null()]),
           defaultPlaylist: Type.Union([playlistSummarySchema, Type.Null()]),
           rules: Type.Array(
@@ -219,6 +244,10 @@ export const timelineSchema = Type.Object(
         { additionalProperties: false },
       ),
     ]),
+    output: Type.Object(outputOutline, { additionalProperties: false }),
+    outputs: Type.Array(
+      Type.Object(outputOutline, { additionalProperties: false }),
+    ),
     timeZone: Type.String(),
     segments: Type.Array(
       Type.Object(
@@ -296,7 +325,18 @@ const outputBody = Type.Object(
 const range = {
   from: instant,
   to: instant,
+  output: Type.Optional(outputKey),
 };
+const layoutBody = Type.Object(
+  {
+    expectedVersion: observedVersion,
+    layoutId: Type.Union([uuid, Type.Null()]),
+    confirmRemovedOutputs: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+);
+const layoutChoice =
+  "A program has no layout and the single screen output, or one layout whose areas are its outputs, keyed by the area keys. The layout must be a company layout or, for a program that reaches exactly one branch, that branch's layout. Outputs of areas the new layout lacks, and the default playlists of its catalog areas (whose default is their view), are dropped; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED with the count of schedules, or DEFAULT_REMOVED) until confirmRemovedOutputs is true.";
 
 export const programmingOperations = [
   {
@@ -522,6 +562,7 @@ export const programmingOperations = [
       "GROUP_NAME_IN_USE",
       "GROUP_SPAN_EXCLUDES_DEVICE",
       "PLAYLIST_SCOPE_MISMATCH",
+      "LAYOUT_SCOPE_MISMATCH",
     ],
   },
   {
@@ -544,7 +585,7 @@ export const programmingOperations = [
     operationId: "getGroupProgram",
     access: "session",
     description:
-      "The group's draft program: per output, its schedules and optional default playlist. It is created with the group at version 1.",
+      "The group's draft program: its layout, and per output (the screen, or each layout area from the bottom of the stack) its schedules and optional default playlist. It is created with the group at version 1, without a layout.",
     schema: {
       params: groupParams,
       response: { 200: programSchema, ...common },
@@ -557,7 +598,7 @@ export const programmingOperations = [
     operationId: "replaceGroupProgramOutput",
     access: "session",
     description:
-      "Replace one output's whole schedule set and default playlist with the observed program version. Overlapping schedules answer SCHEDULE_CONFLICT; use checkScheduleRules to find them. Playlists must belong to the company, or to the group's branch when the span is exactly that branch.",
+      "Replace one output's whole schedule set and default playlist with the observed program version. The output is `screen` without a layout, otherwise an area key of the program's layout; a catalog area takes no default playlist, because its default is its view. Overlapping schedules answer SCHEDULE_CONFLICT; use checkScheduleRules to find them. Playlists must belong to the company, or to the group's branch when the span is exactly that branch.",
     schema: {
       params: groupOutputParams,
       body: outputBody,
@@ -569,6 +610,23 @@ export const programmingOperations = [
       "SCHEDULE_CONFLICT",
       "PLAYLIST_SCOPE_MISMATCH",
       "PROGRAMMING_LIMIT_REACHED",
+    ],
+  },
+  {
+    method: "PUT",
+    url: "/companies/:companyId/programming/groups/:groupId/program/layout",
+    operationId: "setGroupProgramLayout",
+    access: "session",
+    description: `Choose the group program's layout, or none, with the observed program version. ${layoutChoice}`,
+    schema: {
+      params: groupParams,
+      body: layoutBody,
+      response: { 200: programSchema, ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "LAYOUT_SCOPE_MISMATCH",
+      "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
     ],
   },
   {
@@ -617,7 +675,7 @@ export const programmingOperations = [
     operationId: "getDeviceProgram",
     access: "session",
     description:
-      "The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
+      "The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
     schema: {
       params: deviceParams,
       response: { 200: programSchema, ...common },
@@ -630,7 +688,7 @@ export const programmingOperations = [
     operationId: "replaceDeviceProgramOutput",
     access: "session",
     description:
-      "Replace one output of the screen's own program with the observed program version; version 0 creates the program. Playlists must belong to the company or to the screen's branch.",
+      "Replace one output of the screen's own program with the observed program version; version 0 creates the program without a layout. The output is `screen` without a layout, otherwise an area key of the program's layout; a catalog area takes no default playlist, because its default is its view. Playlists must belong to the company or to the screen's branch.",
     schema: {
       params: deviceOutputParams,
       body: outputBody,
@@ -641,6 +699,25 @@ export const programmingOperations = [
       "SCHEDULE_TIMES_EQUAL",
       "SCHEDULE_CONFLICT",
       "PLAYLIST_SCOPE_MISMATCH",
+      "PROGRAMMING_LIMIT_REACHED",
+      "DEVICE_UNLINKED",
+    ],
+  },
+  {
+    method: "PUT",
+    url: "/companies/:companyId/programming/devices/:deviceId/program/layout",
+    operationId: "setDeviceProgramLayout",
+    access: "session",
+    description: `Choose the layout of the screen's own program, or none, with the observed program version; version 0 creates the program. ${layoutChoice}`,
+    schema: {
+      params: deviceParams,
+      body: layoutBody,
+      response: { 200: programSchema, ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "LAYOUT_SCOPE_MISMATCH",
+      "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
       "PROGRAMMING_LIMIT_REACHED",
       "DEVICE_UNLINKED",
     ],
@@ -691,7 +768,7 @@ export const programmingOperations = [
     operationId: "getDeviceTimeline",
     access: "session",
     description:
-      "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary.",
+      "Evaluate one output of the screen's current draft source (the first output unless `output` names another) in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A catalog area shows its view where no schedule or default plays. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary.",
     schema: {
       params: deviceParams,
       querystring: Type.Object(range, { additionalProperties: false }),
@@ -705,7 +782,7 @@ export const programmingOperations = [
     operationId: "getGroupTimeline",
     access: "session",
     description:
-      "Evaluate the group's draft program in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens.",
+      "Evaluate one output of the group's draft program (the first output unless `output` names another) in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens. A catalog area shows its view where no schedule or default plays.",
     schema: {
       params: groupParams,
       querystring: Type.Object(

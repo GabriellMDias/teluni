@@ -417,6 +417,9 @@ export class PublicationService {
     );
     const problems: PublicationProblem[] = [];
     if (!snapshot.programId) problems.push({ code: "NOTHING_TO_PUBLISH" });
+    // Layouts publish with protocol 2 (catalog and composition design,
+    // increment 3); protocol 1 has only the screen output.
+    if (snapshot.layoutId) problems.push({ code: "LAYOUT_NOT_PUBLISHABLE" });
     if (snapshot.outputs.some((output) => !output.valid))
       problems.push({ code: "SCHEDULE_INVALID" });
     for (const playlist of snapshot.playlists) {

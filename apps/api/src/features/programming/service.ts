@@ -29,7 +29,7 @@ import {
   transition as normalizeTransition,
   weekdayMask,
   type ItemInput,
-  outputKeys,
+  screenOutput,
   type OutputKey,
   type RuleInput,
   type Transition,
@@ -44,6 +44,11 @@ import type {
   ProgramSource,
   SettingRecord,
 } from "./prisma-repository.js";
+import type {
+  LayoutRecord,
+  PrismaLayoutRepository,
+} from "./layouts-repository.js";
+import { layoutVisible } from "./layouts-service.js";
 import type {
   ProgramSnapshot,
   ProgramTarget,
@@ -96,14 +101,26 @@ export type PlaylistSummary = Readonly<{
   itemCount: number;
 }>;
 
+/** One output of a program: the screen, or an area of its layout. */
+export type OutputOutline = Readonly<{
+  key: OutputKey;
+  kind: "screen" | "media" | "catalog";
+  /** The area's name; null for the screen output. */
+  name: string | null;
+}>;
+
 export type ProgramView = Readonly<{
   version: number;
-  outputs: readonly {
-    key: OutputKey;
+  layout: Readonly<{
+    id: string;
+    name: string;
+    orientation: "landscape" | "portrait";
+  }> | null;
+  outputs: readonly (OutputOutline & {
     defaultPlaylistId: string | null;
     defaultPlaylist: PlaylistSummary | null;
     rules: readonly (ScheduleRule & { playlist: PlaylistSummary | null })[];
-  }[];
+  })[];
 }>;
 
 export type DeviceProgrammingView = Readonly<{
@@ -118,6 +135,9 @@ export type TimelineView = Readonly<{
   source:
     | { kind: "group"; group: { id: string; name: string } | null }
     | { kind: "individual" };
+  /** The evaluated output, and every output the program has. */
+  output: OutputOutline;
+  outputs: readonly OutputOutline[];
   timeZone: string;
   segments: readonly {
     start: string;
@@ -246,8 +266,11 @@ function requireDevice(
 /** Branches a program can reach: "all" for a whole-company group. */
 type Reach = "all" | ReadonlySet<string>;
 
-/** Company playlists fit every program; a branch one only that branch. */
-function usable(item: PlaylistRecord, reach: Reach): boolean {
+/**
+ * Company playlists and layouts fit every program; a branch one only a
+ * program that reaches exactly that branch.
+ */
+function usable(item: { branchId: string | null }, reach: Reach): boolean {
   return (
     item.branchId === null ||
     (reach !== "all" && reach.size === 1 && reach.has(item.branchId))
@@ -258,6 +281,46 @@ const spanReach = (span: {
   allBranches: boolean;
   branchIds: readonly string[];
 }): Reach => (span.allBranches ? "all" : new Set(span.branchIds));
+
+const screenOutline: OutputOutline = {
+  key: screenOutput,
+  kind: "screen",
+  name: null,
+};
+
+/**
+ * What choosing outputs takes from a program: outputs that no longer exist
+ * and defaults of catalog areas, whose default is their view. Issues name
+ * those with content, which the person must confirm losing.
+ */
+function lostOutputs(
+  program: ProgramRecord | null,
+  outputs: readonly Pick<OutputOutline, "key" | "kind">[],
+) {
+  const kinds = new Map(outputs.map((output) => [output.key, output.kind]));
+  const removed: string[] = [];
+  const cleared: string[] = [];
+  const issues: { path: string; reason: string; count?: number }[] = [];
+  for (const [key, output] of program?.outputs ?? []) {
+    const kind = kinds.get(key);
+    if (kind === undefined) {
+      removed.push(key);
+      if (output.rules.length > 0 || output.defaultPlaylistId !== null)
+        issues.push({
+          path: `/outputs/${key}`,
+          reason: "OUTPUT_REMOVED",
+          count: output.rules.length,
+        });
+    } else if (kind === "catalog" && output.defaultPlaylistId !== null) {
+      cleared.push(key);
+      issues.push({
+        path: `/outputs/${key}/defaultPlaylistId`,
+        reason: "DEFAULT_REMOVED",
+      });
+    }
+  }
+  return { removed, cleared, issues };
+}
 
 const actorOf = (context: HumanContext, access: CompanyAccess): Actor => ({
   principalId: context.principalId,
@@ -277,6 +340,7 @@ export class ProgrammingService {
   readonly #companies: CompanyAccessPort;
   readonly #devices: DevicePort;
   readonly #media: MediaPort;
+  readonly #layouts: PrismaLayoutRepository;
   #publicationFacts: PublicationFacts | undefined;
 
   constructor(options: {
@@ -284,11 +348,13 @@ export class ProgrammingService {
     companies: CompanyAccessPort;
     devices: DevicePort;
     media: MediaPort;
+    layouts: PrismaLayoutRepository;
   }) {
     this.#repository = options.repository;
     this.#companies = options.companies;
     this.#devices = options.devices;
     this.#media = options.media;
+    this.#layouts = options.layouts;
   }
 
   // Playlists
@@ -715,6 +781,12 @@ export class ProgrammingService {
           tx,
         );
         await this.#requireUsable(tx, companyId, program, spanReach(span));
+        // Concurrent layout choices wait for this group's lock.
+        const layout = program?.layoutId
+          ? await this.#layouts.findLayout(companyId, program.layoutId)
+          : null;
+        if (layout && !usable(layout, spanReach(span)))
+          throw new ProgrammingFailure("LAYOUT_SCOPE_MISMATCH");
       }
       return this.#repository.updateGroup(
         tx,
@@ -850,19 +922,10 @@ export class ProgrammingService {
   ): Promise<ProgramView> {
     const { rules, conflicts } = checkRules(input.rules);
     if (conflicts.length > 0) throw new ProgrammingFailure("SCHEDULE_CONFLICT");
-    const before =
-      source.kind === "group"
-        ? await this.#repository.findGroup(companyId, source.groupId)
-        : null;
-    const [beforeDevice] =
-      source.kind === "device"
-        ? await this.#devices.describe(null, companyId, [source.deviceId])
-        : [];
-    if (source.kind === "group" && !before)
-      throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
-    if (source.kind === "device" && !beforeDevice)
-      throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
-    const branchIds = before?.branchIds ?? [beforeDevice.branchId];
+    const branchIds = await this.#sourceBranches(companyId, source);
+    // The layout is locked before the program (layout saves lock layouts,
+    // then their programs), so its ID is read first and checked again.
+    const prior = await this.#repository.program(companyId, source);
     const program = await this.#repository.transaction(async (tx) => {
       const locked = await this.#companies.lockForWrite(
         tx,
@@ -870,35 +933,32 @@ export class ProgrammingService {
         companyId,
         branchIds,
       );
-      let reach: Reach;
-      let concerned: readonly string[];
-      if (source.kind === "group") {
-        const group = await this.#repository.lockGroup(
-          tx,
-          companyId,
-          source.groupId,
-          "share",
-        );
-        if (!group) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
-        requireGroup(locked.access, "programming.edit", group);
-        reach = spanReach(group);
-        concerned = group.branchIds;
-      } else {
-        const [device] = await this.#devices.describe(tx, companyId, [
-          source.deviceId,
-        ]);
-        const found = requireDevice(locked.access, "programming.edit", device);
-        reach = new Set([found.branchId]);
-        concerned = [found.branchId];
-      }
+      const { reach, concerned } = await this.#lockSource(
+        tx,
+        locked.access,
+        companyId,
+        source,
+      );
+      const layoutId = prior?.layoutId ?? null;
+      const outputs = layoutId
+        ? await this.#lockedOutline(tx, companyId, layoutId)
+        : [screenOutline];
       const current = await this.#repository.program(
         companyId,
         source,
         tx,
         true,
       );
-      if ((current?.version ?? 0) !== expectedVersion)
+      if (
+        (current?.version ?? 0) !== expectedVersion ||
+        (current?.layoutId ?? null) !== layoutId
+      )
         throw new ProgrammingFailure("RESOURCE_VERSION_CONFLICT");
+      const output = outputs.find((entry) => entry.key === outputKey);
+      if (!output) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+      // A catalog area's default is its view.
+      if (output.kind === "catalog" && input.defaultPlaylistId !== null)
+        throw new ProgrammingFailure("VALIDATION_FAILED");
       if (!current) {
         const counts = await this.#repository.counts(tx, companyId);
         if (counts.programs >= programmingPolicy.maxProgramsPerCompany)
@@ -934,6 +994,223 @@ export class ProgrammingService {
       return { saved, access: locked.access };
     });
     return this.#programView(program.access, companyId, program.saved);
+  }
+
+  /**
+   * Chooses the program's layout, or none for the single screen output.
+   * Outputs of areas the layout lacks, and defaults of its catalog areas,
+   * are dropped; when they hold schedules or a default, only with
+   * `confirmRemovedOutputs`.
+   */
+  async setProgramLayout(
+    context: HumanContext,
+    companyId: string,
+    source: ProgramSource,
+    expectedVersion: number,
+    input: { layoutId: string | null; confirmRemovedOutputs: boolean },
+  ): Promise<ProgramView> {
+    const branchIds = await this.#sourceBranches(companyId, source);
+    const result = await this.#repository.transaction(async (tx) => {
+      const locked = await this.#companies.lockForWrite(
+        tx,
+        context,
+        companyId,
+        branchIds,
+      );
+      const { reach, concerned } = await this.#lockSource(
+        tx,
+        locked.access,
+        companyId,
+        source,
+      );
+      let outputs: readonly OutputOutline[] = [screenOutline];
+      if (input.layoutId) {
+        const layout = await this.#layouts.lockLayout(
+          tx,
+          companyId,
+          input.layoutId,
+          "share",
+        );
+        if (!layout || !layoutVisible(locked.access, layout))
+          throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+        if (!usable(layout, reach))
+          throw new ProgrammingFailure("LAYOUT_SCOPE_MISMATCH");
+        outputs = await this.#lockedOutline(tx, companyId, layout.id);
+      }
+      const current = await this.#repository.program(
+        companyId,
+        source,
+        tx,
+        true,
+      );
+      if ((current?.version ?? 0) !== expectedVersion)
+        throw new ProgrammingFailure("RESOURCE_VERSION_CONFLICT");
+      if (current && current.layoutId === input.layoutId)
+        return { saved: current, access: locked.access };
+      if (!current) {
+        const counts = await this.#repository.counts(tx, companyId);
+        if (counts.programs >= programmingPolicy.maxProgramsPerCompany)
+          throw new ProgrammingFailure("PROGRAMMING_LIMIT_REACHED");
+      }
+      const lost = lostOutputs(current, outputs);
+      if (lost.issues.length > 0 && !input.confirmRemovedOutputs)
+        throw new ProgrammingFailure(
+          "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
+          lost.issues,
+        );
+      const saved = await this.#repository.setLayout(
+        tx,
+        actorOf(context, locked.access),
+        companyId,
+        source,
+        concerned,
+        current,
+        input.layoutId,
+        lost,
+      );
+      return { saved, access: locked.access };
+    });
+    return this.#programView(result.access, companyId, result.saved);
+  }
+
+  /** Branches the organization locks cover for a source, read unlocked. */
+  async #sourceBranches(
+    companyId: string,
+    source: ProgramSource,
+  ): Promise<readonly string[]> {
+    if (source.kind === "group") {
+      const group = await this.#repository.findGroup(companyId, source.groupId);
+      if (!group) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+      return group.branchIds;
+    }
+    const [device] = await this.#devices.describe(null, companyId, [
+      source.deviceId,
+    ]);
+    if (!device) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+    return [device.branchId];
+  }
+
+  /**
+   * Share-locks a program's source for an edit: the group, or the screen
+   * through the devices port. Returns the branches the program reaches and
+   * those its audit concerns.
+   */
+  async #lockSource(
+    tx: Prisma.TransactionClient,
+    access: CompanyAccess,
+    companyId: string,
+    source: ProgramSource,
+  ): Promise<{ reach: Reach; concerned: readonly string[] }> {
+    if (source.kind === "group") {
+      const group = await this.#repository.lockGroup(
+        tx,
+        companyId,
+        source.groupId,
+        "share",
+      );
+      if (!group) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+      requireGroup(access, "programming.edit", group);
+      return { reach: spanReach(group), concerned: group.branchIds };
+    }
+    const [device] = await this.#devices.describe(tx, companyId, [
+      source.deviceId,
+    ]);
+    const found = requireDevice(access, "programming.edit", device);
+    return { reach: new Set([found.branchId]), concerned: [found.branchId] };
+  }
+
+  /** A layout's areas as outputs, after share-locking the layout. */
+  async #lockedOutline(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    layoutId: string,
+  ): Promise<OutputOutline[]> {
+    const layout = await this.#layouts.lockLayout(
+      tx,
+      companyId,
+      layoutId,
+      "share",
+    );
+    if (!layout) throw new ProgrammingFailure("RESOURCE_VERSION_CONFLICT");
+    return (await this.#layouts.outline(companyId, layoutId, tx)).map(
+      (area) => ({ key: area.key, kind: area.kind, name: area.name }),
+    );
+  }
+
+  /** Whether any program uses a layout; layouts may not be deleted then. */
+  layoutInUse = (
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    layoutId: string,
+  ) => this.#repository.layoutInUse(tx, companyId, layoutId);
+
+  /**
+   * Drops, from every program that uses a layout, the outputs of areas a
+   * save removes and the defaults of areas that become catalog areas. The
+   * layout is already locked; programs follow.
+   */
+  reconcileLayoutOutputs = async (
+    tx: Prisma.TransactionClient,
+    actor: Actor,
+    companyId: string,
+    layoutId: string,
+    areas: readonly { key: string; kind: "media" | "catalog" }[],
+    confirmed: boolean,
+  ): Promise<void> => {
+    const programs = await this.#repository.lockProgramsUsing(
+      tx,
+      companyId,
+      layoutId,
+    );
+    const changes = programs.map((program) => ({
+      program,
+      lost: lostOutputs(program, areas),
+    }));
+    // One issue per output, counting the programs that lose content.
+    const affected = new Map<
+      string,
+      { path: string; reason: string; count: number }
+    >();
+    for (const { lost } of changes)
+      for (const issue of lost.issues) {
+        const entry = affected.get(issue.path) ?? { ...issue, count: 0 };
+        entry.count += 1;
+        affected.set(issue.path, entry);
+      }
+    if (affected.size > 0 && !confirmed)
+      throw new ProgrammingFailure("LAYOUT_CHANGE_CONFIRMATION_REQUIRED", [
+        ...affected.values(),
+      ]);
+    for (const { program, lost } of changes) {
+      if (lost.removed.length === 0 && lost.cleared.length === 0) continue;
+      await this.#repository.removeOutputs(
+        tx,
+        actor,
+        companyId,
+        program.id,
+        await this.#programBranches(companyId, program),
+        layoutId,
+        lost,
+      );
+    }
+  };
+
+  /** The branches a program's audit concerns, read without locks. */
+  async #programBranches(
+    companyId: string,
+    program: { groupId: string | null; deviceId: string | null },
+  ): Promise<readonly string[]> {
+    if (program.groupId)
+      return (
+        (await this.#repository.findGroup(companyId, program.groupId))
+          ?.branchIds ?? []
+      );
+    const [device] = await this.#devices.describe(
+      null,
+      companyId,
+      program.deviceId ? [program.deviceId] : [],
+    );
+    return device ? [device.branchId] : [];
   }
 
   async #requirePlaylists(
@@ -1183,7 +1460,12 @@ export class ProgrammingService {
       source,
       capability,
     );
-    const outputs = outputKeys.flatMap((key) => {
+    const keys = program?.layoutId
+      ? (
+          await this.#layouts.outline(access.companyId, program.layoutId, tx)
+        ).map((area) => area.key)
+      : [screenOutput];
+    const outputs = keys.flatMap((key) => {
       const output = program?.outputs.get(key);
       return output ? [{ key, output }] : [];
     });
@@ -1208,6 +1490,7 @@ export class ProgrammingService {
     const reach: Reach = target.reach === "all" ? "all" : new Set(target.reach);
     return {
       ...target,
+      layoutId: program?.layoutId ?? null,
       outputs: outputs.map(({ key, output }) => ({
         key,
         defaultPlaylistId: output.defaultPlaylistId,
@@ -1273,7 +1556,7 @@ export class ProgrammingService {
     context: HumanContext,
     companyId: string,
     deviceId: string,
-    range: { from: string; to: string },
+    range: { from: string; to: string; output?: string },
   ): Promise<TimelineView> {
     const { from, to } = timelineRange(range);
     const access = await this.#companies.resolve(context, companyId);
@@ -1298,6 +1581,7 @@ export class ProgrammingService {
       from,
       to,
       groupId ? { kind: "group", group: view.group } : { kind: "individual" },
+      range.output,
     );
   }
 
@@ -1305,7 +1589,7 @@ export class ProgrammingService {
     context: HumanContext,
     companyId: string,
     groupId: string,
-    range: { from: string; to: string; timeZone: string },
+    range: { from: string; to: string; timeZone: string; output?: string },
   ): Promise<TimelineView> {
     const { from, to } = timelineRange(range);
     if (!isTimeZone(range.timeZone))
@@ -1330,6 +1614,7 @@ export class ProgrammingService {
         kind: "group",
         group: { id: group.id, name: group.name },
       },
+      range.output,
     );
   }
 
@@ -1341,8 +1626,15 @@ export class ProgrammingService {
     from: Temporal.Instant,
     to: Temporal.Instant,
     source: TimelineView["source"],
+    outputKey?: string,
   ): Promise<TimelineView> {
-    const output = program?.outputs.get("screen") ?? {
+    const outputs = await this.#outlineOf(companyId, program);
+    // The first output unless one is asked for: the screen, or the bottom area.
+    const chosen = outputKey
+      ? outputs.find((entry) => entry.key === outputKey)
+      : outputs[0];
+    if (!chosen) throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
+    const output = program?.outputs.get(chosen.key) ?? {
       defaultPlaylistId: null,
       rules: [],
     };
@@ -1369,6 +1661,8 @@ export class ProgrammingService {
     );
     return {
       source,
+      output: chosen,
+      outputs,
       timeZone: zone,
       segments: timeline.segments.map((segment) => ({
         ...segment,
@@ -1459,6 +1753,17 @@ export class ProgrammingService {
     );
   }
 
+  /** The outputs a program has: the screen, or its layout's areas. */
+  async #outlineOf(
+    companyId: string,
+    program: ProgramRecord | null,
+  ): Promise<OutputOutline[]> {
+    if (!program?.layoutId) return [screenOutline];
+    return (await this.#layouts.outline(companyId, program.layoutId)).map(
+      (area) => ({ key: area.key, kind: area.kind, name: area.name }),
+    );
+  }
+
   async #programView(
     access: CompanyAccess,
     companyId: string,
@@ -1470,25 +1775,32 @@ export class ProgrammingService {
       ...(output.defaultPlaylistId ? [output.defaultPlaylistId] : []),
     ]);
     const summaries = await this.#summaries(access, companyId, referenced);
-    const screen = outputs.get("screen") ?? {
-      defaultPlaylistId: null,
-      rules: [],
-    };
+    // A program's layout always covers its reach, so its viewers see it.
+    const layout: LayoutRecord | null = program?.layoutId
+      ? await this.#layouts.findLayout(companyId, program.layoutId)
+      : null;
     return {
       version: program?.version ?? 0,
-      outputs: [
-        {
-          key: "screen",
-          defaultPlaylistId: screen.defaultPlaylistId,
-          defaultPlaylist: screen.defaultPlaylistId
-            ? (summaries.get(screen.defaultPlaylistId) ?? null)
+      layout: layout
+        ? { id: layout.id, name: layout.name, orientation: layout.orientation }
+        : null,
+      outputs: (await this.#outlineOf(companyId, program)).map((outline) => {
+        const output = outputs.get(outline.key) ?? {
+          defaultPlaylistId: null,
+          rules: [],
+        };
+        return {
+          ...outline,
+          defaultPlaylistId: output.defaultPlaylistId,
+          defaultPlaylist: output.defaultPlaylistId
+            ? (summaries.get(output.defaultPlaylistId) ?? null)
             : null,
-          rules: screen.rules.map((rule) => ({
+          rules: output.rules.map((rule) => ({
             ...rule,
             playlist: summaries.get(rule.playlistId) ?? null,
           })),
-        },
-      ],
+        };
+      }),
     };
   }
 

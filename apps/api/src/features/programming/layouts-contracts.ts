@@ -424,7 +424,7 @@ export const layoutOperations = [
     url: "/companies/:companyId/programming/layouts/:layoutId",
     operationId: "updateLayout",
     access: "session",
-    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
+    description: `Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. ${rules} ${reasons}`,
     schema: {
       params: layoutParams,
       body: Type.Object(
@@ -432,19 +432,25 @@ export const layoutOperations = [
           expectedVersion: version,
           name: Type.Optional(layoutName),
           definition: Type.Optional(layoutDefinitionSchema),
+          confirmRemovedOutputs: Type.Optional(Type.Boolean()),
         },
         { additionalProperties: false },
       ),
       response: { 200: layoutSchema, ...common },
     },
-    expectedErrors: [...mutation, "LAYOUT_INVALID"],
+    expectedErrors: [
+      ...mutation,
+      "LAYOUT_INVALID",
+      "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
+    ],
   },
   {
     method: "DELETE",
     url: "/companies/:companyId/programming/layouts/:layoutId",
     operationId: "deleteLayout",
     access: "session",
-    description: "Delete a layout with its areas and pages.",
+    description:
+      "Delete a layout with its areas and pages. A layout that programs use answers LAYOUT_IN_USE.",
     schema: {
       params: layoutParams,
       body: Type.Object(
@@ -453,7 +459,7 @@ export const layoutOperations = [
       ),
       response: { 204: Type.Null(), ...common },
     },
-    expectedErrors: [...mutation],
+    expectedErrors: [...mutation, "LAYOUT_IN_USE"],
   },
   {
     method: "GET",

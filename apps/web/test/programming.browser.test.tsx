@@ -76,9 +76,12 @@ function group(overrides: Partial<Group> = {}): Group {
 
 const emptyProgram: Program = {
   version: 0,
+  layout: null,
   outputs: [
     {
       key: "screen",
+      kind: "screen",
+      name: null,
       defaultPlaylistId: null,
       defaultPlaylist: null,
       rules: [],
@@ -86,8 +89,12 @@ const emptyProgram: Program = {
   ],
 };
 
+const screenOutput = { key: "screen", kind: "screen", name: null };
+
 const timeline = {
   source: { kind: "individual" },
+  output: screenOutput,
+  outputs: [screenOutput],
   timeZone: "America/Sao_Paulo",
   segments: [
     {
@@ -371,9 +378,10 @@ test("shows conflicts per schedule and saves only a clean set", async () => {
       return {
         body: {
           version: 1,
+          layout: null,
           outputs: [
             {
-              key: "screen",
+              ...screenOutput,
               defaultPlaylistId: null,
               defaultPlaylist: null,
               rules: [],
@@ -584,9 +592,10 @@ test("offers every page of playlists and marks the ones outside the caller's acc
       return {
         body: {
           version: 2,
+          layout: null,
           outputs: [
             {
-              key: "screen",
+              ...screenOutput,
               defaultPlaylistId: hiddenId,
               defaultPlaylist: null,
               rules: [],

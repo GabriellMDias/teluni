@@ -11,9 +11,12 @@ import {
 } from "./schedule.js";
 
 export type Transition = "CUT" | "FADE";
-/** The full-screen output; layout areas (PJ-20) add further keys. */
-export type OutputKey = "screen";
-export const outputKeys: readonly OutputKey[] = ["screen"];
+/**
+ * An output of a program: `screen` without a layout, otherwise the key of
+ * one of its layout's areas.
+ */
+export type OutputKey = string;
+export const screenOutput = "screen";
 
 /** Engineering defaults; changing one is a reviewed code change. */
 export const programmingPolicy = Object.freeze({
@@ -46,7 +49,10 @@ export type ProgrammingFailureCode =
   | "SCHEDULE_CONFLICT"
   | "ASSIGNMENT_CONFIRMATION_REQUIRED"
   | "TIMELINE_TOO_LARGE"
-  | "LAYOUT_INVALID";
+  | "LAYOUT_INVALID"
+  | "LAYOUT_IN_USE"
+  | "LAYOUT_SCOPE_MISMATCH"
+  | "LAYOUT_CHANGE_CONFIRMATION_REQUIRED";
 
 /**
  * One problem with a request, located by a JSON Pointer into its body, with

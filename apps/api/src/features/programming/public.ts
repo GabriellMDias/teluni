@@ -41,6 +41,11 @@ export type ProgramTarget = Readonly<{
 
 export type ProgramSnapshot = ProgramTarget &
   Readonly<{
+    /**
+     * The program's layout; its outputs are then the layout's areas, which
+     * only protocol 2 publishes.
+     */
+    layoutId: string | null;
     outputs: readonly Readonly<{
       key: string;
       defaultPlaylistId: string | null;

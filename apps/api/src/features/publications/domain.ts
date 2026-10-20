@@ -196,7 +196,8 @@ export type PublicationProblem = Readonly<{
     | "PLAYLIST_OUT_OF_SCOPE"
     | "MEDIA_UNAVAILABLE"
     | "TRANSITION_UNSUPPORTED"
-    | "TOO_LARGE";
+    | "TOO_LARGE"
+    | "LAYOUT_NOT_PUBLISHABLE";
   playlistId?: string;
   mediaId?: string;
 }>;

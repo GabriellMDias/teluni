@@ -57,8 +57,8 @@ const uuidList = (ids: readonly string[]) =>
 /**
  * PostgreSQL persistence of layouts, part of the programming module. Writers
  * run inside a transaction that first takes the organization locks, then
- * the layout row (update), then catalogs (key share) and media (share)
- * through their ports. A save replaces the areas, view fields, pages and
+ * the layout row, then the programs that use it, then catalogs (key share)
+ * and media (share) through their ports. A save replaces the areas, view fields, pages and
  * page contents as a whole. Every change writes its programming audit event
  * in the same transaction.
  */
@@ -142,16 +142,47 @@ export class PrismaLayoutRepository {
     return row ? layout(row) : null;
   }
 
+  /**
+   * Locks a layout row: `update` for saves (no key change, so programs may
+   * still take key-share locks on it), `delete` for deletion, `share` for a
+   * program that reads its areas.
+   */
   async lockLayout(
     tx: Prisma.TransactionClient,
     companyId: string,
     layoutId: string,
+    mode: "update" | "delete" | "share",
   ): Promise<LayoutRecord | null> {
     const [row] = await tx.$queryRaw<LayoutRow[]>`
       SELECT ${layoutColumns} FROM layouts
       WHERE company_id = ${companyId}::uuid AND id = ${layoutId}::uuid
-      FOR UPDATE`;
+      ${
+        mode === "update"
+          ? Prisma.sql`FOR NO KEY UPDATE`
+          : mode === "delete"
+            ? Prisma.sql`FOR UPDATE`
+            : Prisma.sql`FOR SHARE`
+      }`;
     return row ? layout(row) : null;
+  }
+
+  /** A layout's areas as program outputs: key, name and kind, by stacking. */
+  async outline(
+    companyId: string,
+    layoutId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ key: string; name: string; kind: "media" | "catalog" }[]> {
+    const rows = await (tx ?? this.#db).$queryRaw<
+      { key: string; name: string; kind: "MEDIA" | "CATALOG" }[]
+    >`
+      SELECT key, name, kind::text AS kind FROM layout_areas
+      WHERE company_id = ${companyId}::uuid AND layout_id = ${layoutId}::uuid
+      ORDER BY z, key`;
+    return rows.map((row) => ({
+      key: row.key,
+      name: row.name,
+      kind: row.kind === "MEDIA" ? "media" : "catalog",
+    }));
   }
 
   /** Newest first, keyset-paginated, within the visible scopes. */
