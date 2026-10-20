@@ -85,6 +85,7 @@ model Company {
   mediaAuditEvents        MediaAuditEvent[]
   // Back-relations of the programming module; never traversed across modules.
   playlists               Playlist[]
+  layouts                 Layout[]
   programmingGroups       ProgrammingGroup[]
   programs                Program[]
   programmingAuditEvents  ProgrammingAuditEvent[]
@@ -115,6 +116,7 @@ model Branch {
   devices              Device[]
   mediaAssets          MediaAsset[]
   playlists            Playlist[]
+  layouts              Layout[]
   programmingGroups    ProgrammingGroupBranch[]
   publicationPlaylists PublicationPlaylist[]
   catalogs             Catalog[]

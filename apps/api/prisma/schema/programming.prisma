@@ -164,3 +164,114 @@ model ProgrammingAuditEvent {
   @@index([companyId, subjectId, occurredAt(sort: Desc), id(sort: Desc)], map: "programming_audit_events_subject_idx")
   @@map("programming_audit_events")
 }
+
+enum LayoutOrientation {
+  LANDSCAPE
+  PORTRAIT
+}
+
+enum LayoutAreaKind {
+  MEDIA
+  CATALOG
+}
+
+// Layouts: reusable canvases with freeform areas, catalog views and
+// optional coordinated pages (D-11). Areas, view fields and pages are
+// replaced as a whole on every save; area keys stay stable for programs.
+model Layout {
+  id                String            @id @db.Uuid
+  companyId         String            @map("company_id") @db.Uuid
+  branchId          String?           @map("branch_id") @db.Uuid
+  name              String            @db.VarChar(120)
+  orientation       LayoutOrientation
+  audioMixConfirmed Boolean           @default(false) @map("audio_mix_confirmed")
+  version           Int               @default(1)
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch            Branch?           @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  areas             LayoutArea[]
+  pages             LayoutPage[]
+
+  @@unique([companyId, id], map: "layouts_company_id_id_key")
+  @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "layouts_company_created_idx")
+  @@map("layouts")
+}
+
+model LayoutArea {
+  id              String              @id @db.Uuid
+  companyId       String              @map("company_id") @db.Uuid
+  layoutId        String              @map("layout_id") @db.Uuid
+  key             String              @db.VarChar(16)
+  name            String              @db.VarChar(40)
+  x               Int
+  y               Int
+  width           Int
+  height          Int
+  z               Int
+  background      String              @db.Char(7)
+  fit             String              @db.VarChar(8)
+  muted           Boolean
+  volume          Int
+  kind            LayoutAreaKind
+  pageControlled  Boolean             @map("page_controlled")
+  catalogId       String?             @map("catalog_id") @db.Uuid
+  presentation    String?             @db.VarChar(8)
+  textSize        Int?                @map("text_size")
+  showUnavailable Boolean?            @map("show_unavailable")
+  pageSeconds     Int?                @map("page_seconds")
+  layout          Layout              @relation(fields: [companyId, layoutId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  catalog         Catalog?            @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  viewFields      LayoutViewField[]
+  pageContents    LayoutPageContent[]
+
+  @@unique([companyId, id], map: "layout_areas_company_id_id_key")
+  @@unique([companyId, layoutId, key], map: "layout_areas_key_key")
+  @@index([companyId, catalogId], map: "layout_areas_catalog_idx")
+  @@map("layout_areas")
+}
+
+model LayoutViewField {
+  companyId String       @map("company_id") @db.Uuid
+  areaId    String       @map("area_id") @db.Uuid
+  position  Int
+  fieldId   String       @map("field_id") @db.Uuid
+  role      String       @db.VarChar(8)
+  area      LayoutArea   @relation(fields: [companyId, areaId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  field     CatalogField @relation(fields: [companyId, fieldId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, areaId, position], map: "layout_view_fields_pkey")
+  @@index([companyId, fieldId], map: "layout_view_fields_field_idx")
+  @@map("layout_view_fields")
+}
+
+model LayoutPage {
+  id              String              @id @db.Uuid
+  companyId       String              @map("company_id") @db.Uuid
+  layoutId        String              @map("layout_id") @db.Uuid
+  position        Int
+  durationSeconds Int                 @map("duration_seconds")
+  layout          Layout              @relation(fields: [companyId, layoutId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  contents        LayoutPageContent[]
+
+  @@unique([companyId, id], map: "layout_pages_company_id_id_key")
+  @@unique([companyId, layoutId, position], map: "layout_pages_position_key")
+  @@map("layout_pages")
+}
+
+model LayoutPageContent {
+  companyId     String      @map("company_id") @db.Uuid
+  pageId        String      @map("page_id") @db.Uuid
+  areaId        String      @map("area_id") @db.Uuid
+  mediaAssetId  String?     @map("media_asset_id") @db.Uuid
+  viewPage      Int?        @map("view_page")
+  groupChoiceId String?     @map("group_choice_id") @db.VarChar(64)
+  page          LayoutPage  @relation(fields: [companyId, pageId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  area          LayoutArea  @relation(fields: [companyId, areaId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  mediaAsset    MediaAsset? @relation(fields: [companyId, mediaAssetId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, pageId, areaId], map: "layout_page_contents_pkey")
+  @@index([companyId, areaId], map: "layout_page_contents_area_idx")
+  @@index([companyId, mediaAssetId], map: "layout_page_contents_media_idx")
+  @@map("layout_page_contents")
+}

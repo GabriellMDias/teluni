@@ -27,9 +27,15 @@ import {
   type FieldDefinition,
   type FieldInput,
   type Issue,
+  type Promotion,
   type SchemaCheck,
   type Values,
 } from "./domain.js";
+import type {
+  BindableCatalog,
+  CatalogUsageGuard,
+  CatalogViewData,
+} from "./public.js";
 import {
   positionGap,
   type Actor,
@@ -201,15 +207,35 @@ export class CatalogService {
   readonly #repository: PrismaCatalogRepository;
   readonly #companies: CompanyAccessPort;
   readonly #media: MediaPort;
+  readonly #guards: readonly CatalogUsageGuard[];
 
   constructor(options: {
     repository: PrismaCatalogRepository;
     companies: CompanyAccessPort;
     media: MediaPort;
+    /** Registered by binding modules; read on every check. */
+    guards?: readonly CatalogUsageGuard[];
   }) {
     this.#repository = options.repository;
     this.#companies = options.companies;
     this.#media = options.media;
+    this.#guards = options.guards ?? [];
+  }
+
+  /** Layouts binding a catalog and each field, summed over every guard. */
+  async #usage(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    catalogId: string,
+  ): Promise<{ layouts: number; fields: Map<string, number> }> {
+    const total = { layouts: 0, fields: new Map<string, number>() };
+    for (const guard of this.#guards) {
+      const usage = await guard(tx, companyId, catalogId);
+      total.layouts += usage.layouts;
+      for (const [fieldId, count] of usage.fields)
+        total.fields.set(fieldId, (total.fields.get(fieldId) ?? 0) + count);
+    }
+    return total;
   }
 
   // Catalogs
@@ -412,7 +438,8 @@ export class CatalogService {
           throw new CatalogFailure("CATALOG_NOT_EMPTY");
         if (
           (await this.#repository.referencingFields(tx, companyId, catalogId)) >
-          0
+            0 ||
+          (await this.#usage(tx, companyId, catalogId)).layouts > 0
         )
           throw new CatalogFailure("CATALOG_IN_USE");
         await this.#repository.deleteCatalog(tx, catalog);
@@ -460,6 +487,27 @@ export class CatalogService {
           const count = await this.#repository.countCheck(tx, catalog, check);
           if (count > 0) issues.push(schemaIssue(check, count));
         }
+        // Fields a layout binds can be neither removed nor archived.
+        const bound = (await this.#usage(tx, companyId, catalogId)).fields;
+        for (const fieldId of plan.changes.removed) {
+          const count = bound.get(fieldId) ?? 0;
+          if (count > 0)
+            issues.push({
+              path: "/fields",
+              reason: "FIELD_BOUND",
+              fieldId,
+              count,
+            });
+        }
+        plan.fields.forEach((field, index) => {
+          const count = bound.get(field.id) ?? 0;
+          if (count > 0 && plan.changes.archived.includes(field.id))
+            issues.push({
+              path: `/fields/${index}/archived`,
+              reason: "FIELD_BOUND",
+              count,
+            });
+        });
         if (issues.length > 0)
           throw new CatalogFailure("CATALOG_SCHEMA_INVALID", issues);
         await this.#repository.replaceFields(
@@ -1299,6 +1347,133 @@ export class CatalogService {
         };
       }),
     };
+  }
+
+  // Catalog port
+
+  /** Active catalogs visible to the access, key-share-locked. */
+  requireBindable = async (
+    tx: Prisma.TransactionClient,
+    access: CompanyAccess,
+    catalogIds: readonly string[],
+  ): Promise<BindableCatalog[]> => {
+    const found = (
+      await this.#repository.keyShareCatalogs(tx, access.companyId, catalogIds)
+    ).filter(
+      (catalog) =>
+        catalog.status === "ACTIVE" && catalogVisible(access, catalog),
+    );
+    return this.#bindable(access.companyId, found, tx);
+  };
+
+  describeCatalogs = async (
+    companyId: string,
+    catalogIds: readonly string[],
+  ): Promise<BindableCatalog[]> =>
+    this.#bindable(
+      companyId,
+      await this.#repository.findCatalogs(companyId, catalogIds),
+    );
+
+  viewData = async (
+    companyId: string,
+    catalogId: string,
+  ): Promise<CatalogViewData | null> => {
+    const [catalog] = await this.describeCatalogs(companyId, [catalogId]);
+    if (!catalog) return null;
+    const records = await this.#repository.allRecords(companyId, catalogId);
+    const prices = new Map<
+      string,
+      Map<
+        string,
+        {
+          base: number | null;
+          overrides: Map<string, number>;
+          promotions: Promotion[];
+        }
+      >
+    >();
+    const money = catalog.fields.filter((field) => field.type === "money");
+    for (const record of records)
+      prices.set(
+        record.id,
+        new Map(
+          money.map((field) => {
+            const base = record.values[field.id];
+            return [
+              field.id,
+              {
+                base: typeof base === "number" ? base : null,
+                overrides: new Map<string, number>(),
+                promotions: [],
+              },
+            ];
+          }),
+        ),
+      );
+    for (const override of await this.#repository.catalogOverrides(
+      companyId,
+      catalogId,
+    ))
+      prices
+        .get(override.recordId)
+        ?.get(override.fieldId)
+        ?.overrides.set(override.branchId, override.amount);
+    for (const promotion of await this.#repository.catalogPromotions(
+      companyId,
+      catalogId,
+    ))
+      prices
+        .get(promotion.recordId)
+        ?.get(promotion.fieldId)
+        ?.promotions.push(promotion);
+    const references = catalog.fields.filter(
+      (field) => field.type === "reference",
+    );
+    const referenced = records.flatMap((record) =>
+      references.flatMap((field) => {
+        const value = record.values[field.id];
+        return typeof value === "string" ? [value] : [];
+      }),
+    );
+    return {
+      catalog,
+      records: records.map((record) => ({
+        id: record.id,
+        available: record.available,
+        values: record.values,
+      })),
+      prices,
+      referenceTitles: await this.#repository.titles(companyId, [
+        ...new Set(referenced),
+      ]),
+    };
+  };
+
+  async #bindable(
+    companyId: string,
+    catalogs: readonly CatalogData[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<BindableCatalog[]> {
+    const fields = await this.#repository.fields(
+      companyId,
+      catalogs.map((catalog) => catalog.id),
+      tx,
+    );
+    return catalogs.map((catalog) => ({
+      id: catalog.id,
+      name: catalog.name,
+      branchId: catalog.branchId,
+      status: catalog.status,
+      fields: (fields.get(catalog.id) ?? []).map((field) => ({
+        id: field.id,
+        label: field.label,
+        type: field.type,
+        archived: field.archived,
+        choices: field.choices ?? [],
+        currency: field.currency ?? null,
+      })),
+    }));
   }
 
   /** Media reference guard: record values protect their media. */

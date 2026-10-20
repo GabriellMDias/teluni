@@ -32,16 +32,17 @@ const media = createMediaModule({
   sessions: identity.sessions,
   companies: organizations.companies,
 });
+const catalogs = createCatalogsModule({
+  sessions: identity.sessions,
+  companies: organizations.companies,
+  media: media.media,
+});
 const programming = createProgrammingModule({
   sessions: identity.sessions,
   companies: organizations.companies,
   devices: devices.devices,
   media: media.media,
-});
-const catalogs = createCatalogsModule({
-  sessions: identity.sessions,
-  companies: organizations.companies,
-  media: media.media,
+  catalogs: catalogs.catalogs,
 });
 const publications = createPublicationsModule({
   sessions: identity.sessions,
@@ -58,7 +59,7 @@ export const apiModules: readonly ApiModule[] = [
   invitations,
   devices.module,
   media.module,
-  programming.module,
   catalogs.module,
+  programming.module,
   publications.module,
 ];

@@ -57,7 +57,7 @@ export const catalogErrors = defineErrors({
   CATALOG_IN_USE: {
     status: 409,
     message:
-      "A field of another catalog refers to this catalog, so it cannot be deleted.",
+      "A field of another catalog or a layout uses this catalog, so it cannot be deleted.",
     category: "conflict",
     retryable: false,
   },

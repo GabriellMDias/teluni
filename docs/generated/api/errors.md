@@ -52,7 +52,15 @@
 | `MEDIA_IN_USE` | 409 | conflict | no | This media item is still used by programming or a publication and cannot be deleted. |
 | `MEDIA_STORAGE_FULL` | 503 | availability | yes | The media storage is nearly full, so new uploads are paused. Contact support. |
 | `MEDIA_INVALID_STATE` | 409 | conflict | no | This media item cannot do that in its current state. |
-| `PROGRAMMING_LIMIT_REACHED` | 409 | conflict | no | This company reached a programming limit: 1,000 playlists, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output. |
+| `CATALOG_SCHEMA_INVALID` | 409 | conflict | no | The fields cannot be saved this way. Each issue names the field and the reason, with how many items cause it when stored data does. |
+| `CATALOG_RECORD_INVALID` | 409 | conflict | no | The item's values do not match the catalog's fields. Each issue names the field and the reason. |
+| `CATALOG_RECORD_REFERENCED` | 409 | conflict | no | Other items refer to this item, so it cannot be deleted. Change those items first. |
+| `CATALOG_PROMOTION_CONFLICT` | 409 | conflict | no | Another promotion of this price overlaps this period for the same branches. |
+| `CATALOG_LIMIT_REACHED` | 409 | conflict | no | A catalog limit was reached: 200 catalogs per company, 60 fields or 5,000 items per catalog, or 100 promotions per price. |
+| `CATALOG_ARCHIVED` | 409 | conflict | no | This catalog is archived. Restore it before changing it. |
+| `CATALOG_NOT_EMPTY` | 409 | conflict | no | Only an empty catalog can be deleted. Delete its items first. |
+| `CATALOG_IN_USE` | 409 | conflict | no | A field of another catalog or a layout uses this catalog, so it cannot be deleted. |
+| `PROGRAMMING_LIMIT_REACHED` | 409 | conflict | no | This company reached a programming limit: 1,000 playlists, 500 layouts, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output. |
 | `PLAYLIST_IN_USE` | 409 | conflict | no | This playlist is still used by a schedule or a default and cannot be deleted. |
 | `PLAYLIST_SCOPE_MISMATCH` | 409 | conflict | no | This playlist or media item belongs to a branch the programming does not cover. Use company content or content of that single branch. |
 | `GROUP_NAME_IN_USE` | 409 | conflict | no | Another programming group of this company already has this name. |
@@ -61,15 +69,8 @@
 | `SCHEDULE_TIMES_EQUAL` | 400 | validation | no | A schedule cannot start and end at the same time. Use the all-day option for a whole day. |
 | `SCHEDULE_CONFLICT` | 409 | conflict | no | Two schedules of the same screen output overlap. Check the schedules to find them. |
 | `ASSIGNMENT_CONFIRMATION_REQUIRED` | 409 | conflict | no | The chosen programming is not published yet, so the screen will show neutral output. Confirm to continue. |
+| `LAYOUT_INVALID` | 409 | conflict | no | The layout cannot be saved this way. Each issue names the area, view or page and the reason. |
 | `TIMELINE_TOO_LARGE` | 400 | validation | no | This period has too many schedule changes to show at once. Choose a shorter period. |
-| `CATALOG_SCHEMA_INVALID` | 409 | conflict | no | The fields cannot be saved this way. Each issue names the field and the reason, with how many items cause it when stored data does. |
-| `CATALOG_RECORD_INVALID` | 409 | conflict | no | The item's values do not match the catalog's fields. Each issue names the field and the reason. |
-| `CATALOG_RECORD_REFERENCED` | 409 | conflict | no | Other items refer to this item, so it cannot be deleted. Change those items first. |
-| `CATALOG_PROMOTION_CONFLICT` | 409 | conflict | no | Another promotion of this price overlaps this period for the same branches. |
-| `CATALOG_LIMIT_REACHED` | 409 | conflict | no | A catalog limit was reached: 200 catalogs per company, 60 fields or 5,000 items per catalog, or 100 promotions per price. |
-| `CATALOG_ARCHIVED` | 409 | conflict | no | This catalog is archived. Restore it before changing it. |
-| `CATALOG_NOT_EMPTY` | 409 | conflict | no | Only an empty catalog can be deleted. Delete its items first. |
-| `CATALOG_IN_USE` | 409 | conflict | no | A field of another catalog refers to this catalog, so it cannot be deleted. |
 | `PUBLICATION_INVALID` | 409 | conflict | no | This programming cannot be published as it is. Check it to see what must change first. |
 | `PUBLICATION_NOT_RESTORABLE` | 409 | conflict | no | This publication is no longer kept and cannot be restored. Publish the current programming instead. |
 | `PROTOCOL_UNSUPPORTED` | 409 | conflict | no | This player supports no synchronization protocol the server offers. Update the player. |

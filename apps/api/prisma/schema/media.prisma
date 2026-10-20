@@ -81,6 +81,7 @@ model MediaAsset {
   playlistItems         PlaylistItem[]
   publicationMedia      PublicationMedia[]
   catalogRecordMedia    CatalogRecordMedia[]
+  layoutPageContents    LayoutPageContent[]
 
   @@unique([companyId, id], map: "media_assets_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "media_assets_company_created_idx")

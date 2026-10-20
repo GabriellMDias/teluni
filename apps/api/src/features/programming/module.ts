@@ -1,10 +1,15 @@
 import type { ApiModule } from "../../module.js";
+import type { CatalogPort } from "../catalogs/public.js";
 import type { DevicePort } from "../devices/public.js";
 import type { HumanSessionPort } from "../identity/public.js";
 import type { MediaPort } from "../media/public.js";
 import type { CompanyAccessPort } from "../organizations/public.js";
 import { programmingOperations } from "./contracts.js";
 import { programmingErrors } from "./errors.js";
+import { layoutOperations } from "./layouts-contracts.js";
+import { PrismaLayoutRepository } from "./layouts-repository.js";
+import { registerLayoutRoutes } from "./layouts-routes.js";
+import { LayoutService } from "./layouts-service.js";
 import { PrismaProgrammingRepository } from "./prisma-repository.js";
 import type { ProgrammingPort, PublicationFacts } from "./public.js";
 import {
@@ -14,10 +19,12 @@ import {
 import { ProgrammingService } from "./service.js";
 
 /**
- * Composes playlists, programming groups, programs and timelines (the
- * programming design, ADR-0029) over the organizations, devices and media
- * ports. Playlists protect their media from deletion, group spans protect
- * their branches from archiving, and a screen moved outside its group's span
+ * Composes playlists, layouts, programming groups, programs and timelines
+ * (the programming design, ADR-0029, and the catalog and composition
+ * design) over the organizations, devices, media and catalogs ports.
+ * Playlists and layout pages protect their media from deletion, layouts
+ * protect the catalogs and fields they bind, group spans protect their
+ * branches from archiving, and a screen moved outside its group's span
  * leaves the group in the move's transaction. Publications use the
  * returned port to snapshot programs and register publication facts.
  */
@@ -26,9 +33,11 @@ export function createProgrammingModule(options: {
   companies: CompanyAccessPort;
   devices: DevicePort;
   media: MediaPort;
+  catalogs: CatalogPort;
   limits?: ProgrammingRouteLimits;
 }): { module: ApiModule; programming: ProgrammingPort } {
   let service: ProgrammingService | undefined;
+  let layouts: LayoutService | undefined;
   let publicationFacts: PublicationFacts | undefined;
   const require = () => {
     if (!service) throw new Error("The programming module is not active");
@@ -50,6 +59,14 @@ export function createProgrammingModule(options: {
   options.media.registerReferenceGuard("playlist-draft", (tx, companyId, id) =>
     service ? service.mediaReferences(tx, companyId, id) : Promise.resolve([]),
   );
+  options.media.registerReferenceGuard("layout-draft", (tx, companyId, id) =>
+    layouts ? layouts.mediaReferences(tx, companyId, id) : Promise.resolve([]),
+  );
+  options.catalogs.registerUsageGuard((tx, companyId, catalogId) =>
+    layouts
+      ? layouts.catalogUsage(tx, companyId, catalogId)
+      : Promise.resolve({ layouts: 0, fields: new Map<string, number>() }),
+  );
   options.companies.guardBranchArchive((tx, companyId, branchId) =>
     service
       ? service.branchInUse(tx, companyId, branchId)
@@ -62,8 +79,14 @@ export function createProgrammingModule(options: {
     name: "programming",
     tag: "Programming",
     requires: ["database"],
-    requiresModules: ["identity", "organizations", "devices", "media"],
-    operations: programmingOperations,
+    requiresModules: [
+      "identity",
+      "organizations",
+      "devices",
+      "media",
+      "catalogs",
+    ],
+    operations: [...programmingOperations, ...layoutOperations],
     errors: programmingErrors,
     activate: ({ database }) => {
       // Activation guarantees the database and the required modules.
@@ -75,15 +98,29 @@ export function createProgrammingModule(options: {
       });
       if (publicationFacts) active.onPublicationFacts(publicationFacts);
       service = active;
+      const layoutService = new LayoutService({
+        repository: new PrismaLayoutRepository(database!),
+        companies: options.companies,
+        catalogs: options.catalogs,
+        media: options.media,
+      });
+      layouts = layoutService;
       return {
         name: "programming",
-        register: (app) =>
+        register: (app) => {
           registerProgrammingRoutes(
             app,
             active,
             options.sessions,
             options.limits,
-          ),
+          );
+          registerLayoutRoutes(
+            app,
+            layoutService,
+            options.sessions,
+            options.limits,
+          );
+        },
       };
     },
   };

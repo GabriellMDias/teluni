@@ -195,6 +195,8 @@ const ptBR = {
     VALUES_OUT_OF_RANGE: "Itens fora do novo intervalo.",
     CHOICE_IN_USE: "Itens usam uma opção removida.",
     PROMOTIONS_EXIST: "Promoções existentes usam este campo.",
+    FIELD_BOUND:
+      "Layouts mostram este campo. Tire-o dos layouts antes de remover ou arquivar.",
     ARCHIVED_FIELD: "Campo arquivado.",
     PRICE_FIELD: "Preços são salvos na seção de preços.",
     REQUIRED: "Preencha este campo.",
@@ -230,7 +232,7 @@ const ptBR = {
     CATALOG_ARCHIVED: "Este catálogo está arquivado. Restaure-o antes.",
     CATALOG_NOT_EMPTY: "Exclua os itens antes de excluir o catálogo.",
     CATALOG_IN_USE:
-      "Um campo de outro catálogo usa este catálogo, por isso ele não pode ser excluído.",
+      "Um campo de outro catálogo ou um layout usa este catálogo, por isso ele não pode ser excluído.",
     MEDIA_NOT_READY: "A imagem não está pronta.",
     BRANCH_ARCHIVED: "A filial escolhida está arquivada.",
     AUTHENTICATION_REQUIRED: "Sua sessão terminou. Entre novamente.",
@@ -446,6 +448,8 @@ const enUS: Messages = {
     VALUES_OUT_OF_RANGE: "Items fall outside the new range.",
     CHOICE_IN_USE: "Items use a removed option.",
     PROMOTIONS_EXIST: "Existing promotions use this field.",
+    FIELD_BOUND:
+      "Layouts show this field. Remove it from them before removing or archiving it.",
     ARCHIVED_FIELD: "Archived field.",
     PRICE_FIELD: "Prices are saved in the prices section.",
     REQUIRED: "Fill in this field.",
@@ -481,7 +485,7 @@ const enUS: Messages = {
     CATALOG_ARCHIVED: "This catalog is archived. Restore it first.",
     CATALOG_NOT_EMPTY: "Delete the items before deleting the catalog.",
     CATALOG_IN_USE:
-      "A field of another catalog uses this catalog, so it cannot be deleted.",
+      "A field of another catalog or a layout uses this catalog, so it cannot be deleted.",
     MEDIA_NOT_READY: "The image is not ready.",
     BRANCH_ARCHIVED: "The chosen branch is archived.",
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
