@@ -233,7 +233,7 @@ Increment 2, the same day:
 - The panel's Publicação section on group pages and on the programming of screens with individual programming ([`publications.tsx`](../../apps/web/src/programming/publications.tsx)), the assignment form that asks for confirmation only for unpublished destinations, member screen states on group pages, and the screen's synchronization section and list states in Telas ([`sync.tsx`](../../apps/web/src/devices/sync.tsx)).
 - Browser component tests for the review, problems, a draft changed after review, restore, the published-destination assignment and the synchronization section, and the [publication journey](../../apps/web/test/e2e/publications/journey.spec.ts) with a simulated player that verifies its statement, manifest and media.
 
-Pending: increment 3.
+Both increments were merged through [pull request #12](https://github.com/GabriellMDias/teluni/pull/12) on 2026-10-20 after its CI passed. Pending: increment 3.
 
 ## Decisions for review
 
