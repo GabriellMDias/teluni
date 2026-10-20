@@ -110,7 +110,7 @@ Proposed initial values:
 - Claim: at most 10 failed claims per person per 15 minutes and 30 per company per 15 minutes, counted in PostgreSQL from failed-claim rows that record only the actor, company and time. Exceeding a limit answers `RATE_LIMITED` without saying which applied. With these limits an attacker with one account needs on the order of years of attempts per expected match against a full pending table. Many accounts or companies created for guessing remain a residual risk that the signup abuse controls (PH-13) must bound; a successful guess pairs a stranger's screen to the attacker's company, which its owner notices because pairing fails on their side, and no tenant data is exposed.
 - Status polling: once per polling interval per enrollment.
 
-The per-address limit uses the address Fastify reports for the connection, as the identity routes do; behind a reverse proxy it counts the proxy until trusted forwarding is configured for the production deployment.
+The per-address limit uses the address Fastify reports for the connection, as the identity routes do; behind a reverse proxy it counts the proxy until trusted forwarding is configured for the production deployment. The general request limit of device routes counts each presented credential instead, under a ceiling of 6,000 requests per address per minute, so screens sharing an address do not exhaust it for each other.
 
 These limits stand on their own; commercial device quotas are PJ-27.
 
