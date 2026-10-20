@@ -12,6 +12,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "test": "vitest run",
+    "conformance:write": "tsx scripts/conformance.ts",
     "references:write": "tsx scripts/generate-references.ts --write",
     "references:check": "tsx scripts/generate-references.ts --check"
   },

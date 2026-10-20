@@ -11,6 +11,8 @@ export default defineConfig(
       "test-results/**",
       "**/dist/**",
       "apps/api/src/generated/**",
+      // The Android TV player is a Gradle build; its outputs are not project JavaScript.
+      "apps/player/**",
     ],
   },
   {

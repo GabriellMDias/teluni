@@ -268,6 +268,48 @@ function localString(instant: Temporal.Instant, zone: string): string {
     .toString({ timeZoneName: "never", smallestUnit: "second" });
 }
 
+/** UTC offsets of a zone over a range, as screens receive them. */
+export type ZoneOffsets = Readonly<{
+  /** The end of the range the periods describe, exclusive. */
+  until: string;
+  /** The offset from the range's start, then one period per transition. */
+  periods: readonly Readonly<{ from: string; offsetSeconds: number }>[];
+}>;
+
+const maxZonePeriods = 64;
+
+/**
+ * The offsets of `zone` over [from, until) from the same zone rules the
+ * evaluator uses, so a screen resolving local times against them agrees with
+ * the preview whatever time zone data the device has.
+ */
+export function zoneOffsets(
+  zone: string,
+  from: Date,
+  until: Date,
+): ZoneOffsets {
+  const seconds = (value: Temporal.ZonedDateTime) =>
+    value.offsetNanoseconds / 1e9;
+  const iso = (instant: Temporal.Instant) =>
+    new Date(instant.epochMilliseconds).toISOString();
+  const end = Temporal.Instant.fromEpochMilliseconds(until.getTime());
+  let current = Temporal.Instant.fromEpochMilliseconds(
+    from.getTime(),
+  ).toZonedDateTimeISO(zone);
+  const periods = [
+    { from: from.toISOString(), offsetSeconds: seconds(current) },
+  ];
+  for (;;) {
+    const next = current.getTimeZoneTransition("next");
+    if (!next || Temporal.Instant.compare(next.toInstant(), end) >= 0) break;
+    if (periods.length >= maxZonePeriods)
+      throw new Error("The zone changes offset too often to describe");
+    periods.push({ from: iso(next.toInstant()), offsetSeconds: seconds(next) });
+    current = next;
+  }
+  return { until: until.toISOString(), periods };
+}
+
 export class TimelineTooLarge extends Error {
   constructor() {
     super("The timeline has more segments than allowed");

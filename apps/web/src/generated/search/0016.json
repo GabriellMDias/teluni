@@ -4,6 +4,42 @@
     "title": "Web Application",
     "group": "Workspace guides",
     "kind": "repository",
+    "heading": "Modules",
+    "anchor": "modules",
+    "text": "Modules\nA web module is the browser side of a product capability. It defines its routes as children of the shared root route, keeps its pages, client calls, styles, and wording in its own `src/<module>/` folder, and exports a navigation link component. [`src/modules.tsx`](src/modules.tsx) is the only composition point: it adds the module's routes to the route tree and its link to the header and home page. Shared shell and portal code never import a module. Module browser journeys belong in `test/e2e/<module>/` and may start their own disposable stack with the shared [end-to-end stack helpers](test/e2e/stack.ts). [Orion's reference implementation](../../docs/project-derivation.md#orions-reference-implementation) is a complete example.\nUse the shared [`ErrorNotice`](src/components.tsx) and [`api-client.ts`](src/api-client.ts) for public API failures: pass a module's own stable codes when unwrapping responses and its own wording for them. A failed or lost write is an unknown outcome, never proof that nothing changed.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Entry and home page",
+    "anchor": "entry-and-home-page",
+    "text": "Entry and home page\nTeluni composes its own `/` route from the [`workspace` web module](src/workspace/routes.tsx) instead of the shell's generic home page. A visitor without a session (or when the session service is unavailable) goes to `/sign-in`; a signed-in person sees the home page with their first companies, a path to create the first company, and the session's two-step verification state. `/sign-in` sends a signed-in person on to `returnTo` or the home page, and presents the product beside the sign-in action. The header shows Home, Companies, the session entry and, in development only, Documentation.\nThe Living Documentation Portal is a development aid, not part of the product (owner direction, 2026-10-19). [`src/modules.tsx`](src/modules.tsx) mounts its routes and header link only when `import.meta.env.DEV` is true, so the Vite development server serves `/docs` while production builds drop the portal's code and generated pages; [`scripts/check-public-bundle.mjs`](scripts/check-public-bundle.mjs), part of `bundle:check`, fails when portal content reaches `dist/`.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Identity",
+    "anchor": "identity",
+    "text": "Identity\nThe display name comes from `.orion/project.json` at build time: page titles, the shell brand, and the portal show the repository's own name. The [brand mark](src/assets/brand-mark.svg) and its derived [touch icon](src/assets/brand-touch-icon.png) belong to the repository. The Orion foundation uses the Orion mark; project initialization replaces both files with a neutral placeholder for the project to redesign.\nThe shell, documentation navigation, and browser favicon consume the SVG directly. Only the Apple touch icon uses a derived 180×180 PNG on the approved `#F8FAFC` light background. After editing the SVG, run `pnpm -C apps/web identity:write` to regenerate that raster through the [export script](scripts/generate-touch-icon.mjs), using the Playwright Chromium installation described in [setup](../../docs/setup.md#prepare-a-clean-checkout). Commit both files, then rebuild. Do not edit the PNG independently. Adjacent live text names the decorative mark for accessibility.\nTeluni uses the owner-approved [Connected Tiles identity](../../docs/project/branding/README.md): the selected symbol, a locally served Plus Jakarta Sans variable font with its OFL notice, titlecase live brand text, and blue/teal/navy palette. The runtime SVG is canonical, and `identity:write` derives its touch PNG. The branding guide owns the single identity kit and remaining domain/trademark evidence.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Run the application",
+    "anchor": "run-the-application",
+    "text": "Run the application\nUse the canonical [setup guide](../../docs/setup.md) for installation, environment loading, and prerequisites. For an API at `127.0.0.1:3000`, run `pnpm -C apps/web dev`.\nVite forwards the default `/api` browser path to the local API and removes that prefix. `ORION_WEB_API_TARGET` changes only the development-server target. `VITE_ORION_API_BASE_URL` is the sole browser API setting, defaults to `/api`, and must be a same-origin path. A deployed static build needs an equivalent same-origin route/reverse proxy; this guide does not select deployment infrastructure. Server-only URLs and credentials must not enter browser configuration.\nHuman sign-in uses the server-managed session of the API's `identity` module. The [`identity` web module](src/identity/routes.tsx) provides `/sign-in`, `/account/sessions` and the header's sign-in/sign-out entry. Login is a full navigation to `/api/auth/login`; the browser then holds only the API's `HttpOnly` session cookie, and the session's CSRF token stays in module memory for unsafe requests through the SDK. Sign-out clears all cached query data. `loginHref(returnTo, \"strong\" | \"recent\")` starts two-step verification when an operation answers `STRONG_AUTHENTICATION_REQUIRED` or `RECENT_AUTHENTICATION_REQUIRED`; the sessions page offers it directly. The header entry neither queries nor shows the session on `/docs` pages, so the portal still makes no API calls while browsing. Copy is localized through a typed pt-BR/en-US catalog in `src/identity/messages.ts`; no i18n library is selected yet. The API still verifies every business request, and production credentials must never be used in tests.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
     "heading": "Companies and branches",
     "anchor": "companies-and-branches",
     "text": "Companies and branches\nThe [`organizations` module](src/organizations/routes.tsx) provides `/companies` and `/companies/$companyId`, composed with identity in `src/modules.tsx`. A signed-in person can page through their companies and create a company with its initial responsible-administrator membership. Company administration offers two-step verification when required by the API. Strongly authenticated administrators can create, rename and archive branches, edit the company's name/default language/time zone, and read its change history; other members see only the branches their current grants allow. Company and branch pages, the selected company view (`view=settings` or `view=history`) and history pages live in route search parameters, so reload and browser history preserve them. Changing views clears the previous collection's cursor. API queries remain in TanStack Query and all product calls use the generated SDK with the session cookie and in-memory CSRF token.\nCompany creation retains its idempotency key across a retry. Branch renames and company-settings drafts retain the version observed when editing started even if their queries refetch; stale-version recovery reloads current data for review. A lost settings response blocks another save until current data is loaded. Successful settings changes invalidate the company detail, company lists and history. Authorization denials stay visible, including direct settings/history URLs without the required capability. Copy is localized through `src/organizations/messages.ts` using the shared browser-locale selection in `src/locale.ts`. Administrators with the `members.manage` capability also get a `view=members` page listing memberships with presentation names/emails from each person's last verified sign-in. Suspending, reactivating or removing a member asks for confirmation that keeps the version observed when the action was requested; a conflict or lost response requires reloading before another change, and restoring an administrator offers recent two-step re-authentication. The responsible administrator shows no lifecycle actions. Each member lists their effective grants with branches and expiry; an administrator can add a grant (role, whole company or selected active branches, optional expiry, with the administration role offered only to the responsible administrator) and revoke one after confirmation. The responsible administrator can propose transferring responsibility from an active administrator's row; the company page shows the pending transfer only to its two parties, with accept or decline for the successor and cancel for the proposer, and offers recent two-step re-authentication when the API requires it. Members with the `invitations.manage` capability get a `view=invitations` page: administrators invite by email with a role, scope, branches and optional expiry (administration only by the responsible administrator), branch managers invite operators to the branches they manage, and the list shows each invitation's state and email delivery with resend and confirmed revoke. The public `/invitations/accept` route moves the credential from the link fragment into the tab's session storage, asks the person to sign in, previews the invitation for the matching verified address and accepts it on explicit confirmation. The [organizations browser journeys](test/e2e/organizations/companies.spec.ts) use the disposable [local identity stack](../../docs/setup.md#try-sign-in-locally), which can also be used manually to open `/companies`.\nThe [`devices` module](src/devices/routes.tsx) provides `/companies/$companyId/screens` and `/companies/$companyId/screens/$deviceId` (\"Telas\"), linked from the company page for members with `devices.view`. The list filters by branch and status in route search parameters and shows each screen's branch, state, erasure and last check-in. Members with `devices.manage` pair a screen by entering the code it shows, which travels only in the request body, with a name, branch and rotation. The screen page shows the reported model and resolution as the device's own statement, the latest offline deadline the screen could hold, and lets managers rename it, change rotation among the reported values, move it to another branch and unlink it after explicit confirmation; an unlinked screen with pending erasure offers a reset record. Changes keep the version observed when the page loaded, and conflicts or lost responses require a reload. The [screens journey](test/e2e/devices/screens.spec.ts) simulates the player over HTTP against the local identity stack.\nThe [`media` module](src/media/routes.tsx) provides `/companies/$companyId/media` and `/companies/$companyId/media/$assetId` (\"Mídia\"), linked from the company page for members with `media.view`. The library shows thumbnails with kind, dimensions or duration, scope and state in Library, Archived and (with `media.delete`) Trash views, filtered by kind, scope and name in route search parameters, and refreshes itself while items upload or are prepared. Members with `media.upload` choose files (or drop them) and a scope; each file is created and then streamed with per-file progress through `XMLHttpRequest`, which sends the session cookie and CSRF token. The item page previews the display rendition, explains rejections, and offers rename and tags, archive and restore, move to the trash after explicit confirmation, restore from the trash, discard of unusable uploads and download of the original. Changes keep the observed version; conflicts or lost responses require a reload. The [media journey](test/e2e/media/library.spec.ts) processes generated media with real FFmpeg against the local identity stack.\nThe [`programming` module](src/programming/routes.tsx) provides `/companies/$companyId/programming` with Playlists and Grupos views, `/companies/$companyId/programming/playlists/$playlistId`, `/companies/$companyId/programming/groups/$groupId` and `/companies/$companyId/programming/screens/$deviceId` (\"Programação\"), linked from the company page for members with `programming.view` and from an active screen's page. Members with `programming.edit` create company or branch playlists, order items picked from ready media that fits the playlist's scope with seconds for images, choose a cut or fade, create groups over the whole company or chosen branches, and edit a group's or screen's schedules and default playlist; a schedule set is checked by the API before saving and each schedule shows its own conflicts. Group and screen pages preview the next seven days as computed by the API, in a branch zone chosen for a group and in the screen's own zone. Members with `programming.assign` choose a screen's group or individual programming; when the destination has no publication they first confirm that the screen shows the neutral screen until it is published, and otherwise the page names the generation the screen will show. Without strong authentication they get the two-step prompt. Playlists and groups are deleted after explicit confirmation. Changes keep the observed version; conflicts or lost responses require a reload. Screens also gain an optional time zone that overrides their branch's. The [programming journey](test/e2e/programming/journey.spec.ts) builds a playlist, schedules a group and assigns a simulated screen against the local identity stack.\nGroup pages and the programming of a screen with individual programming add a Publicação section ([`publications.tsx`](src/programming/publications.tsx)): the current generation, a review that shows the counts, the screens that follow the program and every problem that blocks publication, publishing with the reviewed content digest (a draft changed after the review is refused and must be reviewed again), and the published generations with restore after confirmation for members with `publications.publish`. Group pages also show each member screen's connection and publication state. The screen page in Telas shows the screen's synchronization ([`sync.tsx`](src/devices/sync.tsx)), refreshed every five seconds: connection from the last sync (AT-24), the desired generation, what the screen reports showing and preparing, its playback condition and free storage, each labeled as reported by the screen; the screen list shows connection and publication state per screen. The [publication journey](test/e2e/publications/journey.spec.ts) publishes a group in the panel, lets a simulated player synchronize and verify its statement, manifest and media, and sees the screen reported up to date.\n"
@@ -817,68 +853,5 @@
     "heading": "Decision",
     "anchor": "decision",
     "text": "Decision\nOrion will use **Prisma ORM as its primary database-access and persistence tooling for PostgreSQL applications**.\nThe initial Orion baseline will use the supported **Prisma ORM 7 release line**.\nPrisma ORM 8 will not be adopted as the initial baseline. It may be evaluated after its stable general-availability release and after compatibility, migration, operational, and feature requirements have been assessed.\nA compatible future upgrade from Prisma ORM 7 to Prisma ORM 8 or another Prisma major version does not require a new ADR when Prisma retains the architectural responsibilities defined here.\nThe exact Prisma versions will be pinned mechanically through the package-management strategy established by ADR-0002.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Architectural boundary",
-    "anchor": "architectural-boundary",
-    "text": "Architectural boundary\nPrisma is a **persistence infrastructure concern**.\nThe intended dependency direction is:\ndomain\n    ↑\napplication\n    ↑\npersistence ports\n    ↑\nPrisma persistence adapters\n    ↓\nPostgreSQL\n\nDomain code must not depend on Prisma.\nApplication code should remain independent from Prisma-specific APIs and generated persistence types except where an explicitly scoped infrastructure concern requires otherwise.\nPrisma-generated records and types are persistence representations.\nThey are not domain entities, application models, API contracts, or UI models.\nThe architectural distinction remains:\nPrisma persistence models\n    !=\ndomain entities\n    !=\napplication models\n    !=\nAPI contracts\n    !=\nUI models\n\nPersistence adapters are responsible for translating between database representations and framework-independent application or domain representations where such translation is necessary.\nThis rule does not require ceremonial mapping layers for every trivial projection.\nThe purpose is to preserve responsibility boundaries rather than introduce abstraction for its own sake.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Prisma Schema Language",
-    "anchor": "prisma-schema-language",
-    "text": "Prisma Schema Language\nPrisma Schema Language will be the primary authored representation for database structures that Prisma can represent appropriately.\nThe Prisma schema should clearly describe ordinary persistence concerns such as:\ntables and models;\ncolumns and scalar types;\nnullability;\nidentifiers;\nrelations;\nuniqueness;\nindexes supported by the selected Prisma version;\nsupported database-native types;\nother schema properties that Prisma can represent reliably.\nThe Prisma schema is not considered a complete representation of every possible PostgreSQL capability.\nPostgreSQL-specific structures that cannot be represented correctly through Prisma must not be omitted merely to preserve ORM purity.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Canonical database representations",
-    "anchor": "canonical-database-representations",
-    "text": "Canonical database representations\nOrion will distinguish between three related database representations.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Authored persistence model",
-    "anchor": "authored-persistence-model",
-    "text": "Authored persistence model\nPrisma schema\n    → primary authored representation\n      for database structures Prisma can represent\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Released database evolution",
-    "anchor": "released-database-evolution",
-    "text": "Released database evolution\nversioned SQL migrations\n    → authoritative history of transitions\n      between released database states\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Complete current physical schema",
-    "anchor": "complete-current-physical-schema",
-    "text": "Complete current physical schema\nfully migrated PostgreSQL database\n    → authoritative complete physical schema\n\nThe complete migrated PostgreSQL schema is authoritative for physical database structures because it may contain features not completely represented by Prisma Schema Language.\nThese may include PostgreSQL extensions, specialized constraints, indexes, views, triggers, custom types, or other database-native behavior.\nGenerated database reference documentation should therefore ultimately be derived from or validated against an actually migrated PostgreSQL schema rather than relying exclusively on the Prisma schema.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Database access",
-    "anchor": "database-access",
-    "text": "Database access\nPrisma Client will be the default database-access mechanism for persistence operations that it represents clearly and efficiently.\nTypical examples include:\nordinary creates, reads, updates, and deletes;\nrelational queries;\nfiltering;\nordering;\npagination;\nprojections;\ncommon transactional persistence operations.\nPrisma Client should not be forced onto queries for which explicit SQL provides a materially clearer, safer, or more efficient implementation.\nFor specialized or complex database operations, Orion may use **TypedSQL or explicit parameterized SQL**.\nExamples may include:\ncomplex reporting queries;\ncommon table expressions;\nadvanced aggregations;\nwindow functions;\nspecialized PostgreSQL functionality;\nperformance-sensitive queries;\nvector similarity operations;\noperations unsupported or poorly represented by Prisma Client.\nThe choice between Prisma Client and explicit SQL should be based on clarity, correctness, maintainability, type safety where practical, and demonstrated database behavior rather than a requirement that every query use the ORM abstraction.\nExplicit SQL must remain parameterized where external values are involved and must follow Orion's security and database policies.\n"
   }
 ]

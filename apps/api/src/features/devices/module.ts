@@ -52,6 +52,7 @@ export function createDevicesModule(options: {
         branchId: identity.branchId,
         status: self.status,
         timeZone: self.timeZone,
+        rotation: self.rotation,
         authorizedUntil: self.authorizedUntil,
         serverTime: self.serverTime,
       };

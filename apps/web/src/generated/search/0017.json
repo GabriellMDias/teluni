@@ -4,6 +4,69 @@
     "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Architectural boundary",
+    "anchor": "architectural-boundary",
+    "text": "Architectural boundary\nPrisma is a **persistence infrastructure concern**.\nThe intended dependency direction is:\ndomain\n    ↑\napplication\n    ↑\npersistence ports\n    ↑\nPrisma persistence adapters\n    ↓\nPostgreSQL\n\nDomain code must not depend on Prisma.\nApplication code should remain independent from Prisma-specific APIs and generated persistence types except where an explicitly scoped infrastructure concern requires otherwise.\nPrisma-generated records and types are persistence representations.\nThey are not domain entities, application models, API contracts, or UI models.\nThe architectural distinction remains:\nPrisma persistence models\n    !=\ndomain entities\n    !=\napplication models\n    !=\nAPI contracts\n    !=\nUI models\n\nPersistence adapters are responsible for translating between database representations and framework-independent application or domain representations where such translation is necessary.\nThis rule does not require ceremonial mapping layers for every trivial projection.\nThe purpose is to preserve responsibility boundaries rather than introduce abstraction for its own sake.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Prisma Schema Language",
+    "anchor": "prisma-schema-language",
+    "text": "Prisma Schema Language\nPrisma Schema Language will be the primary authored representation for database structures that Prisma can represent appropriately.\nThe Prisma schema should clearly describe ordinary persistence concerns such as:\ntables and models;\ncolumns and scalar types;\nnullability;\nidentifiers;\nrelations;\nuniqueness;\nindexes supported by the selected Prisma version;\nsupported database-native types;\nother schema properties that Prisma can represent reliably.\nThe Prisma schema is not considered a complete representation of every possible PostgreSQL capability.\nPostgreSQL-specific structures that cannot be represented correctly through Prisma must not be omitted merely to preserve ORM purity.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Canonical database representations",
+    "anchor": "canonical-database-representations",
+    "text": "Canonical database representations\nOrion will distinguish between three related database representations.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Authored persistence model",
+    "anchor": "authored-persistence-model",
+    "text": "Authored persistence model\nPrisma schema\n    → primary authored representation\n      for database structures Prisma can represent\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Released database evolution",
+    "anchor": "released-database-evolution",
+    "text": "Released database evolution\nversioned SQL migrations\n    → authoritative history of transitions\n      between released database states\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Complete current physical schema",
+    "anchor": "complete-current-physical-schema",
+    "text": "Complete current physical schema\nfully migrated PostgreSQL database\n    → authoritative complete physical schema\n\nThe complete migrated PostgreSQL schema is authoritative for physical database structures because it may contain features not completely represented by Prisma Schema Language.\nThese may include PostgreSQL extensions, specialized constraints, indexes, views, triggers, custom types, or other database-native behavior.\nGenerated database reference documentation should therefore ultimately be derived from or validated against an actually migrated PostgreSQL schema rather than relying exclusively on the Prisma schema.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Database access",
+    "anchor": "database-access",
+    "text": "Database access\nPrisma Client will be the default database-access mechanism for persistence operations that it represents clearly and efficiently.\nTypical examples include:\nordinary creates, reads, updates, and deletes;\nrelational queries;\nfiltering;\nordering;\npagination;\nprojections;\ncommon transactional persistence operations.\nPrisma Client should not be forced onto queries for which explicit SQL provides a materially clearer, safer, or more efficient implementation.\nFor specialized or complex database operations, Orion may use **TypedSQL or explicit parameterized SQL**.\nExamples may include:\ncomplex reporting queries;\ncommon table expressions;\nadvanced aggregations;\nwindow functions;\nspecialized PostgreSQL functionality;\nperformance-sensitive queries;\nvector similarity operations;\noperations unsupported or poorly represented by Prisma Client.\nThe choice between Prisma Client and explicit SQL should be based on clarity, correctness, maintainability, type safety where practical, and demonstrated database behavior rather than a requirement that every query use the ORM abstraction.\nExplicit SQL must remain parameterized where external values are involved and must follow Orion's security and database policies.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Migration tooling",
     "anchor": "migration-tooling",
     "text": "Migration tooling\nOrion will use **Prisma Migrate** as its primary migration-generation and deployment tooling.\nDatabase evolution will be represented through version-controlled SQL migration files.\nThe normal development flow is:\nchange persistence schema\n    ↓\ngenerate migration\n    ↓\ninspect generated SQL\n    ↓\nadjust SQL when necessary\n    ↓\nvalidate migration\n    ↓\ncommit schema and migration\n\nGenerated migrations must be reviewed before they become part of released migration history.\nGenerated SQL is not assumed to be operationally safe merely because it was produced by Prisma.\nMigrations involving large tables, backfills, constraint changes, destructive operations, compatibility periods, or zero-downtime requirements may require manually edited or multi-step SQL migrations.\nOrion's existing migration policy remains authoritative:\nreleased migration history\n    → immutable\n\nunreleased development migration history\n    → refinable\n\nBefore release, migrations may be regenerated, consolidated, reordered, or removed when doing so produces a smaller coherent migration history and no durable environment depends on the previous history.\nAfter a migration reaches an environment whose migration history is considered durable, changes must be represented by new migrations.\n"
@@ -988,41 +1051,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion has one primary TypeScript test runner.\nFast unit tests provide rapid feedback for pure logic.\nReal PostgreSQL integration tests verify the database actually used in production.\nPrisma persistence behavior is tested against PostgreSQL rather than mocks.\nProduction migrations are exercised by integration-test database creation.\nCustom PostgreSQL SQL and extensions can be tested realistically.\nTestcontainers provides reproducible ephemeral infrastructure for local development and CI.\nFastify request injection enables realistic backend integration tests without unnecessary network overhead.\nReact component behavior can be tested in real browsers without requiring complete E2E environments.\nPlaywright provides a consistent browser automation foundation.\nFull E2E tests can focus on critical user journeys rather than every rule permutation.\nTests are expected to remain isolated and parallelizable.\nTest data remains local and explicit rather than relying on large implicit global fixtures.\nCoverage remains available without becoming an arbitrary quality metric.\nThe strategy can scale from small repositories to large test suites.\nIndividual test classes remain independently executable and optimizable in CI.\nFlaky tests are treated as defects rather than accepted background noise.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nOrion introduces multiple test execution modes that contributors must understand.\nTestcontainers requires a compatible container runtime in environments executing infrastructure tests.\nReal PostgreSQL integration tests are slower than database mocks or in-memory substitutes.\nMigration-based test database initialization adds execution cost.\nSharing infrastructure for performance requires careful state isolation.\nBrowser Mode tests are slower and more resource-intensive than Node-only tests.\nPlaywright requires browser binaries and corresponding CI resources.\nMaintaining separate component-browser and E2E test levels requires contributors to choose the appropriate level.\nTest isolation may require additional infrastructure code and test factories.\nNot using broad internal mocks means some integration tests will require more setup than heavily mocked alternatives.\nAbsence of a global coverage threshold provides less immediately visible numerical enforcement and requires engineering judgment.\nMulti-browser execution, when introduced, can materially increase CI cost.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nOrion does not currently have an established testing implementation that must be migrated.\nThe initial repository testing foundation will therefore be introduced directly using:\nVitest\nTestcontainers\nVitest Browser Mode\nPlaywright\nPlaywright Test\n\nTest dependencies should only be added when the corresponding test capability exists.\nUnit and integration test scripts must be integrated with repository validation as soon as meaningful test suites exist.\nPostgreSQL integration-test infrastructure must use a PostgreSQL version compatible with the production baseline established by Orion's database tooling.\nTest databases must be initialized from committed migration history.\nContainer lifecycle and database-isolation strategies should initially favor correctness and simplicity, then be optimized using measurement when test execution time becomes material.\nFastify integration tests should use request injection by default unless real network behavior is part of the requirement.\nBrowser-dependent React tests should use Vitest Browser Mode when real browser semantics matter.\nPlaywright Test should be introduced for critical end-to-end workflows once the initial web application can be exercised through a complete running stack.\nChromium will be the initial routine E2E browser.\nAdditional browser projects should be added according to real product browser-support requirements.\nV8 coverage should be configured when coverage reporting becomes useful, without imposing an arbitrary foundation-level percentage threshold.\nCI execution strategy, including parallel jobs, container caching, browser installation, test sharding, and artifact retention, will be defined by ADR-0011.\nRoutine compatible upgrades of Vitest, Testcontainers, or Playwright do not require a new ADR when they preserve the responsibilities established here.\nReplacing the primary test runner, database integration strategy, or browser E2E framework would constitute a material testing-architecture change and should supersede this ADR.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated ADR: [ADR-0008: Select React, Vite, and TanStack for Web Applications](0008-select-react-vite-and-tanstack-for-web-applications.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nExternal reference: Vitest documentation.\nExternal reference: Vitest Browser Mode documentation.\nExternal reference: Testcontainers for Node.js documentation.\nExternal reference: Fastify testing documentation.\nExternal reference: Playwright documentation.\n"
   }
 ]

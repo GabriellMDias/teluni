@@ -1,0 +1,11 @@
+# Player Instructions
+
+Read [the player guide](README.md) for layout and commands, and the [player design](../../docs/project/player-design.md) and [ADR-0031](../../docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md) before changing behavior. Global repository instructions still apply.
+
+- Every rule lives in `core`, which stays free of Android dependencies so the JVM tests cover it. The future `app` module adapts the platform (clock, storage location, Keystore, rendering) to `core`'s interfaces and holds no rule of its own.
+- The player is an untrusted client of the published device contracts. Never import or copy backend or web code. Keep the wire models in `core/.../sync/DeviceApi.kt` in step with the [OpenAPI document](../../docs/generated/api/openapi.json); `ContractTest` fails when a field name differs.
+- Business time never comes from the device's time zone data: resolve local times only with the server's `zoneOffsets`, and take "now" only from `TrustedClock`. The evaluator mirrors the API's evaluator. Change both together with the [shared fixtures](../api/test/programming/schedule-fixtures.json) and regenerate the [conformance file](../api/test/publications/conformance.json) with `pnpm -C apps/api conformance:write`; never edit an expected result to make a test pass.
+- Protected output needs a verified, unexpired statement that lists the playing generation. Never extend a statement's expiry, trust an unverified one, or play content outside the active generation.
+- Writes go through `AtomicFiles`: temporary file, flush, rename, directory flush. Media enter the store only after their length and SHA-256 match. Changing the state record's format needs a forward migration or a re-synchronization that keeps the credential, and tests for both.
+- Credentials, statements, manifests, media and pairing codes never reach logs, exceptions shown to people or reports.
+- Pin new dependencies in the version catalog, then refresh `gradle.lockfile` and `gradle/verification-metadata.xml` in the same change (see the README). Run `./gradlew check` (or the preinstalled Gradle where the wrapper cannot download) before handing off.

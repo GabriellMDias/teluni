@@ -387,6 +387,39 @@ const syncSchema = Type.Object(
     ]),
     clearRequired: Type.Boolean(),
     timeZone: Type.Union([Type.String(), Type.Null()]),
+    zoneOffsets: Type.Union([
+      Type.Object(
+        {
+          until: instant,
+          periods: Type.Array(
+            Type.Object(
+              {
+                from: instant,
+                offsetSeconds: Type.Integer({
+                  minimum: -86_400,
+                  maximum: 86_400,
+                }),
+              },
+              { additionalProperties: false },
+            ),
+            { minItems: 1, maxItems: 64 },
+          ),
+        },
+        {
+          additionalProperties: false,
+          description:
+            "The UTC offsets of `timeZone` from three days before `serverTime` to 35 days after it: the offset at the start, then one period per transition. Screens resolve local schedule times against these instead of their own time zone data.",
+        },
+      ),
+      Type.Null(),
+    ]),
+    rotation: Type.Union([
+      Type.Literal(0),
+      Type.Literal(90),
+      Type.Literal(180),
+      Type.Literal(270),
+      Type.Null(),
+    ]),
     desired: Type.Union([
       Type.Object(
         {
@@ -473,7 +506,7 @@ export const publicationOperations: readonly ApiOperation[] = [
     operationId: "syncDevice",
     access: "device",
     description:
-      "Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
+      "Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone with that zone's UTC offsets, configured rotation, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
     schema: {
       body: reportSchema,
       response: { 200: syncSchema, ...common },

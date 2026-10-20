@@ -1258,7 +1258,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself. */
+        /** @description Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone with that zone's UTC offsets, configured rotation, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself. */
         post: operations["syncDevice"];
         delete?: never;
         options?: never;
@@ -17730,6 +17730,16 @@ export interface operations {
                         status: "active" | "suspended" | "unlinked";
                         clearRequired: boolean;
                         timeZone: string | null;
+                        zoneOffsets: {
+                            /** Format: date-time */
+                            until: string;
+                            periods: {
+                                /** Format: date-time */
+                                from: string;
+                                offsetSeconds: number;
+                            }[];
+                        } | null;
+                        rotation: 0 | 90 | 180 | 270 | null;
                         desired: {
                             publicationId: string;
                             generation: number;

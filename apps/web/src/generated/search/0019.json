@@ -4,6 +4,60 @@
     "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "anchor": "adr-0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n**Superseded by:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted\n**Superseded by:** [ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the `@orion/*` package scope; the Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own `origin`, pull requests, CI history, human actions, product decisions, and releases, while the canonical `GabriellMDias/Orion` repository continues evolving as the upstream foundation. Projects need to know which Orion revision they contain and to adopt later Orion improvements without losing product changes.\nThe repository also contains state that cannot be inherited as true for a new repository: Orion's implementation plan and acceptance evidence describe how Orion itself was built, several completed human actions verified GitHub settings for the Orion repository only, and the Approval Request feature is an executable reference rather than a product requirement. The owner directed a workflow that preserves Git ancestry, protects the canonical repository from accidental product pushes, records machine-readable provenance, and keeps upgrades as reviewable changes.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nA project is derived from a clean, full clone of Orion by the repository's `pnpm orion:init-project` command. After verifying preconditions, the command commits the project's initial identity on top of Orion's history, renames the canonical remote to `orion-upstream`, disables pushing to it and fetching its tags, removes local branch tracking of it, and adds the project's repository as `origin`. It creates no remote repository and pushes nothing.\n`.orion/project.json` is the versioned, schema-checked identity and provenance record. In Orion it describes the foundation. In a derived project it records the project identity, the canonical Orion repository, the immutable commit the project was initialized from, the Orion baseline currently integrated, and the disposition of the Approval Request reference implementation. The immutable Git commit is the foundation version; no separate release or version scheme is introduced.\nFoundation-owned and project-owned state are separated by file. Orion's plan, human actions, and acceptance report remain inherited foundation history in projects; initialization creates project-owned `docs/project/implementation-plan.md` and `docs/project/human-actions.md` with pending actions for the project's own repository settings. Root instructions route implementation work to the project-owned files when the manifest describes a project. The foundation namespace (`@orion/*`, `ORION_*`, `orion_*` claims, and the CI check name) is not renamed.\nThe Approval Request slice is retained in derived projects as a recorded `reference` implementation, not a product requirement. The project owner later records `adopted` or `removed`; validation keeps the disposition coherent with the source tree and refuses a durable release while it is still `reference`.\nOrion upgrades are ordinary branches that merge a chosen commit from `orion-upstream/main` with its history, resolve conflicts under review, regenerate derived artifacts, and pass validation. The recorded baseline is updated only after that commit is integrated, and validation requires it to be an ancestor of `HEAD`.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nPreserving ancestry lets Git compute the upstream changes after a baseline and perform three-way merges, which is the property that makes future upgrades practical. A GitHub template repository or a squashed snapshot would discard that ancestry and force every upgrade to become a manual diff-and-copy exercise. Keeping the canonical repository as a fetch-only remote retains that ancestry without letting ordinary `git push` or `git pull` cross the boundary.\nA small manifest makes provenance machine-checkable in local validation and CI without inventing a release system. Commit ancestry is verifiable wherever full history is available, and the recorded baseline cannot claim unintegrated upstream work.\nSeparate project-owned files avoid conflicts that would otherwise recur on every upgrade while keeping Orion's evidence intact rather than rewriting it. Retaining the reference implementation avoids a brittle, multi-artifact deletion step during initialization; the release guard ensures it cannot silently become product behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "GitHub template repository",
+    "anchor": "github-template-repository",
+    "text": "GitHub template repository\nTemplates create an unrelated history. They make project creation easy but lose the shared ancestry that three-way upgrade merges need, and they record no provenance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Fork or shared-history repository with Orion as origin",
     "anchor": "fork-or-shared-history-repository-with-orion-as-origin",
     "text": "Fork or shared-history repository with Orion as `origin`\nWorking directly from a fork or clone that still pushes to Orion risks product work reaching the canonical repository, couples project pull requests and settings to Orion, and blurs project and foundation history.\n"
@@ -1555,86 +1609,5 @@
     "heading": "Luxon or date-fns-tz",
     "anchor": "luxon-or-date-fns-tz",
     "text": "Luxon or date-fns-tz\nMature libraries, but each has its own model of gaps and repeated hours that differs from `java.time` and from the standard on the way to Node.js, so the fixtures would encode library behavior rather than the policy.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Hand-written resolution over Intl.DateTimeFormat",
-    "anchor": "hand-written-resolution-over-intldatetimeformat",
-    "text": "Hand-written resolution over `Intl.DateTimeFormat`\nAvoids a dependency, but searching transitions and disambiguating local times is where subtle errors appear, and the code would duplicate a standard that is about to ship.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A shared evaluator package compiled for both runtimes",
-    "anchor": "a-shared-evaluator-package-compiled-for-both-runtimes",
-    "text": "A shared evaluator package compiled for both runtimes\nOne implementation for the API and the player would remove the second implementation, but the player is a native Android application; embedding a JavaScript engine to run schedules adds a runtime and its own failure modes on the device.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nDeterministic, host-independent schedule results with the selected DST rules.\nOne fixture file that both the API and the player must pass.\nA direct path to native Temporal.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nA runtime dependency in the API until Node.js ships Temporal, which must be kept current with the zone database it relies on (the polyfill uses the runtime's `Intl` zone data).\nTwo implementations of the evaluator, kept equal only by the fixtures.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nZone data comes from the Node.js runtime's ICU; updating Node.js updates zone rules, and preview results for future dates can change after a zone-database update, as on the device.\nReplacing the polyfill with native Temporal removes the dependency and its import; the fixtures must still pass.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Programming design](../project/programming-design.md)\n[Release policies: time and scheduling](../project/release-policies.md#time-and-scheduling)\n[Playback and synchronization](../project/playback-and-sync.md#time-and-regional-scheduling)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "anchor": "adr-0030-synchronize-screens-by-polling-with-signed-authorization-statements",
-    "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance establishes the direction for local and CI implementation of PJ-11, not the player's conformance (PJ-12), hardware qualification (PH-08) or the provisioning of signing keys in a real environment (PJ-13).\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The policies require that a screen detect a new desired publication within 30 seconds (AT-11), report its state every 30 seconds (AT-24), never be rolled back by stale or reordered messages, keep playing valid content offline for at most seven days after its last renewal (AT-15) and suspend time-dependent output when its clock cannot be trusted (AT-16). Screens authenticate with a device-generated bearer credential under ADR-0027, and the device enrollment design left a tamper-evident form of the offline deadline to this decision. The pilot runs one API process on one host (ADR-0021).\nThis record decides how screens learn their desired publication, how they obtain and verify its manifest and media, and how the server states, verifiably, what a screen may play and until when. The details are in the [publication and synchronization design](../project/publication-sync-design.md).\n"
   }
 ]
