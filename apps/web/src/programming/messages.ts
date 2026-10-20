@@ -91,6 +91,8 @@ const ptBR = {
     "Sem layout, a programação tem uma única saída para a tela inteira. Com um layout, cada área tem os seus próprios horários.",
   layoutLabel: "Layout",
   noLayout: "Sem layout (tela inteira)",
+  hiddenLayout:
+    "Um layout de outra filial, que esta tela não pode mais usar. Escolha outro para mudar os horários.",
   useLayout: "Usar este layout",
   layoutChosen: "Layout escolhido.",
   openLayout: (name: string) => `Abrir o layout ${name}`,
@@ -602,6 +604,8 @@ const enUS: Messages = {
     "Without a layout, the programming has a single full-screen output. With a layout, each area has its own schedules.",
   layoutLabel: "Layout",
   noLayout: "No layout (full screen)",
+  hiddenLayout:
+    "A layout of another branch, which this screen can no longer use. Choose another one to change its schedules.",
   useLayout: "Use this layout",
   layoutChosen: "Layout chosen.",
   openLayout: (name: string) => `Open layout ${name}`,

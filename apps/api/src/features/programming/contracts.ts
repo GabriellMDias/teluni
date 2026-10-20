@@ -167,7 +167,7 @@ export const programSchema = Type.Object(
       Type.Object(
         {
           id: uuid,
-          name: Type.String(),
+          name: Type.Union([Type.String(), Type.Null()]),
           orientation: Type.Union([
             Type.Literal("landscape"),
             Type.Literal("portrait"),
@@ -675,7 +675,7 @@ export const programmingOperations = [
     operationId: "getDeviceProgram",
     access: "session",
     description:
-      "The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
+      "The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist or layout the caller cannot view, such as one of the screen's previous branch, keeps its id without its names; such a layout must be replaced (LAYOUT_SCOPE_MISMATCH) before outputs change.",
     schema: {
       params: deviceParams,
       response: { 200: programSchema, ...common },
@@ -700,6 +700,7 @@ export const programmingOperations = [
       "SCHEDULE_CONFLICT",
       "PLAYLIST_SCOPE_MISMATCH",
       "PROGRAMMING_LIMIT_REACHED",
+      "LAYOUT_SCOPE_MISMATCH",
       "DEVICE_UNLINKED",
     ],
   },

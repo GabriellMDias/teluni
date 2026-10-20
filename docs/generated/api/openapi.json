@@ -65169,7 +65169,14 @@
                               "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                             },
                             "name": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "orientation": {
                               "anyOf": [
@@ -66105,7 +66112,14 @@
                               "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                             },
                             "name": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "orientation": {
                               "anyOf": [
@@ -66970,7 +66984,14 @@
                               "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                             },
                             "name": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "orientation": {
                               "anyOf": [
@@ -69146,7 +69167,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}/program": {
       "get": {
         "operationId": "getDeviceProgram",
-        "description": "The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
+        "description": "The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist or layout the caller cannot view, such as one of the screen's previous branch, keeps its id without its names; such a layout must be replaced (LAYOUT_SCOPE_MISMATCH) before outputs change.",
         "tags": ["Programming"],
         "security": [
           {
@@ -69197,7 +69218,14 @@
                               "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                             },
                             "name": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "orientation": {
                               "anyOf": [
@@ -70134,7 +70162,14 @@
                               "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                             },
                             "name": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "orientation": {
                               "anyOf": [
@@ -70910,6 +70945,7 @@
           "SCHEDULE_CONFLICT",
           "PLAYLIST_SCOPE_MISMATCH",
           "PROGRAMMING_LIMIT_REACHED",
+          "LAYOUT_SCOPE_MISMATCH",
           "DEVICE_UNLINKED"
         ]
       }
@@ -71000,7 +71036,14 @@
                               "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                             },
                             "name": {
-                              "type": "string"
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             },
                             "orientation": {
                               "anyOf": [

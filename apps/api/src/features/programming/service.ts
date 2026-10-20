@@ -113,7 +113,8 @@ export type ProgramView = Readonly<{
   version: number;
   layout: Readonly<{
     id: string;
-    name: string;
+    /** Null for a caller who cannot view the layout. */
+    name: string | null;
     orientation: "landscape" | "portrait";
   }> | null;
   outputs: readonly (OutputOutline & {
@@ -940,9 +941,16 @@ export class ProgrammingService {
         source,
       );
       const layoutId = prior?.layoutId ?? null;
-      const outputs = layoutId
+      const held = layoutId
         ? await this.#lockedOutline(tx, companyId, layoutId)
-        : [screenOutline];
+        : null;
+      if (layoutId && !held)
+        throw new ProgrammingFailure("RESOURCE_VERSION_CONFLICT");
+      // A screen moved to another branch may keep its previous branch's
+      // layout, which must be replaced before its outputs change.
+      if (held && !usable(held.layout, reach))
+        throw new ProgrammingFailure("LAYOUT_SCOPE_MISMATCH");
+      const outputs = held?.outputs ?? [screenOutline];
       const current = await this.#repository.program(
         companyId,
         source,
@@ -1025,17 +1033,12 @@ export class ProgrammingService {
       );
       let outputs: readonly OutputOutline[] = [screenOutline];
       if (input.layoutId) {
-        const layout = await this.#layouts.lockLayout(
-          tx,
-          companyId,
-          input.layoutId,
-          "share",
-        );
-        if (!layout || !layoutVisible(locked.access, layout))
+        const held = await this.#lockedOutline(tx, companyId, input.layoutId);
+        if (!held || !layoutVisible(locked.access, held.layout))
           throw new ProgrammingFailure("RESOURCE_NOT_FOUND");
-        if (!usable(layout, reach))
+        if (!usable(held.layout, reach))
           throw new ProgrammingFailure("LAYOUT_SCOPE_MISMATCH");
-        outputs = await this.#lockedOutline(tx, companyId, layout.id);
+        outputs = held.outputs;
       }
       const current = await this.#repository.program(
         companyId,
@@ -1119,22 +1122,28 @@ export class ProgrammingService {
     return { reach: new Set([found.branchId]), concerned: [found.branchId] };
   }
 
-  /** A layout's areas as outputs, after share-locking the layout. */
+  /** A layout and its areas as outputs, after share-locking the layout. */
   async #lockedOutline(
     tx: Prisma.TransactionClient,
     companyId: string,
     layoutId: string,
-  ): Promise<OutputOutline[]> {
+  ): Promise<{ layout: LayoutRecord; outputs: OutputOutline[] } | null> {
     const layout = await this.#layouts.lockLayout(
       tx,
       companyId,
       layoutId,
       "share",
     );
-    if (!layout) throw new ProgrammingFailure("RESOURCE_VERSION_CONFLICT");
-    return (await this.#layouts.outline(companyId, layoutId, tx)).map(
-      (area) => ({ key: area.key, kind: area.kind, name: area.name }),
-    );
+    if (!layout) return null;
+    const areas = await this.#layouts.outline(companyId, layoutId, tx);
+    return {
+      layout,
+      outputs: areas.map((area) => ({
+        key: area.key,
+        kind: area.kind,
+        name: area.name,
+      })),
+    };
   }
 
   /** Whether any program uses a layout; layouts may not be deleted then. */
@@ -1628,7 +1637,7 @@ export class ProgrammingService {
     source: TimelineView["source"],
     outputKey?: string,
   ): Promise<TimelineView> {
-    const outputs = await this.#outlineOf(companyId, program);
+    const { outputs } = await this.#outlineOf(access, companyId, program);
     // The first output unless one is asked for: the screen, or the bottom area.
     const chosen = outputKey
       ? outputs.find((entry) => entry.key === outputKey)
@@ -1753,15 +1762,37 @@ export class ProgrammingService {
     );
   }
 
-  /** The outputs a program has: the screen, or its layout's areas. */
+  /**
+   * The outputs a program has: the screen, or its layout's areas. A caller
+   * who cannot view the layout, such as the previous branch's layout of a
+   * moved screen, gets its outputs without the layout's names.
+   */
   async #outlineOf(
+    access: CompanyAccess,
     companyId: string,
     program: ProgramRecord | null,
-  ): Promise<OutputOutline[]> {
-    if (!program?.layoutId) return [screenOutline];
-    return (await this.#layouts.outline(companyId, program.layoutId)).map(
-      (area) => ({ key: area.key, kind: area.kind, name: area.name }),
-    );
+  ): Promise<{
+    layout: LayoutRecord | null;
+    visible: boolean;
+    outputs: OutputOutline[];
+  }> {
+    const layout = program?.layoutId
+      ? await this.#layouts.findLayout(companyId, program.layoutId)
+      : null;
+    if (!layout)
+      return { layout: null, visible: true, outputs: [screenOutline] };
+    const visible = layoutVisible(access, layout);
+    return {
+      layout,
+      visible,
+      outputs: (await this.#layouts.outline(companyId, layout.id)).map(
+        (area) => ({
+          key: area.key,
+          kind: area.kind,
+          name: visible ? area.name : null,
+        }),
+      ),
+    };
   }
 
   async #programView(
@@ -1775,16 +1806,21 @@ export class ProgrammingService {
       ...(output.defaultPlaylistId ? [output.defaultPlaylistId] : []),
     ]);
     const summaries = await this.#summaries(access, companyId, referenced);
-    // A program's layout always covers its reach, so its viewers see it.
-    const layout: LayoutRecord | null = program?.layoutId
-      ? await this.#layouts.findLayout(companyId, program.layoutId)
-      : null;
+    const { layout, visible, ...shape } = await this.#outlineOf(
+      access,
+      companyId,
+      program,
+    );
     return {
       version: program?.version ?? 0,
       layout: layout
-        ? { id: layout.id, name: layout.name, orientation: layout.orientation }
+        ? {
+            id: layout.id,
+            name: visible ? layout.name : null,
+            orientation: layout.orientation,
+          }
         : null,
-      outputs: (await this.#outlineOf(companyId, program)).map((outline) => {
+      outputs: shape.outputs.map((outline) => {
         const output = outputs.get(outline.key) ?? {
           defaultPlaylistId: null,
           rules: [],

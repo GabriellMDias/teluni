@@ -1179,6 +1179,10 @@ function LayoutChoice({
       layout.branch === null ||
       (reach !== "all" && reach.size === 1 && reach.has(layout.branch.id)),
   );
+  // A screen moved to another branch may keep a layout the caller cannot see.
+  const current = program.layout
+    ? (program.layout.name ?? t.hiddenLayout)
+    : t.noLayout;
   const pending =
     save.error instanceof ApiFailure &&
     save.error.code === "LAYOUT_CHANGE_CONFIRMATION_REQUIRED"
@@ -1194,7 +1198,7 @@ function LayoutChoice({
       <h2 id="layout-choice-title">{t.layoutTitle}</h2>
       <p className="hint">{t.layoutLead}</p>
       {!editable ? (
-        <p>{program.layout?.name ?? t.noLayout}</p>
+        <p>{current}</p>
       ) : (
         <>
           <label htmlFor="program-layout">{t.layoutLabel}</label>
@@ -1210,7 +1214,7 @@ function LayoutChoice({
             <option value="">{t.noLayout}</option>
             {program.layout &&
               !fitting.some((layout) => layout.id === program.layout?.id) && (
-                <option value={program.layout.id}>{program.layout.name}</option>
+                <option value={program.layout.id}>{current}</option>
               )}
             {fitting.map((layout) => (
               <option key={layout.id} value={layout.id}>
@@ -1257,7 +1261,7 @@ function LayoutChoice({
           </button>
         </>
       )}
-      {program.layout && (
+      {program.layout?.name && (
         <p className="hint">
           <Link
             to="/companies/$companyId/programming/layouts/$layoutId"

@@ -1244,7 +1244,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary. */
+        /** @description The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist or layout the caller cannot view, such as one of the screen's previous branch, keeps its id without its names; such a layout must be replaced (LAYOUT_SCOPE_MISMATCH) before outputs change. */
         get: operations["getDeviceProgram"];
         put?: never;
         post?: never;
@@ -21803,7 +21803,7 @@ export interface operations {
                         version: number;
                         layout: {
                             id: string;
-                            name: string;
+                            name: string | null;
                             orientation: "landscape" | "portrait";
                         } | null;
                         outputs: {
@@ -22064,7 +22064,7 @@ export interface operations {
                         version: number;
                         layout: {
                             id: string;
-                            name: string;
+                            name: string | null;
                             orientation: "landscape" | "portrait";
                         } | null;
                         outputs: {
@@ -22316,7 +22316,7 @@ export interface operations {
                         version: number;
                         layout: {
                             id: string;
-                            name: string;
+                            name: string | null;
                             orientation: "landscape" | "portrait";
                         } | null;
                         outputs: {
@@ -23023,7 +23023,7 @@ export interface operations {
                         version: number;
                         layout: {
                             id: string;
-                            name: string;
+                            name: string | null;
                             orientation: "landscape" | "portrait";
                         } | null;
                         outputs: {
@@ -23284,7 +23284,7 @@ export interface operations {
                         version: number;
                         layout: {
                             id: string;
-                            name: string;
+                            name: string | null;
                             orientation: "landscape" | "portrait";
                         } | null;
                         outputs: {
@@ -23536,7 +23536,7 @@ export interface operations {
                         version: number;
                         layout: {
                             id: string;
-                            name: string;
+                            name: string | null;
                             orientation: "landscape" | "portrait";
                         } | null;
                         outputs: {
