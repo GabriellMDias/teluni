@@ -35,6 +35,7 @@ export type NewPublication = Readonly<{
   programId: string;
   branchIds: readonly string[];
   generation: number;
+  protocol: number;
   contentSha256: Buffer;
   manifest: Buffer;
   manifestSha256: Buffer;
@@ -390,7 +391,8 @@ export class PrismaPublicationRepository {
         restored_from_generation, published_by_principal_id,
         published_by_membership_id, published_at)
       VALUES (${created.id}::uuid, ${companyId}::uuid, ${created.programId}::uuid,
-        ${branches}::uuid[], ${created.generation}, 1, ${created.contentSha256},
+        ${branches}::uuid[], ${created.generation}, ${created.protocol},
+        ${created.contentSha256},
         ${created.manifest}, ${created.manifestSha256}, ${created.manifest.length},
         ${created.counts.rules}, ${created.counts.playlists}, ${created.counts.items},
         ${created.counts.media}, ${created.counts.mediaBytes}::bigint,

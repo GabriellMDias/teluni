@@ -9,6 +9,9 @@ import java.time.format.DateTimeParseException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
 
 /** Why staging a publication failed, as the sync report names it. */
 public enum class StagingFailureCode {
@@ -115,7 +118,12 @@ public object ManifestParser {
             throw StagingFailure(StagingFailureCode.INTEGRITY_FAILED, "The manifest does not match its SHA-256")
         }
         val manifest = try {
-            json.decodeFromString(Manifest.serializer(), bytes.decodeToString(throwOnInvalidSequence = true))
+            val text = bytes.decodeToString(throwOnInvalidSequence = true)
+            // Each protocol has its own format: a later one is incompatible,
+            // not an invalid protocol 1 manifest.
+            val protocol = ((json.parseToJsonElement(text) as? JsonObject)?.get("protocol") as? JsonPrimitive)?.intOrNull
+            if (protocol != null && protocol != PROTOCOL) throw incompatible("Protocol $protocol is not supported")
+            json.decodeFromString(Manifest.serializer(), text)
         } catch (error: SerializationException) {
             throw invalid("The manifest is not protocol 1 JSON: ${error.message}")
         } catch (error: IllegalArgumentException) {

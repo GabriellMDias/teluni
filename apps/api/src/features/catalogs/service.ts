@@ -1375,80 +1375,94 @@ export class CatalogService {
       await this.#repository.findCatalogs(companyId, catalogIds),
     );
 
-  viewData = async (
+  // One repeatable-read snapshot, so a concurrent save never mixes states.
+  viewData = (
     companyId: string,
     catalogId: string,
-  ): Promise<CatalogViewData | null> => {
-    const [catalog] = await this.describeCatalogs(companyId, [catalogId]);
-    if (!catalog) return null;
-    const records = await this.#repository.allRecords(companyId, catalogId);
-    const prices = new Map<
-      string,
-      Map<
-        string,
-        {
-          base: number | null;
-          overrides: Map<string, number>;
-          promotions: Promotion[];
-        }
-      >
-    >();
-    const money = catalog.fields.filter((field) => field.type === "money");
-    for (const record of records)
-      prices.set(
-        record.id,
-        new Map(
-          money.map((field) => {
-            const base = record.values[field.id];
-            return [
-              field.id,
-              {
-                base: typeof base === "number" ? base : null,
-                overrides: new Map<string, number>(),
-                promotions: [],
-              },
-            ];
-          }),
-        ),
+  ): Promise<CatalogViewData | null> =>
+    this.#repository.snapshot(async (tx) => {
+      const [catalog] = await this.#bindable(
+        companyId,
+        await this.#repository.findCatalogs(companyId, [catalogId], tx),
+        tx,
       );
-    for (const override of await this.#repository.catalogOverrides(
-      companyId,
-      catalogId,
-    ))
-      prices
-        .get(override.recordId)
-        ?.get(override.fieldId)
-        ?.overrides.set(override.branchId, override.amount);
-    for (const promotion of await this.#repository.catalogPromotions(
-      companyId,
-      catalogId,
-    ))
-      prices
-        .get(promotion.recordId)
-        ?.get(promotion.fieldId)
-        ?.promotions.push(promotion);
-    const references = catalog.fields.filter(
-      (field) => field.type === "reference",
-    );
-    const referenced = records.flatMap((record) =>
-      references.flatMap((field) => {
-        const value = record.values[field.id];
-        return typeof value === "string" ? [value] : [];
-      }),
-    );
-    return {
-      catalog,
-      records: records.map((record) => ({
-        id: record.id,
-        available: record.available,
-        values: record.values,
-      })),
-      prices,
-      referenceTitles: await this.#repository.titles(companyId, [
-        ...new Set(referenced),
-      ]),
-    };
-  };
+      if (!catalog) return null;
+      const records = await this.#repository.allRecords(
+        companyId,
+        catalogId,
+        tx,
+      );
+      const prices = new Map<
+        string,
+        Map<
+          string,
+          {
+            base: number | null;
+            overrides: Map<string, number>;
+            promotions: Promotion[];
+          }
+        >
+      >();
+      const money = catalog.fields.filter((field) => field.type === "money");
+      for (const record of records)
+        prices.set(
+          record.id,
+          new Map(
+            money.map((field) => {
+              const base = record.values[field.id];
+              return [
+                field.id,
+                {
+                  base: typeof base === "number" ? base : null,
+                  overrides: new Map<string, number>(),
+                  promotions: [],
+                },
+              ];
+            }),
+          ),
+        );
+      for (const override of await this.#repository.catalogOverrides(
+        companyId,
+        catalogId,
+        tx,
+      ))
+        prices
+          .get(override.recordId)
+          ?.get(override.fieldId)
+          ?.overrides.set(override.branchId, override.amount);
+      for (const promotion of await this.#repository.catalogPromotions(
+        companyId,
+        catalogId,
+        tx,
+      ))
+        prices
+          .get(promotion.recordId)
+          ?.get(promotion.fieldId)
+          ?.promotions.push(promotion);
+      const references = catalog.fields.filter(
+        (field) => field.type === "reference",
+      );
+      const referenced = records.flatMap((record) =>
+        references.flatMap((field) => {
+          const value = record.values[field.id];
+          return typeof value === "string" ? [value] : [];
+        }),
+      );
+      return {
+        catalog,
+        records: records.map((record) => ({
+          id: record.id,
+          available: record.available,
+          values: record.values,
+        })),
+        prices,
+        referenceTitles: await this.#repository.titles(
+          companyId,
+          [...new Set(referenced)],
+          tx,
+        ),
+      };
+    });
 
   async #bindable(
     companyId: string,

@@ -76,6 +76,15 @@ class ManifestTest {
     }
 
     @Test
+    fun `refuses the API's protocol 2 manifest as incompatible, not invalid`() {
+        val layout = Fixtures.conformance.getValue("layoutManifest").jsonObject
+        val layoutBytes = layout.getValue("bytes").string.encodeToByteArray()
+        assertFailure(StagingFailureCode.INCOMPATIBLE) {
+            ManifestParser.parse(layoutBytes, layout.getValue("sha256").string)
+        }
+    }
+
+    @Test
     fun `refuses what this player cannot play`() {
         assertFailure(StagingFailureCode.INCOMPATIBLE) {
             parseEdited {

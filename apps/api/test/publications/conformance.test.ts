@@ -7,14 +7,22 @@ import {
   zoneOffsets,
   type ZoneOffsets,
 } from "../../src/features/programming/schedule.js";
-import { manifestBytes } from "../../src/features/publications/domain.js";
+import { effectivePrice } from "../../src/features/catalogs/domain.js";
+import { pageAt } from "../../src/features/programming/layouts.js";
+import {
+  layoutManifestBytes,
+  manifestBytes,
+} from "../../src/features/publications/domain.js";
 import {
   statementType,
   type PublicKeySet,
   type StatementClaims,
 } from "../../src/features/publications/statements.js";
 import {
+  conformanceLayoutManifest,
   conformanceManifest,
+  conformancePageCycles,
+  conformancePrices,
   conformanceZones,
   scheduleFixtureOffsets,
 } from "./conformance.js";
@@ -24,6 +32,9 @@ import {
 // the same file. Regenerate with `pnpm -C apps/api conformance:write`.
 type Fixtures = {
   manifest: { bytes: string; sha256: string };
+  layoutManifest: { bytes: string; sha256: string };
+  pageCycles: { id: string; position: unknown }[];
+  prices: { id: string; price: unknown }[];
   keys: PublicKeySet;
   statements: {
     id: string;
@@ -64,6 +75,30 @@ describe("player protocol conformance fixtures", () => {
     const manifest = manifestBytes(header, content);
     expect(fixtures.manifest.bytes).toBe(manifest.bytes.toString("utf8"));
     expect(fixtures.manifest.sha256).toBe(manifest.sha256.toString("hex"));
+  });
+
+  it("hold the exact protocol 2 manifest bytes the API serializes", () => {
+    const { header, content } = conformanceLayoutManifest;
+    const manifest = layoutManifestBytes(header, content);
+    expect(fixtures.layoutManifest.bytes).toBe(manifest.bytes.toString("utf8"));
+    expect(fixtures.layoutManifest.sha256).toBe(
+      manifest.sha256.toString("hex"),
+    );
+  });
+
+  it("hold the page cycles and effective prices screens evaluate", () => {
+    expect(fixtures.pageCycles).toEqual(
+      conformancePageCycles.map((cycle) => ({
+        ...cycle,
+        position: pageAt(cycle.durations, cycle.secondOfDay),
+      })),
+    );
+    expect(fixtures.prices.map((entry) => [entry.id, entry.price])).toEqual(
+      conformancePrices.map((entry) => [
+        entry.id,
+        effectivePrice(entry.facts, entry.branchId, entry.at),
+      ]),
+    );
   });
 
   it("hold statements that verify, or fail, as the player must decide", async () => {

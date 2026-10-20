@@ -747,62 +747,326 @@ describe("publications: publishing, synchronization and retention", () => {
     expect((await check(`groups/${somewhere.id}`)).body.problems).toEqual([
       { code: "MEDIA_UNAVAILABLE", mediaId: gone },
     ]);
-    // Programs with a layout wait for publication protocol 2.
+  });
+
+  it("publishes a program with a layout as protocol 2 with its catalog", async () => {
+    const catalogs = `/companies/${companyA}/catalogs`;
+    const created = await call("aAdmin", "POST", catalogs, {
+      body: {
+        name: "Cardápio",
+        branchId: null,
+        fields: [
+          { label: "Nome", type: "text", required: true },
+          { label: "Preço", type: "money", currency: "BRL" },
+          { label: "Descrição", type: "longText" },
+        ],
+      },
+    });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    const catalog = `${catalogs}/${created.body.id}`;
+    const [title, price] = created.body.fields as { id: string }[];
+    async function item(name: string, base: number) {
+      const record = await call("aAdmin", "POST", `${catalog}/records`, {
+        body: { values: { [title.id]: name } },
+      });
+      expect(record.status, JSON.stringify(record.body)).toBe(201);
+      const priced = await call(
+        "aAdmin",
+        "PUT",
+        `${catalog}/records/${record.body.id}/prices/${price.id}`,
+        { body: { expectedVersion: record.body.version, amount: base } },
+      );
+      expect(priced.status, JSON.stringify(priced.body)).toBe(200);
+      return priced.body;
+    }
+    const coffee = await item("Café", 500);
+    const bread = await item("Pão de queijo", 750);
+    const prices = `${catalog}/records/${coffee.id}/prices/${price.id}`;
+    let version = coffee.version;
+    for (const [branchId, amount] of [
+      [a1.id, 450],
+      [a2.id, 550],
+    ] as const) {
+      const branch = await call(
+        "aAdmin",
+        "PUT",
+        `${prices}/branches/${branchId}`,
+        {
+          body: { expectedVersion: version, amount },
+        },
+      );
+      expect(branch.status, JSON.stringify(branch.body)).toBe(200);
+      version = branch.body.version;
+    }
+    for (const branchId of [null, a2.id])
+      expect(
+        (
+          await call("aAdmin", "POST", `${prices}/promotions`, {
+            body: {
+              branchId,
+              amount: branchId ? 300 : 400,
+              startsAt: branchId ? "2027-02-01T08:00" : "2027-01-04T08:00",
+              endsAt: branchId ? "2027-02-02T08:00" : "2027-01-05T08:00",
+            },
+          })
+        ).status,
+      ).toBe(201);
     const layout = await call("aAdmin", "POST", `${base}/layouts`, {
       body: {
-        name: "Duas áreas",
+        name: "Cardápio e vídeo",
         branchId: null,
         definition: {
           orientation: "landscape",
           areas: [
             {
-              key: "main",
-              name: "Principal",
+              key: "video",
+              name: "Vídeo",
               x: 0,
               y: 0,
-              width: 960,
+              width: 1280,
               height: 1080,
               z: 0,
               kind: "media",
             },
             {
-              key: "side",
-              name: "Lateral",
-              x: 960,
+              key: "menu",
+              name: "Cardápio",
+              x: 1280,
               y: 0,
-              width: 960,
+              width: 640,
               height: 1080,
               z: 1,
-              kind: "media",
+              kind: "catalog",
+              view: {
+                catalogId: created.body.id,
+                fields: [
+                  { fieldId: title.id, role: "title" },
+                  { fieldId: price.id, role: "price" },
+                ],
+                presentation: "menu",
+                textSize: 40,
+              },
             },
           ],
         },
       },
     });
     expect(layout.status, JSON.stringify(layout.body)).toBe(201);
-    const composed = await group("Composta", [a1.id]);
+    const shop = await group("Cardápio", [a1.id]);
     const chosen = await call(
       "aAdmin",
       "PUT",
-      `${base}/groups/${composed.id}/program/layout`,
-      { body: { expectedVersion: 1, layoutId: layout.body.id } },
+      `${base}/groups/${shop.id}/program/layout`,
+      {
+        body: { expectedVersion: 1, layoutId: layout.body.id },
+      },
     );
     expect(chosen.status, JSON.stringify(chosen.body)).toBe(200);
-    const saved = await call(
+    const clips = await playlist(null, "Clipes", [{ mediaAssetId: png }]);
+    const output = await call(
       "aAdmin",
       "PUT",
-      `${base}/groups/${composed.id}/program/outputs/main`,
+      `${base}/groups/${shop.id}/program/outputs/video`,
       {
         body: {
           expectedVersion: chosen.body.version,
-          defaultPlaylistId: local.id,
+          defaultPlaylistId: clips.id,
           rules: [],
         },
       },
     );
-    expect(saved.status, JSON.stringify(saved.body)).toBe(200);
-    expect((await check(`groups/${composed.id}`)).body.problems).toEqual([
-      { code: "LAYOUT_NOT_PUBLISHABLE" },
+    expect(output.status, JSON.stringify(output.body)).toBe(200);
+    // A record whose title cannot fit blocks publication until it is gone.
+    const long = await call("aAdmin", "POST", `${catalog}/records`, {
+      body: {
+        values: {
+          [title.id]:
+            "Hambúrguer artesanal duplo com queijo, bacon e cebola caramelizada",
+        },
+      },
+    });
+    expect((await check(`groups/${shop.id}`)).body.problems).toEqual([
+      { code: "CATALOG_OVERFLOW", areaKey: "menu" },
+    ]);
+    expect(
+      (
+        await call("aAdmin", "DELETE", `${catalog}/records/${long.body.id}`, {
+          body: { expectedVersion: long.body.version },
+        })
+      ).status,
+    ).toBe(204);
+    const published = await publish(`groups/${shop.id}`);
+    expect(published.status, JSON.stringify(published.body)).toBe(201);
+    const publication = published.body.publication as Body;
+    expect(publication).toMatchObject({ protocol: 2 });
+    const tv = await screen(companyA, a1.id, "Cardápio");
+    expect(
+      (await assign(tv, { groupId: shop.id, individual: false }, false)).status,
+    ).toBe(200);
+    // Players that support protocol 2 agree on it; older ones learn which
+    // protocol the desired publication needs.
+    const newer = await sync(tv, { protocols: [1, 2] });
+    expect(newer.body).toMatchObject({
+      protocol: 2,
+      branchId: a1.id,
+      desired: { protocol: 2 },
+    });
+    expect((await sync(tv)).body).toMatchObject({
+      protocol: 1,
+      desired: { protocol: 2 },
+    });
+    const manifest = await tv.call(
+      "GET",
+      `/device/publications/${publication.id}/manifest`,
+    );
+    expect(manifest.status).toBe(200);
+    expect(createHash("sha256").update(manifest.raw).digest("hex")).toBe(
+      (newer.body.desired as { manifestSha256: string }).manifestSha256,
+    );
+    const parsed = manifest.json() as unknown as Record<string, unknown> & {
+      layout: { areas: { key: string; view: { pages: unknown } | null }[] };
+      catalogs: {
+        fields: { id: string }[];
+        records: { id: string; values: Record<string, unknown> }[];
+        prices: {
+          recordId: string;
+          overrides: { branchId: string }[];
+          promotions: { branchId: string | null }[];
+        }[];
+      }[];
+      media: { id: string }[];
+    };
+    expect(Object.keys(parsed)).toEqual([
+      "format",
+      "protocol",
+      "publicationId",
+      "companyId",
+      "programId",
+      "generation",
+      "publishedAt",
+      "layout",
+      "outputs",
+      "catalogs",
+      "playlists",
+      "media",
+    ]);
+    expect(parsed.protocol).toBe(2);
+    expect(parsed.outputs).toEqual([
+      { key: "video", default: { playlistId: clips.id }, rules: [] },
+      { key: "menu", default: { view: true }, rules: [] },
+    ]);
+    expect(parsed.layout.areas.map((area) => area.key)).toEqual([
+      "video",
+      "menu",
+    ]);
+    expect(parsed.layout.areas[1].view?.pages).toEqual([
+      [
+        { recordId: coffee.id, group: null },
+        { recordId: bread.id, group: null },
+      ],
+    ]);
+    const [snapshot] = parsed.catalogs;
+    expect(snapshot.fields.map((field) => field.id)).toEqual([
+      title.id,
+      price.id,
+    ]);
+    expect(snapshot.records).toEqual([
+      { id: coffee.id, available: true, values: { [title.id]: "Café" } },
+      {
+        id: bread.id,
+        available: true,
+        values: { [title.id]: "Pão de queijo" },
+      },
+    ]);
+    // Only the branches the group reaches keep their prices.
+    const coffeePrices = snapshot.prices.find(
+      (entry) => entry.recordId === coffee.id,
+    );
+    expect(coffeePrices).toMatchObject({
+      base: 500,
+      overrides: [{ branchId: a1.id, amount: 450 }],
+      promotions: [{ branchId: null, amount: 400 }],
+    });
+    expect(parsed.media.map((entry) => entry.id)).toEqual([png]);
+    // A restored copy keeps its prices, so it may not serve a branch the
+    // group reaches only now; within its reach it is the same content.
+    const before = await call("aAdmin", "GET", `${base}/groups/${shop.id}`);
+    const widened = await call("aAdmin", "PATCH", `${base}/groups/${shop.id}`, {
+      body: {
+        expectedVersion: before.body.version,
+        allBranches: false,
+        branchIds: [a1.id, a2.id],
+      },
+    });
+    expect(widened.status, JSON.stringify(widened.body)).toBe(200);
+    const restore = `${base}/groups/${shop.id}/publications/${publication.id}/restore`;
+    expect(code(await call("aAdmin", "POST", restore))).toBe(
+      "PUBLICATION_INVALID",
+    );
+    expect(
+      (
+        await call("aAdmin", "PATCH", `${base}/groups/${shop.id}`, {
+          body: {
+            expectedVersion: widened.body.version,
+            allBranches: false,
+            branchIds: [a1.id],
+          },
+        })
+      ).status,
+    ).toBe(200);
+    expect((await call("aAdmin", "POST", restore)).body).toMatchObject({
+      created: false,
+      publication: { id: publication.id, protocol: 2 },
+    });
+    // A page naming a view page the records no longer fill blocks it too.
+    const paged = await call("aAdmin", "POST", `${base}/layouts`, {
+      body: {
+        name: "Páginas do cardápio",
+        branchId: null,
+        definition: {
+          orientation: "portrait",
+          areas: [
+            {
+              key: "menu",
+              name: "Cardápio",
+              x: 0,
+              y: 0,
+              width: 1080,
+              height: 1920,
+              z: 0,
+              kind: "catalog",
+              pageControlled: true,
+              view: {
+                catalogId: created.body.id,
+                fields: [{ fieldId: title.id, role: "title" }],
+                presentation: "list",
+                textSize: 40,
+              },
+            },
+          ],
+          pages: [1, 2].map((viewPage) => ({
+            durationSeconds: 10,
+            contents: [{ areaKey: "menu", viewPage }],
+          })),
+        },
+      },
+    });
+    expect(paged.status, JSON.stringify(paged.body)).toBe(201);
+    const flipping = await group("Páginas", [a1.id]);
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "PUT",
+          `${base}/groups/${flipping.id}/program/layout`,
+          {
+            body: { expectedVersion: 1, layoutId: paged.body.id },
+          },
+        )
+      ).status,
+    ).toBe(200);
+    expect((await check(`groups/${flipping.id}`)).body.problems).toEqual([
+      { code: "CATALOG_PAGE_MISSING", areaKey: "menu" },
     ]);
   });
 
@@ -1156,7 +1420,7 @@ describe("publications: publishing, synchronization and retention", () => {
         status: 0,
         body: (
           await tv.call("POST", "/device/sync", {
-            body: { ...idle, protocols: [2] },
+            body: { ...idle, protocols: [3] },
           })
         ).json(),
       }),

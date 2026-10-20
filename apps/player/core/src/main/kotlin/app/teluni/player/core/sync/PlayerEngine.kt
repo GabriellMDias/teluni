@@ -415,6 +415,10 @@ public class PlayerEngine(
     }
 
     private fun fetchManifest(desired: SyncAnswer.Desired, identity: Identity, credential: String): Publication {
+        // The answer names the publication's protocol: never download one this player cannot show.
+        if (desired.protocol != ManifestParser.PROTOCOL) {
+            throw StagingFailure(StagingFailureCode.INCOMPATIBLE, "Protocol ${desired.protocol} is not supported")
+        }
         val bytes = store.manifest(desired.publicationId)?.takeIf { sha256Hex(it) == desired.manifestSha256 }
             ?: try {
                 api.manifest(credential, desired.publicationId)

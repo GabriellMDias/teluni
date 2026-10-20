@@ -39,6 +39,108 @@ export type ProgramTarget = Readonly<{
   branchIds: readonly string[];
 }>;
 
+/** A record on a view page, under its group (choice ID or weekday). */
+export type SnapshotPageEntry = Readonly<{
+  recordId: string;
+  group: string | null;
+}>;
+
+/** A catalog as a publication carries it: bound fields, records, prices. */
+export type CatalogSnapshot = Readonly<{
+  id: string;
+  fields: readonly Readonly<{
+    id: string;
+    type: string;
+    label: string;
+    currency?: string;
+    choices?: readonly Readonly<{ id: string; label: string }>[];
+  }>[];
+  /** Every record in catalog order, with bound non-money values. */
+  records: readonly Readonly<{
+    id: string;
+    available: boolean;
+    values: Readonly<Record<string, unknown>>;
+  }>[];
+  /** Base, branch and promotion prices for the branches reached. */
+  prices: readonly Readonly<{
+    recordId: string;
+    fieldId: string;
+    base: number | null;
+    overrides: readonly Readonly<{ branchId: string; amount: number }>[];
+    promotions: readonly Readonly<{
+      id: string;
+      branchId: string | null;
+      amount: number;
+      startsAt: string;
+      endsAt: string;
+    }>[];
+  }>[];
+}>;
+
+export type LayoutSnapshotProblem = Readonly<{
+  code:
+    | "CATALOG_UNAVAILABLE"
+    | "CATALOG_FIELD_UNAVAILABLE"
+    | "CATALOG_OVERFLOW"
+    | "CATALOG_PAGE_MISSING"
+    | "CATALOG_GROUP_OVERFLOW";
+  areaKey: string;
+}>;
+
+/**
+ * A program's layout as a publication carries it: the canvas, areas with
+ * their views paginated now, pages, the catalogs the views use and the
+ * media its pages and catalog values name.
+ */
+export type LayoutSnapshot = Readonly<{
+  id: string;
+  /** Whether the layout covers every branch the program reaches. */
+  usable: boolean;
+  orientation: "landscape" | "portrait";
+  width: number;
+  height: number;
+  audioMixConfirmed: boolean;
+  areas: readonly Readonly<{
+    key: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    z: number;
+    background: string;
+    fit: "contain" | "cover";
+    muted: boolean;
+    volume: number;
+    kind: "media" | "catalog";
+    pageControlled: boolean;
+    view: Readonly<{
+      catalogId: string;
+      fields: readonly Readonly<{ fieldId: string; role: string }>[];
+      presentation: string;
+      textSize: number;
+      unavailable: "hide" | "show";
+      pageSeconds: number;
+      pages: readonly (readonly SnapshotPageEntry[])[];
+      groups: readonly Readonly<{
+        group: string;
+        recordIds: readonly string[];
+      }>[];
+    }> | null;
+  }>[];
+  pages: readonly Readonly<{
+    durationSeconds: number;
+    contents: readonly Readonly<{
+      areaKey: string;
+      mediaId: string | null;
+      viewPage: number | null;
+      groupChoiceId: string | null;
+    }>[];
+  }>[];
+  catalogs: readonly CatalogSnapshot[];
+  mediaIds: readonly string[];
+  problems: readonly LayoutSnapshotProblem[];
+}>;
+
 export type ProgramSnapshot = ProgramTarget &
   Readonly<{
     /**
@@ -46,6 +148,7 @@ export type ProgramSnapshot = ProgramTarget &
      * only protocol 2 publishes.
      */
     layoutId: string | null;
+    layout: LayoutSnapshot | null;
     outputs: readonly Readonly<{
       key: string;
       defaultPlaylistId: string | null;

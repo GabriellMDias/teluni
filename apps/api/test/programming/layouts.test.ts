@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ProgrammingFailure } from "../../src/features/programming/domain.js";
 import {
   fitView,
+  pageAt,
   layoutDocument,
   planLayout,
   roleAccepts,
@@ -315,13 +316,13 @@ describe("catalog view fit", () => {
     // (1080 - 40) / 50 = 20 rows per page.
     expect(rowsPerPage(view, area)).toBe(20);
     const many = Array.from({ length: 45 }, (_, index) => record(index));
-    expect(fitView(view, area, many)).toEqual({
-      pages: 3,
-      records: 45,
-      overflow: [],
-    });
+    const fit = fitView(view, area, many);
+    expect(fit).toMatchObject({ pages: 3, records: 45, overflow: [] });
+    expect(fit.entries.map((page) => page.length)).toEqual([20, 20, 5]);
+    expect(fit.entries[1][0]).toEqual({ recordId: "r20", group: null });
     expect(fitView(view, area, [])).toEqual({
       pages: 0,
+      entries: [],
       records: 0,
       overflow: [],
     });
@@ -362,7 +363,18 @@ describe("catalog view fit", () => {
     ]);
     // 260 units of content: heading 50 + row 50 + row 100 fill one page,
     // and the second group needs a new one.
-    expect(fit).toEqual({ pages: 2, records: 3, overflow: [] });
+    expect(fit).toEqual({
+      pages: 2,
+      entries: [
+        [
+          { recordId: "r1", group: 0 },
+          { recordId: "r2", group: 0 },
+        ],
+        [{ recordId: "r3", group: 1 }],
+      ],
+      records: 3,
+      overflow: [],
+    });
   });
 
   it("counts one heading atop a page that opens a new group", () => {
@@ -380,7 +392,13 @@ describe("catalog view fit", () => {
       record(5, { group: 1 }),
       record(6, { group: 1 }),
     ]);
-    expect(fit).toEqual({ pages: 2, records: 6, overflow: [] });
+    expect(fit).toMatchObject({ pages: 2, records: 6, overflow: [] });
+    expect(
+      fit.entries.map((page) => page.map((entry) => entry.recordId)),
+    ).toEqual([
+      ["r1", "r2", "r3"],
+      ["r4", "r5", "r6"],
+    ]);
   });
 
   it("orders an agenda by weekday then time", () => {
@@ -403,5 +421,31 @@ describe("catalog view fit", () => {
     expect(
       fitView(view, { width: 640, height: 80 }, [record(1)]).overflow,
     ).toEqual([{ recordId: "r1", reason: "ROW_TOO_TALL" }]);
+  });
+});
+
+describe("coordinated page cycle", () => {
+  it("cycles pages from local midnight", () => {
+    // 10 s + 20 s pages: a 30 s cycle.
+    expect(pageAt([10, 20], 0)).toEqual({ page: 0, startsAt: 0, endsAt: 10 });
+    expect(pageAt([10, 20], 10)).toEqual({ page: 1, startsAt: 10, endsAt: 30 });
+    expect(pageAt([10, 20], 29)).toEqual({ page: 1, startsAt: 10, endsAt: 30 });
+    expect(pageAt([10, 20], 30)).toEqual({ page: 0, startsAt: 30, endsAt: 40 });
+    expect(pageAt([10, 20], 8 * 3600 + 45)).toEqual({
+      page: 1,
+      startsAt: 8 * 3600 + 40,
+      endsAt: 8 * 3600 + 60,
+    });
+  });
+
+  it("cuts the day's last cycle at midnight and needs pages", () => {
+    // 86,400 s is not a multiple of the 77 s cycle: the last cycle starts
+    // at 86,394 s and its first page is cut at midnight.
+    expect(pageAt([7, 70], 86_399)).toEqual({
+      page: 0,
+      startsAt: 86_394,
+      endsAt: 86_400,
+    });
+    expect(pageAt([], 100)).toBeNull();
   });
 });

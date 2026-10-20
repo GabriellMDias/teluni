@@ -89,6 +89,8 @@ public data class SyncAnswer(
     val timeZone: String? = null,
     val zoneOffsets: ZoneOffsetsAnswer? = null,
     val rotation: Int? = null,
+    /** The screen's branch, which protocol 2 catalog prices need. */
+    val branchId: String? = null,
     val desired: Desired? = null,
     val authorization: String? = null,
     val nextSyncSeconds: Int,
@@ -100,6 +102,8 @@ public data class SyncAnswer(
         val manifestSha256: String,
         val manifestSize: Long,
         val source: String,
+        /** The manifest's protocol; 1 from servers that did not report it. */
+        val protocol: Int = 1,
     )
 }
 

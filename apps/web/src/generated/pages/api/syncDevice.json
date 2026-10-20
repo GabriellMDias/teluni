@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "syncDevice",
   "summary": "",
-  "description": "Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone with that zone's UTC offsets, configured rotation, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
+  "description": "Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (2 for players that support it), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
   "security": [{ "deviceCredential": [] }],
   "components": {
     "securitySchemes": {
@@ -374,6 +374,7 @@
               "timeZone",
               "zoneOffsets",
               "rotation",
+              "branchId",
               "desired",
               "authorization",
               "nextSyncSeconds"
@@ -433,6 +434,15 @@
                   { "type": "null" }
                 ]
               },
+              "branchId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  { "type": "null" }
+                ]
+              },
               "desired": {
                 "anyOf": [
                   {
@@ -440,6 +450,7 @@
                     "required": [
                       "publicationId",
                       "generation",
+                      "protocol",
                       "manifestSha256",
                       "manifestSize",
                       "source"
@@ -450,6 +461,7 @@
                         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                       },
                       "generation": { "type": "integer", "minimum": 1 },
+                      "protocol": { "type": "integer", "minimum": 1 },
                       "manifestSha256": {
                         "type": "string",
                         "pattern": "^[0-9a-f]{64}$"
@@ -486,6 +498,7 @@
           "timeZone",
           "zoneOffsets",
           "rotation",
+          "branchId",
           "desired",
           "authorization",
           "nextSyncSeconds"
@@ -543,6 +556,15 @@
               { "type": "null" }
             ]
           },
+          "branchId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+              },
+              { "type": "null" }
+            ]
+          },
           "desired": {
             "anyOf": [
               {
@@ -550,6 +572,7 @@
                 "required": [
                   "publicationId",
                   "generation",
+                  "protocol",
                   "manifestSha256",
                   "manifestSize",
                   "source"
@@ -560,6 +583,7 @@
                     "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                   },
                   "generation": { "type": "integer", "minimum": 1 },
+                  "protocol": { "type": "integer", "minimum": 1 },
                   "manifestSha256": {
                     "type": "string",
                     "pattern": "^[0-9a-f]{64}$"
@@ -602,6 +626,11 @@
         {
           "name": "rotation",
           "type": "0 | 90 | 180 | 270 | null",
+          "required": true
+        },
+        {
+          "name": "branchId",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$) | null",
           "required": true
         },
         { "name": "desired", "type": "object | null", "required": true },

@@ -4,6 +4,51 @@
     "title": "Teluni Tenant Data Ownership and Access Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Persistence adapter rules",
+    "anchor": "persistence-adapter-rules",
+    "text": "Persistence adapter rules\nEvery adapter operation on tenant-owned data takes the company scope from `CompanyAccess` as a mandatory parameter and uses it in every `WHERE`, `INSERT` and conditional `UPDATE`. Single-row lookups use the tenant key (`companyId_id` in Prisma), never a bare `id` lookup.\nBranch filters and other authorization predicates are part of the query before pagination, counting and ordering. Nothing is loaded broadly and filtered afterwards.\nA bulk request resolves its complete identifier set with the scope predicate in one query. If any element is absent or out of scope, the whole request fails as not found, with no partial effect.\nCaller-supplied references (for example the branches of a grant) are validated by the composite foreign keys as the final guarantee. A tenant foreign-key violation maps to the module's not-found or validation error and never discloses whether the identifier exists in another company.\nCursors are bound to company, principal and list scope, and current predicates still apply on every page.\nDeferred work and durable intents record company ID and the attributable actor; the executor resolves access again before any effect (IA-13). Workers that act as the system have their own explicitly reviewed capability.\nDerived keys (caches, search entries, media object locations, manifests) include the company ID. A storage location never authorizes access; media access is checked against the owning row.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Row-level security evaluation",
+    "anchor": "row-level-security-evaluation",
+    "text": "Row-level security evaluation\nADR-0018 requires evaluating PostgreSQL row-level security (RLS) before relying on it or rejecting it. The evaluated mechanism was: enable RLS on each tenant-owned table with a policy such as `USING (company_id = current_setting('teluni.company_id', true)::uuid)`, keep the runtime role a non-owner (already true, because migrations own the tables), and set the tenant per transaction with `set_config('teluni.company_id', $1, true)`.\nConcern\nFinding\nMixed-tenant references\nPostgreSQL performs foreign-key checks without applying RLS policies, so RLS alone does not prevent a row from referencing another company's identifier. Composite tenant keys are required either way\nConnection pooling\nThe tenant setting is safe with the pooled Prisma/`pg` adapter only when transaction-local, so every tenant request must run inside an interactive transaction: extra `BEGIN`/`set_config`/`COMMIT` round trips and a pooled connection held for the whole callback\nPrincipal-centric flows\nListing a principal's companies, accepting an invitation before a membership exists and public signup creating a company need extra policy keys or `SECURITY DEFINER` functions, enlarging the reviewed surface\nRoles and migrations\nThe runtime role is not the owner, so policies apply without `FORCE`; the migration owner bypasses them for migrations/backfills. Integration tests already run as the runtime role, so policies would be exercised\nFailure mode\nA missing setting yields no rows, which fails closed\n**Approved outcome: do not adopt RLS for the first slice.** The compensating controls are the composite tenant keys, immutable `company_id` grants, the mandatory scope parameter, per-request access resolution, the structural catalog test and the two-company adversarial suite below. **Reevaluate before PJ-14 admits real customer data or public signup**, when a second database consumer (worker, report or raw SQL path) appears, or immediately after any cross-tenant defect. Adapters already receive the scope, so adopting RLS later needs a new ADR, policy migrations and a transaction-local context in adapters, not contract changes.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Platform and administrative scope",
+    "anchor": "platform-and-administrative-scope",
+    "text": "Platform and administrative scope\nPlatform administration is a separate capability held by individually provisioned platform accounts (P11), not a company membership and not a bypass of tenant predicates. The first slice exposes no platform routes. When added, platform operations may manage company lifecycle and commercial metadata; customer content requires an explicit, expiring, company-authorized support grant (P33/P34, IA-14) stored as tenant-owned data. Database, migration and backup access are operational access under [production access](../security/production-access.md), never product authorization.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Organization audit in the first slice",
+    "anchor": "organization-audit-in-the-first-slice",
+    "text": "Organization audit in the first slice\nThe organizations capability owns an append-only, tenant-owned audit table. Each membership, invitation, grant, profile, responsibility and company-setting change writes its event in the same transaction as the change, so a failed change leaves no event and a committed change exactly one. The runtime role receives only `INSERT` and `SELECT` on it, which makes rows immutable through the application. Events record actor principal and membership, action, target type and ID, outcome and allowlisted details, never secrets or full payloads. Branch events include the branch name at the time of the event, so later renames or name reuse do not relabel past changes; older events without that detail remain readable. Each event also records the branches it concerns (a branch change names its branch; a branch-scoped grant or invitation names its branches) in an append-only join table; an event without branches is a company-level operation. Company administrators read company scope; branch managers read only events that concern at least one branch and only branches they manage, so company-level events and operations that also reach other branches stay hidden. Retention, IP metadata and cross-module audit integrity remain [D-09](architecture.md#pending-decisions) and [PH-13](human-actions.md#ph-13); no deletion job is introduced.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Required verification",
+    "anchor": "required-verification",
+    "text": "Required verification\nEvery tenant-owned module reuses one synthetic two-company fixture: company A with branches A1 and A2, company B with branch B1, and principals for A's administrator, an A1 manager, an A1 operator, B's administrator, a principal holding memberships in both companies with different scopes, and an outsider. The first slice must show, against real migrated PostgreSQL:\nSubstituting another company's or branch's identifier in path, query or body returns not found, and lists, counts and cursors never include out-of-scope rows.\nA direct runtime-role `INSERT` of a mixed-company reference fails with a foreign-key violation, and a runtime `UPDATE` of `company_id` is denied by privileges.\nMembership removal or suspension and grant expiry deny the next request; no cached access survives.\nA branch-restricted manager cannot act on another branch, and a bulk request containing one out-of-scope identifier is rejected entirely.\nThe multi-company principal sees only the requested company's data, and switching company relies only on the path plus current membership.\nThe structural catalog test passes for every tenant table and foreign key.\nA failed authority change leaves no audit event; a committed one leaves exactly one, readable only within scope.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Implementation status",
     "anchor": "implementation-status",
     "text": "Implementation status\nThe [`organizations` API module](../../apps/api/src/features/organizations/module.ts) owns companies, branches, memberships, standard-role grants and branch scopes, creator responsibility and append-only audit. Its [Prisma schema](../../apps/api/prisma/schema/organizations.prisma), [reviewed migration](../../apps/api/prisma/migrations/20261018010000_organizations/migration.sql), semantic metadata and runtime grants implement composite tenant references and immutable tenant columns. Company creation atomically creates the creator's membership, responsibility and administrator grant with one audit event; it confers no commercial entitlement. Creation retries compare an immutable fingerprint of the original normalized inputs, so later company-setting edits do not change the idempotency decision. Company and branch updates use expected versions; stale-write classification stays on the transaction connection. Access resolves current membership, company state and effective grants on every request; administrator/manager grants require strong authentication.\nThe [two-company integration suite](../../apps/api/test/organizations/integration.test.ts) exercises tenant/branch isolation, additive scopes, current revocation/expiry/suspension, idempotency, stale versions, name uniqueness, atomic audit, grant and transfer rules, runtime privileges and migrated schema structure. Branch and audit cursors are validated and bound to company, principal and collection; branch cursors also bind the effective branch scope. The [web module](../../apps/web/src/organizations/routes.tsx) uses the generated SDK for company creation/listing, step-up recovery and branch creation/rename/archive with pt-BR/en-US copy. [Browser journeys](../../apps/web/test/e2e/organizations/companies.spec.ts) exercise real login and OTP enrollment.\nCompany lists use keyset pagination by immutable creation time and ID, newest first, with 50 entries by default and at most 100 per page. Cursors bind the principal and collection; active-membership and effective-role predicates run again before each page. Renaming a company does not move its page boundary. Lists are live rather than snapshots: new companies appear on a restarted first page, and removed/suspended memberships disappear immediately. The web panel preserves company cursors in the URL and provides capability-gated settings and change-history views. Settings capture the edited version and require review after a conflict or unknown write outcome; the history translates allowlisted actions/field names and distinguishes the current actor from another member without exposing raw payloads. Member administration lists memberships with presentation names and emails taken from each person's last verified sign-in (identity's presentation port, called only with principal IDs from the authorized page), never as authority or account-linking evidence.\nStrongly authenticated company administrators can page through the company's memberships and suspend, reactivate or remove (terminally, in this company only) a membership with its observed version, each with one audit event. The responsible administrator cannot be suspended or removed, the last active administrator is protected, and reactivating an administrator requires the responsible administrator with strong authentication no older than five minutes (P10/P14). An unchanged status is a no-op. The panel confirms each change with the version observed when it was requested, reloads after a conflict or unknown outcome before another change, and offers recent re-authentication when restoring an administrator.\nStrongly authenticated company administrators also grant and revoke standard roles (the [roles and responsibility transfer migration](../../apps/api/prisma/migrations/20261018030000_roles_and_responsibility_transfer/migration.sql) adds the transfer table and the runtime grants these writes need). A grant names a role and either the whole company or one to 100 explicit active branches of that company; company administration is always company-wide. Unknown, archived and other companies' branches are rejected alike as invalid input, and a new branch never joins an existing branch grant. An optional expiry must be at least a minute in the future and is never renewed (P30); an identical effective grant is returned instead of duplicated. Roles change by adding and revoking grants; revocation is terminal for that grant, a revoked or expired grant is a no-op, and grants are never edited in place. Only the responsible administrator, with strong authentication no older than five minutes, grants company administration: that action is the P10 approval, and no request-and-approve queue exists for proposals from other administrators. Revoking keeps the responsible administrator's and the last active administrator's company administration. Each grant change writes one audit event with its role, scope and branch count.\nResponsibility moves only through a transfer that the responsible administrator proposes to another active company administrator, with strong authentication no older than five minutes, and that the successor accepts, also with five-minute strong authentication, while still an active administrator and while the proposer is still responsible. A company has at most one pending transfer (a partial unique index); a proposal can be accepted for seven days, an engineering choice that mirrors invitation validity. The proposer can cancel and the successor can decline it; an expired proposal stays closed and is marked expired when the next one is made. Only the two parties see a pending transfer, in the company detail with the counterpart's presentation name; every other member, including other administrators, receives not found for it. Proposal, acceptance, cancellation and decline each write one audit event, and acceptance updates the company's responsibility row under the company lock. The former responsible administrator stays an ordinary administrator, which the new responsible administrator can then suspend or remove. The panel lists each member's effective grants with their branches and expiry, adds a grant through a role, scope, branch and optional expiry form (the administration choice appears only to the responsible administrator), confirms each revocation, proposes a transfer from an active administrator's row, and shows the pending transfer to its two parties with accept, decline or cancel and recent re-authentication when the API asks for it.\nBranch-scoped audit reads follow the [branch audit scope migration](../../apps/api/prisma/migrations/20261019020000_branch_audit_scope/migration.sql), which adds `organization_audit_event_branches` with composite references to the event and the branch, grants the runtime role only `INSERT` and `SELECT`, and backfills existing events from immutable sources (branch event targets and the branch scopes of grants and invitations). The branch predicate is part of the audit query before ordering and the limit, and audit cursors bind the caller's branch scope. Strongly authenticated branch managers open the panel's change history, which then describes it as the history of the branches they manage; operators still have no audit access.\nCompany-customized access profiles follow the [access profiles migration](../../apps/api/prisma/migrations/20261019030000_access_profiles/migration.sql), which adds the tenant-owned `access_profiles` table and lets a grant carry exactly one of a standard role or a composite reference to a profile of the same company (a `CHECK` enforces it). A profile is a company-unique active name plus one to five delegable capabilities: viewing branches, managing invitations, viewing the audit history, viewing screens and pairing/managing screens (the matrix's \"additional grant\" for operators). Company administration, settings, branch and member management are never delegable, so a profile can neither bypass the responsible administrator's P10 approval nor confer authority its grantor lacks. Every profile also includes basic company visibility. Assurance follows each capability rather than the label: managing invitations, reading audit and managing screens require strong authentication of every holder, while viewing branches and screens works in a standard session, so renaming or recombining a profile never lowers an assurance requirement. Profile grants use the same scopes, expiry, identity rule and revocation as role grants, and branch-scoped invitation and audit reach work exactly as for branch managers. Access resolves the profile's current capabilities on every request and ignores archived profiles, so an edit reaches every holder on the next request. Strongly authenticated administrators list, create, rename, recombine and archive profiles with expected versions under the company lock; a company keeps at most 50 active profiles, and a profile with effective grants cannot be archived. The profile detail lists current holders with their scopes and branches (up to 500) before an edit, and each create, edit and archive writes one audit event; edits record added and removed capabilities and the number of affected grants. The panel's Access profiles view lists profiles with their usage, creates and edits them, shows the holders and asks for confirmation before a capability change that reaches members, and the member grant form offers active profiles beside the standard roles. Invitations still offer only standard roles, and profiles will gain capabilities only as the modules that own them are built.\nCompany invitations, including branch managers inviting operators to their own branches, follow the approved D-13 [invitation and email delivery design](invitation-delivery-design.md#implementation-status); a removed membership now stays as history, and one current membership per principal and company is a partial unique index. Support access and bulk operations are not implemented. Their rules above remain requirements; fixture SQL used to test alternate memberships is not a product administration flow. RLS reevaluation remains due before real customer data under PJ-14. Validation evidence and incomplete work remain in [PJ-03/PJ-24](implementation-plan.md#current-work).\nThese cases implement the tenant portion of [IA-03](identity-and-access.md#required-verification-cases), IA-08 and IA-10 and the NF-01 boundary. They do not replace the identity, session and assurance cases owned by D-02 and PJ-24.\n"
@@ -763,95 +808,5 @@
     "heading": "Trigger / Symptoms",
     "anchor": "trigger--symptoms",
     "text": "Trigger / Symptoms\nIdentify observable alerts, errors, or symptoms that activate the procedure, and cases where it must not be used.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Impact",
-    "anchor": "impact",
-    "text": "Impact\nDescribe affected capabilities, scope, urgency, and data/security risk, including any known limit on impact.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Preconditions",
-    "anchor": "preconditions",
-    "text": "Preconditions\nVerify the target environment and observed condition.\nVerify required access and authorization for the planned actions.\nVerify procedure-specific safety conditions and current state.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Diagnosis",
-    "anchor": "diagnosis",
-    "text": "Diagnosis\nOrder low-risk inspection before mutation: relevant metrics, alerts, logs, traces, errors, and bounded read-only checks. Establish affected scope and whether deployment, migration, configuration, or dependency changes contributed. Include expected results and evidence-based branches. Add provider commands only when tooling exists; continue only while evidence matches the procedure.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Mitigation / Procedure",
-    "anchor": "mitigation--procedure",
-    "text": "Mitigation / Procedure\nWrite ordered, bounded, copyable actions with consequences, expected output, decision points, and temporary-measure removal needs. Before a destructive, irreversible, or high-risk action, explain the exact affected scope and consequences. Stop when observed state differs from the documented scope.\nState whether actions are safe to repeat and how to inspect an unknown outcome before retrying. For long-running work, specify supported batch size, progress, monitoring, pause/resume, failure recovery, and concurrent-execution limits.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Verification",
-    "anchor": "verification",
-    "text": "Verification\nProve the intended service, security, or data state through relevant health, errors, latency, progress, integrity, authorization, revocation, or application behavior. A successful command or cleared alert alone is insufficient. Name any justified post-recovery observation period and signals.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Rollback / Recovery",
-    "anchor": "rollback--recovery",
-    "text": "Rollback / Recovery\nDescribe safe reversal and its compatibility prerequisites, or the actual forward-recovery path when rollback is unsafe/impossible. Identify irreversible effects. Remove this section only when it does not apply.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Escalation",
-    "anchor": "escalation",
-    "text": "Escalation\nStop when evidence does not match, scope exceeds bounds, access/preconditions cannot be verified, destructive impact is unknown, corruption/compromise is suspected, recovery fails, or postconditions cannot be verified. Preserve safe evidence and identify the real escalation owner when one exists.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/template",
-    "title": "Runbook: Procedure Title",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Follow-Up",
-    "anchor": "follow-up",
-    "text": "Follow-Up\nRecord needed permanent correction, regression tests, alert/observability changes, automation, temporary-measure removal, runbook update, ADR, or post-incident review. Give follow-up work an owner; keep incident history outside this current procedure.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Authentication",
-    "anchor": "authentication",
-    "text": "Authentication\nThis policy owns trusted identity, credential, and session requirements. [Authorization](authorization.md) owns permission decisions; [secrets management](secrets-management.md) owns credential lifecycle and [redaction](telemetry-redaction.md) owns telemetry handling. Start with the [task index](../README.md) for other concerns.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Current implementation and scope",
-    "anchor": "current-implementation-and-scope",
-    "text": "Current implementation and scope\nThe API verifies JWT bearer access tokens according to [ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) when token settings are configured. The shared [verifier](../../apps/api/src/authentication.ts) is the executable source for accepted claims and algorithms; it yields a principal ID and issuer scopes, and each module maps scopes to its own capabilities. The [API README](../../apps/api/README.md) describes configuration and the current token contract; the [web README](../../apps/web/README.md) describes the in-memory credential boundary.\nTeluni accepted Keycloak and server-managed sessions under ADR-0024/ADR-0025 and approved [product login/recovery/session policies](../project/identity-and-access.md). PH-11 decision selection is complete. The API `identity` module now implements the Keycloak login, PostgreSQL-backed browser sessions, CSRF checks and revocation described in the [identity and session design](../project/identity-session-design.md#implementation-status); step-up assurance, recovery flows and the web workflow remain PJ-24 work, and no real environment is provisioned. Authentication mechanisms for other applications remain separately reviewed. Requirements below apply when those capabilities are introduced; they do not imply implementation. Do not reopen the accepted JWT decision by treating the first API's token format or verification library as undecided.\nThe current verifier rejects invalid credentials without disclosing token details. Key retrieval, malformed trusted JWKS data, and unexpected verifier failures raise a separate availability error; the API returns a safe 503 and records bounded diagnostics. This distinguishes an authentication infrastructure failure from a routine invalid token while still failing closed. Provider login, refresh, and revocation remain conditional on a provider decision recorded as a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
   }
 ]

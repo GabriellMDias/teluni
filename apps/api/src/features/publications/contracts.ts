@@ -93,10 +93,16 @@ const problem = Type.Object(
       Type.Literal("MEDIA_UNAVAILABLE"),
       Type.Literal("TRANSITION_UNSUPPORTED"),
       Type.Literal("TOO_LARGE"),
-      Type.Literal("LAYOUT_NOT_PUBLISHABLE"),
+      Type.Literal("LAYOUT_OUT_OF_SCOPE"),
+      Type.Literal("CATALOG_UNAVAILABLE"),
+      Type.Literal("CATALOG_FIELD_UNAVAILABLE"),
+      Type.Literal("CATALOG_OVERFLOW"),
+      Type.Literal("CATALOG_PAGE_MISSING"),
+      Type.Literal("CATALOG_GROUP_OVERFLOW"),
     ]),
     playlistId: Type.Optional(uuid),
     mediaId: Type.Optional(uuid),
+    areaKey: Type.Optional(Type.String({ pattern: "^[a-z][a-z0-9-]{0,15}$" })),
   },
   { additionalProperties: false },
 );
@@ -283,7 +289,7 @@ function programOperations(kind: "group" | "device"): ApiOperation[] {
       url: `${base}/check`,
       operationId: `check${name}Publication`,
       access: "session",
-      description: `Build the publication of the current draft of ${subject} without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.`,
+      description: `Build the publication of the current draft of ${subject} without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.`,
       schema: {
         params,
         response: { 200: checkSchema, ...common },
@@ -421,11 +427,13 @@ const syncSchema = Type.Object(
       Type.Literal(270),
       Type.Null(),
     ]),
+    branchId: Type.Union([uuid, Type.Null()]),
     desired: Type.Union([
       Type.Object(
         {
           publicationId: uuid,
           generation: Type.Integer({ minimum: 1 }),
+          protocol: Type.Integer({ minimum: 1 }),
           manifestSha256: sha256Hex,
           manifestSize: Type.Integer({ minimum: 1 }),
           source,
@@ -507,7 +515,7 @@ export const publicationOperations: readonly ApiOperation[] = [
     operationId: "syncDevice",
     access: "device",
     description:
-      "Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone with that zone's UTC offsets, configured rotation, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
+      "Every 30 seconds: the screen reports what it received, staged and activated, and receives the protocol both sides support (2 for players that support it), its status, time zone with that zone's UTC offsets, configured rotation, branch (for branch prices in protocol 2 catalogs), desired publication with its manifest protocol (null for a source without one, which means neutral output; a protocol the player lacks means it reports INCOMPATIBLE and keeps its generation) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
     schema: {
       body: reportSchema,
       response: { 200: syncSchema, ...common },

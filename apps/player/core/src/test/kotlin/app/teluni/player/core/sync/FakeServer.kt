@@ -48,6 +48,10 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
     var key: ECKey = ECKeyGenerator(Curve.P_256).keyID("k1").generate()
     var status = "active"
     var desired: FakePublication? = null
+
+    /** The protocol the answer names for the desired publication. */
+    var desiredProtocol = 1
+    var manifestRequests = 0
     var iatShift: Duration = Duration.ZERO
     val publications = mutableMapOf<String, FakePublication>()
     val reports: MutableList<SyncReport> = Collections.synchronizedList(mutableListOf())
@@ -114,7 +118,7 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
             ),
             rotation = if (unlinked) null else 0,
             desired = wanted?.let {
-                SyncAnswer.Desired(it.id, 1, it.sha256, it.bytes.size.toLong(), "group")
+                SyncAnswer.Desired(it.id, 1, it.sha256, it.bytes.size.toLong(), "group", desiredProtocol)
             },
             authorization = statement,
             nextSyncSeconds = 30,
@@ -154,6 +158,7 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
 
     override fun manifest(credential: String, publicationId: String): ByteArray {
         authorize(credential)
+        manifestRequests += 1
         val wanted = desired
         if (wanted == null || wanted.id != publicationId) throw ApiFailure(404, "RESOURCE_NOT_FOUND", null)
         return wanted.bytes

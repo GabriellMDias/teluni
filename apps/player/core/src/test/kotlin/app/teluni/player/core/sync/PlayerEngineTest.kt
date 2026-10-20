@@ -207,6 +207,22 @@ class PlayerEngineTest {
     }
 
     @Test
+    fun `refuses a publication of an unsupported protocol without downloading it`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        server.publish(publication("pub-b", seed = 2))
+        server.desiredProtocol = 2
+        val requests = server.manifestRequests
+        val failed = assertIs<StagingOutcome.Failed>(engine.syncAndStage())
+        assertEquals(StagingFailureCode.INCOMPATIBLE, failed.code)
+        assertEquals(requests, server.manifestRequests)
+        assertEquals("INCOMPATIBLE", engine.report().staging?.failure)
+        val play = assertIs<Plan.Play>(engine.plan())
+        assertEquals("pub-a", play.publication.manifest.publicationId)
+    }
+
+    @Test
     fun `refuses to stage without room for the reserve`() {
         val engine = paired()
         server.publish(publication("pub-a"))
