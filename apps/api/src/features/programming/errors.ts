@@ -75,6 +75,27 @@ export const programmingErrors = defineErrors({
     category: "conflict",
     retryable: false,
   },
+  LAYOUT_IN_USE: {
+    status: 409,
+    message:
+      "Programs use this layout. Choose another layout for them before deleting it.",
+    category: "conflict",
+    retryable: false,
+  },
+  LAYOUT_SCOPE_MISMATCH: {
+    status: 409,
+    message:
+      "This layout belongs to a branch the programming does not cover. Use a company layout or a layout of that single branch.",
+    category: "conflict",
+    retryable: false,
+  },
+  LAYOUT_CHANGE_CONFIRMATION_REQUIRED: {
+    status: 409,
+    message:
+      "This change removes schedules or defaults of areas that no longer exist or no longer take a default playlist. Each issue names the output; confirm to remove them.",
+    category: "conflict",
+    retryable: false,
+  },
   TIMELINE_TOO_LARGE: {
     status: 400,
     message:

@@ -602,6 +602,62 @@ test("coordinates pages, confirms the audio mix and names issues by area and pag
   ]);
 });
 
+test("asks to confirm removing an area whose schedules programs would lose", async () => {
+  const side: Layout["areas"][number] = {
+    ...mainArea,
+    key: "side",
+    name: "Lateral",
+    width: 640,
+    z: 1,
+  };
+  let current = layout({ areas: [{ ...mainArea, width: 1280 }, side] });
+  respond(editor, (url, request) => {
+    if (url.pathname.endsWith(`/layouts/${layoutId}`)) {
+      if (request.method !== "PATCH") return { body: current };
+      return sentCount("PATCH", `/layouts/${layoutId}`) === 1
+        ? {
+            status: 409,
+            body: {
+              error: {
+                code: "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
+                message: "Confirm.",
+                requestId: "request-3",
+                issues: [
+                  { path: "/outputs/side", reason: "OUTPUT_REMOVED", count: 2 },
+                ],
+              },
+            },
+          }
+        : { body: (current = layout({ version: 2 })) };
+    }
+    return undefined;
+  });
+  const { screen } = await open(`${base}/layouts/${layoutId}`);
+  await screen
+    .getByRole("button", { name: l.areaButton("Lateral", l.kinds.media) })
+    .click();
+  await screen.getByRole("button", { name: l.removeArea }).click();
+  await screen.getByRole("button", { name: l.saveLayout }).click();
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(
+      `${l.selectedTitle("Lateral")}: ${l.programsLoseOutput(2)}`,
+    );
+  await expect
+    .element(screen.getByRole("button", { name: l.saveLayout }))
+    .toBeDisabled();
+  await screen.getByLabelText(l.confirmRemoval).click();
+  await screen.getByRole("button", { name: l.saveLayout }).click();
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(l.layoutSaved);
+  expect(await sent("PATCH", `/layouts/${layoutId}`)).toMatchObject({
+    expectedVersion: 1,
+    confirmRemovedOutputs: true,
+    definition: { areas: [{ key: "main" }] },
+  });
+});
+
 test("shows viewers the canvas and the fit report, and exports the file", async () => {
   respond(["programming.view"], (url) => {
     if (url.pathname.endsWith(`/layouts/${layoutId}/export`))

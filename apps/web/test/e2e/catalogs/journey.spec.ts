@@ -149,4 +149,34 @@ test("creates a product catalog with a branch price and a promotion and reads th
   await expect(page.getByRole("status")).toContainText(
     "Arquivo do layout exportado.",
   );
+
+  // A group program chooses the layout; each area has its own schedules,
+  // and publication waits for the screens' protocol 2.
+  await page.goto(`${companyUrl}/programming?view=groups`);
+  await page.getByLabel("Nome", { exact: true }).fill("Lojas");
+  await page.getByLabel("Centro", { exact: true }).check();
+  await page.getByRole("button", { name: "Criar", exact: true }).click();
+  await afterNavigation(
+    page.getByRole("heading", { level: 1, name: "Lojas" }),
+  ).toBeVisible();
+  await page.getByLabel("Layout", { exact: true }).selectOption("Vitrine");
+  await page.getByRole("button", { name: "Usar este layout" }).click();
+  await expect(page.getByRole("status")).toContainText("Layout escolhido.");
+  await page
+    .getByLabel("Área", { exact: true })
+    .selectOption("Cardápio (catálogo)");
+  await expect(
+    page.getByText("O padrão desta área é a visão do catálogo", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await page.getByLabel("Área na prévia").selectOption("Cardápio (catálogo)");
+  await expect(
+    page.getByRole("cell", { name: "Visão do catálogo" }).first(),
+  ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("button", { name: "Revisar para publicar" }).click();
+  await expect(
+    page.getByText("serão publicadas pelo protocolo 2", { exact: false }),
+  ).toBeVisible();
 });

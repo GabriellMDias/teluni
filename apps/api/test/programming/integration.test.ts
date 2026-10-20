@@ -611,9 +611,12 @@ describe("programming: playlists, groups, schedules and assignments", () => {
     );
     expect(program.body).toMatchObject({
       version: 1,
+      layout: null,
       outputs: [
         {
           key: "screen",
+          kind: "screen",
+          name: null,
           defaultPlaylistId: null,
           defaultPlaylist: null,
           rules: [],
@@ -1083,6 +1086,87 @@ describe("programming: playlists, groups, schedules and assignments", () => {
         }),
       ),
     ).toBe("PLAYLIST_SCOPE_MISMATCH");
+    // So is its previous branch's layout, which the new branch sees without
+    // its names until another layout replaces it.
+    const bairro = await call("aAdmin", "POST", `${base}/layouts`, {
+      body: {
+        name: "Layout do bairro",
+        branchId: a2.id,
+        definition: {
+          orientation: "landscape",
+          areas: [
+            {
+              key: "main",
+              name: "Área do bairro",
+              x: 0,
+              y: 0,
+              width: 1920,
+              height: 1080,
+              z: 0,
+              kind: "media",
+            },
+          ],
+        },
+      },
+    });
+    expect(bairro.status, JSON.stringify(bairro.body)).toBe(201);
+    const framed = await screen(companyA, a2.id, "Vitrine 3");
+    const framedPath = `${base}/devices/${framed.id}`;
+    const chosen = await call("aAdmin", "PUT", `${framedPath}/program/layout`, {
+      body: { expectedVersion: 0, layoutId: bairro.body.id },
+    });
+    expect(chosen.status, JSON.stringify(chosen.body)).toBe(200);
+    const framedDevice = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/devices/${framed.id}`,
+    );
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "POST",
+          `/companies/${companyA}/devices/${framed.id}/move`,
+          {
+            strong: true,
+            body: {
+              expectedVersion: framedDevice.body.version,
+              branchId: a1.id,
+            },
+          },
+        )
+      ).status,
+    ).toBe(200);
+    const stale = await call("aManager", "GET", `${framedPath}/program`);
+    expect(stale.body).toMatchObject({
+      layout: { id: bairro.body.id, name: null },
+      outputs: [{ key: "main", kind: "media", name: null }],
+    });
+    expect(
+      (await call("aManager", "GET", `${framedPath}/timeline?${range}`)).body
+        .outputs,
+    ).toEqual([{ key: "main", kind: "media", name: null }]);
+    expect(
+      code(
+        await call("aManager", "PUT", `${framedPath}/program/outputs/main`, {
+          body: {
+            expectedVersion: stale.body.version,
+            defaultPlaylistId: null,
+            rules: [],
+          },
+        }),
+      ),
+    ).toBe("LAYOUT_SCOPE_MISMATCH");
+    const replaced = await call(
+      "aManager",
+      "PUT",
+      `${framedPath}/program/layout`,
+      { body: { expectedVersion: stale.body.version, layoutId: null } },
+    );
+    expect(replaced.body).toMatchObject({
+      layout: null,
+      outputs: [{ key: "screen" }],
+    });
   });
 
   it("holds the playlist limit under concurrent creation", async () => {

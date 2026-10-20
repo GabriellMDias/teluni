@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ApiFailure } from "../api-client.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -25,6 +26,8 @@ import {
   getTimeline,
   groupKey,
   groupsKey,
+  layoutsKey,
+  listLayoutChoices,
   listGroups,
   listPlaylistChoices,
   listPlaylists,
@@ -36,13 +39,15 @@ import {
   programKey,
   publicationsKey,
   replacePlaylistItems,
-  replaceScreenOutput,
+  replaceOutput,
+  setProgramLayout,
   timelineKey,
   updateGroup,
   updatePlaylist,
   type Group,
   type Playlist,
   type Program,
+  type ProgramOutput,
   type ProgramSource,
   type RuleInput,
   type Transition,
@@ -989,8 +994,8 @@ const today = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 
-function toDraftRules(program: Program): DraftRule[] {
-  return (program.outputs[0]?.rules ?? []).map((rule) => ({
+function toDraftRules(output: ProgramOutput): DraftRule[] {
+  return output.rules.map((rule) => ({
     key: nextKey(),
     playlistId: rule.playlistId,
     weekdays: [...rule.weekdays],
@@ -1034,6 +1039,7 @@ function ScheduleEditor({
   const { locale, t } = useProgrammingMessages();
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
+  const [outputKey, setOutputKey] = useState<string | null>(null);
   const program = useQuery({
     queryKey: programKey(companyId, source),
     queryFn: () => getProgram(companyId, source),
@@ -1066,25 +1072,206 @@ function ScheduleEditor({
   }
   for (const playlist of playlists.data ?? [])
     if (fits(playlist)) choices.set(playlist.id, playlist.name);
+  const outputs = program.data.outputs;
+  const output = outputs.find((entry) => entry.key === outputKey) ?? outputs[0];
+  const saved = async (changed: Program, done: string) => {
+    setNotice(done);
+    queryClient.setQueryData(programKey(companyId, source), changed);
+    await queryClient.invalidateQueries({
+      queryKey: ["programming", "timeline", companyId],
+    });
+  };
   return (
-    <ScheduleForm
-      key={`program-${program.data.version}`}
-      companyId={companyId}
-      source={source}
-      program={program.data}
-      choices={[...choices].map(([id, name]) => ({ id, name }))}
-      editable={editable}
-      locale={locale}
-      notice={notice}
-      onEdit={() => setNotice(null)}
-      onSaved={async (saved) => {
-        setNotice(t.schedulesSaved);
-        queryClient.setQueryData(programKey(companyId, source), saved);
-        await queryClient.invalidateQueries({
-          queryKey: ["programming", "timeline", companyId],
-        });
-      }}
-    />
+    <>
+      <LayoutChoice
+        key={`layout-${program.data.version}`}
+        companyId={companyId}
+        source={source}
+        reach={reach}
+        program={program.data}
+        editable={editable}
+        onChanged={(changed) => saved(changed, t.layoutChosen)}
+      />
+      {outputs.length > 1 && (
+        <p>
+          <label htmlFor="program-output">{t.outputLabel}</label>{" "}
+          <select
+            id="program-output"
+            value={output.key}
+            onChange={(event) => {
+              setOutputKey(event.target.value);
+              setNotice(null);
+            }}
+          >
+            {outputs.map((entry) => (
+              <option key={entry.key} value={entry.key}>
+                {outputName(entry, t)}
+              </option>
+            ))}
+          </select>
+        </p>
+      )}
+      <ScheduleForm
+        key={`program-${program.data.version}-${output.key}`}
+        companyId={companyId}
+        source={source}
+        program={program.data}
+        output={output}
+        choices={[...choices].map(([id, name]) => ({ id, name }))}
+        editable={editable}
+        locale={locale}
+        notice={notice}
+        onEdit={() => setNotice(null)}
+        onSaved={(changed) => saved(changed, t.schedulesSaved)}
+      />
+    </>
+  );
+}
+
+/** An output's name: the whole screen, or a layout area with its kind. */
+const outputName = (
+  output: Pick<ProgramOutput, "kind" | "name" | "key">,
+  t: Messages,
+) =>
+  output.kind === "screen"
+    ? t.wholeScreen
+    : t.areaOutput(output.name ?? output.key, t.outputKinds[output.kind]);
+
+/**
+ * The program's layout: none for the single screen output, or a company
+ * layout or one of the single branch the program reaches. Dropping outputs
+ * with schedules or defaults needs the person's confirmation.
+ */
+function LayoutChoice({
+  companyId,
+  source,
+  reach,
+  program,
+  editable,
+  onChanged,
+}: {
+  companyId: string;
+  source: ProgramSource;
+  reach: Reach;
+  program: Program;
+  editable: boolean;
+  onChanged: (program: Program) => Promise<void>;
+}) {
+  const { t } = useProgrammingMessages();
+  const [choice, setChoice] = useState(program.layout?.id ?? "");
+  const [confirmed, setConfirmed] = useState(false);
+  const layouts = useQuery({
+    queryKey: [...layoutsKey(companyId), "choices"],
+    queryFn: () => listLayoutChoices(companyId),
+    enabled: editable,
+  });
+  const save = useMutation({
+    mutationFn: () =>
+      setProgramLayout(companyId, source, program.version, {
+        layoutId: choice || null,
+        confirmRemovedOutputs: confirmed,
+      }),
+    onSuccess: onChanged,
+  });
+  // The server checks scope again; this only offers what can be chosen.
+  const fitting = (layouts.data ?? []).filter(
+    (layout) =>
+      layout.branch === null ||
+      (reach !== "all" && reach.size === 1 && reach.has(layout.branch.id)),
+  );
+  // A screen moved to another branch may keep a layout the caller cannot see.
+  const current = program.layout
+    ? (program.layout.name ?? t.hiddenLayout)
+    : t.noLayout;
+  const pending =
+    save.error instanceof ApiFailure &&
+    save.error.code === "LAYOUT_CHANGE_CONFIRMATION_REQUIRED"
+      ? save.error.issues
+      : [];
+  const named = (path: string) => {
+    const key = path.split("/")[2] ?? "";
+    const output = program.outputs.find((entry) => entry.key === key);
+    return output ? outputName(output, t) : key;
+  };
+  return (
+    <section aria-labelledby="layout-choice-title" className="form-stack">
+      <h2 id="layout-choice-title">{t.layoutTitle}</h2>
+      <p className="hint">{t.layoutLead}</p>
+      {!editable ? (
+        <p>{current}</p>
+      ) : (
+        <>
+          <label htmlFor="program-layout">{t.layoutLabel}</label>
+          <select
+            id="program-layout"
+            value={choice}
+            onChange={(event) => {
+              setChoice(event.target.value);
+              setConfirmed(false);
+              save.reset();
+            }}
+          >
+            <option value="">{t.noLayout}</option>
+            {program.layout &&
+              !fitting.some((layout) => layout.id === program.layout?.id) && (
+                <option value={program.layout.id}>{current}</option>
+              )}
+            {fitting.map((layout) => (
+              <option key={layout.id} value={layout.id}>
+                {layout.name}
+              </option>
+            ))}
+          </select>
+          {pending.length > 0 && (
+            <div role="alert" className="notice notice-error">
+              <p>{t.layoutConfirmLead}</p>
+              <ul>
+                {pending.map((issue) => (
+                  <li key={issue.path}>
+                    {issue.reason === "DEFAULT_REMOVED"
+                      ? t.defaultRemoved(named(issue.path))
+                      : t.outputRemoved(named(issue.path), issue.count ?? 0)}
+                  </li>
+                ))}
+              </ul>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(event) => setConfirmed(event.target.checked)}
+                />
+                {t.layoutConfirm}
+              </label>
+            </div>
+          )}
+          {save.error && pending.length === 0 && (
+            <Failure error={save.error} operation="write" />
+          )}
+          <button
+            type="button"
+            disabled={
+              save.isPending ||
+              mustReload(save.error) ||
+              choice === (program.layout?.id ?? "") ||
+              (pending.length > 0 && !confirmed)
+            }
+            onClick={() => save.mutate()}
+          >
+            {t.useLayout}
+          </button>
+        </>
+      )}
+      {program.layout?.name && (
+        <p className="hint">
+          <Link
+            to="/companies/$companyId/programming/layouts/$layoutId"
+            params={{ companyId, layoutId: program.layout.id }}
+          >
+            {t.openLayout(program.layout.name)}
+          </Link>
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -1092,6 +1279,7 @@ function ScheduleForm({
   companyId,
   source,
   program,
+  output,
   choices,
   editable,
   locale,
@@ -1102,6 +1290,7 @@ function ScheduleForm({
   companyId: string;
   source: ProgramSource;
   program: Program;
+  output: ProgramOutput;
   choices: { id: string; name: string }[];
   editable: boolean;
   locale: string;
@@ -1110,10 +1299,10 @@ function ScheduleForm({
   onSaved: (program: Program) => Promise<void>;
 }) {
   const { t } = useProgrammingMessages();
-  const [rules, setRules] = useState<DraftRule[]>(() => toDraftRules(program));
-  const [fallback, setFallback] = useState(
-    program.outputs[0]?.defaultPlaylistId ?? "",
-  );
+  const [rules, setRules] = useState<DraftRule[]>(() => toDraftRules(output));
+  const [fallback, setFallback] = useState(output.defaultPlaylistId ?? "");
+  // A catalog area's default is its view, so it takes no playlist.
+  const viewDefault = output.kind === "catalog";
   const hidden = program.outputs.some(
     (output) =>
       (output.defaultPlaylistId !== null && !output.defaultPlaylist) ||
@@ -1149,8 +1338,8 @@ function ScheduleForm({
       }
       setProblems(found);
       if (found.size > 0) return null;
-      return replaceScreenOutput(companyId, source, program.version, {
-        defaultPlaylistId: fallback || null,
+      return replaceOutput(companyId, source, output.key, program.version, {
+        defaultPlaylistId: viewDefault ? null : fallback || null,
         rules: rules.map(ruleInput),
       });
     },
@@ -1160,7 +1349,11 @@ function ScheduleForm({
   });
   return (
     <section aria-labelledby="schedules-title" className="form-stack">
-      <h2 id="schedules-title">{t.schedulesTitle}</h2>
+      <h2 id="schedules-title">
+        {output.kind === "screen"
+          ? t.schedulesTitle
+          : t.schedulesFor(outputName(output, t))}
+      </h2>
       <p className="hint">{t.schedulesLead}</p>
       {notice && <p role="status">{notice}</p>}
       {choices.length === 0 && <p className="hint">{t.noPlaylists}</p>}
@@ -1316,19 +1509,25 @@ function ScheduleForm({
             {t.addRule}
           </button>
         )}
-        <label htmlFor="default-playlist">{t.defaultPlaylist}</label>
-        <select
-          id="default-playlist"
-          value={fallback}
-          onChange={(event) => setFallback(event.target.value)}
-        >
-          <option value="">{t.noDefault}</option>
-          {choices.map((choice) => (
-            <option key={choice.id} value={choice.id}>
-              {choice.name}
-            </option>
-          ))}
-        </select>
+        {viewDefault ? (
+          <p className="hint">{t.viewDefault}</p>
+        ) : (
+          <>
+            <label htmlFor="default-playlist">{t.defaultPlaylist}</label>
+            <select
+              id="default-playlist"
+              value={fallback}
+              onChange={(event) => setFallback(event.target.value)}
+            >
+              <option value="">{t.noDefault}</option>
+              {choices.map((choice) => (
+                <option key={choice.id} value={choice.id}>
+                  {choice.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
       </fieldset>
       {save.error && <Failure error={save.error} operation="write" />}
       {editable && (
@@ -1358,11 +1557,14 @@ function TimelinePreview({
   const { locale, t } = useProgrammingMessages();
   const [range] = useState(previewRange);
   const [zone, setZone] = useState(zones?.[0] ?? "UTC");
+  const [output, setOutput] = useState<string | undefined>(undefined);
   const id = source.kind === "group" ? source.groupId : source.deviceId;
   const timeline = useQuery({
-    queryKey: [...timelineKey(companyId, id), zone, range],
-    queryFn: () => getTimeline(companyId, source, range, zone),
+    queryKey: [...timelineKey(companyId, id), zone, range, output],
+    queryFn: () => getTimeline(companyId, source, range, zone, output),
   });
+  const outputs = timeline.data?.outputs ?? [];
+  const view = timeline.data?.output.kind === "catalog";
   const shown = timeline.data?.timeZone ?? zone;
   const format = (instant: string) =>
     new Intl.DateTimeFormat(locale, {
@@ -1400,6 +1602,22 @@ function TimelinePreview({
           </select>
         </p>
       )}
+      {outputs.length > 1 && (
+        <p>
+          <label htmlFor="timeline-output">{t.timelineOutputLabel}</label>{" "}
+          <select
+            id="timeline-output"
+            value={timeline.data?.output.key ?? ""}
+            onChange={(event) => setOutput(event.target.value)}
+          >
+            {outputs.map((entry) => (
+              <option key={entry.key} value={entry.key}>
+                {outputName(entry, t)}
+              </option>
+            ))}
+          </select>
+        </p>
+      )}
       {timeline.isPending ? (
         <p>{t.loading}</p>
       ) : timeline.isError ? (
@@ -1426,7 +1644,9 @@ function TimelinePreview({
                   <td>{format(segment.end)}</td>
                   <td>
                     {segment.source === "none"
-                      ? t.segmentNone
+                      ? view
+                        ? t.segmentView
+                        : t.segmentNone
                       : !segment.playlist
                         ? t.hiddenPlaylist
                         : segment.source === "default"

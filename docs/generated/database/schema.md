@@ -1223,7 +1223,7 @@ The draft programming of one source: exactly one group or one screen.
 
 Owner: Programming. Classification: INTERNAL.
 
-Lifecycle: A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its first output is saved and kept with the device record. Saving an output bumps the version.
+Lifecycle: A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its layout or first output is saved and kept with the device record. Saving an output or choosing a layout bumps the version, and so does a layout save that removes outputs with content.
 
 | Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -1234,6 +1234,7 @@ Lifecycle: A group's program is created with the group and deleted with it (casc
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version, starting at 1; the API reports 0 for a program not yet saved. | — | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
 | `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+| `layout_id` | `uuid` | yes | — | INTERNAL | Layout whose areas are the program's outputs. | The program has no layout and a single screen output. | — |
 
 ### Constraints and indexes
 
@@ -1242,12 +1243,14 @@ Lifecycle: A group's program is created with the group and deleted with it (casc
 | `programs_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The screen belongs to the same company. |
 | `programs_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A program belongs to an existing company. |
 | `programs_company_id_group_id_fkey` | `FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The group belongs to the same company; its program is deleted with it. |
+| `programs_company_id_layout_id_fkey` | `FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The layout belongs to the same company; a layout that programs use cannot be deleted. |
 | `programs_one_source` | `CHECK (((group_id IS NULL) <> (device_id IS NULL)))` | A program belongs to exactly one group or one screen. |
 | `programs_pkey` | `PRIMARY KEY (id)` | Unique program identity. |
 | `programs_version_positive` | `CHECK ((version >= 1))` | Versions start at 1. |
 | `programs_company_id_id_key` | `CREATE UNIQUE INDEX programs_company_id_id_key ON public.programs USING btree (company_id, id)` | Tenant key for programs. |
 | `programs_device_key` | `CREATE UNIQUE INDEX programs_device_key ON public.programs USING btree (company_id, device_id)` | A screen has at most one program. |
 | `programs_group_key` | `CREATE UNIQUE INDEX programs_group_key ON public.programs USING btree (company_id, group_id)` | A group has at most one program. |
+| `programs_layout_idx` | `CREATE INDEX programs_layout_idx ON public.programs USING btree (company_id, layout_id)` | Finds the programs that use a layout, for layout saves and deletion. |
 
 ## program_outputs
 
@@ -1261,7 +1264,7 @@ Lifecycle: Created or updated when the output is saved; deleted with the program
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `company_id` | `uuid` | no | — | INTERNAL | Company that owns the program (tenant key). | — | — |
 | `program_id` | `uuid` | no | — | INTERNAL | Program the output belongs to. | — | — |
-| `output_key` | `character varying(32)` | no | — | INTERNAL | Output name; only screen exists until layouts (PJ-20). | — | — |
+| `output_key` | `character varying(32)` | no | — | INTERNAL | Output key: screen for a program without a layout, otherwise the key of one of its layout's areas. | — | — |
 | `default_playlist_id` | `uuid` | yes | — | INTERNAL | Playlist shown when no schedule applies. | The output shows neutral output when no schedule applies. | — |
 
 ### Constraints and indexes
@@ -1270,7 +1273,7 @@ Lifecycle: Created or updated when the output is saved; deleted with the program
 | --- | --- | --- |
 | `program_outputs_company_id_default_playlist_id_fkey` | `FOREIGN KEY (company_id, default_playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The default playlist belongs to the same company and cannot be deleted while used. |
 | `program_outputs_company_id_program_id_fkey` | `FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The program belongs to the same company; outputs are deleted with it. |
-| `program_outputs_known_key` | `CHECK (((output_key)::text = 'screen'::text))` | Only the screen output exists. |
+| `program_outputs_key_shape` | `CHECK (((output_key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))` | Output keys have the area key shape: a lowercase letter, then up to 15 lowercase letters, digits or hyphens. |
 | `program_outputs_pkey` | `PRIMARY KEY (company_id, program_id, output_key)` | One row per program output. |
 | `program_outputs_default_idx` | `CREATE INDEX program_outputs_default_idx ON public.program_outputs USING btree (company_id, default_playlist_id)` | Finds outputs using a playlist as default, for the playlist delete check. |
 
@@ -1287,7 +1290,7 @@ Lifecycle: Replaced as the whole rule set of an output when it is saved, after c
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated rule UUID, new on every save. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Company that owns the program (tenant key). | — | — |
 | `program_id` | `uuid` | no | — | INTERNAL | Program the rule belongs to. | — | — |
-| `output_key` | `character varying(32)` | no | — | INTERNAL | Output the rule programs; only screen exists until layouts (PJ-20). | — | — |
+| `output_key` | `character varying(32)` | no | — | INTERNAL | Output the rule programs: screen for a program without a layout, otherwise an area key of its layout. | — | — |
 | `position` | `integer` | no | — | INTERNAL | Display order inside the output, 0 to 199. | — | — |
 | `playlist_id` | `uuid` | no | — | INTERNAL | Playlist shown during the window. | — | — |
 | `weekdays` | `integer` | no | — | INTERNAL | Bitmask of the ISO weekdays on which a window starts, bit 0 for Monday, 1 to 127. | — | — |
@@ -1304,7 +1307,7 @@ Lifecycle: Replaced as the whole rule set of an output when it is saved, after c
 | `schedule_rules_company_id_playlist_id_fkey` | `FOREIGN KEY (company_id, playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The playlist belongs to the same company and cannot be deleted while used. |
 | `schedule_rules_company_id_program_id_fkey` | `FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The program belongs to the same company; rules are deleted with it. |
 | `schedule_rules_dates` | `CHECK (((ends_on IS NULL) OR (ends_on >= starts_on)))` | The final date is not before the first date. |
-| `schedule_rules_known_key` | `CHECK (((output_key)::text = 'screen'::text))` | Only the screen output exists. |
+| `schedule_rules_key_shape` | `CHECK (((output_key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))` | Output keys have the area key shape: a lowercase letter, then up to 15 lowercase letters, digits or hyphens. |
 | `schedule_rules_pkey` | `PRIMARY KEY (id)` | Unique rule identity. |
 | `schedule_rules_position_range` | `CHECK ((("position" >= 0) AND ("position" <= 199)))` | At most 200 rules per output. |
 | `schedule_rules_times` | `CHECK (((all_day AND (start_minute IS NULL) AND (end_minute IS NULL)) OR ((NOT all_day) AND ((start_minute >= 0) AND (start_minute <= 1439)) AND ((end_minute >= 0) AND (end_minute <= 1439)) AND (start_minute <> end_minute))))` | All-day rules have no times; other rules have two distinct minutes of the day. |
@@ -1358,7 +1361,7 @@ Lifecycle: Inserted in the same transaction as the change it records; never upda
 | `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
 | `actor_principal_id` | `uuid` | no | — | INTERNAL | Principal that made the change. | — | — |
 | `actor_membership_id` | `uuid` | no | — | INTERNAL | Membership through which the change was made. | — | — |
-| `action` | `character varying(64)` | no | — | INTERNAL | Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move. | — | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, program.layout_changed, program.outputs_removed, device.assignment_changed or device.left_group_on_move. | — | — |
 | `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Bounded summary: names, counts, versions and IDs; never media content. | — | — |
 
 ### Constraints and indexes

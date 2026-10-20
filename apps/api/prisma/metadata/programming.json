@@ -173,7 +173,7 @@
       "owner": "Programming",
       "classification": "INTERNAL",
       "description": "The draft programming of one source: exactly one group or one screen.",
-      "lifecycle": "A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its first output is saved and kept with the device record. Saving an output bumps the version.",
+      "lifecycle": "A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its layout or first output is saved and kept with the device record. Saving an output or choosing a layout bumps the version, and so does a layout save that removes outputs with content.",
       "columns": {
         "id": {
           "description": "Backend-generated immutable program UUID.",
@@ -192,6 +192,11 @@
           "description": "Screen the program belongs to.",
           "classification": "INTERNAL",
           "nullMeaning": "The program belongs to a group."
+        },
+        "layout_id": {
+          "description": "Layout whose areas are the program's outputs.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The program has no layout and a single screen output."
         },
         "version": {
           "description": "Optimistic concurrency version, starting at 1; the API reports 0 for a program not yet saved.",
@@ -217,7 +222,9 @@
         "programs_group_key": "A group has at most one program.",
         "programs_device_key": "A screen has at most one program.",
         "programs_one_source": "A program belongs to exactly one group or one screen.",
-        "programs_version_positive": "Versions start at 1."
+        "programs_version_positive": "Versions start at 1.",
+        "programs_company_id_layout_id_fkey": "The layout belongs to the same company; a layout that programs use cannot be deleted.",
+        "programs_layout_idx": "Finds the programs that use a layout, for layout saves and deletion."
       }
     },
     "program_outputs": {
@@ -235,7 +242,7 @@
           "classification": "INTERNAL"
         },
         "output_key": {
-          "description": "Output name; only screen exists until layouts (PJ-20).",
+          "description": "Output key: screen for a program without a layout, otherwise the key of one of its layout's areas.",
           "classification": "INTERNAL"
         },
         "default_playlist_id": {
@@ -249,7 +256,7 @@
         "program_outputs_company_id_program_id_fkey": "The program belongs to the same company; outputs are deleted with it.",
         "program_outputs_company_id_default_playlist_id_fkey": "The default playlist belongs to the same company and cannot be deleted while used.",
         "program_outputs_default_idx": "Finds outputs using a playlist as default, for the playlist delete check.",
-        "program_outputs_known_key": "Only the screen output exists."
+        "program_outputs_key_shape": "Output keys have the area key shape: a lowercase letter, then up to 15 lowercase letters, digits or hyphens."
       }
     },
     "schedule_rules": {
@@ -271,7 +278,7 @@
           "classification": "INTERNAL"
         },
         "output_key": {
-          "description": "Output the rule programs; only screen exists until layouts (PJ-20).",
+          "description": "Output the rule programs: screen for a program without a layout, otherwise an area key of its layout.",
           "classification": "INTERNAL"
         },
         "position": {
@@ -321,11 +328,11 @@
         "schedule_rules_company_id_playlist_id_fkey": "The playlist belongs to the same company and cannot be deleted while used.",
         "schedule_rules_playlist_idx": "Finds rules using a playlist, for the playlist delete check.",
         "schedule_rules_position_key": "One rule per display position of an output.",
-        "schedule_rules_known_key": "Only the screen output exists.",
         "schedule_rules_position_range": "At most 200 rules per output.",
         "schedule_rules_weekdays_mask": "At least one weekday and no unknown bits.",
         "schedule_rules_times": "All-day rules have no times; other rules have two distinct minutes of the day.",
-        "schedule_rules_dates": "The final date is not before the first date."
+        "schedule_rules_dates": "The final date is not before the first date.",
+        "schedule_rules_key_shape": "Output keys have the area key shape: a lowercase letter, then up to 15 lowercase letters, digits or hyphens."
       }
     },
     "programming_device_settings": {
@@ -410,7 +417,7 @@
           "classification": "INTERNAL"
         },
         "action": {
-          "description": "Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move.",
+          "description": "Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, program.layout_changed, program.outputs_removed, device.assignment_changed or device.left_group_on_move.",
           "classification": "INTERNAL"
         },
         "details": {

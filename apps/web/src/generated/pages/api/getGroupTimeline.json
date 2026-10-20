@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "getGroupTimeline",
   "summary": "",
-  "description": "Evaluate the group's draft program in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens.",
+  "description": "Evaluate one output of the group's draft program (the first output unless `output` names another) in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens. A catalog area shows its view where no schedule or default plays.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -58,6 +58,14 @@
       "description": ""
     },
     {
+      "name": "output",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,15}$" },
+      "type": "string (pattern ^[a-z][a-z0-9-]{0,15}$)",
+      "description": ""
+    },
+    {
       "name": "timeZone",
       "in": "query",
       "required": true,
@@ -75,7 +83,14 @@
         "application/json": {
           "schema": {
             "type": "object",
-            "required": ["source", "timeZone", "segments", "notes"],
+            "required": [
+              "source",
+              "output",
+              "outputs",
+              "timeZone",
+              "segments",
+              "notes"
+            ],
             "properties": {
               "source": {
                 "anyOf": [
@@ -113,6 +128,51 @@
                     "additionalProperties": false
                   }
                 ]
+              },
+              "output": {
+                "type": "object",
+                "required": ["key", "kind", "name"],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                  },
+                  "kind": {
+                    "anyOf": [
+                      { "type": "string", "const": "screen" },
+                      { "type": "string", "const": "media" },
+                      { "type": "string", "const": "catalog" }
+                    ]
+                  },
+                  "name": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "outputs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["key", "kind", "name"],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                    },
+                    "kind": {
+                      "anyOf": [
+                        { "type": "string", "const": "screen" },
+                        { "type": "string", "const": "media" },
+                        { "type": "string", "const": "catalog" }
+                      ]
+                    },
+                    "name": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    }
+                  },
+                  "additionalProperties": false
+                }
               },
               "timeZone": { "type": "string" },
               "segments": {
@@ -213,7 +273,14 @@
       },
       "schema": {
         "type": "object",
-        "required": ["source", "timeZone", "segments", "notes"],
+        "required": [
+          "source",
+          "output",
+          "outputs",
+          "timeZone",
+          "segments",
+          "notes"
+        ],
         "properties": {
           "source": {
             "anyOf": [
@@ -251,6 +318,44 @@
                 "additionalProperties": false
               }
             ]
+          },
+          "output": {
+            "type": "object",
+            "required": ["key", "kind", "name"],
+            "properties": {
+              "key": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,15}$" },
+              "kind": {
+                "anyOf": [
+                  { "type": "string", "const": "screen" },
+                  { "type": "string", "const": "media" },
+                  { "type": "string", "const": "catalog" }
+                ]
+              },
+              "name": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+            },
+            "additionalProperties": false
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["key", "kind", "name"],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                },
+                "kind": {
+                  "anyOf": [
+                    { "type": "string", "const": "screen" },
+                    { "type": "string", "const": "media" },
+                    { "type": "string", "const": "catalog" }
+                  ]
+                },
+                "name": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+              },
+              "additionalProperties": false
+            }
           },
           "timeZone": { "type": "string" },
           "segments": {
@@ -349,6 +454,30 @@
       },
       "fields": [
         { "name": "source", "type": "object | object", "required": true },
+        { "name": "output", "type": "object", "required": true },
+        {
+          "name": "output.key",
+          "type": "string (pattern ^[a-z][a-z0-9-]{0,15}$)",
+          "required": true
+        },
+        {
+          "name": "output.kind",
+          "type": "\"screen\" | \"media\" | \"catalog\"",
+          "required": true
+        },
+        { "name": "output.name", "type": "string | null", "required": true },
+        { "name": "outputs", "type": "array of object", "required": true },
+        {
+          "name": "outputs[].key",
+          "type": "string (pattern ^[a-z][a-z0-9-]{0,15}$)",
+          "required": true
+        },
+        {
+          "name": "outputs[].kind",
+          "type": "\"screen\" | \"media\" | \"catalog\"",
+          "required": true
+        },
+        { "name": "outputs[].name", "type": "string | null", "required": true },
         { "name": "timeZone", "type": "string", "required": true },
         { "name": "segments", "type": "array of object", "required": true },
         {

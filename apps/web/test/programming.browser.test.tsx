@@ -76,9 +76,12 @@ function group(overrides: Partial<Group> = {}): Group {
 
 const emptyProgram: Program = {
   version: 0,
+  layout: null,
   outputs: [
     {
       key: "screen",
+      kind: "screen",
+      name: null,
       defaultPlaylistId: null,
       defaultPlaylist: null,
       rules: [],
@@ -86,8 +89,12 @@ const emptyProgram: Program = {
   ],
 };
 
+const screenOutput = { key: "screen", kind: "screen", name: null };
+
 const timeline = {
   source: { kind: "individual" },
+  output: screenOutput,
+  outputs: [screenOutput],
   timeZone: "America/Sao_Paulo",
   segments: [
     {
@@ -371,9 +378,10 @@ test("shows conflicts per schedule and saves only a clean set", async () => {
       return {
         body: {
           version: 1,
+          layout: null,
           outputs: [
             {
-              key: "screen",
+              ...screenOutput,
               defaultPlaylistId: null,
               defaultPlaylist: null,
               rules: [],
@@ -437,6 +445,158 @@ test("shows conflicts per schedule and saves only a clean set", async () => {
       endsOn: null,
     }),
   ]);
+});
+
+test("chooses a layout after confirming lost schedules and schedules each area", async () => {
+  const layoutId = "00000000-0000-4000-8000-0000000000b1";
+  const area = (key: string, name: string, kind: "media" | "catalog") => ({
+    key,
+    kind,
+    name,
+    defaultPlaylistId: null,
+    defaultPlaylist: null,
+    rules: [],
+  });
+  const composed = (version: number): Program => ({
+    version,
+    layout: { id: layoutId, name: "Vitrine", orientation: "landscape" },
+    outputs: [
+      area("video", "Vídeo", "media"),
+      area("menu", "Cardápio", "catalog"),
+    ],
+  });
+  const summary = (id: string, name: string, branch: string | null) => ({
+    id,
+    name,
+    branch: branch ? { id: branch, name: "Filial" } : null,
+    orientation: "landscape",
+    areaCount: 2,
+    pageCount: 0,
+    createdAt: "2026-10-20T12:00:00.000Z",
+    updatedAt: "2026-10-20T12:00:00.000Z",
+    version: 1,
+  });
+  let current: Program = { ...emptyProgram, version: 1 };
+  respond(editor, (url) => {
+    if (url.pathname.endsWith(`/groups/${groupId}/program/outputs/menu`)) {
+      current = composed(3);
+      return { body: current };
+    }
+    if (url.pathname.endsWith(`/groups/${groupId}/program`))
+      return { body: current };
+    if (url.pathname.endsWith(`/groups/${groupId}`)) return { body: group() };
+    if (url.pathname.endsWith("/programming/layouts"))
+      return {
+        body: {
+          items: [
+            summary(layoutId, "Vitrine", null),
+            summary(
+              "00000000-0000-4000-8000-0000000000b2",
+              "Bairro",
+              "00000000-0000-4000-8000-0000000000a2",
+            ),
+          ],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith("/programming/playlists"))
+      return { body: { items: [playlist()], nextCursor: null } };
+    if (url.pathname.endsWith("/rule-checks"))
+      return { body: { issues: [], conflicts: [] } };
+    return undefined;
+  });
+  // The layout choice answers by its body, which needs an async read.
+  const fetchStub = vi.mocked(fetch);
+  const answer = fetchStub.getMockImplementation();
+  fetchStub.mockImplementation(async (input, init) => {
+    const request =
+      input instanceof Request ? input : new Request(String(input), init);
+    if (new URL(request.url).pathname.endsWith("/program/layout")) {
+      const body = (await request.clone().json()) as {
+        confirmRemovedOutputs?: boolean;
+      };
+      if (!body.confirmRemovedOutputs)
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
+              message: "Confirm.",
+              requestId: "request-1",
+              issues: [
+                { path: "/outputs/screen", reason: "OUTPUT_REMOVED", count: 2 },
+              ],
+            },
+          }),
+          { status: 409, headers: { "content-type": "application/json" } },
+        );
+      current = composed(2);
+      return new Response(JSON.stringify(current), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return answer!(input, init);
+  });
+  const { screen } = await open(`${base}/groups/${groupId}`);
+  const choice = screen.getByLabelText(t.layoutLabel, { exact: true });
+  await expect
+    .element(screen.getByRole("option", { name: "Bairro" }))
+    .not.toBeInTheDocument();
+  await choice.selectOptions("Vitrine");
+  await screen.getByRole("button", { name: t.useLayout }).click();
+  await expect
+    .element(screen.getByText(t.outputRemoved(t.wholeScreen, 2)))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: t.useLayout }))
+    .toBeDisabled();
+  await screen.getByLabelText(t.layoutConfirm).click();
+  await screen.getByRole("button", { name: t.useLayout }).click();
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(t.layoutChosen);
+  // Each area has its own schedules; a catalog area's default is its view.
+  await screen
+    .getByLabelText(t.outputLabel, { exact: true })
+    .selectOptions(t.areaOutput("Cardápio", t.outputKinds.catalog));
+  await expect
+    .element(
+      screen.getByRole("heading", {
+        name: t.schedulesFor(t.areaOutput("Cardápio", t.outputKinds.catalog)),
+      }),
+    )
+    .toBeVisible();
+  await expect.element(screen.getByText(t.viewDefault)).toBeVisible();
+  await expect
+    .element(screen.getByLabelText(t.defaultPlaylist))
+    .not.toBeInTheDocument();
+  await screen.getByRole("button", { name: t.addRule }).click();
+  await screen.getByLabelText(t.rulePlaylist).selectOptions("Manhã");
+  await screen.getByRole("button", { name: t.saveSchedules }).click();
+  await expect
+    .element(screen.getByRole("status"))
+    .toMatchTextContent(t.schedulesSaved);
+  const layoutBodies = await Promise.all(
+    vi
+      .mocked(fetch)
+      .mock.calls.map(([input]) => input)
+      .filter(
+        (input): input is Request =>
+          input instanceof Request &&
+          input.method === "PUT" &&
+          new URL(input.url).pathname.endsWith("/program/layout"),
+      )
+      .map((request) => request.clone().json() as Promise<unknown>),
+  );
+  expect(layoutBodies).toEqual([
+    { expectedVersion: 1, layoutId, confirmRemovedOutputs: false },
+    { expectedVersion: 1, layoutId, confirmRemovedOutputs: true },
+  ]);
+  expect(await sent("PUT", "/outputs/menu")).toMatchObject({
+    expectedVersion: 2,
+    defaultPlaylistId: null,
+    rules: [expect.objectContaining({ playlistId })],
+  });
 });
 
 test("assigns a screen to a group only after confirming the neutral screen", async () => {
@@ -584,9 +744,10 @@ test("offers every page of playlists and marks the ones outside the caller's acc
       return {
         body: {
           version: 2,
+          layout: null,
           outputs: [
             {
-              key: "screen",
+              ...screenOutput,
               defaultPlaylistId: hiddenId,
               defaultPlaylist: null,
               rules: [],

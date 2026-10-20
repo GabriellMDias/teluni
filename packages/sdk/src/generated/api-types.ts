@@ -1159,7 +1159,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The group's draft program: per output, its schedules and optional default playlist. It is created with the group at version 1. */
+        /** @description The group's draft program: its layout, and per output (the screen, or each layout area from the bottom of the stack) its schedules and optional default playlist. It is created with the group at version 1, without a layout. */
         get: operations["getGroupProgram"];
         put?: never;
         post?: never;
@@ -1177,8 +1177,25 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Replace one output's whole schedule set and default playlist with the observed program version. Overlapping schedules answer SCHEDULE_CONFLICT; use checkScheduleRules to find them. Playlists must belong to the company, or to the group's branch when the span is exactly that branch. */
+        /** @description Replace one output's whole schedule set and default playlist with the observed program version. The output is `screen` without a layout, otherwise an area key of the program's layout; a catalog area takes no default playlist, because its default is its view. Overlapping schedules answer SCHEDULE_CONFLICT; use checkScheduleRules to find them. Playlists must belong to the company, or to the group's branch when the span is exactly that branch. */
         put: operations["replaceGroupProgramOutput"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/programming/groups/{groupId}/program/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Choose the group program's layout, or none, with the observed program version. A program has no layout and the single screen output, or one layout whose areas are its outputs, keyed by the area keys. The layout must be a company layout or, for a program that reaches exactly one branch, that branch's layout. Outputs of areas the new layout lacks, and the default playlists of its catalog areas (whose default is their view), are dropped; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED with the count of schedules, or DEFAULT_REMOVED) until confirmRemovedOutputs is true. */
+        put: operations["setGroupProgramLayout"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1227,7 +1244,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary. */
+        /** @description The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist or layout the caller cannot view, such as one of the screen's previous branch, keeps its id without its names; such a layout must be replaced (LAYOUT_SCOPE_MISMATCH) before outputs change. */
         get: operations["getDeviceProgram"];
         put?: never;
         post?: never;
@@ -1245,8 +1262,25 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Replace one output of the screen's own program with the observed program version; version 0 creates the program. Playlists must belong to the company or to the screen's branch. */
+        /** @description Replace one output of the screen's own program with the observed program version; version 0 creates the program without a layout. The output is `screen` without a layout, otherwise an area key of the program's layout; a catalog area takes no default playlist, because its default is its view. Playlists must belong to the company or to the screen's branch. */
         put: operations["replaceDeviceProgramOutput"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/programming/devices/{deviceId}/program/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Choose the layout of the screen's own program, or none, with the observed program version; version 0 creates the program. A program has no layout and the single screen output, or one layout whose areas are its outputs, keyed by the area keys. The layout must be a company layout or, for a program that reaches exactly one branch, that branch's layout. Outputs of areas the new layout lacks, and the default playlists of its catalog areas (whose default is their view), are dropped; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED with the count of schedules, or DEFAULT_REMOVED) until confirmRemovedOutputs is true. */
+        put: operations["setDeviceProgramLayout"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1278,7 +1312,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary. */
+        /** @description Evaluate one output of the screen's current draft source (the first output unless `output` names another) in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A catalog area shows its view where no schedule or default plays. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary. */
         get: operations["getDeviceTimeline"];
         put?: never;
         post?: never;
@@ -1295,7 +1329,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Evaluate the group's draft program in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens. */
+        /** @description Evaluate one output of the group's draft program (the first output unless `output` names another) in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens. A catalog area shows its view where no schedule or default plays. */
         get: operations["getGroupTimeline"];
         put?: never;
         post?: never;
@@ -1351,11 +1385,11 @@ export interface paths {
         get: operations["getLayout"];
         put?: never;
         post?: never;
-        /** @description Delete a layout with its areas and pages. */
+        /** @description Delete a layout with its areas and pages. A layout that programs use answers LAYOUT_IN_USE. */
         delete: operations["deleteLayout"];
         options?: never;
         head?: never;
-        /** @description Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Catalogs and media the layout already names may stay. A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout's branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout's scope no longer than the page, or a view page or group (a selection choice ID, or an agenda's weekday from "1" for Monday to "7"). Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED. */
+        /** @description Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout's branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout's scope no longer than the page, or a view page or group (a selection choice ID, or an agenda's weekday from "1" for Monday to "7"). Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED. */
         patch: operations["updateLayout"];
         trace?: never;
     };
@@ -1403,7 +1437,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
+        /** @description Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
         post: operations["checkGroupPublication"];
         delete?: never;
         options?: never;
@@ -1455,7 +1489,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
+        /** @description Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish. */
         post: operations["checkDevicePublication"];
         delete?: never;
         options?: never;
@@ -21767,9 +21801,15 @@ export interface operations {
                 content: {
                     "application/json": {
                         version: number;
+                        layout: {
+                            id: string;
+                            name: string | null;
+                            orientation: "landscape" | "portrait";
+                        } | null;
                         outputs: {
-                            /** @constant */
-                            key: "screen";
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
@@ -21992,7 +22032,7 @@ export interface operations {
             path: {
                 companyId: string;
                 groupId: string;
-                outputKey: "screen";
+                outputKey: string;
             };
             cookie?: never;
         };
@@ -22022,9 +22062,267 @@ export interface operations {
                 content: {
                     "application/json": {
                         version: number;
+                        layout: {
+                            id: string;
+                            name: string | null;
+                            orientation: "landscape" | "portrait";
+                        } | null;
                         outputs: {
-                            /** @constant */
-                            key: "screen";
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
+                            defaultPlaylistId: string | null;
+                            defaultPlaylist: {
+                                id: string;
+                                name: string;
+                                durationMs: number;
+                                itemCount: number;
+                            } | null;
+                            rules: {
+                                id: string;
+                                playlistId: string;
+                                playlist: {
+                                    id: string;
+                                    name: string;
+                                    durationMs: number;
+                                    itemCount: number;
+                                } | null;
+                                weekdays: number[];
+                                allDay: boolean;
+                                startTime: string | null;
+                                endTime: string | null;
+                                startsOn: string;
+                                endsOn: string | null;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    setGroupProgramLayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    layoutId: string | null;
+                    confirmRemovedOutputs?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        version: number;
+                        layout: {
+                            id: string;
+                            name: string | null;
+                            orientation: "landscape" | "portrait";
+                        } | null;
+                        outputs: {
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
@@ -22723,9 +23021,15 @@ export interface operations {
                 content: {
                     "application/json": {
                         version: number;
+                        layout: {
+                            id: string;
+                            name: string | null;
+                            orientation: "landscape" | "portrait";
+                        } | null;
                         outputs: {
-                            /** @constant */
-                            key: "screen";
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
@@ -22948,7 +23252,7 @@ export interface operations {
             path: {
                 companyId: string;
                 deviceId: string;
-                outputKey: "screen";
+                outputKey: string;
             };
             cookie?: never;
         };
@@ -22978,9 +23282,267 @@ export interface operations {
                 content: {
                     "application/json": {
                         version: number;
+                        layout: {
+                            id: string;
+                            name: string | null;
+                            orientation: "landscape" | "portrait";
+                        } | null;
                         outputs: {
-                            /** @constant */
-                            key: "screen";
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
+                            defaultPlaylistId: string | null;
+                            defaultPlaylist: {
+                                id: string;
+                                name: string;
+                                durationMs: number;
+                                itemCount: number;
+                            } | null;
+                            rules: {
+                                id: string;
+                                playlistId: string;
+                                playlist: {
+                                    id: string;
+                                    name: string;
+                                    durationMs: number;
+                                    itemCount: number;
+                                } | null;
+                                weekdays: number[];
+                                allDay: boolean;
+                                startTime: string | null;
+                                endTime: string | null;
+                                startsOn: string;
+                                endsOn: string | null;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    setDeviceProgramLayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    layoutId: string | null;
+                    confirmRemovedOutputs?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        version: number;
+                        layout: {
+                            id: string;
+                            name: string | null;
+                            orientation: "landscape" | "portrait";
+                        } | null;
+                        outputs: {
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
                             defaultPlaylistId: string | null;
                             defaultPlaylist: {
                                 id: string;
@@ -23434,6 +23996,7 @@ export interface operations {
             query: {
                 from: string;
                 to: string;
+                output?: string;
             };
             header?: never;
             path: {
@@ -23462,6 +24025,16 @@ export interface operations {
                             /** @constant */
                             kind: "individual";
                         };
+                        output: {
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
+                        };
+                        outputs: {
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
+                        }[];
                         timeZone: string;
                         segments: {
                             /** Format: date-time */
@@ -23683,6 +24256,7 @@ export interface operations {
             query: {
                 from: string;
                 to: string;
+                output?: string;
                 timeZone: string;
             };
             header?: never;
@@ -23712,6 +24286,16 @@ export interface operations {
                             /** @constant */
                             kind: "individual";
                         };
+                        output: {
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
+                        };
+                        outputs: {
+                            key: string;
+                            kind: "screen" | "media" | "catalog";
+                            name: string | null;
+                        }[];
                         timeZone: string;
                         segments: {
                             /** Format: date-time */
@@ -25373,6 +25957,7 @@ export interface operations {
                             }[];
                         }[];
                     };
+                    confirmRemovedOutputs?: boolean;
                 };
             };
         };
@@ -26431,7 +27016,7 @@ export interface operations {
                     "application/json": {
                         publishable: boolean;
                         problems: {
-                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE";
+                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE" | "LAYOUT_NOT_PUBLISHABLE";
                             playlistId?: string;
                             mediaId?: string;
                         }[];
@@ -27454,7 +28039,7 @@ export interface operations {
                     "application/json": {
                         publishable: boolean;
                         problems: {
-                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE";
+                            code: "NOTHING_TO_PUBLISH" | "SCHEDULE_INVALID" | "PLAYLIST_OUT_OF_SCOPE" | "MEDIA_UNAVAILABLE" | "TRANSITION_UNSUPPORTED" | "TOO_LARGE" | "LAYOUT_NOT_PUBLISHABLE";
                             playlistId?: string;
                             mediaId?: string;
                         }[];

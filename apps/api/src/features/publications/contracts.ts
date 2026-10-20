@@ -93,6 +93,7 @@ const problem = Type.Object(
       Type.Literal("MEDIA_UNAVAILABLE"),
       Type.Literal("TRANSITION_UNSUPPORTED"),
       Type.Literal("TOO_LARGE"),
+      Type.Literal("LAYOUT_NOT_PUBLISHABLE"),
     ]),
     playlistId: Type.Optional(uuid),
     mediaId: Type.Optional(uuid),
@@ -282,7 +283,7 @@ function programOperations(kind: "group" | "device"): ApiOperation[] {
       url: `${base}/check`,
       operationId: `check${name}Publication`,
       access: "session",
-      description: `Build the publication of the current draft of ${subject} without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.`,
+      description: `Build the publication of the current draft of ${subject} without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.`,
       schema: {
         params,
         response: { 200: checkSchema, ...common },

@@ -11,7 +11,7 @@ GRANT SELECT, INSERT, DELETE ON programming_groups TO orion_runtime;
 GRANT UPDATE (name, all_branches, version, updated_at) ON programming_groups TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON programming_group_branches TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON programs TO orion_runtime;
-GRANT UPDATE (version, updated_at) ON programs TO orion_runtime;
+GRANT UPDATE (layout_id, version, updated_at) ON programs TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON program_outputs TO orion_runtime;
 GRANT UPDATE (default_playlist_id) ON program_outputs TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON schedule_rules TO orion_runtime;

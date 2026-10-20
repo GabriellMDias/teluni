@@ -42,7 +42,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Output the rule programs; only screen exists until layouts (PJ-20).",
+      "Meaning": "Output the rule programs: screen for a program without a layout, otherwise an area key of its layout.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -144,9 +144,9 @@
       "Purpose": "The final date is not before the first date."
     },
     {
-      "Object": "schedule_rules_known_key",
-      "Physical definition": "CHECK (((output_key)::text = 'screen'::text))",
-      "Purpose": "Only the screen output exists."
+      "Object": "schedule_rules_key_shape",
+      "Physical definition": "CHECK (((output_key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))",
+      "Purpose": "Output keys have the area key shape: a lowercase letter, then up to 15 lowercase letters, digits or hyphens."
     },
     {
       "Object": "schedule_rules_pkey",

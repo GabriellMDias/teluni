@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "deleteLayout",
   "summary": "",
-  "description": "Delete a layout with its areas and pages.",
+  "description": "Delete a layout with its areas and pages. A layout that programs use answers LAYOUT_IN_USE.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

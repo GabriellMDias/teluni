@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "getDeviceProgram",
   "summary": "",
-  "description": "The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
+  "description": "The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist or layout the caller cannot view, such as one of the screen's previous branch, keeps its id without its names; such a layout must be replaced (LAYOUT_SCOPE_MISMATCH) before outputs change.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -51,21 +51,61 @@
         "application/json": {
           "schema": {
             "type": "object",
-            "required": ["version", "outputs"],
+            "required": ["version", "layout", "outputs"],
             "properties": {
               "version": { "type": "integer", "minimum": 0 },
+              "layout": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["id", "name", "orientation"],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "name": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "orientation": {
+                        "anyOf": [
+                          { "type": "string", "const": "landscape" },
+                          { "type": "string", "const": "portrait" }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
               "outputs": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "required": [
                     "key",
+                    "kind",
+                    "name",
                     "defaultPlaylistId",
                     "defaultPlaylist",
                     "rules"
                   ],
                   "properties": {
-                    "key": { "type": "string", "const": "screen" },
+                    "key": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                    },
+                    "kind": {
+                      "anyOf": [
+                        { "type": "string", "const": "screen" },
+                        { "type": "string", "const": "media" },
+                        { "type": "string", "const": "catalog" }
+                      ]
+                    },
+                    "name": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
                     "defaultPlaylistId": {
                       "anyOf": [
                         {
@@ -203,21 +243,59 @@
       },
       "schema": {
         "type": "object",
-        "required": ["version", "outputs"],
+        "required": ["version", "layout", "outputs"],
         "properties": {
           "version": { "type": "integer", "minimum": 0 },
+          "layout": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["id", "name", "orientation"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "name": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "orientation": {
+                    "anyOf": [
+                      { "type": "string", "const": "landscape" },
+                      { "type": "string", "const": "portrait" }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
           "outputs": {
             "type": "array",
             "items": {
               "type": "object",
               "required": [
                 "key",
+                "kind",
+                "name",
                 "defaultPlaylistId",
                 "defaultPlaylist",
                 "rules"
               ],
               "properties": {
-                "key": { "type": "string", "const": "screen" },
+                "key": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                },
+                "kind": {
+                  "anyOf": [
+                    { "type": "string", "const": "screen" },
+                    { "type": "string", "const": "media" },
+                    { "type": "string", "const": "catalog" }
+                  ]
+                },
+                "name": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
                 "defaultPlaylistId": {
                   "anyOf": [
                     {
@@ -347,8 +425,19 @@
       },
       "fields": [
         { "name": "version", "type": "integer (minimum 0)", "required": true },
+        { "name": "layout", "type": "object | null", "required": true },
         { "name": "outputs", "type": "array of object", "required": true },
-        { "name": "outputs[].key", "type": "\"screen\"", "required": true },
+        {
+          "name": "outputs[].key",
+          "type": "string (pattern ^[a-z][a-z0-9-]{0,15}$)",
+          "required": true
+        },
+        {
+          "name": "outputs[].kind",
+          "type": "\"screen\" | \"media\" | \"catalog\"",
+          "required": true
+        },
+        { "name": "outputs[].name", "type": "string | null", "required": true },
         {
           "name": "outputs[].defaultPlaylistId",
           "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$) | null",

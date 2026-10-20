@@ -78,12 +78,14 @@ model Program {
   companyId    String            @map("company_id") @db.Uuid
   groupId      String?           @map("group_id") @db.Uuid
   deviceId     String?           @map("device_id") @db.Uuid
+  layoutId     String?           @map("layout_id") @db.Uuid
   version      Int               @default(1)
   createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
   company      Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   group        ProgrammingGroup? @relation(fields: [companyId, groupId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
   device       Device?           @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  layout       Layout?           @relation(fields: [companyId, layoutId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   outputs      ProgramOutput[]
   rules        ScheduleRule[]
   // Back-relation of the publications module; never traversed across modules.
@@ -92,6 +94,7 @@ model Program {
   @@unique([companyId, id], map: "programs_company_id_id_key")
   @@unique([companyId, groupId], map: "programs_group_key")
   @@unique([companyId, deviceId], map: "programs_device_key")
+  @@index([companyId, layoutId], map: "programs_layout_idx")
   @@map("programs")
 }
 
@@ -192,6 +195,7 @@ model Layout {
   branch            Branch?           @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   areas             LayoutArea[]
   pages             LayoutPage[]
+  programs          Program[]
 
   @@unique([companyId, id], map: "layouts_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "layouts_company_created_idx")

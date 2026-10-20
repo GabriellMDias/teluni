@@ -64514,7 +64514,8 @@
           "RESOURCE_VERSION_CONFLICT",
           "GROUP_NAME_IN_USE",
           "GROUP_SPAN_EXCLUDES_DEVICE",
-          "PLAYLIST_SCOPE_MISMATCH"
+          "PLAYLIST_SCOPE_MISMATCH",
+          "LAYOUT_SCOPE_MISMATCH"
         ]
       },
       "delete": {
@@ -65117,7 +65118,7 @@
     "/companies/{companyId}/programming/groups/{groupId}/program": {
       "get": {
         "operationId": "getGroupProgram",
-        "description": "The group's draft program: per output, its schedules and optional default playlist. It is created with the group at version 1.",
+        "description": "The group's draft program: its layout, and per output (the screen, or each layout area from the bottom of the stack) its schedules and optional default playlist. It is created with the group at version 1, without a layout.",
         "tags": ["Programming"],
         "security": [
           {
@@ -65151,11 +65152,51 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["version", "outputs"],
+                  "required": ["version", "layout", "outputs"],
                   "properties": {
                     "version": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "layout": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name", "orientation"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "orientation": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "landscape"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "portrait"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "outputs": {
                       "type": "array",
@@ -65163,6 +65204,8 @@
                         "type": "object",
                         "required": [
                           "key",
+                          "kind",
+                          "name",
                           "defaultPlaylistId",
                           "defaultPlaylist",
                           "rules"
@@ -65170,7 +65213,33 @@
                         "properties": {
                           "key": {
                             "type": "string",
-                            "const": "screen"
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylistId": {
                             "anyOf": [
@@ -65883,7 +65952,7 @@
     "/companies/{companyId}/programming/groups/{groupId}/program/outputs/{outputKey}": {
       "put": {
         "operationId": "replaceGroupProgramOutput",
-        "description": "Replace one output's whole schedule set and default playlist with the observed program version. Overlapping schedules answer SCHEDULE_CONFLICT; use checkScheduleRules to find them. Playlists must belong to the company, or to the group's branch when the span is exactly that branch.",
+        "description": "Replace one output's whole schedule set and default playlist with the observed program version. The output is `screen` without a layout, otherwise an area key of the program's layout; a catalog area takes no default playlist, because its default is its view. Overlapping schedules answer SCHEDULE_CONFLICT; use checkScheduleRules to find them. Playlists must belong to the company, or to the group's branch when the span is exactly that branch.",
         "tags": ["Programming"],
         "security": [
           {
@@ -65915,7 +65984,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "const": "screen"
+              "pattern": "^[a-z][a-z0-9-]{0,15}$"
             }
           }
         ],
@@ -66026,11 +66095,51 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["version", "outputs"],
+                  "required": ["version", "layout", "outputs"],
                   "properties": {
                     "version": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "layout": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name", "orientation"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "orientation": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "landscape"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "portrait"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "outputs": {
                       "type": "array",
@@ -66038,6 +66147,8 @@
                         "type": "object",
                         "required": [
                           "key",
+                          "kind",
+                          "name",
                           "defaultPlaylistId",
                           "defaultPlaylist",
                           "rules"
@@ -66045,7 +66156,33 @@
                         "properties": {
                           "key": {
                             "type": "string",
-                            "const": "screen"
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylistId": {
                             "anyOf": [
@@ -66758,6 +66895,876 @@
           "SCHEDULE_CONFLICT",
           "PLAYLIST_SCOPE_MISMATCH",
           "PROGRAMMING_LIMIT_REACHED"
+        ]
+      }
+    },
+    "/companies/{companyId}/programming/groups/{groupId}/program/layout": {
+      "put": {
+        "operationId": "setGroupProgramLayout",
+        "description": "Choose the group program's layout, or none, with the observed program version. A program has no layout and the single screen output, or one layout whose areas are its outputs, keyed by the area keys. The layout must be a company layout or, for a program that reaches exactly one branch, that branch's layout. Outputs of areas the new layout lacks, and the default playlists of its catalog areas (whose default is their view), are dropped; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED with the count of schedules, or DEFAULT_REMOVED) until confirmRemovedOutputs is true.",
+        "tags": ["Programming"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expectedVersion", "layoutId"],
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "layoutId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "confirmRemovedOutputs": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["version", "layout", "outputs"],
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "layout": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name", "orientation"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "orientation": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "landscape"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "portrait"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "kind",
+                          "name",
+                          "defaultPlaylistId",
+                          "defaultPlaylist",
+                          "rules"
+                        ],
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "defaultPlaylistId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "defaultPlaylist": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "durationMs",
+                                  "itemCount"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "durationMs": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "itemCount": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "rules": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "playlistId",
+                                "playlist",
+                                "weekdays",
+                                "allDay",
+                                "startTime",
+                                "endTime",
+                                "startsOn",
+                                "endsOn"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                },
+                                "playlistId": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                },
+                                "playlist": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "durationMs",
+                                        "itemCount"
+                                      ],
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "durationMs": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "itemCount": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "weekdays": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 7
+                                  }
+                                },
+                                "allDay": {
+                                  "type": "boolean"
+                                },
+                                "startTime": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "endTime": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "startsOn": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "endsOn": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED",
+          "CSRF_VALIDATION_FAILED",
+          "RESOURCE_VERSION_CONFLICT",
+          "LAYOUT_SCOPE_MISMATCH",
+          "LAYOUT_CHANGE_CONFIRMATION_REQUIRED"
         ]
       }
     },
@@ -68160,7 +69167,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}/program": {
       "get": {
         "operationId": "getDeviceProgram",
-        "description": "The screen's own draft program, used when it has no group or individual programming is selected. Version 0 means it was never saved. A playlist the caller cannot view, such as one of the screen's previous branch, keeps its id without a summary.",
+        "description": "The screen's own draft program, used when it has no group or individual programming is selected: its layout and per output its schedules and optional default playlist. Version 0 means it was never saved. A playlist or layout the caller cannot view, such as one of the screen's previous branch, keeps its id without its names; such a layout must be replaced (LAYOUT_SCOPE_MISMATCH) before outputs change.",
         "tags": ["Programming"],
         "security": [
           {
@@ -68194,11 +69201,51 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["version", "outputs"],
+                  "required": ["version", "layout", "outputs"],
                   "properties": {
                     "version": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "layout": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name", "orientation"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "orientation": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "landscape"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "portrait"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "outputs": {
                       "type": "array",
@@ -68206,6 +69253,8 @@
                         "type": "object",
                         "required": [
                           "key",
+                          "kind",
+                          "name",
                           "defaultPlaylistId",
                           "defaultPlaylist",
                           "rules"
@@ -68213,7 +69262,33 @@
                         "properties": {
                           "key": {
                             "type": "string",
-                            "const": "screen"
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylistId": {
                             "anyOf": [
@@ -68927,7 +70002,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}/program/outputs/{outputKey}": {
       "put": {
         "operationId": "replaceDeviceProgramOutput",
-        "description": "Replace one output of the screen's own program with the observed program version; version 0 creates the program. Playlists must belong to the company or to the screen's branch.",
+        "description": "Replace one output of the screen's own program with the observed program version; version 0 creates the program without a layout. The output is `screen` without a layout, otherwise an area key of the program's layout; a catalog area takes no default playlist, because its default is its view. Playlists must belong to the company or to the screen's branch.",
         "tags": ["Programming"],
         "security": [
           {
@@ -68959,7 +70034,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "const": "screen"
+              "pattern": "^[a-z][a-z0-9-]{0,15}$"
             }
           }
         ],
@@ -69070,11 +70145,51 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["version", "outputs"],
+                  "required": ["version", "layout", "outputs"],
                   "properties": {
                     "version": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "layout": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name", "orientation"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "orientation": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "landscape"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "portrait"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "outputs": {
                       "type": "array",
@@ -69082,6 +70197,8 @@
                         "type": "object",
                         "required": [
                           "key",
+                          "kind",
+                          "name",
                           "defaultPlaylistId",
                           "defaultPlaylist",
                           "rules"
@@ -69089,7 +70206,33 @@
                         "properties": {
                           "key": {
                             "type": "string",
-                            "const": "screen"
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "defaultPlaylistId": {
                             "anyOf": [
@@ -69801,6 +70944,879 @@
           "SCHEDULE_TIMES_EQUAL",
           "SCHEDULE_CONFLICT",
           "PLAYLIST_SCOPE_MISMATCH",
+          "PROGRAMMING_LIMIT_REACHED",
+          "LAYOUT_SCOPE_MISMATCH",
+          "DEVICE_UNLINKED"
+        ]
+      }
+    },
+    "/companies/{companyId}/programming/devices/{deviceId}/program/layout": {
+      "put": {
+        "operationId": "setDeviceProgramLayout",
+        "description": "Choose the layout of the screen's own program, or none, with the observed program version; version 0 creates the program. A program has no layout and the single screen output, or one layout whose areas are its outputs, keyed by the area keys. The layout must be a company layout or, for a program that reaches exactly one branch, that branch's layout. Outputs of areas the new layout lacks, and the default playlists of its catalog areas (whose default is their view), are dropped; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED with the count of schedules, or DEFAULT_REMOVED) until confirmRemovedOutputs is true.",
+        "tags": ["Programming"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expectedVersion", "layoutId"],
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "layoutId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "confirmRemovedOutputs": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["version", "layout", "outputs"],
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "layout": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name", "orientation"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "orientation": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "landscape"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "portrait"
+                                }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "kind",
+                          "name",
+                          "defaultPlaylistId",
+                          "defaultPlaylist",
+                          "rules"
+                        ],
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "defaultPlaylistId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "defaultPlaylist": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "durationMs",
+                                  "itemCount"
+                                ],
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "durationMs": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "itemCount": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "rules": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "playlistId",
+                                "playlist",
+                                "weekdays",
+                                "allDay",
+                                "startTime",
+                                "endTime",
+                                "startsOn",
+                                "endsOn"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                },
+                                "playlistId": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                },
+                                "playlist": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "id",
+                                        "name",
+                                        "durationMs",
+                                        "itemCount"
+                                      ],
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                        },
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "durationMs": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "itemCount": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "weekdays": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 7
+                                  }
+                                },
+                                "allDay": {
+                                  "type": "boolean"
+                                },
+                                "startTime": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "endTime": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "startsOn": {
+                                  "type": "string",
+                                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                },
+                                "endsOn": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED",
+          "CSRF_VALIDATION_FAILED",
+          "RESOURCE_VERSION_CONFLICT",
+          "LAYOUT_SCOPE_MISMATCH",
+          "LAYOUT_CHANGE_CONFIRMATION_REQUIRED",
           "PROGRAMMING_LIMIT_REACHED",
           "DEVICE_UNLINKED"
         ]
@@ -70514,7 +72530,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}/timeline": {
       "get": {
         "operationId": "getDeviceTimeline",
-        "description": "Evaluate the screen's current draft source in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary.",
+        "description": "Evaluate one output of the screen's current draft source (the first output unless `output` names another) in its time zone (its own, otherwise its branch's) over at most 31 days: ordered segments with what plays, and notes for times moved by daylight saving changes. A catalog area shows its view where no schedule or default plays. A group the caller cannot fully view is null, and a playlist the caller cannot view stays without a summary.",
         "tags": ["Programming"],
         "security": [
           {
@@ -70557,6 +72573,15 @@
               "type": "string",
               "format": "date-time"
             }
+          },
+          {
+            "name": "output",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,15}$"
+            }
           }
         ],
         "responses": {
@@ -70566,7 +72591,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["source", "timeZone", "segments", "notes"],
+                  "required": [
+                    "source",
+                    "output",
+                    "outputs",
+                    "timeZone",
+                    "segments",
+                    "notes"
+                  ],
                   "properties": {
                     "source": {
                       "anyOf": [
@@ -70614,6 +72646,83 @@
                           "additionalProperties": false
                         }
                       ]
+                    },
+                    "output": {
+                      "type": "object",
+                      "required": ["key", "kind", "name"],
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                        },
+                        "kind": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "screen"
+                            },
+                            {
+                              "type": "string",
+                              "const": "media"
+                            },
+                            {
+                              "type": "string",
+                              "const": "catalog"
+                            }
+                          ]
+                        },
+                        "name": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["key", "kind", "name"],
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      }
                     },
                     "timeZone": {
                       "type": "string"
@@ -71316,7 +73425,7 @@
     "/companies/{companyId}/programming/groups/{groupId}/timeline": {
       "get": {
         "operationId": "getGroupTimeline",
-        "description": "Evaluate the group's draft program in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens.",
+        "description": "Evaluate one output of the group's draft program (the first output unless `output` names another) in a time zone the caller chooses over at most 31 days, so a group can be previewed before it has screens. A catalog area shows its view where no schedule or default plays.",
         "tags": ["Programming"],
         "security": [
           {
@@ -71361,6 +73470,15 @@
             }
           },
           {
+            "name": "output",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,15}$"
+            }
+          },
+          {
             "name": "timeZone",
             "in": "query",
             "required": true,
@@ -71378,7 +73496,14 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["source", "timeZone", "segments", "notes"],
+                  "required": [
+                    "source",
+                    "output",
+                    "outputs",
+                    "timeZone",
+                    "segments",
+                    "notes"
+                  ],
                   "properties": {
                     "source": {
                       "anyOf": [
@@ -71426,6 +73551,83 @@
                           "additionalProperties": false
                         }
                       ]
+                    },
+                    "output": {
+                      "type": "object",
+                      "required": ["key", "kind", "name"],
+                      "properties": {
+                        "key": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                        },
+                        "kind": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "screen"
+                            },
+                            {
+                              "type": "string",
+                              "const": "media"
+                            },
+                            {
+                              "type": "string",
+                              "const": "catalog"
+                            }
+                          ]
+                        },
+                        "name": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["key", "kind", "name"],
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,15}$"
+                          },
+                          "kind": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "screen"
+                              },
+                              {
+                                "type": "string",
+                                "const": "media"
+                              },
+                              {
+                                "type": "string",
+                                "const": "catalog"
+                              }
+                            ]
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      }
                     },
                     "timeZone": {
                       "type": "string"
@@ -76751,7 +78953,7 @@
       },
       "patch": {
         "operationId": "updateLayout",
-        "description": "Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Catalogs and media the layout already names may stay. A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout's branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout's scope no longer than the page, or a view page or group (a selection choice ID, or an agenda's weekday from \"1\" for Monday to \"7\"). Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED.",
+        "description": "Rename a layout and/or replace its whole definition with the observed version. Area keys are kept exactly as given and never renamed; an area whose key the definition leaves out is removed. Programs using the layout lose the outputs of removed areas, and the default playlists of areas that become catalog areas; when any holds schedules or a default, the answer is LAYOUT_CHANGE_CONFIRMATION_REQUIRED with one issue per output (OUTPUT_REMOVED or DEFAULT_REMOVED, counting the programs) until confirmRemovedOutputs is true. Catalogs and media the layout already names may stay. A layout has a 1920×1080 (landscape) or 1080×1920 (portrait) canvas and 1 to 12 areas with unique keys and stacking orders, at least 40 units wide and high and inside the canvas. Areas start muted; more than one audible area needs audioMixConfirmed. A catalog area (at most 6) shows a view of an active catalog of the company or the layout's branch, binding 1 to 8 fields by role (one title; at most one subtitle, price, image and group; a menu needs a price, an agenda a weekdays group), with text size 24 to 200 and automatic pages every 5 to 120 seconds. A layout has no pages or 2 to 20 pages of 1 to 600 seconds, each naming what every page-controlled area shows: a media item of the layout's scope no longer than the page, or a view page or group (a selection choice ID, or an agenda's weekday from \"1\" for Monday to \"7\"). Issue reasons: AREA_COUNT, KEY_INVALID, KEY_DUPLICATE, NAME_INVALID, GEOMETRY_INVALID, OUTSIDE_CANVAS, STACK_INVALID, STACK_DUPLICATE, COLOR_INVALID, VOLUME_INVALID, NO_PAGES, VIEW_NOT_APPLICABLE, VIEW_REQUIRED, VIEW_COUNT, FIELD_COUNT, FIELD_DUPLICATE, TITLE_REQUIRED, ROLE_REPEATED, PRICE_REQUIRED, GROUP_REQUIRED, TEXT_SIZE_INVALID, PAGE_SECONDS_INVALID, AUDIO_MIX_UNCONFIRMED, PAGE_COUNT, DURATION_INVALID, AREA_NOT_PAGE_CONTROLLED, AREA_DUPLICATE, CONTENT_INVALID, CONTENT_MISSING, CATALOG_UNAVAILABLE, CATALOG_SCOPE, FIELD_UNAVAILABLE, ROLE_TYPE_MISMATCH, MEDIA_UNAVAILABLE, MEDIA_SCOPE, PAGE_SHORTER_THAN_VIDEO, GROUP_UNKNOWN and, for imports, FORMAT_UNSUPPORTED.",
         "tags": ["Programming"],
         "security": [
           {
@@ -77085,6 +79287,9 @@
                       }
                     },
                     "additionalProperties": false
+                  },
+                  "confirmRemovedOutputs": {
+                    "type": "boolean"
                   }
                 },
                 "additionalProperties": false
@@ -78151,12 +80356,13 @@
           "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
-          "LAYOUT_INVALID"
+          "LAYOUT_INVALID",
+          "LAYOUT_CHANGE_CONFIRMATION_REQUIRED"
         ]
       },
       "delete": {
         "operationId": "deleteLayout",
-        "description": "Delete a layout with its areas and pages.",
+        "description": "Delete a layout with its areas and pages. A layout that programs use answers LAYOUT_IN_USE.",
         "tags": ["Programming"],
         "security": [
           {
@@ -78746,7 +80952,8 @@
           "PERMISSION_DENIED",
           "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
-          "RESOURCE_VERSION_CONFLICT"
+          "RESOURCE_VERSION_CONFLICT",
+          "LAYOUT_IN_USE"
         ]
       }
     },
@@ -81266,7 +83473,7 @@
     "/companies/{companyId}/programming/groups/{groupId}/publications/check": {
       "post": {
         "operationId": "checkGroupPublication",
-        "description": "Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
+        "description": "Build the publication of the current draft of a group's program, which needs the capability on every branch of its span without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
         "tags": ["Publications"],
         "security": [
           {
@@ -81344,6 +83551,10 @@
                               {
                                 "type": "string",
                                 "const": "TOO_LARGE"
+                              },
+                              {
+                                "type": "string",
+                                "const": "LAYOUT_NOT_PUBLISHABLE"
                               }
                             ]
                           },
@@ -84580,7 +86791,7 @@
     "/companies/{companyId}/programming/devices/{deviceId}/publications/check": {
       "post": {
         "operationId": "checkDevicePublication",
-        "description": "Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it, its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
+        "description": "Build the publication of the current draft of a screen's own program, which needs the capability on the screen's branch without saving it: the problems that block it (a program with a layout reports LAYOUT_NOT_PUBLISHABLE until publication protocol 2 exists), its counts, the content digest to publish with, whether it equals the latest publication and how many screens follow it. Needs publications.publish.",
         "tags": ["Publications"],
         "security": [
           {
@@ -84658,6 +86869,10 @@
                               {
                                 "type": "string",
                                 "const": "TOO_LARGE"
+                              },
+                              {
+                                "type": "string",
+                                "const": "LAYOUT_NOT_PUBLISHABLE"
                               }
                             ]
                           },

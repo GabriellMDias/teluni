@@ -68,8 +68,21 @@ function issueText(
   issue: ApiIssue,
   t: Messages,
   areas: readonly { name: string }[],
+  outputs: readonly { key: string; name: string }[],
 ): string {
   const l = t.layouts;
+  // Programs lose the outputs of removed areas: the key names a saved area.
+  const output = /^\/outputs\/([^/]+)/.exec(issue.path);
+  if (output) {
+    const name =
+      outputs.find((entry) => entry.key === output[1])?.name ?? output[1];
+    const count = issue.count ?? 0;
+    return `${l.selectedTitle(name)}: ${
+      issue.reason === "DEFAULT_REMOVED"
+        ? l.programsLoseDefault(count)
+        : l.programsLoseOutput(count)
+    }`;
+  }
   const text = l.issues[issue.reason] ?? t.generic;
   const area = /^(?:\/document)?\/areas\/(\d+)/.exec(issue.path);
   if (area) {
@@ -87,11 +100,14 @@ function LayoutFailure({
   error,
   operation,
   areas = [],
+  outputs = [],
   onReload,
 }: {
   error: unknown;
   operation: "read" | "write";
   areas?: readonly { name: string }[];
+  /** The saved areas, which issues about program outputs name by key. */
+  outputs?: readonly { key: string; name: string }[];
   onReload?: () => void;
 }) {
   const { t } = useProgrammingMessages();
@@ -103,7 +119,7 @@ function LayoutFailure({
         <ul className="layout-issues">
           {issues.map((issue, index) => (
             <li key={`${issue.path}-${issue.reason}-${index}`}>
-              {issueText(issue, t, areas)}
+              {issueText(issue, t, areas, outputs)}
             </li>
           ))}
         </ul>
@@ -1760,14 +1776,19 @@ function LayoutEditor({
         area.uid === uid ? { ...area, ...patch } : area,
       ),
     });
+  const [confirmRemoval, setConfirmRemoval] = useState(false);
   const save = useMutation({
     mutationFn: () =>
       updateLayout(companyId, layout, {
         ...(draft.name.trim() !== layout.name ? { name: draft.name } : {}),
         definition: toDefinition(layout, draft),
+        ...(confirmRemoval ? { confirmRemovedOutputs: true } : {}),
       }),
     onSuccess: (changed) => onChanged(changed, l.layoutSaved),
   });
+  const removalPending =
+    save.error instanceof ApiFailure &&
+    save.error.code === "LAYOUT_CHANGE_CONFIRMATION_REQUIRED";
   const addArea = (kind: Kind) => {
     const keys = new Set(draft.areas.map((area) => area.key));
     let number = draft.areas.length + 1;
@@ -1915,11 +1936,22 @@ function LayoutEditor({
           error={save.error}
           operation="write"
           areas={draft.areas}
+          outputs={layout.areas}
           onReload={() => {
             save.reset();
             void onChanged(layout);
           }}
         />
+      )}
+      {removalPending && (
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={confirmRemoval}
+            onChange={(event) => setConfirmRemoval(event.target.checked)}
+          />
+          {l.confirmRemoval}
+        </label>
       )}
       <button
         type="submit"
@@ -1928,7 +1960,8 @@ function LayoutEditor({
           !dirty ||
           !draft.name.trim() ||
           save.isPending ||
-          mustReload(save.error)
+          mustReload(save.error) ||
+          (removalPending && !confirmRemoval)
         }
       >
         {save.isPending ? t.saving : l.saveLayout}

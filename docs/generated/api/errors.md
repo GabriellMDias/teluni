@@ -70,6 +70,9 @@
 | `SCHEDULE_CONFLICT` | 409 | conflict | no | Two schedules of the same screen output overlap. Check the schedules to find them. |
 | `ASSIGNMENT_CONFIRMATION_REQUIRED` | 409 | conflict | no | The chosen programming is not published yet, so the screen will show neutral output. Confirm to continue. |
 | `LAYOUT_INVALID` | 409 | conflict | no | The layout cannot be saved this way. Each issue names the area, view or page and the reason. |
+| `LAYOUT_IN_USE` | 409 | conflict | no | Programs use this layout. Choose another layout for them before deleting it. |
+| `LAYOUT_SCOPE_MISMATCH` | 409 | conflict | no | This layout belongs to a branch the programming does not cover. Use a company layout or a layout of that single branch. |
+| `LAYOUT_CHANGE_CONFIRMATION_REQUIRED` | 409 | conflict | no | This change removes schedules or defaults of areas that no longer exist or no longer take a default playlist. Each issue names the output; confirm to remove them. |
 | `TIMELINE_TOO_LARGE` | 400 | validation | no | This period has too many schedule changes to show at once. Choose a shorter period. |
 | `PUBLICATION_INVALID` | 409 | conflict | no | This programming cannot be published as it is. Check it to see what must change first. |
 | `PUBLICATION_NOT_RESTORABLE` | 409 | conflict | no | This publication is no longer kept and cannot be restored. Publish the current programming instead. |

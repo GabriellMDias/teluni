@@ -85,6 +85,32 @@ const ptBR = {
     `Confirmo que quero excluir o grupo “${name}”.`,
   deleteGroup: "Excluir grupo",
   schedulesTitle: "Horários",
+  schedulesFor: (output: string) => `Horários: ${output}`,
+  layoutTitle: "Layout da tela",
+  layoutLead:
+    "Sem layout, a programação tem uma única saída para a tela inteira. Com um layout, cada área tem os seus próprios horários.",
+  layoutLabel: "Layout",
+  noLayout: "Sem layout (tela inteira)",
+  hiddenLayout:
+    "Um layout de outra filial, que esta tela não pode mais usar. Escolha outro para mudar os horários.",
+  useLayout: "Usar este layout",
+  layoutChosen: "Layout escolhido.",
+  openLayout: (name: string) => `Abrir o layout ${name}`,
+  layoutConfirmLead: "Estas saídas perdem horários ou a playlist padrão:",
+  outputRemoved: (output: string, rules: number) =>
+    `${output}: deixa de existir${
+      rules > 0 ? ` (${rules === 1 ? "1 horário" : `${rules} horários`})` : ""
+    }.`,
+  defaultRemoved: (output: string) =>
+    `${output}: perde a playlist padrão e passa a mostrar a visão do catálogo.`,
+  layoutConfirm: "Confirmo que quero remover esses horários e padrões.",
+  outputLabel: "Área",
+  timelineOutputLabel: "Área na prévia",
+  wholeScreen: "Tela inteira",
+  areaOutput: (name: string, kind: string) => `${name} (${kind})`,
+  outputKinds: { media: "mídia", catalog: "catálogo" },
+  viewDefault:
+    "O padrão desta área é a visão do catálogo; os horários podem trocá-la por playlists.",
   schedulesLead:
     "Cada horário vale no fuso de cada tela. O início conta e o fim não; um fim antes do início termina no dia seguinte. Horários não podem se sobrepor.",
   noPlaylists: "Crie uma playlist antes de montar horários.",
@@ -124,6 +150,7 @@ const ptBR = {
   timelineEnd: "Fim",
   timelinePlays: "O que passa",
   segmentNone: "Tela neutra",
+  segmentView: "Visão do catálogo",
   hiddenPlaylist: "Playlist fora do seu acesso",
   hiddenPlaylists:
     "Esta programação usa playlists fora do seu acesso, como as da filial anterior da tela. Troque-as para salvar.",
@@ -189,6 +216,8 @@ const ptBR = {
     problemsTitle: "Corrija antes de publicar",
     problems: {
       NOTHING_TO_PUBLISH: "Esta programação ainda não tem horários nem padrão.",
+      LAYOUT_NOT_PUBLISHABLE:
+        "Programações com layout serão publicadas pelo protocolo 2 das telas, que ainda não está disponível.",
       SCHEDULE_INVALID:
         "Os horários salvos não passam mais na validação. Revise-os e salve de novo.",
       PLAYLIST_OUT_OF_SCOPE:
@@ -374,6 +403,12 @@ const ptBR = {
       `Confirmo que quero excluir o layout “${name}”.`,
     delete: "Excluir layout",
     audioLabel: "Áudio",
+    programsLoseOutput: (programs: number) =>
+      `${programs === 1 ? "1 programação perde" : `${programs} programações perdem`} os horários e a playlist padrão desta área.`,
+    programsLoseDefault: (programs: number) =>
+      `${programs === 1 ? "1 programação perde" : `${programs} programações perdem`} a playlist padrão desta área, que passa a mostrar a visão do catálogo.`,
+    confirmRemoval:
+      "Confirmo que quero remover esses horários e padrões das programações.",
     issues: {
       AREA_COUNT: "Um layout tem de 1 a 12 áreas.",
       KEY_INVALID:
@@ -446,6 +481,12 @@ const ptBR = {
       "Confirme que a tela vai mostrar a tela neutra até a publicação.",
     LAYOUT_INVALID:
       "O layout não pode ser salvo assim. Veja abaixo o que corrigir.",
+    LAYOUT_IN_USE:
+      "Programações usam este layout. Escolha outro layout para elas antes de excluí-lo.",
+    LAYOUT_SCOPE_MISMATCH:
+      "Este layout é de uma filial que a programação não cobre. Use um layout da empresa ou dessa única filial.",
+    LAYOUT_CHANGE_CONFIRMATION_REQUIRED:
+      "Esta mudança remove horários ou playlists padrão de áreas. Confirme para continuar.",
     PUBLICATION_INVALID:
       "Esta programação não pode ser publicada como está. Revise de novo para ver o que corrigir.",
     PUBLICATION_NOT_RESTORABLE:
@@ -557,6 +598,33 @@ const enUS: Messages = {
     `I confirm I want to delete the group “${name}”.`,
   deleteGroup: "Delete group",
   schedulesTitle: "Schedules",
+  schedulesFor: (output: string) => `Schedules: ${output}`,
+  layoutTitle: "Screen layout",
+  layoutLead:
+    "Without a layout, the programming has a single full-screen output. With a layout, each area has its own schedules.",
+  layoutLabel: "Layout",
+  noLayout: "No layout (full screen)",
+  hiddenLayout:
+    "A layout of another branch, which this screen can no longer use. Choose another one to change its schedules.",
+  useLayout: "Use this layout",
+  layoutChosen: "Layout chosen.",
+  openLayout: (name: string) => `Open layout ${name}`,
+  layoutConfirmLead: "These outputs lose schedules or their default playlist:",
+  outputRemoved: (output: string, rules: number) =>
+    `${output}: no longer exists${
+      rules > 0 ? ` (${rules === 1 ? "1 schedule" : `${rules} schedules`})` : ""
+    }.`,
+  defaultRemoved: (output: string) =>
+    `${output}: loses its default playlist and shows its catalog view instead.`,
+  layoutConfirm:
+    "I confirm that I want to remove these schedules and defaults.",
+  outputLabel: "Area",
+  timelineOutputLabel: "Area in the preview",
+  wholeScreen: "Whole screen",
+  areaOutput: (name: string, kind: string) => `${name} (${kind})`,
+  outputKinds: { media: "media", catalog: "catalog" },
+  viewDefault:
+    "This area's default is its catalog view; schedules can replace it with playlists.",
   schedulesLead:
     "Each schedule applies in each screen's time zone. The start is included and the end is not; an end before the start finishes on the next day. Schedules cannot overlap.",
   noPlaylists: "Create a playlist before building schedules.",
@@ -596,6 +664,7 @@ const enUS: Messages = {
   timelineEnd: "End",
   timelinePlays: "What plays",
   segmentNone: "Neutral screen",
+  segmentView: "Catalog view",
   hiddenPlaylist: "A playlist outside your access",
   hiddenPlaylists:
     "This programming uses playlists outside your access, such as those of the screen's previous branch. Replace them to save.",
@@ -661,6 +730,8 @@ const enUS: Messages = {
     problemsTitle: "Fix before publishing",
     problems: {
       NOTHING_TO_PUBLISH: "This programming has no schedules or default yet.",
+      LAYOUT_NOT_PUBLISHABLE:
+        "Programming with a layout publishes through the screens' protocol 2, which is not available yet.",
       SCHEDULE_INVALID:
         "The saved schedules no longer pass validation. Review and save them again.",
       PLAYLIST_OUT_OF_SCOPE:
@@ -843,6 +914,12 @@ const enUS: Messages = {
       `I confirm that I want to delete layout “${name}”.`,
     delete: "Delete layout",
     audioLabel: "Audio",
+    programsLoseOutput: (programs: number) =>
+      `${programs === 1 ? "1 program loses" : `${programs} programs lose`} this area's schedules and default playlist.`,
+    programsLoseDefault: (programs: number) =>
+      `${programs === 1 ? "1 program loses" : `${programs} programs lose`} this area's default playlist, and the area shows its catalog view instead.`,
+    confirmRemoval:
+      "I confirm that I want to remove these schedules and defaults from the programs.",
     issues: {
       AREA_COUNT: "A layout has 1 to 12 areas.",
       KEY_INVALID:
@@ -914,6 +991,12 @@ const enUS: Messages = {
       "Confirm that the screen shows a neutral screen until publication.",
     LAYOUT_INVALID:
       "The layout cannot be saved this way. See below what to fix.",
+    LAYOUT_IN_USE:
+      "Programs use this layout. Choose another layout for them before deleting it.",
+    LAYOUT_SCOPE_MISMATCH:
+      "This layout belongs to a branch the programming does not cover. Use a company layout or one of that single branch.",
+    LAYOUT_CHANGE_CONFIRMATION_REQUIRED:
+      "This change removes schedules or default playlists of areas. Confirm to continue.",
     PUBLICATION_INVALID:
       "This programming cannot be published as it is. Review it again to see what to fix.",
     PUBLICATION_NOT_RESTORABLE:

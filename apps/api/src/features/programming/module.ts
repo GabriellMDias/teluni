@@ -90,19 +90,22 @@ export function createProgrammingModule(options: {
     errors: programmingErrors,
     activate: ({ database }) => {
       // Activation guarantees the database and the required modules.
+      const layoutRepository = new PrismaLayoutRepository(database!);
       const active = new ProgrammingService({
         repository: new PrismaProgrammingRepository(database!),
         companies: options.companies,
         devices: options.devices,
         media: options.media,
+        layouts: layoutRepository,
       });
       if (publicationFacts) active.onPublicationFacts(publicationFacts);
       service = active;
       const layoutService = new LayoutService({
-        repository: new PrismaLayoutRepository(database!),
+        repository: layoutRepository,
         companies: options.companies,
         catalogs: options.catalogs,
         media: options.media,
+        programs: active,
       });
       layouts = layoutService;
       return {

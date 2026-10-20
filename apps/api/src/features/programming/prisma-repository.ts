@@ -48,6 +48,8 @@ export type OutputRecord = Readonly<{
 export type ProgramRecord = Readonly<{
   id: string;
   version: number;
+  /** The layout whose areas are the outputs; null for the screen output. */
+  layoutId: string | null;
   outputs: ReadonlyMap<OutputKey, OutputRecord>;
 }>;
 
@@ -691,16 +693,20 @@ export class PrismaProgrammingRepository {
     tx: Prisma.TransactionClient,
     companyId: string,
     source: ProgramSource,
+    layoutId: string | null = null,
   ): Promise<string> {
     const id = randomUUID();
     const groupId = source.kind === "group" ? source.groupId : null;
     const deviceId = source.kind === "device" ? source.deviceId : null;
     await tx.$executeRaw`
-      INSERT INTO programs (id, company_id, group_id, device_id)
-      VALUES (${id}::uuid, ${companyId}::uuid, ${groupId}::uuid, ${deviceId}::uuid)`;
-    await tx.$executeRaw`
-      INSERT INTO program_outputs (company_id, program_id, output_key)
-      VALUES (${companyId}::uuid, ${id}::uuid, 'screen')`;
+      INSERT INTO programs (id, company_id, group_id, device_id, layout_id)
+      VALUES (${id}::uuid, ${companyId}::uuid, ${groupId}::uuid,
+        ${deviceId}::uuid, ${layoutId}::uuid)`;
+    // Area outputs are stored when first saved; the screen output always is.
+    if (!layoutId)
+      await tx.$executeRaw`
+        INSERT INTO program_outputs (company_id, program_id, output_key)
+        VALUES (${companyId}::uuid, ${id}::uuid, 'screen')`;
     return id;
   }
 
@@ -721,8 +727,10 @@ export class PrismaProgrammingRepository {
     lock: boolean | "share" = false,
   ): Promise<ProgramRecord | null> {
     const db = tx ?? this.#db;
-    const [head] = await db.$queryRaw<{ id: string; version: number }[]>`
-      SELECT id, version FROM programs
+    const [head] = await db.$queryRaw<
+      { id: string; version: number; layout_id: string | null }[]
+    >`
+      SELECT id, version, layout_id FROM programs
       WHERE company_id = ${companyId}::uuid AND ${this.#sourceFilter(source)}
       ${
         lock === "share"
@@ -773,7 +781,12 @@ export class PrismaProgrammingRepository {
             endsOn: rule.ends_on,
           })),
       });
-    return { id: head.id, version: head.version, outputs: map };
+    return {
+      id: head.id,
+      version: head.version,
+      layoutId: head.layout_id,
+      outputs: map,
+    };
   }
 
   /** The ID of a source's program, if it was ever programmed. */
@@ -819,9 +832,11 @@ export class PrismaProgrammingRepository {
       WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid
         AND output_key = ${outputKey}`;
     await tx.$executeRaw`
-      UPDATE program_outputs SET default_playlist_id = ${output.defaultPlaylistId}::uuid
-      WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid
-        AND output_key = ${outputKey}`;
+      INSERT INTO program_outputs (company_id, program_id, output_key, default_playlist_id)
+      VALUES (${companyId}::uuid, ${programId}::uuid, ${outputKey},
+        ${output.defaultPlaylistId}::uuid)
+      ON CONFLICT (company_id, program_id, output_key)
+      DO UPDATE SET default_playlist_id = EXCLUDED.default_playlist_id`;
     if (output.rules.length > 0)
       await tx.$executeRaw`
         INSERT INTO schedule_rules (id, company_id, program_id, output_key, position,
@@ -857,6 +872,151 @@ export class PrismaProgrammingRepository {
     const updated = await this.program(companyId, source, tx);
     if (!updated) throw new Error("Program write returned no row");
     return updated;
+  }
+
+  /**
+   * Chooses a program's layout, creating the program if needed, and drops
+   * the outputs the new layout no longer has and the defaults of areas that
+   * take none. The caller has checked the confirmation.
+   */
+  async setLayout(
+    tx: Prisma.TransactionClient,
+    actor: Actor,
+    companyId: string,
+    source: ProgramSource,
+    branchIds: readonly string[],
+    current: ProgramRecord | null,
+    layoutId: string | null,
+    change: { removed: readonly string[]; cleared: readonly string[] },
+  ): Promise<ProgramRecord> {
+    let programId = current?.id;
+    if (!programId)
+      programId = await this.#createProgram(tx, companyId, source, layoutId);
+    else {
+      await this.#dropOutputs(tx, companyId, programId, change);
+      await tx.$executeRaw`
+        UPDATE programs SET layout_id = ${layoutId}::uuid, version = version + 1,
+          updated_at = GREATEST(statement_timestamp(), updated_at + interval '1 millisecond')
+        WHERE company_id = ${companyId}::uuid AND id = ${programId}::uuid`;
+    }
+    await this.audit(
+      tx,
+      companyId,
+      actor,
+      { type: "program", id: programId },
+      branchIds,
+      "program.layout_changed",
+      {
+        layoutId,
+        previousLayoutId: current?.layoutId ?? null,
+        removedOutputs: [...change.removed],
+        clearedDefaults: [...change.cleared],
+      },
+    );
+    const updated = await this.program(companyId, source, tx);
+    if (!updated) throw new Error("Program write returned no row");
+    return updated;
+  }
+
+  async #dropOutputs(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    programId: string,
+    change: { removed: readonly string[]; cleared: readonly string[] },
+  ): Promise<void> {
+    if (change.removed.length > 0) {
+      await tx.$executeRaw`
+        DELETE FROM schedule_rules
+        WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid
+          AND output_key = ANY(${[...change.removed]}::text[])`;
+      await tx.$executeRaw`
+        DELETE FROM program_outputs
+        WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid
+          AND output_key = ANY(${[...change.removed]}::text[])`;
+    }
+    if (change.cleared.length > 0)
+      await tx.$executeRaw`
+        UPDATE program_outputs SET default_playlist_id = NULL
+        WHERE company_id = ${companyId}::uuid AND program_id = ${programId}::uuid
+          AND output_key = ANY(${[...change.cleared]}::text[])`;
+  }
+
+  /** Programs that use a layout, locked for update, in a stable order. */
+  async lockProgramsUsing(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    layoutId: string,
+  ): Promise<
+    (ProgramRecord & { groupId: string | null; deviceId: string | null })[]
+  > {
+    const rows = await tx.$queryRaw<
+      { id: string; group_id: string | null; device_id: string | null }[]
+    >`
+      SELECT id, group_id, device_id FROM programs
+      WHERE company_id = ${companyId}::uuid AND layout_id = ${layoutId}::uuid
+      ORDER BY id
+      FOR UPDATE`;
+    const programs = [];
+    for (const row of rows) {
+      const source: ProgramSource = row.group_id
+        ? { kind: "group", groupId: row.group_id }
+        : { kind: "device", deviceId: row.device_id ?? "" };
+      const program = await this.program(companyId, source, tx);
+      if (program)
+        programs.push({
+          ...program,
+          groupId: row.group_id,
+          deviceId: row.device_id,
+        });
+    }
+    return programs;
+  }
+
+  /** Whether any program uses a layout. */
+  async layoutInUse(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    layoutId: string,
+  ): Promise<boolean> {
+    const [row] = await tx.$queryRaw<{ used: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM programs
+        WHERE company_id = ${companyId}::uuid AND layout_id = ${layoutId}::uuid
+      ) AS used`;
+    return row?.used ?? false;
+  }
+
+  /**
+   * Drops outputs a layout save removed from one program, bumps its
+   * version and audits it. The caller has checked the confirmation.
+   */
+  async removeOutputs(
+    tx: Prisma.TransactionClient,
+    actor: Actor,
+    companyId: string,
+    programId: string,
+    branchIds: readonly string[],
+    layoutId: string,
+    change: { removed: readonly string[]; cleared: readonly string[] },
+  ): Promise<void> {
+    await this.#dropOutputs(tx, companyId, programId, change);
+    await tx.$executeRaw`
+      UPDATE programs SET version = version + 1,
+        updated_at = GREATEST(statement_timestamp(), updated_at + interval '1 millisecond')
+      WHERE company_id = ${companyId}::uuid AND id = ${programId}::uuid`;
+    await this.audit(
+      tx,
+      companyId,
+      actor,
+      { type: "program", id: programId },
+      branchIds,
+      "program.outputs_removed",
+      {
+        layoutId,
+        removedOutputs: [...change.removed],
+        clearedDefaults: [...change.cleared],
+      },
+    );
   }
 
   // Screen settings

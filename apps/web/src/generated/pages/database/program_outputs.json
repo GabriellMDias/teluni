@@ -32,7 +32,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Output name; only screen exists until layouts (PJ-20).",
+      "Meaning": "Output key: screen for a program without a layout, otherwise the key of one of its layout's areas.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -59,9 +59,9 @@
       "Purpose": "The program belongs to the same company; outputs are deleted with it."
     },
     {
-      "Object": "program_outputs_known_key",
-      "Physical definition": "CHECK (((output_key)::text = 'screen'::text))",
-      "Purpose": "Only the screen output exists."
+      "Object": "program_outputs_key_shape",
+      "Physical definition": "CHECK (((output_key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))",
+      "Purpose": "Output keys have the area key shape: a lowercase letter, then up to 15 lowercase letters, digits or hyphens."
     },
     {
       "Object": "program_outputs_pkey",

@@ -287,6 +287,14 @@ async function ready(
   return created.body.id;
 }
 
+async function programId(groupId: string) {
+  const { rows } = await sql.query<{ id: string }>(
+    "SELECT id FROM programs WHERE group_id = $1",
+    [groupId],
+  );
+  return rows[0]?.id;
+}
+
 async function audit(layoutId: string) {
   const { rows } = await sql.query<{ action: string }>(
     "SELECT action FROM programming_audit_events WHERE subject_type = 'layout' AND subject_id = $1 ORDER BY occurred_at, id",
@@ -931,6 +939,219 @@ describe("layouts: areas, catalog views, pages and their guards", () => {
     ).toEqual([
       "/pages/0/contents/0/groupChoiceId GROUP_UNKNOWN",
       "/pages/1/contents/0/groupChoiceId GROUP_UNKNOWN",
+    ]);
+  });
+
+  it("lets programs choose a layout and schedule each area as an output", async () => {
+    const programming = `/companies/${companyA}/programming`;
+    const shared = await call("aAdmin", "POST", `${programming}/playlists`, {
+      body: { name: "Promoções", branchId: null },
+    });
+    expect(shared.status, JSON.stringify(shared.body)).toBe(201);
+    const layout = await call("aAdmin", "POST", base, {
+      body: {
+        name: "Programa",
+        branchId: null,
+        definition: definition(menu.id),
+      },
+    });
+    const group = await call("aAdmin", "POST", `${programming}/groups`, {
+      body: { name: "Lojas", allBranches: false, branchIds: [a1] },
+    });
+    expect(group.status, JSON.stringify(group.body)).toBe(201);
+    const program = `${programming}/groups/${group.body.id}/program`;
+    expect((await call("aAdmin", "GET", program)).body).toMatchObject({
+      version: 1,
+      layout: null,
+      outputs: [{ key: "screen", kind: "screen", name: null }],
+    });
+    const everyDay = {
+      playlistId: shared.body.id,
+      weekdays: [1, 2, 3, 4, 5, 6, 7],
+      allDay: true,
+      startsOn: "2027-01-04",
+    };
+    const screen = await call("aAdmin", "PUT", `${program}/outputs/screen`, {
+      body: {
+        expectedVersion: 1,
+        defaultPlaylistId: shared.body.id,
+        rules: [],
+      },
+    });
+    expect(screen.status, JSON.stringify(screen.body)).toBe(200);
+    // Choosing the layout drops the screen output, which needs confirmation.
+    const choose = (
+      version: number,
+      layoutId: string | null,
+      confirm = false,
+    ) =>
+      call("aAdmin", "PUT", `${program}/layout`, {
+        body: {
+          expectedVersion: version,
+          layoutId,
+          ...(confirm ? { confirmRemovedOutputs: true } : {}),
+        },
+      });
+    const unconfirmed = await choose(2, layout.body.id);
+    expect(code(unconfirmed)).toBe("LAYOUT_CHANGE_CONFIRMATION_REQUIRED");
+    expect(issues(unconfirmed)).toEqual(["/outputs/screen OUTPUT_REMOVED 0"]);
+    const chosen = await choose(2, layout.body.id, true);
+    expect(chosen.status, JSON.stringify(chosen.body)).toBe(200);
+    expect(chosen.body).toMatchObject({
+      version: 3,
+      layout: {
+        id: layout.body.id,
+        name: "Programa",
+        orientation: "landscape",
+      },
+      outputs: [
+        { key: "video", kind: "media", name: "Vídeo", defaultPlaylistId: null },
+        { key: "menu", kind: "catalog", name: "Cardápio", rules: [] },
+      ],
+    });
+    // Each area is an output; a catalog area's default is its view.
+    expect(
+      code(
+        await call("aAdmin", "PUT", `${program}/outputs/screen`, {
+          body: { expectedVersion: 3, defaultPlaylistId: null, rules: [] },
+        }),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(
+      code(
+        await call("aAdmin", "PUT", `${program}/outputs/menu`, {
+          body: {
+            expectedVersion: 3,
+            defaultPlaylistId: shared.body.id,
+            rules: [],
+          },
+        }),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    const menuRules = await call("aAdmin", "PUT", `${program}/outputs/menu`, {
+      body: { expectedVersion: 3, defaultPlaylistId: null, rules: [everyDay] },
+    });
+    expect(menuRules.status, JSON.stringify(menuRules.body)).toBe(200);
+    const video = await call("aAdmin", "PUT", `${program}/outputs/video`, {
+      body: {
+        expectedVersion: 4,
+        defaultPlaylistId: shared.body.id,
+        rules: [],
+      },
+    });
+    expect(video.status, JSON.stringify(video.body)).toBe(200);
+    const timeline = await call(
+      "aAdmin",
+      "GET",
+      `${programming}/groups/${group.body.id}/timeline?from=2027-01-04T03:00:00.000Z&to=2027-01-05T03:00:00.000Z&timeZone=America/Sao_Paulo&output=menu`,
+    );
+    expect(timeline.status, JSON.stringify(timeline.body)).toBe(200);
+    expect(timeline.body).toMatchObject({
+      output: { key: "menu", kind: "catalog", name: "Cardápio" },
+      outputs: [{ key: "video" }, { key: "menu" }],
+      segments: [{ source: "rule" }],
+    });
+    // A layout in use cannot be deleted, and removing an area with
+    // schedules needs confirmation; it then leaves the programs' outputs.
+    expect(
+      code(
+        await call("aAdmin", "DELETE", `${base}/${layout.body.id}`, {
+          body: { expectedVersion: 1 },
+        }),
+      ),
+    ).toBe("LAYOUT_IN_USE");
+    const withoutMenu = {
+      orientation: "landscape",
+      areas: [videoArea],
+    };
+    const removal = await call("aAdmin", "PATCH", `${base}/${layout.body.id}`, {
+      body: { expectedVersion: 1, definition: withoutMenu },
+    });
+    expect(issues(removal)).toEqual(["/outputs/menu OUTPUT_REMOVED 1"]);
+    const removed = await call("aAdmin", "PATCH", `${base}/${layout.body.id}`, {
+      body: {
+        expectedVersion: 1,
+        definition: withoutMenu,
+        confirmRemovedOutputs: true,
+      },
+    });
+    expect(removed.status, JSON.stringify(removed.body)).toBe(200);
+    expect((await call("aAdmin", "GET", program)).body).toMatchObject({
+      version: 6,
+      outputs: [{ key: "video", defaultPlaylistId: shared.body.id }],
+    });
+    // A layout whose area of the same key is a catalog area drops its default.
+    const catalogVideo = await call("aAdmin", "POST", base, {
+      body: {
+        name: "Só cardápio",
+        branchId: null,
+        definition: {
+          orientation: "landscape",
+          areas: [menuArea(menu.id, { key: "video" })],
+        },
+      },
+    });
+    expect(issues(await choose(6, catalogVideo.body.id))).toEqual([
+      "/outputs/video/defaultPlaylistId DEFAULT_REMOVED",
+    ]);
+    // A layout must cover the program's reach, also after span changes.
+    const bairro = await call("aAdmin", "POST", base, {
+      body: {
+        name: "Bairro",
+        branchId: a2,
+        definition: { orientation: "landscape", areas: [videoArea] },
+      },
+    });
+    expect(code(await choose(6, bairro.body.id, true))).toBe(
+      "LAYOUT_SCOPE_MISMATCH",
+    );
+    const centro = await call("aAdmin", "POST", base, {
+      body: {
+        name: "Centro só",
+        branchId: a1,
+        definition: { orientation: "landscape", areas: [videoArea] },
+      },
+    });
+    const local = await choose(6, centro.body.id);
+    expect(local.status, JSON.stringify(local.body)).toBe(200);
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "PATCH",
+          `${programming}/groups/${group.body.id}`,
+          {
+            body: {
+              expectedVersion: group.body.version,
+              allBranches: false,
+              branchIds: [a1, a2],
+            },
+          },
+        ),
+      ),
+    ).toBe("LAYOUT_SCOPE_MISMATCH");
+    // Back to the single screen output.
+    expect(issues(await choose(7, null))).toEqual([
+      "/outputs/video OUTPUT_REMOVED 0",
+    ]);
+    const none = await choose(7, null, true);
+    expect(none.body).toMatchObject({
+      version: 8,
+      layout: null,
+      outputs: [{ key: "screen", defaultPlaylistId: null, rules: [] }],
+    });
+    const { rows } = await sql.query<{ action: string }>(
+      "SELECT action FROM programming_audit_events WHERE subject_type = 'program' AND subject_id = $1 ORDER BY occurred_at, id",
+      [await programId(group.body.id)],
+    );
+    expect(rows.map((row) => row.action)).toEqual([
+      "program.output_replaced",
+      "program.layout_changed",
+      "program.output_replaced",
+      "program.output_replaced",
+      "program.outputs_removed",
+      "program.layout_changed",
+      "program.layout_changed",
     ]);
   });
 

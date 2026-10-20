@@ -747,6 +747,63 @@ describe("publications: publishing, synchronization and retention", () => {
     expect((await check(`groups/${somewhere.id}`)).body.problems).toEqual([
       { code: "MEDIA_UNAVAILABLE", mediaId: gone },
     ]);
+    // Programs with a layout wait for publication protocol 2.
+    const layout = await call("aAdmin", "POST", `${base}/layouts`, {
+      body: {
+        name: "Duas áreas",
+        branchId: null,
+        definition: {
+          orientation: "landscape",
+          areas: [
+            {
+              key: "main",
+              name: "Principal",
+              x: 0,
+              y: 0,
+              width: 960,
+              height: 1080,
+              z: 0,
+              kind: "media",
+            },
+            {
+              key: "side",
+              name: "Lateral",
+              x: 960,
+              y: 0,
+              width: 960,
+              height: 1080,
+              z: 1,
+              kind: "media",
+            },
+          ],
+        },
+      },
+    });
+    expect(layout.status, JSON.stringify(layout.body)).toBe(201);
+    const composed = await group("Composta", [a1.id]);
+    const chosen = await call(
+      "aAdmin",
+      "PUT",
+      `${base}/groups/${composed.id}/program/layout`,
+      { body: { expectedVersion: 1, layoutId: layout.body.id } },
+    );
+    expect(chosen.status, JSON.stringify(chosen.body)).toBe(200);
+    const saved = await call(
+      "aAdmin",
+      "PUT",
+      `${base}/groups/${composed.id}/program/outputs/main`,
+      {
+        body: {
+          expectedVersion: chosen.body.version,
+          defaultPlaylistId: local.id,
+          rules: [],
+        },
+      },
+    );
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200);
+    expect((await check(`groups/${composed.id}`)).body.problems).toEqual([
+      { code: "LAYOUT_NOT_PUBLISHABLE" },
+    ]);
   });
 
   it("lets only scoped publishers publish", async () => {
