@@ -52,3 +52,13 @@
 | `MEDIA_IN_USE` | 409 | conflict | no | This media item is still used by programming or a publication and cannot be deleted. |
 | `MEDIA_STORAGE_FULL` | 503 | availability | yes | The media storage is nearly full, so new uploads are paused. Contact support. |
 | `MEDIA_INVALID_STATE` | 409 | conflict | no | This media item cannot do that in its current state. |
+| `PROGRAMMING_LIMIT_REACHED` | 409 | conflict | no | This company reached a programming limit: 1,000 playlists, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output. |
+| `PLAYLIST_IN_USE` | 409 | conflict | no | This playlist is still used by a schedule or a default and cannot be deleted. |
+| `PLAYLIST_SCOPE_MISMATCH` | 409 | conflict | no | This playlist or media item belongs to a branch the programming does not cover. Use company content or content of that single branch. |
+| `GROUP_NAME_IN_USE` | 409 | conflict | no | Another programming group of this company already has this name. |
+| `GROUP_HAS_MEMBERS` | 409 | conflict | no | Remove the screens from this group before deleting it. |
+| `GROUP_SPAN_EXCLUDES_DEVICE` | 409 | conflict | no | The group does not cover the screen's branch. Change the group's branches or choose another group. |
+| `SCHEDULE_TIMES_EQUAL` | 400 | validation | no | A schedule cannot start and end at the same time. Use the all-day option for a whole day. |
+| `SCHEDULE_CONFLICT` | 409 | conflict | no | Two schedules of the same screen output overlap. Check the schedules to find them. |
+| `ASSIGNMENT_CONFIRMATION_REQUIRED` | 409 | conflict | no | The chosen programming is not published yet, so the screen will show neutral output. Confirm to continue. |
+| `TIMELINE_TOO_LARGE` | 400 | validation | no | This period has too many schedule changes to show at once. Choose a shorter period. |

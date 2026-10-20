@@ -283,6 +283,19 @@ export class PrismaMediaRepository {
     return row ? record(row) : null;
   }
 
+  async findMany(
+    companyId: string,
+    ids: readonly string[],
+  ): Promise<MediaRecord[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.#db.$queryRaw<Row[]>`
+      SELECT ${columns} FROM media_assets
+      WHERE company_id = ${companyId}::uuid AND id IN (${Prisma.join(
+        [...new Set(ids)].map((id) => Prisma.sql`${id}::uuid`),
+      )})`;
+    return rows.map(record);
+  }
+
   async lock(
     tx: Prisma.TransactionClient,
     companyId: string,

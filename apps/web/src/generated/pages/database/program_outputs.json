@@ -1,0 +1,77 @@
+{
+  "kind": "database",
+  "name": "program_outputs",
+  "description": "One output of a program (the full screen now; layout areas later) with its optional default playlist.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Created or updated when the output is saved; deleted with the program (cascade inside the module).",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the program (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "program_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Program the output belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "output_key",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Output name; only screen exists until layouts (PJ-20).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "default_playlist_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Playlist shown when no schedule applies.",
+      "Null meaning": "The output shows neutral output when no schedule applies.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "program_outputs_company_id_default_playlist_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, default_playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The default playlist belongs to the same company and cannot be deleted while used."
+    },
+    {
+      "Object": "program_outputs_company_id_program_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The program belongs to the same company; outputs are deleted with it."
+    },
+    {
+      "Object": "program_outputs_known_key",
+      "Physical definition": "CHECK (((output_key)::text = 'screen'::text))",
+      "Purpose": "Only the screen output exists."
+    },
+    {
+      "Object": "program_outputs_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, program_id, output_key)",
+      "Purpose": "One row per program output."
+    },
+    {
+      "Object": "program_outputs_default_idx",
+      "Physical definition": "CREATE INDEX program_outputs_default_idx ON public.program_outputs USING btree (company_id, default_playlist_id)",
+      "Purpose": "Finds outputs using a playlist as default, for the playlist delete check."
+    }
+  ]
+}

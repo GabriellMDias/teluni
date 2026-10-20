@@ -1,7 +1,9 @@
+import type { Prisma } from "../../generated/prisma/client.js";
 import type { HumanContext } from "../identity/public.js";
 import {
   branchReach,
   decide,
+  isTimeZone,
   OrganizationFailure,
   requireCapability,
   type CompanyAccess,
@@ -28,8 +30,10 @@ import type {
   DeviceRecord,
   PrismaDeviceRepository,
 } from "./prisma-repository.js";
+import type { DeviceMoveHook } from "./public.js";
 
-export type DeviceView = DeviceRecord & Readonly<{ branchName: string }>;
+export type DeviceView = DeviceRecord &
+  Readonly<{ branchName: string; branchTimeZone: string }>;
 
 type Cursor = { c: string; p: string; r: string; t: string; i: string };
 
@@ -80,6 +84,7 @@ export class DeviceService {
   readonly #repository: PrismaDeviceRepository;
   readonly #companies: CompanyAccessPort;
   readonly #codeKeys: KeyRing;
+  readonly #moveHooks: DeviceMoveHook[] = [];
 
   constructor(options: {
     repository: PrismaDeviceRepository;
@@ -269,14 +274,37 @@ export class DeviceService {
     return (await this.#views(companyId, [device]))[0];
   }
 
+  /** Registers work that runs in every move's transaction. */
+  addMoveHook(hook: DeviceMoveHook): void {
+    this.#moveHooks.push(hook);
+  }
+
+  describe(
+    tx: Prisma.TransactionClient | null,
+    companyId: string,
+    deviceIds: readonly string[],
+  ): Promise<DeviceRecord[]> {
+    return this.#repository.describe(tx, companyId, deviceIds);
+  }
+
   configure(
     context: HumanContext,
     companyId: string,
     deviceId: string,
     expectedVersion: number,
-    changes: { name?: string; rotation?: Rotation },
+    changes: { name?: string; rotation?: Rotation; timeZone?: string | null },
   ): Promise<DeviceView> {
-    if (changes.name === undefined && changes.rotation === undefined)
+    if (
+      changes.name === undefined &&
+      changes.rotation === undefined &&
+      changes.timeZone === undefined
+    )
+      throw new DeviceFailure("VALIDATION_FAILED");
+    if (
+      changes.timeZone !== undefined &&
+      changes.timeZone !== null &&
+      !isTimeZone(changes.timeZone)
+    )
       throw new DeviceFailure("VALIDATION_FAILED");
     const name =
       changes.name === undefined ? undefined : deviceName(changes.name);
@@ -294,6 +322,9 @@ export class DeviceService {
           ...(name !== undefined ? { name } : {}),
           ...(changes.rotation !== undefined
             ? { rotation: changes.rotation }
+            : {}),
+          ...(changes.timeZone !== undefined
+            ? { timeZone: changes.timeZone }
             : {}),
         };
       },
@@ -320,6 +351,21 @@ export class DeviceService {
         if (!locked.activeBranchIds.has(branchId))
           throw new DeviceFailure("VALIDATION_FAILED");
         return { kind: "move", branchId };
+      },
+      {
+        after: async (tx, moved, locked) => {
+          for (const hook of this.#moveHooks)
+            await hook(tx, {
+              companyId,
+              deviceId,
+              branchId,
+              actor: {
+                principalId: context.principalId,
+                membershipId: locked.access.membershipId,
+              },
+            });
+          return moved;
+        },
       },
     );
   }
@@ -380,6 +426,7 @@ export class DeviceService {
         clearRequired: true,
         name: null,
         branch: null,
+        timeZone: null,
         rotation: null,
         authorizedUntil: null,
         serverTime: now,
@@ -397,6 +444,7 @@ export class DeviceService {
       branch: branch
         ? { id: device.branchId, name: branch.name, timeZone: branch.timeZone }
         : null,
+      timeZone: device.timeZone ?? branch?.timeZone ?? null,
       rotation: device.rotation,
       // A suspended company renews nothing; already issued leases run out.
       authorizedUntil: suspended
@@ -448,7 +496,14 @@ export class DeviceService {
       current: DeviceRecord,
       locked: Awaited<ReturnType<CompanyAccessPort["lockForWrite"]>>,
     ) => Parameters<PrismaDeviceRepository["change"]>[3],
-    options: { allowRevoked?: boolean } = {},
+    options: {
+      allowRevoked?: boolean;
+      after?: (
+        tx: Prisma.TransactionClient,
+        changed: DeviceRecord,
+        locked: Awaited<ReturnType<CompanyAccessPort["lockForWrite"]>>,
+      ) => Promise<DeviceRecord>;
+    } = {},
   ): Promise<DeviceView> {
     const device = await this.#repository.transaction(async (tx) => {
       const locked = await this.#companies.lockForWrite(
@@ -467,7 +522,7 @@ export class DeviceService {
           throw new DeviceFailure("DEVICE_ERASURE_NOT_PENDING");
       } else if (current.status !== "ACTIVE")
         throw new DeviceFailure("DEVICE_UNLINKED");
-      return this.#repository.change(
+      const changed = await this.#repository.change(
         tx,
         {
           principalId: context.principalId,
@@ -476,6 +531,7 @@ export class DeviceService {
         current,
         decideChange(current, locked),
       );
+      return options.after ? options.after(tx, changed, locked) : changed;
     });
     return (await this.#views(companyId, [device]))[0];
   }
@@ -491,6 +547,8 @@ export class DeviceService {
     return devices.map((device) => ({
       ...device,
       branchName: description.branches.get(device.branchId)?.name ?? "",
+      branchTimeZone:
+        description.branches.get(device.branchId)?.timeZone ?? "UTC",
     }));
   }
 }

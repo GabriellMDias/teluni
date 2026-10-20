@@ -67,6 +67,7 @@ Lifecycle: Created ACTIVE when a member claims an enrollment. Renamed, rotated a
 | `erasure_recorded_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the erasure was confirmed by the screen or the reset was recorded. | No erasure outcome is recorded. | UTC instant, millisecond precision |
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
 | `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change. | — | UTC instant, millisecond precision |
+| `time_zone` | `character varying(64)` | yes | — | INTERNAL | Explicit IANA time zone of the screen's local business time, set with devices.manage. | The screen follows its branch's time zone. | — |
 
 ### Constraints and indexes
 
@@ -88,6 +89,7 @@ Lifecycle: Created ACTIVE when a member claims an enrollment. Renamed, rotated a
 | `devices_revocation_state` | `CHECK (((status = 'REVOKED'::"DeviceStatus") = (revoked_at IS NOT NULL)))` | A revocation instant exists exactly for revoked devices. |
 | `devices_rotation_pending_only_active` | `CHECK (((status = 'ACTIVE'::"DeviceStatus") OR (next_credential_hash IS NULL)))` | Only active devices can have a pending credential rotation. |
 | `devices_rotation_valid` | `CHECK ((rotation = ANY (ARRAY[0, 90, 180, 270])))` | Rotation is a quarter turn. |
+| `devices_time_zone_shape` | `CHECK (((time_zone IS NULL) OR ((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text)))` | An explicit time zone looks like an IANA zone name; the API validates it against the runtime's zone database. |
 | `devices_version_positive` | `CHECK ((version >= 1))` | Versions start at one. |
 | `devices_company_branch_status_idx` | `CREATE INDEX devices_company_branch_status_idx ON public.devices USING btree (company_id, branch_id, status)` | Lists a branch's devices and finds active devices before a branch is archived. |
 | `devices_company_id_id_key` | `CREATE UNIQUE INDEX devices_company_id_id_key ON public.devices USING btree (company_id, id)` | Tenant key for references to devices. |
@@ -593,7 +595,7 @@ Lifecycle: Created ACTIVE; edited with expected versions, so every holder's acce
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable profile UUID; public resource ID. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Owning company; immutable (tenant key). | — | — |
 | `name` | `character varying(120)` | no | — | CONFIDENTIAL | Profile name, unique among the company's active profiles regardless of case. | — | — |
-| `capabilities` | `text[]` | no | — | INTERNAL | Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive); company administration is never delegable through a profile. | — | — |
+| `capabilities` | `text[]` | no | — | INTERNAL | Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign); company administration is never delegable through a profile. | — | — |
 | `status` | `"AccessProfileStatus"` | no | `'ACTIVE'::"AccessProfileStatus"` | INTERNAL | ACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution. | — | — |
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
@@ -604,7 +606,7 @@ Lifecycle: Created ACTIVE; edited with expected versions, so every holder's acce
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `access_profiles_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A profile belongs to an existing company. |
-| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text])))` | A profile names at least one capability, all of them delegable. |
+| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text])))` | A profile names at least one capability, all of them delegable. |
 | `access_profiles_name_nonblank` | `CHECK ((btrim((name)::text) <> ''::text))` | Profile name cannot be blank. |
 | `access_profiles_pkey` | `PRIMARY KEY (id)` | Unique profile identity. |
 | `access_profiles_version_positive` | `CHECK ((version >= 1))` | Rejects invalid concurrency versions. |
@@ -838,6 +840,276 @@ Lifecycle: Created with its invitation and never changed.
 | `company_invitation_branches_pkey` | `PRIMARY KEY (invitation_id, branch_id)` | Each branch appears once per invitation. |
 | `company_invitation_branches_branch_idx` | `CREATE INDEX company_invitation_branches_branch_idx ON public.company_invitation_branches USING btree (company_id, branch_id)` | Finds invitations that name a branch. |
 
+## playlists
+
+An ordered, looping list of media items owned by a company or one branch, with its transition. Several programs may schedule the same playlist.
+
+Owner: Programming. Classification: CONFIDENTIAL.
+
+Lifecycle: Created empty; renames, transition changes and item replacements bump the version. Deleted at runtime, with its items, only when no schedule rule or default uses it. The owning scope never changes. See docs/project/programming-design.md.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable playlist UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the playlist; immutable (tenant key). | — | — |
+| `branch_id` | `uuid` | yes | — | INTERNAL | Branch that owns the playlist; immutable. | The playlist belongs to the whole company and every member who may view programming sees it. | — |
+| `name` | `character varying(120)` | no | — | CONFIDENTIAL | Display name chosen by members, trimmed, 1 to 120 characters. | — | — |
+| `transition` | `"PlaylistTransition"` | no | `'CUT'::"PlaylistTransition"` | INTERNAL | CUT or FADE between items. | — | — |
+| `fade_ms` | `integer` | yes | — | INTERNAL | Fade duration between items. | The transition is CUT. | milliseconds |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version, starting at 1. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `playlists_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The owning branch belongs to the same company. |
+| `playlists_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A playlist belongs to an existing company. |
+| `playlists_fade` | `CHECK ((((transition = 'CUT'::"PlaylistTransition") AND (fade_ms IS NULL)) OR ((transition = 'FADE'::"PlaylistTransition") AND ((fade_ms >= 250) AND (fade_ms <= 2000)))))` | A fade carries a duration from 250 to 2,000 ms and a cut carries none. |
+| `playlists_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are trimmed and not empty. |
+| `playlists_pkey` | `PRIMARY KEY (id)` | Unique playlist identity. |
+| `playlists_version_positive` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `playlists_company_created_idx` | `CREATE INDEX playlists_company_created_idx ON public.playlists USING btree (company_id, created_at DESC, id DESC)` | Lists a company's playlists newest first with keyset cursors. |
+| `playlists_company_id_id_key` | `CREATE UNIQUE INDEX playlists_company_id_id_key ON public.playlists USING btree (company_id, id)` | Tenant key for playlists. |
+
+## playlist_items
+
+One position of a playlist: the media item it plays and, for an image, how long.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Replaced as a whole list when members save the playlist's items; deleted with the playlist (cascade inside the module). The same media item may appear at several positions.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the playlist (tenant key). | — | — |
+| `playlist_id` | `uuid` | no | — | INTERNAL | Playlist the item belongs to. | — | — |
+| `position` | `integer` | no | — | INTERNAL | Zero-based play order, 0 to 499. | — | — |
+| `media_asset_id` | `uuid` | no | — | INTERNAL | Media item played at this position. | — | — |
+| `duration_ms` | `integer` | yes | — | INTERNAL | How long an image is shown, 1,000 to 3,600,000. | The item is a video and plays its whole duration. | milliseconds |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `playlist_items_company_id_media_asset_id_fkey` | `FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The media item belongs to the same company and cannot be removed while referenced. |
+| `playlist_items_company_id_playlist_id_fkey` | `FOREIGN KEY (company_id, playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The playlist belongs to the same company; items are deleted with it. |
+| `playlist_items_duration_range` | `CHECK (((duration_ms IS NULL) OR ((duration_ms >= 1000) AND (duration_ms <= 3600000))))` | Image durations stay within 1 to 3,600 seconds. |
+| `playlist_items_pkey` | `PRIMARY KEY (company_id, playlist_id, "position")` | One item per playlist position. |
+| `playlist_items_position_range` | `CHECK ((("position" >= 0) AND ("position" <= 499)))` | At most 500 positions. |
+| `playlist_items_media_idx` | `CREATE INDEX playlist_items_media_idx ON public.playlist_items USING btree (company_id, media_asset_id)` | Finds the playlists that use a media item, for the media reference guard. |
+
+## programming_groups
+
+A company-owned group of screens that share one program, spanning the whole company or a fixed set of branches.
+
+Owner: Programming. Classification: CONFIDENTIAL.
+
+Lifecycle: Created with its program; renames and span changes bump the version. Deleted at runtime, with its program and span rows, only when it has no member screens.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable group UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the group; immutable (tenant key). | — | — |
+| `name` | `character varying(80)` | no | — | CONFIDENTIAL | Display name, trimmed, 1 to 80 characters, unique in the company ignoring case. | — | — |
+| `all_branches` | `boolean` | no | — | INTERNAL | True when the group spans every branch of the company; otherwise programming_group_branches lists its span. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version, starting at 1. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `programming_groups_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A group belongs to an existing company. |
+| `programming_groups_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are trimmed and not empty. |
+| `programming_groups_pkey` | `PRIMARY KEY (id)` | Unique group identity. |
+| `programming_groups_version_positive` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `programming_groups_company_id_id_key` | `CREATE UNIQUE INDEX programming_groups_company_id_id_key ON public.programming_groups USING btree (company_id, id)` | Tenant key for groups. |
+| `programming_groups_company_name_unique` | `CREATE UNIQUE INDEX programming_groups_company_name_unique ON public.programming_groups USING btree (company_id, lower((name)::text))` | Group names are unique in a company, ignoring case. |
+
+## programming_group_branches
+
+The explicit branch span of a group that does not cover the whole company.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Replaced when the group's span changes; deleted with the group (cascade inside the module). While a row names a branch, archiving that branch is refused.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the group (tenant key). | — | — |
+| `group_id` | `uuid` | no | — | INTERNAL | Group whose span this row belongs to. | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch inside the group's span. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `programming_group_branches_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company. |
+| `programming_group_branches_company_id_group_id_fkey` | `FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The group belongs to the same company; rows are deleted with it. |
+| `programming_group_branches_pkey` | `PRIMARY KEY (company_id, group_id, branch_id)` | Each branch appears once in a group's span. |
+| `programming_group_branches_branch_idx` | `CREATE INDEX programming_group_branches_branch_idx ON public.programming_group_branches USING btree (company_id, branch_id)` | Finds groups whose span names a branch, for the branch archive guard. |
+
+## programs
+
+The draft programming of one source: exactly one group or one screen.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its first output is saved and kept with the device record. Saving an output bumps the version.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable program UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the program; immutable (tenant key). | — | — |
+| `group_id` | `uuid` | yes | — | INTERNAL | Group the program belongs to. | The program belongs to a screen. | — |
+| `device_id` | `uuid` | yes | — | INTERNAL | Screen the program belongs to. | The program belongs to a group. | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version, starting at 1; the API reports 0 for a program not yet saved. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `programs_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The screen belongs to the same company. |
+| `programs_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A program belongs to an existing company. |
+| `programs_company_id_group_id_fkey` | `FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The group belongs to the same company; its program is deleted with it. |
+| `programs_one_source` | `CHECK (((group_id IS NULL) <> (device_id IS NULL)))` | A program belongs to exactly one group or one screen. |
+| `programs_pkey` | `PRIMARY KEY (id)` | Unique program identity. |
+| `programs_version_positive` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `programs_company_id_id_key` | `CREATE UNIQUE INDEX programs_company_id_id_key ON public.programs USING btree (company_id, id)` | Tenant key for programs. |
+| `programs_device_key` | `CREATE UNIQUE INDEX programs_device_key ON public.programs USING btree (company_id, device_id)` | A screen has at most one program. |
+| `programs_group_key` | `CREATE UNIQUE INDEX programs_group_key ON public.programs USING btree (company_id, group_id)` | A group has at most one program. |
+
+## program_outputs
+
+One output of a program (the full screen now; layout areas later) with its optional default playlist.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Created or updated when the output is saved; deleted with the program (cascade inside the module).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the program (tenant key). | — | — |
+| `program_id` | `uuid` | no | — | INTERNAL | Program the output belongs to. | — | — |
+| `output_key` | `character varying(32)` | no | — | INTERNAL | Output name; only screen exists until layouts (PJ-20). | — | — |
+| `default_playlist_id` | `uuid` | yes | — | INTERNAL | Playlist shown when no schedule applies. | The output shows neutral output when no schedule applies. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `program_outputs_company_id_default_playlist_id_fkey` | `FOREIGN KEY (company_id, default_playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The default playlist belongs to the same company and cannot be deleted while used. |
+| `program_outputs_company_id_program_id_fkey` | `FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The program belongs to the same company; outputs are deleted with it. |
+| `program_outputs_known_key` | `CHECK (((output_key)::text = 'screen'::text))` | Only the screen output exists. |
+| `program_outputs_pkey` | `PRIMARY KEY (company_id, program_id, output_key)` | One row per program output. |
+| `program_outputs_default_idx` | `CREATE INDEX program_outputs_default_idx ON public.program_outputs USING btree (company_id, default_playlist_id)` | Finds outputs using a playlist as default, for the playlist delete check. |
+
+## schedule_rules
+
+A recurring local-time window that assigns a playlist to one output of a program. Rules store local values only; zones apply per screen when evaluating.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Replaced as the whole rule set of an output when it is saved, after conflict validation; deleted with the program (cascade inside the module).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated rule UUID, new on every save. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the program (tenant key). | — | — |
+| `program_id` | `uuid` | no | — | INTERNAL | Program the rule belongs to. | — | — |
+| `output_key` | `character varying(32)` | no | — | INTERNAL | Output the rule programs; only screen exists until layouts (PJ-20). | — | — |
+| `position` | `integer` | no | — | INTERNAL | Display order inside the output, 0 to 199. | — | — |
+| `playlist_id` | `uuid` | no | — | INTERNAL | Playlist shown during the window. | — | — |
+| `weekdays` | `integer` | no | — | INTERNAL | Bitmask of the ISO weekdays on which a window starts, bit 0 for Monday, 1 to 127. | — | — |
+| `all_day` | `boolean` | no | — | INTERNAL | True when each window covers the whole local day. | — | — |
+| `start_minute` | `integer` | yes | — | INTERNAL | Local start of the window. | The rule is all-day. | minute of the local day, 0 to 1,439 |
+| `end_minute` | `integer` | yes | — | INTERNAL | Local end of the window; earlier than the start ends on the next day, 0 means the following midnight. | The rule is all-day. | minute of the local day, 0 to 1,439 |
+| `starts_on` | `date` | no | — | INTERNAL | First local date on which a window may start. | — | local calendar date |
+| `ends_on` | `date` | yes | — | INTERNAL | Final local date, inclusive; windows clip at the midnight that ends it. | The rule has no final date. | local calendar date |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `schedule_rules_company_id_playlist_id_fkey` | `FOREIGN KEY (company_id, playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The playlist belongs to the same company and cannot be deleted while used. |
+| `schedule_rules_company_id_program_id_fkey` | `FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The program belongs to the same company; rules are deleted with it. |
+| `schedule_rules_dates` | `CHECK (((ends_on IS NULL) OR (ends_on >= starts_on)))` | The final date is not before the first date. |
+| `schedule_rules_known_key` | `CHECK (((output_key)::text = 'screen'::text))` | Only the screen output exists. |
+| `schedule_rules_pkey` | `PRIMARY KEY (id)` | Unique rule identity. |
+| `schedule_rules_position_range` | `CHECK ((("position" >= 0) AND ("position" <= 199)))` | At most 200 rules per output. |
+| `schedule_rules_times` | `CHECK (((all_day AND (start_minute IS NULL) AND (end_minute IS NULL)) OR ((NOT all_day) AND ((start_minute >= 0) AND (start_minute <= 1439)) AND ((end_minute >= 0) AND (end_minute <= 1439)) AND (start_minute <> end_minute))))` | All-day rules have no times; other rules have two distinct minutes of the day. |
+| `schedule_rules_weekdays_mask` | `CHECK (((weekdays >= 1) AND (weekdays <= 127)))` | At least one weekday and no unknown bits. |
+| `schedule_rules_company_id_id_key` | `CREATE UNIQUE INDEX schedule_rules_company_id_id_key ON public.schedule_rules USING btree (company_id, id)` | Tenant key for rules. |
+| `schedule_rules_playlist_idx` | `CREATE INDEX schedule_rules_playlist_idx ON public.schedule_rules USING btree (company_id, playlist_id)` | Finds rules using a playlist, for the playlist delete check. |
+| `schedule_rules_position_key` | `CREATE UNIQUE INDEX schedule_rules_position_key ON public.schedule_rules USING btree (company_id, program_id, output_key, "position")` | One rule per display position of an output. |
+
+## programming_device_settings
+
+A screen's programming source: its group, if any, and whether individual programming is selected.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Created by the first assignment; each assignment, or a move outside the group's span, updates it and bumps the version. Kept with the device record after unlinking.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the screen (tenant key). | — | — |
+| `device_id` | `uuid` | no | — | INTERNAL | Screen these settings belong to. | — | — |
+| `group_id` | `uuid` | yes | — | INTERNAL | Group the screen belongs to. | The screen belongs to no group and is programmed individually. | — |
+| `individual` | `boolean` | no | `false` | INTERNAL | True when the screen uses its own program although it belongs to a group. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version, starting at 1; the API reports 0 for a screen never assigned. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `programming_device_settings_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The screen belongs to the same company. |
+| `programming_device_settings_company_id_group_id_fkey` | `FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The group belongs to the same company and cannot be deleted while it has members. |
+| `programming_device_settings_pkey` | `PRIMARY KEY (company_id, device_id)` | One settings row per screen. |
+| `programming_device_settings_version_positive` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `programming_device_settings_group_idx` | `CREATE INDEX programming_device_settings_group_idx ON public.programming_device_settings USING btree (company_id, group_id)` | Lists a group's member screens. |
+
+## programming_audit_events
+
+Append-only record of programming changes and assignments, with the acting member and the branches each change concerns.
+
+Owner: Programming. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company the change belongs to. | — | — |
+| `subject_type` | `character varying(16)` | no | — | INTERNAL | Kind of subject: playlist, group, program or device. | — | — |
+| `subject_id` | `uuid` | no | — | INTERNAL | Playlist, group, program or screen the event concerns; not a foreign key, so events outlive deleted subjects. | — | — |
+| `branch_ids` | `uuid[]` | yes | `ARRAY[]::uuid[]` | INTERNAL | Branches the change concerns, for branch-scoped audit reads; empty for company-wide subjects. | Never null; an empty array means the subject is company-wide. | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
+| `actor_principal_id` | `uuid` | no | — | INTERNAL | Principal that made the change. | — | — |
+| `actor_membership_id` | `uuid` | no | — | INTERNAL | Membership through which the change was made. | — | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | Event name such as playlist.created, playlist.items_replaced, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move. | — | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Bounded summary: names, counts, versions and IDs; never media content. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `programming_audit_events_actor_principal_id_fkey` | `FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The actor is a known principal. |
+| `programming_audit_events_branch_ids_present` | `CHECK (((branch_ids IS NOT NULL) AND (cardinality(branch_ids) <= 100)))` | The branch list is present and bounded. |
+| `programming_audit_events_company_id_actor_membership_id_fkey` | `FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The acting membership belongs to the same company. |
+| `programming_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
+| `programming_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
+| `programming_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
+| `programming_audit_events_subject_type` | `CHECK (((subject_type)::text = ANY ((ARRAY['playlist'::character varying, 'group'::character varying, 'program'::character varying, 'device'::character varying])::text[])))` | Subjects come from a closed set. |
+| `programming_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX programming_audit_events_company_id_id_key ON public.programming_audit_events USING btree (company_id, id)` | Tenant key for events. |
+| `programming_audit_events_subject_idx` | `CREATE INDEX programming_audit_events_subject_idx ON public.programming_audit_events USING btree (company_id, subject_id, occurred_at DESC, id DESC)` | Reads a subject's history newest first. |
+
 ## Database enums
 
 | Enum | Values | Meaning |
@@ -856,5 +1128,6 @@ Lifecycle: Created with its invitation and never changed.
 | `MediaStatus` | UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED, PURGED | Lifecycle state of a media item: UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED or PURGED. |
 | `MembershipStatus` | ACTIVE, SUSPENDED, REMOVED | Membership state: ACTIVE, SUSPENDED or REMOVED. |
 | `OutboundEmailStatus` | PENDING, SENT, FAILED, CANCELLED | Outbound email state: PENDING, SENT, FAILED or CANCELLED. |
+| `PlaylistTransition` | CUT, FADE | Transition between playlist items: CUT or FADE. |
 | `PrincipalStatus` | ACTIVE, DISABLED | Global principal state: ACTIVE or DISABLED. |
 | `ResponsibilityTransferStatus` | PENDING, ACCEPTED, DECLINED, CANCELLED, EXPIRED | Responsibility transfer state: PENDING, ACCEPTED, DECLINED, CANCELLED or EXPIRED. |

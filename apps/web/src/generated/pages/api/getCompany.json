@@ -137,7 +137,10 @@
                         { "type": "string", "const": "media.view" },
                         { "type": "string", "const": "media.upload" },
                         { "type": "string", "const": "media.archive" },
-                        { "type": "string", "const": "media.delete" }
+                        { "type": "string", "const": "media.delete" },
+                        { "type": "string", "const": "programming.view" },
+                        { "type": "string", "const": "programming.edit" },
+                        { "type": "string", "const": "programming.assign" }
                       ]
                     }
                   },
@@ -160,7 +163,10 @@
                         { "type": "string", "const": "media.view" },
                         { "type": "string", "const": "media.upload" },
                         { "type": "string", "const": "media.archive" },
-                        { "type": "string", "const": "media.delete" }
+                        { "type": "string", "const": "media.delete" },
+                        { "type": "string", "const": "programming.view" },
+                        { "type": "string", "const": "programming.edit" },
+                        { "type": "string", "const": "programming.assign" }
                       ]
                     }
                   }
@@ -311,7 +317,10 @@
                     { "type": "string", "const": "media.view" },
                     { "type": "string", "const": "media.upload" },
                     { "type": "string", "const": "media.archive" },
-                    { "type": "string", "const": "media.delete" }
+                    { "type": "string", "const": "media.delete" },
+                    { "type": "string", "const": "programming.view" },
+                    { "type": "string", "const": "programming.edit" },
+                    { "type": "string", "const": "programming.assign" }
                   ]
                 }
               },
@@ -331,7 +340,10 @@
                     { "type": "string", "const": "media.view" },
                     { "type": "string", "const": "media.upload" },
                     { "type": "string", "const": "media.archive" },
-                    { "type": "string", "const": "media.delete" }
+                    { "type": "string", "const": "media.delete" },
+                    { "type": "string", "const": "programming.view" },
+                    { "type": "string", "const": "programming.edit" },
+                    { "type": "string", "const": "programming.assign" }
                   ]
                 }
               }
@@ -444,12 +456,12 @@
         { "name": "access.responsible", "type": "boolean", "required": true },
         {
           "name": "access.capabilities",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\"",
           "required": true
         },
         {
           "name": "access.capabilitiesAfterStrongAuthentication",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\"",
+          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\"",
           "required": true
         },
         {

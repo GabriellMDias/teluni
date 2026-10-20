@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md",
+  "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-19</p>\n<p><strong>Acceptance scope:</strong> The owner explicitly approved this decision and the eleven decisions of the programming design on 2026-10-19 under PH-24. Acceptance establishes the direction for local and CI implementation of PJ-10, not the player's evaluator (PJ-12) or device qualification (PH-08).</p>\n<h2 id=\"context\">Context</h2>\n<p>Teluni schedules playlists by local business time per screen: weekdays, local hours, overnight windows, inclusive final dates and all-day windows, interpreted in the screen's time zone or its branch's, never the server's (FR-06). The <a href=\"/docs/repository/docs/project/release-policies#time-and-scheduling\">release policies</a> fix how DST gaps and repeated hours resolve and require the backend preview and the Android player to share fixtures. Node.js 24, the API runtime, does not ship the ECMAScript Temporal API, and the standard <code>Date</code> and <code>Intl</code> objects give offsets for an instant but no way to resolve a local time that falls in a gap or a repeated hour. D-10 has not selected a time-zone library.</p>\n<p>This record decides how the API represents and resolves local time for schedules and how the API and the player agree on the results. The rules themselves are in the <a href=\"/docs/repository/docs/project/programming-design\">programming design</a>.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Teluni will evaluate schedules with a pure evaluator over the Temporal API and verify every implementation against one fixture file:</p>\n<ul>\n<li>The API's programming module owns a pure TypeScript evaluator that takes rules, a default, an IANA zone name and an instant range and returns resolved segments. It never reads a clock or the process time zone.</li>\n<li>Local dates and times are Temporal <code>PlainDate</code> and <code>PlainTime</code> values, instants are Temporal <code>Instant</code> values, and zone resolution uses <code>ZonedDateTime</code> with explicit disambiguation plus transition lookup for gaps. Until Node.js provides Temporal natively, the API uses the <code>temporal-polyfill</code> package, pinned to an exact version, imported only by the programming module.</li>\n<li>Canonical fixtures in JSON (rules, zone, range and expected segments in UTC and local form, and expected validation codes) are owned by the API module and run by its tests. The player runs the same file against its implementation in PJ-12; neither implementation is the reference for the other.</li>\n<li>Preview is computed only by the API; the panel displays its segments.</li>\n</ul>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Temporal models exactly the concepts the policies use (plain local dates and times, instants, zones and explicit disambiguation), and its model matches <code>java.time</code>, which an Android player is expected to use, so both implementations reason in the same terms and the fixtures express the same cases. A spec-conformant polyfill keeps the code on the standard API, so removing it when Node.js ships Temporal is an import change rather than a rewrite. Fixtures, not shared code, are the contract between two runtimes in different languages. Keeping the evaluator pure makes validation, preview and tests deterministic and independent of the host.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"luxon-or-date-fns-tz\">Luxon or date-fns-tz</h3>\n<p>Mature libraries, but each has its own model of gaps and repeated hours that differs from <code>java.time</code> and from the standard on the way to Node.js, so the fixtures would encode library behavior rather than the policy.</p>\n<h3 id=\"hand-written-resolution-over-intldatetimeformat\">Hand-written resolution over <code>Intl.DateTimeFormat</code></h3>\n<p>Avoids a dependency, but searching transitions and disambiguating local times is where subtle errors appear, and the code would duplicate a standard that is about to ship.</p>\n<h3 id=\"a-shared-evaluator-package-compiled-for-both-runtimes\">A shared evaluator package compiled for both runtimes</h3>\n<p>One implementation for the API and the player would remove the second implementation, but the player is a native Android application; embedding a JavaScript engine to run schedules adds a runtime and its own failure modes on the device.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Deterministic, host-independent schedule results with the selected DST rules.</li>\n<li>One fixture file that both the API and the player must pass.</li>\n<li>A direct path to native Temporal.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>A runtime dependency in the API until Node.js ships Temporal, which must be kept current with the zone database it relies on (the polyfill uses the runtime's <code>Intl</code> zone data).</li>\n<li>Two implementations of the evaluator, kept equal only by the fixtures.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>Zone data comes from the Node.js runtime's ICU; updating Node.js updates zone rules, and preview results for future dates can change after a zone-database update, as on the device.</li>\n<li>Replacing the polyfill with native Temporal removes the dependency and its import; the fixtures must still pass.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/project/programming-design\">Programming design</a></li>\n<li><a href=\"/docs/repository/docs/project/release-policies#time-and-scheduling\">Release policies: time and scheduling</a></li>\n<li><a href=\"/docs/repository/docs/project/playback-and-sync#time-and-regional-scheduling\">Playback and synchronization</a></li>\n<li><a href=\"/docs/repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation\">ADR-0019</a>, <a href=\"/docs/repository/docs/adr/0020-propose-a-native-android-tv-player\">ADR-0020</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0029-evaluate-schedules-with-the-temporal-api-and-shared-fixtures",
+      "text": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "luxon-or-date-fns-tz",
+      "text": "Luxon or date-fns-tz",
+      "level": 3
+    },
+    {
+      "id": "hand-written-resolution-over-intldatetimeformat",
+      "text": "Hand-written resolution over Intl.DateTimeFormat",
+      "level": 3
+    },
+    {
+      "id": "a-shared-evaluator-package-compiled-for-both-runtimes",
+      "text": "A shared evaluator package compiled for both runtimes",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

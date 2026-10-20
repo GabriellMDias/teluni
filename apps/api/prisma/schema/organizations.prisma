@@ -83,6 +83,11 @@ model Company {
   mediaObjects            MediaObject[]
   mediaAssets             MediaAsset[]
   mediaAuditEvents        MediaAuditEvent[]
+  // Back-relations of the programming module; never traversed across modules.
+  playlists               Playlist[]
+  programmingGroups       ProgrammingGroup[]
+  programs                Program[]
+  programmingAuditEvents  ProgrammingAuditEvent[]
 
   @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
   @@map("companies")
@@ -103,6 +108,8 @@ model Branch {
   auditEventBranches OrganizationAuditEventBranch[]
   devices            Device[]
   mediaAssets        MediaAsset[]
+  playlists          Playlist[]
+  programmingGroups  ProgrammingGroupBranch[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
   @@index([companyId, status, name], map: "branches_company_status_name_idx")
@@ -131,6 +138,7 @@ model Membership {
   deviceAuditEvents DeviceAuditEvent[]       @relation("DeviceAuditActorMembership")
   createdMedia      MediaAsset[]             @relation("MediaCreator")
   mediaAuditEvents  MediaAuditEvent[]        @relation("MediaAuditActorMembership")
+  programmingAudit  ProgrammingAuditEvent[]  @relation("ProgrammingAuditActorMembership")
 
   // One current (not REMOVED) membership per principal and company is a
   // partial unique index in the reviewed SQL, which Prisma cannot express.

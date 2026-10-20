@@ -279,6 +279,17 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0028 accepted, complete PJ-34 and merge PJ-09 work. A rejected or changed item updates the design and, where it changes the mechanism, ADR-0028.
 **Evidence / blocker:** 2026-10-19: the owner asked for development to continue autonomously; the design and ADR-0028 were drafted, linked from the plan, the product architecture and the decision index, and implemented on the same branch following the recommended options so the review can see working behavior. The same day the owner approved all nine decisions as proposed, including ADR-0028, on the decision card in the project thread; implementation continues in PJ-09.
 
+## PH-24
+
+- [x] **Review and approve the proposed D-06 programming design and ADR-0029.**
+
+**Status:** completed. **Owner:** project owner, with engineering review.
+**Dependency / trigger:** [PJ-35](implementation-plan.md#current-work); gates merging [PJ-10](implementation-plan.md#current-work), which every publication and screen schedule needs, and through it PJ-11/PJ-12/PJ-20.
+**Request and reason:** Read the [programming design](programming-design.md) and the proposed [ADR-0029](../adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md), then approve, reject or adjust each of the design's [eleven decisions for review](programming-design.md#decisions-for-review): (1) reusable company or branch playlists and one program per group and per screen; (2) groups with a fixed branch span; (3) the rule representation; (4) wall-clock conflict validation; (5) the DST handoff refinement of P14; (6) the Temporal-based evaluator with `temporal-polyfill` and canonical fixtures; (7) items and transitions; (8) `programming.view`/`programming.edit`/`programming.assign`; (9) the unpublished-destination confirmation; (10) deletion only when unused; (11) the limits. Decision 5 refines an owner-selected policy, and the others shape every customer's schedules, which the repository requires the owner, not an agent, to approve.
+**Configuration:** none. The design adds no setting.
+**Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0029 accepted, complete PJ-35 and merge PJ-10 work. A rejected or changed item updates the design and, where it changes the mechanism, ADR-0029.
+**Evidence / blocker:** 2026-10-19: the owner asked for development to continue autonomously; the design and ADR-0029 were drafted, linked from the plan, the product architecture and the decision index, and are being implemented following the recommended options so the review can see working behavior. The same day the owner approved all eleven decisions as proposed, including ADR-0029, on the decision card in the project thread; implementation continues in PJ-10 ([pull request #11](https://github.com/GabriellMDias/teluni/pull/11)).
+
 ## New action template
 
 Allocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the blocked or conditional plan task.

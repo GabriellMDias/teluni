@@ -1,0 +1,112 @@
+{
+  "kind": "database",
+  "name": "programming_groups",
+  "description": "A company-owned group of screens that share one program, spanning the whole company or a fixed set of branches.",
+  "owner": "Programming",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created with its program; renames and span changes bump the version. Deleted at runtime, with its program and span rows, only when it has no member screens.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable group UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the group; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display name, trimmed, 1 to 80 characters, unique in the company ignoring case.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "all_branches",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "True when the group spans every branch of the company; otherwise programming_group_branches lists its span.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency version, starting at 1.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of creation.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "programming_groups_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A group belongs to an existing company."
+    },
+    {
+      "Object": "programming_groups_name_trimmed",
+      "Physical definition": "CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))",
+      "Purpose": "Names are trimmed and not empty."
+    },
+    {
+      "Object": "programming_groups_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique group identity."
+    },
+    {
+      "Object": "programming_groups_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "programming_groups_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX programming_groups_company_id_id_key ON public.programming_groups USING btree (company_id, id)",
+      "Purpose": "Tenant key for groups."
+    },
+    {
+      "Object": "programming_groups_company_name_unique",
+      "Physical definition": "CREATE UNIQUE INDEX programming_groups_company_name_unique ON public.programming_groups USING btree (company_id, lower((name)::text))",
+      "Purpose": "Group names are unique in a company, ignoring case."
+    }
+  ]
+}

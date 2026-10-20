@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "getDeviceSelf",
   "summary": "",
-  "description": "The calling screen's configuration. An active screen receives authorizedUntil, seven days after this successful renewal (AT-15), which it must stop protected playback at. An unlinked screen learns only that it must clear its private content and credential, then confirm the erasure. A screen of a suspended company receives no renewal.",
+  "description": "The calling screen's configuration, including the time zone that schedules use: its explicit zone, otherwise its branch's. An active screen receives authorizedUntil, seven days after this successful renewal (AT-15), which it must stop protected playback at. An unlinked screen learns only that it must clear its private content and credential, then confirm the erasure. A screen of a suspended company receives no renewal.",
   "security": [{ "deviceCredential": [] }],
   "components": {
     "securitySchemes": {
@@ -33,6 +33,7 @@
               "clearRequired",
               "name",
               "branch",
+              "timeZone",
               "rotation",
               "authorizedUntil",
               "serverTime"
@@ -79,6 +80,9 @@
                   { "type": "null" }
                 ]
               },
+              "timeZone": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
               "rotation": {
                 "anyOf": [
                   {
@@ -112,6 +116,7 @@
           "clearRequired",
           "name",
           "branch",
+          "timeZone",
           "rotation",
           "authorizedUntil",
           "serverTime"
@@ -158,6 +163,7 @@
               { "type": "null" }
             ]
           },
+          "timeZone": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
           "rotation": {
             "anyOf": [
               {
@@ -199,6 +205,7 @@
           "required": true
         },
         { "name": "branch", "type": "object | null", "required": true },
+        { "name": "timeZone", "type": "string | null", "required": true },
         {
           "name": "rotation",
           "type": "0 | 90 | 180 | 270 | null",

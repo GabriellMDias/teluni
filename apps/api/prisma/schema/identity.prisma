@@ -32,6 +32,7 @@ model Principal {
   deviceAudit      DeviceAuditEvent[]       @relation("DeviceAuditActor")
   createdMedia     MediaAsset[]             @relation("MediaCreatorPrincipal")
   mediaAudit       MediaAuditEvent[]        @relation("MediaAuditActor")
+  programmingAudit ProgrammingAuditEvent[]  @relation("ProgrammingAuditActor")
 
   @@unique([issuer, subject], map: "principals_issuer_subject_key")
   @@map("principals")

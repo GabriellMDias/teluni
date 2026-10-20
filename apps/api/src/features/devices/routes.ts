@@ -38,7 +38,12 @@ const defaultLimits: DeviceRouteLimits = {
 const deviceWire = (device: DeviceView) => ({
   id: device.id,
   name: device.name,
-  branch: { id: device.branchId, name: device.branchName },
+  branch: {
+    id: device.branchId,
+    name: device.branchName,
+    timeZone: device.branchTimeZone,
+  },
+  timeZone: device.timeZone,
   rotation: device.rotation,
   status: device.status,
   erasure: device.erasure,
@@ -319,6 +324,9 @@ export function registerDeviceRoutes(
                           : {}),
                         ...(body.rotation !== undefined
                           ? { rotation: body.rotation as Rotation }
+                          : {}),
+                        ...(body.timeZone !== undefined
+                          ? { timeZone: body.timeZone as string | null }
                           : {}),
                       },
                     ),

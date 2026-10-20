@@ -1,0 +1,97 @@
+{
+  "kind": "database",
+  "name": "programming_device_settings",
+  "description": "A screen's programming source: its group, if any, and whether individual programming is selected.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Created by the first assignment; each assignment, or a move outside the group's span, updates it and bumps the version. Kept with the device record after unlinking.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the screen (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "device_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Screen these settings belong to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "group_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Group the screen belongs to.",
+      "Null meaning": "The screen belongs to no group and is programmed individually.",
+      "Unit": "—"
+    },
+    {
+      "Column": "individual",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "false",
+      "Classification": "INTERNAL",
+      "Meaning": "True when the screen uses its own program although it belongs to a group.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency version, starting at 1; the API reports 0 for a screen never assigned.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "programming_device_settings_company_id_device_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The screen belongs to the same company."
+    },
+    {
+      "Object": "programming_device_settings_company_id_group_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The group belongs to the same company and cannot be deleted while it has members."
+    },
+    {
+      "Object": "programming_device_settings_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, device_id)",
+      "Purpose": "One settings row per screen."
+    },
+    {
+      "Object": "programming_device_settings_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "programming_device_settings_group_idx",
+      "Physical definition": "CREATE INDEX programming_device_settings_group_idx ON public.programming_device_settings USING btree (company_id, group_id)",
+      "Purpose": "Lists a group's member screens."
+    }
+  ]
+}

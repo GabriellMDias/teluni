@@ -90,6 +90,7 @@
                     "id",
                     "name",
                     "branch",
+                    "timeZone",
                     "rotation",
                     "status",
                     "erasure",
@@ -113,15 +114,27 @@
                     },
                     "branch": {
                       "type": "object",
-                      "required": ["id", "name"],
+                      "required": ["id", "name", "timeZone"],
                       "properties": {
                         "id": {
                           "type": "string",
                           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                         },
-                        "name": { "type": "string" }
+                        "name": { "type": "string" },
+                        "timeZone": { "type": "string" }
                       },
                       "additionalProperties": false
+                    },
+                    "timeZone": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "pattern": "^[A-Za-z][A-Za-z0-9_+/-]*$"
+                        },
+                        { "type": "null" }
+                      ]
                     },
                     "rotation": {
                       "anyOf": [
@@ -263,6 +276,7 @@
                 "id",
                 "name",
                 "branch",
+                "timeZone",
                 "rotation",
                 "status",
                 "erasure",
@@ -286,15 +300,27 @@
                 },
                 "branch": {
                   "type": "object",
-                  "required": ["id", "name"],
+                  "required": ["id", "name", "timeZone"],
                   "properties": {
                     "id": {
                       "type": "string",
                       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                     },
-                    "name": { "type": "string" }
+                    "name": { "type": "string" },
+                    "timeZone": { "type": "string" }
                   },
                   "additionalProperties": false
+                },
+                "timeZone": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "pattern": "^[A-Za-z][A-Za-z0-9_+/-]*$"
+                    },
+                    { "type": "null" }
+                  ]
                 },
                 "rotation": {
                   "anyOf": [
@@ -439,6 +465,16 @@
           "required": true
         },
         { "name": "items[].branch.name", "type": "string", "required": true },
+        {
+          "name": "items[].branch.timeZone",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "items[].timeZone",
+          "type": "string (min length 1, max length 64, pattern ^[A-Za-z][A-Za-z0-9_+/-]*$) | null",
+          "required": true
+        },
         {
           "name": "items[].rotation",
           "type": "0 | 90 | 180 | 270",

@@ -6,6 +6,7 @@ import {
   organizationRoutes,
   OrganizationsNavigation,
 } from "./organizations/routes.js";
+import { programmingRoutes } from "./programming/routes.js";
 import { rootRoute } from "./shell.js";
 import { workspaceRoutes, WorkspaceNavigation } from "./workspace/routes.js";
 
@@ -26,6 +27,7 @@ export const routeTree = rootRoute.addChildren([
   ...organizationRoutes,
   ...deviceRoutes,
   ...mediaRoutes,
+  ...programmingRoutes,
   ...(developerPortal?.documentationRoutes ?? []),
 ]);
 

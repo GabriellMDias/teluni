@@ -1,0 +1,62 @@
+{
+  "kind": "database",
+  "name": "programming_group_branches",
+  "description": "The explicit branch span of a group that does not cover the whole company.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced when the group's span changes; deleted with the group (cascade inside the module). While a row names a branch, archiving that branch is refused.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the group (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "group_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Group whose span this row belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch inside the group's span.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "programming_group_branches_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The branch belongs to the same company."
+    },
+    {
+      "Object": "programming_group_branches_company_id_group_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The group belongs to the same company; rows are deleted with it."
+    },
+    {
+      "Object": "programming_group_branches_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, group_id, branch_id)",
+      "Purpose": "Each branch appears once in a group's span."
+    },
+    {
+      "Object": "programming_group_branches_branch_idx",
+      "Physical definition": "CREATE INDEX programming_group_branches_branch_idx ON public.programming_group_branches USING btree (company_id, branch_id)",
+      "Purpose": "Finds groups whose span names a branch, for the branch archive guard."
+    }
+  ]
+}

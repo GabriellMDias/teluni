@@ -1,0 +1,157 @@
+{
+  "kind": "database",
+  "name": "programming_audit_events",
+  "description": "Append-only record of programming changes and assignments, with the acting member and the branches each change concerns.",
+  "owner": "Programming",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated event UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company the change belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "subject_type",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Kind of subject: playlist, group, program or device.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "subject_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Playlist, group, program or screen the event concerns; not a foreign key, so events outlive deleted subjects.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_ids",
+      "PostgreSQL type": "uuid[]",
+      "Nullable": "yes",
+      "Default": "ARRAY[]::uuid[]",
+      "Classification": "INTERNAL",
+      "Meaning": "Branches the change concerns, for branch-scoped audit reads; empty for company-wide subjects.",
+      "Null meaning": "Never null; an empty array means the subject is company-wide.",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "actor_principal_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Principal that made the change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "actor_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership through which the change was made.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "action",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Event name such as playlist.created, playlist.items_replaced, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "details",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Bounded summary: names, counts, versions and IDs; never media content.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "programming_audit_events_actor_principal_id_fkey",
+      "Physical definition": "FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The actor is a known principal."
+    },
+    {
+      "Object": "programming_audit_events_branch_ids_present",
+      "Physical definition": "CHECK (((branch_ids IS NOT NULL) AND (cardinality(branch_ids) <= 100)))",
+      "Purpose": "The branch list is present and bounded."
+    },
+    {
+      "Object": "programming_audit_events_company_id_actor_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The acting membership belongs to the same company."
+    },
+    {
+      "Object": "programming_audit_events_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An event belongs to an existing company."
+    },
+    {
+      "Object": "programming_audit_events_details_object",
+      "Physical definition": "CHECK ((jsonb_typeof(details) = 'object'::text))",
+      "Purpose": "Details are a JSON object."
+    },
+    {
+      "Object": "programming_audit_events_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique event identity."
+    },
+    {
+      "Object": "programming_audit_events_subject_type",
+      "Physical definition": "CHECK (((subject_type)::text = ANY ((ARRAY['playlist'::character varying, 'group'::character varying, 'program'::character varying, 'device'::character varying])::text[])))",
+      "Purpose": "Subjects come from a closed set."
+    },
+    {
+      "Object": "programming_audit_events_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX programming_audit_events_company_id_id_key ON public.programming_audit_events USING btree (company_id, id)",
+      "Purpose": "Tenant key for events."
+    },
+    {
+      "Object": "programming_audit_events_subject_idx",
+      "Physical definition": "CREATE INDEX programming_audit_events_subject_idx ON public.programming_audit_events USING btree (company_id, subject_id, occurred_at DESC, id DESC)",
+      "Purpose": "Reads a subject's history newest first."
+    }
+  ]
+}

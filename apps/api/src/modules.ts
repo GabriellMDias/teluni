@@ -5,6 +5,7 @@ import { createMailModule } from "./features/mail/module.js";
 import { createMediaModule } from "./features/media/module.js";
 import { createInvitationsModule } from "./features/organizations/invitations-module.js";
 import { createOrganizationsModule } from "./features/organizations/module.js";
+import { createProgrammingModule } from "./features/programming/module.js";
 
 // Composition owned by this repository. Add each API module here; the shared
 // runtime activates the ones whose requirements are configured. A module that
@@ -25,10 +26,15 @@ const devices = createDevicesModule({
   sessions: identity.sessions,
   companies: organizations.companies,
 });
-
 const media = createMediaModule({
   sessions: identity.sessions,
   companies: organizations.companies,
+});
+const programming = createProgrammingModule({
+  sessions: identity.sessions,
+  companies: organizations.companies,
+  devices: devices.devices,
+  media: media.media,
 });
 
 export const apiModules: readonly ApiModule[] = [
@@ -36,6 +42,7 @@ export const apiModules: readonly ApiModule[] = [
   mail.module,
   organizations.module,
   invitations,
-  devices,
+  devices.module,
   media.module,
+  programming,
 ];

@@ -96,6 +96,11 @@
           "classification": "INTERNAL",
           "unit": "degrees"
         },
+        "time_zone": {
+          "description": "Explicit IANA time zone of the screen's local business time, set with devices.manage.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The screen follows its branch's time zone."
+        },
         "status": {
           "description": "ACTIVE screens use every device operation; REVOKED screens can only learn they must clear and confirm it.",
           "classification": "INTERNAL"
@@ -179,7 +184,8 @@
         "devices_revocation_state": "A revocation instant exists exactly for revoked devices.",
         "devices_rotation_pending_only_active": "Only active devices can have a pending credential rotation.",
         "devices_confirmed_without_credential": "A confirmed erasure leaves no credential hash.",
-        "devices_erasure_recorded_state": "An erasure instant exists exactly for confirmed or recorded erasures."
+        "devices_erasure_recorded_state": "An erasure instant exists exactly for confirmed or recorded erasures.",
+        "devices_time_zone_shape": "An explicit time zone looks like an IANA zone name; the API validates it against the runtime's zone database."
       }
     },
     "device_claim_failures": {

@@ -76,6 +76,8 @@ model MediaAsset {
   display               MediaObject?      @relation("MediaDisplay", fields: [companyId, displaySha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
   thumbnail             MediaObject?      @relation("MediaThumbnail", fields: [companyId, thumbnailSha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
   auditEvents           MediaAuditEvent[]
+  // Back-relation of the programming module; never traversed across modules.
+  playlistItems         PlaylistItem[]
 
   @@unique([companyId, id], map: "media_assets_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "media_assets_company_created_idx")

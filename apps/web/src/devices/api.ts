@@ -79,7 +79,7 @@ export async function pairDevice(
 export async function configureDevice(
   companyId: string,
   device: Device,
-  input: { name?: string; rotation?: Rotation },
+  input: { name?: string; rotation?: Rotation; timeZone?: string | null },
 ): Promise<Device> {
   return unwrap(
     await client().PATCH("/companies/{companyId}/devices/{deviceId}", {

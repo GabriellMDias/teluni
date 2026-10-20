@@ -500,17 +500,23 @@ function ConfigureForm({
   const { t } = useDeviceMessages();
   const [name, setName] = useState(device.name);
   const [rotation, setRotation] = useState<Rotation>(device.rotation);
+  const [zone, setZone] = useState(device.timeZone ?? "");
+  const timeZone = zone.trim() || null;
   const save = useMutation({
     mutationFn: () =>
       configureDevice(companyId, device, {
         ...(name.trim() !== device.name ? { name } : {}),
         ...(rotation !== device.rotation ? { rotation } : {}),
+        ...(timeZone !== device.timeZone ? { timeZone } : {}),
       }),
     onSuccess: async (changed) => {
       await onChanged(changed, t.saved);
     },
   });
-  const unchanged = name.trim() === device.name && rotation === device.rotation;
+  const unchanged =
+    name.trim() === device.name &&
+    rotation === device.rotation &&
+    timeZone === device.timeZone;
   return (
     <form
       className="form-stack"
@@ -543,6 +549,18 @@ function ConfigureForm({
           </option>
         ))}
       </select>
+      <label htmlFor="device-time-zone">{t.timeZoneLabel}</label>
+      <input
+        id="device-time-zone"
+        maxLength={64}
+        value={zone}
+        placeholder={device.branch.timeZone}
+        aria-describedby="device-time-zone-hint"
+        onChange={(event) => setZone(event.target.value)}
+      />
+      <p id="device-time-zone-hint" className="hint">
+        {t.timeZoneHint(device.branch.timeZone)}
+      </p>
       {save.error && (
         <Failure
           error={save.error}
@@ -779,6 +797,8 @@ function ScreenDetail({
         <dl className="company-settings">
           <dt>{t.rotationLabel}</dt>
           <dd>{t.rotations[screen.rotation]}</dd>
+          <dt>{t.timeZoneLabel}</dt>
+          <dd>{screen.timeZone ?? t.branchTimeZone(screen.branch.timeZone)}</dd>
           <dt>{t.lastSeen}</dt>
           <dd>
             {screen.lastSeenAt
@@ -812,6 +832,17 @@ function ScreenDetail({
           )}
         </dl>
         <p className="hint">{t.reportNote}</p>
+        {screen.status === "ACTIVE" &&
+          company.access.capabilities.includes("programming.view") && (
+            <p>
+              <Link
+                to="/companies/$companyId/programming/screens/$deviceId"
+                params={{ companyId, deviceId }}
+              >
+                {t.programmingLink}
+              </Link>
+            </p>
+          )}
       </section>
       {manage && screen.status === "ACTIVE" && (
         <>

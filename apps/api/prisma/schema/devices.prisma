@@ -39,28 +39,32 @@ model DeviceEnrollment {
 }
 
 model Device {
-  id                   String             @id @db.Uuid
-  companyId            String             @map("company_id") @db.Uuid
-  branchId             String             @map("branch_id") @db.Uuid
-  enrollmentId         String             @map("enrollment_id") @db.Uuid
-  name                 String             @db.VarChar(80)
+  id                   String                    @id @db.Uuid
+  companyId            String                    @map("company_id") @db.Uuid
+  branchId             String                    @map("branch_id") @db.Uuid
+  enrollmentId         String                    @map("enrollment_id") @db.Uuid
+  name                 String                    @db.VarChar(80)
+  timeZone             String?                   @map("time_zone") @db.VarChar(64)
   rotation             Int
-  status               DeviceStatus       @default(ACTIVE)
-  erasure              DeviceErasure      @default(NONE)
-  credentialHash       Bytes?             @map("credential_hash")
-  nextCredentialHash   Bytes?             @map("next_credential_hash")
-  report               Json               @db.JsonB
-  lastSeenAt           DateTime?          @map("last_seen_at") @db.Timestamptz(3)
-  pairedByMembershipId String             @map("paired_by_membership_id") @db.Uuid
-  pairedAt             DateTime           @default(now()) @map("paired_at") @db.Timestamptz(3)
-  revokedAt            DateTime?          @map("revoked_at") @db.Timestamptz(3)
-  erasureRecordedAt    DateTime?          @map("erasure_recorded_at") @db.Timestamptz(3)
-  version              Int                @default(1)
-  updatedAt            DateTime           @default(now()) @map("updated_at") @db.Timestamptz(3)
-  company              Company            @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  branch               Branch             @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
-  pairedBy             Membership         @relation("DevicePairer", fields: [companyId, pairedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  status               DeviceStatus              @default(ACTIVE)
+  erasure              DeviceErasure             @default(NONE)
+  credentialHash       Bytes?                    @map("credential_hash")
+  nextCredentialHash   Bytes?                    @map("next_credential_hash")
+  report               Json                      @db.JsonB
+  lastSeenAt           DateTime?                 @map("last_seen_at") @db.Timestamptz(3)
+  pairedByMembershipId String                    @map("paired_by_membership_id") @db.Uuid
+  pairedAt             DateTime                  @default(now()) @map("paired_at") @db.Timestamptz(3)
+  revokedAt            DateTime?                 @map("revoked_at") @db.Timestamptz(3)
+  erasureRecordedAt    DateTime?                 @map("erasure_recorded_at") @db.Timestamptz(3)
+  version              Int                       @default(1)
+  updatedAt            DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company              Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch               Branch                    @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  pairedBy             Membership                @relation("DevicePairer", fields: [companyId, pairedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   auditEvents          DeviceAuditEvent[]
+  // Back-relations of the programming module; never traversed across modules.
+  programs             Program[]
+  programmingSetting   ProgrammingDeviceSetting?
 
   @@unique([companyId, id], map: "devices_company_id_id_key")
   @@unique([enrollmentId], map: "devices_enrollment_key")
