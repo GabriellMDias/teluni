@@ -4,6 +4,15 @@
     "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Migration tooling",
+    "anchor": "migration-tooling",
+    "text": "Migration tooling\nOrion will use **Prisma Migrate** as its primary migration-generation and deployment tooling.\nDatabase evolution will be represented through version-controlled SQL migration files.\nThe normal development flow is:\nchange persistence schema\n    ↓\ngenerate migration\n    ↓\ninspect generated SQL\n    ↓\nadjust SQL when necessary\n    ↓\nvalidate migration\n    ↓\ncommit schema and migration\n\nGenerated migrations must be reviewed before they become part of released migration history.\nGenerated SQL is not assumed to be operationally safe merely because it was produced by Prisma.\nMigrations involving large tables, backfills, constraint changes, destructive operations, compatibility periods, or zero-downtime requirements may require manually edited or multi-step SQL migrations.\nOrion's existing migration policy remains authoritative:\nreleased migration history\n    → immutable\n\nunreleased development migration history\n    → refinable\n\nBefore release, migrations may be regenerated, consolidated, reordered, or removed when doing so produces a smaller coherent migration history and no durable environment depends on the previous history.\nAfter a migration reaches an environment whose migration history is considered durable, changes must be represented by new migrations.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "db push",
     "anchor": "db-push",
     "text": "`db push`\n`prisma db push` will **not be part of Orion's canonical database-evolution workflow** for durable application development.\nThe normal Orion development path will use versioned migrations from the beginning.\n`db push` may be used only in explicitly disposable experimentation or tooling contexts where migration history is intentionally irrelevant.\nIt must not be used to evolve production, staging, shared durable development environments, or other databases whose migration history must remain reproducible.\n"
@@ -1015,14 +1024,5 @@
     "heading": "References",
     "anchor": "references",
     "text": "References\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated ADR: [ADR-0008: Select React, Vite, and TanStack for Web Applications](0008-select-react-vite-and-tanstack-for-web-applications.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nExternal reference: Vitest documentation.\nExternal reference: Vitest Browser Mode documentation.\nExternal reference: Testcontainers for Node.js documentation.\nExternal reference: Fastify testing documentation.\nExternal reference: Playwright documentation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "anchor": "adr-0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "text": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
   }
 ]

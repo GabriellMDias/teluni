@@ -228,7 +228,12 @@ Implemented in [PJ-11](implementation-plan.md#current-work) on 2026-10-19, incre
 - The sync exchange, delivery of the desired publication's manifest and renditions with ranges and at most two downloads per screen, screen states and 30-day transitions, the `publication` media guard, hourly pruning, and the programming assignment that asks for confirmation only for unpublished destinations.
 - [Domain tests](../../apps/api/test/publications/domain.test.ts) for exact manifest bytes, fixture-format rules, digests, statements with rotated keys, authorization lists, AT-24 thresholds and protocol agreement, and the [two-company integration suite](../../apps/api/test/publications/integration.test.ts) with simulated screens against PostgreSQL as the runtime role.
 
-Pending: increment 2 (panel pages and the end-to-end journey with a simulated player) and increment 3.
+Increment 2, the same day:
+
+- The panel's Publicação section on group pages and on the programming of screens with individual programming ([`publications.tsx`](../../apps/web/src/programming/publications.tsx)), the assignment form that asks for confirmation only for unpublished destinations, member screen states on group pages, and the screen's synchronization section and list states in Telas ([`sync.tsx`](../../apps/web/src/devices/sync.tsx)).
+- Browser component tests for the review, problems, a draft changed after review, restore, the published-destination assignment and the synchronization section, and the [publication journey](../../apps/web/test/e2e/publications/journey.spec.ts) with a simulated player that verifies its statement, manifest and media.
+
+Pending: increment 3.
 
 ## Decisions for review
 

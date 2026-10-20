@@ -4,6 +4,13 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale } from "../locale.js";
+import {
+  listScreenStates,
+  screenStatesKey,
+  syncRefreshMs,
+} from "../devices/api.js";
+import { deviceMessages } from "../devices/messages.js";
+import { syncSummary } from "../devices/sync.js";
 import { contentUrl } from "../media/api.js";
 import {
   companyKey,
@@ -30,11 +37,13 @@ import {
   listGroups,
   listPlaylistChoices,
   listPlaylists,
+  listPublications,
   listSelectableMedia,
   playlistKey,
   playlistsKey,
   previewRange,
   programKey,
+  publicationsKey,
   replacePlaylistItems,
   replaceScreenOutput,
   timelineKey,
@@ -48,6 +57,7 @@ import {
   type Transition,
 } from "./api.js";
 import { programmingMessages } from "./messages.js";
+import { PublicationPanel } from "./publications.js";
 
 export type ProgrammingFilter = Readonly<{
   view?: "groups";
@@ -1734,7 +1744,7 @@ function GroupDetail({
   groupId: string;
   company: CompanyWithAccess;
 }) {
-  const { t } = useProgrammingMessages();
+  const { locale, t } = useProgrammingMessages();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const branches = useBranchChoices(companyId);
@@ -1743,6 +1753,14 @@ function GroupDetail({
     queryKey: groupKey(companyId, groupId),
     queryFn: () => getGroup(companyId, groupId),
   });
+  const memberIds = (group.data?.members ?? []).map((member) => member.id);
+  const states = useQuery({
+    queryKey: screenStatesKey(companyId, memberIds),
+    queryFn: () => listScreenStates(companyId, memberIds),
+    enabled: memberIds.length > 0 && can(company, "devices.view"),
+    refetchInterval: syncRefreshMs,
+  });
+  const screenText = deviceMessages[locale];
   if (group.isPending) return <p>{t.loading}</p>;
   if (group.isError)
     return (
@@ -1791,6 +1809,11 @@ function GroupDetail({
                   {member.name}
                 </Link>
                 <span className="hint">{member.branch.name}</span>
+                {states.data?.get(member.id) && (
+                  <span className="hint">
+                    {syncSummary(states.data.get(member.id)!, screenText)}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -1807,6 +1830,12 @@ function GroupDetail({
         companyId={companyId}
         source={{ kind: "group", groupId }}
         zones={zones}
+      />
+      <PublicationPanel
+        companyId={companyId}
+        source={{ kind: "group", groupId }}
+        company={company}
+        returnTo={`/companies/${companyId}/programming/groups/${groupId}`}
       />
       {edit && (
         <>
@@ -1913,12 +1942,28 @@ function AssignmentForm({
       updatedAt: "",
       version: 1,
     });
+  // The destination's latest publication decides whether the person must
+  // confirm a neutral screen; until it is known, confirmation is asked.
+  const destination: ProgramSource | null =
+    groupId === HIDDEN_GROUP
+      ? null
+      : groupId && !individual
+        ? { kind: "group", groupId }
+        : { kind: "device", deviceId: current.device.id };
+  const published = useQuery({
+    queryKey: destination
+      ? [...publicationsKey(companyId, destination), "latest"]
+      : ["programming", "publications", companyId, "none"],
+    queryFn: () => listPublications(companyId, destination!, { limit: 1 }),
+    enabled: destination !== null,
+  });
+  const latest = published.data?.items[0] ?? null;
   const assign = useMutation({
     mutationFn: () =>
       assignDevice(companyId, current, {
         groupId: groupId || null,
         individual: groupId ? individual : false,
-        confirmUnpublished: confirmed,
+        confirmUnpublished: latest ? false : confirmed,
       }),
     onSuccess: () => onChanged(t.assigned),
   });
@@ -1961,14 +2006,18 @@ function AssignmentForm({
           {t.individualLabel}
         </label>
       )}
-      <label className="checkbox-row">
-        <input
-          type="checkbox"
-          checked={confirmed}
-          onChange={(event) => setConfirmed(event.target.checked)}
-        />
-        {t.confirmUnpublished}
-      </label>
+      {latest ? (
+        <p className="hint">{t.publishedDestination(latest.generation)}</p>
+      ) : (
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={confirmed}
+            onChange={(event) => setConfirmed(event.target.checked)}
+          />
+          {t.confirmUnpublished}
+        </label>
+      )}
       {assign.error && (
         <Failure
           error={assign.error}
@@ -1984,7 +2033,7 @@ function AssignmentForm({
         className="button-primary"
         disabled={
           unchanged ||
-          !confirmed ||
+          (!latest && !confirmed) ||
           assign.isPending ||
           mustReload(assign.error)
         }
@@ -2117,6 +2166,14 @@ function ScreenProgrammingDetail({
         companyId={companyId}
         source={{ kind: "device", deviceId }}
       />
+      {current.source === "individual" && (
+        <PublicationPanel
+          companyId={companyId}
+          source={{ kind: "device", deviceId }}
+          company={company}
+          returnTo={returnTo}
+        />
+      )}
     </>
   );
 }

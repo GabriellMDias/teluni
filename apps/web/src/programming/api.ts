@@ -397,3 +397,126 @@ export async function getTimeline(
     programmingErrorCodes,
   );
 }
+
+// Publications of a program (PJ-11): history, check, publish and restore.
+
+export const publicationErrorCodes: ReadonlySet<string> = new Set([
+  ...programmingErrorCodes,
+  "PUBLICATION_INVALID",
+  "PUBLICATION_NOT_RESTORABLE",
+]);
+
+export type PublicationPage = Json<
+  paths["/companies/{companyId}/programming/groups/{groupId}/publications"]["get"]
+>;
+export type Publication = PublicationPage["items"][number];
+export type PublicationCheck = Json<
+  paths["/companies/{companyId}/programming/groups/{groupId}/publications/check"]["post"]
+>;
+export type PublicationProblem = PublicationCheck["problems"][number];
+
+export const publicationsKey = (companyId: string, source: ProgramSource) =>
+  [
+    "programming",
+    "publications",
+    companyId,
+    source.kind === "group" ? source.groupId : source.deviceId,
+  ] as const;
+
+export async function listPublications(
+  companyId: string,
+  source: ProgramSource,
+  options: { limit?: number; cursor?: string } = {},
+): Promise<PublicationPage> {
+  const api = client();
+  const query = {
+    limit: options.limit ?? 10,
+    ...(options.cursor ? { cursor: options.cursor } : {}),
+  };
+  return unwrap(
+    source.kind === "group"
+      ? await api.GET(
+          "/companies/{companyId}/programming/groups/{groupId}/publications",
+          { params: { path: { companyId, groupId: source.groupId }, query } },
+        )
+      : await api.GET(
+          "/companies/{companyId}/programming/devices/{deviceId}/publications",
+          { params: { path: { companyId, deviceId: source.deviceId }, query } },
+        ),
+    publicationErrorCodes,
+  );
+}
+
+export async function checkPublication(
+  companyId: string,
+  source: ProgramSource,
+): Promise<PublicationCheck> {
+  const api = client();
+  return unwrap(
+    source.kind === "group"
+      ? await api.POST(
+          "/companies/{companyId}/programming/groups/{groupId}/publications/check",
+          { params: { path: { companyId, groupId: source.groupId } } },
+        )
+      : await api.POST(
+          "/companies/{companyId}/programming/devices/{deviceId}/publications/check",
+          { params: { path: { companyId, deviceId: source.deviceId } } },
+        ),
+    publicationErrorCodes,
+  );
+}
+
+/** Publishes exactly the reviewed content; a changed draft is a conflict. */
+export async function publishProgram(
+  companyId: string,
+  source: ProgramSource,
+  contentDigest: string,
+): Promise<{ publication: Publication; created: boolean }> {
+  const api = client();
+  return unwrap(
+    source.kind === "group"
+      ? await api.POST(
+          "/companies/{companyId}/programming/groups/{groupId}/publications",
+          {
+            params: { path: { companyId, groupId: source.groupId } },
+            body: { contentDigest },
+          },
+        )
+      : await api.POST(
+          "/companies/{companyId}/programming/devices/{deviceId}/publications",
+          {
+            params: { path: { companyId, deviceId: source.deviceId } },
+            body: { contentDigest },
+          },
+        ),
+    publicationErrorCodes,
+  );
+}
+
+export async function restorePublication(
+  companyId: string,
+  source: ProgramSource,
+  publicationId: string,
+): Promise<{ publication: Publication; created: boolean }> {
+  const api = client();
+  return unwrap(
+    source.kind === "group"
+      ? await api.POST(
+          "/companies/{companyId}/programming/groups/{groupId}/publications/{publicationId}/restore",
+          {
+            params: {
+              path: { companyId, groupId: source.groupId, publicationId },
+            },
+          },
+        )
+      : await api.POST(
+          "/companies/{companyId}/programming/devices/{deviceId}/publications/{publicationId}/restore",
+          {
+            params: {
+              path: { companyId, deviceId: source.deviceId, publicationId },
+            },
+          },
+        ),
+    publicationErrorCodes,
+  );
+}

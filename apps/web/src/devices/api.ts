@@ -145,3 +145,44 @@ export function latestAuthorization(device: Device): Date | null {
       lastSeenGranularityMs,
   );
 }
+
+// Screen synchronization (PJ-11): what each screen should play and what it
+// last reported. Reported values are the screen's own statements.
+
+export type ScreenState =
+  paths["/companies/{companyId}/devices/{deviceId}/sync-state"]["get"]["responses"][200]["content"]["application/json"];
+
+export const syncStateKey = (companyId: string, deviceId: string) =>
+  ["devices", "sync", companyId, deviceId] as const;
+export const screenStatesKey = (companyId: string, deviceIds: string[]) =>
+  ["devices", "sync-list", companyId, ...deviceIds] as const;
+
+/** AT-14: an acknowledgement shows within 10 seconds of reaching the API. */
+export const syncRefreshMs = 5_000;
+
+export async function getSyncState(
+  companyId: string,
+  deviceId: string,
+): Promise<ScreenState> {
+  return unwrap(
+    await client().GET("/companies/{companyId}/devices/{deviceId}/sync-state", {
+      params: { path: { companyId, deviceId } },
+    }),
+    deviceErrorCodes,
+  );
+}
+
+/** States of up to 100 screens; ones the caller cannot see are omitted. */
+export async function listScreenStates(
+  companyId: string,
+  deviceIds: string[],
+): Promise<Map<string, ScreenState>> {
+  if (deviceIds.length === 0) return new Map();
+  const body = unwrap(
+    await client().GET("/companies/{companyId}/publications/screen-states", {
+      params: { path: { companyId }, query: { deviceId: deviceIds } },
+    }),
+    deviceErrorCodes,
+  );
+  return new Map(body.items.map((item) => [item.deviceId, item]));
+}

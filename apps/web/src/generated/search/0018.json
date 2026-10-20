@@ -4,6 +4,15 @@
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "anchor": "adr-0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "text": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Context",
     "anchor": "context",
     "text": "Context\nOrion requires a concrete observability strategy before production-oriented backend implementation proceeds further.\nThe strategy must support applications ranging from small deployments to large distributed systems while preserving the ability to choose different observability backends according to product, hosting, regulatory, operational, and cost requirements.\nObservability must provide enough information to understand:\nwhether a system is healthy;\nwhat failed;\nwhere a failure occurred;\nhow requests move through the system;\nwhich dependencies contributed to latency;\nhow infrastructure and application behavior change over time;\nwhether important operational thresholds are being approached;\nhow logs from different components relate to the same request or distributed operation.\nOrion has already selected Pino as the structured logging implementation for the Fastify runtime.\nThat decision establishes the technical logger but does not define:\nlog structure;\ncorrelation semantics;\nredaction;\ntracing;\nmetrics;\ntelemetry propagation;\nsampling;\nexporting;\nerror reporting;\nobservability backend selection.\nOrion must also avoid coupling application code to a specific monitoring vendor.\nA project may eventually use systems such as Grafana, Datadog, Honeycomb, New Relic, Azure Monitor, cloud-provider-native tooling, or another compatible platform.\nThe application architecture should not need to change merely because the telemetry destination changes.\nObservability must also remain distinct from business audit history.\nOperational logs and traces are optimized for diagnostics, reliability, and performance investigation.\nAudit history may require different guarantees around persistence, retention, authorization, immutability, and business semantics.\nThese responsibilities must not be conflated.\n"
@@ -1195,14 +1204,5 @@
     "heading": "GitHub template repository",
     "anchor": "github-template-repository",
     "text": "GitHub template repository\nTemplates create an unrelated history. They make project creation easy but lose the shared ancestry that three-way upgrade merges need, and they record no provenance.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Fork or shared-history repository with Orion as origin",
-    "anchor": "fork-or-shared-history-repository-with-orion-as-origin",
-    "text": "Fork or shared-history repository with Orion as `origin`\nWorking directly from a fork or clone that still pushes to Orion risks product work reaching the canonical repository, couples project pull requests and settings to Orion, and blurs project and foundation history.\n"
   }
 ]

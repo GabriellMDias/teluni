@@ -385,3 +385,67 @@ test("asks to reload after a version conflict", async () => {
     branchId: branchB,
   });
 });
+
+const publicationId = "00000000-0000-4000-8000-0000000000b1";
+
+test("shows a screen's synchronization as the screen reported it", async () => {
+  const state = {
+    deviceId,
+    connection: "online",
+    lastContactAt: "2026-10-19T12:00:00.000Z",
+    source: "group",
+    desired: { publicationId, generation: 2 },
+    publication: "failed",
+    reported: {
+      receivedAt: "2026-10-19T12:00:00.000Z",
+      appVersion: "1.2.0",
+      protocol: 1,
+      active: { publicationId, generation: 1, since: null },
+      staging: {
+        publicationId,
+        generation: 2,
+        state: "FAILED",
+        failure: "STORAGE_FULL",
+        bytesDone: 10,
+        bytesTotal: 100,
+      },
+      playback: "PLAYING",
+      storage: { freeBytes: 1.5e9, totalBytes: 8e9 },
+    },
+  };
+  respond((url) => {
+    if (url.pathname.endsWith(`/devices/${deviceId}/sync-state`))
+      return { body: state };
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    if (url.pathname.endsWith("/publications/screen-states"))
+      return { body: { items: [state] } };
+    if (url.pathname.endsWith("/devices"))
+      return { body: { items: [device()], nextCursor: null } };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["devices.view"]) };
+  });
+  const { screen } = await open(`${screensPath}/${deviceId}`);
+  const sync = screen.getByTestId("screen-sync");
+  await expect.element(sync).toBeVisible();
+  await expect
+    .element(sync.getByText(t.sync.connection.online, { exact: false }))
+    .toBeVisible();
+  await expect.element(sync.getByText(t.sync.publication.failed)).toBeVisible();
+  await expect.element(sync.getByText(t.sync.desired(2, true))).toBeVisible();
+  await expect.element(sync.getByText(t.sync.active(1))).toBeVisible();
+  await expect
+    .element(sync.getByText(t.sync.failure.STORAGE_FULL))
+    .toBeVisible();
+  await expect.element(sync.getByText(t.sync.playback.PLAYING)).toBeVisible();
+  await expect.element(screen.getByText(t.sync.note)).toBeVisible();
+  // The list shows each screen's connection and publication.
+  const { screen: list } = await open(screensPath);
+  await expect
+    .element(
+      list.getByText(
+        `${t.sync.connection.online} · ${t.sync.publication.failed}`,
+      ),
+    )
+    .toBeVisible();
+});

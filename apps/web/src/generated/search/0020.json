@@ -4,6 +4,15 @@
     "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nScreens **poll**. Every 30 seconds a screen calls `POST /device/sync` with its state report and receives its status, time zone, desired publication and a new authorization statement. The server computes the desired publication from current rows at each call; it keeps no push channel and no per-screen delivery queue.\nA publication's **manifest** is UTF-8 JSON produced in a fixed key order, stored as exact bytes and identified by their SHA-256. Media are delivered as display renditions identified by SHA-256. Manifests and media are downloadable only for the screen's current desired publication; superseded work coalesces by synchronizing again.\nEach sync response carries an **authorization statement**: a compact JWS signed with ECDSA P-256 and SHA-256 (`ES256`) by the first key of a configured key ring. It names the screen and company, the server time of issue, an expiry seven days later and the publications (ID and manifest SHA-256) the screen may activate or keep active until then. The key set's public halves are served to screens, which pin them after pairing.\nManifests and exchanges carry a **protocol** number; the server answers with the highest protocol both sides support and serializes publications in the current and previous protocol for at least 90 days after a new one (AT-26).\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
     "text": "Rationale\nPolling at 30 seconds meets AT-11 and doubles as the AT-24 heartbeat with one request per screen, uses only the HTTPS path the device credential already protects, and survives proxies, restarts and the single-host deployment without connection state. Deriving desired state from authoritative rows makes ordering a property of the database rather than of message delivery, so no acknowledgement or crash can roll a screen back or lose an assignment. Exact stored bytes give the manifest an identity that a statement can sign; a structure regenerated or normalized on each request could not. A per-screen statement binds entitlement, expiry and a signed server time in one object the player can check offline and store next to its active generation, which makes the seven-day deadline and the choice of content tamper-evident on the device and gives the trusted clock a server reference. ECDSA P-256 is implemented by Node.js and by Android's standard security providers, so neither side needs a new cryptographic dependency.\n"

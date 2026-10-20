@@ -307,7 +307,7 @@ export function registerPublicationRoutes(
                   .header("cache-control", "private, no-store")
                   .header("etag", `"${manifest.sha256}"`)
                   .header("x-content-type-options", "nosniff")
-                  .type("application/vnd.teluni.publication+json")
+                  .type("application/octet-stream")
                   .header("content-length", manifest.bytes.length)
                   .send(manifest.bytes);
               }

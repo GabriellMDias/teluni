@@ -153,6 +153,81 @@ const ptBR = {
   stepUpNotice:
     "Escolher a programação das telas exige verificação em duas etapas nesta empresa.",
   stepUpButton: "Verificar em duas etapas",
+  publishedDestination: (generation: number) =>
+    `O destino escolhido tem a geração ${generation} publicada; a tela passa a exibi-la na próxima sincronização.`,
+  publication: {
+    title: "Publicação",
+    lead: "Publicar torna o rascunho atual uma nova geração, que as telas recebem em até 30 segundos quando conectadas.",
+    never:
+      "Nada foi publicado ainda: as telas desta programação mostram a tela neutra.",
+    current: (generation: number, when: string, byYou: boolean) =>
+      `Geração ${generation}, publicada em ${when} ${byYou ? "por você" : "por outro membro"}.`,
+    stepUp: "Publicar exige verificação em duas etapas.",
+    review: "Revisar para publicar",
+    reviewing: "Revisando…",
+    reviewTitle: "Revisão da publicação",
+    unchanged:
+      "O rascunho é igual à geração publicada. Não há nada novo a publicar.",
+    summary: (
+      rules: number,
+      playlists: number,
+      items: number,
+      media: number,
+      size: string,
+    ) =>
+      `${rules === 1 ? "1 horário" : `${rules} horários`} · ${
+        playlists === 1 ? "1 playlist" : `${playlists} playlists`
+      } · ${items === 1 ? "1 item" : `${items} itens`} · ${
+        media === 1 ? "1 mídia" : `${media} mídias`
+      } (${size})`,
+    followers: (count: number) =>
+      count === 0
+        ? "Nenhuma tela segue esta programação agora."
+        : count === 1
+          ? "1 tela segue esta programação e vai recebê-la."
+          : `${count} telas seguem esta programação e vão recebê-la.`,
+    problemsTitle: "Corrija antes de publicar",
+    problems: {
+      NOTHING_TO_PUBLISH: "Esta programação ainda não tem horários nem padrão.",
+      SCHEDULE_INVALID:
+        "Os horários salvos não passam mais na validação. Revise-os e salve de novo.",
+      PLAYLIST_OUT_OF_SCOPE:
+        "Uma playlist é de uma filial que esta programação não cobre, como a filial anterior da tela.",
+      MEDIA_UNAVAILABLE: "Uma mídia de uma playlist não está mais disponível.",
+      TRANSITION_UNSUPPORTED:
+        "Uma playlist usa a transição Esmaecer, que ainda não foi qualificada nas telas. Use Corte seco para publicar.",
+      TOO_LARGE: "A publicação passa de 2.000 itens ou 1.000 mídias.",
+    } as Record<string, string>,
+    publish: "Publicar agora",
+    publishing: "Publicando…",
+    cancel: "Cancelar",
+    published: (generation: number) =>
+      `Geração ${generation} publicada. As telas conectadas recebem em até 30 segundos.`,
+    alreadyPublished: (generation: number) =>
+      `O conteúdo já era a geração ${generation}; nada mudou.`,
+    changedSinceReview:
+      "A programação mudou depois da revisão. Revise de novo antes de publicar.",
+    historyTitle: "Gerações publicadas",
+    historyEmpty: "Nenhuma geração ainda.",
+    generation: (generation: number) => `Geração ${generation}`,
+    restoredFrom: (generation: number) => `restaura a geração ${generation}`,
+    byYou: "por você",
+    byOther: "por outro membro",
+    states: {
+      current: "atual",
+      retained: "pode ser restaurada",
+      pruned: "não é mais guardada",
+    },
+    restore: "Restaurar",
+    restoreConfirm: (generation: number) =>
+      `Publicar de novo o conteúdo da geração ${generation}? Os rascunhos não mudam.`,
+    restoreYes: "Restaurar como nova geração",
+    restoring: "Restaurando…",
+    restored: (generation: number) =>
+      `Conteúdo restaurado como geração ${generation}.`,
+    more: "Gerações anteriores",
+    membersSync: "Sincronização das telas",
+  },
   errors: {
     PROGRAMMING_LIMIT_REACHED:
       "A empresa chegou a um limite de programação: 1.000 playlists, 100 grupos, 2.000 programações, 500 itens por playlist ou 200 horários.",
@@ -169,6 +244,10 @@ const ptBR = {
     SCHEDULE_CONFLICT: "Dois horários se sobrepõem.",
     ASSIGNMENT_CONFIRMATION_REQUIRED:
       "Confirme que a tela vai mostrar a tela neutra até a publicação.",
+    PUBLICATION_INVALID:
+      "Esta programação não pode ser publicada como está. Revise de novo para ver o que corrigir.",
+    PUBLICATION_NOT_RESTORABLE:
+      "Esta geração não é mais guardada e não pode ser restaurada.",
     TIMELINE_TOO_LARGE:
       "O período tem mudanças demais para mostrar de uma vez.",
     MEDIA_NOT_READY: "Uma das mídias não está pronta ou foi arquivada.",
@@ -344,6 +423,81 @@ const enUS: Messages = {
   stepUpNotice:
     "Choosing the screens' programming requires two-step verification in this company.",
   stepUpButton: "Verify with two steps",
+  publishedDestination: (generation: number) =>
+    `The chosen destination has generation ${generation} published; the screen shows it at its next synchronization.`,
+  publication: {
+    title: "Publication",
+    lead: "Publishing makes the current draft a new generation, which connected screens receive within 30 seconds.",
+    never:
+      "Nothing is published yet: screens of this programming show a neutral screen.",
+    current: (generation: number, when: string, byYou: boolean) =>
+      `Generation ${generation}, published on ${when} ${byYou ? "by you" : "by another member"}.`,
+    stepUp: "Publishing requires two-step verification.",
+    review: "Review to publish",
+    reviewing: "Reviewing…",
+    reviewTitle: "Publication review",
+    unchanged:
+      "The draft equals the published generation. There is nothing new to publish.",
+    summary: (
+      rules: number,
+      playlists: number,
+      items: number,
+      media: number,
+      size: string,
+    ) =>
+      `${rules === 1 ? "1 schedule" : `${rules} schedules`} · ${
+        playlists === 1 ? "1 playlist" : `${playlists} playlists`
+      } · ${items === 1 ? "1 item" : `${items} items`} · ${
+        media === 1 ? "1 media item" : `${media} media items`
+      } (${size})`,
+    followers: (count: number) =>
+      count === 0
+        ? "No screen follows this programming now."
+        : count === 1
+          ? "1 screen follows this programming and will receive it."
+          : `${count} screens follow this programming and will receive it.`,
+    problemsTitle: "Fix before publishing",
+    problems: {
+      NOTHING_TO_PUBLISH: "This programming has no schedules or default yet.",
+      SCHEDULE_INVALID:
+        "The saved schedules no longer pass validation. Review and save them again.",
+      PLAYLIST_OUT_OF_SCOPE:
+        "A playlist belongs to a branch this programming does not cover, such as the screen's previous branch.",
+      MEDIA_UNAVAILABLE: "A media item of a playlist is no longer available.",
+      TRANSITION_UNSUPPORTED:
+        "A playlist uses the Fade transition, which screens are not qualified for yet. Use Cut to publish.",
+      TOO_LARGE: "The publication exceeds 2,000 items or 1,000 media items.",
+    },
+    publish: "Publish now",
+    publishing: "Publishing…",
+    cancel: "Cancel",
+    published: (generation: number) =>
+      `Generation ${generation} published. Connected screens receive it within 30 seconds.`,
+    alreadyPublished: (generation: number) =>
+      `The content already was generation ${generation}; nothing changed.`,
+    changedSinceReview:
+      "The programming changed after the review. Review again before publishing.",
+    historyTitle: "Published generations",
+    historyEmpty: "No generation yet.",
+    generation: (generation: number) => `Generation ${generation}`,
+    restoredFrom: (generation: number) => `restores generation ${generation}`,
+    byYou: "by you",
+    byOther: "by another member",
+    states: {
+      current: "current",
+      retained: "can be restored",
+      pruned: "no longer kept",
+    },
+    restore: "Restore",
+    restoreConfirm: (generation: number) =>
+      `Publish the content of generation ${generation} again? Drafts do not change.`,
+    restoreYes: "Restore as a new generation",
+    restoring: "Restoring…",
+    restored: (generation: number) =>
+      `Content restored as generation ${generation}.`,
+    more: "Earlier generations",
+    membersSync: "Screen synchronization",
+  },
   errors: {
     PROGRAMMING_LIMIT_REACHED:
       "The company reached a programming limit: 1,000 playlists, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules.",
@@ -360,6 +514,10 @@ const enUS: Messages = {
     SCHEDULE_CONFLICT: "Two schedules overlap.",
     ASSIGNMENT_CONFIRMATION_REQUIRED:
       "Confirm that the screen shows a neutral screen until publication.",
+    PUBLICATION_INVALID:
+      "This programming cannot be published as it is. Review it again to see what to fix.",
+    PUBLICATION_NOT_RESTORABLE:
+      "This generation is no longer kept and cannot be restored.",
     TIMELINE_TOO_LARGE: "The period has too many changes to show at once.",
     MEDIA_NOT_READY: "One of the media items is not ready or was archived.",
     DEVICE_UNLINKED: "This screen was unlinked.",
