@@ -426,7 +426,7 @@ export interface paths {
         /** @description List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification. */
         get: operations["listAccessProfiles"];
         put?: never;
-        /** @description Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish); devices.manage needs devices.view, media.upload and media.archive need media.view, and programming.edit, programming.assign and publications.publish need programming.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification. */
+        /** @description Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); devices.manage needs devices.view, media.upload and media.archive need media.view, programming.edit, programming.assign and publications.publish need programming.view, and catalogs.edit, catalogs.manage and prices.edit need catalogs.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification. */
         post: operations["createAccessProfile"];
         delete?: never;
         options?: never;
@@ -1111,6 +1111,200 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/companies/{companyId}/catalogs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The company's catalogs the caller may view, newest first: company catalogs for anyone who may view catalogs, and catalogs of granted branches. Filter by scope (company or a branch), name text and status. Cursors are bound to the company, caller, visible scope and filters. */
+        get: operations["listCatalogs"];
+        put?: never;
+        /** @description Create a catalog owned by the company (null branch, which needs company-wide authority) or one active branch, optionally with its first fields. The owning scope never changes. Fields: text (maxLength 1-500, 120 by default), longText (1-2,000, 500), number (decimals 0-4, optional minimum and maximum as decimal strings), boolean, date, time, weekdays, selection (1-100 choices with stable IDs), money (an ISO 4217 currency fixed for the field; never required; promotions allowed unless false), media (image items) and reference (a target catalog of the same company that covers this catalog's scope). A field's type, currency, decimals and reference target never change; labels are unique among active fields, ignoring case. Issue reasons: LABEL_INVALID, LABEL_DUPLICATE, UNKNOWN_FIELD, DUPLICATE_FIELD, TYPE_IMMUTABLE, CURRENCY_IMMUTABLE, TARGET_IMMUTABLE, DECIMALS_IMMUTABLE, SETTING_NOT_APPLICABLE, SETTING_INVALID, CHOICES_INVALID, CURRENCY_UNSUPPORTED, REQUIRED_NOT_ALLOWED, TARGET_INVALID, and with a count of stored items FIELD_HAS_VALUES, REQUIRED_MISSING_VALUES, VALUES_TOO_LONG, VALUES_OUT_OF_RANGE, CHOICE_IN_USE and PROMOTIONS_EXIST. */
+        post: operations["createCatalog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One catalog the caller may view, with its ordered fields and item count. */
+        get: operations["getCatalog"];
+        put?: never;
+        post?: never;
+        /** @description Delete an empty catalog with its fields. A catalog with items answers CATALOG_NOT_EMPTY, and one that another catalog's reference field targets answers CATALOG_IN_USE. */
+        delete: operations["deleteCatalog"];
+        options?: never;
+        head?: never;
+        /** @description Rename, archive or restore a catalog with the observed version. An archived catalog is read-only until it is restored. */
+        patch: operations["updateCatalog"];
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Replace the whole ordered field list with the observed catalog version. Fields keep their IDs; new fields and choices get IDs. Leaving a field out deletes it only while no item or price holds a value for it; archive it instead to keep its values. Making a field required, shortening text, narrowing a number range, removing a choice or disallowing promotions is refused while stored items or promotions would break the rule. Fields: text (maxLength 1-500, 120 by default), longText (1-2,000, 500), number (decimals 0-4, optional minimum and maximum as decimal strings), boolean, date, time, weekdays, selection (1-100 choices with stable IDs), money (an ISO 4217 currency fixed for the field; never required; promotions allowed unless false), media (image items) and reference (a target catalog of the same company that covers this catalog's scope). A field's type, currency, decimals and reference target never change; labels are unique among active fields, ignoring case. Issue reasons: LABEL_INVALID, LABEL_DUPLICATE, UNKNOWN_FIELD, DUPLICATE_FIELD, TYPE_IMMUTABLE, CURRENCY_IMMUTABLE, TARGET_IMMUTABLE, DECIMALS_IMMUTABLE, SETTING_NOT_APPLICABLE, SETTING_INVALID, CHOICES_INVALID, CURRENCY_UNSUPPORTED, REQUIRED_NOT_ALLOWED, TARGET_INVALID, and with a count of stored items FIELD_HAS_VALUES, REQUIRED_MISSING_VALUES, VALUES_TOO_LONG, VALUES_OUT_OF_RANGE, CHOICE_IN_USE and PROMOTIONS_EXIST. */
+        put: operations["replaceCatalogSchema"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A catalog's items in their stored order, optionally only those whose active text fields contain the text. Each item carries its title (the first active text field), the branch prices the caller may view, and the media and items it names. Cursors are bound to the company, caller, catalog and text. */
+        get: operations["listCatalogRecords"];
+        put?: never;
+        /** @description Add an item at the end of the catalog, available unless chosen otherwise. Values map field IDs to text, canonical decimal strings with the field's places, booleans, YYYY-MM-DD dates, HH:MM times, weekday lists (1 Monday to 7 Sunday), choice IDs, media IDs or record IDs; null or empty text means absent. Money values are prices, saved through the price operations. At most 16 KiB of values per item. New media must be ready image items of the company or of the catalog's branch; references must name items of the field's target catalog. Issue reasons: UNKNOWN_FIELD, ARCHIVED_FIELD, PRICE_FIELD, REQUIRED, INVALID_TYPE, CONTROL_CHARACTERS, TOO_LONG, NUMBER_FORMAT, OUT_OF_RANGE, DATE_INVALID, TIME_INVALID, WEEKDAYS_INVALID, CHOICE_UNKNOWN, MEDIA_UNAVAILABLE, MEDIA_NOT_IMAGE, MEDIA_SCOPE, REFERENCE_NOT_FOUND and RECORD_TOO_LARGE. */
+        post: operations["createCatalogRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One item of a catalog the caller may view. */
+        get: operations["getCatalogRecord"];
+        put?: never;
+        post?: never;
+        /** @description Delete an item with its prices and promotions. An item that other items refer to answers CATALOG_RECORD_REFERENCED with a REFERRED_BY_RECORDS issue counting them. */
+        delete: operations["deleteCatalogRecord"];
+        options?: never;
+        head?: never;
+        /** @description Replace an item's values (every active field except money; archived fields and prices keep theirs) and/or set its availability, with the observed item version. Values map field IDs to text, canonical decimal strings with the field's places, booleans, YYYY-MM-DD dates, HH:MM times, weekday lists (1 Monday to 7 Sunday), choice IDs, media IDs or record IDs; null or empty text means absent. Money values are prices, saved through the price operations. At most 16 KiB of values per item. Issue reasons: UNKNOWN_FIELD, ARCHIVED_FIELD, PRICE_FIELD, REQUIRED, INVALID_TYPE, CONTROL_CHARACTERS, TOO_LONG, NUMBER_FORMAT, OUT_OF_RANGE, DATE_INVALID, TIME_INVALID, WEEKDAYS_INVALID, CHOICE_UNKNOWN, MEDIA_UNAVAILABLE, MEDIA_NOT_IMAGE, MEDIA_SCOPE, REFERENCE_NOT_FOUND and RECORD_TOO_LARGE. */
+        patch: operations["updateCatalogRecord"];
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Place an item right after another item of the same catalog, or first when afterRecordId is null, with the observed item version. */
+        post: operations["moveCatalogRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts. */
+        put: operations["setCatalogBasePrice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/branches/{branchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. */
+        put: operations["setCatalogBranchPrice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Promotions of an item's money field that the caller may view (scope-wide ones and those of visible branches), by start. */
+        get: operations["listCatalogPromotions"];
+        put?: never;
+        /** @description Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price. */
+        post: operations["createCatalogPromotion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions/{promotionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove a promotion. Promotions are never edited; remove one and add another to change it. */
+        delete: operations["deleteCatalogPromotion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/effective-prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The price each active money field of an item shows at a local minute: a promotion in effect, then the branch price, then the base price. Gives the whole scope's price and, for each visible branch with its own price or promotion, that branch's. */
+        get: operations["getCatalogEffectivePrices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/companies/{companyId}/programming/groups/{groupId}/publications": {
         parameters: {
             query?: never;
@@ -1462,6 +1656,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1481,6 +1681,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1498,6 +1704,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1515,6 +1727,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1561,6 +1779,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1578,6 +1802,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1626,6 +1856,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1643,6 +1879,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1662,6 +1904,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1679,6 +1927,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1696,6 +1950,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1731,6 +1991,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1748,6 +2014,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1765,6 +2037,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1784,6 +2062,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1801,6 +2085,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1818,6 +2108,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1867,6 +2163,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1884,6 +2186,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1903,6 +2211,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1920,6 +2234,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1937,6 +2257,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1974,6 +2300,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -1991,6 +2323,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2008,6 +2346,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2025,6 +2369,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2044,6 +2394,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2061,6 +2417,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2078,6 +2440,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2113,6 +2481,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2130,6 +2504,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2147,6 +2527,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2166,6 +2552,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2183,6 +2575,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2200,6 +2598,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2241,6 +2645,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2260,6 +2670,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2277,6 +2693,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2294,6 +2716,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2384,6 +2812,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2401,6 +2835,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2418,6 +2858,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2435,6 +2881,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2452,6 +2904,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2471,6 +2929,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2488,6 +2952,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2505,6 +2975,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2544,6 +3020,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2561,6 +3043,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2578,6 +3066,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2595,6 +3089,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2612,6 +3112,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2631,6 +3137,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2648,6 +3160,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2665,6 +3183,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2721,6 +3245,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2738,6 +3268,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2755,6 +3291,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2772,6 +3314,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2789,6 +3337,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2808,6 +3362,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2825,6 +3385,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2842,6 +3408,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2880,6 +3452,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2897,6 +3475,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2914,6 +3498,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2931,6 +3521,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2948,6 +3544,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2967,6 +3569,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -2984,6 +3592,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3001,6 +3615,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3039,6 +3659,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3056,6 +3682,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3073,6 +3705,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3090,6 +3728,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3107,6 +3751,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3126,6 +3776,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3143,6 +3799,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3160,6 +3822,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3230,6 +3898,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3247,6 +3921,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3264,6 +3944,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3281,6 +3967,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3298,6 +3990,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3317,6 +4015,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3334,6 +4038,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3351,6 +4061,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3396,6 +4112,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3413,6 +4135,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3430,6 +4158,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3447,6 +4181,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3464,6 +4204,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3483,6 +4229,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3500,6 +4252,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3517,6 +4275,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3565,6 +4329,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3582,6 +4352,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3599,6 +4375,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3616,6 +4398,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3633,6 +4421,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3652,6 +4446,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3669,6 +4469,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3686,6 +4492,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3734,8 +4546,8 @@ export interface operations {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             profiles: string[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -3775,8 +4587,8 @@ export interface operations {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             profiles: string[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -3806,6 +4618,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3823,6 +4641,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3840,6 +4664,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3857,6 +4687,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3874,6 +4710,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3893,6 +4735,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3910,6 +4758,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3927,6 +4781,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -3967,8 +4827,8 @@ export interface operations {
                             roles: ("COMPANY_ADMINISTRATOR" | "BRANCH_MANAGER" | "OPERATOR")[];
                             profiles: string[];
                             responsible: boolean;
-                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                            capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
+                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -3998,6 +4858,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4015,6 +4881,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4032,6 +4904,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4049,6 +4927,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4066,6 +4950,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4085,6 +4975,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4102,6 +4998,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4119,6 +5021,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4178,6 +5086,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4195,6 +5109,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4212,6 +5132,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4229,6 +5155,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4246,6 +5178,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4265,6 +5203,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4282,6 +5226,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4299,6 +5249,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4355,6 +5311,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4372,6 +5334,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4389,6 +5357,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4406,6 +5380,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4423,6 +5403,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4442,6 +5428,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4459,6 +5451,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4476,6 +5474,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4533,6 +5537,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4550,6 +5560,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4567,6 +5583,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4584,6 +5606,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4601,6 +5629,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4620,6 +5654,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4637,6 +5677,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4654,6 +5700,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4705,6 +5757,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4722,6 +5780,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4739,6 +5803,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4756,6 +5826,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4773,6 +5849,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4792,6 +5874,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4809,6 +5897,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4826,6 +5920,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4885,6 +5985,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4902,6 +6008,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4919,6 +6031,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4936,6 +6054,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4953,6 +6077,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4972,6 +6102,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -4989,6 +6125,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5006,6 +6148,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5063,6 +6211,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5080,6 +6234,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5097,6 +6257,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5114,6 +6280,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5131,6 +6303,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5150,6 +6328,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5167,6 +6351,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5184,6 +6374,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5240,6 +6436,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5257,6 +6459,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5274,6 +6482,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5291,6 +6505,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5308,6 +6528,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5327,6 +6553,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5344,6 +6576,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5361,6 +6599,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5390,7 +6634,7 @@ export interface operations {
                         items: {
                             id: string;
                             name: string;
-                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                             status: "ACTIVE" | "ARCHIVED";
                             version: number;
                             /** Format: date-time */
@@ -5416,6 +6660,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5433,6 +6683,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5450,6 +6706,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5467,6 +6729,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5484,6 +6752,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5503,6 +6777,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5520,6 +6800,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5537,6 +6823,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5556,7 +6848,7 @@ export interface operations {
             content: {
                 "application/json": {
                     name: string;
-                    capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                    capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                 };
             };
         };
@@ -5570,7 +6862,7 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
                         /** Format: date-time */
@@ -5595,6 +6887,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5612,6 +6910,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5629,6 +6933,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5646,6 +6956,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5663,6 +6979,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5682,6 +7004,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5699,6 +7027,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5716,6 +7050,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5744,7 +7084,7 @@ export interface operations {
                         profile: {
                             id: string;
                             name: string;
-                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                            capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                             status: "ACTIVE" | "ARCHIVED";
                             version: number;
                             /** Format: date-time */
@@ -5784,6 +7124,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5801,6 +7147,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5818,6 +7170,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5835,6 +7193,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5852,6 +7216,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5871,6 +7241,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5888,6 +7264,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5905,6 +7287,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5926,7 +7314,7 @@ export interface operations {
                 "application/json": {
                     expectedVersion: number;
                     name?: string;
-                    capabilities?: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                    capabilities?: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                 };
             };
         };
@@ -5940,7 +7328,7 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
                         /** Format: date-time */
@@ -5965,6 +7353,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5982,6 +7376,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -5999,6 +7399,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6016,6 +7422,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6033,6 +7445,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6052,6 +7470,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6069,6 +7493,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6086,6 +7516,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6119,7 +7555,7 @@ export interface operations {
                     "application/json": {
                         id: string;
                         name: string;
-                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish")[];
+                        capabilities: ("branches.view" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
                         /** Format: date-time */
@@ -6144,6 +7580,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6161,6 +7603,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6178,6 +7626,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6195,6 +7649,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6212,6 +7672,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6231,6 +7697,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6248,6 +7720,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6265,6 +7743,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6327,6 +7811,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6344,6 +7834,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6361,6 +7857,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6378,6 +7880,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6395,6 +7903,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6414,6 +7928,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6431,6 +7951,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6448,6 +7974,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6515,6 +8047,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6532,6 +8070,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6549,6 +8093,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6566,6 +8116,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6583,6 +8139,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6602,6 +8164,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6619,6 +8187,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6636,6 +8210,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6693,6 +8273,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6710,6 +8296,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6727,6 +8319,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6744,6 +8342,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6761,6 +8365,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6780,6 +8390,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6797,6 +8413,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6814,6 +8436,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6852,6 +8480,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6869,6 +8503,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6886,6 +8526,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6903,6 +8549,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6920,6 +8572,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6939,6 +8597,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6956,6 +8620,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -6973,6 +8643,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7030,6 +8706,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7047,6 +8729,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7064,6 +8752,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7081,6 +8775,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7098,6 +8798,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7117,6 +8823,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7134,6 +8846,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7151,6 +8869,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7209,6 +8933,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7226,6 +8956,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7243,6 +8979,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7260,6 +9002,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7277,6 +9025,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7296,6 +9050,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7313,6 +9073,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7330,6 +9096,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7391,6 +9163,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7408,6 +9186,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7425,6 +9209,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7442,6 +9232,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7459,6 +9255,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7478,6 +9280,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7495,6 +9303,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7512,6 +9326,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7555,6 +9375,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7572,6 +9398,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7589,6 +9421,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7606,6 +9444,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7623,6 +9467,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7642,6 +9492,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7659,6 +9515,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7676,6 +9538,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7728,6 +9596,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7745,6 +9619,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7762,6 +9642,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7779,6 +9665,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7796,6 +9688,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7815,6 +9713,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7832,6 +9736,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7849,6 +9759,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7899,6 +9815,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7916,6 +9838,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7933,6 +9861,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7950,6 +9884,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7967,6 +9907,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -7986,6 +9932,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8003,6 +9955,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8020,6 +9978,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8055,6 +10019,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8072,6 +10042,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8089,6 +10065,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8106,6 +10088,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8123,6 +10111,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8142,6 +10136,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8159,6 +10159,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8176,6 +10182,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8217,6 +10229,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8234,6 +10252,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8251,6 +10275,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8268,6 +10298,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8285,6 +10321,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8304,6 +10346,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8321,6 +10369,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8338,6 +10392,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8415,6 +10475,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8432,6 +10498,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8449,6 +10521,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8466,6 +10544,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8483,6 +10567,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8502,6 +10592,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8519,6 +10615,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8536,6 +10638,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8614,6 +10722,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8631,6 +10745,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8648,6 +10768,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8665,6 +10791,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8682,6 +10814,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8701,6 +10839,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8718,6 +10862,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8735,6 +10885,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8805,6 +10961,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8822,6 +10984,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8839,6 +11007,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8856,6 +11030,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8873,6 +11053,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8892,6 +11078,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8909,6 +11101,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -8926,6 +11124,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9005,6 +11209,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9022,6 +11232,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9039,6 +11255,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9056,6 +11278,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9073,6 +11301,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9092,6 +11326,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9109,6 +11349,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9126,6 +11372,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9203,6 +11455,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9220,6 +11478,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9237,6 +11501,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9254,6 +11524,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9271,6 +11547,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9290,6 +11572,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9307,6 +11595,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9324,6 +11618,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9400,6 +11700,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9417,6 +11723,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9434,6 +11746,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9451,6 +11769,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9468,6 +11792,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9487,6 +11817,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9504,6 +11840,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9521,6 +11863,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9597,6 +11945,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9614,6 +11968,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9631,6 +11991,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9648,6 +12014,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9665,6 +12037,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9684,6 +12062,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9701,6 +12085,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9718,6 +12108,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9796,6 +12192,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9813,6 +12215,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9830,6 +12238,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9847,6 +12261,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9864,6 +12284,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9883,6 +12309,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9900,6 +12332,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9917,6 +12355,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -9994,6 +12438,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10011,6 +12461,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10028,6 +12484,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10045,6 +12507,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10062,6 +12530,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10081,6 +12555,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10098,6 +12578,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10115,6 +12601,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10175,6 +12667,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10192,6 +12690,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10209,6 +12713,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10226,6 +12736,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10243,6 +12759,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10260,6 +12782,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10279,6 +12807,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10296,6 +12830,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10313,6 +12853,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10385,6 +12931,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10402,6 +12954,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10419,6 +12977,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10436,6 +13000,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10453,6 +13023,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10472,6 +13048,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10489,6 +13071,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10506,6 +13094,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10574,6 +13168,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10591,6 +13191,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10608,6 +13214,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10625,6 +13237,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10642,6 +13260,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10661,6 +13285,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10678,6 +13308,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10695,6 +13331,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10739,6 +13381,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10756,6 +13404,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10773,6 +13427,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10790,6 +13450,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10807,6 +13473,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10826,6 +13498,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10843,6 +13521,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10860,6 +13544,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10936,6 +13626,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10953,6 +13649,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10970,6 +13672,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -10987,6 +13695,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11004,6 +13718,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11023,6 +13743,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11040,6 +13766,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11057,6 +13789,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11131,6 +13869,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11148,6 +13892,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11165,6 +13915,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11182,6 +13938,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11199,6 +13961,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11218,6 +13986,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11235,6 +14009,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11252,6 +14032,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11326,6 +14112,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11343,6 +14135,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11360,6 +14158,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11377,6 +14181,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11394,6 +14204,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11413,6 +14229,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11430,6 +14252,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11447,6 +14275,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11521,6 +14355,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11538,6 +14378,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11555,6 +14401,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11572,6 +14424,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11589,6 +14447,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11608,6 +14472,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11625,6 +14495,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11642,6 +14518,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11716,6 +14598,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11733,6 +14621,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11750,6 +14644,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11767,6 +14667,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11784,6 +14690,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11803,6 +14715,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11820,6 +14738,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11837,6 +14761,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11907,6 +14837,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11924,6 +14860,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11941,6 +14883,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11958,6 +14906,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11975,6 +14929,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -11994,6 +14954,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12011,6 +14977,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12028,6 +15000,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12099,6 +15077,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12116,6 +15100,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12133,6 +15123,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12150,6 +15146,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12167,6 +15169,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12186,6 +15194,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12203,6 +15217,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12220,6 +15240,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12283,6 +15309,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12300,6 +15332,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12317,6 +15355,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12334,6 +15378,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12351,6 +15401,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12370,6 +15426,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12387,6 +15449,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12404,6 +15472,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12448,6 +15522,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12465,6 +15545,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12482,6 +15568,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12499,6 +15591,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12516,6 +15614,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12535,6 +15639,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12552,6 +15662,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12569,6 +15685,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12641,6 +15763,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12658,6 +15786,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12675,6 +15809,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12692,6 +15832,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12709,6 +15855,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12728,6 +15880,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12745,6 +15903,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12762,6 +15926,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12835,6 +16005,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12852,6 +16028,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12869,6 +16051,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12886,6 +16074,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12903,6 +16097,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12922,6 +16122,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12939,6 +16145,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -12956,6 +16168,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13019,6 +16237,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13036,6 +16260,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13053,6 +16283,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13070,6 +16306,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13087,6 +16329,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13106,6 +16354,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13123,6 +16377,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13140,6 +16400,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13209,6 +16475,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13226,6 +16498,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13243,6 +16521,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13260,6 +16544,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13277,6 +16567,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13296,6 +16592,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13313,6 +16615,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13330,6 +16638,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13392,6 +16706,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13409,6 +16729,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13426,6 +16752,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13443,6 +16775,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13460,6 +16798,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13479,6 +16823,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13496,6 +16846,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13513,6 +16869,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13557,6 +16919,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13574,6 +16942,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13591,6 +16965,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13608,6 +16988,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13625,6 +17011,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13644,6 +17036,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13661,6 +17059,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13678,6 +17082,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13749,6 +17159,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13766,6 +17182,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13783,6 +17205,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13800,6 +17228,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13817,6 +17251,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13836,6 +17276,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13853,6 +17299,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13870,6 +17322,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13939,6 +17397,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13956,6 +17420,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13973,6 +17443,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -13990,6 +17466,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14007,6 +17489,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14026,6 +17514,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14043,6 +17537,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14060,6 +17560,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14146,6 +17652,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14163,6 +17675,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14180,6 +17698,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14197,6 +17721,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14214,6 +17744,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14233,6 +17769,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14250,6 +17792,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14267,6 +17815,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14325,6 +17879,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14342,6 +17902,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14359,6 +17925,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14376,6 +17948,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14393,6 +17971,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14412,6 +17996,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14429,6 +18019,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14446,6 +18042,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14513,6 +18115,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14530,6 +18138,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14547,6 +18161,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14564,6 +18184,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14581,6 +18207,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14600,6 +18232,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14617,6 +18255,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14634,6 +18278,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14703,6 +18353,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14720,6 +18376,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14737,6 +18399,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14754,6 +18422,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14771,6 +18445,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14790,6 +18470,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14807,6 +18493,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14824,6 +18516,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14910,6 +18608,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14927,6 +18631,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14944,6 +18654,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14961,6 +18677,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14978,6 +18700,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -14997,6 +18725,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15014,6 +18748,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15031,6 +18771,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15095,6 +18841,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15112,6 +18864,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15129,6 +18887,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15146,6 +18910,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15163,6 +18933,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15182,6 +18958,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15199,6 +18981,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15216,6 +19004,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15296,6 +19090,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15313,6 +19113,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15330,6 +19136,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15347,6 +19159,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15364,6 +19182,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15383,6 +19207,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15400,6 +19230,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15417,6 +19253,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15498,6 +19340,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15515,6 +19363,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15532,6 +19386,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15549,6 +19409,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15566,6 +19432,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15585,6 +19457,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15602,6 +19480,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15619,6 +19503,4354 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listCatalogs: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                scope?: string;
+                text?: string;
+                status?: "ACTIVE" | "ARCHIVED";
+            };
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            } | null;
+                            status: "ACTIVE" | "ARCHIVED";
+                            fields: {
+                                id: string;
+                                label: string;
+                                type: "text" | "longText" | "number" | "boolean" | "date" | "time" | "weekdays" | "selection" | "money" | "media" | "reference";
+                                required: boolean;
+                                archived: boolean;
+                                maxLength?: number;
+                                decimals?: number;
+                                minimum?: string | null;
+                                maximum?: string | null;
+                                currency?: string;
+                                promotions?: boolean;
+                                targetCatalogId?: string;
+                                choices?: {
+                                    id: string;
+                                    label: string;
+                                }[];
+                            }[];
+                            recordCount: number;
+                            schemaVersion: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            version: number;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    branchId: string | null;
+                    fields?: {
+                        id?: string;
+                        label: string;
+                        type: "text" | "longText" | "number" | "boolean" | "date" | "time" | "weekdays" | "selection" | "money" | "media" | "reference";
+                        required?: boolean;
+                        archived?: boolean;
+                        maxLength?: number;
+                        decimals?: number;
+                        minimum?: string | null;
+                        maximum?: string | null;
+                        currency?: string;
+                        promotions?: boolean;
+                        targetCatalogId?: string;
+                        choices?: {
+                            id?: string;
+                            label: string;
+                        }[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        status: "ACTIVE" | "ARCHIVED";
+                        fields: {
+                            id: string;
+                            label: string;
+                            type: "text" | "longText" | "number" | "boolean" | "date" | "time" | "weekdays" | "selection" | "money" | "media" | "reference";
+                            required: boolean;
+                            archived: boolean;
+                            maxLength?: number;
+                            decimals?: number;
+                            minimum?: string | null;
+                            maximum?: string | null;
+                            currency?: string;
+                            promotions?: boolean;
+                            targetCatalogId?: string;
+                            choices?: {
+                                id: string;
+                                label: string;
+                            }[];
+                        }[];
+                        recordCount: number;
+                        schemaVersion: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        status: "ACTIVE" | "ARCHIVED";
+                        fields: {
+                            id: string;
+                            label: string;
+                            type: "text" | "longText" | "number" | "boolean" | "date" | "time" | "weekdays" | "selection" | "money" | "media" | "reference";
+                            required: boolean;
+                            archived: boolean;
+                            maxLength?: number;
+                            decimals?: number;
+                            minimum?: string | null;
+                            maximum?: string | null;
+                            currency?: string;
+                            promotions?: boolean;
+                            targetCatalogId?: string;
+                            choices?: {
+                                id: string;
+                                label: string;
+                            }[];
+                        }[];
+                        recordCount: number;
+                        schemaVersion: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    deleteCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    name?: string;
+                    archived?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        status: "ACTIVE" | "ARCHIVED";
+                        fields: {
+                            id: string;
+                            label: string;
+                            type: "text" | "longText" | "number" | "boolean" | "date" | "time" | "weekdays" | "selection" | "money" | "media" | "reference";
+                            required: boolean;
+                            archived: boolean;
+                            maxLength?: number;
+                            decimals?: number;
+                            minimum?: string | null;
+                            maximum?: string | null;
+                            currency?: string;
+                            promotions?: boolean;
+                            targetCatalogId?: string;
+                            choices?: {
+                                id: string;
+                                label: string;
+                            }[];
+                        }[];
+                        recordCount: number;
+                        schemaVersion: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    replaceCatalogSchema: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    fields: {
+                        id?: string;
+                        label: string;
+                        type: "text" | "longText" | "number" | "boolean" | "date" | "time" | "weekdays" | "selection" | "money" | "media" | "reference";
+                        required?: boolean;
+                        archived?: boolean;
+                        maxLength?: number;
+                        decimals?: number;
+                        minimum?: string | null;
+                        maximum?: string | null;
+                        currency?: string;
+                        promotions?: boolean;
+                        targetCatalogId?: string;
+                        choices?: {
+                            id?: string;
+                            label: string;
+                        }[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        name: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        status: "ACTIVE" | "ARCHIVED";
+                        fields: {
+                            id: string;
+                            label: string;
+                            type: "text" | "longText" | "number" | "boolean" | "date" | "time" | "weekdays" | "selection" | "money" | "media" | "reference";
+                            required: boolean;
+                            archived: boolean;
+                            maxLength?: number;
+                            decimals?: number;
+                            minimum?: string | null;
+                            maximum?: string | null;
+                            currency?: string;
+                            promotions?: boolean;
+                            targetCatalogId?: string;
+                            choices?: {
+                                id: string;
+                                label: string;
+                            }[];
+                        }[];
+                        recordCount: number;
+                        schemaVersion: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listCatalogRecords: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+                text?: string;
+            };
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            catalogId: string;
+                            title: string | null;
+                            available: boolean;
+                            values: {
+                                [key: string]: number[] | boolean | number | string | null;
+                            };
+                            overrides: {
+                                fieldId: string;
+                                branch: {
+                                    id: string;
+                                    name: string;
+                                };
+                                amount: number;
+                            }[];
+                            media: {
+                                fieldId: string;
+                                mediaAssetId: string;
+                                name: string | null;
+                                status: string | null;
+                            }[];
+                            references: {
+                                fieldId: string;
+                                recordId: string;
+                                title: string | null;
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            version: number;
+                        }[];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createCatalogRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    values: {
+                        [key: string]: number[] | boolean | number | string | null;
+                    };
+                    available?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        catalogId: string;
+                        title: string | null;
+                        available: boolean;
+                        values: {
+                            [key: string]: number[] | boolean | number | string | null;
+                        };
+                        overrides: {
+                            fieldId: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            };
+                            amount: number;
+                        }[];
+                        media: {
+                            fieldId: string;
+                            mediaAssetId: string;
+                            name: string | null;
+                            status: string | null;
+                        }[];
+                        references: {
+                            fieldId: string;
+                            recordId: string;
+                            title: string | null;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getCatalogRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        catalogId: string;
+                        title: string | null;
+                        available: boolean;
+                        values: {
+                            [key: string]: number[] | boolean | number | string | null;
+                        };
+                        overrides: {
+                            fieldId: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            };
+                            amount: number;
+                        }[];
+                        media: {
+                            fieldId: string;
+                            mediaAssetId: string;
+                            name: string | null;
+                            status: string | null;
+                        }[];
+                        references: {
+                            fieldId: string;
+                            recordId: string;
+                            title: string | null;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    deleteCatalogRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateCatalogRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    values?: {
+                        [key: string]: number[] | boolean | number | string | null;
+                    };
+                    available?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        catalogId: string;
+                        title: string | null;
+                        available: boolean;
+                        values: {
+                            [key: string]: number[] | boolean | number | string | null;
+                        };
+                        overrides: {
+                            fieldId: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            };
+                            amount: number;
+                        }[];
+                        media: {
+                            fieldId: string;
+                            mediaAssetId: string;
+                            name: string | null;
+                            status: string | null;
+                        }[];
+                        references: {
+                            fieldId: string;
+                            recordId: string;
+                            title: string | null;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    moveCatalogRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    afterRecordId: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        catalogId: string;
+                        title: string | null;
+                        available: boolean;
+                        values: {
+                            [key: string]: number[] | boolean | number | string | null;
+                        };
+                        overrides: {
+                            fieldId: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            };
+                            amount: number;
+                        }[];
+                        media: {
+                            fieldId: string;
+                            mediaAssetId: string;
+                            name: string | null;
+                            status: string | null;
+                        }[];
+                        references: {
+                            fieldId: string;
+                            recordId: string;
+                            title: string | null;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    setCatalogBasePrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    amount: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        catalogId: string;
+                        title: string | null;
+                        available: boolean;
+                        values: {
+                            [key: string]: number[] | boolean | number | string | null;
+                        };
+                        overrides: {
+                            fieldId: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            };
+                            amount: number;
+                        }[];
+                        media: {
+                            fieldId: string;
+                            mediaAssetId: string;
+                            name: string | null;
+                            status: string | null;
+                        }[];
+                        references: {
+                            fieldId: string;
+                            recordId: string;
+                            title: string | null;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    setCatalogBranchPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+                fieldId: string;
+                branchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedVersion: number;
+                    amount: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        catalogId: string;
+                        title: string | null;
+                        available: boolean;
+                        values: {
+                            [key: string]: number[] | boolean | number | string | null;
+                        };
+                        overrides: {
+                            fieldId: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            };
+                            amount: number;
+                        }[];
+                        media: {
+                            fieldId: string;
+                            mediaAssetId: string;
+                            name: string | null;
+                            status: string | null;
+                        }[];
+                        references: {
+                            fieldId: string;
+                            recordId: string;
+                            title: string | null;
+                        }[];
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listCatalogPromotions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            fieldId: string;
+                            branch: {
+                                id: string;
+                                name: string;
+                            } | null;
+                            amount: number;
+                            startsAt: string;
+                            endsAt: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createCatalogPromotion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    branchId: string | null;
+                    amount: number;
+                    startsAt: string;
+                    endsAt: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        fieldId: string;
+                        branch: {
+                            id: string;
+                            name: string;
+                        } | null;
+                        amount: number;
+                        startsAt: string;
+                        endsAt: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    deleteCatalogPromotion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+                fieldId: string;
+                promotionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getCatalogEffectivePrices: {
+        parameters: {
+            query: {
+                at: string;
+            };
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        at: string;
+                        fields: {
+                            fieldId: string;
+                            currency: string;
+                            scope: {
+                                amount: number | null;
+                                source: "promotion" | "override" | "base" | "none";
+                                promotionId: string | null;
+                            };
+                            branches: {
+                                branch: {
+                                    id: string;
+                                    name: string;
+                                };
+                                amount: number | null;
+                                source: "promotion" | "override" | "base" | "none";
+                                promotionId: string | null;
+                            }[];
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15686,6 +23918,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15703,6 +23941,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15720,6 +23964,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15737,6 +23987,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15754,6 +24010,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15773,6 +24035,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15790,6 +24058,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15807,6 +24081,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15910,6 +24190,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15927,6 +24213,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15944,6 +24236,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15961,6 +24259,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15978,6 +24282,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -15997,6 +24307,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16014,6 +24330,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16031,6 +24353,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16110,6 +24438,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16127,6 +24461,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16144,6 +24484,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16161,6 +24507,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16178,6 +24530,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16197,6 +24555,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16214,6 +24578,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16231,6 +24601,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16329,6 +24705,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16346,6 +24728,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16363,6 +24751,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16380,6 +24774,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16397,6 +24797,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16416,6 +24822,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16433,6 +24845,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16450,6 +24868,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16517,6 +24941,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16534,6 +24964,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16551,6 +24987,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16568,6 +25010,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16585,6 +25033,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16604,6 +25058,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16621,6 +25081,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16638,6 +25104,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16741,6 +25213,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16758,6 +25236,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16775,6 +25259,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16792,6 +25282,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16809,6 +25305,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16828,6 +25330,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16845,6 +25353,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16862,6 +25376,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16941,6 +25461,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16958,6 +25484,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16975,6 +25507,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -16992,6 +25530,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17009,6 +25553,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17028,6 +25578,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17045,6 +25601,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17062,6 +25624,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17160,6 +25728,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17177,6 +25751,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17194,6 +25774,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17211,6 +25797,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17228,6 +25820,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17247,6 +25845,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17264,6 +25868,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17281,6 +25891,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17355,6 +25971,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17372,6 +25994,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17389,6 +26017,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17406,6 +26040,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17423,6 +26063,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17442,6 +26088,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17459,6 +26111,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17476,6 +26134,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17553,6 +26217,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17570,6 +26240,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17587,6 +26263,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17604,6 +26286,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17621,6 +26309,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17640,6 +26334,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17657,6 +26357,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17674,6 +26380,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17765,6 +26477,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17782,6 +26500,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17799,6 +26523,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17816,6 +26546,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17833,6 +26569,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17852,6 +26594,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17869,6 +26617,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17886,6 +26640,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17925,6 +26685,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17942,6 +26708,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17959,6 +26731,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17976,6 +26754,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -17993,6 +26777,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18012,6 +26802,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18029,6 +26825,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18046,6 +26848,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18094,6 +26902,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18111,6 +26925,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18128,6 +26948,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18145,6 +26971,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18162,6 +26994,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18179,6 +27017,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18198,6 +27042,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18215,6 +27065,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18232,6 +27088,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18283,6 +27145,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18300,6 +27168,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18317,6 +27191,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18334,6 +27214,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18351,6 +27237,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18370,6 +27262,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18387,6 +27285,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };
@@ -18404,6 +27308,12 @@ export interface operations {
                             requestId: string;
                             traceId?: string;
                             errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
                         };
                     };
                 };

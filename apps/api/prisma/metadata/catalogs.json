@@ -1,0 +1,455 @@
+{
+  "tables": {
+    "catalogs": {
+      "owner": "Catalogs",
+      "classification": "CONFIDENTIAL",
+      "description": "A user-defined typed collection, such as products, a menu or a weekly agenda, owned by a company or one branch.",
+      "lifecycle": "Created with an empty schema. Renames, archiving, restoring and schema saves bump the version; schema saves also bump the schema version. Deleted at runtime only when it has no records and no other catalog's reference field targets it. The owning scope never changes. See docs/project/catalog-composition-design.md.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable catalog UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the catalog; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch that owns the catalog; immutable.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The catalog belongs to the whole company and every member who may view catalogs sees it."
+        },
+        "name": {
+          "description": "Display name chosen by members, trimmed, 1 to 120 characters.",
+          "classification": "CONFIDENTIAL"
+        },
+        "status": {
+          "description": "ACTIVE, or ARCHIVED (read-only until restored).",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency version of the catalog and its schema, starting at 1.",
+          "classification": "INTERNAL"
+        },
+        "schema_version": {
+          "description": "Counts schema saves, starting at 1, so published snapshots can name the schema they copied.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change to the catalog row.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "catalogs_pkey": "Unique catalog identity.",
+        "catalogs_company_id_id_key": "Tenant key for catalogs.",
+        "catalogs_company_id_fkey": "A catalog belongs to an existing company.",
+        "catalogs_company_id_branch_id_fkey": "The owning branch belongs to the same company.",
+        "catalogs_company_created_idx": "Lists a company's catalogs newest first with keyset cursors.",
+        "catalogs_name_trimmed": "Names are trimmed and not empty.",
+        "catalogs_version_positive": "Versions start at 1."
+      }
+    },
+    "catalog_fields": {
+      "owner": "Catalogs",
+      "classification": "CONFIDENTIAL",
+      "description": "One field of a catalog's schema: a stable identifier, a label that may change, a type that never changes, and type settings.",
+      "lifecycle": "Saved as part of the whole ordered field list. Archiving keeps the values and hides the field from editing. Deleted at runtime only while no record, override or promotion holds a value for it, and with its catalog.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated stable field UUID; record values are keyed by it.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the catalog (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog whose schema holds the field; immutable.",
+          "classification": "INTERNAL"
+        },
+        "position": {
+          "description": "Zero-based order in the schema, 0 to 59, unique within the catalog by the module.",
+          "classification": "INTERNAL"
+        },
+        "label": {
+          "description": "Display label chosen by members, trimmed, 1 to 80 characters; renaming never changes meaning.",
+          "classification": "CONFIDENTIAL"
+        },
+        "type": {
+          "description": "TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, TIME, WEEKDAYS, SELECTION, MONEY, MEDIA or REFERENCE; immutable.",
+          "classification": "INTERNAL"
+        },
+        "required": {
+          "description": "Whether every record must hold a value; never true for MONEY fields.",
+          "classification": "INTERNAL"
+        },
+        "settings": {
+          "description": "Validated type settings: maximum length, decimal places and bounds, selection choices with stable identifiers, or whether promotions are allowed.",
+          "classification": "CONFIDENTIAL"
+        },
+        "currency": {
+          "description": "ISO 4217 alphabetic code of a MONEY field; immutable (ADR-0032).",
+          "classification": "INTERNAL",
+          "nullMeaning": "The field is not a MONEY field."
+        },
+        "target_catalog_id": {
+          "description": "Catalog whose records a REFERENCE field points to; immutable.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The field is not a REFERENCE field."
+        },
+        "archived_at": {
+          "description": "PostgreSQL-clock instant the field was archived.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision",
+          "nullMeaning": "The field is active."
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant the field was added.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "catalog_fields_pkey": "Unique field identity.",
+        "catalog_fields_company_id_catalog_id_fkey": "A field belongs to a catalog of the same company and is deleted with it.",
+        "catalog_fields_company_id_target_catalog_id_fkey": "A reference target is a catalog of the same company that cannot be deleted while targeted.",
+        "catalog_fields_catalog_position_idx": "Reads a schema in order.",
+        "catalog_fields_target_idx": "Finds the reference fields that target a catalog.",
+        "catalog_fields_label_trimmed": "Labels are trimmed and not empty.",
+        "catalog_fields_position_range": "A schema has at most 60 positions.",
+        "catalog_fields_settings_object": "Settings are a JSON object.",
+        "catalog_fields_currency": "MONEY fields, and only they, carry a three-letter uppercase currency code.",
+        "catalog_fields_target": "REFERENCE fields, and only they, carry a target catalog.",
+        "catalog_fields_money_optional": "MONEY fields are never required, because prices are saved separately.",
+        "catalog_fields_company_id_id_key": "Tenant key that prices and record links reference."
+      }
+    },
+    "catalog_records": {
+      "owner": "Catalogs",
+      "classification": "CONFIDENTIAL",
+      "description": "One entry of a catalog: its values keyed by field identifier, including the base price of each MONEY field, its availability and its position.",
+      "lifecycle": "Created and updated one at a time with the observed version; value, availability, price and position changes bump it. Deleted at runtime with its overrides, promotions and join rows, only while no other record references it.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable record UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the record (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog the record belongs to; immutable.",
+          "classification": "INTERNAL"
+        },
+        "position": {
+          "description": "Sort key in the catalog's stored order, spaced so a move usually changes one row; ties order by id.",
+          "classification": "INTERNAL"
+        },
+        "available": {
+          "description": "Whether the record is available; views hide unavailable records unless they show them as unavailable.",
+          "classification": "INTERNAL"
+        },
+        "field_values": {
+          "description": "Validated JSON object from field UUID to value: trimmed text, canonical decimal strings, booleans, local dates and times, sorted weekdays, choice identifiers, media and record UUIDs, and base prices as integer minor units (ADR-0032). At most 16 KiB as serialized by the API.",
+          "classification": "CONFIDENTIAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency version, starting at 1.",
+          "classification": "INTERNAL"
+        },
+        "created_by_membership_id": {
+          "description": "Membership that created the record.",
+          "classification": "INTERNAL"
+        },
+        "updated_by_membership_id": {
+          "description": "Membership that made the last change.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "catalog_records_pkey": "Unique record identity.",
+        "catalog_records_company_id_id_key": "Tenant key that prices, record links and references target.",
+        "catalog_records_company_id_catalog_id_fkey": "A record belongs to a catalog of the same company, which cannot be deleted while it has records.",
+        "catalog_records_company_id_created_by_membership_id_fkey": "The creator is a membership of the same company.",
+        "catalog_records_company_id_updated_by_membership_id_fkey": "The last updater is a membership of the same company.",
+        "catalog_records_catalog_position_idx": "Lists a catalog's records in stored order with keyset cursors.",
+        "catalog_records_position_range": "Positions are not negative.",
+        "catalog_records_version_positive": "Versions start at 1.",
+        "catalog_records_values_object": "Values are a JSON object with a storage backstop above the API's 16 KiB limit."
+      }
+    },
+    "catalog_price_overrides": {
+      "owner": "Catalogs",
+      "classification": "CONFIDENTIAL",
+      "description": "The price of one record's MONEY field for one branch of a company catalog, replacing the base price there.",
+      "lifecycle": "Set, changed or removed one branch at a time with the record's observed version, which each change bumps; deleted with the record.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the catalog (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+          "classification": "INTERNAL"
+        },
+        "record_id": {
+          "description": "Record whose price is overridden.",
+          "classification": "INTERNAL"
+        },
+        "field_id": {
+          "description": "MONEY field whose price is overridden.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch where the override applies.",
+          "classification": "INTERNAL"
+        },
+        "amount": {
+          "description": "Price in the field currency's minor units, 0 to 10^12.",
+          "classification": "CONFIDENTIAL",
+          "unit": "minor units of the field's ISO 4217 currency"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "catalog_price_overrides_pkey": "One override per record, field and branch.",
+        "catalog_price_overrides_company_id_catalog_id_fkey": "The catalog belongs to the same company.",
+        "catalog_price_overrides_company_id_record_id_fkey": "The record belongs to the same company; overrides are deleted with it.",
+        "catalog_price_overrides_company_id_field_id_fkey": "The field belongs to the same company; the module checks it belongs to the record's catalog.",
+        "catalog_price_overrides_company_id_branch_id_fkey": "The branch belongs to the same company.",
+        "catalog_price_overrides_field_idx": "Finds the overrides of a field for schema checks.",
+        "catalog_price_overrides_branch_idx": "Finds a branch's overrides.",
+        "catalog_price_overrides_amount_range": "Amounts are 0 to 10^12 minor units."
+      }
+    },
+    "catalog_promotions": {
+      "owner": "Catalogs",
+      "classification": "CONFIDENTIAL",
+      "description": "A promotional price of one record's MONEY field within a local wall-clock window, for the whole catalog scope or one branch.",
+      "lifecycle": "Created and deleted, never edited; windows of the same price whose branch scopes intersect never overlap. Deleted with the record.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable promotion UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the catalog (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+          "classification": "INTERNAL"
+        },
+        "record_id": {
+          "description": "Record whose price is promoted.",
+          "classification": "INTERNAL"
+        },
+        "field_id": {
+          "description": "MONEY field whose price is promoted.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch where the promotion applies.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The promotion applies to the whole catalog scope."
+        },
+        "amount": {
+          "description": "Promotional price in the field currency's minor units, 0 to 10^12.",
+          "classification": "CONFIDENTIAL",
+          "unit": "minor units of the field's ISO 4217 currency"
+        },
+        "starts_at": {
+          "description": "Local wall-clock start, inclusive, evaluated in each screen's time zone.",
+          "classification": "INTERNAL",
+          "unit": "local date and time without zone, minute precision"
+        },
+        "ends_at": {
+          "description": "Local wall-clock end, exclusive.",
+          "classification": "INTERNAL",
+          "unit": "local date and time without zone, minute precision"
+        },
+        "created_by_membership_id": {
+          "description": "Membership that created the promotion.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "catalog_promotions_pkey": "Unique promotion identity.",
+        "catalog_promotions_company_id_id_key": "Tenant key for promotions.",
+        "catalog_promotions_company_id_catalog_id_fkey": "The catalog belongs to the same company.",
+        "catalog_promotions_company_id_record_id_fkey": "The record belongs to the same company; promotions are deleted with it.",
+        "catalog_promotions_company_id_field_id_fkey": "The field belongs to the same company; the module checks it belongs to the record's catalog.",
+        "catalog_promotions_company_id_branch_id_fkey": "The branch belongs to the same company.",
+        "catalog_promotions_company_id_created_by_membership_id_fkey": "The creator is a membership of the same company.",
+        "catalog_promotions_price_idx": "Reads a price's promotions by start for overlap checks and evaluation.",
+        "catalog_promotions_field_idx": "Finds the promotions of a field for schema checks.",
+        "catalog_promotions_amount_range": "Amounts are 0 to 10^12 minor units.",
+        "catalog_promotions_window": "Windows end after they start, at whole minutes."
+      }
+    },
+    "catalog_record_media": {
+      "owner": "Catalogs",
+      "classification": "INTERNAL",
+      "description": "The media item a record's MEDIA field holds, mirrored from the record values so media deletion can be guarded.",
+      "lifecycle": "Replaced with the record's values in the same transaction; deleted with the record.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the catalog (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+          "classification": "INTERNAL"
+        },
+        "record_id": {
+          "description": "Record that holds the media.",
+          "classification": "INTERNAL"
+        },
+        "field_id": {
+          "description": "MEDIA field that holds it.",
+          "classification": "INTERNAL"
+        },
+        "media_asset_id": {
+          "description": "Media item the value names.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "catalog_record_media_pkey": "One media item per record and field.",
+        "catalog_record_media_company_id_catalog_id_fkey": "The catalog belongs to the same company.",
+        "catalog_record_media_company_id_record_id_fkey": "The record belongs to the same company; rows are deleted with it.",
+        "catalog_record_media_company_id_field_id_fkey": "The field belongs to the same company; the module checks it belongs to the record's catalog.",
+        "catalog_record_media_company_id_media_asset_id_fkey": "The media item belongs to the same company.",
+        "catalog_record_media_asset_idx": "Answers the media reference guard."
+      }
+    },
+    "catalog_record_references": {
+      "owner": "Catalogs",
+      "classification": "INTERNAL",
+      "description": "The record a record's REFERENCE field points to, mirrored from the record values so deleting the target can be refused.",
+      "lifecycle": "Replaced with the record's values in the same transaction; deleted with the referring record.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the catalog (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.",
+          "classification": "INTERNAL"
+        },
+        "record_id": {
+          "description": "Record that holds the reference.",
+          "classification": "INTERNAL"
+        },
+        "field_id": {
+          "description": "REFERENCE field that holds it.",
+          "classification": "INTERNAL"
+        },
+        "target_record_id": {
+          "description": "Record the value points to, in the field's target catalog.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "catalog_record_references_pkey": "One reference per record and field.",
+        "catalog_record_references_company_id_catalog_id_fkey": "The catalog belongs to the same company.",
+        "catalog_record_references_company_id_record_id_fkey": "The referring record belongs to the same company; rows are deleted with it.",
+        "catalog_record_references_company_id_field_id_fkey": "The field belongs to the same company; the module checks it belongs to the record's catalog.",
+        "catalog_record_references_company_id_target_record_id_fkey": "The target is a record of the same company that cannot be deleted while referenced.",
+        "catalog_record_references_target_idx": "Counts the records that refer to a record."
+      }
+    },
+    "catalog_audit_events": {
+      "owner": "Catalogs",
+      "classification": "CONFIDENTIAL",
+      "description": "Append-only record of catalog, schema, record and price changes, with the acting member and the branches each change concerns.",
+      "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
+      "columns": {
+        "id": {
+          "description": "Backend-generated event UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company the change belongs to.",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog the event concerns; not a foreign key, so events outlive deleted catalogs.",
+          "classification": "INTERNAL"
+        },
+        "record_id": {
+          "description": "Record the event concerns; not a foreign key.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The event concerns the catalog or its schema."
+        },
+        "branch_ids": {
+          "description": "Branches the change concerns, for branch-scoped audit reads; empty for company-wide changes.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Never null; an empty array means the change is company-wide."
+        },
+        "occurred_at": {
+          "description": "PostgreSQL-clock instant of the change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "actor_principal_id": {
+          "description": "Principal that made the change.",
+          "classification": "INTERNAL"
+        },
+        "actor_membership_id": {
+          "description": "Membership through which the change was made.",
+          "classification": "INTERNAL"
+        },
+        "action": {
+          "description": "Event name such as catalog.created, catalog.schema_changed, catalog.record_updated, catalog.price_changed, catalog.price_override_changed or catalog.promotion_changed.",
+          "classification": "INTERNAL"
+        },
+        "details": {
+          "description": "Bounded summary: names, field identifiers, counts, versions, IDs, and old and new amounts with their currency for price events; never record values.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "catalog_audit_events_pkey": "Unique event identity.",
+        "catalog_audit_events_company_id_id_key": "Tenant key for events.",
+        "catalog_audit_events_company_id_fkey": "An event belongs to an existing company.",
+        "catalog_audit_events_actor_principal_id_fkey": "The actor is a known principal.",
+        "catalog_audit_events_company_id_actor_membership_id_fkey": "The acting membership belongs to the same company.",
+        "catalog_audit_events_catalog_idx": "Reads a catalog's history newest first.",
+        "catalog_audit_events_branch_ids_present": "The branch list is present and bounded.",
+        "catalog_audit_events_details_object": "Details are a JSON object."
+      }
+    }
+  },
+  "enums": {
+    "CatalogStatus": "Catalog lifecycle: ACTIVE or ARCHIVED.",
+    "CatalogFieldType": "Catalog field types: TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, TIME, WEEKDAYS, SELECTION, MONEY, MEDIA or REFERENCE."
+  }
+}

@@ -4,6 +4,271 @@
 
 [Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)
 
+## catalogs
+
+A user-defined typed collection, such as products, a menu or a weekly agenda, owned by a company or one branch.
+
+Owner: Catalogs. Classification: CONFIDENTIAL.
+
+Lifecycle: Created with an empty schema. Renames, archiving, restoring and schema saves bump the version; schema saves also bump the schema version. Deleted at runtime only when it has no records and no other catalog's reference field targets it. The owning scope never changes. See docs/project/catalog-composition-design.md.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable catalog UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the catalog; immutable (tenant key). | — | — |
+| `branch_id` | `uuid` | yes | — | INTERNAL | Branch that owns the catalog; immutable. | The catalog belongs to the whole company and every member who may view catalogs sees it. | — |
+| `name` | `character varying(120)` | no | — | CONFIDENTIAL | Display name chosen by members, trimmed, 1 to 120 characters. | — | — |
+| `status` | `"CatalogStatus"` | no | `'ACTIVE'::"CatalogStatus"` | INTERNAL | ACTIVE, or ARCHIVED (read-only until restored). | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version of the catalog and its schema, starting at 1. | — | — |
+| `schema_version` | `integer` | no | `1` | INTERNAL | Counts schema saves, starting at 1, so published snapshots can name the schema they copied. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change to the catalog row. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalogs_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The owning branch belongs to the same company. |
+| `catalogs_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A catalog belongs to an existing company. |
+| `catalogs_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are trimmed and not empty. |
+| `catalogs_pkey` | `PRIMARY KEY (id)` | Unique catalog identity. |
+| `catalogs_version_positive` | `CHECK (((version >= 1) AND (schema_version >= 1)))` | Versions start at 1. |
+| `catalogs_company_created_idx` | `CREATE INDEX catalogs_company_created_idx ON public.catalogs USING btree (company_id, created_at DESC, id DESC)` | Lists a company's catalogs newest first with keyset cursors. |
+| `catalogs_company_id_id_key` | `CREATE UNIQUE INDEX catalogs_company_id_id_key ON public.catalogs USING btree (company_id, id)` | Tenant key for catalogs. |
+
+## catalog_fields
+
+One field of a catalog's schema: a stable identifier, a label that may change, a type that never changes, and type settings.
+
+Owner: Catalogs. Classification: CONFIDENTIAL.
+
+Lifecycle: Saved as part of the whole ordered field list. Archiving keeps the values and hides the field from editing. Deleted at runtime only while no record, override or promotion holds a value for it, and with its catalog.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated stable field UUID; record values are keyed by it. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the catalog (tenant key). | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog whose schema holds the field; immutable. | — | — |
+| `position` | `integer` | no | — | INTERNAL | Zero-based order in the schema, 0 to 59, unique within the catalog by the module. | — | — |
+| `label` | `character varying(80)` | no | — | CONFIDENTIAL | Display label chosen by members, trimmed, 1 to 80 characters; renaming never changes meaning. | — | — |
+| `type` | `"CatalogFieldType"` | no | — | INTERNAL | TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, TIME, WEEKDAYS, SELECTION, MONEY, MEDIA or REFERENCE; immutable. | — | — |
+| `required` | `boolean` | no | `false` | INTERNAL | Whether every record must hold a value; never true for MONEY fields. | — | — |
+| `settings` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Validated type settings: maximum length, decimal places and bounds, selection choices with stable identifiers, or whether promotions are allowed. | — | — |
+| `currency` | `character(3)` | yes | — | INTERNAL | ISO 4217 alphabetic code of a MONEY field; immutable (ADR-0032). | The field is not a MONEY field. | — |
+| `target_catalog_id` | `uuid` | yes | — | INTERNAL | Catalog whose records a REFERENCE field points to; immutable. | The field is not a REFERENCE field. | — |
+| `archived_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant the field was archived. | The field is active. | UTC instant, millisecond precision |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the field was added. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_fields_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | A field belongs to a catalog of the same company and is deleted with it. |
+| `catalog_fields_company_id_target_catalog_id_fkey` | `FOREIGN KEY (company_id, target_catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A reference target is a catalog of the same company that cannot be deleted while targeted. |
+| `catalog_fields_currency` | `CHECK ((((type = 'MONEY'::"CatalogFieldType") = (currency IS NOT NULL)) AND ((currency IS NULL) OR (currency ~ '^[A-Z]{3}$'::text))))` | MONEY fields, and only they, carry a three-letter uppercase currency code. |
+| `catalog_fields_label_trimmed` | `CHECK ((((label)::text = btrim((label)::text)) AND (char_length((label)::text) >= 1)))` | Labels are trimmed and not empty. |
+| `catalog_fields_money_optional` | `CHECK ((NOT ((type = 'MONEY'::"CatalogFieldType") AND required)))` | MONEY fields are never required, because prices are saved separately. |
+| `catalog_fields_pkey` | `PRIMARY KEY (id)` | Unique field identity. |
+| `catalog_fields_position_range` | `CHECK ((("position" >= 0) AND ("position" <= 59)))` | A schema has at most 60 positions. |
+| `catalog_fields_settings_object` | `CHECK ((jsonb_typeof(settings) = 'object'::text))` | Settings are a JSON object. |
+| `catalog_fields_target` | `CHECK (((type = 'REFERENCE'::"CatalogFieldType") = (target_catalog_id IS NOT NULL)))` | REFERENCE fields, and only they, carry a target catalog. |
+| `catalog_fields_catalog_position_idx` | `CREATE INDEX catalog_fields_catalog_position_idx ON public.catalog_fields USING btree (company_id, catalog_id, "position")` | Reads a schema in order. |
+| `catalog_fields_company_id_id_key` | `CREATE UNIQUE INDEX catalog_fields_company_id_id_key ON public.catalog_fields USING btree (company_id, id)` | Tenant key that prices and record links reference. |
+| `catalog_fields_target_idx` | `CREATE INDEX catalog_fields_target_idx ON public.catalog_fields USING btree (company_id, target_catalog_id)` | Finds the reference fields that target a catalog. |
+
+## catalog_records
+
+One entry of a catalog: its values keyed by field identifier, including the base price of each MONEY field, its availability and its position.
+
+Owner: Catalogs. Classification: CONFIDENTIAL.
+
+Lifecycle: Created and updated one at a time with the observed version; value, availability, price and position changes bump it. Deleted at runtime with its overrides, promotions and join rows, only while no other record references it.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable record UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the record (tenant key). | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog the record belongs to; immutable. | — | — |
+| `position` | `integer` | no | — | INTERNAL | Sort key in the catalog's stored order, spaced so a move usually changes one row; ties order by id. | — | — |
+| `available` | `boolean` | no | `true` | INTERNAL | Whether the record is available; views hide unavailable records unless they show them as unavailable. | — | — |
+| `field_values` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Validated JSON object from field UUID to value: trimmed text, canonical decimal strings, booleans, local dates and times, sorted weekdays, choice identifiers, media and record UUIDs, and base prices as integer minor units (ADR-0032). At most 16 KiB as serialized by the API. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version, starting at 1. | — | — |
+| `created_by_membership_id` | `uuid` | no | — | INTERNAL | Membership that created the record. | — | — |
+| `updated_by_membership_id` | `uuid` | no | — | INTERNAL | Membership that made the last change. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_records_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A record belongs to a catalog of the same company, which cannot be deleted while it has records. |
+| `catalog_records_company_id_created_by_membership_id_fkey` | `FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The creator is a membership of the same company. |
+| `catalog_records_company_id_updated_by_membership_id_fkey` | `FOREIGN KEY (company_id, updated_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The last updater is a membership of the same company. |
+| `catalog_records_pkey` | `PRIMARY KEY (id)` | Unique record identity. |
+| `catalog_records_position_range` | `CHECK (("position" >= 0))` | Positions are not negative. |
+| `catalog_records_values_object` | `CHECK (((jsonb_typeof(field_values) = 'object'::text) AND (octet_length((field_values)::text) <= 32768)))` | Values are a JSON object with a storage backstop above the API's 16 KiB limit. |
+| `catalog_records_version_positive` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `catalog_records_catalog_position_idx` | `CREATE INDEX catalog_records_catalog_position_idx ON public.catalog_records USING btree (company_id, catalog_id, "position", id)` | Lists a catalog's records in stored order with keyset cursors. |
+| `catalog_records_company_id_id_key` | `CREATE UNIQUE INDEX catalog_records_company_id_id_key ON public.catalog_records USING btree (company_id, id)` | Tenant key that prices, record links and references target. |
+
+## catalog_price_overrides
+
+The price of one record's MONEY field for one branch of a company catalog, replacing the base price there.
+
+Owner: Catalogs. Classification: CONFIDENTIAL.
+
+Lifecycle: Set, changed or removed one branch at a time with the record's observed version, which each change bumps; deleted with the record.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the catalog (tenant key). | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog. | — | — |
+| `record_id` | `uuid` | no | — | INTERNAL | Record whose price is overridden. | — | — |
+| `field_id` | `uuid` | no | — | INTERNAL | MONEY field whose price is overridden. | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch where the override applies. | — | — |
+| `amount` | `bigint` | no | — | CONFIDENTIAL | Price in the field currency's minor units, 0 to 10^12. | — | minor units of the field's ISO 4217 currency |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_price_overrides_amount_range` | `CHECK (((amount >= 0) AND (amount <= '1000000000000'::bigint)))` | Amounts are 0 to 10^12 minor units. |
+| `catalog_price_overrides_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company. |
+| `catalog_price_overrides_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The catalog belongs to the same company. |
+| `catalog_price_overrides_company_id_field_id_fkey` | `FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The field belongs to the same company; the module checks it belongs to the record's catalog. |
+| `catalog_price_overrides_company_id_record_id_fkey` | `FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The record belongs to the same company; overrides are deleted with it. |
+| `catalog_price_overrides_pkey` | `PRIMARY KEY (company_id, record_id, field_id, branch_id)` | One override per record, field and branch. |
+| `catalog_price_overrides_branch_idx` | `CREATE INDEX catalog_price_overrides_branch_idx ON public.catalog_price_overrides USING btree (company_id, branch_id)` | Finds a branch's overrides. |
+| `catalog_price_overrides_field_idx` | `CREATE INDEX catalog_price_overrides_field_idx ON public.catalog_price_overrides USING btree (company_id, catalog_id, field_id)` | Finds the overrides of a field for schema checks. |
+
+## catalog_promotions
+
+A promotional price of one record's MONEY field within a local wall-clock window, for the whole catalog scope or one branch.
+
+Owner: Catalogs. Classification: CONFIDENTIAL.
+
+Lifecycle: Created and deleted, never edited; windows of the same price whose branch scopes intersect never overlap. Deleted with the record.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable promotion UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the catalog (tenant key). | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog. | — | — |
+| `record_id` | `uuid` | no | — | INTERNAL | Record whose price is promoted. | — | — |
+| `field_id` | `uuid` | no | — | INTERNAL | MONEY field whose price is promoted. | — | — |
+| `branch_id` | `uuid` | yes | — | INTERNAL | Branch where the promotion applies. | The promotion applies to the whole catalog scope. | — |
+| `amount` | `bigint` | no | — | CONFIDENTIAL | Promotional price in the field currency's minor units, 0 to 10^12. | — | minor units of the field's ISO 4217 currency |
+| `starts_at` | `timestamp(0) without time zone` | no | — | INTERNAL | Local wall-clock start, inclusive, evaluated in each screen's time zone. | — | local date and time without zone, minute precision |
+| `ends_at` | `timestamp(0) without time zone` | no | — | INTERNAL | Local wall-clock end, exclusive. | — | local date and time without zone, minute precision |
+| `created_by_membership_id` | `uuid` | no | — | INTERNAL | Membership that created the promotion. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_promotions_amount_range` | `CHECK (((amount >= 0) AND (amount <= '1000000000000'::bigint)))` | Amounts are 0 to 10^12 minor units. |
+| `catalog_promotions_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company. |
+| `catalog_promotions_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The catalog belongs to the same company. |
+| `catalog_promotions_company_id_created_by_membership_id_fkey` | `FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The creator is a membership of the same company. |
+| `catalog_promotions_company_id_field_id_fkey` | `FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The field belongs to the same company; the module checks it belongs to the record's catalog. |
+| `catalog_promotions_company_id_record_id_fkey` | `FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The record belongs to the same company; promotions are deleted with it. |
+| `catalog_promotions_pkey` | `PRIMARY KEY (id)` | Unique promotion identity. |
+| `catalog_promotions_window` | `CHECK (((ends_at > starts_at) AND (date_trunc('minute'::text, starts_at) = starts_at) AND (date_trunc('minute'::text, ends_at) = ends_at)))` | Windows end after they start, at whole minutes. |
+| `catalog_promotions_company_id_id_key` | `CREATE UNIQUE INDEX catalog_promotions_company_id_id_key ON public.catalog_promotions USING btree (company_id, id)` | Tenant key for promotions. |
+| `catalog_promotions_field_idx` | `CREATE INDEX catalog_promotions_field_idx ON public.catalog_promotions USING btree (company_id, catalog_id, field_id)` | Finds the promotions of a field for schema checks. |
+| `catalog_promotions_price_idx` | `CREATE INDEX catalog_promotions_price_idx ON public.catalog_promotions USING btree (company_id, record_id, field_id, starts_at)` | Reads a price's promotions by start for overlap checks and evaluation. |
+
+## catalog_record_media
+
+The media item a record's MEDIA field holds, mirrored from the record values so media deletion can be guarded.
+
+Owner: Catalogs. Classification: INTERNAL.
+
+Lifecycle: Replaced with the record's values in the same transaction; deleted with the record.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the catalog (tenant key). | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog. | — | — |
+| `record_id` | `uuid` | no | — | INTERNAL | Record that holds the media. | — | — |
+| `field_id` | `uuid` | no | — | INTERNAL | MEDIA field that holds it. | — | — |
+| `media_asset_id` | `uuid` | no | — | INTERNAL | Media item the value names. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_record_media_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The catalog belongs to the same company. |
+| `catalog_record_media_company_id_field_id_fkey` | `FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The field belongs to the same company; the module checks it belongs to the record's catalog. |
+| `catalog_record_media_company_id_media_asset_id_fkey` | `FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The media item belongs to the same company. |
+| `catalog_record_media_company_id_record_id_fkey` | `FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The record belongs to the same company; rows are deleted with it. |
+| `catalog_record_media_pkey` | `PRIMARY KEY (company_id, record_id, field_id)` | One media item per record and field. |
+| `catalog_record_media_asset_idx` | `CREATE INDEX catalog_record_media_asset_idx ON public.catalog_record_media USING btree (company_id, media_asset_id)` | Answers the media reference guard. |
+
+## catalog_record_references
+
+The record a record's REFERENCE field points to, mirrored from the record values so deleting the target can be refused.
+
+Owner: Catalogs. Classification: INTERNAL.
+
+Lifecycle: Replaced with the record's values in the same transaction; deleted with the referring record.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the catalog (tenant key). | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog. | — | — |
+| `record_id` | `uuid` | no | — | INTERNAL | Record that holds the reference. | — | — |
+| `field_id` | `uuid` | no | — | INTERNAL | REFERENCE field that holds it. | — | — |
+| `target_record_id` | `uuid` | no | — | INTERNAL | Record the value points to, in the field's target catalog. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_record_references_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The catalog belongs to the same company. |
+| `catalog_record_references_company_id_field_id_fkey` | `FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The field belongs to the same company; the module checks it belongs to the record's catalog. |
+| `catalog_record_references_company_id_record_id_fkey` | `FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The referring record belongs to the same company; rows are deleted with it. |
+| `catalog_record_references_company_id_target_record_id_fkey` | `FOREIGN KEY (company_id, target_record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The target is a record of the same company that cannot be deleted while referenced. |
+| `catalog_record_references_pkey` | `PRIMARY KEY (company_id, record_id, field_id)` | One reference per record and field. |
+| `catalog_record_references_target_idx` | `CREATE INDEX catalog_record_references_target_idx ON public.catalog_record_references USING btree (company_id, target_record_id)` | Counts the records that refer to a record. |
+
+## catalog_audit_events
+
+Append-only record of catalog, schema, record and price changes, with the acting member and the branches each change concerns.
+
+Owner: Catalogs. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company the change belongs to. | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog the event concerns; not a foreign key, so events outlive deleted catalogs. | — | — |
+| `record_id` | `uuid` | yes | — | INTERNAL | Record the event concerns; not a foreign key. | The event concerns the catalog or its schema. | — |
+| `branch_ids` | `uuid[]` | yes | `ARRAY[]::uuid[]` | INTERNAL | Branches the change concerns, for branch-scoped audit reads; empty for company-wide changes. | Never null; an empty array means the change is company-wide. | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
+| `actor_principal_id` | `uuid` | no | — | INTERNAL | Principal that made the change. | — | — |
+| `actor_membership_id` | `uuid` | no | — | INTERNAL | Membership through which the change was made. | — | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | Event name such as catalog.created, catalog.schema_changed, catalog.record_updated, catalog.price_changed, catalog.price_override_changed or catalog.promotion_changed. | — | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Bounded summary: names, field identifiers, counts, versions, IDs, and old and new amounts with their currency for price events; never record values. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_audit_events_actor_principal_id_fkey` | `FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The actor is a known principal. |
+| `catalog_audit_events_branch_ids_present` | `CHECK (((branch_ids IS NOT NULL) AND (cardinality(branch_ids) <= 100)))` | The branch list is present and bounded. |
+| `catalog_audit_events_company_id_actor_membership_id_fkey` | `FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The acting membership belongs to the same company. |
+| `catalog_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
+| `catalog_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
+| `catalog_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
+| `catalog_audit_events_catalog_idx` | `CREATE INDEX catalog_audit_events_catalog_idx ON public.catalog_audit_events USING btree (company_id, catalog_id, occurred_at DESC, id DESC)` | Reads a catalog's history newest first. |
+| `catalog_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX catalog_audit_events_company_id_id_key ON public.catalog_audit_events USING btree (company_id, id)` | Tenant key for events. |
+
 ## device_enrollments
 
 A screen's request to be paired: the hash of the credential the player generated, the HMAC of the short code it shows and its report. Platform-scoped until a member claims the code.
@@ -595,7 +860,7 @@ Lifecycle: Created ACTIVE; edited with expected versions, so every holder's acce
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable profile UUID; public resource ID. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Owning company; immutable (tenant key). | — | — |
 | `name` | `character varying(120)` | no | — | CONFIDENTIAL | Profile name, unique among the company's active profiles regardless of case. | — | — |
-| `capabilities` | `text[]` | no | — | INTERNAL | Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign); company administration is never delegable through a profile. | — | — |
+| `capabilities` | `text[]` | no | — | INTERNAL | Delegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); company administration is never delegable through a profile. | — | — |
 | `status` | `"AccessProfileStatus"` | no | `'ACTIVE'::"AccessProfileStatus"` | INTERNAL | ACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution. | — | — |
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
@@ -606,7 +871,7 @@ Lifecycle: Created ACTIVE; edited with expected versions, so every holder's acce
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `access_profiles_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A profile belongs to an existing company. |
-| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text, 'publications.publish'::text])))` | A profile names at least one capability, all of them delegable. |
+| `access_profiles_delegable_capabilities` | `CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text, 'publications.publish'::text, 'catalogs.view'::text, 'catalogs.edit'::text, 'catalogs.manage'::text, 'prices.edit'::text])))` | A profile names at least one capability, all of them delegable. |
 | `access_profiles_name_nonblank` | `CHECK ((btrim((name)::text) <> ''::text))` | Profile name cannot be blank. |
 | `access_profiles_pkey` | `PRIMARY KEY (id)` | Unique profile identity. |
 | `access_profiles_version_positive` | `CHECK ((version >= 1))` | Rejects invalid concurrency versions. |
@@ -1327,6 +1592,8 @@ Lifecycle: Inserted in the same transaction as the publication it records; never
 | `AccessProfileStatus` | ACTIVE, ARCHIVED | Access profile state: ACTIVE or ARCHIVED. |
 | `AccessRole` | COMPANY_ADMINISTRATOR, BRANCH_MANAGER, OPERATOR | Standard role presets: COMPANY_ADMINISTRATOR, BRANCH_MANAGER and OPERATOR. |
 | `BranchStatus` | ACTIVE, ARCHIVED | Branch state: ACTIVE or ARCHIVED. |
+| `CatalogFieldType` | TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, TIME, WEEKDAYS, SELECTION, MONEY, MEDIA, REFERENCE | Catalog field types: TEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, TIME, WEEKDAYS, SELECTION, MONEY, MEDIA or REFERENCE. |
+| `CatalogStatus` | ACTIVE, ARCHIVED | Catalog lifecycle: ACTIVE or ARCHIVED. |
 | `CompanyStatus` | ACTIVE, SUSPENDED | Company state: ACTIVE or SUSPENDED. |
 | `DeviceEnrollmentStatus` | PENDING, CLAIMED | Enrollment state: PENDING or CLAIMED. |
 | `DeviceErasure` | NONE, PENDING, CONFIRMED, RESET_RECORDED | Erasure state of a device: NONE, PENDING, CONFIRMED or RESET_RECORDED. |

@@ -112,6 +112,10 @@ const ptBR = {
     "programming.edit": "Montar playlists e programações",
     "programming.assign": "Escolher a programação das telas",
     "publications.publish": "Publicar programações nas telas",
+    "catalogs.view": "Ver catálogos e preços",
+    "catalogs.edit": "Editar itens de catálogos",
+    "catalogs.manage": "Criar catálogos e alterar seus campos",
+    "prices.edit": "Alterar preços e promoções",
   } satisfies Record<DelegableCapability, string>,
   profilesTitle: "Perfis de acesso",
   profilesLead:
@@ -424,6 +428,10 @@ const enUS: OrganizationMessages = {
     "programming.edit": "Build playlists and programming",
     "programming.assign": "Choose the screens' programming",
     "publications.publish": "Publish programming to screens",
+    "catalogs.view": "View catalogs and prices",
+    "catalogs.edit": "Edit catalog items",
+    "catalogs.manage": "Create catalogs and change their fields",
+    "prices.edit": "Change prices and promotions",
   },
   profilesTitle: "Access profiles",
   profilesLead:

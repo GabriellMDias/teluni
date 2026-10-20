@@ -1,0 +1,197 @@
+// Catalogs module: user-defined typed catalogs owned by a company or one
+// branch, their fields, records, branch price overrides and promotions.
+// Rules follow docs/project/catalog-composition-design.md and ADR-0032;
+// tenant-owned tables keep a (company_id, id) key and composite tenant
+// references. Rows of one item's prices and links also carry its catalog;
+// the module checks that their item and field belong to it.
+
+enum CatalogStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CatalogFieldType {
+  TEXT
+  LONG_TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  TIME
+  WEEKDAYS
+  SELECTION
+  MONEY
+  MEDIA
+  REFERENCE
+}
+
+model Catalog {
+  id            String                   @id @db.Uuid
+  companyId     String                   @map("company_id") @db.Uuid
+  branchId      String?                  @map("branch_id") @db.Uuid
+  name          String                   @db.VarChar(120)
+  status        CatalogStatus            @default(ACTIVE)
+  version       Int                      @default(1)
+  schemaVersion Int                      @default(1) @map("schema_version")
+  createdAt     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company       Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch        Branch?                  @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  fields        CatalogField[]           @relation("CatalogFields")
+  referencedBy  CatalogField[]           @relation("CatalogFieldTarget")
+  records       CatalogRecord[]
+  overrides     CatalogPriceOverride[]
+  promotions    CatalogPromotion[]
+  recordMedia   CatalogRecordMedia[]
+  references    CatalogRecordReference[]
+
+  @@unique([companyId, id], map: "catalogs_company_id_id_key")
+  @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "catalogs_company_created_idx")
+  @@map("catalogs")
+}
+
+model CatalogField {
+  id              String                   @id @db.Uuid
+  companyId       String                   @map("company_id") @db.Uuid
+  catalogId       String                   @map("catalog_id") @db.Uuid
+  position        Int
+  label           String                   @db.VarChar(80)
+  type            CatalogFieldType
+  required        Boolean                  @default(false)
+  settings        Json                     @default("{}")
+  currency        String?                  @db.Char(3)
+  targetCatalogId String?                  @map("target_catalog_id") @db.Uuid
+  archivedAt      DateTime?                @map("archived_at") @db.Timestamptz(3)
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  catalog         Catalog                  @relation("CatalogFields", fields: [companyId, catalogId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  targetCatalog   Catalog?                 @relation("CatalogFieldTarget", fields: [companyId, targetCatalogId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  overrides       CatalogPriceOverride[]
+  promotions      CatalogPromotion[]
+  recordMedia     CatalogRecordMedia[]
+  references      CatalogRecordReference[]
+
+  @@unique([companyId, id], map: "catalog_fields_company_id_id_key")
+  @@index([companyId, catalogId, position], map: "catalog_fields_catalog_position_idx")
+  @@index([companyId, targetCatalogId], map: "catalog_fields_target_idx")
+  @@map("catalog_fields")
+}
+
+model CatalogRecord {
+  id                    String                   @id @db.Uuid
+  companyId             String                   @map("company_id") @db.Uuid
+  catalogId             String                   @map("catalog_id") @db.Uuid
+  position              Int
+  available             Boolean                  @default(true)
+  values                Json                     @default("{}") @map("field_values")
+  version               Int                      @default(1)
+  createdByMembershipId String                   @map("created_by_membership_id") @db.Uuid
+  updatedByMembershipId String                   @map("updated_by_membership_id") @db.Uuid
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(3)
+  catalog               Catalog                  @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy             Membership               @relation("CatalogRecordCreator", fields: [companyId, createdByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  updatedBy             Membership               @relation("CatalogRecordUpdater", fields: [companyId, updatedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  overrides             CatalogPriceOverride[]
+  promotions            CatalogPromotion[]
+  media                 CatalogRecordMedia[]
+  references            CatalogRecordReference[] @relation("CatalogReferenceSource")
+  referencedBy          CatalogRecordReference[] @relation("CatalogReferenceTarget")
+
+  @@unique([companyId, id], map: "catalog_records_company_id_id_key")
+  @@index([companyId, catalogId, position, id], map: "catalog_records_catalog_position_idx")
+  @@map("catalog_records")
+}
+
+model CatalogPriceOverride {
+  companyId String        @map("company_id") @db.Uuid
+  catalogId String        @map("catalog_id") @db.Uuid
+  recordId  String        @map("record_id") @db.Uuid
+  fieldId   String        @map("field_id") @db.Uuid
+  branchId  String        @map("branch_id") @db.Uuid
+  amount    BigInt
+  updatedAt DateTime      @default(now()) @map("updated_at") @db.Timestamptz(3)
+  catalog   Catalog       @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  record    CatalogRecord @relation(fields: [companyId, recordId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  field     CatalogField  @relation(fields: [companyId, fieldId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branch    Branch        @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, recordId, fieldId, branchId], map: "catalog_price_overrides_pkey")
+  @@index([companyId, catalogId, fieldId], map: "catalog_price_overrides_field_idx")
+  @@index([companyId, branchId], map: "catalog_price_overrides_branch_idx")
+  @@map("catalog_price_overrides")
+}
+
+model CatalogPromotion {
+  id                    String        @id @db.Uuid
+  companyId             String        @map("company_id") @db.Uuid
+  catalogId             String        @map("catalog_id") @db.Uuid
+  recordId              String        @map("record_id") @db.Uuid
+  fieldId               String        @map("field_id") @db.Uuid
+  branchId              String?       @map("branch_id") @db.Uuid
+  amount                BigInt
+  startsAt              DateTime      @map("starts_at") @db.Timestamp(0)
+  endsAt                DateTime      @map("ends_at") @db.Timestamp(0)
+  createdByMembershipId String        @map("created_by_membership_id") @db.Uuid
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  catalog               Catalog       @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  record                CatalogRecord @relation(fields: [companyId, recordId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  field                 CatalogField  @relation(fields: [companyId, fieldId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branch                Branch?       @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy             Membership    @relation("CatalogPromotionCreator", fields: [companyId, createdByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "catalog_promotions_company_id_id_key")
+  @@index([companyId, recordId, fieldId, startsAt], map: "catalog_promotions_price_idx")
+  @@index([companyId, catalogId, fieldId], map: "catalog_promotions_field_idx")
+  @@map("catalog_promotions")
+}
+
+model CatalogRecordMedia {
+  companyId    String        @map("company_id") @db.Uuid
+  catalogId    String        @map("catalog_id") @db.Uuid
+  recordId     String        @map("record_id") @db.Uuid
+  fieldId      String        @map("field_id") @db.Uuid
+  mediaAssetId String        @map("media_asset_id") @db.Uuid
+  catalog      Catalog       @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  record       CatalogRecord @relation(fields: [companyId, recordId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  field        CatalogField  @relation(fields: [companyId, fieldId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  mediaAsset   MediaAsset    @relation(fields: [companyId, mediaAssetId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, recordId, fieldId], map: "catalog_record_media_pkey")
+  @@index([companyId, mediaAssetId], map: "catalog_record_media_asset_idx")
+  @@map("catalog_record_media")
+}
+
+model CatalogRecordReference {
+  companyId      String        @map("company_id") @db.Uuid
+  catalogId      String        @map("catalog_id") @db.Uuid
+  recordId       String        @map("record_id") @db.Uuid
+  fieldId        String        @map("field_id") @db.Uuid
+  targetRecordId String        @map("target_record_id") @db.Uuid
+  catalog        Catalog       @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  record         CatalogRecord @relation("CatalogReferenceSource", fields: [companyId, recordId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  field          CatalogField  @relation(fields: [companyId, fieldId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  target         CatalogRecord @relation("CatalogReferenceTarget", fields: [companyId, targetRecordId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([companyId, recordId, fieldId], map: "catalog_record_references_pkey")
+  @@index([companyId, targetRecordId], map: "catalog_record_references_target_idx")
+  @@map("catalog_record_references")
+}
+
+model CatalogAuditEvent {
+  id                String     @id @db.Uuid
+  companyId         String     @map("company_id") @db.Uuid
+  catalogId         String     @map("catalog_id") @db.Uuid
+  recordId          String?    @map("record_id") @db.Uuid
+  branchIds         String[]   @default([]) @map("branch_ids") @db.Uuid
+  occurredAt        DateTime   @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String     @map("actor_principal_id") @db.Uuid
+  actorMembershipId String     @map("actor_membership_id") @db.Uuid
+  action            String     @db.VarChar(64)
+  details           Json       @default("{}")
+  company           Company    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Principal  @relation("CatalogAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorMembership   Membership @relation("CatalogAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "catalog_audit_events_company_id_id_key")
+  @@index([companyId, catalogId, occurredAt(sort: Desc), id(sort: Desc)], map: "catalog_audit_events_catalog_idx")
+  @@map("catalog_audit_events")
+}

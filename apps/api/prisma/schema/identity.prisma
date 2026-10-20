@@ -35,6 +35,7 @@ model Principal {
   programmingAudit ProgrammingAuditEvent[]  @relation("ProgrammingAuditActor")
   publications     Publication[]            @relation("PublicationPublisher")
   publicationAudit PublicationAuditEvent[]  @relation("PublicationAuditActor")
+  catalogAudit     CatalogAuditEvent[]      @relation("CatalogAuditActor")
 
   @@unique([issuer, subject], map: "principals_issuer_subject_key")
   @@map("principals")

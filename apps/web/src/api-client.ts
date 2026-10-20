@@ -12,16 +12,50 @@ export const coreErrorCodes: ReadonlySet<string> = new Set([
   "INTERNAL_ERROR",
 ]);
 
+/** A field-level problem from the envelope's optional `issues` list. */
+export type ApiIssue = Readonly<{
+  path: string;
+  reason: string;
+  fieldId?: string;
+  count?: number;
+}>;
+
 export class ApiFailure extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
     public readonly requestId: string | null,
     message: string,
+    public readonly issues: readonly ApiIssue[] = [],
   ) {
     super(message);
     this.name = "ApiFailure";
   }
+}
+
+/** Keeps well-formed issues only, at most 50, as the server bounds them. */
+function issuesOf(value: unknown): ApiIssue[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 50).flatMap((entry: unknown) => {
+    if (!entry || typeof entry !== "object") return [];
+    const issue = entry as Record<string, unknown>;
+    if (
+      typeof issue.path !== "string" ||
+      typeof issue.reason !== "string" ||
+      !/^[A-Z][A-Z0-9_]{0,63}$/.test(issue.reason)
+    )
+      return [];
+    return [
+      {
+        path: issue.path,
+        reason: issue.reason,
+        ...(typeof issue.fieldId === "string"
+          ? { fieldId: issue.fieldId }
+          : {}),
+        ...(typeof issue.count === "number" ? { count: issue.count } : {}),
+      },
+    ];
+  });
 }
 
 /** The generated SDK bound to the browser's same-origin API path. */
@@ -63,7 +97,8 @@ export function unwrap<T>(
     (coreErrorCodes.has(code) || knownCodes.has(code))
       ? detail.message
       : "The request could not be completed.";
-  throw new ApiFailure(response.status, code, requestId, message);
+  const issues = detail && "issues" in detail ? issuesOf(detail.issues) : [];
+  throw new ApiFailure(response.status, code, requestId, message, issues);
 }
 
 export type FailureOperation = "read" | "create" | "write";

@@ -91,6 +91,9 @@ model Company {
   // Back-relations of the publications module; never traversed across modules.
   publications            Publication[]
   publicationAuditEvents  PublicationAuditEvent[]
+  // Back-relations of the catalogs module; never traversed across modules.
+  catalogs                Catalog[]
+  catalogAuditEvents      CatalogAuditEvent[]
 
   @@unique([createdByPrincipalId, creationKey], map: "companies_creator_key_unique")
   @@map("companies")
@@ -114,6 +117,9 @@ model Branch {
   playlists            Playlist[]
   programmingGroups    ProgrammingGroupBranch[]
   publicationPlaylists PublicationPlaylist[]
+  catalogs             Catalog[]
+  catalogOverrides     CatalogPriceOverride[]
+  catalogPromotions    CatalogPromotion[]
 
   @@unique([companyId, id], map: "branches_company_id_id_key")
   @@index([companyId, status, name], map: "branches_company_status_name_idx")
@@ -145,6 +151,10 @@ model Membership {
   programmingAudit  ProgrammingAuditEvent[]  @relation("ProgrammingAuditActorMembership")
   publications      Publication[]            @relation("PublicationPublisherMembership")
   publicationAudit  PublicationAuditEvent[]  @relation("PublicationAuditActorMembership")
+  createdRecords    CatalogRecord[]          @relation("CatalogRecordCreator")
+  updatedRecords    CatalogRecord[]          @relation("CatalogRecordUpdater")
+  createdPromotions CatalogPromotion[]       @relation("CatalogPromotionCreator")
+  catalogAudit      CatalogAuditEvent[]      @relation("CatalogAuditActorMembership")
 
   // One current (not REMOVED) membership per principal and company is a
   // partial unique index in the reviewed SQL, which Prisma cannot express.

@@ -248,6 +248,8 @@ describe("organization access decisions", () => {
       ["media.archive", "devices.view"],
       ["programming.assign"],
       ["publications.publish"],
+      ["catalogs.edit"],
+      ["prices.edit"],
     ])
       expect(() => profileCapabilities(requested)).toThrow(OrganizationFailure);
   });
