@@ -168,7 +168,14 @@ PJ-11 increment 3 adds two fields to the `POST /device/sync` response, both comp
 - `zoneOffsets`, as above, or `null` when `timeZone` is `null`;
 - `rotation`, the configured clockwise rotation (0, 90, 180 or 270).
 
-The API also publishes protocol conformance fixtures next to its tests: a protocol 1 manifest as exact bytes with its SHA-256, a key set and statements signed with a fixed test key, and zone-offset examples. The API's tests produce and verify them, and the player's `core` tests parse and verify the same files. These test keys sign nothing else.
+The API also publishes protocol conformance fixtures in [`conformance.json`](../../apps/api/test/publications/conformance.json):
+
+- a protocol 1 manifest as exact bytes with its SHA-256;
+- a key set and statements signed with throwaway keys whose private halves are discarded, including a rotated key and a tampered payload;
+- zone offsets with local-time resolutions, including gaps, repeated hours and a half-hour transition;
+- the zone offsets of every shared schedule fixture.
+
+`pnpm -C apps/api conformance:write` writes the file with the API's own serializer, signer and zone rules. The API's tests check that the committed file still matches that code, and the player's `core` tests parse and verify the same file.
 
 ## Diagnostics and privacy
 
@@ -185,7 +192,7 @@ The player sends nothing beyond the sync report and erasure confirmation; diagno
 ## Verification
 
 - **`core` unit tests:**
-  - every case of the shared schedule fixtures through the Kotlin evaluator, with zone offsets built from the JDK's rules for the fixture zones;
+  - every case of the shared schedule fixtures through the Kotlin evaluator, with the API's zone offsets for each case from the conformance file, so the tests use the same offsets a device would receive;
   - local-time resolution against offset periods with gaps, repeated hours and the handoff clip;
   - parsing of the conformance manifest and strict rejection of malformed and unknown content;
   - statement verification with the conformance key set: wrong algorithm, `typ`, `kid`, subject, company, expiry, tampered payload and rotated keys;
@@ -194,7 +201,7 @@ The player sends nothing beyond the sync report and erasure confirmation; diagno
   - startup reconciliation from every crash point;
   - staging, superseding, preflight and the reserve, resume, integrity failures and activation against MockWebServer;
   - the playback decision for segments, boundaries, authorization and neutral output.
-- **API tests:** the conformance fixtures are produced and verified by the API, and `zoneOffsets` match Temporal for zones with and without DST.
+- **API tests:** the committed conformance file still matches the API's serializer, signatures and zone rules, `zoneOffsets` match Temporal for zones with and without DST, and the sync response carries the offsets and rotation.
 - **`app` tests:** Robolectric tests for the vault adapter's error paths, the activity's states and the device-owner calls that Robolectric supports. An emulator smoke test (Android TV image) pairs against a local API, plays a publication and survives a process kill, when CI can host the emulator.
 - **Hardware qualification (PH-08, PJ-14):** AT-04, AT-06 to AT-13 and AT-16 on each candidate model, including at least 20 power cuts across download, preparation, activation and playback, seven days offline with reboots, every rotation, and the managed profile's boot and crash recovery.
 

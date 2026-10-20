@@ -3391,10 +3391,10 @@
       { "file": "search/0024.json", "count": 66, "kinds": ["repository"] },
       { "file": "search/0025.json", "count": 53, "kinds": ["repository"] },
       { "file": "search/0026.json", "count": 58, "kinds": ["repository"] },
-      { "file": "search/0027.json", "count": 82, "kinds": ["repository"] },
-      { "file": "search/0028.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0027.json", "count": 81, "kinds": ["repository"] },
+      { "file": "search/0028.json", "count": 68, "kinds": ["repository"] },
       { "file": "search/0029.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0030.json", "count": 65, "kinds": ["repository"] }
+      { "file": "search/0030.json", "count": 68, "kinds": ["repository"] }
     ],
     "count": 1667
   }

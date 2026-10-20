@@ -862,6 +862,7 @@ describe("publications: publishing, synchronization and retention", () => {
       status: "active",
       clearRequired: false,
       timeZone: "America/Sao_Paulo",
+      rotation: 0,
       desired: {
         publicationId: first.id,
         generation: 1,
@@ -877,6 +878,20 @@ describe("publications: publishing, synchronization and retention", () => {
       publications: [{ id: first.id, sha256: first.manifestSha256 }],
     });
     expect(statement.exp - statement.iat).toBe(7 * 24 * 60 * 60);
+    // The zone's offsets cover two days before to 35 days after the
+    // server's time, so the screen never needs its own zone data.
+    const serverTime = Date.parse(synced.body.serverTime as string);
+    const offsets = synced.body.zoneOffsets as {
+      until: string;
+      periods: { from: string; offsetSeconds: number }[];
+    };
+    expect(Date.parse(offsets.until) - serverTime).toBe(35 * 86_400_000);
+    expect(serverTime - Date.parse(offsets.periods[0].from)).toBe(
+      2 * 86_400_000,
+    );
+    expect(offsets.periods).toEqual([
+      { from: offsets.periods[0].from, offsetSeconds: -10_800 },
+    ]);
 
     const manifest = await tv.call(
       "GET",
@@ -1135,6 +1150,9 @@ describe("publications: publishing, synchronization and retention", () => {
     expect((await sync(tv)).body).toMatchObject({
       status: "unlinked",
       clearRequired: true,
+      timeZone: null,
+      zoneOffsets: null,
+      rotation: null,
       desired: null,
       authorization: null,
     });

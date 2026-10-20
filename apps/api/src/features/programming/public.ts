@@ -7,6 +7,7 @@ import type { Capability, CompanyAccess } from "../organizations/public.js";
 
 export { ProgrammingFailure } from "./domain.js";
 export { programmingErrors } from "./errors.js";
+export { zoneOffsets, type ZoneOffsets } from "./schedule.js";
 
 /** A group's program or a screen's own program. */
 export type ProgramSource =

@@ -10,11 +10,13 @@ import {
   type CompanyAccess,
   type CompanyAccessPort,
 } from "../organizations/public.js";
-import type {
-  ProgramSnapshot,
-  ProgramSource,
-  ProgramTarget,
-  ProgrammingPort,
+import {
+  zoneOffsets,
+  type ProgramSnapshot,
+  type ProgramSource,
+  type ProgramTarget,
+  type ProgrammingPort,
+  type ZoneOffsets,
 } from "../programming/public.js";
 import {
   agreedProtocol,
@@ -102,6 +104,9 @@ export type SyncAnswer = Readonly<{
   status: "active" | "suspended" | "unlinked";
   clearRequired: boolean;
   timeZone: string | null;
+  /** The zone's UTC offsets around `serverTime`; null without a zone. */
+  zoneOffsets: ZoneOffsets | null;
+  rotation: 0 | 90 | 180 | 270 | null;
   desired: Readonly<{
     publicationId: string;
     generation: number;
@@ -123,6 +128,7 @@ type Built = Readonly<{
 }>;
 
 const publish = "publications.publish";
+const dayMs = 86_400_000;
 
 const encodeCursor = (generation: number) =>
   Buffer.from(JSON.stringify({ g: generation }), "utf8").toString("base64url");
@@ -724,6 +730,8 @@ export class PublicationService {
         status: "unlinked",
         clearRequired: true,
         timeZone: null,
+        zoneOffsets: null,
+        rotation: null,
         desired: null,
         authorization: null,
         nextSyncSeconds: publicationPolicy.syncIntervalSeconds,
@@ -818,6 +826,20 @@ export class PublicationService {
       status: screen.status,
       clearRequired: false,
       timeZone: screen.timeZone,
+      zoneOffsets: screen.timeZone
+        ? zoneOffsets(
+            screen.timeZone,
+            new Date(
+              screen.serverTime.getTime() -
+                publicationPolicy.zoneOffsetsBeforeDays * dayMs,
+            ),
+            new Date(
+              screen.serverTime.getTime() +
+                publicationPolicy.zoneOffsetsAfterDays * dayMs,
+            ),
+          )
+        : null,
+      rotation: screen.rotation,
       desired: desired
         ? {
             publicationId: desired.id,

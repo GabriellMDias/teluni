@@ -4,6 +4,33 @@
     "title": "Health Checks",
     "group": "Reliability",
     "kind": "repository",
+    "heading": "Health Checks",
+    "anchor": "health-checks",
+    "text": "Health Checks\nThis policy owns startup, liveness, readiness, and diagnostic-health semantics. Probes answer narrow operational questions; [metrics](metrics.md), [alerts](alerting.md), synthetic monitoring, and full diagnostics serve different purposes. The application owns dependency criticality; shared mechanisms or an orchestrator must not infer it automatically.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current API contract",
+    "anchor": "current-api-contract",
+    "text": "Current API contract\nThe implemented [health contracts](../../apps/api/src/health-contracts.ts), [handlers](../../apps/api/src/app.ts), and [lifecycle](../../apps/api/src/lifecycle.ts) define three endpoints with `200`/`503` and minimal `{ \"status\": \"ok\" | \"unavailable\" }` responses:\nEndpoint\nCurrent behavior\n`/health/startup`\nUnavailable while lifecycle is `starting`; successful after leaving that phase\n`/health/live`\nSuccessful until lifecycle reaches `stopped`; does not query PostgreSQL\n`/health/ready`\nSuccessful only in `ready`, plus the feature's database check when configured; dependency failure or a 500 ms wait deadline makes it unavailable\n[Bootstrap](../../apps/api/src/main.ts) validates configuration, checks configured database connectivity, listens, then marks ready. Shutdown begins drain before closing HTTP and resources. Ordinary requests during draining/stopped receive a safe unavailable response. The readiness wait deadline does not itself cancel the underlying database operation. The current handler verifies connectivity, not full schema compatibility or every business capability.\nHealth paths/status/schema are implemented contracts, not deferred choices. Orchestrator probe frequency/thresholds, deployed routing, diagnostics authorization, uptime/synthetic monitors, and recovery objectives remain deployment-specific. Global response logging/instrumentation currently includes health traffic; the noise guidance below is an intended improvement, not existing exclusion behavior.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Liveness",
+    "anchor": "liveness",
+    "text": "Liveness\nLiveness asks whether the process can make progress and whether restarting has a reasonable chance of repair. Prefer cheap process-local evidence such as irrecoverable state or inability to serve the handler. A remote database, cache, broker, identity, or provider outage normally does not justify restarting otherwise healthy replicas. Dependency-coupled liveness can amplify shared outages, startup load, and loss of evidence.\nUse runtime/platform controls where adequate instead of fragile custom memory/disk/event-loop thresholds without evidence. High load or memory pressure is not automatically death; rate limiting/backpressure may remain safe. Serverless/client runtimes need appropriate initialization/reachability behavior, not forced container-style endpoints.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
     "heading": "Readiness",
     "anchor": "readiness",
     "text": "Readiness\nReadiness asks whether this runtime can safely accept its expected work now. Failure normally removes new traffic/job claiming without terminating the process. Consider required initialization/configuration, truly critical dependencies/resources, and draining. A process can be live and unready while a dependency recovers.\nClassify dependencies by actual application responsibility. Optional email/analytics/cache failure may permit degraded operation; a broker can be critical for a worker without being critical to a read API. A nominally optional cache can become critical if fallback overloads the database, so use tested behavior. Do not map every circuit breaker, dependency outage, or individual module to whole-process unready automatically.\nDefine “degraded” explicitly if used. Independent read/write capabilities may justify scoped routing, separate runtimes, or bounded degraded responses when real requirements demand it; do not create dozens of probes preemptively. Health aggregation for a dashboard is not orchestration health authority. Readiness is minimum work-acceptance evidence, not complete correctness, SLO compliance, or a customer-specific domain validation.\n"
@@ -925,32 +952,5 @@
     "heading": "Incident Response",
     "anchor": "incident-response",
     "text": "Incident Response\nThis policy owns coordinated response to material reliability, security, and data incidents. It defines requirements, not deployed incident tooling or authority. Paging/escalation channels, concrete roles, severity names, legal notifications, forensic storage, and exercise schedules must follow actual product, organization, jurisdiction, and infrastructure decisions. Real repeatable procedures belong in [runbooks](../runbooks/README.md).\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Declaration and ownership",
-    "anchor": "declaration-and-ownership",
-    "text": "Declaration and ownership\nAn incident requires coordinated action because service behavior, trust, confidentiality, integrity, or data lifecycle may be materially violated. Reliability, security, and data classes can overlap. An isolated transient timeout, recovered job, or replaced replica is not automatically an incident; assess impact, risk, investigation, mitigation, and coordination needs.\nDetection can come from [alerts](../reliability/alerting.md), error reports, support/customers, providers, operators, or integrity checks. Declare serious incidents explicitly without waiting for perfect root cause. Every active incident must have an owner. Significant incidents may divide coordination, technical response, communication, security, and scribing; small teams can combine these responsibilities without inventing organizational roles.\nRecord the observed signal, environment, affected service/operation/data, first known impact, scope, trend, active release, and relevant recent changes. Maintain a useful timeline with consistent absolute timestamps and important decisions/rationale. Use one authoritative status location rather than conflicting chat threads.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Severity",
-    "anchor": "severity",
-    "text": "Severity\nUse a small consistent severity model based on user impact, scope, urgency, data classification, privilege/trust risk, and recovery complexity. Do not confuse technical difficulty or error count with severity. A single signing-key leak can be more urgent than many benign failures. Unknown scope can justify higher urgency until evidence narrows it; change severity explicitly as facts improve.\nA possible future scale distinguishes critical widespread outage/active privileged compromise/severe corruption, major workflow degradation or suspected serious compromise, localized recoverable impact, and minor contained anomalies. These categories are guidance, not a selected `SEV-*` contract or response-time promise.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Triage and containment",
-    "anchor": "triage-and-containment",
-    "text": "Triage and containment\nDetermine what is failing, who is affected, whether impact is increasing, what changed, and whether security or data is at risk. Prefer scoped reversible containment where safe, but broader containment can be justified by high risk and uncertain scope. Stop active harm before perfecting diagnosis or preserving every artifact.\nContainment may disable a capability, remove traffic, pause workers/writes/deletion/exports, revoke access, or isolate affected data. These are conditional options, not authorization to execute them. Establish target scope, needed privilege, data-loss/evidence risks, reversibility, success criteria, and recovery before action where practical. Preserve evidence when safe without delaying urgent containment.\nInspect deployment, migration, configuration, feature-flag, infrastructure, and provider changes as clues. Temporal correlation is not proof. Roll back only when the earlier version remains compatible and reversal is safe; irreversible database changes, data-loss risk, or incompatible old releases may require a forward fix. A temporary freeze on unrelated changes can reduce confusion but must not block necessary mitigation.\n"
   }
 ]

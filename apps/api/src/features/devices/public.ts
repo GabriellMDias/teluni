@@ -3,7 +3,7 @@
 // screens they decide about, react to moves inside the move transaction and
 // authenticate screens on their own device routes.
 import type { Prisma } from "../../generated/prisma/client.js";
-import type { DeviceStatus } from "./domain.js";
+import type { DeviceStatus, Rotation } from "./domain.js";
 
 export { DeviceFailure } from "./domain.js";
 export { deviceErrors } from "./errors.js";
@@ -44,6 +44,8 @@ export type ScreenSession = Readonly<{
   status: "active" | "suspended" | "unlinked";
   /** The screen's own zone, otherwise its branch's; null when unlinked. */
   timeZone: string | null;
+  /** The configured clockwise rotation; null when unlinked. */
+  rotation: Rotation | null;
   /** The offline deadline a renewal grants now (AT-15); null without one. */
   authorizedUntil: Date | null;
   /** The database clock when the screen was authenticated. */

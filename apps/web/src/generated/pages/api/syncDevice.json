@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "syncDevice",
   "summary": "",
-  "description": "Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
+  "description": "Every 30 seconds: the screen reports what it received, staged and activated, and receives its status, time zone with that zone's UTC offsets, configured rotation, desired publication (null for a source without one, which means neutral output) and a signed authorization statement listing the manifests it may play until the statement expires. A suspended company receives neither a desired publication nor a statement; an unlinked screen must clear itself.",
   "security": [{ "deviceCredential": [] }],
   "components": {
     "securitySchemes": {
@@ -372,6 +372,8 @@
               "status",
               "clearRequired",
               "timeZone",
+              "zoneOffsets",
+              "rotation",
               "desired",
               "authorization",
               "nextSyncSeconds"
@@ -389,6 +391,47 @@
               "clearRequired": { "type": "boolean" },
               "timeZone": {
                 "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
+              "zoneOffsets": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["until", "periods"],
+                    "properties": {
+                      "until": { "type": "string", "format": "date-time" },
+                      "periods": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["from", "offsetSeconds"],
+                          "properties": {
+                            "from": { "type": "string", "format": "date-time" },
+                            "offsetSeconds": {
+                              "type": "integer",
+                              "minimum": -86400,
+                              "maximum": 86400
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "minItems": 1,
+                        "maxItems": 64
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "The UTC offsets of `timeZone` from two days before `serverTime` to 35 days after it: the offset at the start, then one period per transition. Screens resolve local schedule times against these instead of their own time zone data."
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "rotation": {
+                "anyOf": [
+                  { "type": "number", "const": 0 },
+                  { "type": "number", "const": 90 },
+                  { "type": "number", "const": 180 },
+                  { "type": "number", "const": 270 },
+                  { "type": "null" }
+                ]
               },
               "desired": {
                 "anyOf": [
@@ -441,6 +484,8 @@
           "status",
           "clearRequired",
           "timeZone",
+          "zoneOffsets",
+          "rotation",
           "desired",
           "authorization",
           "nextSyncSeconds"
@@ -457,6 +502,47 @@
           },
           "clearRequired": { "type": "boolean" },
           "timeZone": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "zoneOffsets": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["until", "periods"],
+                "properties": {
+                  "until": { "type": "string", "format": "date-time" },
+                  "periods": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["from", "offsetSeconds"],
+                      "properties": {
+                        "from": { "type": "string", "format": "date-time" },
+                        "offsetSeconds": {
+                          "type": "integer",
+                          "minimum": -86400,
+                          "maximum": 86400
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 64
+                  }
+                },
+                "additionalProperties": false,
+                "description": "The UTC offsets of `timeZone` from two days before `serverTime` to 35 days after it: the offset at the start, then one period per transition. Screens resolve local schedule times against these instead of their own time zone data."
+              },
+              { "type": "null" }
+            ]
+          },
+          "rotation": {
+            "anyOf": [
+              { "type": "number", "const": 0 },
+              { "type": "number", "const": 90 },
+              { "type": "number", "const": 180 },
+              { "type": "number", "const": 270 },
+              { "type": "null" }
+            ]
+          },
           "desired": {
             "anyOf": [
               {
@@ -512,6 +598,12 @@
         },
         { "name": "clearRequired", "type": "boolean", "required": true },
         { "name": "timeZone", "type": "string | null", "required": true },
+        { "name": "zoneOffsets", "type": "object | null", "required": true },
+        {
+          "name": "rotation",
+          "type": "0 | 90 | 180 | 270 | null",
+          "required": true
+        },
         { "name": "desired", "type": "object | null", "required": true },
         { "name": "authorization", "type": "string | null", "required": true },
         {

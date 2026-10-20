@@ -1,0 +1,383 @@
+{
+  "description": "Player protocol conformance fixtures (docs/project/player-design.md#server-additions), written by apps/api/scripts/conformance.ts from the API's serializer, signer and zone rules and verified by apps/api/test/publications/conformance.test.ts. The keys are throwaway test keys whose private halves were discarded. Do not edit by hand.",
+  "version": 1,
+  "manifest": {
+    "header": {
+      "publicationId": "2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e",
+      "companyId": "0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c",
+      "programId": "1c8e0b63-69b5-4b46-8a64-7d2f3a4b5c6d",
+      "generation": 3,
+      "publishedAt": "2026-10-19T12:00:00.000Z"
+    },
+    "content": {
+      "outputs": [
+        {
+          "key": "screen",
+          "defaultPlaylistId": "4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90",
+          "rules": [
+            {
+              "id": "r1",
+              "playlistId": "3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f",
+              "weekdays": [1, 2, 3, 4, 5],
+              "allDay": false,
+              "startTime": "08:00",
+              "endTime": "18:00",
+              "startsOn": "2026-10-20",
+              "endsOn": null
+            },
+            {
+              "id": "r2",
+              "playlistId": "3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f",
+              "weekdays": [5],
+              "allDay": false,
+              "startTime": "22:00",
+              "endTime": "02:00",
+              "startsOn": "2026-10-20",
+              "endsOn": "2026-12-31"
+            },
+            {
+              "id": "r3",
+              "playlistId": "4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90",
+              "weekdays": [6, 7],
+              "allDay": true,
+              "startsOn": "2026-10-24",
+              "endsOn": null
+            }
+          ]
+        }
+      ],
+      "playlists": [
+        {
+          "id": "3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f",
+          "transition": { "kind": "CUT" },
+          "items": [
+            {
+              "mediaId": "50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001",
+              "durationMs": 10000
+            },
+            {
+              "mediaId": "61d350b8-be0a-409b-9fb9-c27e8f900112",
+              "durationMs": null
+            }
+          ]
+        },
+        {
+          "id": "4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90",
+          "transition": { "kind": "CUT" },
+          "items": [
+            {
+              "mediaId": "50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001",
+              "durationMs": 15000
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "id": "50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001",
+          "kind": "IMAGE",
+          "contentType": "image/jpeg",
+          "size": 482113,
+          "sha256": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4",
+          "width": 1920,
+          "height": 1080,
+          "durationMs": null,
+          "hasAudio": false
+        },
+        {
+          "id": "61d350b8-be0a-409b-9fb9-c27e8f900112",
+          "kind": "VIDEO",
+          "contentType": "video/mp4",
+          "size": 18734002,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "width": 1920,
+          "height": 1080,
+          "durationMs": 31500,
+          "hasAudio": true
+        }
+      ]
+    },
+    "bytes": "{\"format\":\"teluni.publication\",\"protocol\":1,\"publicationId\":\"2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e\",\"companyId\":\"0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c\",\"programId\":\"1c8e0b63-69b5-4b46-8a64-7d2f3a4b5c6d\",\"generation\":3,\"publishedAt\":\"2026-10-19T12:00:00.000Z\",\"outputs\":[{\"key\":\"screen\",\"defaultPlaylistId\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"rules\":[{\"id\":\"r1\",\"playlistId\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"weekdays\":[1,2,3,4,5],\"allDay\":false,\"startTime\":\"08:00\",\"endTime\":\"18:00\",\"startsOn\":\"2026-10-20\",\"endsOn\":null},{\"id\":\"r2\",\"playlistId\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"weekdays\":[5],\"allDay\":false,\"startTime\":\"22:00\",\"endTime\":\"02:00\",\"startsOn\":\"2026-10-20\",\"endsOn\":\"2026-12-31\"},{\"id\":\"r3\",\"playlistId\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"weekdays\":[6,7],\"allDay\":true,\"startsOn\":\"2026-10-24\",\"endsOn\":null}]}],\"playlists\":[{\"id\":\"3ea02d85-8bd7-4d68-8c86-9f4b5c6d7e8f\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":10000},{\"mediaId\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"durationMs\":null}]},{\"id\":\"4fb13e96-9ce8-4e79-9d97-a05c6d7e8f90\",\"transition\":{\"kind\":\"CUT\"},\"items\":[{\"mediaId\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"durationMs\":15000}]}],\"media\":[{\"id\":\"50c24fa7-adf9-4f8a-8ea8-b16d7e8f9001\",\"kind\":\"IMAGE\",\"contentType\":\"image/jpeg\",\"size\":482113,\"sha256\":\"8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4\",\"width\":1920,\"height\":1080,\"durationMs\":null,\"hasAudio\":false},{\"id\":\"61d350b8-be0a-409b-9fb9-c27e8f900112\",\"kind\":\"VIDEO\",\"contentType\":\"video/mp4\",\"size\":18734002,\"sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"width\":1920,\"height\":1080,\"durationMs\":31500,\"hasAudio\":true}]}",
+    "sha256": "34526633a97cb0df97ef25b71a2413f4c29df3d00e7415b3ecf5f3cf0223ef52"
+  },
+  "keys": {
+    "keys": [
+      {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "pZwVibW5hcB-gx267JtLnP60Vk_pm60QoSL9_bA4zPw",
+        "y": "neBLc3mh4S_-QvY1srq0jEU_vgVVWT9_5MBJDr36dwk",
+        "kid": "conformance-2",
+        "use": "sig",
+        "alg": "ES256"
+      },
+      {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "oCvvpQ4tFLFrm1Bq3HmhoI9dRTXwxe1FWF6PuzlgCV4",
+        "y": "k2wePf073uqB_QCt4Y4usbKXyQaHRdS3HksVFLxR9tw",
+        "kid": "conformance-1",
+        "use": "sig",
+        "alg": "ES256"
+      }
+    ]
+  },
+  "statements": [
+    {
+      "id": "current-key",
+      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ.sYlR200WuHr5Pfbe0KGr9gO77NW2W0Z7C7ouQtfmP3uWc7W8SnuBN4ky8GbU0UrTqtiZdDvii8OkbpnYabpKNg",
+      "valid": true,
+      "claims": {
+        "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
+        "company": "0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c",
+        "iat": 1792497600,
+        "exp": 1793102400,
+        "publications": [
+          {
+            "id": "2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e",
+            "sha256": "34526633a97cb0df97ef25b71a2413f4c29df3d00e7415b3ecf5f3cf0223ef52"
+          }
+        ]
+      }
+    },
+    {
+      "id": "rotated-key",
+      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTEiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ.useYJ3zl23fJzXkoq4e5ZZ5XDYumCNgUIubswHaNl6-4LPcndgHvDLEYXLvpnNtJABDmJa8Pd_zXkKW_l4DoMQ",
+      "valid": true,
+      "claims": {
+        "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
+        "company": "0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c",
+        "iat": 1792497600,
+        "exp": 1793102400,
+        "publications": [
+          {
+            "id": "2d9f1c74-7ac6-4c57-9b75-8e3a4b5c6d7e",
+            "sha256": "34526633a97cb0df97ef25b71a2413f4c29df3d00e7415b3ecf5f3cf0223ef52"
+          }
+        ]
+      }
+    },
+    {
+      "id": "unpublished-source",
+      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W119.GnFIoukf9Cl9X_DB5z6rW56-ge4NXWiYKOgk-TvEi72_wh83JK_7atYcvrh8eJ4ZTXZq-tkxk3U73AL-wtRZIA",
+      "valid": true,
+      "claims": {
+        "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
+        "company": "0b7d9a52-58a4-4a35-9f53-6c1e2f3a4b5c",
+        "iat": 1792497600,
+        "exp": 1793102400,
+        "publications": []
+      }
+    },
+    {
+      "id": "tampered-payload",
+      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxODg4MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ.sYlR200WuHr5Pfbe0KGr9gO77NW2W0Z7C7ouQtfmP3uWc7W8SnuBN4ky8GbU0UrTqtiZdDvii8OkbpnYabpKNg",
+      "valid": false,
+      "claims": null
+    }
+  ],
+  "zones": [
+    {
+      "timeZone": "America/Sao_Paulo",
+      "offsets": {
+        "until": "2027-02-05T00:00:00.000Z",
+        "periods": [
+          { "from": "2027-01-01T00:00:00.000Z", "offsetSeconds": -10800 }
+        ]
+      },
+      "resolutions": [
+        {
+          "local": "2027-01-04T08:00",
+          "boundary": "start",
+          "instant": "2027-01-04T11:00:00.000Z",
+          "resolution": null
+        },
+        {
+          "local": "2027-01-04T18:00",
+          "boundary": "end",
+          "instant": "2027-01-04T21:00:00.000Z",
+          "resolution": null
+        }
+      ]
+    },
+    {
+      "timeZone": "America/New_York",
+      "offsets": {
+        "until": "2027-04-16T00:00:00.000Z",
+        "periods": [
+          { "from": "2027-03-12T00:00:00.000Z", "offsetSeconds": -18000 },
+          { "from": "2027-03-14T07:00:00.000Z", "offsetSeconds": -14400 }
+        ]
+      },
+      "resolutions": [
+        {
+          "local": "2027-03-14T01:59",
+          "boundary": "start",
+          "instant": "2027-03-14T06:59:00.000Z",
+          "resolution": null
+        },
+        {
+          "local": "2027-03-14T02:30",
+          "boundary": "start",
+          "instant": "2027-03-14T07:00:00.000Z",
+          "resolution": "gap"
+        },
+        {
+          "local": "2027-03-14T02:30",
+          "boundary": "end",
+          "instant": "2027-03-14T07:00:00.000Z",
+          "resolution": "gap"
+        },
+        {
+          "local": "2027-03-14T03:00",
+          "boundary": "end",
+          "instant": "2027-03-14T07:00:00.000Z",
+          "resolution": null
+        }
+      ]
+    },
+    {
+      "timeZone": "America/New_York",
+      "offsets": {
+        "until": "2027-12-10T00:00:00.000Z",
+        "periods": [
+          { "from": "2027-11-05T00:00:00.000Z", "offsetSeconds": -14400 },
+          { "from": "2027-11-07T06:00:00.000Z", "offsetSeconds": -18000 }
+        ]
+      },
+      "resolutions": [
+        {
+          "local": "2027-11-07T01:30",
+          "boundary": "start",
+          "instant": "2027-11-07T05:30:00.000Z",
+          "resolution": "repeated"
+        },
+        {
+          "local": "2027-11-07T01:30",
+          "boundary": "end",
+          "instant": "2027-11-07T06:30:00.000Z",
+          "resolution": "repeated"
+        },
+        {
+          "local": "2027-11-07T02:00",
+          "boundary": "start",
+          "instant": "2027-11-07T07:00:00.000Z",
+          "resolution": null
+        }
+      ]
+    },
+    {
+      "timeZone": "Australia/Lord_Howe",
+      "offsets": {
+        "until": "2027-05-07T00:00:00.000Z",
+        "periods": [
+          { "from": "2027-04-02T00:00:00.000Z", "offsetSeconds": 39600 },
+          { "from": "2027-04-03T15:00:00.000Z", "offsetSeconds": 37800 }
+        ]
+      },
+      "resolutions": [
+        {
+          "local": "2027-04-04T01:45",
+          "boundary": "start",
+          "instant": "2027-04-03T14:45:00.000Z",
+          "resolution": "repeated"
+        },
+        {
+          "local": "2027-04-04T01:45",
+          "boundary": "end",
+          "instant": "2027-04-03T15:15:00.000Z",
+          "resolution": "repeated"
+        }
+      ]
+    }
+  ],
+  "scheduleOffsets": {
+    "inclusive-start-exclusive-end": {
+      "until": "2027-01-07T22:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-01T10:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    },
+    "overnight-anchored-on-start-day": {
+      "until": "2027-01-12T12:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-05T00:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    },
+    "final-date-clips-overnight": {
+      "until": "2027-01-12T12:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-05T00:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    },
+    "all-day-windows": {
+      "until": "2027-01-14T12:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-05T12:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    },
+    "range-starts-inside-overnight-window": {
+      "until": "2027-01-08T10:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-02T06:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    },
+    "no-window-before-first-date": {
+      "until": "2027-01-08T10:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-02T06:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    },
+    "cross-branch-group-lisbon": {
+      "until": "2027-01-07T19:00:00.000Z",
+      "periods": [{ "from": "2027-01-01T07:00:00.000Z", "offsetSeconds": 0 }]
+    },
+    "dst-gap-at-start": {
+      "until": "2027-03-17T10:00:00.000Z",
+      "periods": [
+        { "from": "2027-03-11T05:00:00.000Z", "offsetSeconds": -18000 },
+        { "from": "2027-03-14T07:00:00.000Z", "offsetSeconds": -14400 }
+      ]
+    },
+    "dst-gap-at-end": {
+      "until": "2027-03-17T08:00:00.000Z",
+      "periods": [
+        { "from": "2027-03-11T05:00:00.000Z", "offsetSeconds": -18000 },
+        { "from": "2027-03-14T07:00:00.000Z", "offsetSeconds": -14400 }
+      ]
+    },
+    "repeated-hour-at-start": {
+      "until": "2027-11-10T09:00:00.000Z",
+      "periods": [
+        { "from": "2027-11-04T04:00:00.000Z", "offsetSeconds": -14400 },
+        { "from": "2027-11-07T06:00:00.000Z", "offsetSeconds": -18000 }
+      ]
+    },
+    "repeated-hour-at-end": {
+      "until": "2027-11-10T08:00:00.000Z",
+      "periods": [
+        { "from": "2027-11-04T03:00:00.000Z", "offsetSeconds": -14400 },
+        { "from": "2027-11-07T06:00:00.000Z", "offsetSeconds": -18000 }
+      ]
+    },
+    "repeated-hour-handoff": {
+      "until": "2027-11-10T08:00:00.000Z",
+      "periods": [
+        { "from": "2027-11-04T04:00:00.000Z", "offsetSeconds": -14400 },
+        { "from": "2027-11-07T06:00:00.000Z", "offsetSeconds": -18000 }
+      ]
+    },
+    "touching-windows": {
+      "until": "2027-01-07T22:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-01T10:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    },
+    "no-rules-without-default": {
+      "until": "2027-01-08T00:00:00.000Z",
+      "periods": [
+        { "from": "2027-01-01T00:00:00.000Z", "offsetSeconds": -10800 }
+      ]
+    }
+  }
+}
