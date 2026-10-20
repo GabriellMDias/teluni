@@ -38,6 +38,7 @@ import java.util.Base64
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -66,6 +67,8 @@ public data class SyncRecord(
     val zoneOffsets: ZoneOffsetsAnswer? = null,
     val rotation: Int? = null,
     val desired: SyncAnswer.Desired? = null,
+    /** The screen's branch, for protocol 2 branch prices; absent in records of older releases. */
+    val branchId: String? = null,
 )
 
 public sealed interface SyncOutcome {
@@ -236,7 +239,7 @@ public class PlayerEngine(
     public fun report(): SyncReport {
         val state = store.state()
         return SyncReport(
-            protocols = listOf(ManifestParser.PROTOCOL),
+            protocols = ManifestParser.PROTOCOLS,
             appVersion = appVersion,
             active = state.active?.let { SyncReport.Active(it.publicationId, requireNotNull(it.activatedAt)) },
             recovery = state.recovery?.let { SyncReport.Recovery(it.publicationId) },
@@ -283,7 +286,7 @@ public class PlayerEngine(
         saveRecord(
             PlayerStore.Record.SYNC,
             SyncRecord.serializer(),
-            SyncRecord(answer.status, answer.timeZone, answer.zoneOffsets, answer.rotation, answer.desired),
+            SyncRecord(answer.status, answer.timeZone, answer.zoneOffsets, answer.rotation, answer.desired, answer.branchId),
         )
         answer.authorization?.let { accept(it, identity, credential) }
         val state = store.state()
@@ -416,7 +419,7 @@ public class PlayerEngine(
 
     private fun fetchManifest(desired: SyncAnswer.Desired, identity: Identity, credential: String): Publication {
         // The answer names the publication's protocol: never download one this player cannot show.
-        if (desired.protocol != ManifestParser.PROTOCOL) {
+        if (desired.protocol !in ManifestParser.PROTOCOLS) {
             throw StagingFailure(StagingFailureCode.INCOMPATIBLE, "Protocol ${desired.protocol} is not supported")
         }
         val bytes = store.manifest(desired.publicationId)?.takeIf { sha256Hex(it) == desired.manifestSha256 }
@@ -432,8 +435,8 @@ public class PlayerEngine(
             throw StagingFailure(StagingFailureCode.INTEGRITY_FAILED, "The manifest size does not match")
         }
         val publication = ManifestParser.parse(bytes, desired.manifestSha256)
-        if (publication.manifest.publicationId != desired.publicationId ||
-            (identity.companyId != null && publication.manifest.companyId != identity.companyId)
+        if (publication.header.publicationId != desired.publicationId ||
+            (identity.companyId != null && publication.header.companyId != identity.companyId)
         ) {
             throw StagingFailure(StagingFailureCode.INVALID_MANIFEST, "The manifest belongs to another publication")
         }
@@ -493,6 +496,14 @@ public class PlayerEngine(
             }
         } finally {
             pool.shutdownNow()
+            // Return only once the other downloads stop, so a later attempt
+            // never writes the same partial file at the same time. A blocked
+            // read ends at the HTTP read timeout.
+            try {
+                pool.awaitTermination(DOWNLOADS_STOP_SECONDS, TimeUnit.SECONDS)
+            } catch (_: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
         }
         check(publication.media.values.all { store.hasMedia(it.sha256, it.size) })
     }
@@ -692,8 +703,9 @@ public class PlayerEngine(
         val (active, statement) = synchronized(lock) {
             store.state().active?.let(::parsed) to latestStatement()
         }
-        val zone = syncRecord()?.zoneOffsets?.let(::zoneOffsets)
-        return PlaybackPlanner.plan(active, statement, clock.now(), zone)
+        val record = syncRecord()
+        val zone = record?.zoneOffsets?.let(::zoneOffsets)
+        return PlaybackPlanner.plan(active, statement, clock.now(), zone, record?.branchId)
     }
 
     private fun zoneOffsets(answer: ZoneOffsetsAnswer): ZoneOffsets? = try {
@@ -742,6 +754,7 @@ public class PlayerEngine(
 
     private companion object {
         const val MAX_DOWNLOADS = 2
+        const val DOWNLOADS_STOP_SECONDS = 60L
 
         /** About 85 media requests per minute, leaving room for syncs under 120. */
         const val MEDIA_REQUEST_INTERVAL_MILLIS = 700L

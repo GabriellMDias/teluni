@@ -398,7 +398,23 @@ Implementation decisions, taken under the owner's delegation:
 - **Synchronization.** The sync answer always carries the screen's `branchId` (null only in the answer to an unlinked screen) and `desired.protocol`. A player that supports only protocol 1 still agrees on protocol 1 and learns from `desired.protocol` that it cannot stage the publication.
 - **Restore.** A protocol 2 publication is restored only while the program's reach stays within the branches it was published for, because its prices were limited to them; otherwise the restore answers `PUBLICATION_INVALID`.
 
-Increment 3, part B (the player `core`'s protocol 2 parsing and evaluation, PJ-12) and increments 4 and 5 are not implemented.
+**Increment 3, part B (the player `core`'s protocol 2, PJ-12) is implemented, 2026-10-20:**
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| Strict parsing and checks of protocol 2 manifests: canvas and area geometry, stacking, audio confirmation, views, pages and what they show, outputs per area, catalog fields, records, media values and prices | [`LayoutManifest.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/protocol/LayoutManifest.kt), [`Manifest.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/protocol/Manifest.kt) | [Layout manifest tests](../../apps/player/core/src/test/kotlin/app/teluni/player/core/protocol/LayoutManifestTest.kt) over the API's conformance bytes and edits of them |
+| The page cycle and effective prices, ported from the API | [`Pages.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/playback/Pages.kt), [`Prices.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/catalog/Prices.kt) | [Composition tests](../../apps/player/core/src/test/kotlin/app/teluni/player/core/playback/CompositionTest.kt) against every shared page cycle and price case |
+| A composed plan: what each area shows, in stacking order, until the next schedule, page, view page or price change | [`Planner.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/playback/Planner.kt) | Composition tests: the page cycle by local time, a regional schedule over a page-controlled area, branch prices and a promotion's start |
+| Protocols 1 and 2 declared in the sync report, the screen's branch kept with the sync record (older records still read) | [`PlayerEngine.kt`](../../apps/player/core/src/main/kotlin/app/teluni/player/core/sync/PlayerEngine.kt) | [Engine tests](../../apps/player/core/src/test/kotlin/app/teluni/player/core/sync/PlayerEngineTest.kt) |
+
+Implementation decisions, taken under the owner's delegation:
+
+- **What an area shows.** A rule of the area's output wins while it lasts. Otherwise a page-controlled area shows what the current page names (a media item, a view page or a group), and other areas show their default: a playlist, the catalog view, or nothing.
+- **A catalog view's own pages** advance every `pageSeconds` with the same cycle as layout pages, anchored at local midnight, so screens of a group page together.
+- **Prices** are evaluated for the screen's branch from the sync answer at the local minute, and the plan is made again at the next promotion start or end of a record it shows.
+- **Strictness.** Anything the API would never publish fails as `INVALID_MANIFEST`, and fades stay `INCOMPATIBLE`, as in protocol 1. Drawing areas, catalog text, images and mixed audio is the Android `app`'s, qualified on [PH-08](human-actions.md#ph-08) hardware (increment 5).
+
+Increments 4 and 5 are not implemented.
 
 ## Decisions
 

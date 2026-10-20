@@ -23,14 +23,17 @@ class ManifestTest {
     fun `parses the API's protocol 1 manifest`() {
         assertEquals(sha256, sha256Hex(bytes))
         val publication = ManifestParser.parse(bytes, sha256)
-        assertEquals(3, publication.manifest.generation)
-        assertEquals(listOf("r1", "r2", "r3"), publication.rules.map { it.id })
-        assertEquals(480, publication.rules[0].startMinute)
-        assertEquals(120, publication.rules[1].endMinute)
-        assertEquals(null, publication.rules[2].startMinute)
+        assertEquals(1, publication.header.protocol)
+        assertEquals(3, publication.header.generation)
+        val output = publication.outputs.getValue(ManifestParser.OUTPUT)
+        assertEquals(listOf("r1", "r2", "r3"), output.rules.map { it.id })
+        assertEquals(480, output.rules[0].startMinute)
+        assertEquals(120, output.rules[1].endMinute)
+        assertEquals(null, output.rules[2].startMinute)
         assertEquals(2, publication.playlists.size)
         assertEquals(setOf("IMAGE", "VIDEO"), publication.media.values.map { it.kind }.toSet())
-        assertEquals(publication.manifest.playlists.last().id, publication.defaultPlaylistId)
+        assertEquals(publication.playlists.keys.max(), output.defaultPlaylistId)
+        assertEquals(null, publication.layout)
     }
 
     @Test
@@ -66,21 +69,14 @@ class ManifestTest {
     @Test
     fun `refuses unknown fields, protocols and formats`() {
         assertFailure(StagingFailureCode.INVALID_MANIFEST) { parseEdited { it["extra"] = JsonPrimitive(1) } }
-        assertFailure(StagingFailureCode.INCOMPATIBLE) { parseEdited { it["protocol"] = JsonPrimitive(2) } }
+        assertFailure(StagingFailureCode.INCOMPATIBLE) { parseEdited { it["protocol"] = JsonPrimitive(3) } }
+        // A protocol 1 body that claims protocol 2 does not match protocol 2.
+        assertFailure(StagingFailureCode.INVALID_MANIFEST) { parseEdited { it["protocol"] = JsonPrimitive(2) } }
         assertFailure(StagingFailureCode.INVALID_MANIFEST) { parseEdited { it["format"] = JsonPrimitive("other") } }
         assertFailure(StagingFailureCode.INVALID_MANIFEST) { parseEdited { it.remove("media") } }
         assertFailure(StagingFailureCode.INVALID_MANIFEST) {
             val broken = byteArrayOf(0xC3.toByte(), 0x28)
             ManifestParser.parse(broken, sha256Hex(broken))
-        }
-    }
-
-    @Test
-    fun `refuses the API's protocol 2 manifest as incompatible, not invalid`() {
-        val layout = Fixtures.conformance.getValue("layoutManifest").jsonObject
-        val layoutBytes = layout.getValue("bytes").string.encodeToByteArray()
-        assertFailure(StagingFailureCode.INCOMPATIBLE) {
-            ManifestParser.parse(layoutBytes, layout.getValue("sha256").string)
         }
     }
 
@@ -137,6 +133,7 @@ class ManifestTest {
             it.editArray("playlists", 1) { playlist -> playlist["items"] = JsonArray(emptyList()) }
         }
         val publication = ManifestParser.parse(edited, sha256Hex(edited))
-        assertEquals(0, publication.playlists.getValue(publication.defaultPlaylistId!!).items.size)
+        val default = publication.outputs.getValue(ManifestParser.OUTPUT).defaultPlaylistId!!
+        assertEquals(0, publication.playlists.getValue(default).items.size)
     }
 }

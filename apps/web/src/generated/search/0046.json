@@ -1,5 +1,86 @@
 [
   {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "State-changing and long-running operations",
+    "anchor": "state-changing-and-long-running-operations",
+    "text": "State-changing and long-running operations\nData repair must identify the invariant, affected scope, desired canonical state, repair, verification, and recovery. Prefer reviewed repository-controlled scripts over inline copies of complex code. Identify the relevant script revision/release when version-sensitive. Use dry runs before destructive execution where valuable and explain preview results.\nState whether an operation is safe to repeat. Resolve unknown outcomes by inspecting actual state before retrying. For batch or long-running operations, document batch size, progress, monitoring, failure handling, safe pause, and resume behavior where supported. Say explicitly when concurrent execution is unsafe; tooling should eventually enforce that restriction where practical.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Exercise, maintenance, and automation",
+    "anchor": "exercise-maintenance-and-automation",
+    "text": "Exercise, maintenance, and automation\nImportant procedures should eventually be exercised through controlled staging, synthetic failures, tabletop exercises, restore tests, or game days. Do not test destructive instructions against real production data merely to prove documentation works. Backups require real restore tests; successful backup creation alone is insufficient. Exercise credential rotation before an emergency where possible.\nReview after architecture, tooling, permissions, dependencies, or incident evidence changes. After significant use, assess accuracy, missing steps, confusion, and opportunities for automation. Treat drift as an operational defect. Calendar review can be added when operational maturity justifies it.\nRepeated deterministic procedures are candidates for scripts, purpose-built tools, and safe automatic recovery. Runbooks can remain orchestration and verification guides. Where safe self-healing exists, alert on failed recovery or recurring instability rather than keeping humans as the primary mechanism.\n`pnpm docs:check` already checks local links, headings, and reachability. Runbook ownership, command applicability, safety, and recovery semantics still require review. Future focused checks may cover metadata, known command wrappers, scripts, or supported arguments; avoid rigid parsing that makes simple procedures difficult to maintain. Runbook files remain canonical if an index is later generated.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Creation and follow-up",
+    "anchor": "creation-and-follow-up",
+    "text": "Creation and follow-up\nConfirm a real repeatable condition, copy the template, identify ownership/access, write triggers and preconditions, then diagnosis, action, verification, recovery, warnings, and escalation. Review security and operational safety and exercise the procedure where practical.\nAfter recovery, consider permanent correction, regression tests, alert/observability changes, automation, revised warnings or verification, a runbook update, an ADR, and post-incident review based on observed evidence. Incident tooling, provider queries, command wrappers, metadata format, index generation, and review cadence remain dependent on actual operational needs and tooling.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/README",
+    "title": "Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbooks",
+    "anchor": "runbooks",
+    "text": "Runbooks\nNo operational runbooks exist yet. This directory contains the [authoring policy](authoring.md), [template](template.md), and [local instructions](AGENTS.md). Add index entries only for real procedures when the corresponding runtime and operational tooling exist.\nExisting contributor procedures have narrower owners: [local setup](../setup.md), [validation](../validation.md), and [database release/evolution](../database/release-evolution.md). No production environment is selected; authoring guidance does not activate deployment-specific work.\nRunbooks describe current repeatable operations, not hypothetical systems or historical incident narratives. A procedure does not grant authority: [production access](../security/production-access.md) and [incident response](../security/incident-response.md) continue to apply.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/README",
+    "title": "Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Create a procedure",
+    "anchor": "create-a-procedure",
+    "text": "Create a procedure\nRead the [authoring policy](authoring.md#creation-and-follow-up), choose one real condition, and copy the template. Identify ownership, triggers, required access, verifiable preconditions, bounded diagnosis/actions, recovery verification, and stop/escalation conditions. Do not invent provider commands.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/README",
+    "title": "Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Find related policy",
+    "anchor": "find-related-policy",
+    "text": "Find related policy\n[Health checks](../reliability/health-checks.md) and [observability](../reliability/observability.md) for diagnostic evidence.\n[Alerting](../reliability/alerting.md) for actionable signals and runbook references.\n[Secrets](../security/secrets-management.md), [classification](../security/data-classification.md), and [retention](../security/data-retention.md) for safe handling of credentials, evidence, and temporary exports.\n[Documentation task index](../README.md) for other current policies.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook: Procedure Title",
+    "anchor": "runbook-procedure-title",
+    "text": "Runbook: Procedure Title\n**Owner:** actual responsible owner\n**Status:** active only after the procedure exists and is verified\n**Environment / applicability:**\n**Related alerts:**\n**Required access:**\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md). Replace prompts with current, verified details; this template is not an executable procedure or an authorization grant.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nState the one operational condition or task handled by this procedure.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/template",
+    "title": "Runbook: Procedure Title",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nIdentify observable alerts, errors, or symptoms that activate the procedure, and cases where it must not be used.\n"
+  },
+  {
     "id": "repository/docs/runbooks/template",
     "title": "Runbook: Procedure Title",
     "group": "Runbooks",
@@ -880,50 +961,5 @@
     "heading": "Living Documentation Portal",
     "anchor": "living-documentation-portal",
     "text": "Living Documentation Portal\nThe portal needs no API, database, identity provider, or `.env.local`. After the clean-checkout install above, run `pnpm -C apps/web dev` and open `http://127.0.0.1:5173/docs` (or the Vite-printed port plus `/docs`). Use its section navigation and breadcrumbs for API operations, tables, component examples, architecture, guides, policies, and ADRs. Repository documentation opens locally with headings and search, rather than requiring GitHub. Relevant sections also expose AI-readable OpenAPI, database, error, and component references.\nTo try an API route, also run the API as described above, open an API operation, enter declared inputs and a token when the operation requires one, then select **Send request**. Writes require explicit acknowledgement. Tokens and responses remain in memory; no request executes automatically. Cancellation/timeouts do not prove a write was undone. Without the API, reading remains available and request failures are shown safely.\nAfter editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Teluni's production build (`pnpm -C apps/web build`) deliberately excludes the portal, so read it through the development server; `vite preview` serves the product build only. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Persistent local environment",
-    "anchor": "persistent-local-environment",
-    "text": "Persistent local environment\nFor day-to-day development with data that survives restarts, start the local services once and run the API and web application in watch mode. With Docker running, from the repository root:\npnpm db:generate\npnpm -C apps/api dev:services up\npnpm -C apps/api dev\npnpm -C apps/web dev\n\n`dev:services up` creates or starts named containers (PostgreSQL on `127.0.0.1:55433`, Keycloak on `localhost:8180` with its management port on `9180`, Mailpit with SMTP on `127.0.0.1:1025` and its inbox on `http://127.0.0.1:8025`) with named volumes, applies the committed migrations and runtime grants, provisions the `teluni` realm with the Teluni sign-in theme, creates the synthetic developer account `dev@teluni.test`, creates the ignored `.dev-media/` media volume, and writes the root `.env.local` the API loads (the media module also needs FFmpeg on `PATH`). Machine-local credentials (database, Keycloak bootstrap administrator, client secrets, key rings and the developer password) are generated once and kept in the ignored `.env.dev-services`; a previous `.env.local` is copied to `.env.local.before-dev-services`. Open `http://127.0.0.1:5173`; invitation and verification emails arrive in the Mailpit inbox. Rerun `up` after pulling new migrations or realm changes. `pnpm -C apps/api dev:services down` stops the containers and keeps their data; `reset` removes containers, volumes, network and `.dev-media/` so the next `up` starts empty. Keycloak's back-channel logout cannot reach an API listening on loopback, so in this environment provider-side sign-outs end panel sessions through the 30-second revalidation instead. These are development services only; never point the script or its credentials at shared or production systems.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Try sign-in locally",
-    "anchor": "try-sign-in-locally",
-    "text": "Try sign-in locally\nThe identity workflow needs a Keycloak that the API calls back, so it runs as a disposable stack rather than with `.env.local`. With Docker running, from the repository root:\npnpm db:generate\npnpm -C apps/api build\nnode apps/web/test/e2e/identity/manual.ts\n\nIt starts a migrated PostgreSQL with the restricted runtime role, the pinned Keycloak with the provisioned `teluni` realm and one synthetic verified user, Mailpit as the mail inbox, the emitted API with generated session keys and client secrets, and Vite. It also configures the API's mail relay to Mailpit. It prints the panel URL, the Mailpit inbox URL and the email and password of a synthetic user and of a synthetic invitee; invitations sent from a company's Invitations view arrive in Mailpit, and you can also create an account on the Keycloak sign-in page and read its verification email there. Every credential is generated for that run only, and Ctrl+C discards all containers and data. The same stack drives the [identity browser journeys](../apps/web/test/e2e/identity/login.spec.ts).\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Exercise automated workflows",
-    "anchor": "exercise-automated-workflows",
-    "text": "Exercise automated workflows\nAutomated workflows use disposable databases and synthetic identities. No seed data or external account is needed:\npnpm build\npnpm smoke\npnpm test:e2e\n\n`pnpm smoke` exercises the emitted API process, then any module process smokes. `pnpm test:e2e` runs the emitted API and the Vite web app for the shared documentation and shell journeys; module journeys start their own migrated PostgreSQL and synthetic issuer through the shared [end-to-end stack helpers](../apps/web/test/e2e/stack.ts). These fixtures are disposable and are not release or production data.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Validate, regenerate, and build",
-    "anchor": "validate-regenerate-and-build",
-    "text": "Validate, regenerate, and build\nRun the full, non-mutating tracked-source gate after changes:\npnpm validate\n\nIt checks format, lint, types, dependency boundaries, documentation, `.env.example` against API configuration metadata, migration release history, project provenance, current generated references, real PostgreSQL and browser tests, builds, and process smokes. `pnpm references:check` diagnoses generated API/database/SDK drift independently; it migrates a fresh PostgreSQL for the physical database reference and does not repair tracked files. To intentionally change those references, edit their canonical TypeBox/schema/metadata sources and run `pnpm -C apps/api references:write`, then `pnpm -C packages/sdk generate` after an OpenAPI change. Review the generated diff and rerun `pnpm references:check`.\nAfter intentional repository Markdown, API, database, or component-metadata changes, run `pnpm docs:references:write` and review the generated component Markdown, catalog, detail pages, and search shards. Vite serves/emits the existing API, database, error, and component artifacts without committing duplicate copies. `pnpm docs:references:check` is non-mutating and fails on drift, missing component metadata, or known secret patterns; it runs within `pnpm validate` and CI. Do not edit either generated layer directly.\n`pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.\n"
-  },
-  {
-    "id": "repository/docs/validation",
-    "title": "Validation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Validation",
-    "anchor": "validation",
-    "text": "Validation\n"
   }
 ]

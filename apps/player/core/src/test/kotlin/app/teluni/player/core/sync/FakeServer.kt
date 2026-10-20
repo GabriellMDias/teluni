@@ -49,6 +49,8 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
     var status = "active"
     var desired: FakePublication? = null
 
+    val branchId = "5c1d2e3f-4a5b-4c6d-8e7f-8091a2b3c4d5"
+
     /** The protocol the answer names for the desired publication. */
     var desiredProtocol = 1
     var manifestRequests = 0
@@ -117,6 +119,7 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
                 periods = listOf(ZoneOffsetsAnswer.Period(serverTime.minus(Duration.ofDays(3)).toString(), -10_800)),
             ),
             rotation = if (unlinked) null else 0,
+            branchId = if (unlinked) null else branchId,
             desired = wanted?.let {
                 SyncAnswer.Desired(it.id, 1, it.sha256, it.bytes.size.toLong(), "group", desiredProtocol)
             },

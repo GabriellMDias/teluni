@@ -199,7 +199,7 @@ class PlayerEngineTest {
         val failed = assertIs<StagingOutcome.Failed>(engine.syncAndStage())
         assertEquals(StagingFailureCode.INTEGRITY_FAILED, failed.code)
         val play = assertIs<Plan.Play>(engine.plan())
-        assertEquals("pub-a", play.publication.manifest.publicationId)
+        assertEquals("pub-a", play.publication.header.publicationId)
 
         server.corruptMedia = false
         assertEquals(StagingOutcome.Activated("pub-b"), engine.syncAndStage())
@@ -212,14 +212,32 @@ class PlayerEngineTest {
         server.publish(publication("pub-a"))
         engine.syncAndStage()
         server.publish(publication("pub-b", seed = 2))
-        server.desiredProtocol = 2
+        server.desiredProtocol = 3
         val requests = server.manifestRequests
         val failed = assertIs<StagingOutcome.Failed>(engine.syncAndStage())
         assertEquals(StagingFailureCode.INCOMPATIBLE, failed.code)
         assertEquals(requests, server.manifestRequests)
         assertEquals("INCOMPATIBLE", engine.report().staging?.failure)
         val play = assertIs<Plan.Play>(engine.plan())
-        assertEquals("pub-a", play.publication.manifest.publicationId)
+        assertEquals("pub-a", play.publication.header.publicationId)
+    }
+
+    @Test
+    fun `keeps the screen's branch and reads sync records of older releases`() {
+        val engine = paired()
+        engine.sync()
+        assertEquals(server.branchId, engine.syncRecord()?.branchId)
+        // Records written before protocol 2 have no branch or desired protocol.
+        PlayerStore(root, space = { space }).saveRecord(
+            PlayerStore.Record.SYNC,
+            (
+                """{"status":"active","timeZone":"America/Sao_Paulo","rotation":0,"desired":{"publicationId":"pub-a",""" +
+                    """"generation":1,"manifestSha256":"${"a".repeat(64)}","manifestSize":10,"source":"group"}}"""
+                ).encodeToByteArray(),
+        )
+        val record = assertNotNull(engine.syncRecord())
+        assertNull(record.branchId)
+        assertEquals(1, record.desired?.protocol)
     }
 
     @Test
@@ -359,7 +377,10 @@ class PlayerEngineTest {
         server.onMedia = {
             if (once.compareAndSet(false, true)) {
                 server.status = "unlinked"
-                thread { cleared = engine.sync().also { unlinked.countDown() } }
+                thread {
+                    cleared = engine.sync()
+                    unlinked.countDown()
+                }
             }
         }
         assertIs<SyncOutcome.Synced>(engine.sync())
