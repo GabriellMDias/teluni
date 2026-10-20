@@ -297,6 +297,10 @@ describe("organizations: two-company isolation", () => {
         "programming.edit",
         "programming.assign",
         "publications.publish",
+        "catalogs.view",
+        "catalogs.edit",
+        "catalogs.manage",
+        "prices.edit",
       ],
     });
     const companyId = (first.body.company as { id: string }).id;

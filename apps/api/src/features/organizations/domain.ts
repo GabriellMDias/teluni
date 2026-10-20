@@ -27,7 +27,11 @@ export type Capability =
   | "programming.view"
   | "programming.edit"
   | "programming.assign"
-  | "publications.publish";
+  | "publications.publish"
+  | "catalogs.view"
+  | "catalogs.edit"
+  | "catalogs.manage"
+  | "prices.edit";
 
 type Preset = Readonly<{
   capabilities: ReadonlySet<Capability>;
@@ -36,10 +40,10 @@ type Preset = Readonly<{
 }>;
 
 // Only the capabilities implemented so far are listed; the matrix's other
-// rows (export, price changes) arrive with their modules. Operators pair
-// devices, archive media, assign programming and publish only through an
-// additional grant (an access profile); permanent media deletion stays with
-// administrators.
+// rows (export) arrive with their modules. Operators pair devices, archive
+// media, assign programming, publish, manage catalog schemas and change
+// prices only through an additional grant (an access profile); permanent
+// media deletion stays with administrators.
 export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
   COMPANY_ADMINISTRATOR: {
     capabilities: new Set([
@@ -60,6 +64,10 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "programming.edit",
       "programming.assign",
       "publications.publish",
+      "catalogs.view",
+      "catalogs.edit",
+      "catalogs.manage",
+      "prices.edit",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -78,6 +86,10 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "programming.edit",
       "programming.assign",
       "publications.publish",
+      "catalogs.view",
+      "catalogs.edit",
+      "catalogs.manage",
+      "prices.edit",
     ]),
     requiresStrongAuthentication: true,
   },
@@ -90,6 +102,8 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "media.upload",
       "programming.view",
       "programming.edit",
+      "catalogs.view",
+      "catalogs.edit",
     ]),
     requiresStrongAuthentication: false,
   },
@@ -114,6 +128,10 @@ export const delegableCapabilities: readonly Capability[] = [
   "programming.edit",
   "programming.assign",
   "publications.publish",
+  "catalogs.view",
+  "catalogs.edit",
+  "catalogs.manage",
+  "prices.edit",
 ];
 
 /**
@@ -129,6 +147,9 @@ export const capabilityPrerequisites: Readonly<
   "programming.edit": "programming.view",
   "programming.assign": "programming.view",
   "publications.publish": "programming.view",
+  "catalogs.edit": "catalogs.view",
+  "catalogs.manage": "catalogs.view",
+  "prices.edit": "catalogs.view",
 };
 
 /**
@@ -147,6 +168,7 @@ const strongCapabilities: ReadonlySet<Capability> = new Set([
   "media.delete",
   "programming.assign",
   "publications.publish",
+  "prices.edit",
 ]);
 
 /** What a grant confers: a standard role or a company's access profile. */

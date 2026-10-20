@@ -4,7 +4,7 @@ import { createApp } from "../src/app.js";
 import type { AccessTokenVerifier } from "../src/authentication.js";
 import type { Database } from "../src/database.js";
 import { publicErrorRegistry } from "../src/error-registry.js";
-import { coreErrors } from "../src/errors.js";
+import { coreErrors, errorResponder, maxErrorIssues } from "../src/errors.js";
 import { activateModules, type ApiModule } from "../src/module.js";
 
 function exampleModule(overrides: Partial<ApiModule> = {}): ApiModule {
@@ -97,6 +97,25 @@ describe("API module composition", () => {
     } finally {
       await app.close();
     }
+  });
+
+  it("adds bounded issues to an envelope only when a module reports them", () => {
+    const respond = errorResponder(coreErrors);
+    expect(respond("VALIDATION_FAILED", "req_1").body.error).not.toHaveProperty(
+      "issues",
+    );
+    expect(
+      respond("VALIDATION_FAILED", "req_1", undefined, undefined, []).body
+        .error,
+    ).not.toHaveProperty("issues");
+    const many = Array.from({ length: maxErrorIssues + 5 }, (_, index) => ({
+      path: `/values/${index}`,
+      reason: "REQUIRED",
+    }));
+    const body = respond("VALIDATION_FAILED", "req_1", "trace", undefined, many)
+      .body.error;
+    expect(body.issues).toHaveLength(maxErrorIssues);
+    expect(body.issues?.[0]).toEqual({ path: "/values/0", reason: "REQUIRED" });
   });
 
   it("merges module errors into one public registry without redefinition", () => {

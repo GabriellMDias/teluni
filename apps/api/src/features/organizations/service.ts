@@ -64,6 +64,10 @@ const capabilities: readonly Capability[] = [
   "programming.edit",
   "programming.assign",
   "publications.publish",
+  "catalogs.view",
+  "catalogs.edit",
+  "catalogs.manage",
+  "prices.edit",
 ];
 
 export type AccessSummary = Readonly<{

@@ -39,6 +39,9 @@ export function createApp(
     genReqId: () => `req_${randomUUID()}`,
     requestTimeout,
     connectionTimeout: 10_000,
+    // Multi-type schemas (such as catalog item values) keep a value of any
+    // listed type as sent; an anyOf would let coercion rewrite it.
+    ajv: { customOptions: { allowUnionTypes: true } },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
   if (requestTimeout > standardRequestMs) {

@@ -56,6 +56,25 @@ export const coreErrors = defineErrors({
 });
 
 export type CoreErrorCode = keyof typeof coreErrors;
+
+/** Most issues one envelope carries; further ones are omitted. */
+export const maxErrorIssues = 50;
+
+// One problem with a request that a module reports for codes whose
+// consumers act per field. `path` is a JSON Pointer into the request body,
+// `reason` a stable code, `fieldId` a stored field absent from the body and
+// `count` how many stored items cause the problem. Never submitted values.
+export const errorIssueSchema = Type.Object(
+  {
+    path: Type.String({ maxLength: 200 }),
+    reason: Type.String({ pattern: "^[A-Z][A-Z0-9_]*$", maxLength: 64 }),
+    fieldId: Type.Optional(Type.String({ maxLength: 64 })),
+    count: Type.Optional(Type.Integer({ minimum: 0 })),
+  },
+  { additionalProperties: false },
+);
+export type ErrorIssue = Static<typeof errorIssueSchema>;
+
 export const errorEnvelopeSchema = Type.Object(
   {
     error: Type.Object(
@@ -65,6 +84,9 @@ export const errorEnvelopeSchema = Type.Object(
         requestId: Type.String(),
         traceId: Type.Optional(Type.String()),
         errorId: Type.Optional(Type.String()),
+        issues: Type.Optional(
+          Type.Array(errorIssueSchema, { maxItems: maxErrorIssues }),
+        ),
       },
       { additionalProperties: false },
     ),
@@ -82,6 +104,7 @@ export function errorResponder<
     requestId: string,
     traceId?: string,
     errorId?: string,
+    issues?: readonly ErrorIssue[],
   ): { status: number; body: ErrorEnvelope } => {
     const definition = registry[code];
     if (!definition) throw new Error(`Unregistered public error ${code}`);
@@ -94,6 +117,13 @@ export function errorResponder<
           requestId,
           ...(traceId ? { traceId } : {}),
           ...(errorId ? { errorId } : {}),
+          ...(issues && issues.length > 0
+            ? {
+                issues: issues
+                  .slice(0, maxErrorIssues)
+                  .map((issue) => ({ ...issue })),
+              }
+            : {}),
         },
       },
     };

@@ -1,0 +1,167 @@
+{
+  "kind": "database",
+  "name": "catalog_records",
+  "description": "One entry of a catalog: its values keyed by field identifier, including the base price of each MONEY field, its availability and its position.",
+  "owner": "Catalogs",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created and updated one at a time with the observed version; value, availability, price and position changes bump it. Deleted at runtime with its overrides, promotions and join rows, only while no other record references it.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable record UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the record (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog the record belongs to; immutable.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "position",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Sort key in the catalog's stored order, spaced so a move usually changes one row; ties order by id.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "available",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "true",
+      "Classification": "INTERNAL",
+      "Meaning": "Whether the record is available; views hide unavailable records unless they show them as unavailable.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "field_values",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Validated JSON object from field UUID to value: trimmed text, canonical decimal strings, booleans, local dates and times, sorted weekdays, choice identifiers, media and record UUIDs, and base prices as integer minor units (ADR-0032). At most 16 KiB as serialized by the API.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency version, starting at 1.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that created the record.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that made the last change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of creation.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_records_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A record belongs to a catalog of the same company, which cannot be deleted while it has records."
+    },
+    {
+      "Object": "catalog_records_company_id_created_by_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The creator is a membership of the same company."
+    },
+    {
+      "Object": "catalog_records_company_id_updated_by_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, updated_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The last updater is a membership of the same company."
+    },
+    {
+      "Object": "catalog_records_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique record identity."
+    },
+    {
+      "Object": "catalog_records_position_range",
+      "Physical definition": "CHECK ((\"position\" >= 0))",
+      "Purpose": "Positions are not negative."
+    },
+    {
+      "Object": "catalog_records_values_object",
+      "Physical definition": "CHECK (((jsonb_typeof(field_values) = 'object'::text) AND (octet_length((field_values)::text) <= 32768)))",
+      "Purpose": "Values are a JSON object with a storage backstop above the API's 16 KiB limit."
+    },
+    {
+      "Object": "catalog_records_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "catalog_records_catalog_position_idx",
+      "Physical definition": "CREATE INDEX catalog_records_catalog_position_idx ON public.catalog_records USING btree (company_id, catalog_id, \"position\", id)",
+      "Purpose": "Lists a catalog's records in stored order with keyset cursors."
+    },
+    {
+      "Object": "catalog_records_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX catalog_records_company_id_id_key ON public.catalog_records USING btree (company_id, id)",
+      "Purpose": "Tenant key that prices, record links and references target."
+    }
+  ]
+}

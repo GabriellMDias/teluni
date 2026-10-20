@@ -1,4 +1,5 @@
 import type { ApiModule } from "./module.js";
+import { createCatalogsModule } from "./features/catalogs/module.js";
 import { createDevicesModule } from "./features/devices/module.js";
 import { createIdentityModule } from "./features/identity/module.js";
 import { createMailModule } from "./features/mail/module.js";
@@ -37,6 +38,11 @@ const programming = createProgrammingModule({
   devices: devices.devices,
   media: media.media,
 });
+const catalogs = createCatalogsModule({
+  sessions: identity.sessions,
+  companies: organizations.companies,
+  media: media.media,
+});
 const publications = createPublicationsModule({
   sessions: identity.sessions,
   companies: organizations.companies,
@@ -53,5 +59,6 @@ export const apiModules: readonly ApiModule[] = [
   devices.module,
   media.module,
   programming.module,
+  catalogs.module,
   publications.module,
 ];

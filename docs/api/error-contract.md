@@ -6,7 +6,7 @@ This policy owns public failure semantics. The API's [shared error registry, env
 
 ## Error Envelope
 
-The implemented API envelope has a top-level `error` object with required `code`, `message`, and `requestId`, plus optional `traceId` and `errorId`. The schema prohibits additional fields. A synthetic example is:
+The implemented API envelope has a top-level `error` object with required `code`, `message`, and `requestId`, plus optional `traceId`, `errorId` and `issues`. The schema prohibits additional fields. A synthetic example is:
 
 ```json
 {
@@ -20,7 +20,7 @@ The implemented API envelope has a top-level `error` object with required `code`
 
 The runtime generates fresh request IDs, adds trace correlation when available, and assigns unexpected failures an error occurrence ID. These are opaque support references, not credentials; knowing one must not grant telemetry access. See [request handling](../../apps/api/src/app.ts) for construction and reporting.
 
-The current envelope has **no field-level `details` or retry object**. Registry `retryable` metadata is documentation/classification, not a serialized promise that any write is safe to repeat. Rate limiting uses the HTTP `Retry-After` header. The extension rules below apply when consumers need additional structured information; do not implement hypothetical fields merely because examples in a policy mention them.
+The envelope has **no retry object** and no free-form `details`. Its only structured extension is the optional `issues` list described under [validation errors](#validation-errors). Registry `retryable` metadata is documentation/classification, not a serialized promise that any write is safe to repeat. Rate limiting uses the HTTP `Retry-After` header. The extension rules below apply when consumers need additional structured information; do not implement hypothetical fields merely because examples in a policy mention them.
 
 [Health probes](../../apps/api/src/health-contracts.ts) use their own documented status response, including when unavailable; do not confuse a probe status with an application error envelope.
 
@@ -40,7 +40,15 @@ For a new code, determine its semantic owner, expected/unexpected category, publ
 
 The implemented validation response is `400 VALIDATION_FAILED` with the common envelope. Do not expose validator exceptions or echo submitted values. Structural validation is distinct from a valid request that conflicts with current domain state.
 
-If field-level details become useful, add an explicit bounded schema to the canonical contract. Identify fields using a stable public request-path convention, never internal database/ORM paths; use stable reason codes where clients need to act and safe human text for explanation. Define multiple-failure bounds and unknown-field behavior. Returning every issue in an attacker-controlled payload must not create an unbounded response.
+Field-level problems use the envelope's optional `issues`, defined once in the [shared envelope schema](../../apps/api/src/errors.ts):
+
+- Each issue has a `path` (a JSON Pointer into the request body, never a database or ORM path) and a stable `UPPER_SNAKE_CASE` `reason`.
+- An issue may add `fieldId`, naming a stored field that is absent from the body, and `count`, saying how many stored items cause the problem.
+- An issue never echoes a submitted value.
+- The responder keeps at most 50 issues, so an attacker-controlled payload cannot create an unbounded response. Unknown body fields still fail structural validation first.
+- A module sends issues only for the codes whose operations document their reasons. Today these are the catalogs module's `CATALOG_SCHEMA_INVALID`, `CATALOG_RECORD_INVALID` and `CATALOG_RECORD_REFERENCED`. Other codes, including `VALIDATION_FAILED`, carry none.
+
+Clients branch on `code` and may use `reason` to point at the field; they must tolerate unknown reasons. Adding a reason is additive; changing a reason's meaning follows [compatibility review](versioning.md).
 
 ## Mapping and disclosure
 
