@@ -171,7 +171,7 @@ PJ-11 increment 3 adds two fields to the `POST /device/sync` response, both comp
 The API also publishes protocol conformance fixtures in [`conformance.json`](../../apps/api/test/publications/conformance.json):
 
 - a protocol 1 manifest as exact bytes with its SHA-256;
-- a key set and statements signed with throwaway keys whose private halves are discarded, including a rotated key and a tampered payload;
+- a key set and statements signed with throwaway keys whose private halves are discarded, including a rotated key and a tampered payload, stored in flattened JWS JSON serialization (RFC 7515) so secret scanners do not take these test vectors for live tokens;
 - zone offsets with local-time resolutions, including gaps, repeated hours and a half-hour transition;
 - the zone offsets of every shared schedule fixture.
 

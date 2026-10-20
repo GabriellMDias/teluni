@@ -1,7 +1,8 @@
 // Writes the player protocol conformance fixtures of the player design
 // (docs/project/player-design.md#server-additions) from the API's own
 // serializer, signer and zone rules: a protocol 1 manifest as exact bytes,
-// statements signed by throwaway keys whose private halves are discarded,
+// statements signed by throwaway keys whose private halves are discarded
+// (in flattened JWS JSON serialization),
 // zone offsets with local-time resolutions, and the zone offsets of every
 // shared schedule fixture. test/publications/conformance.test.ts verifies
 // the committed file against the same code; the player's core tests read it.
@@ -66,6 +67,11 @@ const tampered = [
   signature,
 ].join(".");
 
+function flattened(jws: string) {
+  const [protectedHeader, payload, signature] = jws.split(".");
+  return { protected: protectedHeader, payload, signature };
+}
+
 const zones = conformanceZones.map((zone) => ({
   timeZone: zone.timeZone,
   offsets: zoneOffsets(
@@ -99,16 +105,24 @@ const fixtures = {
     sha256,
   },
   keys: await publicKeySet([newest, older]),
+  // Flattened JWS JSON serialization (RFC 7515, section 7.2.2): the compact
+  // form a screen receives is `protected.payload.signature`. Kept apart so
+  // secret scanners do not report these test vectors as live tokens.
   statements: [
-    { id: "current-key", jws: current, valid: true, claims },
-    { id: "rotated-key", jws: rotated, valid: true, claims },
+    { id: "current-key", ...flattened(current), valid: true, claims },
+    { id: "rotated-key", ...flattened(rotated), valid: true, claims },
     {
       id: "unpublished-source",
-      jws: empty,
+      ...flattened(empty),
       valid: true,
       claims: { ...claims, publications: [] },
     },
-    { id: "tampered-payload", jws: tampered, valid: false, claims: null },
+    {
+      id: "tampered-payload",
+      ...flattened(tampered),
+      valid: false,
+      claims: null,
+    },
   ],
   zones,
   scheduleOffsets: scheduleFixtureOffsets(

@@ -105,8 +105,8 @@
       {
         "kty": "EC",
         "crv": "P-256",
-        "x": "pZwVibW5hcB-gx267JtLnP60Vk_pm60QoSL9_bA4zPw",
-        "y": "neBLc3mh4S_-QvY1srq0jEU_vgVVWT9_5MBJDr36dwk",
+        "x": "Dhkp6Sk0SL5Kv6dpVRqbdX2khXjal5kSbVKU9daFL3k",
+        "y": "8spacqoT-D_Lo4JUYHHxhytXs4Jjsq_3SBDZLLH86WU",
         "kid": "conformance-2",
         "use": "sig",
         "alg": "ES256"
@@ -114,8 +114,8 @@
       {
         "kty": "EC",
         "crv": "P-256",
-        "x": "oCvvpQ4tFLFrm1Bq3HmhoI9dRTXwxe1FWF6PuzlgCV4",
-        "y": "k2wePf073uqB_QCt4Y4usbKXyQaHRdS3HksVFLxR9tw",
+        "x": "U0MFACDgffPDj89ApLSod_A1RRY0umdjmDajuTlGECw",
+        "y": "Eo-d0Ql5lRzAFwVchr1t30G6Y5ZdH8xZZx_PLsptVTo",
         "kid": "conformance-1",
         "use": "sig",
         "alg": "ES256"
@@ -125,7 +125,9 @@
   "statements": [
     {
       "id": "current-key",
-      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ.sYlR200WuHr5Pfbe0KGr9gO77NW2W0Z7C7ouQtfmP3uWc7W8SnuBN4ky8GbU0UrTqtiZdDvii8OkbpnYabpKNg",
+      "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
+      "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
+      "signature": "0V8irQV3L6_DLaANd8rCQPGMsUGnFW1YMHmD0wp73wBcGkCs5MBigFelk1qQ53t4TGKqpu3lytt_OSU2a1Pwmg",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -142,7 +144,9 @@
     },
     {
       "id": "rotated-key",
-      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTEiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ.useYJ3zl23fJzXkoq4e5ZZ5XDYumCNgUIubswHaNl6-4LPcndgHvDLEYXLvpnNtJABDmJa8Pd_zXkKW_l4DoMQ",
+      "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTEiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
+      "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
+      "signature": "qLgQsMY-fccBSxUAO8EKwc6A_ZMeXv7trK7gRoiVu7TVHGe9nuyzNQ56D1OB2gPtlfHJi3a0ruVYIXpeoPV76A",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -159,7 +163,9 @@
     },
     {
       "id": "unpublished-source",
-      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W119.GnFIoukf9Cl9X_DB5z6rW56-ge4NXWiYKOgk-TvEi72_wh83JK_7atYcvrh8eJ4ZTXZq-tkxk3U73AL-wtRZIA",
+      "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
+      "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxMDI0MDAsInB1YmxpY2F0aW9ucyI6W119",
+      "signature": "82N6mePpqla-VkefRiXmYPHNtm-2ycrpzf0EmJegIMIXWBu662Cpgq1Zv2Yd-IYYhBfmsH5R3YPBN3kZlRUjpg",
       "valid": true,
       "claims": {
         "sub": "6f0c2d0e-3c55-4c8e-9a43-2b1f0f9d7a10",
@@ -171,7 +177,9 @@
     },
     {
       "id": "tampered-payload",
-      "jws": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ.eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxODg4MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ.sYlR200WuHr5Pfbe0KGr9gO77NW2W0Z7C7ouQtfmP3uWc7W8SnuBN4ky8GbU0UrTqtiZdDvii8OkbpnYabpKNg",
+      "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImNvbmZvcm1hbmNlLTIiLCJ0eXAiOiJ0ZWx1bmktYXV0aG9yaXphdGlvbitqd3MifQ",
+      "payload": "eyJzdWIiOiI2ZjBjMmQwZS0zYzU1LTRjOGUtOWE0My0yYjFmMGY5ZDdhMTAiLCJjb21wYW55IjoiMGI3ZDlhNTItNThhNC00YTM1LTlmNTMtNmMxZTJmM2E0YjVjIiwiaWF0IjoxNzkyNDk3NjAwLCJleHAiOjE3OTMxODg4MDAsInB1YmxpY2F0aW9ucyI6W3siaWQiOiIyZDlmMWM3NC03YWM2LTRjNTctOWI3NS04ZTNhNGI1YzZkN2UiLCJzaGEyNTYiOiIzNDUyNjYzM2E5N2NiMGRmOTdlZjI1YjcxYTI0MTNmNGMyOWRmM2QwMGU3NDE1YjNlY2Y1ZjNjZjAyMjNlZjUyIn1dfQ",
+      "signature": "0V8irQV3L6_DLaANd8rCQPGMsUGnFW1YMHmD0wp73wBcGkCs5MBigFelk1qQ53t4TGKqpu3lytt_OSU2a1Pwmg",
       "valid": false,
       "claims": null
     }

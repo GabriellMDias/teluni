@@ -27,7 +27,9 @@ type Fixtures = {
   keys: PublicKeySet;
   statements: {
     id: string;
-    jws: string;
+    protected: string;
+    payload: string;
+    signature: string;
     valid: boolean;
     claims: StatementClaims | null;
   }[];
@@ -76,11 +78,17 @@ describe("player protocol conformance fixtures", () => {
       "tampered-payload",
     ]);
     for (const statement of fixtures.statements) {
+      // The compact form a screen receives.
+      const jws = [
+        statement.protected,
+        statement.payload,
+        statement.signature,
+      ].join(".");
       if (!statement.valid) {
-        await expect(verify(statement.jws)).rejects.toThrow();
+        await expect(verify(jws)).rejects.toThrow();
         continue;
       }
-      const { payload, protectedHeader } = await verify(statement.jws);
+      const { payload, protectedHeader } = await verify(jws);
       expect(protectedHeader).toMatchObject({
         alg: "ES256",
         typ: statementType,

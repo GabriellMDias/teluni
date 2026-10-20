@@ -20,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -33,6 +34,10 @@ class StatementsTest {
     private val device = claims.getValue("sub").string
     private val company = claims.getValue("company").string
 
+    /** The compact form a screen receives, from the fixture's flattened JWS JSON serialization. */
+    private fun compact(statement: JsonObject): String =
+        listOf("protected", "payload", "signature").joinToString(".") { statement.getValue(it).string }
+
     private fun assertRejected(reason: StatementRejection, block: () -> Unit) {
         assertEquals(reason, assertFailsWith<StatementRejected> { block() }.reason)
     }
@@ -42,7 +47,7 @@ class StatementsTest {
         assertEquals(setOf("conformance-1", "conformance-2"), keys.ids)
         for (element in fixtures.getValue("statements").jsonArray) {
             val case = element.jsonObject
-            val jws = case.getValue("jws").string
+            val jws = compact(case)
             if (!case.getValue("valid").jsonPrimitive.boolean) {
                 assertRejected(StatementRejection.SIGNATURE) { StatementVerifier.verify(jws, keys, device, company) }
                 continue
@@ -60,7 +65,7 @@ class StatementsTest {
         }
         val manifest = fixtures.getValue("manifest").jsonObject
         val current = StatementVerifier.verify(
-            fixtures.getValue("statements").jsonArray[0].jsonObject.getValue("jws").string,
+            compact(fixtures.getValue("statements").jsonArray[0].jsonObject),
             keys,
             device,
             company,
@@ -72,7 +77,7 @@ class StatementsTest {
 
     @Test
     fun `binds statements to this screen and company`() {
-        val jws = fixtures.getValue("statements").jsonArray[0].jsonObject.getValue("jws").string
+        val jws = compact(fixtures.getValue("statements").jsonArray[0].jsonObject)
         assertRejected(StatementRejection.SUBJECT) { StatementVerifier.verify(jws, keys, "another-screen", company) }
         assertRejected(StatementRejection.SUBJECT) { StatementVerifier.verify(jws, keys, device, "another-company") }
     }
