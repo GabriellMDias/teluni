@@ -1626,7 +1626,7 @@
     "kind": "repository",
     "heading": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
     "anchor": "adr-0030-synchronize-screens-by-polling-with-signed-authorization-statements",
-    "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements\n**Status:** proposed\n**Date:** 2026-10-19\n"
+    "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance establishes the direction for local and CI implementation of PJ-11, not the player's conformance (PJ-12), hardware qualification (PH-08) or the provisioning of signing keys in a real environment (PJ-13).\n"
   },
   {
     "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",

@@ -2513,7 +2513,7 @@
       "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
       "group": "Decisions",
       "source": "docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md",
-      "summary": "ADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The…",
+      "summary": "Acceptance scope: The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance…",
       "headings": [],
       "file": "pages/repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.json"
     },
@@ -3013,7 +3013,7 @@
       "title": "Teluni Publication and Synchronization Design",
       "group": "Project guides",
       "source": "docs/project/publication-sync-design.md",
-      "summary": "Proposed detailed design for D-04 (server side) and the basic monitoring of FR-09, 2026-10-19, for owner review under PH-25 with ADR-0030. It is drafted after the owner asked…",
+      "summary": "Approved detailed design for D-04 (server side) and the basic monitoring of FR-09, 2026-10-20. The owner approved all ten decisions for review as proposed under PH-25,…",
       "headings": [],
       "file": "pages/repository/docs/project/publication-sync-design.json"
     },

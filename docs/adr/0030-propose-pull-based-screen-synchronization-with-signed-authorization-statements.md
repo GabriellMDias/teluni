@@ -1,7 +1,9 @@
 # ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements
 
-**Status:** proposed
-**Date:** 2026-10-19
+**Status:** accepted
+**Date:** 2026-10-20
+
+**Acceptance scope:** The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance establishes the direction for local and CI implementation of PJ-11, not the player's conformance (PJ-12), hardware qualification (PH-08) or the provisioning of signing keys in a real environment (PJ-13).
 
 ## Context
 

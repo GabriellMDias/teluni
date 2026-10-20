@@ -292,14 +292,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-25
 
-- [ ] **Review and approve the proposed D-04 publication and synchronization design and ADR-0030.**
+- [x] **Review and approve the proposed D-04 publication and synchronization design and ADR-0030.**
 
-**Status:** pending. **Owner:** project owner, with engineering review.
+**Status:** completed. **Owner:** project owner, with engineering review.
 **Dependency / trigger:** [PJ-36](implementation-plan.md#current-work); gates merging [PJ-11](implementation-plan.md#current-work), which screens need to show any published programming, and through it PJ-12/PJ-14.
 **Request and reason:** Read the [publication and synchronization design](publication-sync-design.md) and the proposed [ADR-0030](../adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md), then approve, reject or adjust each of the design's [ten decisions for review](publication-sync-design.md#decisions-for-review): (1) one immutable generation sequence per program, published with the reviewed content digest; (2) desired state derived at each synchronization, with the assignment confirmation only for unpublished destinations; (3) polling every 30 seconds with downloads limited to the desired publication; (4) the protocol 1 manifest; (5) ES256 authorization statements with a seven-day expiry and signed server time; (6) validation at publication, refusing fades until a profile is qualified; (7) `publications.publish`; (8) state reports and monitoring; (9) retention for 90 days and restore; (10) the limits. They decide what customers' screens are allowed to play, for how long offline, and who may publish, which the repository requires the owner, not an agent, to approve.
 **Configuration:** `TELUNI_SYNC_SIGNING_KEYS` (secret key ring) in real environments, provisioned under PJ-13; local and CI runs generate disposable keys.
 **Verification:** Record the owner's dated explicit decision per item (chat or pull-request review). On approval, mark the design approved and ADR-0030 accepted, complete PJ-36 and merge PJ-11 work. A rejected or changed item updates the design and, where it changes the mechanism, ADR-0030.
-**Evidence / blocker:** 2026-10-19: the owner asked for development to continue autonomously; the design and ADR-0030 were drafted, linked from the plan, the product architecture and the decision index, and are being implemented following the recommended options so the review can see working behavior.
+**Evidence / blocker:** 2026-10-19: the owner asked for development to continue autonomously; the design and ADR-0030 were drafted, linked from the plan, the product architecture and the decision index, and are being implemented following the recommended options so the review can see working behavior. On 2026-10-20 the owner approved PH-25 in the session chat, which covers all ten decisions as proposed, including ADR-0030, and delegated to the agent any further decision that needs a choice. The design is marked approved, ADR-0030 accepted and PJ-36 completed; PJ-11 continues in its pull request.
 
 ## New action template
 

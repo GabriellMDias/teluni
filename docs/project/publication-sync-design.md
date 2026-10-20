@@ -4,7 +4,7 @@
 
 ## Status and scope
 
-**Proposed detailed design for D-04 (server side) and the basic monitoring of FR-09, 2026-10-19,** for owner review under [PH-25](human-actions.md#ph-25) with ADR-0030. It is drafted after the owner asked for development to continue autonomously, and the API and panel follow the recommended options so the review can see working behavior; nothing is merged as approved until the owner decides.
+**Approved detailed design for D-04 (server side) and the basic monitoring of FR-09, 2026-10-20.** The owner approved all ten [decisions for review](#decisions-for-review) as proposed under [PH-25](human-actions.md#ph-25), including ADR-0030, after the API and panel had been built on the recommended options so the review could see working behavior. Approval authorizes PJ-11 in local and CI environments with a simulated player.
 
 In scope: publishing a program into an immutable generation, the manifest format, the desired publication of each screen, the device synchronization exchange, delivery of manifests and media to screens, the signed authorization statement, acknowledgements and state reports, the screen's synchronization state in the panel, published-reference protection, publication history, restore and retention, permissions, limits, audit, data, contracts and verification (FR-07, FR-09).
 
@@ -220,7 +220,7 @@ Copy is in `pt-BR` and `en-US`; reported states are labeled as reported by the s
 
 ## Implementation status
 
-Implemented in [PJ-11](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options while the owner reviews them under [PH-25](human-actions.md#ph-25):
+Implemented in [PJ-11](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-25](human-actions.md#ph-25):
 
 - The [`publications` API module](../../apps/api/src/features/publications/AGENTS.md), its reviewed migration (which also lets profiles delegate `publications.publish`), runtime grants, schema metadata, the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK, and the `TELUNI_SYNC_SIGNING_KEYS` setting; without it the module stays unmounted.
 - `publications.publish` for administrators and branch managers and as a delegable profile capability with `programming.view`, always with strong authentication.
@@ -236,6 +236,8 @@ Increment 2, the same day:
 Pending: increment 3.
 
 ## Decisions for review
+
+The owner approved each item as proposed on 2026-10-20 under [PH-25](human-actions.md#ph-25):
 
 1. **Publication unit.** One immutable generation sequence per program; a publication copies the program's rules, its playlists and descriptors of its media; publishing needs the content digest the person reviewed, and unchanged content returns the latest publication.
 2. **Derived desired state.** A screen desires the latest publication of its current source, computed at each synchronization; no fan-out; an unpublished source means neutral output; the assignment confirmation is required only for unpublished destinations.
