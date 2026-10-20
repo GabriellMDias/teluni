@@ -1,0 +1,92 @@
+{
+  "kind": "database",
+  "name": "layout_pages",
+  "description": "One coordinated page of a layout, with its duration.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced with the whole definition on every save; deleted with the layout.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated page UUID, new on every save.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the layout (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "layout_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Layout the page belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "position",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Zero-based page order, 0 to 19.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "duration_seconds",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "How long the page shows, 1 to 600.",
+      "Null meaning": "—",
+      "Unit": "seconds"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "layout_pages_company_id_layout_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The layout belongs to the same company; pages are deleted with it."
+    },
+    {
+      "Object": "layout_pages_duration_range",
+      "Physical definition": "CHECK (((duration_seconds >= 1) AND (duration_seconds <= 600)))",
+      "Purpose": "Pages last 1 to 600 seconds."
+    },
+    {
+      "Object": "layout_pages_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique page identity."
+    },
+    {
+      "Object": "layout_pages_position_range",
+      "Physical definition": "CHECK (((\"position\" >= 0) AND (\"position\" <= 19)))",
+      "Purpose": "A layout has at most 20 pages."
+    },
+    {
+      "Object": "layout_pages_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX layout_pages_company_id_id_key ON public.layout_pages USING btree (company_id, id)",
+      "Purpose": "Tenant key that page contents reference."
+    },
+    {
+      "Object": "layout_pages_position_key",
+      "Physical definition": "CREATE UNIQUE INDEX layout_pages_position_key ON public.layout_pages USING btree (company_id, layout_id, \"position\")",
+      "Purpose": "One page per position in a layout."
+    }
+  ]
+}

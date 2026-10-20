@@ -6,11 +6,11 @@ import type { Transition } from "./api.js";
 
 const ptBR = {
   title: "Programação",
-  lead: "Playlists, grupos de telas e horários. Tudo aqui é rascunho até ser publicado.",
+  lead: "Playlists, layouts, grupos de telas e horários. Tudo aqui é rascunho até ser publicado.",
   backToCompany: "Voltar para a empresa",
   backToProgramming: "Voltar para programação",
   viewsLabel: "Seções da programação",
-  views: { playlists: "Playlists", groups: "Grupos" },
+  views: { playlists: "Playlists", layouts: "Layouts", groups: "Grupos" },
   loading: "Carregando…",
   reload: "Recarregar",
   filterText: "Buscar por nome",
@@ -228,9 +228,209 @@ const ptBR = {
     more: "Gerações anteriores",
     membersSync: "Sincronização das telas",
   },
+  layouts: {
+    listEmpty: "Nenhum layout ainda.",
+    createTitle: "Novo layout",
+    orientationLabel: "Orientação da tela",
+    orientations: {
+      landscape: "Horizontal (1920 × 1080)",
+      portrait: "Vertical (1080 × 1920)",
+    },
+    firstAreaName: "Principal",
+    summary: (areas: number, pages: number) =>
+      `${areas === 1 ? "1 área" : `${areas} áreas`}${
+        pages > 0 ? ` · ${pages} páginas` : ""
+      }`,
+    importTitle: "Importar layout",
+    importLead:
+      "Escolha um arquivo .json exportado do Teluni. Catálogos, campos e mídias que você não pode usar aparecem como problemas para trocar.",
+    importFile: "Arquivo do layout",
+    importing: "Importando…",
+    import: "Importar",
+    importUnreadable:
+      "Não foi possível ler o arquivo. Use um .json exportado do Teluni, com até 512 KB.",
+    canvasLabel: (name: string) => `Tela do layout ${name}`,
+    canvasHint:
+      "Arraste uma área para mover e o canto para redimensionar. Com a área selecionada, as setas movem 10 unidades e Shift + setas mudam o tamanho.",
+    areaButton: (name: string, kind: string) => `${name} (${kind})`,
+    kinds: { media: "Mídia", catalog: "Catálogo" },
+    areasTitle: "Áreas",
+    addMediaArea: "Adicionar área de mídia",
+    addCatalogArea: "Adicionar área de catálogo",
+    newAreaName: (number: number) => `Área ${number}`,
+    selectedTitle: (name: string) => `Área “${name}”`,
+    noSelection: "Selecione uma área na tela ou na lista.",
+    areaName: "Nome da área",
+    areaKey: "Chave",
+    areaKeyHint:
+      "A programação usa a chave para saber o que a área mostra; ela não muda depois de salva.",
+    areaKind: "Tipo",
+    geometry: "Posição e tamanho (unidades da tela)",
+    x: "X",
+    y: "Y",
+    width: "Largura",
+    height: "Altura",
+    stack: "Ordem de sobreposição (maior fica na frente)",
+    background: "Cor de fundo",
+    fit: "Encaixe da mídia",
+    fits: { contain: "Mostrar inteira", cover: "Preencher (corta as bordas)" },
+    muted: "Sem som",
+    volume: "Volume (0 a 100)",
+    pageControlled: "Controlada pelas páginas do layout",
+    removeArea: "Remover área",
+    viewTitle: "Visão do catálogo",
+    catalog: "Catálogo",
+    chooseCatalog: "Escolha um catálogo",
+    catalogsUnavailable:
+      "Para escolher catálogos, você precisa poder ver catálogos nesta empresa.",
+    viewFields: "Campos mostrados",
+    viewFieldsHint:
+      "Um título é obrigatório; subtítulo, preço, imagem e grupo aparecem no máximo uma vez. Até 8 campos.",
+    field: "Campo",
+    roleOf: (position: number) => `Papel do campo ${position}`,
+    roles: {
+      title: "Título",
+      subtitle: "Subtítulo",
+      price: "Preço",
+      image: "Imagem",
+      detail: "Detalhe",
+      group: "Grupo",
+    },
+    addField: "Adicionar campo",
+    fieldPosition: (position: number) => `Campo ${position}`,
+    presentation: "Apresentação",
+    presentations: {
+      list: "Lista",
+      table: "Tabela",
+      menu: "Cardápio (título e preço alinhados)",
+      agenda: "Agenda (por dia da semana)",
+    },
+    textSize: "Tamanho do texto (24 a 200)",
+    unavailable: "Itens indisponíveis",
+    unavailableChoices: {
+      hide: "Esconder",
+      show: "Mostrar como indisponíveis",
+    },
+    pageSeconds: "Trocar de página a cada (segundos, 5 a 120)",
+    audioTitle: "Áudio",
+    audioMix: "Confirmo que estas áreas tocam som ao mesmo tempo.",
+    audioAreas: (names: string) => `Áreas com som: ${names}.`,
+    pagesTitle: "Páginas",
+    pagesLead:
+      "As páginas coordenam as áreas controladas: todas trocam juntas. Um layout tem nenhuma ou de 2 a 20 páginas.",
+    pagesEmpty: "Sem páginas: cada área segue a sua própria programação.",
+    addPage: "Adicionar página",
+    removePage: "Remover página",
+    pageTitle: (number: number) => `Página ${number}`,
+    pageDuration: "Duração (segundos, 1 a 600)",
+    suggested: (seconds: number) =>
+      `Na versão salva, ${seconds} s cobrem o vídeo mais longo da página.`,
+    noControlledAreas:
+      "Marque “Controlada pelas páginas do layout” em uma área para escolher o que ela mostra em cada página.",
+    content: (area: string) => `${area}: conteúdo`,
+    noMedia: "Nenhuma mídia escolhida",
+    chooseMedia: "Escolher mídia",
+    closePicker: "Fechar",
+    useMedia: (name: string) => `Usar ${name}`,
+    contentModes: { page: "Página da visão", group: "Grupo" },
+    viewPage: (area: string) => `${area}: página da visão`,
+    group: (area: string) => `${area}: grupo`,
+    chooseGroup: "Escolha um grupo",
+    weekdays: [
+      "Segunda-feira",
+      "Terça-feira",
+      "Quarta-feira",
+      "Quinta-feira",
+      "Sexta-feira",
+      "Sábado",
+      "Domingo",
+    ],
+    nameTitle: "Nome do layout",
+    saveLayout: "Salvar layout",
+    layoutSaved: "Layout salvo.",
+    export: "Exportar JSON",
+    exporting: "Exportando…",
+    exported: "Arquivo do layout exportado.",
+    fitTitle: "Encaixe dos catálogos",
+    fitLead:
+      "Calculado na versão salva, com a medida de texto que as telas respeitam. Itens nunca são cortados: o que não cabe aparece abaixo.",
+    fitEmpty: "Este layout não tem áreas de catálogo.",
+    fitSummary: (records: number, pages: number, rows: number) =>
+      `${records === 1 ? "1 item" : `${records} itens`} em ${
+        pages === 1 ? "1 página" : `${pages} páginas`
+      }, até ${rows} por página`,
+    overflowRecord: "Um item",
+    overflow: {
+      TITLE_OVERFLOW: "o título não cabe em 2 linhas",
+      PRICE_OVERFLOW: "o preço não cabe na coluna de preço",
+      DETAIL_OVERFLOW: "o subtítulo ou um detalhe não cabe em 3 linhas",
+      ROW_TOO_TALL: "o item não cabe na altura da área",
+    } as Record<string, string>,
+    readOnlyAreas: "Áreas do layout",
+    viewOf: (catalog: string) => `Mostra o catálogo ${catalog}`,
+    deleteTitle: "Excluir layout",
+    deleteLead: "A exclusão é definitiva.",
+    deleteConfirm: (name: string) =>
+      `Confirmo que quero excluir o layout “${name}”.`,
+    delete: "Excluir layout",
+    audioLabel: "Áudio",
+    issues: {
+      AREA_COUNT: "Um layout tem de 1 a 12 áreas.",
+      KEY_INVALID:
+        "A chave usa letras minúsculas, números e hífens, começa com letra e tem até 16 caracteres.",
+      KEY_DUPLICATE: "Outra área já usa esta chave.",
+      NAME_INVALID: "O nome tem de 1 a 40 caracteres.",
+      GEOMETRY_INVALID:
+        "Posição e tamanho são números inteiros; a área tem pelo menos 40 de largura e de altura e cabe na tela.",
+      OUTSIDE_CANVAS: "A área passa da borda da tela.",
+      STACK_INVALID: "A ordem de sobreposição vai de 0 a 99.",
+      STACK_DUPLICATE: "Outra área já usa esta ordem de sobreposição.",
+      COLOR_INVALID: "Use uma cor no formato #RRGGBB.",
+      VOLUME_INVALID: "O volume vai de 0 a 100.",
+      NO_PAGES:
+        "Uma área controlada pelas páginas precisa que o layout tenha páginas.",
+      VIEW_NOT_APPLICABLE: "Uma área de mídia não mostra catálogo.",
+      VIEW_REQUIRED: "Escolha o catálogo e os campos que a área mostra.",
+      VIEW_COUNT: "Um layout tem no máximo 6 áreas de catálogo.",
+      FIELD_COUNT: "Uma visão mostra de 1 a 8 campos.",
+      FIELD_DUPLICATE: "Um campo aparece duas vezes.",
+      TITLE_REQUIRED: "A visão precisa de exatamente um campo como título.",
+      ROLE_REPEATED:
+        "Subtítulo, preço, imagem e grupo aparecem no máximo uma vez.",
+      PRICE_REQUIRED: "Um cardápio precisa de um campo de preço.",
+      GROUP_REQUIRED:
+        "Uma agenda precisa de um campo de dias da semana como grupo.",
+      TEXT_SIZE_INVALID: "O tamanho do texto vai de 24 a 200.",
+      PAGE_SECONDS_INVALID: "A troca de página vai de 5 a 120 segundos.",
+      AUDIO_MIX_UNCONFIRMED:
+        "Mais de uma área tem som: confirme a mistura de áudio.",
+      PAGE_COUNT: "Um layout com páginas tem de 2 a 20 páginas.",
+      DURATION_INVALID: "Uma página dura de 1 a 600 segundos.",
+      AREA_NOT_PAGE_CONTROLLED:
+        "A página nomeia uma área que não é controlada pelas páginas.",
+      AREA_DUPLICATE: "A página nomeia a mesma área duas vezes.",
+      CONTENT_INVALID:
+        "Escolha uma mídia para áreas de mídia, e uma página da visão ou um grupo para áreas de catálogo.",
+      CONTENT_MISSING: "A página não diz o que cada área controlada mostra.",
+      CATALOG_UNAVAILABLE:
+        "O catálogo não existe, foi arquivado ou você não pode usá-lo.",
+      CATALOG_SCOPE: "O catálogo é de uma filial que o layout não cobre.",
+      FIELD_UNAVAILABLE: "O campo não existe mais ou foi arquivado.",
+      ROLE_TYPE_MISMATCH:
+        "O tipo do campo não serve para o papel: preço é dinheiro, imagem é mídia e grupo é seleção (ou dias da semana, na agenda).",
+      MEDIA_UNAVAILABLE:
+        "A mídia não está pronta, foi arquivada ou você não pode usá-la.",
+      MEDIA_SCOPE: "A mídia é de uma filial que o layout não cobre.",
+      PAGE_SHORTER_THAN_VIDEO:
+        "A página dura menos que um vídeo que ela mostra.",
+      GROUP_UNKNOWN: "O grupo escolhido não existe no campo de grupo.",
+      FORMAT_UNSUPPORTED:
+        "O arquivo não é um layout do Teluni (teluni.layout, versão 1).",
+    } as Record<string, string>,
+  },
   errors: {
     PROGRAMMING_LIMIT_REACHED:
-      "A empresa chegou a um limite de programação: 1.000 playlists, 100 grupos, 2.000 programações, 500 itens por playlist ou 200 horários.",
+      "A empresa chegou a um limite de programação: 1.000 playlists, 500 layouts, 100 grupos, 2.000 programações, 500 itens por playlist ou 200 horários.",
     PLAYLIST_IN_USE:
       "Esta playlist é usada em horários ou como padrão e não pode ser excluída.",
     PLAYLIST_SCOPE_MISMATCH:
@@ -244,6 +444,8 @@ const ptBR = {
     SCHEDULE_CONFLICT: "Dois horários se sobrepõem.",
     ASSIGNMENT_CONFIRMATION_REQUIRED:
       "Confirme que a tela vai mostrar a tela neutra até a publicação.",
+    LAYOUT_INVALID:
+      "O layout não pode ser salvo assim. Veja abaixo o que corrigir.",
     PUBLICATION_INVALID:
       "Esta programação não pode ser publicada como está. Revise de novo para ver o que corrigir.",
     PUBLICATION_NOT_RESTORABLE:
@@ -279,11 +481,11 @@ type Messages = typeof ptBR;
 
 const enUS: Messages = {
   title: "Programming",
-  lead: "Playlists, screen groups and schedules. Everything here is a draft until it is published.",
+  lead: "Playlists, layouts, screen groups and schedules. Everything here is a draft until it is published.",
   backToCompany: "Back to the company",
   backToProgramming: "Back to programming",
   viewsLabel: "Programming sections",
-  views: { playlists: "Playlists", groups: "Groups" },
+  views: { playlists: "Playlists", layouts: "Layouts", groups: "Groups" },
   loading: "Loading…",
   reload: "Reload",
   filterText: "Search by name",
@@ -498,9 +700,205 @@ const enUS: Messages = {
     more: "Earlier generations",
     membersSync: "Screen synchronization",
   },
+  layouts: {
+    listEmpty: "No layouts yet.",
+    createTitle: "New layout",
+    orientationLabel: "Screen orientation",
+    orientations: {
+      landscape: "Landscape (1920 × 1080)",
+      portrait: "Portrait (1080 × 1920)",
+    },
+    firstAreaName: "Main",
+    summary: (areas: number, pages: number) =>
+      `${areas === 1 ? "1 area" : `${areas} areas`}${
+        pages > 0 ? ` · ${pages} pages` : ""
+      }`,
+    importTitle: "Import layout",
+    importLead:
+      "Choose a .json file exported from Teluni. Catalogs, fields and media you cannot use are reported as issues to replace.",
+    importFile: "Layout file",
+    importing: "Importing…",
+    import: "Import",
+    importUnreadable:
+      "The file could not be read. Use a .json file exported from Teluni, up to 512 KB.",
+    canvasLabel: (name: string) => `Canvas of layout ${name}`,
+    canvasHint:
+      "Drag an area to move it and its corner to resize it. With an area selected, arrow keys move it 10 units and Shift + arrow keys change its size.",
+    areaButton: (name: string, kind: string) => `${name} (${kind})`,
+    kinds: { media: "Media", catalog: "Catalog" },
+    areasTitle: "Areas",
+    addMediaArea: "Add media area",
+    addCatalogArea: "Add catalog area",
+    newAreaName: (number: number) => `Area ${number}`,
+    selectedTitle: (name: string) => `Area “${name}”`,
+    noSelection: "Select an area on the canvas or in the list.",
+    areaName: "Area name",
+    areaKey: "Key",
+    areaKeyHint:
+      "Programming uses the key to know what the area shows; it does not change once saved.",
+    areaKind: "Kind",
+    geometry: "Position and size (canvas units)",
+    x: "X",
+    y: "Y",
+    width: "Width",
+    height: "Height",
+    stack: "Stacking order (higher draws in front)",
+    background: "Background color",
+    fit: "Media fit",
+    fits: { contain: "Show whole", cover: "Fill (crops the edges)" },
+    muted: "Muted",
+    volume: "Volume (0 to 100)",
+    pageControlled: "Controlled by the layout's pages",
+    removeArea: "Remove area",
+    viewTitle: "Catalog view",
+    catalog: "Catalog",
+    chooseCatalog: "Choose a catalog",
+    catalogsUnavailable:
+      "To choose catalogs, you need to be allowed to view catalogs in this company.",
+    viewFields: "Fields shown",
+    viewFieldsHint:
+      "A title is required; subtitle, price, image and group appear at most once. Up to 8 fields.",
+    field: "Field",
+    roleOf: (position: number) => `Role of field ${position}`,
+    roles: {
+      title: "Title",
+      subtitle: "Subtitle",
+      price: "Price",
+      image: "Image",
+      detail: "Detail",
+      group: "Group",
+    },
+    addField: "Add field",
+    fieldPosition: (position: number) => `Field ${position}`,
+    presentation: "Presentation",
+    presentations: {
+      list: "List",
+      table: "Table",
+      menu: "Menu (title and price aligned)",
+      agenda: "Agenda (by weekday)",
+    },
+    textSize: "Text size (24 to 200)",
+    unavailable: "Unavailable items",
+    unavailableChoices: { hide: "Hide", show: "Show as unavailable" },
+    pageSeconds: "Change page every (seconds, 5 to 120)",
+    audioTitle: "Audio",
+    audioMix: "I confirm that these areas play sound at the same time.",
+    audioAreas: (names: string) => `Areas with sound: ${names}.`,
+    pagesTitle: "Pages",
+    pagesLead:
+      "Pages coordinate the controlled areas: they all change together. A layout has no pages or 2 to 20 pages.",
+    pagesEmpty: "No pages: each area follows its own programming.",
+    addPage: "Add page",
+    removePage: "Remove page",
+    pageTitle: (number: number) => `Page ${number}`,
+    pageDuration: "Duration (seconds, 1 to 600)",
+    suggested: (seconds: number) =>
+      `On the saved version, ${seconds} s cover the page's longest video.`,
+    noControlledAreas:
+      "Check “Controlled by the layout's pages” on an area to choose what it shows on each page.",
+    content: (area: string) => `${area}: content`,
+    noMedia: "No media chosen",
+    chooseMedia: "Choose media",
+    closePicker: "Close",
+    useMedia: (name: string) => `Use ${name}`,
+    contentModes: { page: "View page", group: "Group" },
+    viewPage: (area: string) => `${area}: view page`,
+    group: (area: string) => `${area}: group`,
+    chooseGroup: "Choose a group",
+    weekdays: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    nameTitle: "Layout name",
+    saveLayout: "Save layout",
+    layoutSaved: "Layout saved.",
+    export: "Export JSON",
+    exporting: "Exporting…",
+    exported: "Layout file exported.",
+    fitTitle: "Catalog fit",
+    fitLead:
+      "Computed on the saved version with the text measure screens honor. Items are never clipped: what does not fit is listed below.",
+    fitEmpty: "This layout has no catalog areas.",
+    fitSummary: (records: number, pages: number, rows: number) =>
+      `${records === 1 ? "1 item" : `${records} items`} on ${
+        pages === 1 ? "1 page" : `${pages} pages`
+      }, up to ${rows} per page`,
+    overflowRecord: "An item",
+    overflow: {
+      TITLE_OVERFLOW: "the title does not fit in 2 lines",
+      PRICE_OVERFLOW: "the price does not fit the price column",
+      DETAIL_OVERFLOW: "the subtitle or a detail does not fit in 3 lines",
+      ROW_TOO_TALL: "the item does not fit the area's height",
+    },
+    readOnlyAreas: "Layout areas",
+    viewOf: (catalog: string) => `Shows catalog ${catalog}`,
+    deleteTitle: "Delete layout",
+    deleteLead: "Deletion is permanent.",
+    deleteConfirm: (name: string) =>
+      `I confirm that I want to delete layout “${name}”.`,
+    delete: "Delete layout",
+    audioLabel: "Audio",
+    issues: {
+      AREA_COUNT: "A layout has 1 to 12 areas.",
+      KEY_INVALID:
+        "The key uses lowercase letters, digits and hyphens, starts with a letter and has up to 16 characters.",
+      KEY_DUPLICATE: "Another area already uses this key.",
+      NAME_INVALID: "The name has 1 to 40 characters.",
+      GEOMETRY_INVALID:
+        "Position and size are whole numbers; an area is at least 40 wide and high and fits the canvas.",
+      OUTSIDE_CANVAS: "The area goes past the edge of the canvas.",
+      STACK_INVALID: "The stacking order goes from 0 to 99.",
+      STACK_DUPLICATE: "Another area already uses this stacking order.",
+      COLOR_INVALID: "Use a color in #RRGGBB format.",
+      VOLUME_INVALID: "Volume goes from 0 to 100.",
+      NO_PAGES: "A page-controlled area needs the layout to have pages.",
+      VIEW_NOT_APPLICABLE: "A media area does not show a catalog.",
+      VIEW_REQUIRED: "Choose the catalog and fields the area shows.",
+      VIEW_COUNT: "A layout has at most 6 catalog areas.",
+      FIELD_COUNT: "A view shows 1 to 8 fields.",
+      FIELD_DUPLICATE: "A field appears twice.",
+      TITLE_REQUIRED: "The view needs exactly one field as its title.",
+      ROLE_REPEATED: "Subtitle, price, image and group appear at most once.",
+      PRICE_REQUIRED: "A menu needs a price field.",
+      GROUP_REQUIRED: "An agenda needs a weekdays field as its group.",
+      TEXT_SIZE_INVALID: "Text size goes from 24 to 200.",
+      PAGE_SECONDS_INVALID: "Paging goes from 5 to 120 seconds.",
+      AUDIO_MIX_UNCONFIRMED:
+        "More than one area has sound: confirm the audio mix.",
+      PAGE_COUNT: "A layout with pages has 2 to 20 pages.",
+      DURATION_INVALID: "A page lasts 1 to 600 seconds.",
+      AREA_NOT_PAGE_CONTROLLED:
+        "The page names an area that is not controlled by the pages.",
+      AREA_DUPLICATE: "The page names the same area twice.",
+      CONTENT_INVALID:
+        "Choose a media item for media areas, and a view page or a group for catalog areas.",
+      CONTENT_MISSING:
+        "The page does not say what every controlled area shows.",
+      CATALOG_UNAVAILABLE:
+        "The catalog does not exist, was archived, or you cannot use it.",
+      CATALOG_SCOPE:
+        "The catalog belongs to a branch this layout does not cover.",
+      FIELD_UNAVAILABLE: "The field no longer exists or was archived.",
+      ROLE_TYPE_MISMATCH:
+        "The field's type does not suit the role: price is money, image is media and group is selection (or weekdays, in an agenda).",
+      MEDIA_UNAVAILABLE:
+        "The media item is not ready, was archived, or you cannot use it.",
+      MEDIA_SCOPE:
+        "The media item belongs to a branch this layout does not cover.",
+      PAGE_SHORTER_THAN_VIDEO: "The page is shorter than a video it shows.",
+      GROUP_UNKNOWN: "The chosen group does not exist in the group field.",
+      FORMAT_UNSUPPORTED:
+        "The file is not a Teluni layout (teluni.layout, schema 1).",
+    },
+  },
   errors: {
     PROGRAMMING_LIMIT_REACHED:
-      "The company reached a programming limit: 1,000 playlists, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules.",
+      "The company reached a programming limit: 1,000 playlists, 500 layouts, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules.",
     PLAYLIST_IN_USE:
       "This playlist is used by schedules or as a default and cannot be deleted.",
     PLAYLIST_SCOPE_MISMATCH:
@@ -514,6 +912,8 @@ const enUS: Messages = {
     SCHEDULE_CONFLICT: "Two schedules overlap.",
     ASSIGNMENT_CONFIRMATION_REQUIRED:
       "Confirm that the screen shows a neutral screen until publication.",
+    LAYOUT_INVALID:
+      "The layout cannot be saved this way. See below what to fix.",
     PUBLICATION_INVALID:
       "This programming cannot be published as it is. Review it again to see what to fix.",
     PUBLICATION_NOT_RESTORABLE:

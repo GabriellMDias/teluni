@@ -43,6 +43,8 @@ model Catalog {
   promotions    CatalogPromotion[]
   recordMedia   CatalogRecordMedia[]
   references    CatalogRecordReference[]
+  // Back-relation of the programming module's layouts; never traversed.
+  layoutAreas   LayoutArea[]
 
   @@unique([companyId, id], map: "catalogs_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "catalogs_company_created_idx")
@@ -68,6 +70,8 @@ model CatalogField {
   promotions      CatalogPromotion[]
   recordMedia     CatalogRecordMedia[]
   references      CatalogRecordReference[]
+  // Back-relation of the programming module's layouts; never traversed.
+  layoutFields    LayoutViewField[]
 
   @@unique([companyId, id], map: "catalog_fields_company_id_id_key")
   @@index([companyId, catalogId, position], map: "catalog_fields_catalog_position_idx")

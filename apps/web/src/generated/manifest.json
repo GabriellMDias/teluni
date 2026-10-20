@@ -358,6 +358,24 @@
       "file": "pages/api/createInvitation.json"
     },
     {
+      "id": "api/createLayout",
+      "kind": "api",
+      "title": "createLayout",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/layouts",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/layouts",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createLayout.json"
+    },
+    {
       "id": "api/createMedia",
       "kind": "api",
       "title": "createMedia",
@@ -465,6 +483,24 @@
       "file": "pages/api/deleteCatalogRecord.json"
     },
     {
+      "id": "api/deleteLayout",
+      "kind": "api",
+      "title": "deleteLayout",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/programming/layouts/{layoutId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/programming/layouts/{layoutId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteLayout.json"
+    },
+    {
       "id": "api/deleteMedia",
       "kind": "api",
       "title": "deleteMedia",
@@ -535,6 +571,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/discardMedia.json"
+    },
+    {
+      "id": "api/exportLayout",
+      "kind": "api",
+      "title": "exportLayout",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/layouts/{layoutId}/export",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/layouts/{layoutId}/export",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/exportLayout.json"
     },
     {
       "id": "api/getAccessProfile",
@@ -843,6 +896,23 @@
       "file": "pages/api/getGroupTimeline.json"
     },
     {
+      "id": "api/getLayout",
+      "kind": "api",
+      "title": "getLayout",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/layouts/{layoutId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/layouts/{layoutId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getLayout.json"
+    },
+    {
       "id": "api/getLiveness",
       "kind": "api",
       "title": "getLiveness",
@@ -977,6 +1047,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getStartupHealth.json"
+    },
+    {
+      "id": "api/importLayout",
+      "kind": "api",
+      "title": "importLayout",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/programming/layouts/import",
+      "method": "POST",
+      "path": "/companies/{companyId}/programming/layouts/import",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/importLayout.json"
     },
     {
       "id": "api/listAccessProfiles",
@@ -1181,6 +1269,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/listInvitations.json"
+    },
+    {
+      "id": "api/listLayouts",
+      "kind": "api",
+      "title": "listLayouts",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/programming/layouts",
+      "method": "GET",
+      "path": "/companies/{companyId}/programming/layouts",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listLayouts.json"
     },
     {
       "id": "api/listMedia",
@@ -1943,6 +2048,24 @@
       "file": "pages/api/updateDeviceReport.json"
     },
     {
+      "id": "api/updateLayout",
+      "kind": "api",
+      "title": "updateLayout",
+      "group": "Programming",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/programming/layouts/{layoutId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/programming/layouts/{layoutId}",
+      "tags": ["Programming"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateLayout.json"
+    },
+    {
       "id": "api/updateMedia",
       "kind": "api",
       "title": "updateMedia",
@@ -2213,6 +2336,56 @@
       "summary": "Server-managed browser session: an opaque cookie credential's hash, its bounds and assurance, and the sealed provider tokens obtained for it.",
       "headings": [],
       "file": "pages/database/human_sessions.json"
+    },
+    {
+      "id": "database/layout_areas",
+      "kind": "database",
+      "title": "layout_areas",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One area of a layout: its rectangle in canvas units, stacking order, appearance, audio and kind, and for catalog areas the view's settings.",
+      "headings": [],
+      "file": "pages/database/layout_areas.json"
+    },
+    {
+      "id": "database/layout_page_contents",
+      "kind": "database",
+      "title": "layout_page_contents",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "What one page-controlled area shows on one page: a media item, a view page or a group of the view.",
+      "headings": [],
+      "file": "pages/database/layout_page_contents.json"
+    },
+    {
+      "id": "database/layout_pages",
+      "kind": "database",
+      "title": "layout_pages",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One coordinated page of a layout, with its duration.",
+      "headings": [],
+      "file": "pages/database/layout_pages.json"
+    },
+    {
+      "id": "database/layout_view_fields",
+      "kind": "database",
+      "title": "layout_view_fields",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One catalog field a view binds, in order, with its role: title, subtitle, price, image, detail or group.",
+      "headings": [],
+      "file": "pages/database/layout_view_fields.json"
+    },
+    {
+      "id": "database/layouts",
+      "kind": "database",
+      "title": "layouts",
+      "group": "Programming",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A reusable canvas with freeform areas, catalog views and optional coordinated pages, owned by a company or one branch.",
+      "headings": [],
+      "file": "pages/database/layouts.json"
     },
     {
       "id": "database/media_assets",
@@ -3817,46 +3990,48 @@
       { "file": "search/0007.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0008.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0009.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0010.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0010.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0011.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0012.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0013.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0014.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0015.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0016.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0017.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0018.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0019.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0020.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0012.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0013.json", "count": 14, "kinds": ["api"] },
+      { "file": "search/0014.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0015.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0016.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0017.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0018.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0019.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0020.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0021.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0022.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0023.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0024.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0024.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0025.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0026.json", "count": 22, "kinds": ["api", "database"] },
-      { "file": "search/0027.json", "count": 25, "kinds": ["database"] },
+      { "file": "search/0026.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0027.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0028.json", "count": 19, "kinds": ["api", "database"] },
+      { "file": "search/0029.json", "count": 24, "kinds": ["database"] },
       {
-        "file": "search/0028.json",
-        "count": 55,
+        "file": "search/0030.json",
+        "count": 44,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0029.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0030.json", "count": 118, "kinds": ["repository"] },
-      { "file": "search/0031.json", "count": 145, "kinds": ["repository"] },
-      { "file": "search/0032.json", "count": 177, "kinds": ["repository"] },
-      { "file": "search/0033.json", "count": 118, "kinds": ["repository"] },
-      { "file": "search/0034.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0035.json", "count": 79, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 61, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 64, "kinds": ["repository"] },
-      { "file": "search/0039.json", "count": 46, "kinds": ["repository"] },
-      { "file": "search/0040.json", "count": 74, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 84, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 20, "kinds": ["repository"] }
+      { "file": "search/0031.json", "count": 92, "kinds": ["repository"] },
+      { "file": "search/0032.json", "count": 115, "kinds": ["repository"] },
+      { "file": "search/0033.json", "count": 128, "kinds": ["repository"] },
+      { "file": "search/0034.json", "count": 179, "kinds": ["repository"] },
+      { "file": "search/0035.json", "count": 135, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 129, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 84, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 48, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 54, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 81, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 104, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 76, "kinds": ["repository"] }
     ],
-    "count": 1853
+    "count": 1890
   }
 }

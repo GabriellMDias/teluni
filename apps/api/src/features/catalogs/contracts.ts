@@ -276,7 +276,7 @@ const cursor = Type.Optional(Type.String({ minLength: 1, maxLength: 1024 }));
 const limit = Type.Optional(Type.Integer({ minimum: 1, maximum: 100 }));
 
 const schemaReasons =
-  "Issue reasons: LABEL_INVALID, LABEL_DUPLICATE, UNKNOWN_FIELD, DUPLICATE_FIELD, TYPE_IMMUTABLE, CURRENCY_IMMUTABLE, TARGET_IMMUTABLE, DECIMALS_IMMUTABLE, SETTING_NOT_APPLICABLE, SETTING_INVALID, CHOICES_INVALID, CURRENCY_UNSUPPORTED, REQUIRED_NOT_ALLOWED, TARGET_INVALID, and with a count of stored items FIELD_HAS_VALUES, REQUIRED_MISSING_VALUES, VALUES_TOO_LONG, VALUES_OUT_OF_RANGE, CHOICE_IN_USE and PROMOTIONS_EXIST.";
+  "Issue reasons: LABEL_INVALID, LABEL_DUPLICATE, UNKNOWN_FIELD, DUPLICATE_FIELD, TYPE_IMMUTABLE, CURRENCY_IMMUTABLE, TARGET_IMMUTABLE, DECIMALS_IMMUTABLE, SETTING_NOT_APPLICABLE, SETTING_INVALID, CHOICES_INVALID, CURRENCY_UNSUPPORTED, REQUIRED_NOT_ALLOWED, TARGET_INVALID, and with a count of stored items FIELD_HAS_VALUES, REQUIRED_MISSING_VALUES, VALUES_TOO_LONG, VALUES_OUT_OF_RANGE, CHOICE_IN_USE, PROMOTIONS_EXIST and FIELD_BOUND (layouts that bind the field, which can then be neither removed nor archived).";
 const fieldRules =
   "Fields: text (maxLength 1-500, 120 by default), longText (1-2,000, 500), number (decimals 0-4, optional minimum and maximum as decimal strings), boolean, date, time, weekdays, selection (1-100 choices with stable IDs), money (an ISO 4217 currency fixed for the field; never required; promotions allowed unless false), media (image items) and reference (a target catalog of the same company that covers this catalog's scope). A field's type, currency, decimals and reference target never change; labels are unique among active fields, ignoring case.";
 const recordReasons =

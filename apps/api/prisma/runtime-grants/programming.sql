@@ -18,3 +18,12 @@ GRANT SELECT, INSERT, DELETE ON schedule_rules TO orion_runtime;
 GRANT SELECT, INSERT ON programming_device_settings TO orion_runtime;
 GRANT UPDATE (group_id, individual, version, updated_at) ON programming_device_settings TO orion_runtime;
 GRANT SELECT, INSERT ON programming_audit_events TO orion_runtime;
+
+-- Layouts: a save replaces the areas, view fields, pages and page
+-- contents by deleting and inserting rows; only the layout row is updated.
+GRANT SELECT, INSERT, DELETE ON layouts TO orion_runtime;
+GRANT UPDATE (name, orientation, audio_mix_confirmed, version, updated_at) ON layouts TO orion_runtime;
+GRANT SELECT, INSERT, DELETE ON layout_areas TO orion_runtime;
+GRANT SELECT, INSERT, DELETE ON layout_view_fields TO orion_runtime;
+GRANT SELECT, INSERT, DELETE ON layout_pages TO orion_runtime;
+GRANT SELECT, INSERT, DELETE ON layout_page_contents TO orion_runtime;

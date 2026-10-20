@@ -1,0 +1,292 @@
+{
+  "kind": "database",
+  "name": "layout_areas",
+  "description": "One area of a layout: its rectangle in canvas units, stacking order, appearance, audio and kind, and for catalog areas the view's settings.",
+  "owner": "Programming",
+  "classification": "INTERNAL",
+  "lifecycle": "Replaced with the whole definition on every save, keeping each area's key; deleted with the layout.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated area UUID, new on every save.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the layout (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "layout_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Layout the area belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "key",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Stable area key chosen by the editor, unique in the layout; program outputs refer to it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(40)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display name of the area, trimmed, 1 to 40 characters.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "x",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Left edge.",
+      "Null meaning": "—",
+      "Unit": "canvas units"
+    },
+    {
+      "Column": "y",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Top edge.",
+      "Null meaning": "—",
+      "Unit": "canvas units"
+    },
+    {
+      "Column": "width",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Width, at least 40 and inside the canvas.",
+      "Null meaning": "—",
+      "Unit": "canvas units"
+    },
+    {
+      "Column": "height",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Height, at least 40 and inside the canvas.",
+      "Null meaning": "—",
+      "Unit": "canvas units"
+    },
+    {
+      "Column": "z",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Stacking order, 0 to 99 and unique in the layout; higher draws above.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "background",
+      "PostgreSQL type": "character(7)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Background color as #RRGGBB.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "fit",
+      "PostgreSQL type": "character varying(8)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "How media fills the area: contain (whole, letterboxed) or cover (cropped, never distorted).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "muted",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Whether the area plays without sound; new areas start muted.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "volume",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Volume from 0 to 100 when not muted.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "kind",
+      "PostgreSQL type": "\"LayoutAreaKind\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "MEDIA (plays what its program output selects) or CATALOG (shows a catalog view).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "page_controlled",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Whether the area changes content with the layout's pages.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog the view shows.",
+      "Null meaning": "The area is a media area.",
+      "Unit": "—"
+    },
+    {
+      "Column": "presentation",
+      "PostgreSQL type": "character varying(8)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "View presentation: list, table, menu or agenda.",
+      "Null meaning": "The area is a media area.",
+      "Unit": "—"
+    },
+    {
+      "Column": "text_size",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "View text size, 24 to 200; text never shrinks below it.",
+      "Null meaning": "The area is a media area.",
+      "Unit": "canvas units"
+    },
+    {
+      "Column": "show_unavailable",
+      "PostgreSQL type": "boolean",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Whether the view shows unavailable records as unavailable instead of hiding them.",
+      "Null meaning": "The area is a media area.",
+      "Unit": "—"
+    },
+    {
+      "Column": "page_seconds",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Seconds each view page shows when the area is not page-controlled, 5 to 120.",
+      "Null meaning": "The area is a media area.",
+      "Unit": "seconds"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "layout_areas_background",
+      "Physical definition": "CHECK ((background ~ '^#[0-9A-F]{6}$'::text))",
+      "Purpose": "Backgrounds are uppercase #RRGGBB colors."
+    },
+    {
+      "Object": "layout_areas_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The viewed catalog belongs to the same company and cannot be deleted while a layout shows it."
+    },
+    {
+      "Object": "layout_areas_company_id_layout_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The layout belongs to the same company; areas are deleted with it."
+    },
+    {
+      "Object": "layout_areas_fit",
+      "Physical definition": "CHECK (((fit)::text = ANY ((ARRAY['contain'::character varying, 'cover'::character varying])::text[])))",
+      "Purpose": "Media fit is contain or cover."
+    },
+    {
+      "Object": "layout_areas_geometry",
+      "Physical definition": "CHECK (((x >= 0) AND (y >= 0) AND (width >= 40) AND (height >= 40) AND ((x + width) <= 1920) AND ((y + height) <= 1920)))",
+      "Purpose": "Rectangles are at least 40 units and within the larger canvas dimension; the API checks the layout's own canvas."
+    },
+    {
+      "Object": "layout_areas_key_shape",
+      "Physical definition": "CHECK (((key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))",
+      "Purpose": "Keys are short lowercase identifiers."
+    },
+    {
+      "Object": "layout_areas_name_trimmed",
+      "Physical definition": "CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))",
+      "Purpose": "Names are trimmed and not empty."
+    },
+    {
+      "Object": "layout_areas_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique area identity."
+    },
+    {
+      "Object": "layout_areas_stack_range",
+      "Physical definition": "CHECK (((z >= 0) AND (z <= 99)))",
+      "Purpose": "Stacking orders are 0 to 99."
+    },
+    {
+      "Object": "layout_areas_view",
+      "Physical definition": "CHECK ((((kind = 'CATALOG'::\"LayoutAreaKind\") = (catalog_id IS NOT NULL)) AND ((kind = 'CATALOG'::\"LayoutAreaKind\") = (presentation IS NOT NULL)) AND ((kind = 'CATALOG'::\"LayoutAreaKind\") = (text_size IS NOT NULL)) AND ((kind = 'CATALOG'::\"LayoutAreaKind\") = (show_unavailable IS NOT NULL)) AND ((kind = 'CATALOG'::\"LayoutAreaKind\") = (page_seconds IS NOT NULL)) AND ((presentation IS NULL) OR ((presentation)::text = ANY ((ARRAY['list'::character varying, 'table'::character varying, 'menu'::character varying, 'agenda'::character varying])::text[]))) AND ((text_size IS NULL) OR ((text_size >= 24) AND (text_size <= 200))) AND ((page_seconds IS NULL) OR ((page_seconds >= 5) AND (page_seconds <= 120)))))",
+      "Purpose": "Catalog areas, and only they, carry a complete view with a known presentation and bounded text size and paging."
+    },
+    {
+      "Object": "layout_areas_volume_range",
+      "Physical definition": "CHECK (((volume >= 0) AND (volume <= 100)))",
+      "Purpose": "Volumes are 0 to 100."
+    },
+    {
+      "Object": "layout_areas_catalog_idx",
+      "Physical definition": "CREATE INDEX layout_areas_catalog_idx ON public.layout_areas USING btree (company_id, catalog_id)",
+      "Purpose": "Finds the layouts that show a catalog."
+    },
+    {
+      "Object": "layout_areas_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX layout_areas_company_id_id_key ON public.layout_areas USING btree (company_id, id)",
+      "Purpose": "Tenant key that view fields and page contents reference."
+    },
+    {
+      "Object": "layout_areas_key_key",
+      "Physical definition": "CREATE UNIQUE INDEX layout_areas_key_key ON public.layout_areas USING btree (company_id, layout_id, key)",
+      "Purpose": "Area keys are unique within a layout."
+    }
+  ]
+}

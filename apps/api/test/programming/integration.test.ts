@@ -7,6 +7,7 @@ import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/app.js";
 import { createDatabase, type Database } from "../../src/database.js";
+import { createCatalogsModule } from "../../src/features/catalogs/module.js";
 import { createDevicesModule } from "../../src/features/devices/module.js";
 import type { HumanSessionPort } from "../../src/features/identity/public.js";
 import { createMediaModule } from "../../src/features/media/module.js";
@@ -97,11 +98,18 @@ beforeAll(async () => {
       limits,
       manual: true,
     });
+    const catalogs = createCatalogsModule({
+      sessions,
+      companies: organizations.companies,
+      media: media.media,
+      limits,
+    });
     const { module: programming } = createProgrammingModule({
       sessions,
       companies: organizations.companies,
       devices: devices.devices,
       media: media.media,
+      catalogs: catalogs.catalogs,
       limits,
     });
     const modules = activateModules(
@@ -110,6 +118,7 @@ beforeAll(async () => {
         organizations.module,
         devices.module,
         media.module,
+        catalogs.module,
         programming,
       ],
       {

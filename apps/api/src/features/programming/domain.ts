@@ -23,6 +23,7 @@ export const programmingPolicy = Object.freeze({
   minFadeMs: 250,
   maxFadeMs: 2_000,
   maxPlaylistsPerCompany: 1_000,
+  maxLayoutsPerCompany: 500,
   maxGroupsPerCompany: 100,
   maxProgramsPerCompany: 2_000,
   maxItemsPerPlaylist: 500,
@@ -44,14 +45,27 @@ export type ProgrammingFailureCode =
   | "SCHEDULE_TIMES_EQUAL"
   | "SCHEDULE_CONFLICT"
   | "ASSIGNMENT_CONFIRMATION_REQUIRED"
-  | "TIMELINE_TOO_LARGE";
+  | "TIMELINE_TOO_LARGE"
+  | "LAYOUT_INVALID";
+
+/**
+ * One problem with a request, located by a JSON Pointer into its body, with
+ * a stable reason and, when stored data causes it, a count.
+ */
+export type Issue = Readonly<{
+  path: string;
+  reason: string;
+  count?: number;
+}>;
 
 export class ProgrammingFailure extends Error {
   readonly code: ProgrammingFailureCode;
-  constructor(code: ProgrammingFailureCode) {
+  readonly issues: readonly Issue[];
+  constructor(code: ProgrammingFailureCode, issues: readonly Issue[] = []) {
     super(`Programming failure: ${code}`);
     this.name = "ProgrammingFailure";
     this.code = code;
+    this.issues = issues.slice(0, 50);
   }
 }
 

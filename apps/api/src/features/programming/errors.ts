@@ -10,7 +10,7 @@ export const programmingErrors = defineErrors({
   PROGRAMMING_LIMIT_REACHED: {
     status: 409,
     message:
-      "This company reached a programming limit: 1,000 playlists, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output.",
+      "This company reached a programming limit: 1,000 playlists, 500 layouts, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output.",
     category: "conflict",
     retryable: false,
   },
@@ -65,6 +65,13 @@ export const programmingErrors = defineErrors({
     status: 409,
     message:
       "The chosen programming is not published yet, so the screen will show neutral output. Confirm to continue.",
+    category: "conflict",
+    retryable: false,
+  },
+  LAYOUT_INVALID: {
+    status: 409,
+    message:
+      "The layout cannot be saved this way. Each issue names the area, view or page and the reason.",
     category: "conflict",
     retryable: false,
   },

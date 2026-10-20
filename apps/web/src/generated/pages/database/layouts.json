@@ -1,0 +1,137 @@
+{
+  "kind": "database",
+  "name": "layouts",
+  "description": "A reusable canvas with freeform areas, catalog views and optional coordinated pages, owned by a company or one branch.",
+  "owner": "Programming",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created by members or imported from its JSON representation; every save of the definition or name bumps the version. Deleted at runtime with its areas and pages. The owning scope never changes. See docs/project/catalog-composition-design.md#layouts.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable layout UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the layout; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch that owns the layout; immutable.",
+      "Null meaning": "The layout belongs to the whole company.",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display name chosen by members, trimmed, 1 to 120 characters.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "orientation",
+      "PostgreSQL type": "\"LayoutOrientation\"",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "LANDSCAPE (1920×1080 canvas units) or PORTRAIT (1080×1920).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "audio_mix_confirmed",
+      "PostgreSQL type": "boolean",
+      "Nullable": "no",
+      "Default": "false",
+      "Classification": "INTERNAL",
+      "Meaning": "Whether members confirmed that more than one area plays sound at once.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency version, starting at 1.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of creation.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "layouts_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The owning branch belongs to the same company."
+    },
+    {
+      "Object": "layouts_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "A layout belongs to an existing company."
+    },
+    {
+      "Object": "layouts_name_trimmed",
+      "Physical definition": "CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))",
+      "Purpose": "Names are trimmed and not empty."
+    },
+    {
+      "Object": "layouts_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Unique layout identity."
+    },
+    {
+      "Object": "layouts_version_positive",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "layouts_company_created_idx",
+      "Physical definition": "CREATE INDEX layouts_company_created_idx ON public.layouts USING btree (company_id, created_at DESC, id DESC)",
+      "Purpose": "Lists a company's layouts newest first with keyset cursors."
+    },
+    {
+      "Object": "layouts_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX layouts_company_id_id_key ON public.layouts USING btree (company_id, id)",
+      "Purpose": "Tenant key for layouts."
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import { createDevicesModule } from "../../src/features/devices/module.js";
 import type { HumanSessionPort } from "../../src/features/identity/public.js";
 import { createMediaModule } from "../../src/features/media/module.js";
 import { createOrganizationsModule } from "../../src/features/organizations/module.js";
+import { createCatalogsModule } from "../../src/features/catalogs/module.js";
 import { createProgrammingModule } from "../../src/features/programming/module.js";
 import { createPublicationsModule } from "../../src/features/publications/module.js";
 import type { DevicePort } from "../../src/features/devices/public.js";
@@ -110,11 +111,18 @@ beforeAll(async () => {
       limits,
       manual: true,
     });
+    const catalogs = createCatalogsModule({
+      sessions,
+      companies: organizations.companies,
+      media: media.media,
+      limits,
+    });
     const programming = createProgrammingModule({
       sessions,
       companies: organizations.companies,
       devices: devices.devices,
       media: media.media,
+      catalogs: catalogs.catalogs,
       limits,
     });
     publications = createPublicationsModule({
@@ -132,6 +140,7 @@ beforeAll(async () => {
         organizations.module,
         devices.module,
         media.module,
+        catalogs.module,
         programming.module,
         publications.module,
       ],

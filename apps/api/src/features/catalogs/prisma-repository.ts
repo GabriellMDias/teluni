@@ -307,6 +307,32 @@ export class PrismaCatalogRepository {
     return row ? catalog(row) : null;
   }
 
+  async findCatalogs(
+    companyId: string,
+    catalogIds: readonly string[],
+  ): Promise<CatalogData[]> {
+    if (catalogIds.length === 0) return [];
+    const rows = await this.#db.$queryRaw<CatalogRow[]>`
+      SELECT ${catalogColumns} FROM catalogs
+      WHERE company_id = ${companyId}::uuid AND id IN (${uuidList(catalogIds)})
+      ORDER BY id`;
+    return rows.map(catalog);
+  }
+
+  /** Key-share-locks catalogs a binding names; returns those found. */
+  async keyShareCatalogs(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    catalogIds: readonly string[],
+  ): Promise<CatalogData[]> {
+    if (catalogIds.length === 0) return [];
+    const rows = await tx.$queryRaw<CatalogRow[]>`
+      SELECT ${catalogColumns} FROM catalogs
+      WHERE company_id = ${companyId}::uuid AND id IN (${uuidList(catalogIds)})
+      ORDER BY id FOR KEY SHARE`;
+    return rows.map(catalog);
+  }
+
   /** Newest first, keyset-paginated, within the visible scopes. */
   async listCatalogs(
     companyId: string,
@@ -714,6 +740,18 @@ export class PrismaCatalogRepository {
     return rows.map(record);
   }
 
+  /** Every record of a catalog in stored order (at most 5,000). */
+  async allRecords(
+    companyId: string,
+    catalogId: string,
+  ): Promise<RecordData[]> {
+    const rows = await this.#db.$queryRaw<RecordRow[]>`
+      SELECT ${recordColumns} FROM catalog_records
+      WHERE company_id = ${companyId}::uuid AND catalog_id = ${catalogId}::uuid
+      ORDER BY position, id`;
+    return rows.map(record);
+  }
+
   async updateRecord(
     tx: Prisma.TransactionClient,
     actor: Actor,
@@ -852,6 +890,41 @@ export class PrismaCatalogRepository {
       branchId: row.branch_id,
       amount: Number(row.amount),
     }));
+  }
+
+  async catalogOverrides(
+    companyId: string,
+    catalogId: string,
+  ): Promise<OverrideData[]> {
+    const rows = await this.#db.$queryRaw<
+      {
+        record_id: string;
+        field_id: string;
+        branch_id: string;
+        amount: bigint;
+      }[]
+    >`
+      SELECT record_id, field_id, branch_id, amount FROM catalog_price_overrides
+      WHERE company_id = ${companyId}::uuid AND catalog_id = ${catalogId}::uuid`;
+    return rows.map((row) => ({
+      recordId: row.record_id,
+      fieldId: row.field_id,
+      branchId: row.branch_id,
+      amount: Number(row.amount),
+    }));
+  }
+
+  async catalogPromotions(
+    companyId: string,
+    catalogId: string,
+  ): Promise<PromotionData[]> {
+    const rows = await this.#db.$queryRaw<{ record_id: string }[]>`
+      SELECT DISTINCT record_id FROM catalog_promotions
+      WHERE company_id = ${companyId}::uuid AND catalog_id = ${catalogId}::uuid`;
+    return this.promotions(
+      companyId,
+      rows.map((row) => row.record_id),
+    );
   }
 
   async setOverride(

@@ -1352,13 +1352,13 @@ Lifecycle: Inserted in the same transaction as the change it records; never upda
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Company the change belongs to. | — | — |
-| `subject_type` | `character varying(16)` | no | — | INTERNAL | Kind of subject: playlist, group, program or device. | — | — |
-| `subject_id` | `uuid` | no | — | INTERNAL | Playlist, group, program or screen the event concerns; not a foreign key, so events outlive deleted subjects. | — | — |
+| `subject_type` | `character varying(16)` | no | — | INTERNAL | Kind of subject: playlist, layout, group, program or device. | — | — |
+| `subject_id` | `uuid` | no | — | INTERNAL | Playlist, layout, group, program or screen the event concerns; not a foreign key, so events outlive deleted subjects. | — | — |
 | `branch_ids` | `uuid[]` | yes | `ARRAY[]::uuid[]` | INTERNAL | Branches the change concerns, for branch-scoped audit reads; empty for company-wide subjects. | Never null; an empty array means the subject is company-wide. | — |
 | `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
 | `actor_principal_id` | `uuid` | no | — | INTERNAL | Principal that made the change. | — | — |
 | `actor_membership_id` | `uuid` | no | — | INTERNAL | Membership through which the change was made. | — | — |
-| `action` | `character varying(64)` | no | — | INTERNAL | Event name such as playlist.created, playlist.items_replaced, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move. | — | — |
+| `action` | `character varying(64)` | no | — | INTERNAL | Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move. | — | — |
 | `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Bounded summary: names, counts, versions and IDs; never media content. | — | — |
 
 ### Constraints and indexes
@@ -1371,9 +1371,175 @@ Lifecycle: Inserted in the same transaction as the change it records; never upda
 | `programming_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
 | `programming_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
 | `programming_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
-| `programming_audit_events_subject_type` | `CHECK (((subject_type)::text = ANY ((ARRAY['playlist'::character varying, 'group'::character varying, 'program'::character varying, 'device'::character varying])::text[])))` | Subjects come from a closed set. |
+| `programming_audit_events_subject_type` | `CHECK (((subject_type)::text = ANY ((ARRAY['playlist'::character varying, 'group'::character varying, 'program'::character varying, 'device'::character varying, 'layout'::character varying])::text[])))` | Subjects come from a closed set. |
 | `programming_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX programming_audit_events_company_id_id_key ON public.programming_audit_events USING btree (company_id, id)` | Tenant key for events. |
 | `programming_audit_events_subject_idx` | `CREATE INDEX programming_audit_events_subject_idx ON public.programming_audit_events USING btree (company_id, subject_id, occurred_at DESC, id DESC)` | Reads a subject's history newest first. |
+
+## layouts
+
+A reusable canvas with freeform areas, catalog views and optional coordinated pages, owned by a company or one branch.
+
+Owner: Programming. Classification: CONFIDENTIAL.
+
+Lifecycle: Created by members or imported from its JSON representation; every save of the definition or name bumps the version. Deleted at runtime with its areas and pages. The owning scope never changes. See docs/project/catalog-composition-design.md#layouts.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable layout UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the layout; immutable (tenant key). | — | — |
+| `branch_id` | `uuid` | yes | — | INTERNAL | Branch that owns the layout; immutable. | The layout belongs to the whole company. | — |
+| `name` | `character varying(120)` | no | — | CONFIDENTIAL | Display name chosen by members, trimmed, 1 to 120 characters. | — | — |
+| `orientation` | `"LayoutOrientation"` | no | — | INTERNAL | LANDSCAPE (1920×1080 canvas units) or PORTRAIT (1080×1920). | — | — |
+| `audio_mix_confirmed` | `boolean` | no | `false` | INTERNAL | Whether members confirmed that more than one area plays sound at once. | — | — |
+| `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency version, starting at 1. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of creation. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the last change. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `layouts_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The owning branch belongs to the same company. |
+| `layouts_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A layout belongs to an existing company. |
+| `layouts_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are trimmed and not empty. |
+| `layouts_pkey` | `PRIMARY KEY (id)` | Unique layout identity. |
+| `layouts_version_positive` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `layouts_company_created_idx` | `CREATE INDEX layouts_company_created_idx ON public.layouts USING btree (company_id, created_at DESC, id DESC)` | Lists a company's layouts newest first with keyset cursors. |
+| `layouts_company_id_id_key` | `CREATE UNIQUE INDEX layouts_company_id_id_key ON public.layouts USING btree (company_id, id)` | Tenant key for layouts. |
+
+## layout_areas
+
+One area of a layout: its rectangle in canvas units, stacking order, appearance, audio and kind, and for catalog areas the view's settings.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Replaced with the whole definition on every save, keeping each area's key; deleted with the layout.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated area UUID, new on every save. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the layout (tenant key). | — | — |
+| `layout_id` | `uuid` | no | — | INTERNAL | Layout the area belongs to. | — | — |
+| `key` | `character varying(16)` | no | — | INTERNAL | Stable area key chosen by the editor, unique in the layout; program outputs refer to it. | — | — |
+| `name` | `character varying(40)` | no | — | CONFIDENTIAL | Display name of the area, trimmed, 1 to 40 characters. | — | — |
+| `x` | `integer` | no | — | INTERNAL | Left edge. | — | canvas units |
+| `y` | `integer` | no | — | INTERNAL | Top edge. | — | canvas units |
+| `width` | `integer` | no | — | INTERNAL | Width, at least 40 and inside the canvas. | — | canvas units |
+| `height` | `integer` | no | — | INTERNAL | Height, at least 40 and inside the canvas. | — | canvas units |
+| `z` | `integer` | no | — | INTERNAL | Stacking order, 0 to 99 and unique in the layout; higher draws above. | — | — |
+| `background` | `character(7)` | no | — | INTERNAL | Background color as #RRGGBB. | — | — |
+| `fit` | `character varying(8)` | no | — | INTERNAL | How media fills the area: contain (whole, letterboxed) or cover (cropped, never distorted). | — | — |
+| `muted` | `boolean` | no | — | INTERNAL | Whether the area plays without sound; new areas start muted. | — | — |
+| `volume` | `integer` | no | — | INTERNAL | Volume from 0 to 100 when not muted. | — | — |
+| `kind` | `"LayoutAreaKind"` | no | — | INTERNAL | MEDIA (plays what its program output selects) or CATALOG (shows a catalog view). | — | — |
+| `page_controlled` | `boolean` | no | — | INTERNAL | Whether the area changes content with the layout's pages. | — | — |
+| `catalog_id` | `uuid` | yes | — | INTERNAL | Catalog the view shows. | The area is a media area. | — |
+| `presentation` | `character varying(8)` | yes | — | INTERNAL | View presentation: list, table, menu or agenda. | The area is a media area. | — |
+| `text_size` | `integer` | yes | — | INTERNAL | View text size, 24 to 200; text never shrinks below it. | The area is a media area. | canvas units |
+| `show_unavailable` | `boolean` | yes | — | INTERNAL | Whether the view shows unavailable records as unavailable instead of hiding them. | The area is a media area. | — |
+| `page_seconds` | `integer` | yes | — | INTERNAL | Seconds each view page shows when the area is not page-controlled, 5 to 120. | The area is a media area. | seconds |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `layout_areas_background` | `CHECK ((background ~ '^#[0-9A-F]{6}$'::text))` | Backgrounds are uppercase #RRGGBB colors. |
+| `layout_areas_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The viewed catalog belongs to the same company and cannot be deleted while a layout shows it. |
+| `layout_areas_company_id_layout_id_fkey` | `FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The layout belongs to the same company; areas are deleted with it. |
+| `layout_areas_fit` | `CHECK (((fit)::text = ANY ((ARRAY['contain'::character varying, 'cover'::character varying])::text[])))` | Media fit is contain or cover. |
+| `layout_areas_geometry` | `CHECK (((x >= 0) AND (y >= 0) AND (width >= 40) AND (height >= 40) AND ((x + width) <= 1920) AND ((y + height) <= 1920)))` | Rectangles are at least 40 units and within the larger canvas dimension; the API checks the layout's own canvas. |
+| `layout_areas_key_shape` | `CHECK (((key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))` | Keys are short lowercase identifiers. |
+| `layout_areas_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are trimmed and not empty. |
+| `layout_areas_pkey` | `PRIMARY KEY (id)` | Unique area identity. |
+| `layout_areas_stack_range` | `CHECK (((z >= 0) AND (z <= 99)))` | Stacking orders are 0 to 99. |
+| `layout_areas_view` | `CHECK ((((kind = 'CATALOG'::"LayoutAreaKind") = (catalog_id IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (presentation IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (text_size IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (show_unavailable IS NOT NULL)) AND ((kind = 'CATALOG'::"LayoutAreaKind") = (page_seconds IS NOT NULL)) AND ((presentation IS NULL) OR ((presentation)::text = ANY ((ARRAY['list'::character varying, 'table'::character varying, 'menu'::character varying, 'agenda'::character varying])::text[]))) AND ((text_size IS NULL) OR ((text_size >= 24) AND (text_size <= 200))) AND ((page_seconds IS NULL) OR ((page_seconds >= 5) AND (page_seconds <= 120)))))` | Catalog areas, and only they, carry a complete view with a known presentation and bounded text size and paging. |
+| `layout_areas_volume_range` | `CHECK (((volume >= 0) AND (volume <= 100)))` | Volumes are 0 to 100. |
+| `layout_areas_catalog_idx` | `CREATE INDEX layout_areas_catalog_idx ON public.layout_areas USING btree (company_id, catalog_id)` | Finds the layouts that show a catalog. |
+| `layout_areas_company_id_id_key` | `CREATE UNIQUE INDEX layout_areas_company_id_id_key ON public.layout_areas USING btree (company_id, id)` | Tenant key that view fields and page contents reference. |
+| `layout_areas_key_key` | `CREATE UNIQUE INDEX layout_areas_key_key ON public.layout_areas USING btree (company_id, layout_id, key)` | Area keys are unique within a layout. |
+
+## layout_view_fields
+
+One catalog field a view binds, in order, with its role: title, subtitle, price, image, detail or group.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Replaced with the whole definition on every save; deleted with its area.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the layout (tenant key). | — | — |
+| `area_id` | `uuid` | no | — | INTERNAL | Catalog area whose view binds the field. | — | — |
+| `position` | `integer` | no | — | INTERNAL | Zero-based order in the view, 0 to 7. | — | — |
+| `field_id` | `uuid` | no | — | INTERNAL | Bound catalog field; it cannot be deleted or archived while bound. | — | — |
+| `role` | `character varying(8)` | no | — | INTERNAL | How the view shows the field: title, subtitle, price, image, detail or group. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `layout_view_fields_company_id_area_id_fkey` | `FOREIGN KEY (company_id, area_id) REFERENCES layout_areas(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The area belongs to the same company; bindings are deleted with it. |
+| `layout_view_fields_company_id_field_id_fkey` | `FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The field belongs to the same company and cannot be deleted while bound. |
+| `layout_view_fields_pkey` | `PRIMARY KEY (company_id, area_id, "position")` | One field per view position. |
+| `layout_view_fields_position_range` | `CHECK ((("position" >= 0) AND ("position" <= 7)))` | A view binds at most eight fields. |
+| `layout_view_fields_role` | `CHECK (((role)::text = ANY ((ARRAY['title'::character varying, 'subtitle'::character varying, 'price'::character varying, 'image'::character varying, 'detail'::character varying, 'group'::character varying])::text[])))` | Roles come from a closed set. |
+| `layout_view_fields_field_idx` | `CREATE INDEX layout_view_fields_field_idx ON public.layout_view_fields USING btree (company_id, field_id)` | Finds the layouts that bind a field. |
+
+## layout_pages
+
+One coordinated page of a layout, with its duration.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Replaced with the whole definition on every save; deleted with the layout.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated page UUID, new on every save. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the layout (tenant key). | — | — |
+| `layout_id` | `uuid` | no | — | INTERNAL | Layout the page belongs to. | — | — |
+| `position` | `integer` | no | — | INTERNAL | Zero-based page order, 0 to 19. | — | — |
+| `duration_seconds` | `integer` | no | — | INTERNAL | How long the page shows, 1 to 600. | — | seconds |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `layout_pages_company_id_layout_id_fkey` | `FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The layout belongs to the same company; pages are deleted with it. |
+| `layout_pages_duration_range` | `CHECK (((duration_seconds >= 1) AND (duration_seconds <= 600)))` | Pages last 1 to 600 seconds. |
+| `layout_pages_pkey` | `PRIMARY KEY (id)` | Unique page identity. |
+| `layout_pages_position_range` | `CHECK ((("position" >= 0) AND ("position" <= 19)))` | A layout has at most 20 pages. |
+| `layout_pages_company_id_id_key` | `CREATE UNIQUE INDEX layout_pages_company_id_id_key ON public.layout_pages USING btree (company_id, id)` | Tenant key that page contents reference. |
+| `layout_pages_position_key` | `CREATE UNIQUE INDEX layout_pages_position_key ON public.layout_pages USING btree (company_id, layout_id, "position")` | One page per position in a layout. |
+
+## layout_page_contents
+
+What one page-controlled area shows on one page: a media item, a view page or a group of the view.
+
+Owner: Programming. Classification: INTERNAL.
+
+Lifecycle: Replaced with the whole definition on every save; deleted with its page or area.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the layout (tenant key). | — | — |
+| `page_id` | `uuid` | no | — | INTERNAL | Page the content belongs to. | — | — |
+| `area_id` | `uuid` | no | — | INTERNAL | Page-controlled area the content fills. | — | — |
+| `media_asset_id` | `uuid` | yes | — | INTERNAL | Media item a media area shows on the page; it cannot be deleted while named. | The area is a catalog area. | — |
+| `view_page` | `integer` | yes | — | INTERNAL | View page, from 1, a catalog area shows on the page. | The content is a media item or a group. | — |
+| `group_choice_id` | `character varying(64)` | yes | — | INTERNAL | Selection choice whose group a catalog area shows on the page. | The content is a media item or a view page. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `layout_page_contents_company_id_area_id_fkey` | `FOREIGN KEY (company_id, area_id) REFERENCES layout_areas(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The area belongs to the same company; contents are deleted with it. |
+| `layout_page_contents_company_id_media_asset_id_fkey` | `FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The media item belongs to the same company and cannot be deleted while named. |
+| `layout_page_contents_company_id_page_id_fkey` | `FOREIGN KEY (company_id, page_id) REFERENCES layout_pages(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The page belongs to the same company; contents are deleted with it. |
+| `layout_page_contents_one_choice` | `CHECK (((num_nonnulls(media_asset_id, view_page, group_choice_id) = 1) AND ((view_page IS NULL) OR ((view_page >= 1) AND (view_page <= 1000)))))` | Each content names exactly one media item, view page or group, with view pages from 1. |
+| `layout_page_contents_pkey` | `PRIMARY KEY (company_id, page_id, area_id)` | One content per page and area. |
+| `layout_page_contents_area_idx` | `CREATE INDEX layout_page_contents_area_idx ON public.layout_page_contents USING btree (company_id, area_id)` | Finds an area's page contents. |
+| `layout_page_contents_media_idx` | `CREATE INDEX layout_page_contents_media_idx ON public.layout_page_contents USING btree (company_id, media_asset_id)` | Answers the media reference guard. |
 
 ## publications
 
@@ -1601,6 +1767,8 @@ Lifecycle: Inserted in the same transaction as the publication it records; never
 | `GrantScope` | COMPANY, BRANCHES | Grant scope: COMPANY or explicit BRANCHES. |
 | `HumanSessionState` | PENDING_LIMIT, ACTIVE, REVOKED | Server-managed session state: PENDING_LIMIT, ACTIVE or REVOKED. |
 | `InvitationStatus` | PENDING, ACCEPTED, REVOKED, REPLACED, EXPIRED | Invitation state: PENDING, ACCEPTED, REVOKED, REPLACED or EXPIRED. |
+| `LayoutAreaKind` | MEDIA, CATALOG | Layout area kinds: MEDIA or CATALOG. |
+| `LayoutOrientation` | LANDSCAPE, PORTRAIT | Layout canvas orientation: LANDSCAPE or PORTRAIT. |
 | `MediaKind` | IMAGE, VIDEO | Kind of media item: IMAGE or VIDEO. |
 | `MediaStatus` | UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED, PURGED | Lifecycle state of a media item: UPLOADING, PROCESSING, READY, REJECTED, FAILED, ARCHIVED, DELETED or PURGED. |
 | `MembershipStatus` | ACTIVE, SUSPENDED, REMOVED | Membership state: ACTIVE, SUSPENDED or REMOVED. |

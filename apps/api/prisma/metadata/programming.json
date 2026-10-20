@@ -384,11 +384,11 @@
           "classification": "INTERNAL"
         },
         "subject_type": {
-          "description": "Kind of subject: playlist, group, program or device.",
+          "description": "Kind of subject: playlist, layout, group, program or device.",
           "classification": "INTERNAL"
         },
         "subject_id": {
-          "description": "Playlist, group, program or screen the event concerns; not a foreign key, so events outlive deleted subjects.",
+          "description": "Playlist, layout, group, program or screen the event concerns; not a foreign key, so events outlive deleted subjects.",
           "classification": "INTERNAL"
         },
         "branch_ids": {
@@ -410,7 +410,7 @@
           "classification": "INTERNAL"
         },
         "action": {
-          "description": "Event name such as playlist.created, playlist.items_replaced, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move.",
+          "description": "Event name such as playlist.created, playlist.items_replaced, layout.created, layout.saved, group.span_changed, program.output_replaced, device.assignment_changed or device.left_group_on_move.",
           "classification": "INTERNAL"
         },
         "details": {
@@ -429,9 +429,303 @@
         "programming_audit_events_subject_type": "Subjects come from a closed set.",
         "programming_audit_events_details_object": "Details are a JSON object."
       }
+    },
+    "layouts": {
+      "owner": "Programming",
+      "classification": "CONFIDENTIAL",
+      "description": "A reusable canvas with freeform areas, catalog views and optional coordinated pages, owned by a company or one branch.",
+      "lifecycle": "Created by members or imported from its JSON representation; every save of the definition or name bumps the version. Deleted at runtime with its areas and pages. The owning scope never changes. See docs/project/catalog-composition-design.md#layouts.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable layout UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the layout; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch that owns the layout; immutable.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The layout belongs to the whole company."
+        },
+        "name": {
+          "description": "Display name chosen by members, trimmed, 1 to 120 characters.",
+          "classification": "CONFIDENTIAL"
+        },
+        "orientation": {
+          "description": "LANDSCAPE (1920×1080 canvas units) or PORTRAIT (1080×1920).",
+          "classification": "INTERNAL"
+        },
+        "audio_mix_confirmed": {
+          "description": "Whether members confirmed that more than one area plays sound at once.",
+          "classification": "INTERNAL"
+        },
+        "version": {
+          "description": "Optimistic concurrency version, starting at 1.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock instant of creation.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock instant of the last change.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "layouts_pkey": "Unique layout identity.",
+        "layouts_company_id_id_key": "Tenant key for layouts.",
+        "layouts_company_id_fkey": "A layout belongs to an existing company.",
+        "layouts_company_id_branch_id_fkey": "The owning branch belongs to the same company.",
+        "layouts_company_created_idx": "Lists a company's layouts newest first with keyset cursors.",
+        "layouts_name_trimmed": "Names are trimmed and not empty.",
+        "layouts_version_positive": "Versions start at 1."
+      }
+    },
+    "layout_areas": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "One area of a layout: its rectangle in canvas units, stacking order, appearance, audio and kind, and for catalog areas the view's settings.",
+      "lifecycle": "Replaced with the whole definition on every save, keeping each area's key; deleted with the layout.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated area UUID, new on every save.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the layout (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "layout_id": {
+          "description": "Layout the area belongs to.",
+          "classification": "INTERNAL"
+        },
+        "key": {
+          "description": "Stable area key chosen by the editor, unique in the layout; program outputs refer to it.",
+          "classification": "INTERNAL"
+        },
+        "name": {
+          "description": "Display name of the area, trimmed, 1 to 40 characters.",
+          "classification": "CONFIDENTIAL"
+        },
+        "x": {
+          "description": "Left edge.",
+          "classification": "INTERNAL",
+          "unit": "canvas units"
+        },
+        "y": {
+          "description": "Top edge.",
+          "classification": "INTERNAL",
+          "unit": "canvas units"
+        },
+        "width": {
+          "description": "Width, at least 40 and inside the canvas.",
+          "classification": "INTERNAL",
+          "unit": "canvas units"
+        },
+        "height": {
+          "description": "Height, at least 40 and inside the canvas.",
+          "classification": "INTERNAL",
+          "unit": "canvas units"
+        },
+        "z": {
+          "description": "Stacking order, 0 to 99 and unique in the layout; higher draws above.",
+          "classification": "INTERNAL"
+        },
+        "background": {
+          "description": "Background color as #RRGGBB.",
+          "classification": "INTERNAL"
+        },
+        "fit": {
+          "description": "How media fills the area: contain (whole, letterboxed) or cover (cropped, never distorted).",
+          "classification": "INTERNAL"
+        },
+        "muted": {
+          "description": "Whether the area plays without sound; new areas start muted.",
+          "classification": "INTERNAL"
+        },
+        "volume": {
+          "description": "Volume from 0 to 100 when not muted.",
+          "classification": "INTERNAL"
+        },
+        "kind": {
+          "description": "MEDIA (plays what its program output selects) or CATALOG (shows a catalog view).",
+          "classification": "INTERNAL"
+        },
+        "page_controlled": {
+          "description": "Whether the area changes content with the layout's pages.",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog the view shows.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The area is a media area."
+        },
+        "presentation": {
+          "description": "View presentation: list, table, menu or agenda.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The area is a media area."
+        },
+        "text_size": {
+          "description": "View text size, 24 to 200; text never shrinks below it.",
+          "classification": "INTERNAL",
+          "unit": "canvas units",
+          "nullMeaning": "The area is a media area."
+        },
+        "show_unavailable": {
+          "description": "Whether the view shows unavailable records as unavailable instead of hiding them.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The area is a media area."
+        },
+        "page_seconds": {
+          "description": "Seconds each view page shows when the area is not page-controlled, 5 to 120.",
+          "classification": "INTERNAL",
+          "unit": "seconds",
+          "nullMeaning": "The area is a media area."
+        }
+      },
+      "objects": {
+        "layout_areas_pkey": "Unique area identity.",
+        "layout_areas_company_id_id_key": "Tenant key that view fields and page contents reference.",
+        "layout_areas_key_key": "Area keys are unique within a layout.",
+        "layout_areas_company_id_layout_id_fkey": "The layout belongs to the same company; areas are deleted with it.",
+        "layout_areas_company_id_catalog_id_fkey": "The viewed catalog belongs to the same company and cannot be deleted while a layout shows it.",
+        "layout_areas_catalog_idx": "Finds the layouts that show a catalog.",
+        "layout_areas_key_shape": "Keys are short lowercase identifiers.",
+        "layout_areas_name_trimmed": "Names are trimmed and not empty.",
+        "layout_areas_geometry": "Rectangles are at least 40 units and within the larger canvas dimension; the API checks the layout's own canvas.",
+        "layout_areas_stack_range": "Stacking orders are 0 to 99.",
+        "layout_areas_background": "Backgrounds are uppercase #RRGGBB colors.",
+        "layout_areas_fit": "Media fit is contain or cover.",
+        "layout_areas_volume_range": "Volumes are 0 to 100.",
+        "layout_areas_view": "Catalog areas, and only they, carry a complete view with a known presentation and bounded text size and paging."
+      }
+    },
+    "layout_view_fields": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "One catalog field a view binds, in order, with its role: title, subtitle, price, image, detail or group.",
+      "lifecycle": "Replaced with the whole definition on every save; deleted with its area.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the layout (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "area_id": {
+          "description": "Catalog area whose view binds the field.",
+          "classification": "INTERNAL"
+        },
+        "position": {
+          "description": "Zero-based order in the view, 0 to 7.",
+          "classification": "INTERNAL"
+        },
+        "field_id": {
+          "description": "Bound catalog field; it cannot be deleted or archived while bound.",
+          "classification": "INTERNAL"
+        },
+        "role": {
+          "description": "How the view shows the field: title, subtitle, price, image, detail or group.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "layout_view_fields_pkey": "One field per view position.",
+        "layout_view_fields_company_id_area_id_fkey": "The area belongs to the same company; bindings are deleted with it.",
+        "layout_view_fields_company_id_field_id_fkey": "The field belongs to the same company and cannot be deleted while bound.",
+        "layout_view_fields_field_idx": "Finds the layouts that bind a field.",
+        "layout_view_fields_position_range": "A view binds at most eight fields.",
+        "layout_view_fields_role": "Roles come from a closed set."
+      }
+    },
+    "layout_pages": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "One coordinated page of a layout, with its duration.",
+      "lifecycle": "Replaced with the whole definition on every save; deleted with the layout.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated page UUID, new on every save.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the layout (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "layout_id": {
+          "description": "Layout the page belongs to.",
+          "classification": "INTERNAL"
+        },
+        "position": {
+          "description": "Zero-based page order, 0 to 19.",
+          "classification": "INTERNAL"
+        },
+        "duration_seconds": {
+          "description": "How long the page shows, 1 to 600.",
+          "classification": "INTERNAL",
+          "unit": "seconds"
+        }
+      },
+      "objects": {
+        "layout_pages_pkey": "Unique page identity.",
+        "layout_pages_company_id_id_key": "Tenant key that page contents reference.",
+        "layout_pages_position_key": "One page per position in a layout.",
+        "layout_pages_company_id_layout_id_fkey": "The layout belongs to the same company; pages are deleted with it.",
+        "layout_pages_position_range": "A layout has at most 20 pages.",
+        "layout_pages_duration_range": "Pages last 1 to 600 seconds."
+      }
+    },
+    "layout_page_contents": {
+      "owner": "Programming",
+      "classification": "INTERNAL",
+      "description": "What one page-controlled area shows on one page: a media item, a view page or a group of the view.",
+      "lifecycle": "Replaced with the whole definition on every save; deleted with its page or area.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the layout (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "page_id": {
+          "description": "Page the content belongs to.",
+          "classification": "INTERNAL"
+        },
+        "area_id": {
+          "description": "Page-controlled area the content fills.",
+          "classification": "INTERNAL"
+        },
+        "media_asset_id": {
+          "description": "Media item a media area shows on the page; it cannot be deleted while named.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The area is a catalog area."
+        },
+        "view_page": {
+          "description": "View page, from 1, a catalog area shows on the page.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The content is a media item or a group."
+        },
+        "group_choice_id": {
+          "description": "Selection choice whose group a catalog area shows on the page.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The content is a media item or a view page."
+        }
+      },
+      "objects": {
+        "layout_page_contents_pkey": "One content per page and area.",
+        "layout_page_contents_company_id_page_id_fkey": "The page belongs to the same company; contents are deleted with it.",
+        "layout_page_contents_company_id_area_id_fkey": "The area belongs to the same company; contents are deleted with it.",
+        "layout_page_contents_company_id_media_asset_id_fkey": "The media item belongs to the same company and cannot be deleted while named.",
+        "layout_page_contents_area_idx": "Finds an area's page contents.",
+        "layout_page_contents_media_idx": "Answers the media reference guard.",
+        "layout_page_contents_one_choice": "Each content names exactly one media item, view page or group, with view pages from 1."
+      }
     }
   },
   "enums": {
-    "PlaylistTransition": "Transition between playlist items: CUT or FADE."
+    "PlaylistTransition": "Transition between playlist items: CUT or FADE.",
+    "LayoutOrientation": "Layout canvas orientation: LANDSCAPE or PORTRAIT.",
+    "LayoutAreaKind": "Layout area kinds: MEDIA or CATALOG."
   }
 }
