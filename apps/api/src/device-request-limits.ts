@@ -1,12 +1,16 @@
 import { createHash } from "node:crypto";
-import rateLimit, { type RateLimitPluginOptions } from "@fastify/rate-limit";
+import rateLimit, {
+  normalizeIP,
+  type RateLimitPluginOptions,
+} from "@fastify/rate-limit";
 import type { FastifyInstance } from "fastify";
 
 // Screens present a bearer credential on every request, and many share one
 // client address: a store's router, or the ingress proxy in front of the API.
 // The limits taken before authentication therefore count each presented
 // credential on its own, under a much higher ceiling per address that bounds
-// floods of unknown credentials.
+// floods of unknown credentials. Addresses are normalized as the plugin's
+// default key does, so an IPv6 client counts once per subnet.
 
 type Limit = Readonly<{ max: number; timeWindow: number }>;
 
@@ -31,7 +35,7 @@ export function deviceRequestKey(request: {
   const presented = request.headers.authorization;
   return presented
     ? `credential:${createHash("sha256").update(presented).digest("base64url")}`
-    : `address:${request.ip}`;
+    : `address:${normalizeIP(request.ip)}`;
 }
 
 /**
@@ -51,7 +55,7 @@ export async function registerDeviceRequestLimits(
   });
   const perAddress = feature.createRateLimit({
     ...limits.perAddress,
-    keyGenerator: (request) => request.ip,
+    keyGenerator: (request) => normalizeIP(request.ip),
   });
   feature.addHook("onRequest", async (request, reply) => {
     const limit = await perAddress(request);

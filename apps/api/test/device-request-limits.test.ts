@@ -73,6 +73,9 @@ describe("screen request limits", () => {
     expect(deviceRequestKey({ headers: {}, ip: "198.51.100.7" })).toBe(
       "address:198.51.100.7",
     );
+    expect(deviceRequestKey({ headers: {}, ip: "2001:db8:0:1::7" })).toBe(
+      deviceRequestKey({ headers: {}, ip: "2001:db8:0:1:ffff::9" }),
+    );
   });
 
   it("gives each screen behind one address its own budget", async () => {
@@ -99,6 +102,14 @@ describe("screen request limits", () => {
     expect(flooded.json()).toMatchObject({ error: { code: "RATE_LIMITED" } });
     expect(Number(flooded.headers["retry-after"])).toBeGreaterThan(0);
     expect((await send("six", "203.0.113.9")).statusCode).toBe(200);
+  });
+
+  it("counts an IPv6 client once per subnet under the ceiling", async () => {
+    const send = await screenApp();
+    for (const host of ["1", "2", "3", "4", "5"])
+      expect((await send(host, `2001:db8:0:1::${host}`)).statusCode).toBe(200);
+    expect((await send("six", "2001:db8:0:1:ffff::9")).statusCode).toBe(429);
+    expect((await send("six", "2001:db8:0:2::1")).statusCode).toBe(200);
   });
 
   it("limits requests without a credential per address", async () => {
