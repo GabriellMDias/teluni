@@ -18,3 +18,12 @@ GRANT UPDATE (received_at, protocol, app_version, desired_publication_id,
   device_time) ON publication_device_states TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON publication_device_events TO orion_runtime;
 GRANT SELECT, INSERT ON publication_audit_events TO orion_runtime;
+-- A publication's catalog copies are recorded with it and never change.
+-- Price publication intents coalesce, are claimed, finish and, once
+-- finished, are deleted after their retention; their program, catalog and
+-- creation never change.
+GRANT SELECT, INSERT ON publication_catalogs TO orion_runtime;
+GRANT SELECT, INSERT, DELETE ON price_publication_intents TO orion_runtime;
+GRANT UPDATE (price_sequence, author_membership_id, authorized_by_membership_id,
+  state, reason, attempts, next_attempt_at, lease_expires_at, publication_id,
+  updated_at) ON price_publication_intents TO orion_runtime;

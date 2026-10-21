@@ -323,8 +323,9 @@ function HistoryEntry({
         {formatInstant(locale, item.publishedAt)} ·{" "}
         {item.publishedBy.isCaller ? p.byYou : p.byOther}
         {item.restoredFromGeneration !== null &&
-          ` · ${p.restoredFrom(item.restoredFromGeneration)}`}{" "}
-        · {p.states[item.state]}
+          ` · ${p.restoredFrom(item.restoredFromGeneration)}`}
+        {item.origin === "price" && ` · ${p.priceOrigin}`} ·{" "}
+        {p.states[item.state]}
       </span>
       {canRestore && !confirming && (
         <button type="button" onClick={() => setConfirming(true)}>

@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "deleteCatalogPromotion",
   "summary": "",
-  "description": "Remove a promotion. Promotions are never edited; remove one and add another to change it.",
+  "description": "Remove a promotion. Promotions are never edited; remove one and add another to change it. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

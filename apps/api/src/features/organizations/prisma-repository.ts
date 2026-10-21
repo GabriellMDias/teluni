@@ -436,6 +436,53 @@ export class PrismaOrganizationRepository {
       principalId,
       strong,
     );
+    return {
+      access,
+      activeBranchIds: await this.#lockBranches(tx, companyId, branchIds),
+    };
+  }
+
+  /**
+   * As `lockForWrite`, for a membership that authorized work earlier: null
+   * unless the company exists and the membership is active. Its access
+   * counts strong authentication as proven.
+   */
+  async lockForMembership(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    membershipId: string,
+    branchIds: readonly string[],
+  ): Promise<{
+    access: CompanyAccess;
+    activeBranchIds: ReadonlySet<string>;
+  } | null> {
+    const [company] = await tx.$queryRaw<{ status: CompanyStatus }[]>`
+      SELECT status::text AS status FROM companies WHERE id = ${companyId}::uuid FOR SHARE`;
+    if (!company) return null;
+    const [member] = await tx.$queryRaw<{ principal_id: string }[]>`
+      SELECT principal_id FROM memberships
+      WHERE company_id = ${companyId}::uuid AND id = ${membershipId}::uuid
+        AND status = 'ACTIVE'
+      FOR SHARE`;
+    if (!member) return null;
+    return {
+      access: await accessOf(
+        tx,
+        companyId,
+        membershipId,
+        member.principal_id,
+        true,
+      ),
+      activeBranchIds: await this.#lockBranches(tx, companyId, branchIds),
+    };
+  }
+
+  /** Share-locks the named branches that are active; returns them. */
+  async #lockBranches(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    branchIds: readonly string[],
+  ): Promise<ReadonlySet<string>> {
     const ids = [...new Set(branchIds)].sort();
     const active =
       ids.length === 0
@@ -444,10 +491,7 @@ export class PrismaOrganizationRepository {
             SELECT id FROM branches WHERE company_id = ${companyId}::uuid AND status = 'ACTIVE'
               AND id IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
             ORDER BY id FOR SHARE`;
-    return {
-      access,
-      activeBranchIds: new Set(active.map((row) => row.id)),
-    };
+    return new Set(active.map((row) => row.id));
   }
 
   async listMembers(

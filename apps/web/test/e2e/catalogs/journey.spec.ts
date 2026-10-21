@@ -64,6 +64,7 @@ test("creates a product catalog with a branch price and a promotion and reads th
   await afterNavigation(
     page.getByRole("heading", { level: 1, name: "X-Burger" }),
   ).toBeVisible();
+  const itemUrl = page.url();
   await page.getByRole("textbox", { name: "Preço base" }).fill("19,90");
   await page
     .getByRole("form", { name: "Preço base" })
@@ -185,4 +186,21 @@ test("creates a product catalog with a branch price and a promotion and reads th
       .getByRole("list", { name: "Gerações publicadas" })
       .getByText("Geração 1"),
   ).toBeVisible();
+
+  // A price change reaches the published program as a new generation that
+  // changes only the prices.
+  await page.goto(itemUrl);
+  await page.getByRole("textbox", { name: "Preço base" }).fill("20,90");
+  await page
+    .getByRole("form", { name: "Preço base" })
+    .getByRole("button", { name: "Salvar" })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Alterações salvas.");
+  const published = page
+    .getByRole("list", { name: "Publicação nas telas" })
+    .getByRole("listitem")
+    .filter({ hasText: "Grupo Lojas" });
+  await afterNavigation(published).toContainText("Publicada como geração 2");
+  await expect(published).toContainText("pedida por você");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

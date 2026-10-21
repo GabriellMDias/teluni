@@ -716,6 +716,21 @@ export class PrismaProgrammingRepository {
       : Prisma.sql`device_id = ${source.deviceId}::uuid`;
   }
 
+  /** The group or screen a program belongs to. */
+  async sourceOf(
+    companyId: string,
+    programId: string,
+  ): Promise<ProgramSource | null> {
+    const [row] = await this.#db.$queryRaw<
+      { group_id: string | null; device_id: string | null }[]
+    >`
+      SELECT group_id, device_id FROM programs
+      WHERE company_id = ${companyId}::uuid AND id = ${programId}::uuid`;
+    if (!row) return null;
+    if (row.group_id) return { kind: "group", groupId: row.group_id };
+    return row.device_id ? { kind: "device", deviceId: row.device_id } : null;
+  }
+
   /**
    * The program of a source; absent for a source never programmed. `lock`
    * true takes the row for update, "share" share-locks it.

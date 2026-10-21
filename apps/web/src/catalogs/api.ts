@@ -13,6 +13,7 @@ export const catalogErrorCodes: ReadonlySet<string> = new Set([
   "CATALOG_ARCHIVED",
   "CATALOG_NOT_EMPTY",
   "CATALOG_IN_USE",
+  "PRICE_TARGET_FORBIDDEN",
 ]);
 
 type Json<T> = T extends {
@@ -40,6 +41,10 @@ export type EffectivePrices = Json<
   paths["/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/effective-prices"]["get"]
 >;
 
+export type PricePublication = Json<
+  paths["/companies/{companyId}/catalogs/{catalogId}/price-publications"]["get"]
+>["items"][number];
+
 export const catalogsKey = (companyId: string) =>
   ["catalogs", "list", companyId] as const;
 export const catalogKey = (companyId: string, catalogId: string) =>
@@ -65,7 +70,38 @@ export const effectiveKey = (
   at: string,
 ) => ["catalogs", "effective", companyId, catalogId, recordId, at] as const;
 
+export const pricePublicationsKey = (companyId: string, catalogId: string) =>
+  ["catalogs", "price-publications", companyId, catalogId] as const;
+
 const client = sessionApiClient;
+
+/** The catalog's recent automatic price publications, newest first. */
+export async function listPricePublications(
+  companyId: string,
+  catalogId: string,
+) {
+  return unwrap(
+    await client().GET(
+      "/companies/{companyId}/catalogs/{catalogId}/price-publications",
+      { params: { path: { companyId, catalogId } } },
+    ),
+    catalogErrorCodes,
+  );
+}
+
+/** Authorizes a blocked or failed price publication again. */
+export async function retryPricePublication(
+  companyId: string,
+  intentId: string,
+) {
+  return unwrap(
+    await client().POST(
+      "/companies/{companyId}/price-publications/{intentId}/retry",
+      { params: { path: { companyId, intentId } } },
+    ),
+    catalogErrorCodes,
+  );
+}
 
 export async function listCatalogs(
   companyId: string,

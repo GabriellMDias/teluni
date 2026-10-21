@@ -215,6 +215,16 @@
       "Meaning": "PostgreSQL-clock instant maintenance pruned the publication.",
       "Null meaning": "The publication is retained.",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "origin",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "'MANUAL'::character varying",
+      "Classification": "INTERNAL",
+      "Meaning": "Where the publication came from: MANUAL (a person published the draft), RESTORE (a person restored an earlier generation) or PRICE (the price processor republished the latest generation with a catalog's current prices).",
+      "Null meaning": "—",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -262,6 +272,16 @@
       "Object": "publications_manifest_until_pruned",
       "Physical definition": "CHECK (((manifest IS NULL) = (pruned_at IS NOT NULL)))",
       "Purpose": "The manifest is kept exactly until the publication is pruned."
+    },
+    {
+      "Object": "publications_origin_known",
+      "Physical definition": "CHECK (((origin)::text = ANY ((ARRAY['MANUAL'::character varying, 'RESTORE'::character varying, 'PRICE'::character varying])::text[])))",
+      "Purpose": "Only the three origins exist."
+    },
+    {
+      "Object": "publications_origin_restore",
+      "Physical definition": "CHECK ((((origin)::text = 'RESTORE'::text) = (restored_from_generation IS NOT NULL)))",
+      "Purpose": "A restore, and only a restore, names the generation it restores."
     },
     {
       "Object": "publications_pkey",

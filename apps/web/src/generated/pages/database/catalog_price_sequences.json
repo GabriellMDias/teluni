@@ -1,0 +1,57 @@
+{
+  "kind": "database",
+  "name": "catalog_price_sequences",
+  "description": "Each catalog's price change counter: every base price, branch price or promotion change adds one under this row's lock, so changes are numbered in commit order and publications record which ones they include.",
+  "owner": "Catalogs",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted with a catalog's first price change and incremented by each later one; deleted with the catalog.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the catalog; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Counted catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "sequence",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "INTERNAL",
+      "Meaning": "Number of the catalog's latest committed price change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "catalog_price_sequences_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The catalog belongs to the same company; the counter goes with it."
+    },
+    {
+      "Object": "catalog_price_sequences_nonnegative",
+      "Physical definition": "CHECK ((sequence >= 0))",
+      "Purpose": "Counters start at 0."
+    },
+    {
+      "Object": "catalog_price_sequences_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, catalog_id)",
+      "Purpose": "One counter per catalog."
+    }
+  ]
+}

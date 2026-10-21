@@ -35,6 +35,7 @@ import type {
   BindableCatalog,
   CatalogUsageGuard,
   CatalogViewData,
+  PriceChangeListener,
 } from "./public.js";
 import {
   positionGap,
@@ -208,6 +209,7 @@ export class CatalogService {
   readonly #companies: CompanyAccessPort;
   readonly #media: MediaPort;
   readonly #guards: readonly CatalogUsageGuard[];
+  readonly #priceListeners: readonly PriceChangeListener[];
 
   constructor(options: {
     repository: PrismaCatalogRepository;
@@ -215,11 +217,38 @@ export class CatalogService {
     media: MediaPort;
     /** Registered by binding modules; read on every check. */
     guards?: readonly CatalogUsageGuard[];
+    /** Registered by the publications module; run by every price change. */
+    priceListeners?: readonly PriceChangeListener[];
   }) {
     this.#repository = options.repository;
     this.#companies = options.companies;
     this.#media = options.media;
     this.#guards = options.guards ?? [];
+    this.#priceListeners = options.priceListeners ?? [];
+  }
+
+  /**
+   * After a price write in its transaction: counts the change and lets the
+   * listeners queue it for publication. A listener's refusal (the author
+   * cannot publish a program that shows the catalog) refuses the change.
+   */
+  async #priceChanged(locked: Locked, branchId: string | null): Promise<void> {
+    const { tx, access, catalog } = locked;
+    const sequence = await this.#repository.nextPriceSequence(
+      tx,
+      catalog.companyId,
+      catalog.id,
+    );
+    for (const listener of this.#priceListeners)
+      if (
+        !(await listener(tx, {
+          access,
+          catalogId: catalog.id,
+          branchId,
+          sequence,
+        }))
+      )
+        throw new CatalogFailure("PRICE_TARGET_FORBIDDEN");
   }
 
   /** Layouts binding a catalog and each field, summed over every guard. */
@@ -957,7 +986,8 @@ export class CatalogService {
       recordId,
       expectedVersion,
       { mode: "share", capability: "prices.edit" },
-      async ({ tx, catalog, actor }, current) => {
+      async (locked, current) => {
+        const { tx, catalog, actor } = locked;
         const fields =
           (await this.#repository.fields(companyId, [catalogId], tx)).get(
             catalogId,
@@ -989,6 +1019,7 @@ export class CatalogService {
             version: updated.version,
           },
         );
+        await this.#priceChanged(locked, null);
         return updated;
       },
     );
@@ -1014,7 +1045,8 @@ export class CatalogService {
       recordId,
       expectedVersion,
       { mode: "share", capability: null, branchIds: [branchId] },
-      async ({ tx, access, activeBranchIds, catalog, actor }, current) => {
+      async (locked, current) => {
+        const { tx, access, activeBranchIds, catalog, actor } = locked;
         if (catalog.branchId !== null)
           throw new CatalogFailure("VALIDATION_FAILED");
         requireCapability(access, "prices.edit", branchId);
@@ -1062,6 +1094,7 @@ export class CatalogService {
             version: updated.version,
           },
         );
+        await this.#priceChanged(locked, branchId);
         return updated;
       },
     );
@@ -1129,7 +1162,8 @@ export class CatalogService {
         capability: null,
         branchIds: input.branchId ? [input.branchId] : [],
       },
-      async ({ tx, access, activeBranchIds, catalog, actor }, current) => {
+      async (locked, current) => {
+        const { tx, access, activeBranchIds, catalog, actor } = locked;
         this.#requirePromotionScope(access, catalog, input.branchId);
         if (input.branchId && !activeBranchIds.has(input.branchId))
           throw new CatalogFailure("VALIDATION_FAILED");
@@ -1178,6 +1212,7 @@ export class CatalogService {
             endsAt: input.endsAt,
           },
         );
+        await this.#priceChanged(locked, input.branchId);
         return current;
       },
       { view: false },
@@ -1212,7 +1247,8 @@ export class CatalogService {
         capability: null,
         branchIds: before.branchId ? [before.branchId] : [],
       },
-      async ({ tx, access, catalog, actor }, current) => {
+      async (locked, current) => {
+        const { tx, access, catalog, actor } = locked;
         const promotion = (
           await this.#repository.promotions(companyId, [recordId], tx)
         ).find(
@@ -1250,6 +1286,7 @@ export class CatalogService {
             endsAt: promotion.endsAt,
           },
         );
+        await this.#priceChanged(locked, promotion.branchId);
         return current;
       },
       { view: false },
@@ -1375,6 +1412,35 @@ export class CatalogService {
       await this.#repository.findCatalogs(companyId, catalogIds),
     );
 
+  visibleCatalog = async (
+    access: CompanyAccess,
+    catalogId: string,
+  ): Promise<BindableCatalog | null> => {
+    const item = await this.#repository.findCatalog(
+      access.companyId,
+      catalogId,
+    );
+    if (!item || !catalogVisible(access, item)) return null;
+    return (await this.#bindable(access.companyId, [item]))[0] ?? null;
+  };
+
+  priceSequences = async (
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    catalogIds: readonly string[],
+  ): Promise<ReadonlyMap<string, number>> =>
+    new Map(
+      await Promise.all(
+        [...new Set(catalogIds)].map(
+          async (id) =>
+            [
+              id,
+              await this.#repository.priceSequence(companyId, id, tx),
+            ] as const,
+        ),
+      ),
+    );
+
   // One repeatable-read snapshot, so a concurrent save never mixes states.
   viewData = (
     companyId: string,
@@ -1387,6 +1453,11 @@ export class CatalogService {
         tx,
       );
       if (!catalog) return null;
+      const priceSequence = await this.#repository.priceSequence(
+        companyId,
+        catalogId,
+        tx,
+      );
       const records = await this.#repository.allRecords(
         companyId,
         catalogId,
@@ -1450,6 +1521,7 @@ export class CatalogService {
       );
       return {
         catalog,
+        priceSequence,
         records: records.map((record) => ({
           id: record.id,
           available: record.available,

@@ -446,6 +446,31 @@
         "catalog_audit_events_branch_ids_present": "The branch list is present and bounded.",
         "catalog_audit_events_details_object": "Details are a JSON object."
       }
+    },
+    "catalog_price_sequences": {
+      "owner": "Catalogs",
+      "classification": "INTERNAL",
+      "description": "Each catalog's price change counter: every base price, branch price or promotion change adds one under this row's lock, so changes are numbered in commit order and publications record which ones they include.",
+      "lifecycle": "Inserted with a catalog's first price change and incremented by each later one; deleted with the catalog.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the catalog; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Counted catalog.",
+          "classification": "INTERNAL"
+        },
+        "sequence": {
+          "description": "Number of the catalog's latest committed price change.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "catalog_price_sequences_pkey": "One counter per catalog.",
+        "catalog_price_sequences_nonnegative": "Counters start at 0.",
+        "catalog_price_sequences_company_id_catalog_id_fkey": "The catalog belongs to the same company; the counter goes with it."
+      }
     }
   },
   "enums": {

@@ -22,6 +22,8 @@ model Publication {
   mediaCount              Int                   @map("media_count")
   mediaBytes              BigInt                @map("media_bytes")
   restoredFromGeneration  Int?                  @map("restored_from_generation")
+  /// MANUAL, RESTORE or PRICE (an automatic price publication).
+  origin                  String                @default("MANUAL") @db.VarChar(16)
   publishedByPrincipalId  String                @map("published_by_principal_id") @db.Uuid
   publishedByMembershipId String                @map("published_by_membership_id") @db.Uuid
   publishedAt             DateTime              @default(now()) @map("published_at") @db.Timestamptz(3)
@@ -33,6 +35,8 @@ model Publication {
   publishedByMembership   Membership            @relation("PublicationPublisherMembership", fields: [companyId, publishedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   playlists               PublicationPlaylist[]
   media                   PublicationMedia[]
+  catalogs                PublicationCatalog[]
+  priceIntents            PriceIntent[]
 
   @@unique([companyId, id], map: "publications_company_id_id_key")
   @@unique([companyId, programId, generation], map: "publications_generation_key")
@@ -126,4 +130,54 @@ model PublicationAuditEvent {
   @@unique([companyId, id], map: "publication_audit_events_company_id_id_key")
   @@index([companyId, subjectId, occurredAt(sort: Desc), id(sort: Desc)], map: "publication_audit_events_subject_idx")
   @@map("publication_audit_events")
+}
+
+/// The catalogs a protocol 2 publication copies, with the price sequence of
+/// each copy, so a price change finds the programs whose latest
+/// publication shows its catalog.
+model PublicationCatalog {
+  companyId     String      @map("company_id") @db.Uuid
+  publicationId String      @map("publication_id") @db.Uuid
+  catalogId     String      @map("catalog_id") @db.Uuid
+  priceSequence BigInt      @map("price_sequence")
+  publication   Publication @relation(fields: [companyId, publicationId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  catalog       Catalog     @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@id([companyId, publicationId, catalogId], map: "publication_catalogs_pkey")
+  @@index([companyId, catalogId], map: "publication_catalogs_catalog_idx")
+  @@map("publication_catalogs")
+}
+
+/// A durable request to publish a catalog's current prices to a program,
+/// committed with the price change. Pending intents are coalesced per
+/// program and catalog by a partial unique index in the reviewed SQL, and
+/// due ones by a partial index, which Prisma cannot express.
+model PriceIntent {
+  id                       String       @id @db.Uuid
+  companyId                String       @map("company_id") @db.Uuid
+  programId                String       @map("program_id") @db.Uuid
+  catalogId                String       @map("catalog_id") @db.Uuid
+  priceSequence            BigInt       @map("price_sequence")
+  authorMembershipId       String       @map("author_membership_id") @db.Uuid
+  authorizedByMembershipId String?      @map("authorized_by_membership_id") @db.Uuid
+  /// PENDING, PUBLISHED, SKIPPED, BLOCKED or FAILED.
+  state                    String       @default("PENDING") @db.VarChar(16)
+  reason                   String?      @db.VarChar(32)
+  attempts                 Int          @default(0)
+  nextAttemptAt            DateTime     @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
+  leaseExpiresAt           DateTime?    @map("lease_expires_at") @db.Timestamptz(3)
+  publicationId            String?      @map("publication_id") @db.Uuid
+  createdAt                DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime     @default(now()) @map("updated_at") @db.Timestamptz(3)
+  company                  Company      @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  program                  Program      @relation(fields: [companyId, programId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  catalog                  Catalog      @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+  author                   Membership   @relation("PriceIntentAuthor", fields: [companyId, authorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  authorizedBy             Membership?  @relation("PriceIntentAuthorizer", fields: [companyId, authorizedByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  publication              Publication? @relation(fields: [companyId, publicationId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([companyId, id], map: "price_publication_intents_company_id_id_key")
+  @@index([companyId, catalogId, createdAt(sort: Desc)], map: "price_publication_intents_catalog_idx")
+  @@index([companyId, programId], map: "price_publication_intents_program_idx")
+  @@map("price_publication_intents")
 }

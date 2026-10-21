@@ -133,6 +133,52 @@ const ptBR = {
   pricesLead:
     "O preço base vale para todas as filiais. Um preço de filial o substitui ali, e uma promoção substitui os dois no seu período.",
   pricesStrongHint: "Alterar preços exige verificação em duas etapas.",
+  pricePublications: {
+    title: "Publicação nas telas",
+    lead: "Cada mudança de preço publica uma nova geração das programações cuja publicação atual mostra este catálogo. Só os preços mudam; rascunhos não são publicados.",
+    empty: "Nenhuma mudança de preço publicada ainda.",
+    hidden: "Programação que você não pode ver",
+    group: (name: string) => `Grupo ${name}`,
+    device: (name: string) => `Tela ${name}`,
+    states: {
+      pending: () => "Na fila",
+      published: (generation: number | null) =>
+        generation === null
+          ? "Publicada"
+          : `Publicada como geração ${generation}`,
+      skipped: () => "Sem nova geração",
+      blocked: () => "Bloqueada",
+      failed: () => "Falhou",
+    },
+    reasons: {
+      INCLUDED: "A publicação atual já tem estes preços.",
+      UNCHANGED: "Nada mudou nas filiais que a programação alcança.",
+      SUPERSEDED: "Outra publicação na fila inclui estes preços.",
+      NOT_PUBLISHED:
+        "A publicação atual da programação não mostra mais este catálogo.",
+      CATALOG_DELETED: "O catálogo foi excluído.",
+      AUTHOR_INACTIVE: "Quem pediu não é mais membro da empresa.",
+      AUTHOR_NOT_AUTHORIZED:
+        "Quem pediu não pode mais publicar esta programação. Alguém que pode deve autorizar de novo.",
+      REACH_CHANGED:
+        "A programação alcança outras filiais agora. Publique-a de novo.",
+      MEDIA_UNAVAILABLE: "Uma mídia da publicação não está mais disponível.",
+      CATALOG_UNAVAILABLE: "O catálogo não está mais disponível.",
+      CATALOG_FIELD_UNAVAILABLE: "Um campo mostrado foi arquivado.",
+      CATALOG_OVERFLOW: "Um preço novo não cabe na área do catálogo.",
+      CATALOG_PAGE_MISSING:
+        "Os itens não preenchem mais as páginas que o layout mostra.",
+      CATALOG_GROUP_OVERFLOW: "Um grupo não cabe mais em uma página.",
+      RATE_LIMITED: "Limite de publicações atingido.",
+      RESOURCE_VERSION_CONFLICT: "Outra publicação veio antes.",
+      COMPANY_SUSPENDED: "A empresa está suspensa.",
+      ERROR: "Erro inesperado.",
+    } as Record<string, string>,
+    byYou: "pedida por você",
+    retry: "Autorizar de novo",
+    retrying: "Autorizando…",
+    retried: "Autorizada de novo; volta para a fila.",
+  },
   basePrice: "Preço base",
   noPrice: "Sem preço",
   amountLabel: (currency: string) => `Valor (${currency})`,
@@ -233,6 +279,8 @@ const ptBR = {
     CATALOG_NOT_EMPTY: "Exclua os itens antes de excluir o catálogo.",
     CATALOG_IN_USE:
       "Um campo de outro catálogo ou um layout usa este catálogo, por isso ele não pode ser excluído.",
+    PRICE_TARGET_FORBIDDEN:
+      "Telas mostram este catálogo por programações que você não pode publicar, então este preço não pode mudar pela sua conta. Peça a quem pode publicá-las.",
     MEDIA_NOT_READY: "A imagem não está pronta.",
     BRANCH_ARCHIVED: "A filial escolhida está arquivada.",
     AUTHENTICATION_REQUIRED: "Sua sessão terminou. Entre novamente.",
@@ -386,6 +434,53 @@ const enUS: Messages = {
   pricesLead:
     "The base price applies to every branch. A branch price replaces it there, and a promotion replaces both during its period.",
   pricesStrongHint: "Changing prices requires two-step verification.",
+  pricePublications: {
+    title: "Publishing to screens",
+    lead: "Each price change publishes a new generation of the programs whose current publication shows this catalog. Only the prices change; drafts are not published.",
+    empty: "No price changes published yet.",
+    hidden: "A program you cannot see",
+    group: (name: string) => `Group ${name}`,
+    device: (name: string) => `Screen ${name}`,
+    states: {
+      pending: () => "Queued",
+      published: (generation: number | null) =>
+        generation === null
+          ? "Published"
+          : `Published as generation ${generation}`,
+      skipped: () => "No new generation",
+      blocked: () => "Blocked",
+      failed: () => "Failed",
+    },
+    reasons: {
+      INCLUDED: "The current publication already has these prices.",
+      UNCHANGED: "Nothing changed in the branches the program reaches.",
+      SUPERSEDED: "Another queued publication includes these prices.",
+      NOT_PUBLISHED:
+        "The program's current publication no longer shows this catalog.",
+      CATALOG_DELETED: "The catalog was deleted.",
+      AUTHOR_INACTIVE: "Whoever asked is no longer a member of the company.",
+      AUTHOR_NOT_AUTHORIZED:
+        "Whoever asked can no longer publish this program. Someone who can must authorize it again.",
+      REACH_CHANGED:
+        "The program reaches other branches now. Publish it again.",
+      MEDIA_UNAVAILABLE:
+        "A media item of the publication is no longer available.",
+      CATALOG_UNAVAILABLE: "The catalog is no longer available.",
+      CATALOG_FIELD_UNAVAILABLE: "A field shown was archived.",
+      CATALOG_OVERFLOW: "A new price does not fit the catalog area.",
+      CATALOG_PAGE_MISSING:
+        "The items no longer fill the pages the layout shows.",
+      CATALOG_GROUP_OVERFLOW: "A group no longer fits one page.",
+      RATE_LIMITED: "The publication limit was reached.",
+      RESOURCE_VERSION_CONFLICT: "Another publication came first.",
+      COMPANY_SUSPENDED: "The company is suspended.",
+      ERROR: "Unexpected error.",
+    },
+    byYou: "asked by you",
+    retry: "Authorize again",
+    retrying: "Authorizing…",
+    retried: "Authorized again; it is queued.",
+  },
   basePrice: "Base price",
   noPrice: "No price",
   amountLabel: (currency: string) => `Amount (${currency})`,
@@ -486,6 +581,8 @@ const enUS: Messages = {
     CATALOG_NOT_EMPTY: "Delete the items before deleting the catalog.",
     CATALOG_IN_USE:
       "A field of another catalog or a layout uses this catalog, so it cannot be deleted.",
+    PRICE_TARGET_FORBIDDEN:
+      "Screens show this catalog through programs you cannot publish, so this price cannot change from your account. Ask someone who can publish them.",
     MEDIA_NOT_READY: "The image is not ready.",
     BRANCH_ARCHIVED: "The chosen branch is archived.",
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",

@@ -60,6 +60,7 @@
 | `CATALOG_ARCHIVED` | 409 | conflict | no | This catalog is archived. Restore it before changing it. |
 | `CATALOG_NOT_EMPTY` | 409 | conflict | no | Only an empty catalog can be deleted. Delete its items first. |
 | `CATALOG_IN_USE` | 409 | conflict | no | A field of another catalog or a layout uses this catalog, so it cannot be deleted. |
+| `PRICE_TARGET_FORBIDDEN` | 403 | authorization | no | Screens show this catalog through programs you cannot publish, so its prices cannot change from your account. Ask someone who can publish them. |
 | `PROGRAMMING_LIMIT_REACHED` | 409 | conflict | no | This company reached a programming limit: 1,000 playlists, 500 layouts, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output. |
 | `PLAYLIST_IN_USE` | 409 | conflict | no | This playlist is still used by a schedule or a default and cannot be deleted. |
 | `PLAYLIST_SCOPE_MISMATCH` | 409 | conflict | no | This playlist or media item belongs to a branch the programming does not cover. Use company content or content of that single branch. |

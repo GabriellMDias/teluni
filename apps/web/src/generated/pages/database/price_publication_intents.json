@@ -1,0 +1,252 @@
+{
+  "kind": "database",
+  "name": "price_publication_intents",
+  "description": "Durable requests to publish a catalog's current prices to a program, committed with the price change that caused them; the API's processor claims due ones under a lease and turns each into a new generation that changes only that catalog's prices.",
+  "owner": "Publications",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted or coalesced by a price change; claimed, retried and finished by the processor or re-authorized by a person. Finished rows are deleted 30 days after their last update, and rows go with their program or catalog.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Intent identifier.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the program and catalog; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "program_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Program whose latest publication copies the catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog whose prices changed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "price_sequence",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "The catalog's price sequence of the newest change the intent publishes.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "author_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that made the newest price change; kept as the change's author.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "authorized_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that authorized the intent again after it was blocked or failed, whose authority the processor then checks.",
+      "Null meaning": "Nobody authorized it again; the author's authority is checked.",
+      "Unit": "—"
+    },
+    {
+      "Column": "state",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "'PENDING'::character varying",
+      "Classification": "INTERNAL",
+      "Meaning": "PENDING, PUBLISHED, SKIPPED (nothing to publish), BLOCKED (its authority was removed) or FAILED.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "reason",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Stable code of why the intent was skipped, blocked or failed, or of its last transient failure.",
+      "Null meaning": "Nothing to explain: pending without failures, or published.",
+      "Unit": "—"
+    },
+    {
+      "Column": "attempts",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "INTERNAL",
+      "Meaning": "Processing attempts so far.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "next_attempt_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "When a pending intent is next due.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "lease_expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "End of the current processing claim.",
+      "Null meaning": "Not claimed.",
+      "Unit": "—"
+    },
+    {
+      "Column": "publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication the intent produced, or the current one it found already including its prices.",
+      "Null meaning": "No publication yet, or none applies.",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "When the first change of the intent was committed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "When the intent last changed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "price_publication_intents_attempts_nonnegative",
+      "Physical definition": "CHECK ((attempts >= 0))",
+      "Purpose": "Attempts are counted from 0."
+    },
+    {
+      "Object": "price_publication_intents_company_id_author_membership_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, author_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The author is a membership of the same company."
+    },
+    {
+      "Object": "price_publication_intents_company_id_authorized_by_members_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, authorized_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The re-authorizing member belongs to the same company."
+    },
+    {
+      "Object": "price_publication_intents_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The catalog belongs to the same company; intents go with it."
+    },
+    {
+      "Object": "price_publication_intents_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The intent belongs to an existing company."
+    },
+    {
+      "Object": "price_publication_intents_company_id_program_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The program belongs to the same company; intents go with it."
+    },
+    {
+      "Object": "price_publication_intents_company_id_publication_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The publication belongs to the same company."
+    },
+    {
+      "Object": "price_publication_intents_lease_pending",
+      "Physical definition": "CHECK ((((state)::text = 'PENDING'::text) OR (lease_expires_at IS NULL)))",
+      "Purpose": "Only pending intents are claimed."
+    },
+    {
+      "Object": "price_publication_intents_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Intent identifier."
+    },
+    {
+      "Object": "price_publication_intents_publication_outcome",
+      "Physical definition": "CHECK (((publication_id IS NULL) OR ((state)::text = ANY ((ARRAY['PUBLISHED'::character varying, 'SKIPPED'::character varying])::text[]))))",
+      "Purpose": "Only published and skipped intents name a publication."
+    },
+    {
+      "Object": "price_publication_intents_sequence_positive",
+      "Physical definition": "CHECK ((price_sequence >= 1))",
+      "Purpose": "An intent follows at least one counted price change."
+    },
+    {
+      "Object": "price_publication_intents_state_known",
+      "Physical definition": "CHECK (((state)::text = ANY ((ARRAY['PENDING'::character varying, 'PUBLISHED'::character varying, 'SKIPPED'::character varying, 'BLOCKED'::character varying, 'FAILED'::character varying])::text[])))",
+      "Purpose": "Only the five states exist."
+    },
+    {
+      "Object": "price_publication_intents_catalog_idx",
+      "Physical definition": "CREATE INDEX price_publication_intents_catalog_idx ON public.price_publication_intents USING btree (company_id, catalog_id, created_at DESC)",
+      "Purpose": "Lists a catalog's recent intents for the panel."
+    },
+    {
+      "Object": "price_publication_intents_company_id_id_key",
+      "Physical definition": "CREATE UNIQUE INDEX price_publication_intents_company_id_id_key ON public.price_publication_intents USING btree (company_id, id)",
+      "Purpose": "Tenant key for composite references."
+    },
+    {
+      "Object": "price_publication_intents_due_idx",
+      "Physical definition": "CREATE INDEX price_publication_intents_due_idx ON public.price_publication_intents USING btree (next_attempt_at) WHERE ((state)::text = 'PENDING'::text)",
+      "Purpose": "Due pending intents, in claiming order."
+    },
+    {
+      "Object": "price_publication_intents_finished_idx",
+      "Physical definition": "CREATE INDEX price_publication_intents_finished_idx ON public.price_publication_intents USING btree (updated_at) WHERE ((state)::text <> 'PENDING'::text)",
+      "Purpose": "Finished intents, in retention-cleanup order."
+    },
+    {
+      "Object": "price_publication_intents_one_pending",
+      "Physical definition": "CREATE UNIQUE INDEX price_publication_intents_one_pending ON public.price_publication_intents USING btree (company_id, program_id, catalog_id) WHERE ((state)::text = 'PENDING'::text)",
+      "Purpose": "One pending intent per program and catalog; later changes coalesce into it."
+    },
+    {
+      "Object": "price_publication_intents_program_idx",
+      "Physical definition": "CREATE INDEX price_publication_intents_program_idx ON public.price_publication_intents USING btree (company_id, program_id)",
+      "Purpose": "Finds a program's intents."
+    }
+  ]
+}

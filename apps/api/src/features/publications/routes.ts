@@ -24,6 +24,7 @@ import { PublicationFailure } from "./domain.js";
 import { respond } from "./errors.js";
 import type {
   CheckView,
+  PriceIntentView,
   PublicationService,
   PublicationView,
   ScreenStateView,
@@ -68,10 +69,25 @@ const publicationWire = (item: PublicationView) => ({
     isCaller: item.isCaller,
   },
   restoredFromGeneration: item.restoredFromGeneration,
+  origin: item.origin.toLowerCase(),
   counts: { ...item.counts },
   manifestSha256: item.manifestSha256.toString("hex"),
   state: item.state,
   supersededAt: item.supersededAt?.toISOString() ?? null,
+});
+
+const priceIntentWire = (item: PriceIntentView) => ({
+  id: item.id,
+  state: item.state.toLowerCase(),
+  reason: item.reason,
+  target: item.target ? { ...item.target } : null,
+  priceSequence: item.priceSequence,
+  generation: item.generation,
+  authorIsCaller: item.authorIsCaller,
+  reauthorized: item.authorizedByMembershipId !== null,
+  attempts: item.attempts,
+  createdAt: item.createdAt.toISOString(),
+  updatedAt: item.updatedAt.toISOString(),
 });
 
 const checkWire = (check: CheckView) => ({
@@ -187,6 +203,8 @@ export function registerPublicationRoutes(
             groupId?: string;
             deviceId?: string;
             publicationId?: string;
+            catalogId?: string;
+            intentId?: string;
           };
           const { companyId } = params;
           const source: ProgramSource = params.groupId
@@ -247,6 +265,24 @@ export function registerPublicationRoutes(
                       context,
                       companyId,
                       params.deviceId ?? "",
+                    ),
+                  ),
+                );
+              case "listCatalogPricePublications": {
+                const items = await service.pricePublications(
+                  context,
+                  companyId,
+                  params.catalogId ?? "",
+                );
+                return reply.send({ items: items.map(priceIntentWire) });
+              }
+              case "retryPricePublication":
+                return reply.send(
+                  priceIntentWire(
+                    await service.retryPricePublication(
+                      context,
+                      companyId,
+                      params.intentId ?? "",
                     ),
                   ),
                 );

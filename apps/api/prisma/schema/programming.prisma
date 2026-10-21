@@ -88,8 +88,9 @@ model Program {
   layout       Layout?           @relation(fields: [companyId, layoutId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
   outputs      ProgramOutput[]
   rules        ScheduleRule[]
-  // Back-relation of the publications module; never traversed across modules.
+  // Back-relations of the publications module; never traversed across modules.
   publications Publication[]
+  priceIntents PriceIntent[]
 
   @@unique([companyId, id], map: "programs_company_id_id_key")
   @@unique([companyId, groupId], map: "programs_group_key")

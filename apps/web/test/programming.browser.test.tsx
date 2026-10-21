@@ -801,6 +801,7 @@ function publication(
       isCaller: false,
     },
     restoredFromGeneration: null,
+    origin: "manual",
     counts: { rules: 1, playlists: 1, items: 1, media: 1, mediaBytes: 2e6 },
     manifestSha256: "a".repeat(64),
     state: generation === 2 ? "current" : "retained",
@@ -964,7 +965,10 @@ test("restores a retained generation only after confirmation", async () => {
       request.method === "GET"
     )
       return {
-        body: { items: [publication(2), publication(1)], nextCursor: null },
+        body: {
+          items: [publication(2, { origin: "price" }), publication(1)],
+          nextCursor: null,
+        },
       };
     if (url.pathname.endsWith(`/groups/${groupId}/program`))
       return { body: emptyProgram };
@@ -974,6 +978,14 @@ test("restores a retained generation only after confirmation", async () => {
     return undefined;
   });
   const { screen } = await open(`${base}/groups/${groupId}`);
+  // A generation the price processor published says so.
+  await expect
+    .element(
+      screen
+        .getByRole("listitem")
+        .filter({ hasText: t.publication.generation(2) }),
+    )
+    .toMatchTextContent(t.publication.priceOrigin);
   // Only a retained generation offers restore.
   const restore = screen.getByRole("button", { name: t.publication.restore });
   await expect.element(restore).toBeVisible();

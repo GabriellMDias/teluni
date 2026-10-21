@@ -252,6 +252,7 @@ const ptBR = {
     historyEmpty: "Nenhuma geração ainda.",
     generation: (generation: number) => `Geração ${generation}`,
     restoredFrom: (generation: number) => `restaura a geração ${generation}`,
+    priceOrigin: "preços atualizados automaticamente",
     byYou: "por você",
     byOther: "por outro membro",
     states: {
@@ -778,6 +779,7 @@ const enUS: Messages = {
     historyEmpty: "No generation yet.",
     generation: (generation: number) => `Generation ${generation}`,
     restoredFrom: (generation: number) => `restores generation ${generation}`,
+    priceOrigin: "prices updated automatically",
     byYou: "by you",
     byOther: "by another member",
     states: {

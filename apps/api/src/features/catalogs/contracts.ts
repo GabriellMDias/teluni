@@ -539,13 +539,13 @@ export const catalogOperations = [
     operationId: "setCatalogBasePrice",
     access: "session",
     description:
-      "Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts.",
+      "Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
     schema: {
       params: priceParams,
       body: priceBody,
       response: { 200: recordSchema, ...common },
     },
-    expectedErrors: [...recordMutation],
+    expectedErrors: [...recordMutation, "PRICE_TARGET_FORBIDDEN"],
   },
   {
     method: "PUT",
@@ -553,7 +553,7 @@ export const catalogOperations = [
     operationId: "setCatalogBranchPrice",
     access: "session",
     description:
-      "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication.",
+      "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
     schema: {
       params: Type.Object(
         {
@@ -568,7 +568,7 @@ export const catalogOperations = [
       body: priceBody,
       response: { 200: recordSchema, ...common },
     },
-    expectedErrors: [...recordMutation],
+    expectedErrors: [...recordMutation, "PRICE_TARGET_FORBIDDEN"],
   },
   {
     method: "GET",
@@ -595,7 +595,7 @@ export const catalogOperations = [
     operationId: "createCatalogPromotion",
     access: "session",
     description:
-      "Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price.",
+      "Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
     schema: {
       params: priceParams,
       body: Type.Object(
@@ -613,6 +613,7 @@ export const catalogOperations = [
       ...recordMutation,
       "CATALOG_PROMOTION_CONFLICT",
       "CATALOG_LIMIT_REACHED",
+      "PRICE_TARGET_FORBIDDEN",
     ],
   },
   {
@@ -621,7 +622,7 @@ export const catalogOperations = [
     operationId: "deleteCatalogPromotion",
     access: "session",
     description:
-      "Remove a promotion. Promotions are never edited; remove one and add another to change it.",
+      "Remove a promotion. Promotions are never edited; remove one and add another to change it. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
     schema: {
       params: Type.Object(
         {
@@ -635,7 +636,7 @@ export const catalogOperations = [
       ),
       response: { 204: Type.Null(), ...common },
     },
-    expectedErrors: [...recordMutation],
+    expectedErrors: [...recordMutation, "PRICE_TARGET_FORBIDDEN"],
   },
   {
     method: "GET",

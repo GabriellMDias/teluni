@@ -5,6 +5,15 @@ import { publicationPolicy } from "./domain.js";
 
 export type Actor = Readonly<{ principalId: string; membershipId: string }>;
 
+/** A person's publication, a restore, or the price processor's. */
+export type PublicationOrigin = "MANUAL" | "RESTORE" | "PRICE";
+
+/** A catalog a protocol 2 publication copies, with the price changes it includes. */
+export type CatalogCopy = Readonly<{
+  catalogId: string;
+  priceSequence: number;
+}>;
+
 export type PublicationRecord = Readonly<{
   id: string;
   companyId: string;
@@ -23,6 +32,7 @@ export type PublicationRecord = Readonly<{
     mediaBytes: number;
   }>;
   restoredFromGeneration: number | null;
+  origin: PublicationOrigin;
   publishedByPrincipalId: string;
   publishedByMembershipId: string;
   publishedAt: Date;
@@ -41,8 +51,10 @@ export type NewPublication = Readonly<{
   manifestSha256: Buffer;
   counts: PublicationRecord["counts"];
   restoredFromGeneration: number | null;
+  origin: PublicationOrigin;
   publishedAt: Date;
   playlists: readonly Readonly<{ id: string; branchId: string | null }>[];
+  catalogs: readonly CatalogCopy[];
   media: readonly Readonly<{
     id: string;
     sha256: Buffer;
@@ -99,6 +111,7 @@ type PublicationRow = {
   media_count: number;
   media_bytes: bigint;
   restored_from_generation: number | null;
+  origin: PublicationOrigin;
   published_by_principal_id: string;
   published_by_membership_id: string;
   published_at: Date;
@@ -109,7 +122,7 @@ type PublicationRow = {
 const publicationColumns = Prisma.sql`id, company_id, program_id,
   COALESCE(branch_ids::text[], '{}') AS branch_ids, generation, protocol,
   content_sha256, manifest_sha256, manifest_size, rule_count, playlist_count,
-  item_count, media_count, media_bytes, restored_from_generation,
+  item_count, media_count, media_bytes, restored_from_generation, origin,
   published_by_principal_id, published_by_membership_id, published_at,
   superseded_at, pruned_at`;
 
@@ -134,6 +147,7 @@ const publication = (row: PublicationRow): PublicationRecord => ({
     mediaBytes: Number(row.media_bytes),
   },
   restoredFromGeneration: row.restored_from_generation,
+  origin: row.origin,
   publishedByPrincipalId: row.published_by_principal_id,
   publishedByMembershipId: row.published_by_membership_id,
   publishedAt: row.published_at,
@@ -210,6 +224,20 @@ export async function programIsPublished(
   return row?.found ?? false;
 }
 
+const publicationLockKey = (companyId: string) => `publications:${companyId}`;
+
+/**
+ * Takes the company's publication lock shared until commit: a price change
+ * then sees every publication committed before it, and a publication waits
+ * for the change's commit and sees its price sequence.
+ */
+export async function lockPublicationsShared(
+  tx: Prisma.TransactionClient,
+  companyId: string,
+): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${publicationLockKey(companyId)}, 0))`;
+}
+
 /**
  * The branches of each retained publication that references a media item.
  * It runs in the deleting or purging transaction and needs no activated
@@ -250,14 +278,14 @@ export class PrismaPublicationRepository {
 
   /**
    * Serializes publishing per company until commit, so generations, the
-   * supersession of the previous one and the limits are exact.
+   * supersession of the previous one and the limits are exact. Price
+   * changes take the same lock shared (`lockPublicationsShared`).
    */
   async lockCompany(
     tx: Prisma.TransactionClient,
     companyId: string,
   ): Promise<void> {
-    const key = `publications:${companyId}`;
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${publicationLockKey(companyId)}, 0))`;
   }
 
   /** The latest publication of a program, which is never pruned. */
@@ -344,6 +372,24 @@ export class PrismaPublicationRepository {
     }));
   }
 
+  /** The catalogs a publication copies, with the price changes each copy includes. */
+  async catalogs(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    publicationId: string,
+  ): Promise<CatalogCopy[]> {
+    const rows = await tx.$queryRaw<
+      { catalog_id: string; price_sequence: bigint }[]
+    >`
+      SELECT catalog_id, price_sequence FROM publication_catalogs
+      WHERE company_id = ${companyId}::uuid AND publication_id = ${publicationId}::uuid
+      ORDER BY catalog_id`;
+    return rows.map((row) => ({
+      catalogId: row.catalog_id,
+      priceSequence: Number(row.price_sequence),
+    }));
+  }
+
   /** Publications counted by the limits: this program's hour, the company's day. */
   async recentCounts(
     tx: Prisma.TransactionClient,
@@ -376,7 +422,10 @@ export class PrismaPublicationRepository {
     actor: Actor,
     companyId: string,
     created: NewPublication,
-    action: "publication.published" | "publication.restored",
+    action:
+      | "publication.published"
+      | "publication.restored"
+      | "publication.price_published",
     details: Record<string, unknown>,
   ): Promise<PublicationRecord> {
     const branches = [...new Set(created.branchIds)].sort();
@@ -388,7 +437,7 @@ export class PrismaPublicationRepository {
       INSERT INTO publications (id, company_id, program_id, branch_ids, generation,
         protocol, content_sha256, manifest, manifest_sha256, manifest_size,
         rule_count, playlist_count, item_count, media_count, media_bytes,
-        restored_from_generation, published_by_principal_id,
+        restored_from_generation, origin, published_by_principal_id,
         published_by_membership_id, published_at)
       VALUES (${created.id}::uuid, ${companyId}::uuid, ${created.programId}::uuid,
         ${branches}::uuid[], ${created.generation}, ${created.protocol},
@@ -396,7 +445,8 @@ export class PrismaPublicationRepository {
         ${created.manifest}, ${created.manifestSha256}, ${created.manifest.length},
         ${created.counts.rules}, ${created.counts.playlists}, ${created.counts.items},
         ${created.counts.media}, ${created.counts.mediaBytes}::bigint,
-        ${created.restoredFromGeneration}::int, ${actor.principalId}::uuid,
+        ${created.restoredFromGeneration}::int, ${created.origin},
+        ${actor.principalId}::uuid,
         ${actor.membershipId}::uuid, ${created.publishedAt})`;
     if (created.playlists.length > 0)
       await tx.$executeRaw`
@@ -405,6 +455,16 @@ export class PrismaPublicationRepository {
           created.playlists.map(
             (item) =>
               Prisma.sql`(${companyId}::uuid, ${created.id}::uuid, ${item.id}::uuid, ${item.branchId}::uuid)`,
+          ),
+        )}`;
+    if (created.catalogs.length > 0)
+      await tx.$executeRaw`
+        INSERT INTO publication_catalogs (company_id, publication_id, catalog_id, price_sequence)
+        VALUES ${Prisma.join(
+          created.catalogs.map(
+            (item) =>
+              Prisma.sql`(${companyId}::uuid, ${created.id}::uuid, ${item.catalogId}::uuid,
+                ${item.priceSequence}::bigint)`,
           ),
         )}`;
     if (created.media.length > 0)
@@ -428,6 +488,26 @@ export class PrismaPublicationRepository {
     const stored = await this.find(companyId, created.id, tx);
     if (!stored) throw new Error("Publication write returned no row");
     return stored;
+  }
+
+  /** Writes an audit event of a program that records no publication. */
+  async audit(
+    tx: Prisma.TransactionClient,
+    actor: Actor,
+    companyId: string,
+    programId: string,
+    branchIds: readonly string[],
+    action: "publication.price_reauthorized",
+    details: Record<string, unknown>,
+  ): Promise<void> {
+    const branches = [...new Set(branchIds)].sort();
+    await tx.$executeRaw`
+      INSERT INTO publication_audit_events (id, company_id, subject_type,
+        subject_id, branch_ids, actor_principal_id, actor_membership_id,
+        action, details)
+      VALUES (${randomUUID()}::uuid, ${companyId}::uuid, 'program',
+        ${programId}::uuid, ${branches}::uuid[], ${actor.principalId}::uuid,
+        ${actor.membershipId}::uuid, ${action}, ${JSON.stringify(details)}::jsonb)`;
   }
 
   /** A rendition of a retained publication, if that publication names it. */

@@ -269,6 +269,28 @@ Lifecycle: Inserted in the same transaction as the change it records; never upda
 | `catalog_audit_events_catalog_idx` | `CREATE INDEX catalog_audit_events_catalog_idx ON public.catalog_audit_events USING btree (company_id, catalog_id, occurred_at DESC, id DESC)` | Reads a catalog's history newest first. |
 | `catalog_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX catalog_audit_events_company_id_id_key ON public.catalog_audit_events USING btree (company_id, id)` | Tenant key for events. |
 
+## catalog_price_sequences
+
+Each catalog's price change counter: every base price, branch price or promotion change adds one under this row's lock, so changes are numbered in commit order and publications record which ones they include.
+
+Owner: Catalogs. Classification: INTERNAL.
+
+Lifecycle: Inserted with a catalog's first price change and incremented by each later one; deleted with the catalog.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the catalog; immutable (tenant key). | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Counted catalog. | — | — |
+| `sequence` | `bigint` | no | `0` | INTERNAL | Number of the catalog's latest committed price change. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `catalog_price_sequences_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The catalog belongs to the same company; the counter goes with it. |
+| `catalog_price_sequences_nonnegative` | `CHECK ((sequence >= 0))` | Counters start at 0. |
+| `catalog_price_sequences_pkey` | `PRIMARY KEY (company_id, catalog_id)` | One counter per catalog. |
+
 ## device_enrollments
 
 A screen's request to be paired: the hash of the credential the player generated, the HMAC of the short code it shows and its report. Platform-scoped until a member claims the code.
@@ -1575,6 +1597,7 @@ Lifecycle: Inserted when a person publishes or restores; never edited. Supersede
 | `published_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of publication. | — | UTC instant, millisecond precision |
 | `superseded_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant the next generation was published. | This is the program's latest publication. | UTC instant, millisecond precision |
 | `pruned_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock instant maintenance pruned the publication. | The publication is retained. | UTC instant, millisecond precision |
+| `origin` | `character varying(16)` | no | `'MANUAL'::character varying` | INTERNAL | Where the publication came from: MANUAL (a person published the draft), RESTORE (a person restored an earlier generation) or PRICE (the price processor republished the latest generation with a catalog's current prices). | — | — |
 
 ### Constraints and indexes
 
@@ -1589,6 +1612,8 @@ Lifecycle: Inserted when a person publishes or restores; never edited. Supersede
 | `publications_generation_positive` | `CHECK ((generation >= 1))` | Generations start at 1. |
 | `publications_manifest_size` | `CHECK (((manifest_size > 0) AND ((manifest IS NULL) OR (octet_length(manifest) = manifest_size))))` | The recorded size matches the stored manifest. |
 | `publications_manifest_until_pruned` | `CHECK (((manifest IS NULL) = (pruned_at IS NOT NULL)))` | The manifest is kept exactly until the publication is pruned. |
+| `publications_origin_known` | `CHECK (((origin)::text = ANY ((ARRAY['MANUAL'::character varying, 'RESTORE'::character varying, 'PRICE'::character varying])::text[])))` | Only the three origins exist. |
+| `publications_origin_restore` | `CHECK ((((origin)::text = 'RESTORE'::text) = (restored_from_generation IS NOT NULL)))` | A restore, and only a restore, names the generation it restores. |
 | `publications_pkey` | `PRIMARY KEY (id)` | Unique publication identity. |
 | `publications_protocol_known` | `CHECK ((protocol = ANY (ARRAY[1, 2])))` | Only protocols 1 and 2 exist. |
 | `publications_pruned_after_superseded` | `CHECK (((pruned_at IS NULL) OR (superseded_at IS NOT NULL)))` | Only a superseded publication can be pruned. |
@@ -1753,6 +1778,80 @@ Lifecycle: Inserted in the same transaction as the publication it records; never
 | `publication_audit_events_subject_type` | `CHECK (((subject_type)::text = 'program'::text))` | Subjects come from a closed set. |
 | `publication_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX publication_audit_events_company_id_id_key ON public.publication_audit_events USING btree (company_id, id)` | Tenant key for events. |
 | `publication_audit_events_subject_idx` | `CREATE INDEX publication_audit_events_subject_idx ON public.publication_audit_events USING btree (company_id, subject_id, occurred_at DESC, id DESC)` | Reads a program's publication history newest first. |
+
+## publication_catalogs
+
+Each catalog a protocol 2 publication copies, with the price sequence its copy includes; a price change finds the programs whose latest publication copies its catalog here.
+
+Owner: Publications. Classification: INTERNAL.
+
+Lifecycle: Inserted with its publication; never updated. Deleted with the publication or the catalog.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the publication; immutable (tenant key). | — | — |
+| `publication_id` | `uuid` | no | — | INTERNAL | Publication that copies the catalog. | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Copied catalog. | — | — |
+| `price_sequence` | `bigint` | no | — | INTERNAL | The catalog's price sequence when it was copied: the copy includes every price change up to it. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `publication_catalogs_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The catalog belongs to the same company; rows go with it. |
+| `publication_catalogs_company_id_publication_id_fkey` | `FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The publication belongs to the same company; rows go with it. |
+| `publication_catalogs_pkey` | `PRIMARY KEY (company_id, publication_id, catalog_id)` | One row per catalog and publication. |
+| `publication_catalogs_sequence_nonnegative` | `CHECK ((price_sequence >= 0))` | Sequences start at 0. |
+| `publication_catalogs_catalog_idx` | `CREATE INDEX publication_catalogs_catalog_idx ON public.publication_catalogs USING btree (company_id, catalog_id)` | Finds the publications that copy a catalog. |
+
+## price_publication_intents
+
+Durable requests to publish a catalog's current prices to a program, committed with the price change that caused them; the API's processor claims due ones under a lease and turns each into a new generation that changes only that catalog's prices.
+
+Owner: Publications. Classification: INTERNAL.
+
+Lifecycle: Inserted or coalesced by a price change; claimed, retried and finished by the processor or re-authorized by a person. Finished rows are deleted 30 days after their last update, and rows go with their program or catalog.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Intent identifier. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Company that owns the program and catalog; immutable (tenant key). | — | — |
+| `program_id` | `uuid` | no | — | INTERNAL | Program whose latest publication copies the catalog. | — | — |
+| `catalog_id` | `uuid` | no | — | INTERNAL | Catalog whose prices changed. | — | — |
+| `price_sequence` | `bigint` | no | — | INTERNAL | The catalog's price sequence of the newest change the intent publishes. | — | — |
+| `author_membership_id` | `uuid` | no | — | INTERNAL | Membership that made the newest price change; kept as the change's author. | — | — |
+| `authorized_by_membership_id` | `uuid` | yes | — | INTERNAL | Membership that authorized the intent again after it was blocked or failed, whose authority the processor then checks. | Nobody authorized it again; the author's authority is checked. | — |
+| `state` | `character varying(16)` | no | `'PENDING'::character varying` | INTERNAL | PENDING, PUBLISHED, SKIPPED (nothing to publish), BLOCKED (its authority was removed) or FAILED. | — | — |
+| `reason` | `character varying(32)` | yes | — | INTERNAL | Stable code of why the intent was skipped, blocked or failed, or of its last transient failure. | Nothing to explain: pending without failures, or published. | — |
+| `attempts` | `integer` | no | `0` | INTERNAL | Processing attempts so far. | — | — |
+| `next_attempt_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | When a pending intent is next due. | — | — |
+| `lease_expires_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | End of the current processing claim. | Not claimed. | — |
+| `publication_id` | `uuid` | yes | — | INTERNAL | Publication the intent produced, or the current one it found already including its prices. | No publication yet, or none applies. | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | When the first change of the intent was committed. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | When the intent last changed. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `price_publication_intents_attempts_nonnegative` | `CHECK ((attempts >= 0))` | Attempts are counted from 0. |
+| `price_publication_intents_company_id_author_membership_id_fkey` | `FOREIGN KEY (company_id, author_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The author is a membership of the same company. |
+| `price_publication_intents_company_id_authorized_by_members_fkey` | `FOREIGN KEY (company_id, authorized_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The re-authorizing member belongs to the same company. |
+| `price_publication_intents_company_id_catalog_id_fkey` | `FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The catalog belongs to the same company; intents go with it. |
+| `price_publication_intents_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The intent belongs to an existing company. |
+| `price_publication_intents_company_id_program_id_fkey` | `FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The program belongs to the same company; intents go with it. |
+| `price_publication_intents_company_id_publication_id_fkey` | `FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE` | The publication belongs to the same company. |
+| `price_publication_intents_lease_pending` | `CHECK ((((state)::text = 'PENDING'::text) OR (lease_expires_at IS NULL)))` | Only pending intents are claimed. |
+| `price_publication_intents_pkey` | `PRIMARY KEY (id)` | Intent identifier. |
+| `price_publication_intents_publication_outcome` | `CHECK (((publication_id IS NULL) OR ((state)::text = ANY ((ARRAY['PUBLISHED'::character varying, 'SKIPPED'::character varying])::text[]))))` | Only published and skipped intents name a publication. |
+| `price_publication_intents_sequence_positive` | `CHECK ((price_sequence >= 1))` | An intent follows at least one counted price change. |
+| `price_publication_intents_state_known` | `CHECK (((state)::text = ANY ((ARRAY['PENDING'::character varying, 'PUBLISHED'::character varying, 'SKIPPED'::character varying, 'BLOCKED'::character varying, 'FAILED'::character varying])::text[])))` | Only the five states exist. |
+| `price_publication_intents_catalog_idx` | `CREATE INDEX price_publication_intents_catalog_idx ON public.price_publication_intents USING btree (company_id, catalog_id, created_at DESC)` | Lists a catalog's recent intents for the panel. |
+| `price_publication_intents_company_id_id_key` | `CREATE UNIQUE INDEX price_publication_intents_company_id_id_key ON public.price_publication_intents USING btree (company_id, id)` | Tenant key for composite references. |
+| `price_publication_intents_due_idx` | `CREATE INDEX price_publication_intents_due_idx ON public.price_publication_intents USING btree (next_attempt_at) WHERE ((state)::text = 'PENDING'::text)` | Due pending intents, in claiming order. |
+| `price_publication_intents_finished_idx` | `CREATE INDEX price_publication_intents_finished_idx ON public.price_publication_intents USING btree (updated_at) WHERE ((state)::text <> 'PENDING'::text)` | Finished intents, in retention-cleanup order. |
+| `price_publication_intents_one_pending` | `CREATE UNIQUE INDEX price_publication_intents_one_pending ON public.price_publication_intents USING btree (company_id, program_id, catalog_id) WHERE ((state)::text = 'PENDING'::text)` | One pending intent per program and catalog; later changes coalesce into it. |
+| `price_publication_intents_program_idx` | `CREATE INDEX price_publication_intents_program_idx ON public.price_publication_intents USING btree (company_id, program_id)` | Finds a program's intents. |
 
 ## Database enums
 

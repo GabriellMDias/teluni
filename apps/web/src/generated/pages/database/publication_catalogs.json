@@ -1,0 +1,77 @@
+{
+  "kind": "database",
+  "name": "publication_catalogs",
+  "description": "Each catalog a protocol 2 publication copies, with the price sequence its copy includes; a price change finds the programs whose latest publication copies its catalog here.",
+  "owner": "Publications",
+  "classification": "INTERNAL",
+  "lifecycle": "Inserted with its publication; never updated. Deleted with the publication or the catalog.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company that owns the publication; immutable (tenant key).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "publication_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Publication that copies the catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "catalog_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Copied catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "price_sequence",
+      "PostgreSQL type": "bigint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "The catalog's price sequence when it was copied: the copy includes every price change up to it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "publication_catalogs_company_id_catalog_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The catalog belongs to the same company; rows go with it."
+    },
+    {
+      "Object": "publication_catalogs_company_id_publication_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, publication_id) REFERENCES publications(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE",
+      "Purpose": "The publication belongs to the same company; rows go with it."
+    },
+    {
+      "Object": "publication_catalogs_pkey",
+      "Physical definition": "PRIMARY KEY (company_id, publication_id, catalog_id)",
+      "Purpose": "One row per catalog and publication."
+    },
+    {
+      "Object": "publication_catalogs_sequence_nonnegative",
+      "Physical definition": "CHECK ((price_sequence >= 0))",
+      "Purpose": "Sequences start at 0."
+    },
+    {
+      "Object": "publication_catalogs_catalog_idx",
+      "Physical definition": "CREATE INDEX publication_catalogs_catalog_idx ON public.publication_catalogs USING btree (company_id, catalog_id)",
+      "Purpose": "Finds the publications that copy a catalog."
+    }
+  ]
+}

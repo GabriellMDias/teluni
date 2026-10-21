@@ -490,6 +490,7 @@ test("saves prices in the person's locale and previews the price in effect", asy
           ],
         },
       };
+    if (path.endsWith("/price-publications")) return { body: { items: [] } };
     if (path.endsWith(`/records/${recordId}`)) return { body: current };
     if (path.endsWith(`/catalogs/${catalogId}/records`))
       return { body: { items: [current], nextCursor: null } };
@@ -558,5 +559,123 @@ test("saves prices in the person's locale and previews the price in effect", asy
         { exact: false },
       ),
     )
+    .toBeVisible();
+});
+
+test("shows what price changes did on screens and authorizes blocked ones again", async () => {
+  const p = t.pricePublications;
+  const blocked = "00000000-0000-4000-8000-0000000000b1";
+  const intent = (overrides: Record<string, unknown>) => ({
+    id: "00000000-0000-4000-8000-0000000000b2",
+    state: "published",
+    reason: null,
+    target: {
+      kind: "group",
+      id: "00000000-0000-4000-8000-0000000000a5",
+      name: "Lojas",
+    },
+    priceSequence: 3,
+    generation: null,
+    authorIsCaller: false,
+    reauthorized: false,
+    attempts: 1,
+    createdAt: "2026-10-21T12:00:00.000Z",
+    updatedAt: "2026-10-21T12:00:05.000Z",
+    ...overrides,
+  });
+  let retried = false;
+  respond([...manager, "publications.publish"], (url, request) => {
+    const path = url.pathname;
+    if (path.endsWith(`/price-publications/${blocked}/retry`)) {
+      retried = true;
+      return {
+        body: intent({ id: blocked, state: "pending", reauthorized: true }),
+      };
+    }
+    if (path.endsWith("/price-publications"))
+      return {
+        body: {
+          items: [
+            intent({
+              id: blocked,
+              state: retried ? "pending" : "blocked",
+              reason: retried ? null : "AUTHOR_NOT_AUTHORIZED",
+              reauthorized: retried,
+            }),
+            intent({
+              state: "published",
+              generation: 4,
+              authorIsCaller: true,
+              target: {
+                kind: "device",
+                id: "00000000-0000-4000-8000-0000000000d9",
+                name: "Caixa",
+              },
+            }),
+            intent({
+              id: "00000000-0000-4000-8000-0000000000b3",
+              state: "failed",
+              reason: "CATALOG_OVERFLOW",
+              target: null,
+            }),
+          ],
+        },
+      };
+    if (path.endsWith(`/prices/${priceField}`) && request.method === "PUT")
+      return {
+        status: 403,
+        body: {
+          error: {
+            code: "PRICE_TARGET_FORBIDDEN",
+            message: "Forbidden.",
+            requestId: "req_1",
+          },
+        },
+      };
+    if (path.endsWith(`/prices/${priceField}/promotions`))
+      return { body: { items: [] } };
+    if (path.endsWith("/effective-prices"))
+      return {
+        body: { at: url.searchParams.get("at"), fields: [] },
+      };
+    if (path.endsWith(`/records/${recordId}`)) return { body: record() };
+    if (path.endsWith(`/catalogs/${catalogId}`)) return { body: catalog() };
+    return undefined;
+  });
+  const { screen } = await open(`${base}/${catalogId}/items/${recordId}`);
+  const text = (item: { query(): Element | null }) =>
+    item.query()?.textContent ?? "";
+  const list = screen.getByRole("list", { name: p.title });
+  const lojas = list
+    .getByRole("listitem")
+    .filter({ hasText: p.group("Lojas") });
+  await expect.poll(() => text(lojas)).toContain(p.states.blocked());
+  await expect
+    .poll(() => text(lojas))
+    .toContain(p.reasons.AUTHOR_NOT_AUTHORIZED);
+  const caixa = list
+    .getByRole("listitem")
+    .filter({ hasText: p.device("Caixa") });
+  await expect.poll(() => text(caixa)).toContain(p.states.published(4));
+  await expect.poll(() => text(caixa)).toContain(p.byYou);
+  const hidden = list.getByRole("listitem").filter({ hasText: p.hidden });
+  await expect.poll(() => text(hidden)).toContain(p.reasons.CATALOG_OVERFLOW);
+  await expect
+    .element(caixa.getByRole("button", { name: p.retry }))
+    .not.toBeInTheDocument();
+  await lojas.getByRole("button", { name: p.retry }).click();
+  await expect.element(screen.getByText(p.retried)).toBeVisible();
+  await expect.poll(() => text(lojas)).toContain(p.states.pending());
+  // A price that screens show through a program the person cannot publish.
+  const decimal = locale === "pt-BR" ? "," : ".";
+  await screen
+    .getByRole("textbox", { name: t.basePrice })
+    .fill(`21${decimal}9`);
+  await screen
+    .getByRole("form", { name: t.basePrice })
+    .getByRole("button", { name: t.save })
+    .click();
+  await expect
+    .element(screen.getByText(t.errors.PRICE_TARGET_FORBIDDEN))
     .toBeVisible();
 });

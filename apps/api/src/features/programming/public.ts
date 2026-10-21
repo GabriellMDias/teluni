@@ -77,6 +77,10 @@ export type CatalogSnapshot = Readonly<{
   }>[];
 }>;
 
+/** A catalog copy with the price sequence it includes. */
+export type PricedCatalogSnapshot = CatalogSnapshot &
+  Readonly<{ priceSequence: number }>;
+
 export type LayoutSnapshotProblem = Readonly<{
   code:
     | "CATALOG_UNAVAILABLE"
@@ -136,8 +140,44 @@ export type LayoutSnapshot = Readonly<{
       groupChoiceId: string | null;
     }>[];
   }>[];
-  catalogs: readonly CatalogSnapshot[];
+  catalogs: readonly PricedCatalogSnapshot[];
   mediaIds: readonly string[];
+  problems: readonly LayoutSnapshotProblem[];
+}>;
+
+/** What a published layout copy holds of one of its catalogs. */
+export type PublishedCatalogCopy = Readonly<{
+  areas: readonly Readonly<{
+    key: string;
+    width: number;
+    height: number;
+    view: LayoutSnapshot["areas"][number]["view"];
+  }>[];
+  pages: readonly Readonly<{
+    contents: readonly Readonly<{
+      areaKey: string;
+      viewPage: number | null;
+      groupChoiceId: string | null;
+    }>[];
+  }>[];
+  catalog: CatalogSnapshot;
+}>;
+
+/**
+ * A published catalog copy with the catalog's current prices, the views
+ * of it paginated again, and what blocks publishing them.
+ */
+export type RepricedCatalog = Readonly<{
+  catalog: CatalogSnapshot;
+  priceSequence: number;
+  views: readonly Readonly<{
+    areaKey: string;
+    pages: readonly (readonly SnapshotPageEntry[])[];
+    groups: readonly Readonly<{
+      group: string;
+      recordIds: readonly string[];
+    }>[];
+  }>[];
   problems: readonly LayoutSnapshotProblem[];
 }>;
 
@@ -216,4 +256,32 @@ export type ProgrammingPort = Readonly<{
   >;
   /** Screens that follow a source's program now; authorizes nothing. */
   followers(companyId: string, source: ProgramSource): Promise<string[]>;
+  /**
+   * The groups and screens of the named programs that the access may see
+   * with `programming.view`, with their names; others are left out.
+   */
+  describePrograms(
+    access: CompanyAccess,
+    programIds: readonly string[],
+  ): Promise<
+    ReadonlyMap<
+      string,
+      Readonly<{ kind: "group" | "device"; id: string; name: string }>
+    >
+  >;
+  /** The group or screen a program belongs to; authorizes nothing. */
+  programSource(
+    companyId: string,
+    programId: string,
+  ): Promise<ProgramSource | null>;
+  /**
+   * A published layout copy's catalog with its current prices for the
+   * reach, its views paginated again (records keep their published
+   * values). Null when the catalog no longer exists; authorizes nothing.
+   */
+  repriceCatalog(
+    companyId: string,
+    published: PublishedCatalogCopy,
+    reach: "all" | ReadonlySet<string>,
+  ): Promise<RepricedCatalog | null>;
 }>;

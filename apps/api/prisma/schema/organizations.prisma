@@ -92,6 +92,7 @@ model Company {
   // Back-relations of the publications module; never traversed across modules.
   publications            Publication[]
   publicationAuditEvents  PublicationAuditEvent[]
+  priceIntents            PriceIntent[]
   // Back-relations of the catalogs module; never traversed across modules.
   catalogs                Catalog[]
   catalogAuditEvents      CatalogAuditEvent[]
@@ -153,6 +154,8 @@ model Membership {
   programmingAudit  ProgrammingAuditEvent[]  @relation("ProgrammingAuditActorMembership")
   publications      Publication[]            @relation("PublicationPublisherMembership")
   publicationAudit  PublicationAuditEvent[]  @relation("PublicationAuditActorMembership")
+  authoredIntents   PriceIntent[]            @relation("PriceIntentAuthor")
+  authorizedIntents PriceIntent[]            @relation("PriceIntentAuthorizer")
   createdRecords    CatalogRecord[]          @relation("CatalogRecordCreator")
   updatedRecords    CatalogRecord[]          @relation("CatalogRecordUpdater")
   createdPromotions CatalogPromotion[]       @relation("CatalogPromotionCreator")

@@ -10,6 +10,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure, type ApiIssue } from "../api-client.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale, type Locale } from "../locale.js";
+import { formatInstant } from "../organizations/members.js";
 import {
   companyKey,
   describe,
@@ -32,14 +33,17 @@ import {
   getRecord,
   listCatalogChoices,
   listCatalogs,
+  listPricePublications,
   listPromotions,
   listRecords,
   listSelectableImages,
   moveRecord,
+  pricePublicationsKey,
   promotionsKey,
   recordKey,
   recordsKey,
   replaceSchema,
+  retryPricePublication,
   setBasePrice,
   setBranchPrice,
   updateCatalog,
@@ -49,6 +53,7 @@ import {
   type Field,
   type FieldInput,
   type FieldType,
+  type PricePublication,
   type Value,
 } from "./api.js";
 import { catalogMessages, type CatalogMessages } from "./messages.js";
@@ -2349,6 +2354,100 @@ function PriceSection({
   );
 }
 
+/**
+ * What each price change did on screens: one line per program whose
+ * publication shows the catalog, refreshed while some are queued, with a
+ * new authorization for blocked or failed ones.
+ */
+function PricePublications({
+  companyId,
+  catalogId,
+  canRetry,
+}: {
+  companyId: string;
+  catalogId: string;
+  canRetry: boolean;
+}) {
+  const { locale, t } = useCatalogMessages();
+  const p = t.pricePublications;
+  const queryClient = useQueryClient();
+  const [notice, setNotice] = useState<string | null>(null);
+  const list = useQuery({
+    queryKey: pricePublicationsKey(companyId, catalogId),
+    queryFn: () => listPricePublications(companyId, catalogId),
+    refetchInterval: (query) =>
+      query.state.data?.items.some((item) => item.state === "pending")
+        ? 2_000
+        : false,
+  });
+  const retry = useMutation({
+    mutationFn: (intentId: string) =>
+      retryPricePublication(companyId, intentId),
+    onSuccess: async () => {
+      setNotice(p.retried);
+      await queryClient.invalidateQueries({
+        queryKey: pricePublicationsKey(companyId, catalogId),
+      });
+    },
+  });
+  const target = (item: PricePublication) =>
+    item.target === null
+      ? p.hidden
+      : item.target.kind === "group"
+        ? p.group(item.target.name)
+        : p.device(item.target.name);
+  return (
+    <section aria-labelledby="catalog-price-publications-title">
+      <h3 id="catalog-price-publications-title">{p.title}</h3>
+      <p className="hint">{p.lead}</p>
+      {notice && <p role="status">{notice}</p>}
+      {list.isPending && <p>{t.loading}</p>}
+      {list.isError && (
+        <Failure
+          error={list.error}
+          operation="read"
+          onReload={() => void list.refetch()}
+        />
+      )}
+      {list.data && list.data.items.length === 0 && <p>{p.empty}</p>}
+      {list.data && list.data.items.length > 0 && (
+        <ul aria-label={p.title} className="catalog-price-publications">
+          {list.data.items.map((item) => (
+            <li key={item.id}>
+              <strong>{target(item)}</strong>{" "}
+              <span>{p.states[item.state](item.generation)}</span>
+              <span className="hint">
+                {" "}
+                · {formatInstant(locale, item.updatedAt)}
+                {item.authorIsCaller ? ` · ${p.byYou}` : ""}
+              </span>
+              {item.reason && item.state !== "published" && (
+                <span className="hint">
+                  {" "}
+                  · {p.reasons[item.reason] ?? t.generic}
+                </span>
+              )}
+              {canRetry &&
+                (item.state === "blocked" || item.state === "failed") && (
+                  <button
+                    type="button"
+                    disabled={retry.isPending}
+                    onClick={() => retry.mutate(item.id)}
+                  >
+                    {retry.isPending && retry.variables === item.id
+                      ? p.retrying
+                      : p.retry}
+                  </button>
+                )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {retry.error && <Failure error={retry.error} operation="write" />}
+    </section>
+  );
+}
+
 function MoveForm({
   companyId,
   record,
@@ -2449,10 +2548,17 @@ function RecordDetail({
     void queryClient.invalidateQueries({
       queryKey: recordsKey(companyId, catalogId),
     });
+    // A price change may have queued publications.
+    void queryClient.invalidateQueries({
+      queryKey: pricePublicationsKey(companyId, catalogId),
+    });
   };
   const onPromotions = () => {
     void queryClient.invalidateQueries({
       queryKey: ["catalogs", "effective", companyId, catalogId, recordId],
+    });
+    void queryClient.invalidateQueries({
+      queryKey: pricePublicationsKey(companyId, catalogId),
     });
   };
   if (catalog.isPending || record.isPending) return <p>{t.loading}</p>;
@@ -2543,6 +2649,11 @@ function RecordDetail({
             companyId={companyId}
             catalog={catalog.data}
             record={item}
+          />
+          <PricePublications
+            companyId={companyId}
+            catalogId={catalogId}
+            canRetry={can(company, "publications.publish")}
           />
         </section>
       )}
