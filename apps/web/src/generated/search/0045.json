@@ -4,6 +4,24 @@
     "title": "Teluni Android TV Player Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Server additions",
+    "anchor": "server-additions",
+    "text": "Server additions\nPJ-11 increment 3 adds two fields to the `POST /device/sync` response, both compatible with existing clients:\n`zoneOffsets`, as above (three days back, 35 days ahead), or `null` when `timeZone` is `null`;\n`rotation`, the configured clockwise rotation (0, 90, 180 or 270).\nThe API also publishes protocol conformance fixtures in [`conformance.json`](../../apps/api/test/publications/conformance.json):\na protocol 1 manifest as exact bytes with its SHA-256;\na protocol 2 manifest as exact bytes with its SHA-256, with page cycles and effective prices to evaluate ([catalog and composition design](catalog-composition-design.md#publication-protocol-2));\na key set and statements signed with throwaway keys whose private halves are discarded, including a rotated key and a tampered payload, stored in flattened JWS JSON serialization (RFC 7515) so secret scanners do not take these test vectors for live tokens;\nzone offsets with local-time resolutions, including gaps, repeated hours and a half-hour transition;\nthe zone offsets of every shared schedule fixture.\n`pnpm -C apps/api conformance:write` writes the file with the API's own serializer, signer and zone rules. The API's tests check that the committed file still matches that code, and the player's `core` tests parse and verify the same file.\n"
+  },
+  {
+    "id": "repository/docs/project/player-design",
+    "title": "Teluni Android TV Player Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Diagnostics and privacy",
+    "anchor": "diagnostics-and-privacy",
+    "text": "Diagnostics and privacy\nThe player sends nothing beyond the sync report and erasure confirmation; diagnostic uploads are D-09. Logcat output is limited to states, error codes and publication IDs. It never contains credentials, statements, manifests, media, URLs with credentials or the pairing code after pairing. The status card shows only the screen name and states. Crash records stay on the device and are counted in a later report field, not uploaded.\n"
+  },
+  {
+    "id": "repository/docs/project/player-design",
+    "title": "Teluni Android TV Player Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Build, dependencies and CI",
     "anchor": "build-dependencies-and-ci",
     "text": "Build, dependencies and CI\n**Build.** Gradle with the Kotlin DSL, a wrapper pinned with its distribution SHA-256, a version catalog, dependency locking and Gradle dependency verification with SHA-256 checksums for every artifact. Renovate updates the catalog.\n**Toolchain.** JDK 17. `minSdk` 26 (Android 8.0), which gives `java.time`, current Keystore APIs and `java.nio.file` without desugaring. `compileSdk` and `targetSdk` follow the newest stable platform.\n**Dependencies.** `core` uses Kotlin, kotlinx.serialization, OkHttp and Nimbus JOSE + JWT, and runs its own work on blocking calls and a two-thread download pool. `app` adds Media3 and the AndroidX libraries it needs. Tests use JUnit Jupiter and OkHttp's MockWebServer for `core`, and JUnit 4 with Robolectric for `app`.\n**CI.** A `Player` job sets up JDK 17, validates the Gradle wrapper and runs `./gradlew check` on every pull request, joining the required gate. `core` needs only the JDK. `app` adds the Android SDK that GitHub's Ubuntu runners provide, and its unsigned release build. The root `pnpm validate` does not require Android tooling; `apps/player/README.md` lists the Gradle commands.\n**Dependency hosts.** Building `app` needs Google's Maven repository, which redirects to `dl.google.com`. The current cloud development environment refuses that host ([PH-26](human-actions.md#ph-26)), so `app` can be written and verified only after it is allowed or on a developer machine. `core` builds with Maven Central and the Gradle plugin portal.\n"
@@ -682,23 +700,5 @@
     "heading": "Media and rendering targets",
     "anchor": "media-and-rendering-targets",
     "text": "Media and rendering targets\nID\nSelected limit / qualification target\nRequirement / source\nAT-01\nImage item duration 1–3,600 seconds inclusive; default 10 seconds. Coordinated pages use their reviewed page-duration rule instead\nFR-05/FR-10; earlier owner default and delegated P16\nAT-02\nImage file at most 20 MiB; each decoded axis at most 8,192 px and total at most 32,000,000 pixels. Enforce all bounds, not only compressed size\nFR-04/NF-02; delegated P16\nAT-03\nVideo file at most 1 GiB and duration at most 60 minutes. Exact allowed/convertible formats and decoder limits remain D-05 qualification\nFR-04/FR-05; delegated P16\nAT-04\nReference qualification: 1080p output, at least 6 concurrent areas and 2 simultaneous 1080p/30 fps videos; remaining areas show images/catalog views. Test supported orientation, audio mix, sustained playback and recovery. Higher profiles require their own evidence\nFR-03/FR-08/FR-10/FR-11; owner P18\nAT-05\nKeep active and previous valid generations plus new staging; preserve free reserve of at least max(1 GiB, 10% of the media volume) after planned resource use. Count shared immutable files once. Refuse unsafe staging/activation without deleting protected resources\nFR-07/FR-08/NF-02; owner P19\n"
-  },
-  {
-    "id": "repository/docs/project/release-targets",
-    "title": "Teluni Release Acceptance Targets",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Reliability and synchronization targets",
-    "anchor": "reliability-and-synchronization-targets",
-    "text": "Reliability and synchronization targets\nID\nQualification target\nRequirement / source\nAT-06\nFirst valid cached output within 10 seconds after the OS hands execution to the player\nFR-08/NF-02; delegated P20\nAT-07\nRecover a failed player process within 30 seconds on a qualified supervised-restart profile\nFR-08/NF-02; delegated P20\nAT-08\nFull device reboot to content: target at most 120 seconds, conditional on model/OS/autostart validation\nFR-08/NF-02; delegated P20; PH-08 evidence required\nAT-09\nAt least 20 physical power-interruption cycles distributed across download, preparation, activation and playback; no incomplete/mixed active generation\nFR-07/FR-08/NF-02; delegated P20\nAT-10\nSeven-day offline endurance with reboots, checking local schedules/catalog validity and the expected neutral transition at authorization expiry. Never count expired-authorization output as a successful playback guarantee\nFR-08/NF-02; delegated P20, owner P22\nAT-11\nDetect an available desired publication within 30 seconds when backend/connectivity are available; measure network/file transfer separately\nFR-07/NF-03; delegated P21\nAT-12\nActivate within 5 seconds after all required resources are available/validated and the version is eligible for activation\nFR-07/NF-02; delegated P21\nAT-13\nScheduled output change within 500 ms of its boundary relative to the trusted player clock; qualify separately from absolute clock uncertainty\nFR-06/FR-10/NF-02; delegated P21\nAT-14\nPanel reflects an observed player acknowledgement within 10 seconds of receiving it; server intent alone is not activation evidence\nFR-09/NF-05; delegated P21\nAT-15\nOffline authorization expires no later than 7 days after its last successful online renewal. At the deadline show neutral output and require reconnection; server revocation cannot instantly erase an unreachable cache\nFR-02/FR-08/NF-01/NF-02; owner P22\nAT-16\nMaximum intended trusted-time uncertainty for commercial scheduling: 60 seconds. Detected incompatible jumps or insufficient trustworthy reference suspend time-dependent commercial output and report the condition; proof of estimation/detection remains required\nFR-06/FR-08/NF-02/NF-06; owner P23\n"
-  },
-  {
-    "id": "repository/docs/project/release-targets",
-    "title": "Teluni Release Acceptance Targets",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Retention targets",
-    "anchor": "retention-targets",
-    "text": "Retention targets\nID\nSelected operational retention\nRequirement / source\nAT-17\nRecoverable archive/trash for at least 30 days before purging media or archived catalog records/definitions with no protected references\nFR-04/FR-11/NF-02; delegated P26 and lifecycle defaults for the custom-catalog expansion\nAT-18\nInactive publication history recoverable for at least 90 days\nFR-07/NF-02; delegated P26\nAT-19\nPlayer retains active and previous valid generations and resources of a valid staging attempt\nFR-07/FR-08/NF-02; owner P19 and delegated P26\nAT-20\nDetailed operational reports: 30-day default, minimized/redacted and subject to the separate privacy/retention review\nFR-09/NF-05; delegated P26; PH-13\nThese periods never permit deleting an active, staging, recovery or otherwise protected referenced resource. Reconciliation, the offline authorization envelope and safe garbage collection remain mandatory. A restored publication still obeys content expiry and authorization. These are operational selections, not a legal retention policy for personal data or security audit; PH-13 remains pending.\n"
   }
 ]

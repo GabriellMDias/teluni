@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metric registry and testing",
+    "anchor": "metric-registry-and-testing",
+    "text": "Metric registry and testing\nDocument important custom metric name, type, unit, exact meaning/emission point, owner, required dimensions/allowed values, cardinality expectations, consumers, and removal condition. Reuse instrumentation metadata; introduce a separate machine-readable registry only if it adds value. Remove unused metrics deliberately and keep consumer references current.\nTest critical cardinality, units, single authoritative increments, outcomes/retries, safe labels, and SLI eligibility where practical using test readers/exporters. Isolate state so tests are order-independent. Do not unit-test every automatic runtime metric or require a production provider. Local collection may be optional while instrumentation paths remain exercised.\nBefore adding a metric/dimension, identify user/operational question, existing standard signal, type/unit, authority, allowed values/worst-case multiplication, sensitivity, consumer compatibility, evidence tests, and lifecycle. If the question concerns one specific record, use another signal. Check [validation](../validation.md) for actual enforcement; future naming/cardinality/schema checks are not existing guarantees.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Observability",
+    "anchor": "observability",
+    "text": "Observability\nThis policy owns the observability model and signal ownership. Production-relevant behavior must be explainable from structured, safe, correlated evidence. Use this page to choose the right signal; detailed requirements live with its owner rather than being repeated across policies.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and accepted direction",
+    "anchor": "current-implementation-and-accepted-direction",
+    "text": "Current implementation and accepted direction\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects server-side OpenTelemetry traces/metrics, W3C Trace Context, OTLP, and Pino JSON logs. A Collector is preferred when deployment complexity justifies it; direct compatible OTLP export remains valid. No global backend/vendor is selected. The OpenTelemetry Logs SDK and browser instrumentation are not initial defaults, and a dedicated error-reporting provider is optional.\nThe API [initializes telemetry before Fastify/application composition](../../apps/api/src/main.ts), with [Pino redaction](../../apps/api/src/logging.ts), [HTTP instrumentation and allowlisted OTLP export](../../apps/api/src/telemetry.ts), and [health/error boundaries](../../apps/api/src/app.ts). See the [runtime guide](../../apps/api/README.md) and [validation inventory](../validation.md) for current configuration and evidence.\nThe current API logs centralized `request_id`, `trace_id`, and `span_id` where available, carries a configured release identifier, and initializes HTTP, Fastify, and Prisma instrumentation before application composition. Successful health responses are suppressed from request logs. Trace export removes arbitrary attributes, event details, URLs, SQL text, and status messages; it does not provide full database diagnostics. A production Collector, backend, dashboards, alert owners/thresholds, retention durations, and service objectives remain deployment-specific; policy presence is not evidence they exist.\n"
+  },
+  {
     "id": "repository/docs/reliability/observability",
     "title": "Observability",
     "group": "Reliability",
@@ -934,23 +961,5 @@
     "heading": "Ownership and scope",
     "anchor": "ownership-and-scope",
     "text": "Ownership and scope\nEvery important secret needs an owner, issuing system/source, purpose/capability, consumers, environment, privileges, rotation/revocation method, compromise impact, and deletion condition. Secret inventory/documentation contains metadata and references only, never values. Names should communicate purpose and ownership without sensitive contents; names can themselves be internal information. Public keys, client IDs, and publishable provider keys must be distinguished by their actual capability, not terminology alone.\nScope credentials by application, environment, and capability. Separate runtime from migration, database-owner, backup, analytics, and administrative identities when their responsibilities differ. Human, service, CI, and deployment actors should be distinguishable. Prefer attributable workload/short-lived identities over broadly shared static secrets where infrastructure supports them. Shared development credentials, when necessary, need limited scope, ownership, and rotation and must never be reused for production.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Secret storage",
-    "anchor": "secret-storage",
-    "text": "Secret storage\nUse established credential stores, secret managers, approved CI stores, or workload-identity facilities appropriate to the environment. Arbitrary plaintext files are not an acceptable long-term production store. Do not build a general-purpose secret manager or custom cryptographic storage without extraordinary justification. If operating encrypted storage, do not store its encryption key alongside the encrypted secrets. Protect secret-manager administration more strongly than ordinary application credentials.\nNever intentionally commit secrets into any Git file, commit, branch, tag, fixture, example, generated artifact, or documentation. A private repository is not a secret store. Ignore files reduce accidents but are not the security boundary. Templates use obvious placeholders and describe where values come from. Local credential files required for tooling must stay outside source control, use restrictive permissions and environment-appropriate credentials, and be documented; prefer a secure local store where practical.\nRoutine local development must work without production credentials. Use local/sandbox services, synthetic credentials, or development identities. Environment variables can deliver secrets but are not a management system: process inspection, child processes, dumps, and CI can expose them. Never dump complete environments/configuration. Avoid raw secrets in command arguments, shell history, and routine clipboard workflows; minimize manual handling.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Client applications and build boundaries",
-    "anchor": "client-applications-and-build-boundaries",
-    "text": "Client applications and build boundaries\nAnything delivered to browser, mobile, or desktop users can be inspected despite compilation, minification, obfuscation, packaging, or signing. Never embed server database credentials, private provider keys, signing keys, or backend tokens. User-specific credentials may exist in clients only according to [authentication storage policy](authentication.md#sessions). Clearly classify intentionally publishable provider values.\nScope CI secrets to required jobs and workflow trust. Contributed or forked code must not automatically receive privileged credentials. A test job must not inherit production deployment authority. Build secrets must not remain in binaries, source maps, generated code, package metadata, container layers/history, or build context. Supply runtime credentials through approved mechanisms; infrastructure definitions should reference secrets, not contain or print values. Review images/artifacts where tooling exists; do not assume source scanning covers them.\n"
   }
 ]

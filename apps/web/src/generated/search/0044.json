@@ -4,6 +4,15 @@
     "title": "Teluni Company Invitation and Durable Email Delivery Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Policy inputs",
+    "anchor": "policy-inputs",
+    "text": "Policy inputs\nThe design applies these selected policies without changing them:\nCompany invitations are recipient-bound, single-use, revocable and valid for seven days; a resend invalidates the previous pending invitation; acceptance requires the matching authenticated identity and explicit membership confirmation; changing the recipient requires a new invitation ([identity and access](identity-and-access.md#enrollment-and-account-continuity)).\nEmail verification establishes mailbox control, not legal identity or company ownership, and accounts are never merged solely by equal email.\nCompany administrators invite with company scope; branch managers invite operators to their own branches without granting authority beyond their own ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)). New administrators require the responsible administrator's approval (P10) with strong authentication no older than five minutes (P14). Temporary access expires explicitly and is never renewed automatically (P30).\nCredentials in URLs are allowed only as short-lived, high-entropy, single-purpose values whose exposure is understood; reset and invitation links are `RESTRICTED` ([authentication policy](../security/authentication.md)). Retry, duplicate request, delivery failure and expiry must stay safe for email-based flows.\nA durable required side effect records its intent in the same transaction as the change, and consumers tolerate duplicates ([delivery policy](../architecture/delivery-and-side-effects.md)).\n"
+  },
+  {
+    "id": "repository/docs/project/invitation-delivery-design",
+    "title": "Teluni Company Invitation and Durable Email Delivery Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Who may invite",
     "anchor": "who-may-invite",
     "text": "Who may invite\nAn invitation carries exactly one grant request with the same shape as a direct grant: a standard role, either the whole company or one to 100 explicit active branches of the company, and an optional grant expiry. The rules mirror direct grants:\nInviter\nMay invite\nConditions\nCompany administrator (strongly authenticated)\nOperator or branch manager, company-wide or for any active branches\nCompany active\nResponsible administrator\nAdditionally company administrator, always company-wide\nStrong authentication no older than five minutes; the invitation is the P10 approval\nBranch manager (strongly authenticated)\nOperator only, for a subset of the branches the manager currently manages\nNever company-wide, never another role\nOperator\nNobody\n—\nA new capability, `invitations.manage`, is company-wide for administrators and branch-scoped for managers. Administrators see and manage every invitation of the company; a branch manager sees and manages only invitations whose whole branch scope lies inside the branches they currently manage. Invitation lists are paginated and cursor-bound like other company lists.\nAt invitation time the system never looks up principals by email: it neither reveals whether the address belongs to an account or a member nor links anything by address. The address binds only the later acceptance.\n"
@@ -610,23 +619,5 @@
     "heading": "Updates and compatibility",
     "anchor": "updates-and-compatibility",
     "text": "Updates and compatibility\n**Manifests.** The player declares its supported protocols in every sync. An incompatible manifest fails staging and keeps the active generation, and the report names the incompatibility. Protocol 2, for programs with a layout, is served beside protocol 1 rather than replacing it, so a player that supports 2 keeps supporting 1; `desired.protocol` lets an older player report `INCOMPATIBLE` without downloading. A protocol that replaces another is supported beside it for at least 90 days (AT-26).\n**Local state.** `state.json` carries a format version. Each release migrates older formats forward when it starts. A format the release does not know is not read: the player keeps the credential, discards content state and synchronizes again, which costs downloads but never mixes formats.\n**Releases (increment 4).** The API serves the release approved for the screen through two device operations: the release description (version code, size, SHA-256) and the APK. The player downloads it like media.\n**Installation.** The player verifies the APK's SHA-256 and that its signing certificate equals the installed one. It then installs through `PackageInstaller` inside the update window, by default 03:00 to 05:00 local business time, unless a release is marked urgent. Android refuses a lower version code, so the player never downgrades.\n**Rollback.** A rollback is a new release with a higher version code built from the earlier source and able to read the current state format.\n**Ownership.** The release signing key is a human-held secret ([PH-27](human-actions.md#ph-27)). Release approval and the update window are operational configuration (PJ-13).\n"
-  },
-  {
-    "id": "repository/docs/project/player-design",
-    "title": "Teluni Android TV Player Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Server additions",
-    "anchor": "server-additions",
-    "text": "Server additions\nPJ-11 increment 3 adds two fields to the `POST /device/sync` response, both compatible with existing clients:\n`zoneOffsets`, as above (three days back, 35 days ahead), or `null` when `timeZone` is `null`;\n`rotation`, the configured clockwise rotation (0, 90, 180 or 270).\nThe API also publishes protocol conformance fixtures in [`conformance.json`](../../apps/api/test/publications/conformance.json):\na protocol 1 manifest as exact bytes with its SHA-256;\na protocol 2 manifest as exact bytes with its SHA-256, with page cycles and effective prices to evaluate ([catalog and composition design](catalog-composition-design.md#publication-protocol-2));\na key set and statements signed with throwaway keys whose private halves are discarded, including a rotated key and a tampered payload, stored in flattened JWS JSON serialization (RFC 7515) so secret scanners do not take these test vectors for live tokens;\nzone offsets with local-time resolutions, including gaps, repeated hours and a half-hour transition;\nthe zone offsets of every shared schedule fixture.\n`pnpm -C apps/api conformance:write` writes the file with the API's own serializer, signer and zone rules. The API's tests check that the committed file still matches that code, and the player's `core` tests parse and verify the same file.\n"
-  },
-  {
-    "id": "repository/docs/project/player-design",
-    "title": "Teluni Android TV Player Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Diagnostics and privacy",
-    "anchor": "diagnostics-and-privacy",
-    "text": "Diagnostics and privacy\nThe player sends nothing beyond the sync report and erasure confirmation; diagnostic uploads are D-09. Logcat output is limited to states, error codes and publication IDs. It never contains credentials, statements, manifests, media, URLs with credentials or the pairing code after pairing. The status card shows only the screen name and states. Crash records stay on the device and are counted in a later report field, not uploaded.\n"
   }
 ]

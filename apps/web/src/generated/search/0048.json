@@ -4,6 +4,24 @@
     "title": "Secrets Management",
     "group": "Security",
     "kind": "repository",
+    "heading": "Secret storage",
+    "anchor": "secret-storage",
+    "text": "Secret storage\nUse established credential stores, secret managers, approved CI stores, or workload-identity facilities appropriate to the environment. Arbitrary plaintext files are not an acceptable long-term production store. Do not build a general-purpose secret manager or custom cryptographic storage without extraordinary justification. If operating encrypted storage, do not store its encryption key alongside the encrypted secrets. Protect secret-manager administration more strongly than ordinary application credentials.\nNever intentionally commit secrets into any Git file, commit, branch, tag, fixture, example, generated artifact, or documentation. A private repository is not a secret store. Ignore files reduce accidents but are not the security boundary. Templates use obvious placeholders and describe where values come from. Local credential files required for tooling must stay outside source control, use restrictive permissions and environment-appropriate credentials, and be documented; prefer a secure local store where practical.\nRoutine local development must work without production credentials. Use local/sandbox services, synthetic credentials, or development identities. Environment variables can deliver secrets but are not a management system: process inspection, child processes, dumps, and CI can expose them. Never dump complete environments/configuration. Avoid raw secrets in command arguments, shell history, and routine clipboard workflows; minimize manual handling.\n"
+  },
+  {
+    "id": "repository/docs/security/secrets-management",
+    "title": "Secrets Management",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Client applications and build boundaries",
+    "anchor": "client-applications-and-build-boundaries",
+    "text": "Client applications and build boundaries\nAnything delivered to browser, mobile, or desktop users can be inspected despite compilation, minification, obfuscation, packaging, or signing. Never embed server database credentials, private provider keys, signing keys, or backend tokens. User-specific credentials may exist in clients only according to [authentication storage policy](authentication.md#sessions). Clearly classify intentionally publishable provider values.\nScope CI secrets to required jobs and workflow trust. Contributed or forked code must not automatically receive privileged credentials. A test job must not inherit production deployment authority. Build secrets must not remain in binaries, source maps, generated code, package metadata, container layers/history, or build context. Supply runtime credentials through approved mechanisms; infrastructure definitions should reference secrets, not contain or print values. Review images/artifacts where tooling exists; do not assume source scanning covers them.\n"
+  },
+  {
+    "id": "repository/docs/security/secrets-management",
+    "title": "Secrets Management",
+    "group": "Security",
+    "kind": "repository",
     "heading": "Delivery, initialization, and failure",
     "anchor": "delivery-initialization-and-failure",
     "text": "Delivery, initialization, and failure\nAcquire credentials near trusted application composition and inject only what each infrastructure adapter needs. Domain code should not fetch arbitrary environment/secret values. Avoid global unrestricted helpers and passing full secret-bearing configuration objects. Use established cryptographically secure generation with adequate entropy; distinct signing/encryption/authentication purposes should normally use separate keys. Password storage follows [authentication](authentication.md#password-storage).\nValidate required secret availability and safe structural format during initialization; diagnostics may name a missing configuration key but never show its value. Fail startup, remain unready, or explicitly degrade only the affected optional capability according to the runtime design. A required secret must not silently become optional. Reject insecure fallback/default/placeholder credentials in production; isolated synthetic development defaults must not become production behavior.\nSpecify retrieval, caching, renewal, and provider-outage behavior. In-memory caching must respect rotation, revocation, lifetime, and memory exposure. Choose restart, periodic/event refresh, or dynamic credentials deliberately; avoid unnecessary per-operation dependence on a secret service. Existing processes may continue with still-valid cached credentials while new processes cannot start, but this behavior must be explicit and observable without secret values. Expiration needs reliable renewal rather than predictable outages.\n"
