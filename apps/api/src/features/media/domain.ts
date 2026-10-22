@@ -26,6 +26,13 @@ export type RejectionReason =
   | "MEDIA_UNREADABLE"
   | "MEDIA_CONVERSION_FAILED";
 
+/**
+ * Advisory lock key that the pilot backup (infra/pilot/backup) takes
+ * exclusively while it dumps the database and links the media objects;
+ * deleting object files takes it shared. Changing it breaks that contract.
+ */
+export const mediaBackupLockKey = "teluni.media-backup";
+
 /** Engineering defaults; changing one is a reviewed code change. */
 export const mediaPolicy = Object.freeze({
   maxImageBytes: 20 * 1024 * 1024,

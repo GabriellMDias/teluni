@@ -175,6 +175,8 @@ Implemented in [PJ-09](implementation-plan.md#current-work) on 2026-10-19, incre
 
 - The panel's **Mídia** pages in `apps/web` for the library, upload with per-file progress, preview, rename and tags, archive, trash and discard, with browser component tests and a [browser journey](../../apps/web/test/e2e/media/library.spec.ts) through the real identity stack and FFmpeg.
 
+- Backup consistency (2026-10-22, [deployment design](deployment-design.md#backups-and-restore)): every object file deletion first takes the `teluni.media-backup` advisory lock shared without waiting, and leaves the file for the orphan sweep while a backup holds it exclusively.
+
 Pending: increment 3 (explicit sharing with selected branches and storage accounting for PJ-27) and a processing-timeout fixture.
 
 ## Decisions for review

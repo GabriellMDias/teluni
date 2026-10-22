@@ -113,27 +113,31 @@ RESTIC_REPOSITORY=/repository
 RESTIC_PASSWORD=$(secret)
 ENV
   # The rehearsal's only differences from production: the API trusts Caddy's
-  # local CA, and the off-host bucket is a directory on this machine.
-  cat >"$work/rehearsal.yaml" <<YAML
+  # local CA, the off-host bucket is a directory on this machine and, on a
+  # network that intercepts TLS, the builds get its CA certificate.
+  local build=""
+  if [ -n "${TELUNI_BUILD_CA_FILE:-}" ]; then
+    build=$'\n    build:\n      secrets: [extra-ca]'
+  fi
+  {
+    cat <<YAML
 services:
-  api:
+  api:$build
     environment:
       NODE_EXTRA_CA_CERTS: /rehearsal-ca/root.crt
     volumes:
       - $work/ca:/rehearsal-ca:ro
-  backup:
+  backup:$build
     volumes:
       - $work/repository:/repository
 YAML
-  # On a network that intercepts TLS, the builds need its CA certificate.
-  if [ -n "${TELUNI_BUILD_CA_FILE:-}" ]; then
-    {
-      for service in release keycloak api proxy backup; do
-        printf '  %s:\n    build:\n      secrets: [extra-ca]\n' "$service"
+    if [ -n "$build" ]; then
+      for service in release keycloak proxy; do
+        printf '  %s:%s\n' "$service" "$build"
       done
       printf 'secrets:\n  extra-ca:\n    file: %s\n' "$TELUNI_BUILD_CA_FILE"
-    } >>"$work/rehearsal.yaml"
-  fi
+    fi
+  } >"$work/rehearsal.yaml"
 }
 
 wait_healthy() {

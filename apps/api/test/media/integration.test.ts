@@ -1,5 +1,13 @@
-import { createHash, randomUUID } from "node:crypto";
-import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
@@ -8,7 +16,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/app.js";
 import { createDatabase, type Database } from "../../src/database.js";
 import type { HumanSessionPort } from "../../src/features/identity/public.js";
+import { mediaBackupLockKey } from "../../src/features/media/domain.js";
 import { createMediaModule } from "../../src/features/media/module.js";
+import { PrismaMediaRepository } from "../../src/features/media/prisma-repository.js";
+import { MediaObjectStore } from "../../src/features/media/storage.js";
 import type { MediaReference } from "../../src/features/media/public.js";
 import { createOrganizationsModule } from "../../src/features/organizations/module.js";
 import { activateModules, type ApiModule } from "../../src/module.js";
@@ -887,5 +898,38 @@ describe("media: upload, processing, scope and lifecycle", () => {
       [ids],
     );
     expect(rows).toEqual([{ status: "PURGED" }]);
+  });
+
+  it("keeps object files while a backup holds the media backup lock", async () => {
+    // The pilot backup locks before its dump and unlocks once the objects
+    // are linked; a file deleted in between would be missing from it.
+    const repository = new PrismaMediaRepository(
+      database,
+      new MediaObjectStore(root),
+    );
+    const bytes = randomBytes(64);
+    const hash = createHash("sha256").update(bytes).digest();
+    const directory = join(
+      root,
+      "objects",
+      companyA,
+      hash.toString("hex").slice(0, 2),
+    );
+    await mkdir(directory, { recursive: true });
+    const path = join(directory, hash.toString("hex"));
+    await writeFile(path, bytes);
+    await sql.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [
+      mediaBackupLockKey,
+    ]);
+    try {
+      expect(await repository.removeUnrecorded(companyA, hash)).toBe(false);
+      expect((await stat(path)).size).toBe(64);
+    } finally {
+      await sql.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [
+        mediaBackupLockKey,
+      ]);
+    }
+    expect(await repository.removeUnrecorded(companyA, hash)).toBe(true);
+    await expect(stat(path)).rejects.toThrow();
   });
 });

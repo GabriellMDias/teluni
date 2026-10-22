@@ -17,7 +17,13 @@ set -euo pipefail
 media="${TELUNI_MEDIA_DIR:?}"
 work=/tmp/teluni-backup
 dumps="$work/dumps"
+# Hard links of the objects, on the media volume itself, outside the
+# objects/ and work/ trees the API manages.
+staging="$media/backup-staging"
 databases=(teluni keycloak)
+# mediaBackupLockKey in apps/api/src/features/media/domain.ts: the API never
+# deletes an object file while this lock is held exclusively.
+lock_key=teluni.media-backup
 
 log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
@@ -30,19 +36,29 @@ ensure_repository() {
 
 snapshot() {
   ensure_repository
-  rm -rf "$work"
+  rm -rf "$work" "$staging"
   mkdir -p "$dumps" "$media/objects"
-  # Dumps first: objects are write-once and purged at least 30 days after
-  # deletion, so the objects copied afterwards include every one they name.
+  # Consistency: objects are written before the rows that record them, and
+  # their files are deleted only after the rows, under the backup lock. With
+  # the lock held from before the dumps until the objects are linked, every
+  # object the dumps record is in the snapshot.
+  coproc lock { psql --no-psqlrc --quiet --tuples-only --no-align --dbname teluni; }
+  printf "SELECT pg_advisory_lock(hashtextextended('%s', 0)), 'locked';\n" "$lock_key" >&"${lock[1]}"
+  local answer
+  read -r -t 120 answer <&"${lock[0]}" || true
+  [ "$answer" = "|locked" ] || { log "snapshot_failed: backup lock not acquired"; exit 1; }
   for database in "${databases[@]}"; do
     pg_dump --format=custom --dbname "$database" --file "$dumps/$database.dump"
   done
+  cp -al "$media/objects" "$staging"
+  printf '\\q\n' >&"${lock[1]}"
+  wait "$lock_PID"
   date -u +%Y-%m-%dT%H:%M:%SZ >"$dumps/taken-at"
   printf '%s\n' "${TELUNI_RELEASE:-unknown}" >"$dumps/release"
-  restic backup --quiet --tag teluni --host teluni "$dumps" "$media/objects"
+  restic backup --quiet --tag teluni --host teluni "$dumps" "$staging"
   restic forget --quiet --tag teluni --host teluni \
     --keep-last 8 --keep-daily 14 --keep-weekly 5
-  rm -rf "$work"
+  rm -rf "$work" "$staging"
   log "snapshot_complete"
 }
 
@@ -83,8 +99,8 @@ restore() {
   psql --dbname teluni --quiet --command \
     "DELETE FROM human_sessions; DELETE FROM oidc_login_attempts;"
   mkdir -p "$media/objects"
-  if [ -d "$work/restore$media/objects" ]; then
-    cp -a "$work/restore$media/objects/." "$media/objects/"
+  if [ -d "$work/restore$staging" ]; then
+    cp -a "$work/restore$staging/." "$media/objects/"
   fi
   # The API runs as uid 10001 (infra/pilot/Dockerfile).
   chown -R 10001:10001 "$media"
@@ -94,8 +110,15 @@ restore() {
 }
 
 verify() {
-  local hash=false missing=0 checked=0
+  local hash=false missing=0 checked=0 inventory
   [ "${1:-}" = "--hash" ] && hash=true
+  # Read the inventory first, so a failed query fails verification instead
+  # of looking like an empty one.
+  if ! inventory="$(psql --dbname teluni --tuples-only --no-align --field-separator='|' \
+    --command "SELECT company_id, encode(sha256, 'hex'), byte_size FROM media_objects")"; then
+    log "verify_failed: the object inventory could not be read"
+    return 1
+  fi
   while IFS='|' read -r company sha size; do
     [ -n "$company" ] || continue
     checked=$((checked + 1))
@@ -107,8 +130,7 @@ verify() {
       log "object_corrupt company=$company sha256=$sha"
       missing=$((missing + 1))
     fi
-  done < <(psql --dbname teluni --tuples-only --no-align --field-separator='|' \
-    --command "SELECT company_id, encode(sha256, 'hex'), byte_size FROM media_objects")
+  done <<<"$inventory"
   log "verify objects=$checked problems=$missing"
   [ "$missing" -eq 0 ]
 }

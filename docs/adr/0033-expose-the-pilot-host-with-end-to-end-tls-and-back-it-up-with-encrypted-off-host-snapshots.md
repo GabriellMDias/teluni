@@ -15,13 +15,13 @@ Screens download video renditions, and people upload videos of up to 1 GiB in a 
 
 TLS ends on the owner's host, in a Caddy reverse proxy that obtains Let's Encrypt certificates. The host is reached directly when the line has a usable public address. Otherwise it is reached through a TCP relay on a free-tier virtual machine that forwards encrypted traffic through a WireGuard tunnel opened by the host. No TLS-terminating tunnel, CDN or proxy service sits in front of Teluni.
 
-Backups are restic snapshots, encrypted on the host, of the PostgreSQL dumps followed by the content-addressed media objects. They are written every 6 hours to an S3-compatible bucket at a separate provider, initially Backblaze B2, and kept for at most about 35 days. Secrets are excluded from snapshots and kept offline by the owner.
+Backups are restic snapshots, encrypted on the host, of the PostgreSQL dumps followed by hard links of the content-addressed media objects, taken under a lock that keeps object files from being deleted in between. They are written every 6 hours to an S3-compatible bucket at a separate provider, initially Backblaze B2, and kept for at most about 35 days. Secrets are excluded from snapshots and kept offline by the owner.
 
 ## Rationale
 
 - Ending TLS on the host keeps session cookies, credentials and private media away from intermediaries. The relay is replaceable and holds nothing.
 - A TLS-terminating free tunnel would solve CGNAT, but its terms restrict serving video outside paid products. Its reported upload cap is below the media limit, and it would see every session.
-- Write-once media named by their hash, and purge delayed by at least 30 days, make "dump first, then objects" a consistent set without stopping the service. The restore check verifies it.
+- Object files are written before the rows that record them and deleted only after those rows, under an advisory lock that the backup holds from before its dumps until it has hard-linked the objects. That makes "dumps first, then objects" a consistent set without stopping the service or making anyone wait on the upload. The restore check verifies it.
 - Client-side encryption lets a free off-host bucket hold customer data as ciphertext only. Deduplication keeps 6-hourly snapshots within the free allowance at pilot scale.
 - A 6-hour recovery point and a 72-hour worst-case recovery time keep screens playing through any recovery under AT-15.
 
