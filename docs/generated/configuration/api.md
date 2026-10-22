@@ -12,6 +12,7 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `ORION_RELEASE_ID` | artifact identifier, 1..128 ASCII letters/digits/._- | no | `local` | server | INTERNAL | no | Actual artifact revision for correlated logs and traces; local for unversioned development. |
 | `ORION_API_HOST` | nonempty string | no | `127.0.0.1` | server | INTERNAL | no | Listen address; loopback by default. |
 | `ORION_API_PORT` | integer 0..65535 | no | `3000` | server | INTERNAL | no | Listen port; zero selects an ephemeral port. |
+| `TELUNI_TRUSTED_PROXIES` | comma-separated IP addresses or CIDR ranges, at most 16 | no | — | server | INTERNAL | no | Reverse proxies whose X-Forwarded-For and X-Forwarded-Proto headers are trusted, so request limits count the real client address; none by default. |
 | `ORION_LOG_LEVEL` | Pino level | no | `info` | server | INTERNAL | no | Structured log threshold. |
 | `ORION_SHUTDOWN_TIMEOUT_MS` | integer 100..30000 | no | `5000` | server | INTERNAL | no | Total graceful shutdown deadline. |
 | `ORION_OTLP_ENDPOINT` | http(s) URL | no | — | server | INTERNAL | no | Optional OTLP HTTP collector base URL. |

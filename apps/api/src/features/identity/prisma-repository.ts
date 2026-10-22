@@ -125,6 +125,28 @@ export class PrismaIdentityRepository {
         now() + make_interval(secs => ${sessionPolicy.loginAttemptSeconds}::double precision))`;
   }
 
+  /**
+   * Deletes a bounded batch of login attempts and sessions that ended more
+   * than the retention period ago. A session ends at revocation, its
+   * absolute expiry or its idle timeout, whichever comes first.
+   */
+  async purgeEnded(): Promise<{ attempts: number; sessions: number }> {
+    const { endedRetentionDays: days, purgeBatchSize: batch } = sessionPolicy;
+    const attempts = await this.#db.$executeRaw`
+      DELETE FROM oidc_login_attempts WHERE id IN (
+        SELECT id FROM oidc_login_attempts
+        WHERE expires_at <= now() - make_interval(days => ${days}::integer)
+        LIMIT ${batch}::integer)`;
+    const sessions = await this.#db.$executeRaw`
+      DELETE FROM human_sessions WHERE id IN (
+        SELECT id FROM human_sessions
+        WHERE LEAST(COALESCE(revoked_at, 'infinity'::timestamptz), absolute_expires_at,
+            last_activity_at + make_interval(secs => idle_timeout_seconds))
+          <= now() - make_interval(days => ${days}::integer)
+        LIMIT ${batch}::integer)`;
+    return { attempts, sessions };
+  }
+
   /** Consumes an unexpired attempt exactly once; a replay returns null. */
   async consumeLoginAttempt(
     handleHash: Buffer,

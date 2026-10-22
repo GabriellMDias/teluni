@@ -21,6 +21,10 @@ export const sessionPolicy = Object.freeze({
   activityWriteIntervalSeconds: 15,
   /** Lifetime of one login attempt between redirect and callback. */
   loginAttemptSeconds: 10 * 60,
+  /** Data handling policies: ended sessions and attempts are kept 30 days. */
+  endedRetentionDays: 30,
+  /** Rows deleted per table each time a login starts. */
+  purgeBatchSize: 100,
 });
 
 /** Authentication context classes the realm maps to levels of authentication. */

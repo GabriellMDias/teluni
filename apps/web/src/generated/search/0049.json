@@ -1,0 +1,83 @@
+[
+  {
+    "id": "repository/infra/pilot/README",
+    "title": "Pilot Deployment",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Configuration",
+    "anchor": "configuration",
+    "text": "Configuration\nCompose reads per-host values from the environment and secrets from env files in `TELUNI_CONFIG_DIR`, a root-only directory such as `/etc/teluni`. The rehearsal's `write_config` function writes a complete disposable set and is the reference for their contents.\nVariable or file\nHolds\n`TELUNI_CONFIG_DIR`, `TELUNI_APP_HOST`, `TELUNI_AUTH_HOST`, `TELUNI_APEX_HOST`, `TELUNI_ACME_EMAIL`, `TELUNI_RELEASE`\nCompose interpolation, for example in `/etc/teluni/compose.env` for the systemd units\n`postgres.env`\n`POSTGRES_PASSWORD` and the passwords of the `teluni_owner`, `orion_runtime` and `keycloak` roles\n`release.env`\n`ORION_MIGRATION_DATABASE_URL` (the owner role) and the realm step's Keycloak administrator, origin, audience and client secrets\n`keycloak.env`\n`KC_DB_PASSWORD` and the bootstrap administrator, which is disabled after the realm exists\n`api.env`\nThe API settings of the [configuration reference](../../docs/generated/configuration/api.md); the Compose file sets `TELUNI_TRUSTED_PROXIES` to the proxy's fixed address\n`backup.env`\n`PGPASSWORD`, `RESTIC_REPOSITORY`, `RESTIC_PASSWORD` and the bucket's credentials (for Backblaze B2, `B2_ACCOUNT_ID` and `B2_ACCOUNT_KEY`)\n"
+  },
+  {
+    "id": "repository/infra/pilot/README",
+    "title": "Pilot Deployment",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Commands",
+    "anchor": "commands",
+    "text": "Commands\nFrom this directory, with the environment above:\n`docker compose --profile tools build` builds every image.\n`docker compose up --detach --wait` applies migrations and grants (the `release` service), then starts the stack.\n`docker compose run --rm release realm` creates or updates the `teluni` realm; `docker compose run --rm release end-sessions` ends every Keycloak session after a restore.\n`docker compose run --rm backup snapshot`, `maintain`, `restore [ID]`, `verify [--hash]` and `snapshots` manage backups. `restore` refuses databases or a media volume that are not empty, so it runs on a fresh project before the rest of the stack starts.\n`./rehearsal.sh` rehearses all of it on this machine, using loopback ports 80 and 443 and Caddy's local CA.\nOn a network that intercepts TLS, set `TELUNI_BUILD_CA_FILE` to its CA certificate before running the rehearsal, so the build can reach the npm registry. The rehearsal passes it as the Dockerfile's optional `extra-ca` build secret, which is never stored in an image. When the file is outside this directory, Buildx also needs `BUILDX_BAKE_ENTITLEMENTS_FS=0` to read it.\n"
+  },
+  {
+    "id": "repository/infra/pilot/README",
+    "title": "Pilot Deployment",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Not yet here",
+    "anchor": "not-yet-here",
+    "text": "Not yet here\nThe relay listener with PROXY protocol for a line behind CGNAT, alert delivery for failed backups and renewals, and the runbooks for installation, updates and restore arrive with the real host (PH-10). Keycloak's own production mail needs authenticated SMTP in the realm contract, which PJ-24 adds.\n"
+  },
+  {
+    "id": "repository/packages/sdk/AGENTS",
+    "title": "SDK-local Instructions",
+    "group": "Agent instructions",
+    "kind": "repository",
+    "heading": "SDK-local Instructions",
+    "anchor": "sdk-local-instructions",
+    "text": "SDK-local Instructions\nUse [the package guide](README.md) for ownership and generation. Global repository instructions still apply.\n`src/index.ts` is the public surface. Keep the SDK a thin generated-contract consumer; never import API implementation, persistence, or backend business authorization.\nGenerate `src/generated/api-types.ts` from committed OpenAPI after changing the API's executable contracts. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); never hand-edit generated types or duplicate wire schemas here.\nThe host supplies bearer tokens and the session CSRF token through `createApiClient`; do not add token storage, provider-specific identity, or authorization rules.\nPreserve structured errors and safe unknown-code fallback. Consider actual consumer compatibility when changing the client surface or generator; this private workspace package has no independent publication promise.\nRun `pnpm -C packages/sdk typecheck` and root `pnpm references:check`, then root `pnpm validate` before substantial-work handoff.\n"
+  },
+  {
+    "id": "repository/packages/sdk/README",
+    "title": "API SDK",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "API SDK",
+    "anchor": "api-sdk",
+    "text": "API SDK\n[API modules](../../apps/api/README.md#modules) · [Generated OpenAPI](../../docs/generated/api/openapi.json) · [API policy](../../docs/api/principles.md) · [Web consumer](../../apps/web/README.md)\nThis private workspace package (`packages/sdk`) is the client boundary for the API. [`src/index.ts`](src/index.ts) exports `createApiClient(baseUrl, getAccessToken, { getCsrfToken })`, `ApiClient`, and generated `paths` types. The host provides credentials through the callbacks; the SDK adds the bearer header, and the session CSRF token on unsafe methods only, without issuing, refreshing, persisting, or logging them. Session cookies travel as same-origin browser cookies. It contains no business authorization, persistence, or provider-specific identity model.\nThe API owns executable TypeBox schemas and stable operation IDs. Generated OpenAPI feeds `openapi-typescript`, which produces [`src/generated/api-types.ts`](src/generated/api-types.ts); `openapi-fetch` supplies the thin typed runtime. Never edit generated types or import server implementation models. Compile-time typing does not automatically revalidate successful responses at runtime.\nFrom the repository root, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md): regenerate API OpenAPI first, run `pnpm -C packages/sdk generate`, and regenerate affected portal data. `pnpm references:check` verifies API/database/SDK freshness without editing tracked files. Run `pnpm -C packages/sdk typecheck` and the full `pnpm validate` gate for the client and web consumer.\nThis package has no independently published compatibility promise. A real independently released consumer activates [API compatibility policy](../../docs/api/versioning.md) and a human action to identify its supported baseline; SDK package versions and server contract versions are distinct. Current-source drift checks do not validate a historical released consumer.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "Teluni",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Teluni",
+    "anchor": "teluni",
+    "text": "Teluni\nTeluni is a planned multi-tenant digital signage SaaS built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. It will let companies centrally manage images, videos, playlists and schedules on displays, with reliable offline playback. Brazil is the initial market, with international use anticipated. The core is intended for multiple business segments, from a single shop to a branch network.\n**Every screen. One place.** · **Todas as suas telas. Um só lugar.**\nStart with the [product documentation](docs/project/README.md) for the vision, initial release policies/acceptance targets, accepted architecture directions, pending detailed design, risks and delivery phases. The name Teluni and principal domain `teluni.app` are approved; [branding](docs/project/branding/README.md) records the defensive `teluni.com.br` option, current exclusion of `teluni.com`, and the approved Connected Tiles identity. Domain registration/control evidence and trademark outcome remain pending. The owner approved [initial commercial policies](docs/project/commercial-policies.md) and validation prices; actual customer acceptance, costs, capacity and billing readiness remain unverified.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "Teluni",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Current state",
+    "anchor": "current-state",
+    "text": "Current state\nThis repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It contains the foundation's architecture, policies, accepted ADRs, tooling, validation gate, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). The API and web application compose `identity` (Keycloak login, server-managed human sessions and OTP step-up) and the first `organizations` increments (companies, creator memberships, scoped standard-role access, branches, company settings, paginated change history, member administration, role grants, responsibility transfer and email invitations), with a `mail` module that delivers transactional email through a PostgreSQL outbox, and `devices` (screen pairing with temporary codes and device-generated credentials, configuration, moves and unlinking with erasure tracking), `media` (a company media library with uploads, FFmpeg processing into playback renditions, archive and trash) `programming` (playlists, layouts with catalog views and pages, programming groups, programs with a layout's areas as outputs, schedules in local time, screen assignments and timelines), `catalogs` (typed catalogs with exact prices per branch, promotions, an effective-price preview and automatic price publication to the screens that show them) and `publications` (immutable publications of programs, in protocol 2 with layouts and catalog snapshots for programs with a layout, screen synchronization with signed authorization statements and screens' reported state). The [identity/access policies](docs/project/identity-and-access.md) and D-01/D-02 designs are owner-approved. Tests use disposable Keycloak/PostgreSQL; real-environment provisioning and qualification remain pending. The [Android TV player](apps/player/README.md) has its JVM `core` (schedules, protocols 1 and 2 with layouts and catalog prices, statements, trusted time, storage and synchronization); its Android application is not built yet.\nThe [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\nThe initial product brief is documented. Real email sending (the D-13 [invitation and email delivery design](docs/project/invitation-delivery-design.md) is implemented locally with Mailpit; a real sender awaits PH-17), custom profile capabilities beyond the organization module, identity recovery qualification, the Android TV player's application and device qualification, and production deployment remain unfinished. The owner accepted the [product architecture directions](docs/project/architecture.md) in ADR-0018–ADR-0021 and ADR-0023–ADR-0025 on 2026-10-18. The D-01 [tenant data](docs/project/tenant-data-design.md) and D-02 [identity/session](docs/project/identity-session-design.md) designs were approved that day with an explicit request to implement PJ-24/PJ-03. Their implementation status and remaining work are recorded in the designs and plan; other detailed designs and release-readiness checks remain pending. No real-environment deployment is authorized by those approvals. The [pilot deployment](infra/pilot/README.md) of the D-08 [deployment design](docs/project/deployment-design.md) is built and rehearsed locally and in CI; installing it on a real host awaits PH-10.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "Teluni",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Start here",
+    "anchor": "start-here",
+    "text": "Start here\nTask\nEntry point\nUnderstand Teluni's product, release policies/targets, proposed modules, risks and roadmap\n[Product documentation](docs/project/README.md)\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nAdd a product capability\n[API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nInspect provenance or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "Teluni",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "License",
+    "anchor": "license",
+    "text": "License\nTeluni repository source and documentation are licensed under the [Apache License, Version 2.0](LICENSE) (`Apache-2.0`), including independently developed Teluni material. [ADR-0022](docs/adr/0022-license-teluni-under-apache-2-0.md) records the product owner's decision. Material inherited from Orion retains its Apache-2.0 license and provenance; third-party dependencies and separately licensed material retain their own terms.\n"
+  }
+]

@@ -1,0 +1,25 @@
+# Build context for infra/pilot/Dockerfile: the repository without installed,
+# built, local or secret files.
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+!.env.example
+.dev-media
+coverage
+apps/api/src/generated/prisma
+apps/player
+apps/web/.vitest
+apps/web/playwright-report
+apps/web/test-results
+# Files the images never use, so editing them does not rebuild the workspace.
+.github
+docs/*
+!docs/generated
+infra/AGENTS.md
+infra/pilot/README.md
+infra/pilot/compose.yaml
+infra/pilot/rehearsal.sh
+infra/pilot/systemd

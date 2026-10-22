@@ -66,6 +66,18 @@ jobs:
         working-directory: apps/player
         run: ./gradlew --no-daemon check
 
+  deployment:
+    name: Deployment rehearsal
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build, run, back up and restore the pilot deployment
+        run: infra/pilot/rehearsal.sh
+
   dependency-review:
     name: Dependency review
     if: ${{ github.event_name == 'pull_request' && vars.DEPENDENCY_REVIEW_ENABLED == 'true' }}
@@ -83,7 +95,7 @@ jobs:
 
   required-gate:
     name: Orion required gate
-    needs: [validate, player, dependency-review]
+    needs: [validate, player, deployment, dependency-review]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -93,6 +105,7 @@ jobs:
         env:
           VALIDATE_RESULT: ${{ needs.validate.result }}
           PLAYER_RESULT: ${{ needs.player.result }}
+          DEPLOYMENT_RESULT: ${{ needs.deployment.result }}
           DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}
           DEPENDENCY_REVIEW_ENABLED: ${{ vars.DEPENDENCY_REVIEW_ENABLED }}
           EVENT_NAME: ${{ github.event_name }}
@@ -103,6 +116,10 @@ jobs:
           fi
           if [ "$PLAYER_RESULT" != "success" ]; then
             echo "Player job concluded: $PLAYER_RESULT" >&2
+            exit 1
+          fi
+          if [ "$DEPLOYMENT_RESULT" != "success" ]; then
+            echo "Deployment rehearsal concluded: $DEPLOYMENT_RESULT" >&2
             exit 1
           fi
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$DEPENDENCY_REVIEW_ENABLED" = "true" ] && [ "$DEPENDENCY_REVIEW_RESULT" != "success" ]; then

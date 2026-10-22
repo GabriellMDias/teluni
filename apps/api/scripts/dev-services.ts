@@ -15,7 +15,7 @@ import {
   mailpitImage,
   teluniThemeFiles,
 } from "./keycloak.js";
-import { runtimeGrantStatements } from "./migrated-database.js";
+import { applyRuntimeGrants } from "./runtime-grants.js";
 
 // Persistent local development services: PostgreSQL, Keycloak and Mailpit as
 // named Docker containers with named volumes, published on loopback only.
@@ -241,9 +241,7 @@ async function up(): Promise<void> {
         ? `CREATE ROLE orion_runtime LOGIN PASSWORD '${password}'`
         : `ALTER ROLE orion_runtime LOGIN PASSWORD '${password}'`,
     );
-    await admin.query("GRANT USAGE ON SCHEMA public TO orion_runtime");
-    for (const statement of await runtimeGrantStatements())
-      await admin.query(statement);
+    await applyRuntimeGrants(admin);
   } finally {
     await admin.end();
   }

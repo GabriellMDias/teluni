@@ -1,4 +1,5 @@
 import { createPrivateKey, type KeyObject } from "node:crypto";
+import { isIP } from "node:net";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
 
@@ -13,6 +14,9 @@ export const serverConfigSchema = Type.Object(
     releaseId: Type.String({ pattern: "^[A-Za-z0-9._-]{1,128}$" }),
     host: Type.String({ minLength: 1 }),
     port: Type.Integer({ minimum: 0, maximum: 65535 }),
+    trustedProxies: Type.Array(Type.String({ minLength: 1, maxLength: 64 }), {
+      maxItems: 16,
+    }),
     logLevel: Type.Union([
       Type.Literal("fatal"),
       Type.Literal("error"),
@@ -127,6 +131,18 @@ export const configReference = Object.freeze([
     classification: "INTERNAL",
     secret: false,
     purpose: "Listen port; zero selects an ephemeral port.",
+  },
+  {
+    key: "trustedProxies",
+    name: "TELUNI_TRUSTED_PROXIES",
+    type: "comma-separated IP addresses or CIDR ranges, at most 16",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Reverse proxies whose X-Forwarded-For and X-Forwarded-Proto headers are trusted, so request limits count the real client address; none by default.",
   },
   {
     key: "logLevel",
@@ -524,6 +540,21 @@ function numberFromEnv(value: string | undefined, fallback: number): number {
   return Number(value);
 }
 
+function listFromEnv(value: string | undefined): string[] {
+  if (value === undefined || value.trim() === "") return [];
+  return value.split(",").map((entry) => entry.trim());
+}
+
+/** An IP address, or an address with a prefix length that fits its family. */
+function isAddressOrRange(value: string): boolean {
+  const [address = "", prefix, ...rest] = value.split("/");
+  const family = isIP(address);
+  if (family === 0 || rest.length > 0) return false;
+  if (prefix === undefined) return true;
+  if (!/^\d{1,3}$/.test(prefix)) return false;
+  return Number(prefix) <= (family === 4 ? 32 : 128);
+}
+
 export function parseServerConfig(
   env: Readonly<Record<string, string | undefined>>,
 ): ServerConfig {
@@ -532,6 +563,7 @@ export function parseServerConfig(
     releaseId: env.ORION_RELEASE_ID ?? "local",
     host: env.ORION_API_HOST ?? "127.0.0.1",
     port: numberFromEnv(env.ORION_API_PORT, 3000),
+    trustedProxies: listFromEnv(env.TELUNI_TRUSTED_PROXIES),
     logLevel: env.ORION_LOG_LEVEL ?? "info",
     shutdownTimeoutMs: numberFromEnv(env.ORION_SHUTDOWN_TIMEOUT_MS, 5000),
     ...(env.ORION_OTLP_ENDPOINT === undefined
@@ -742,6 +774,8 @@ export function parseServerConfig(
     parseKeyRing(candidate.deviceCodeKeys, "device code keys");
   if (candidate.syncSigningKeys !== undefined)
     parseSigningKeyRing(candidate.syncSigningKeys);
+  if (!candidate.trustedProxies.every(isAddressOrRange))
+    throw new Error("Invalid API configuration: trusted proxies");
   // Tools run without a shell; a name is looked up on PATH, a path is used
   // as given. Neither may carry arguments.
   for (const tool of [candidate.mediaFfmpegPath, candidate.mediaFfprobePath])

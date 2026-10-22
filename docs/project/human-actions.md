@@ -26,6 +26,25 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 - Humans place secrets directly into the selected protected secret store or an explicitly documented ignored local file. Contributors verify presence and authorized behavior without printing secret contents.
 - Use synthetic local and test data and ephemeral credentials where possible. Production secrets must not be prerequisites for ordinary development or CI.
 
+## Decision review of 2026-10-22
+
+On 2026-10-22 the owner asked the agent to take every pending decision that is only a decision, so that development can continue, extending the delegation recorded with [PH-25](#ph-25). The agent reviewed every open action. The decision parts are now decided in the [deployment design](deployment-design.md) with [ADR-0033](../adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md), the [data handling policies](data-handling-policies.md) and the player's [hardware envelope](player-design.md#supported-hardware-envelope). What remains below needs the owner's accounts, devices, facts, legal identity or a qualified professional, which no decision can replace.
+
+| Action | Decided on 2026-10-22 | Still needs the owner |
+| --- | --- | --- |
+| [PH-07](#ph-07) | Nothing left to decide; the hostnames under `teluni.app` are set by the deployment design | Registering `teluni.app` and the trademark evidence |
+| [PH-08](#ph-08) | The hardware envelope devices are bought and qualified against | The pilot's confirmation, the physical devices and their measurements |
+| [PH-10](#ph-10) | How the host is reached, the proxy, backups, RPO and RTO, availability objective and maintenance window | The host and line facts, the relay and backup accounts, the real restore rehearsal |
+| [PH-13](#ph-13) | Completed: responsibilities, upload restrictions, retention, closure, deletion, export, requests and incidents | The legal review moves to [PH-28](#ph-28) |
+| [PH-14](#ph-14) | Nothing: the copyright holder is a legal fact, not a choice | The holder's name, when distribution needs it |
+| [PH-15](#ph-15) | The issuer address `https://auth.teluni.app/realms/teluni` and the production composition | Running Keycloak with the protected inputs |
+| [PH-16](#ph-16) | Client type, redirect URI and scopes | Registering the Google client |
+| [PH-17](#ph-17) | Resend over SMTP from `notify.teluni.app`, staged DMARC, Brevo as fallback | The account, DNS verification and the key |
+| [PH-18](#ph-18) | Nothing: customer acceptance, costs and support coverage are measured facts | Pilot evidence |
+| [PH-19](#ph-19) | Nothing: the billing issuer and fiscal process depend on the owner's legal situation and an accountant | The qualified fiscal setup |
+| [PH-26](#ph-26) | Nothing: environment settings | Allowing two hosts in the cloud environment |
+| [PH-27](#ph-27) | Nothing: the key must be created and kept outside agent sessions | Creating and keeping the key |
+
 ## PH-01
 
 - [x] **Create Teluni's repository and publish the initialized default branch.**
@@ -101,7 +120,7 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Request and reason:** The owner approved the [Connected Tiles identity](branding/README.md) and authorized project integration. Teluni and `teluni.app` are approved; `teluni.com.br` remains the secondary/defensive Brazil option (reported available), and unavailable/premium `teluni.com` remains outside the current budget/scope. Record registration/control and final trademark evidence only when supplied or verified.
 **Configuration:** none; do not publish registrar credentials.
 **Verification:** Preserve owner-approved Connected Tiles assets and verify the integrated shell, portal, SVG favicon, derived touch icon and local font. Record dated non-secret domain-control/registration and trademark outcomes before claiming them; player/store exports are conditional on the future Android application.
-**Evidence / blocker:** 2026-10-17: owner explicitly selected Connected Tiles and requested its integration. PJ-04 completed the runtime SVG, derived touch icon, locally served font and shell/portal colors. Desktop/mobile inspection and full local `pnpm validate` passed, including 16 E2E tests; the [branding guide](branding/README.md#approved-name-and-domain-direction) and its review evidence record the approved integration. No further visual-direction choice is pending. Domain registration/control and trademark outcomes remain unverified, so PH-07 is not complete.
+**Evidence / blocker:** 2026-10-17: owner explicitly selected Connected Tiles and requested its integration. PJ-04 completed the runtime SVG, derived touch icon, locally served font and shell/portal colors. Desktop/mobile inspection and full local `pnpm validate` passed, including 16 E2E tests; the [branding guide](branding/README.md#approved-name-and-domain-direction) and its review evidence record the approved integration. No further visual-direction choice is pending. Domain registration/control and trademark outcomes remain unverified, so PH-07 is not complete. 2026-10-22: the [deployment design](deployment-design.md#hostnames-and-routing) uses `app.teluni.app`, `auth.teluni.app` and `notify.teluni.app`, which wait for this registration and DNS access; no decision remains in this action.
 
 ## PH-08
 
@@ -109,10 +128,10 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 **Status:** pending. **Owner:** project owner and candidate pilot operator.
 **Dependency / trigger:** PJ-07, PJ-08, PJ-09, PJ-12, PJ-20 and PJ-14; before hardware-specific commitments and pilot acceptance.
-**Request and reason:** Confirm the snack bar's participation and core workflow, screen/device quantity and models, Android versions, connection/storage conditions, orientations and installation/update access. Qualify AT-04 and the selected startup/power/offline/timing targets with the FR-10 video/audio and FR-11 generic-catalog profiles; policy approval is not physical support evidence. A candidate customer is not a confirmed pilot or a tested hardware profile.
+**Request and reason:** Confirm the snack bar's participation and core workflow, screen/device quantity and models within the decided [hardware envelope](player-design.md#supported-hardware-envelope), connection/storage conditions, orientations and installation/update access. Qualify AT-04 and the selected startup/power/offline/timing targets with the FR-10 video/audio and FR-11 generic-catalog profiles; policy approval is not physical support evidence. A candidate customer is not a confirmed pilot or a tested hardware profile.
 **Configuration:** none yet; record model/capability facts without private access details.
 **Verification:** Approved hardware/support matrix and operator workflow, available test devices, and recorded playback/reboot/codec tests during implementation.
-**Evidence / blocker:** Owner identified a potential snack bar pilot; hardware, participation and capacity remain unverified.
+**Evidence / blocker:** Owner identified a potential snack bar pilot; hardware, participation and capacity remain unverified. 2026-10-22: under the owner's delegation the agent decided the envelope devices are bought and qualified against (certified Android TV or Google TV, Android 9 or later, Anatel homologation, 2 GB of RAM, 8 GB of storage, H.264 1080p30 hardware decoding, a Google TV HDMI device as the reference class). What remains is the pilot's confirmation, the physical devices and their measurements.
 
 ## PH-09
 
@@ -131,10 +150,10 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 **Status:** pending. **Owner:** project owner / server and network administrator.
 **Dependency / trigger:** PJ-07/PJ-13 and before PJ-14 real-customer operation.
-**Request and reason:** Supply the host/network inventory, public access/CGNAT/ISP constraints, controlled domain/HTTPS path, safe administration, power/uplink/capacity facts, off-host backup destination, recovery-key handling and acceptable RPO/RTO/downtime/support. Review the [deployment readiness gates](operations.md#residential-exposure-and-readiness-gate). No tunnel, free DNS or home-server arrangement has been certified suitable.
+**Request and reason:** Supply the host/network inventory: whether the line has a public IPv4 address or is behind CGNAT, whether inbound 443 reaches the router, IPv6, upload bandwidth, data caps, power and reboot behavior, CPU/RAM/disk. Create the accounts the [deployment design](deployment-design.md) needs: the relay VM only if the line requires it, and the off-host backup bucket. Keep the restic password offline. Then run the restore rehearsal on the real host. The exposure path, proxy, backup method, RPO/RTO, availability objective and maintenance window are decided there. Support coverage stays with PH-18. Review the [deployment readiness gates](operations.md#residential-exposure-and-readiness-gate).
 **Configuration:** only currently implemented names from the [configuration reference](../generated/configuration/api.md); new deployment keys are pending design. Put secrets only in an approved protected destination.
 **Verification:** Network/ingress/security inspection and isolated timed PostgreSQL-plus-media restore, followed by reboot/offline and endpoint-migration rehearsal with supported players.
-**Evidence / blocker:** No cloud budget; personal residential server intended. Topology, exposure, backup destination and availability/recovery targets remain unverified. No deployment authorized by this entry.
+**Evidence / blocker:** No cloud budget; personal residential server intended. 2026-10-22: under the owner's delegation the agent decided the [deployment design](deployment-design.md) and ADR-0033: end-to-end TLS on the host through Caddy, direct or through a WireGuard TCP relay; restic snapshots every 6 hours to Backblaze B2, kept about 35 days; RPO 6 hours, RTO 4 hours with the host intact and 72 hours if it is lost; a 99% internal objective; and a weekday 02:00–06:00 maintenance window. Host facts, accounts and the real rehearsal remain unverified. No deployment authorized by this entry.
 
 ## PH-11
 
@@ -160,14 +179,14 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## PH-13
 
-- [ ] **Define customer data responsibilities and privacy/retention obligations before collecting pilot data.**
+- [x] **Define customer data responsibilities and privacy/retention obligations before collecting pilot data.**
 
-**Status:** pending. **Owner:** project owner with qualified legal/privacy input when needed.
+**Status:** completed (decision scope; the legal review is [PH-28](#ph-28)). **Owner:** project owner with qualified legal/privacy input when needed.
 **Dependency / trigger:** PJ-13/PJ-14 before real customer/personal data or public signup; international expansion when triggered.
 **Request and reason:** Review the [initial data inventory](security-and-i18n.md#initial-data-inventory), intended content restrictions, notices/terms, customer/operator responsibilities, lawful purposes, retention/deletion/export, backup reconciliation and incident contact. Determine applicable LGPD and other jurisdictional obligations against actual operation; the product documentation is not compliance certification.
 **Configuration:** no legal/privacy settings implemented; do not put customer records or private advice in public examples.
 **Verification:** Approved obligations and retention/deletion/access procedures linked to implementation and restore acceptance; no sensitive clinic/patient dataset required for signage.
-**Evidence / blocker:** Initial classifications documented; legal/operational policies and retention periods remain pending.
+**Evidence / blocker:** Initial classifications documented. 2026-10-22: the owner asked the agent to take every pending decision that is only a decision. Under that delegation the agent recorded the [data handling policies](data-handling-policies.md): the responsibility split, upload restrictions, the retention schedule (confirming the modules' provisional values and adding audit, ledger, log and backup durations), company closure, account deletion, export, data subject requests, incident communication and the service providers. **Explicit scope split, as with PH-12:** the qualified legal/privacy review, the LGPD and Marco Civil applicability, and the published privacy notice and terms of use move to [PH-28](#ph-28), which still gates real customer data and public signup. This completion closes decisions only.
 
 ## PH-14
 
@@ -189,7 +208,7 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Request and reason:** Confirm host capacity, a controlled HTTPS issuer address, restricted provider administration, persistent provider storage and protected signing/recovery material. Identify responsible administrators and safe recovery ownership without publishing personal account details. Prepare inputs only after the reviewed provider/version design; this action does not authorize deployment.
 **Configuration:** the [configuration reference](../generated/configuration/api.md) defines the token settings `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE` and `ORION_TOKEN_JWKS_URL` and the human identity settings `TELUNI_PUBLIC_ORIGIN`, `TELUNI_OIDC_CLIENT_ID`, `TELUNI_OIDC_CLIENT_SECRET`, `TELUNI_IDENTITY_PROVISIONER_CLIENT_ID`, `TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET` and `TELUNI_SESSION_KEYS` (the three secrets are `RESTRICTED`). The realm and clients they refer to are created by `apps/api/scripts/identity-realm.ts`, and the realm's `teluni` login theme must be installed in the deployed Keycloak (`apps/api/keycloak/themes/teluni` plus the brand mark and typeface listed by `teluniThemeFiles()`). Supply secret material only in an approved protected destination, never in this checklist or chat.
 **Verification:** Record non-secret environment/issuer ownership and controlled access; during authorized implementation verify pinned provider, human-only claim provisioning, key rotation, restricted management and isolated revocation-safe restore under PH-10/PJ-13.
-**Evidence / blocker:** 2026-10-18: self-hosting/Keycloak accepted by the owner; Keycloak 26.8.1 source was reviewed for compatibility, but host capacity, actual deployment version/image, issuer control, secret destination and deployment remain unverified. Foundation validation is not provisioning evidence.
+**Evidence / blocker:** 2026-10-18: self-hosting/Keycloak accepted by the owner; Keycloak 26.8.1 source was reviewed for compatibility, but host capacity, actual deployment version/image, issuer control, secret destination and deployment remain unverified. Foundation validation is not provisioning evidence. 2026-10-22: under the owner's delegation the [deployment design](deployment-design.md#identity-in-a-real-environment) decided the issuer `https://auth.teluni.app/realms/teluni`, the production Keycloak service (`start`, PostgreSQL storage, the pinned digest, admin console reachable only over the administration tunnel) and secrets as root-only files. Running it with the protected inputs remains.
 
 ## PH-16
 
@@ -200,7 +219,7 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Request and reason:** Register/control the Google application and required consent/branding configuration for the actual environment. Approve exact reviewed callback origins/redirects and required identity attributes/scopes; keep environments separate. Microsoft is not selected. Do not invent callback URLs before implementation defines them or register an application in this documentation task.
 **Configuration:** no Google-specific application keys are implemented. Store any future client secret in the approved protected destination; record only safe ownership/environment evidence.
 **Verification:** Authorized implementation verifies the controlled callback, correct audience/environment, account linking without email-only merging and non-bypassable administrative assurance. Provider account actions are not implied by answering the questionnaire.
-**Evidence / blocker:** 2026-10-18: P05=B selects Google only; no Google registration, credentials, consent setup or callback test is verified.
+**Evidence / blocker:** 2026-10-18: P05=B selects Google only; no Google registration, credentials, consent setup or callback test is verified. 2026-10-22: under the owner's delegation the [deployment design](deployment-design.md#identity-in-a-real-environment) decided the registration values: one web client per environment, redirect URI `https://auth.teluni.app/realms/teluni/broker/google/endpoint`, no JavaScript origins, scopes `openid`, `email` and `profile`, and a consent screen named Teluni that links the notices PH-28 approves. Registering the client remains.
 
 ## PH-17
 
@@ -208,10 +227,10 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 **Status:** pending. **Owner:** project owner / domain and mail administrator.
 **Dependency / trigger:** PH-07 domain control, PH-10 hosting, PH-11 flow review and PH-13 notices; before public signup or real invitations/recovery in PJ-24.
-**Request and reason:** Identify a reliable sender/delivery service compatible with the no-recurring-procurement constraint, confirm sender/domain control and applicable limits/terms, and prepare protected mail credentials. Review required DNS authentication, deliverability, abuse response and sender continuity; do not assume residential SMTP or an unspecified free service is adequate. If no suitable path exists, record the budget/readiness blocker rather than bypassing verification/recovery.
+**Request and reason:** Create the account of the decided provider (Resend's free plan; Brevo's free plan as fallback), verify the sending domain `notify.teluni.app` with its SPF and DKIM records, publish the staged DMARC record, and place an API key limited to sending in the protected store ([deployment design](deployment-design.md#transactional-email-ph-17-choice)). Confirm the provider's current limits and terms. Review required DNS authentication, deliverability, abuse response and sender continuity; do not assume residential SMTP or an unspecified free service is adequate. If no suitable path exists, record the budget/readiness blocker rather than bypassing verification/recovery.
 **Configuration:** the [configuration reference](../generated/configuration/api.md) defines `TELUNI_MAIL_SMTP_HOST`, `TELUNI_MAIL_SMTP_PORT`, `TELUNI_MAIL_SMTP_SECURITY` (TLS required in production), `TELUNI_MAIL_SMTP_USERNAME`, `TELUNI_MAIL_SMTP_PASSWORD` (`RESTRICTED`), `TELUNI_MAIL_FROM` and the `RESTRICTED` key ring `TELUNI_MAIL_KEYS`; Keycloak's realm SMTP settings for its own mail are written by the realm provisioning script. Credentials go only in the approved protected store. Do not publish credentials, reset or invitation links, or private recipient records.
 **Verification:** Authorized implementation tests delivery/failure/retry and invitation/reset expiry/single-use behavior with synthetic addresses under actual approved sender configuration. DNS/service/account facts need owner evidence; documentation is not delivery proof.
-**Evidence / blocker:** 2026-10-18: P03=A confirms no recurring identity/email procurement now. No existing sender, delivery service, DNS configuration or successful delivery is established. The approved [invitation and email delivery design](invitation-delivery-design.md) ([PH-21](#ph-21)) requires only authenticated SMTP submission with TLS from the chosen service, shared by the application and Keycloak.
+**Evidence / blocker:** 2026-10-18: P03=A confirms no recurring identity/email procurement now. No existing sender, delivery service, DNS configuration or successful delivery is established. The approved [invitation and email delivery design](invitation-delivery-design.md) ([PH-21](#ph-21)) requires only authenticated SMTP submission with TLS from the chosen service, shared by the application and Keycloak. 2026-10-22: under the owner's delegation the agent chose the provider and sender in the [deployment design](deployment-design.md#transactional-email-ph-17-choice): Resend over SMTP with implicit TLS from `no-reply@notify.teluni.app`, DMARC `p=none` for 30 days then `p=quarantine`, and Brevo as fallback. The account, DNS verification, key and a real delivery test remain.
 
 ## PH-18
 
@@ -322,6 +341,17 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 **Configuration:** the release build will read the keystore path, alias and passwords from Gradle properties or environment variables that the player README names when release signing is implemented; never commit their values.
 **Verification:** The fingerprint is recorded, an APK signed by the release process verifies with `apksigner verify --print-certs` against it, and an update signed with the same key installs over the previous release on a test device.
 **Evidence / blocker:** 2026-10-20: requested by the [player design](player-design.md#updates-and-compatibility); no key exists yet.
+
+## PH-28
+
+- [ ] **Have the data handling policies reviewed by a qualified professional and publish the privacy notice and terms of use.**
+
+**Status:** pending. **Owner:** project owner with qualified legal/privacy input.
+**Dependency / trigger:** split from [PH-13](#ph-13) on 2026-10-22; PJ-13/PJ-14 before real customer or personal data, public signup or the Google consent screen ([PH-16](#ph-16)); PH-19 for the commercial terms.
+**Request and reason:** Have a lawyer or privacy professional review the [data handling policies](data-handling-policies.md) against the actual operation. The review confirms or changes: the controller/processor roles, the retention durations (including the 5-year commercial ledger and the Marco Civil access-record question), the 15-day request deadline, incident notification to the ANPD and data subjects, and the international transfers to the listed providers. Then publish a privacy notice and terms of use in Portuguese, including the upload restrictions, at addresses the panel and consent screen can link. An agent can draft texts, but cannot give or replace legal advice.
+**Configuration:** none. Do not put customer records or private advice in public documentation.
+**Verification:** A dated record of the review's conclusions (not the private advice itself), the policies updated to match, and the published notice and terms reachable from the panel.
+**Evidence / blocker:** 2026-10-22: policies decided under the owner's delegation; no review has taken place and no notice or terms are published.
 
 ## New action template
 

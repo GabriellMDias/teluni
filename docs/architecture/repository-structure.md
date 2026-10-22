@@ -15,6 +15,7 @@ These locations exist:
 | `apps/web/` | React/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md). |
 | `apps/player/` | Android TV player: a Gradle build outside the pnpm workspace whose `core` module holds the screen's rules on the JVM (ADR-0031). Start with its [README](../../apps/player/README.md). |
 | `packages/sdk/` | Public API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md). |
+| `infra/pilot/` | Declarative pilot deployment: the container images, Compose composition, reverse proxy, PostgreSQL bootstrap, backup and restore, systemd timers and the rehearsal CI runs. Start with its [README](../../infra/pilot/README.md). |
 | `docs/` | Current policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md). |
 | `tooling/validate/` | Repository documentation, agent-instruction, environment-example, and release-history checks. |
 | `tooling/documentation/` | Portal dataset and component-reference generation. |
@@ -23,7 +24,7 @@ These locations exist:
 | `.gemini/` | Gemini CLI discovery adapter only; see [agent instructions](agent-instructions.md). |
 | `.github/` | GitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings. |
 
-`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no `infra/`, mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.
+`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.
 
 Keep the root small: application-specific implementation belongs to its application; runtime sharing belongs to a meaningful package; repository automation belongs under `tooling/`. Introduce `infra/` only for real declarative deployment/operational infrastructure, never ordinary business logic. Infrastructure may consume application artifacts and configuration requirements; runtime code must not import infrastructure definitions.
 

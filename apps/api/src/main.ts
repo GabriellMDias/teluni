@@ -112,6 +112,7 @@ try {
   );
   const { app, lifecycle } = createApp(logger, undefined, {
     modules,
+    trustedProxies: config.trustedProxies,
     ...(database ? { checkReady: () => checkDatabase(database) } : {}),
   });
   const runtimeLogger = logger;

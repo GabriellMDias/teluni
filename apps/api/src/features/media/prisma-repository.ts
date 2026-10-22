@@ -3,6 +3,7 @@ import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import {
   MediaFailure,
+  mediaBackupLockKey,
   mediaPolicy,
   type MediaKind,
   type MediaStatus,
@@ -759,6 +760,13 @@ export class PrismaMediaRepository {
    */
   async removeUnrecorded(companyId: string, sha256: Buffer): Promise<boolean> {
     return this.transaction(async (tx) => {
+      // A backup holds this lock exclusively from before its database dump
+      // until it has linked the objects, so no object the dump records can
+      // vanish first. The file stays for now; the orphan sweep removes it.
+      const [backup] = await tx.$queryRaw<{ free: boolean }[]>`
+        SELECT pg_try_advisory_xact_lock_shared(
+          hashtextextended(${mediaBackupLockKey}, 0)) AS free`;
+      if (!backup?.free) return false;
       await lockObject(tx, companyId, sha256);
       const [row] = await tx.$queryRaw<{ found: number }[]>`
         SELECT 1 AS found FROM media_objects

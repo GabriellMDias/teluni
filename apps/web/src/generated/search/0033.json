@@ -4,6 +4,15 @@
     "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Architecture and dependency enforcement",
+    "anchor": "architecture-and-dependency-enforcement",
+    "text": "Architecture and dependency enforcement\nOrion will use **dependency-cruiser** as its initial dependency-graph and architecture-rule enforcement tool for JavaScript and TypeScript code.\nDependency rules should be encoded mechanically where dependency-cruiser or another appropriate repository mechanism can express them reliably.\nThese rules may include:\nforbidden dependency directions;\nforbidden imports between applications or packages;\nisolation of domain and application layers from infrastructure concerns;\nrestrictions on importing application internals across boundaries;\ncircular dependency detection;\nunresolved dependency detection;\npackage dependency consistency;\nrestrictions between production and development-only dependencies;\nother dependency-graph invariants defined by Orion architecture.\nArchitecture documentation remains the source of architectural intent.\nMechanical rules implement enforceable portions of that intent and must remain consistent with the authored architecture documentation.\ndependency-cruiser does not define Orion's architecture. It verifies dependency properties derived from Orion's architecture.\nIf a future architecture rule cannot be expressed appropriately by dependency-cruiser, another focused validation mechanism may be introduced rather than weakening the architectural requirement.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Validation composition",
     "anchor": "validation-composition",
     "text": "Validation composition\nThe initial `pnpm validate` workflow will include the checks that exist at the current repository stage.\nIts initial responsibilities are expected to include:\nformat:check\nlint\ntypecheck\narchitecture\n\nAs Orion introduces additional capabilities, the same canonical validation workflow will expand to include relevant checks such as:\nunit tests\nintegration tests\nbrowser tests where appropriate\ngenerated artifact consistency\ndatabase consistency\ndocumentation validation\nsecurity checks\nbuild validation\n\nA capability must not be represented in `pnpm validate` before the corresponding implementation actually exists.\nThe canonical command should therefore evolve with the repository while remaining a stable contributor-facing interface.\nIndividual validation responsibilities should remain independently executable where practical for development, diagnosis, and CI optimization.\nFor example:\npnpm format:check\npnpm lint\npnpm typecheck\npnpm architecture\npnpm validate\n\nThe existence of `pnpm validate` does not prevent contributors from running narrower checks during development.\n"

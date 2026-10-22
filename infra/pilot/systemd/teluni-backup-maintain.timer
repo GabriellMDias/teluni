@@ -1,0 +1,10 @@
+# Weekly, early on Sunday in the host's local time; pruning needs no downtime.
+[Unit]
+Description=Teluni weekly backup maintenance
+
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

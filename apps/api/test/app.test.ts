@@ -20,6 +20,39 @@ function testLogger(lines: string[]) {
 }
 
 describe("Fastify transport boundary", () => {
+  it("takes the client address from X-Forwarded-For only behind a trusted proxy", async () => {
+    const addressOf = async (trustedProxies: readonly string[]) => {
+      const { app, lifecycle } = createApp(testLogger([]), undefined, {
+        trustedProxies,
+      });
+      app.get("/test/address", (request) => ({ ip: request.ip }));
+      lifecycle.markReady();
+      const seen = async (remoteAddress: string) =>
+        (
+          await app.inject({
+            method: "GET",
+            url: "/test/address",
+            remoteAddress,
+            headers: { "x-forwarded-for": "203.0.113.7" },
+          })
+        ).json<{ ip: string }>().ip;
+      const result = {
+        fromProxy: await seen("172.20.0.5"),
+        fromElsewhere: await seen("198.51.100.9"),
+      };
+      await app.close();
+      return result;
+    };
+    expect(await addressOf(["172.20.0.0/16"])).toEqual({
+      fromProxy: "203.0.113.7",
+      fromElsewhere: "198.51.100.9",
+    });
+    expect(await addressOf([])).toEqual({
+      fromProxy: "172.20.0.5",
+      fromElsewhere: "198.51.100.9",
+    });
+  });
+
   it("uses TypeBox request validation and response serialization", async () => {
     const { app, lifecycle } = createApp(testLogger([]));
     app.post(

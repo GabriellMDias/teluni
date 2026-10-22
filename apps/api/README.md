@@ -47,7 +47,7 @@ Tests and reference generation use fresh migrated Testcontainers PostgreSQL, and
 
 `ORION_DATABASE_URL` is the restricted runtime credential. Only the Prisma CLI reads `ORION_MIGRATION_DATABASE_URL`, supplied separately for migration commands; the CLI does not automatically load the API's root `.env.local`. Keep both out of tracked files and do not leave the migration credential in the runtime environment.
 
-The runtime role needs `USAGE` on the application schema plus only the table and column privileges that each module declares in `prisma/runtime-grants/`. It needs no DDL grant. The [database fixture](scripts/migrated-database.ts) provisions separate migration/runtime roles and applies those grants, so integration tests run with the same least-privilege runtime role.
+The runtime role needs `USAGE` on the application schema plus only the table and column privileges that each module declares in `prisma/runtime-grants/`. It needs no DDL grant. The [database fixture](scripts/migrated-database.ts) provisions separate migration/runtime roles and applies those grants through [`scripts/runtime-grants.ts`](scripts/runtime-grants.ts), so integration tests run with the same least-privilege runtime role. The pilot deployment's release step, [`scripts/release.ts`](scripts/release.ts), applies migrations and the same grants, provisions the realm and ends Keycloak sessions after a restore ([pilot deployment](../../infra/pilot/README.md)).
 
 The [release workflow](../../docs/database/release-evolution.md) owns durable migration recording. An empty registry is not permission to rewrite unverified history.
 
