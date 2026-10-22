@@ -76,7 +76,7 @@ export interface IdentityProvider {
   newChallenge(): Promise<LoginChallenge & { codeChallenge: string }>;
   authorizationUrl(
     challenge: LoginChallenge & { codeChallenge: string },
-    request?: { acrValues?: string; maxAgeSeconds?: number },
+    request?: { acrValues?: string; maxAgeSeconds?: number; prompt?: "create" },
   ): Promise<URL>;
   completeLogin(
     callback: URL,
@@ -234,6 +234,8 @@ export function createKeycloakProvider(
     async authorizationUrl(challenge, request = {}) {
       return oidc.buildAuthorizationUrl(await webConfig(), {
         ...(request.acrValues ? { acr_values: request.acrValues } : {}),
+        // OpenID Connect prompt=create opens the provider's account creation.
+        ...(request.prompt ? { prompt: request.prompt } : {}),
         ...(request.maxAgeSeconds === undefined
           ? {}
           : { max_age: String(request.maxAgeSeconds) }),

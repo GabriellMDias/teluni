@@ -108,12 +108,13 @@ export function registerIdentityRoutes(
       url: login.url,
       schema: login.schema,
       handler: async (request, reply) => {
-        const { returnTo, assurance } = request.query as {
+        const { returnTo, assurance, intent } = request.query as {
           returnTo?: string;
           assurance?: "strong" | "recent";
+          intent?: "signup";
         };
         try {
-          const started = await service.startLogin(returnTo, assurance);
+          const started = await service.startLogin(returnTo, assurance, intent);
           reply.setCookie(names.login, started.loginHandle, {
             ...loginCookie,
             maxAge: 600,

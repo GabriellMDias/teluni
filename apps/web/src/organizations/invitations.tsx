@@ -7,7 +7,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
-import { loginHref, sessionQuery } from "../identity/api.js";
+import { loginHref, sessionQuery, signUpHref } from "../identity/api.js";
 import type { Locale } from "../locale.js";
 import {
   acceptInvitation,
@@ -474,6 +474,10 @@ export function AcceptInvitationPage({
           href={loginHref("/invitations/accept")}
         >
           {t.signIn}
+        </a>
+        <p>{t.acceptSignUp}</p>
+        <a className="button-link" href={signUpHref("/invitations/accept")}>
+          {t.signUp}
         </a>
       </>
     );

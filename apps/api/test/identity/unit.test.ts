@@ -5,6 +5,7 @@ import {
   isUnsafeMethod,
   safeReturnPath,
 } from "../../src/features/identity/domain.js";
+import { realmSettings } from "../../scripts/identity-realm.js";
 import {
   hashSecret,
   newSecret,
@@ -89,5 +90,51 @@ describe("session credentials and sealed provider tokens", () => {
     expect(new SessionKeyRing([current]).verifyCsrf("session-1", token)).toBe(
       false,
     );
+  });
+});
+
+describe("realm mail settings", () => {
+  const base = {
+    realm: "teluni",
+    publicOrigin: "https://app.teluni.test",
+    backchannelLogoutUrl: "https://app.teluni.test/api/auth/backchannel-logout",
+    apiAudience: "teluni-api",
+    webClientSecret: "synthetic-web-secret-000",
+    provisionerClientSecret: "synthetic-provisioner-000",
+  };
+
+  it("sends Keycloak's mail through an authenticated relay with implicit TLS", () => {
+    expect(
+      realmSettings({
+        ...base,
+        smtp: {
+          host: "smtp.relay.test",
+          port: 465,
+          from: "no-reply@notify.teluni.test",
+          security: "tls",
+          credentials: { username: "relay-user", password: "relay-secret" },
+        },
+      }).smtpServer,
+    ).toEqual({
+      host: "smtp.relay.test",
+      port: "465",
+      from: "no-reply@notify.teluni.test",
+      fromDisplayName: "Teluni",
+      ssl: "true",
+      starttls: "false",
+      auth: "true",
+      user: "relay-user",
+      password: "relay-secret",
+    });
+  });
+
+  it("keeps a local test sink unauthenticated and without TLS", () => {
+    expect(
+      realmSettings({
+        ...base,
+        smtp: { host: "localhost", port: 1025, from: "no-reply@teluni.test" },
+      }).smtpServer,
+    ).toMatchObject({ ssl: "false", starttls: "false", auth: "false" });
+    expect(realmSettings(base)).not.toHaveProperty("smtpServer");
   });
 });

@@ -173,7 +173,14 @@ expect_status() {
 start_stack() {
   local project="$1"
   compose "$project" up --detach --wait --wait-timeout 300
-  compose "$project" cp proxy:/data/caddy/pki/authorities/local/root.crt "$work/ca/root.crt"
+  # Caddy creates its local CA shortly after it starts, with the first
+  # certificate; wait for it before copying.
+  local root=/data/caddy/pki/authorities/local/root.crt
+  for _ in $(seq 1 60); do
+    compose "$project" exec -T proxy test -s "$root" && break
+    sleep 1
+  done
+  compose "$project" cp "proxy:$root" "$work/ca/root.crt"
   chmod 644 "$work/ca/root.crt"
   # The API started before the proxy created its CA; restart it to trust it.
   compose "$project" restart api >/dev/null

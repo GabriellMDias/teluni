@@ -125,10 +125,15 @@ export class IdentityService {
     this.#events = options.events;
   }
 
-  /** Starts an authorization-code login; the handle goes into the login-attempt cookie. */
+  /**
+   * Starts an authorization-code login; the handle goes into the
+   * login-attempt cookie. A signup opens the provider's account creation,
+   * which verifies the email before the person returns.
+   */
   async startLogin(
     returnTo: string | undefined,
     assurance?: RequestedAssurance,
+    intent?: "signup",
   ): Promise<{ redirectTo: URL; loginHandle: string }> {
     // Step-up asks for the strong level; "recent" also forces a new
     // authentication so the strong factor is at most five minutes old.
@@ -160,6 +165,7 @@ export class IdentityService {
       this.#provider.authorizationUrl(challenge, {
         ...(requestedAssurance ? { acrValues: requestedAssurance } : {}),
         ...(maxAgeSeconds === null ? {} : { maxAgeSeconds }),
+        ...(intent === "signup" ? { prompt: "create" as const } : {}),
       }),
     );
     return { redirectTo, loginHandle };

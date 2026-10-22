@@ -4,6 +4,24 @@
     "title": "Documentation Task Index",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Architecture and implementation",
+    "anchor": "architecture-and-implementation",
+    "text": "Architecture and implementation\nTask\nAuthoritative policy\nUnderstand Teluni's vision, MVP, proposed architecture, offline behavior and delivery phases\n[Teluni product documentation](project/README.md)\nExecute or track implementation work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nStart a new project from Orion, check its provenance, or upgrade its Orion baseline\n[Start and upgrade a project from Orion](project-derivation.md)\nName a stable Orion foundation release or assess derived-project compatibility\n[Foundation versioning](versioning.md)\nChange agent instruction files or tool compatibility adapters\n[Agent instructions](architecture/agent-instructions.md)\nReproduce development setup, local execution, and the validation gate\n[Development setup](setup.md)\nRun the living API/data/component portal and understand its architecture\n[Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md)\nResolve owner decisions, external access, or other human prerequisites\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nAdd an API module or web workflow\n[API runtime](../apps/api/README.md#modules), [web workflow](../apps/web/README.md#modules)\nStudy a complete implemented example across database, API, SDK, and UI\n[Orion's reference implementation](project-derivation.md#orions-reference-implementation)\nEvaluate architectural tradeoffs or exceptions\n[Principles](architecture/principles.md)\nFind selected technology decisions\n[Technology decisions](architecture/technology-decisions.md)\nPlace code or create an application/package\n[Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md)\nAdd imports or shared dependencies\n[Dependency rules](architecture/dependency-rules.md)\nModel failures and translate boundaries\n[Error handling](architecture/error-handling.md)\nAdd configuration\n[Configuration](architecture/configuration.md)\nChoose test coverage and execution layers\n[Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md)\nChange independently deployed or persisted contracts\n[Versioning and compatibility](architecture/versioning-and-compatibility.md)\nHandle delivery, retries, and external side effects\n[Delivery and side effects](architecture/delivery-and-side-effects.md)\nImplement CI or dependency automation\n[Continuous integration](architecture/continuous-integration.md)\nChange backend execution or regenerate derived references\n[Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md)\nRun or extend the current API feature\n[API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json)\nRun or extend the web workflow or generated SDK\n[Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts)\nChange the SDK public surface or generated types\n[SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "APIs and data",
+    "anchor": "apis-and-data",
+    "text": "APIs and data\nTask\nAuthoritative policy\nDesign an operation or generate a client\n[API principles](api/principles.md)\nExpose an error\n[API error contract](api/error-contract.md)\nEvolve, deprecate, or retire an API contract\n[API versioning](api/versioning.md)\nModel persistent data and ownership\n[Database principles](database/principles.md)\nChange durable schema or migration history\n[Migrations](database/migrations.md)\nEstablish release status, test upgrades, or plan application/database recovery\n[Release and evolution workflow](database/release-evolution.md)\nDocument or generate database reference\n[Schema documentation](database/schema-documentation.md)\nInspect the migrated database schema\n[Generated database reference](generated/database/schema.md)\nFind the current machine-readable API contract and public errors\n[OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md)\nInspect API configuration names, types, defaults, and visibility\n[Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md)\nFind the generated frontend component reference\n[Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json)\nProtect atomicity or concurrent writes\n[Transactions and concurrency](database/transactions-and-concurrency.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Reliability",
     "anchor": "reliability",
     "text": "Reliability\nTask\nAuthoritative policy\nSelect or integrate diagnostic signals\n[Observability](reliability/observability.md)\nAdd structured events\n[Logging](reliability/logging.md)\nInstrument causal execution and propagation\n[Tracing](reliability/tracing.md)\nAdd measurements and bounded dimensions\n[Metrics](reliability/metrics.md)\nCapture and group unexpected failures\n[Error reporting](reliability/error-reporting.md)\nChange startup, liveness, readiness, or shutdown\n[Health checks](reliability/health-checks.md)\nCreate actionable alerts\n[Alerting](reliability/alerting.md)\n"
@@ -889,41 +907,5 @@
     "heading": "Authorization",
     "anchor": "authorization",
     "text": "Authorization\nThis policy owns permission decisions for application actors. [Authentication](authentication.md) establishes trusted identity; [production access](production-access.md) governs operational capabilities. Use the [task index](../README.md) for related API, database, and security policy.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Current implementation and ownership",
-    "anchor": "current-implementation-and-ownership",
-    "text": "Current implementation and ownership\nEach module owns its concrete authorization policy in its domain rules, enforced by its application operations and scoped database queries; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows owner/reviewer rules this way. This is not a repository-wide role engine or multi-tenant implementation.\nProtected operations must have an identifiable policy owner. Keep business-security meaning near the owning domain; common infrastructure may provide evaluation, principal types, lookup, denial semantics, and audit hooks without becoming a central switch over all domain rules. Introduce shared abstractions, a permission registry, RBAC, ABAC, ReBAC, or row-level security only when actual requirements justify them. Significant choices need an ADR.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Default deny",
-    "anchor": "default-deny",
-    "text": "Default deny\nAuthorization asks whether this actor may perform this operation on this resource in this context. Fail closed when permission cannot be established; security-sensitive ambiguity must not broaden access. Use verified principals and trusted resource state, not client-provided roles, user IDs, ownership, tenant IDs, or capability hints.\nPublic operations must be intentionally public and represent anonymous actors explicitly. Authentication does not grant permission. Resource identifier possession, unpredictable IDs, hidden endpoints, feature flags, and UI visibility are not authorization controls. Feature availability, subscriptions/entitlements, and security authorization have distinct meanings even when all constrain an operation.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Trusted enforcement boundary",
-    "anchor": "trusted-enforcement-boundary",
-    "text": "Trusted enforcement boundary\nEnforce authorization in trusted backend application, worker, or service code before side effects, unless an atomic architecture requires a combined decision. Every entry point to a protected operation must receive equivalent enforcement. Transport checks, authoritative application policy, and database isolation may coexist when their responsibilities differ; do not independently reimplement a rule in several layers or clients.\nClients may hide/disable actions and display safe capability hints for usability. The backend must evaluate each requested operation independently. Distinguish permission from domain validity: an actor may be permitted to cancel a resource whose current state prevents cancellation. Order checks deliberately to avoid revealing protected existence; a safe not-found result may be appropriate instead of a permission denial.\nPass minimal explicit actor, operation, resource, and relevant context into policy evaluation. Prefer predictable decisions without hidden global state or business side effects. Controlled audit/telemetry is acceptable; checking permission must not modify resources, send email, or charge payments. Load policy state explicitly and efficiently, including bulk evaluation where needed to avoid authorization N+1 queries.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Roles, permissions, and privileged actors",
-    "anchor": "roles-permissions-and-privileged-actors",
-    "text": "Roles, permissions, and privileged actors\nPermissions represent stable business capabilities and explicit scope, not button/controller names or undocumented strings. Roles group meaningful responsibilities and must define granted permissions, scope, and who may assign them. Avoid scattered hardcoded role checks, vague global administrator shortcuts, excessive granularity, and deep/cyclic inheritance. A maintainer should be able to explain why access was granted.\nPrefer narrow administrative roles when responsibilities differ. Support access must not automatically grant infrastructure, deployment, database, or secret administration. An unrestricted superuser, if required, needs strict assignment, strong authentication, auditability, limited use, and clear ownership. Impersonation must be explicit, visible, limited, and preserve both real and effective actors in audit evidence. Authorized operation of a system does not automatically authorize reading its raw secrets.\nMachine, CI, integration, and AI actors need scoped capabilities, not implicit trust. Scope by service, environment, and operation where relevant. Test automation must not inherit production deployment or administration permissions. An agent's repository knowledge does not enlarge its delegated authority; repository edits, telemetry, deployment, infrastructure, and production access remain separate capabilities.\n"
   }
 ]

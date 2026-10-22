@@ -80,6 +80,10 @@ test("sends a visitor from the entry to the sign-in page", async () => {
   await expect
     .element(screen.getByRole("link", { name: t.navHome }))
     .not.toBeInTheDocument();
+  // Someone without an account creates one at the provider instead.
+  await expect
+    .element(screen.getByRole("link", { name: identity.signUpLink }))
+    .toHaveAttribute("href", "/api/auth/login?returnTo=%2F&intent=signup");
 });
 
 test("shows a signed-in person's companies and account on the home page", async () => {

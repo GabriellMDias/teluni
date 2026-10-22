@@ -121,3 +121,8 @@ export function loginHref(
 ): string {
   return `${loadClientConfig().apiBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}${assurance ? `&assurance=${assurance}` : ""}`;
 }
+
+/** Account creation at the provider, returning to `returnTo` once signed in. */
+export function signUpHref(returnTo: string): string {
+  return `${loadClientConfig().apiBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}&intent=signup`;
+}

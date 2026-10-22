@@ -36,6 +36,10 @@ const ptBR = {
   signInButton: "Entrar com segurança",
   signInHint:
     "Você será levado à página de acesso do Teluni e voltará para cá depois de entrar.",
+  signUpPrompt: "Ainda não tem conta?",
+  signUpLink: "Criar conta",
+  signUpHint:
+    "Informe seu nome e e-mail, confirme o endereço pelo link que enviamos e defina sua senha.",
   productTitle: "Sinalização digital para o seu negócio",
   productPoints: [
     "Organize empresas, filiais e equipes com acessos separados.",
@@ -110,6 +114,10 @@ const enUS: IdentityMessages = {
   signInButton: "Sign in securely",
   signInHint:
     "You will go to the Teluni sign-in page and return here after signing in.",
+  signUpPrompt: "No account yet?",
+  signUpLink: "Create an account",
+  signUpHint:
+    "Enter your name and email, confirm the address through the link we send and choose a password.",
   productTitle: "Digital signage for your business",
   productPoints: [
     "Organize companies, branches and teams with separate access.",

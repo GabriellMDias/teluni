@@ -133,7 +133,7 @@ Screens play through outages; publishing, pairing, sign-in and monitoring stop. 
 ## Delivery increments
 
 1. **Deployment bundle (PJ-13).** In the repository: the API's trusted-proxy setting, container images for the API (with FFmpeg) and Keycloak (with the theme), the Compose file, the Caddyfile, the backup, restore and verification scripts, and a local rehearsal that brings the stack up, writes data, backs it up to a repository on the machine, restores it into a fresh project and verifies it. CI runs the rehearsal.
-2. **Real-host additions and runbooks**, written against the real host once PH-10 provides it: the relay listener with PROXY protocol if the line needs it, alert delivery, Keycloak's authenticated production mail (PJ-24), and runbooks for install, update, backup failure, restore and host migration.
+2. **Real-host additions and runbooks**, written against the real host once PH-10 provides it: the relay listener with PROXY protocol if the line needs it, alert delivery, and runbooks for install, update, backup failure, restore and host migration.
 3. **Real-host qualification**: the readiness gate in [operations](operations.md#residential-exposure-and-readiness-gate), the timed restore and a recorded RPO and RTO.
 
 ## Implementation status
@@ -151,7 +151,7 @@ Increment 1, the deployment bundle, is implemented in [`infra/pilot`](../../infr
 
 Rehearsal findings fixed in the bundle: Keycloak's readiness endpoint reports UP while it still bootstraps its database, so its health check and the release step wait for the main server; the proxy's fixed address is kept out of the network's dynamic range. Review findings fixed: a media purge between the dump and the object copy could leave a recorded object out of the snapshot, which the backup lock now prevents; and verification no longer passes when its inventory query fails.
 
-Not yet implemented (increment 2, with the real host): the relay listener with PROXY protocol, alert delivery, Keycloak's authenticated production mail, the runbooks, and the timed rehearsal on the owner's host.
+Keycloak's own mail goes through the same authenticated relay: the release step's `realm` passes the `TELUNI_MAIL_` settings (2026-10-22). Not yet implemented (increment 2, with the real host): the relay listener with PROXY protocol, alert delivery, the runbooks, and the timed rehearsal on the owner's host.
 
 ## Decisions
 

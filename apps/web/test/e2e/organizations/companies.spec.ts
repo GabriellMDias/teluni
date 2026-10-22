@@ -1,7 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { enrollAuthenticator, enterCredentials } from "../identity/provider.ts";
+import { actionLink, mailedLink } from "../identity/mail.ts";
+import {
+  choosePassword,
+  enrollAuthenticator,
+  enterCredentials,
+  registerAccount,
+} from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
 // Company and branch administration through the real sign-in, two-step
@@ -15,28 +21,12 @@ const afterNavigation = expect.configure({ timeout: 20_000 });
 let stack: IdentityStack;
 
 /** The invitation link in the latest Mailpit message to `recipient`. */
-async function invitationLink(recipient: string): Promise<string> {
-  const deadline = Date.now() + 20_000;
-  for (;;) {
-    const search = (await (
-      await fetch(
-        `${stack.mailUrl}/api/v1/search?query=${encodeURIComponent(`to:${recipient}`)}`,
-      )
-    ).json()) as { messages: { ID: string }[] };
-    if (search.messages.length > 0) {
-      const message = (await (
-        await fetch(`${stack.mailUrl}/api/v1/message/${search.messages[0].ID}`)
-      ).json()) as { Text: string };
-      const match =
-        /(https?:\/\/\S+\/invitations\/accept#[A-Za-z0-9_-]{43})/.exec(
-          message.Text,
-        );
-      if (match) return match[1];
-    }
-    if (Date.now() > deadline)
-      throw new Error(`No invitation email reached ${recipient}`);
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
+function invitationLink(recipient: string): Promise<string> {
+  return mailedLink(
+    stack.mailUrl,
+    recipient,
+    /(https?:\/\/\S+\/invitations\/accept#[A-Za-z0-9_-]{43})/,
+  );
 }
 test.beforeAll(async () => {
   test.setTimeout(300_000);
@@ -438,6 +428,43 @@ test("creates a company, verifies in two steps and manages branches, settings, m
     }
     await memberPage.reload();
     await afterNavigation(invitationRow).toContainText("Aceito");
+
+    // Someone without an account creates one from the invitation, confirms
+    // the address in the same tab and accepts.
+    const newcomer = `newcomer-${randomUUID().slice(0, 8)}@example.test`;
+    await memberPage.getByLabel("E-mail da pessoa").fill(newcomer);
+    await memberPage
+      .getByRole("button", { name: "Enviar convite", exact: true })
+      .click();
+    await expect(
+      memberPage.locator(".branch-list > li").filter({ hasText: newcomer }),
+    ).toContainText("Aguardando aceite");
+    const newcomerLink = await invitationLink(newcomer);
+    const newcomerContext = await browser.newContext({ locale: "pt-BR" });
+    newcomerContext.setDefaultTimeout(20_000);
+    try {
+      const newcomerPage = await newcomerContext.newPage();
+      await newcomerPage.goto(newcomerLink);
+      await newcomerPage
+        .getByRole("main")
+        .getByRole("link", { name: "Criar conta", exact: true })
+        .click();
+      const since = new Date(Date.now() - 1000);
+      await registerAccount(newcomerPage, newcomer);
+      await newcomerPage.goto(
+        await mailedLink(stack.mailUrl, newcomer, actionLink, since),
+      );
+      await choosePassword(newcomerPage, `senha-${randomUUID()}`);
+      await afterNavigation(
+        newcomerPage.getByRole("button", { name: "Aceitar convite" }),
+      ).toBeVisible();
+      await newcomerPage
+        .getByRole("button", { name: "Aceitar convite" })
+        .click();
+      await afterNavigation(newcomerPage).toHaveURL(independentUrl);
+    } finally {
+      await newcomerContext.close();
+    }
   } finally {
     await memberContext.close();
   }

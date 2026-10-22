@@ -191,6 +191,9 @@ const ptBR = {
     "Este link de convite está incompleto ou já foi usado neste navegador. Abra novamente o link recebido por e-mail.",
   acceptSignIn:
     "Entre com o endereço de e-mail que recebeu o convite para vê-lo e aceitá-lo.",
+  acceptSignUp:
+    "Ainda não tem conta? Crie uma com o endereço que recebeu o convite e abra o link de confirmação nesta mesma aba.",
+  signUp: "Criar conta",
   acceptLead:
     "Ao aceitar, você passa a fazer parte desta empresa com o acesso abaixo.",
   acceptCompany: "Empresa",
@@ -508,6 +511,9 @@ const enUS: OrganizationMessages = {
     "This invitation link is incomplete or was already used in this browser. Open the link from the email again.",
   acceptSignIn:
     "Sign in with the email address that received the invitation to see and accept it.",
+  acceptSignUp:
+    "No account yet? Create one with the address that received the invitation, and open the confirmation link in this same tab.",
+  signUp: "Create an account",
   acceptLead: "By accepting, you join this company with the access below.",
   acceptCompany: "Company",
   acceptAccess: "Access",

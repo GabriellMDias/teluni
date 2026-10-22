@@ -1546,6 +1546,14 @@ test("keeps the invitation credential out of the address and asks to sign in", a
       "href",
       `/api/auth/login?returnTo=${encodeURIComponent("/invitations/accept")}`,
     );
+  // Someone without an account creates one and returns to this page.
+  await expect.element(screen.getByText(t.acceptSignUp)).toBeVisible();
+  await expect
+    .element(screen.getByRole("main").getByRole("link", { name: t.signUp }))
+    .toHaveAttribute(
+      "href",
+      `/api/auth/login?returnTo=${encodeURIComponent("/invitations/accept")}&intent=signup`,
+    );
   expect(router.state.location.hash).toBe("");
   expect(sessionStorage.getItem("teluni.invitation")).toBe(credential);
   sessionStorage.removeItem("teluni.invitation");

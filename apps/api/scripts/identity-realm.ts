@@ -16,7 +16,18 @@ export type TeluniRealmOptions = Readonly<{
   apiAudience: string;
   webClientSecret: string;
   provisionerClientSecret: string;
-  smtp?: Readonly<{ host: string; port: number; from: string }>;
+  /**
+   * Keycloak's own mail (verification, password reset). Real environments
+   * use the same authenticated relay with TLS as the API (D-13, PH-17);
+   * local and test runs use Mailpit without either.
+   */
+  smtp?: Readonly<{
+    host: string;
+    port: number;
+    from: string;
+    security?: "tls" | "starttls" | "none";
+    credentials?: Readonly<{ username: string; password: string }>;
+  }>;
 }>;
 
 export const webClientId = "teluni-web";
@@ -38,7 +49,7 @@ function expectOk(response: Response, action: string): void {
     throw new Error(`Keycloak ${action} failed with HTTP ${response.status}`);
 }
 
-function realmSettings(
+export function realmSettings(
   options: TeluniRealmOptions & { bindBrowserFlow?: boolean },
 ) {
   const secureOrigin = new URL(options.publicOrigin).protocol === "https:";
@@ -95,9 +106,15 @@ function realmSettings(
             port: String(options.smtp.port),
             from: options.smtp.from,
             fromDisplayName: "Teluni",
-            ssl: "false",
-            starttls: "false",
-            auth: "false",
+            ssl: String(options.smtp.security === "tls"),
+            starttls: String(options.smtp.security === "starttls"),
+            auth: String(options.smtp.credentials !== undefined),
+            ...(options.smtp.credentials
+              ? {
+                  user: options.smtp.credentials.username,
+                  password: options.smtp.credentials.password,
+                }
+              : {}),
           },
         }
       : {}),
