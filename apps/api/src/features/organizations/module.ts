@@ -39,6 +39,16 @@ export function createOrganizationsModule(options: {
         branchIds,
       );
     },
+    lockForMembership(tx, companyId, membershipId, branchIds) {
+      if (!repository)
+        throw new Error("The organizations module is not active");
+      return repository.lockForMembership(
+        tx,
+        companyId,
+        membershipId,
+        branchIds,
+      );
+    },
     describe(companyId, branchIds) {
       if (!repository)
         throw new Error("The organizations module is not active");

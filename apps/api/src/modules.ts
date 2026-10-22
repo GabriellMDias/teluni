@@ -50,6 +50,7 @@ const publications = createPublicationsModule({
   devices: devices.devices,
   media: media.media,
   programming: programming.programming,
+  catalogs: catalogs.catalogs,
 });
 
 export const apiModules: readonly ApiModule[] = [

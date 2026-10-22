@@ -33,6 +33,28 @@ export const publicationPolicy = Object.freeze({
   zoneOffsetsAfterDays: 35,
 });
 
+/**
+ * Automatic price publication (catalog and composition design, increment
+ * 4); engineering defaults, changed only by a reviewed code change.
+ */
+export const priceIntentPolicy = Object.freeze({
+  /** How long a claim on an intent lasts. */
+  leaseMs: 120_000,
+  pollMs: 2_000,
+  batchSize: 5,
+  /** Transient failures retry with back-off up to this many attempts. */
+  maxAttempts: 8,
+  /** AT-20: finished intents are kept this long for the panel and support. */
+  retentionDays: 30,
+  /** Recent intents a catalog's list shows. */
+  listLimit: 50,
+});
+
+/** Back-off before attempt `attempts + 1`: 30 s doubling, at most an hour. */
+export function priceRetryDelayMs(attempts: number): number {
+  return Math.min(30_000 * 2 ** Math.max(attempts - 1, 0), 3_600_000);
+}
+
 export type PublicationFailureCode =
   | "RESOURCE_NOT_FOUND"
   | "VALIDATION_FAILED"

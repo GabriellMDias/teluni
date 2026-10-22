@@ -1101,6 +1101,23 @@
       "file": "pages/api/listBranches.json"
     },
     {
+      "id": "api/listCatalogPricePublications",
+      "kind": "api",
+      "title": "listCatalogPricePublications",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/catalogs/{catalogId}/price-publications",
+      "method": "GET",
+      "path": "/companies/{companyId}/catalogs/{catalogId}/price-publications",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listCatalogPricePublications.json"
+    },
+    {
       "id": "api/listCatalogPromotions",
       "kind": "api",
       "title": "listCatalogPromotions",
@@ -1711,6 +1728,23 @@
       "file": "pages/api/restoreMedia.json"
     },
     {
+      "id": "api/retryPricePublication",
+      "kind": "api",
+      "title": "retryPricePublication",
+      "group": "Publications",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/price-publications/{intentId}/retry",
+      "method": "POST",
+      "path": "/companies/{companyId}/price-publications/{intentId}/retry",
+      "tags": ["Publications"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/retryPricePublication.json"
+    },
+    {
       "id": "api/revokeInvitation",
       "kind": "api",
       "title": "revokeInvitation",
@@ -2234,6 +2268,16 @@
       "file": "pages/database/catalog_price_overrides.json"
     },
     {
+      "id": "database/catalog_price_sequences",
+      "kind": "database",
+      "title": "catalog_price_sequences",
+      "group": "Catalogs",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Each catalog's price change counter: every base price, branch price or promotion change adds one under this row's lock, so changes are numbered in commit order and publications record which ones they include.",
+      "headings": [],
+      "file": "pages/database/catalog_price_sequences.json"
+    },
+    {
       "id": "database/catalog_promotions",
       "kind": "database",
       "title": "catalog_promotions",
@@ -2544,6 +2588,16 @@
       "file": "pages/database/playlists.json"
     },
     {
+      "id": "database/price_publication_intents",
+      "kind": "database",
+      "title": "price_publication_intents",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Durable requests to publish a catalog's current prices to a program, committed with the price change that caused them; the API's processor claims due ones under a lease and turns each into a new generation that changes only that catalog's prices.",
+      "headings": [],
+      "file": "pages/database/price_publication_intents.json"
+    },
+    {
       "id": "database/principals",
       "kind": "database",
       "title": "principals",
@@ -2622,6 +2676,16 @@
       "summary": "Append-only record of publications and restores, with the acting member and the branches each program concerns.",
       "headings": [],
       "file": "pages/database/publication_audit_events.json"
+    },
+    {
+      "id": "database/publication_catalogs",
+      "kind": "database",
+      "title": "publication_catalogs",
+      "group": "Publications",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Each catalog a protocol 2 publication copies, with the price sequence its copy includes; a price change finds the programs whose latest publication copies its catalog here.",
+      "headings": [],
+      "file": "pages/database/publication_catalogs.json"
     },
     {
       "id": "database/publication_device_events",
@@ -4032,43 +4096,44 @@
       { "file": "search/0013.json", "count": 14, "kinds": ["api"] },
       { "file": "search/0014.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0015.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0016.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0017.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0016.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0017.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0018.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0019.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0019.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0020.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0021.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0021.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0022.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0023.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0024.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0025.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0026.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0025.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0026.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0027.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0028.json", "count": 14, "kinds": ["api", "database"] },
-      { "file": "search/0029.json", "count": 23, "kinds": ["database"] },
+      { "file": "search/0028.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0029.json", "count": 16, "kinds": ["api", "database"] },
+      { "file": "search/0030.json", "count": 25, "kinds": ["database"] },
       {
-        "file": "search/0030.json",
-        "count": 31,
+        "file": "search/0031.json",
+        "count": 29,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0031.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0032.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0033.json", "count": 122, "kinds": ["repository"] },
-      { "file": "search/0034.json", "count": 174, "kinds": ["repository"] },
-      { "file": "search/0035.json", "count": 154, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 114, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0039.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0040.json", "count": 53, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 46, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 73, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 84, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 20, "kinds": ["repository"] }
+      { "file": "search/0032.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0033.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0034.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0035.json", "count": 173, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 158, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 117, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 54, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 64, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 41, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 78, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 44, "kinds": ["repository"] }
     ],
-    "count": 1898
+    "count": 1913
   }
 }

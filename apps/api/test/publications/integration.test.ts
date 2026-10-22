@@ -23,6 +23,8 @@ import { createPublicationsModule } from "../../src/features/publications/module
 import type { DevicePort } from "../../src/features/devices/public.js";
 import type { MediaReferenceGuard } from "../../src/features/media/public.js";
 import type { CompanyAccessPort } from "../../src/features/organizations/public.js";
+import type { PriceChangeListener } from "../../src/features/catalogs/public.js";
+import { companyAccess } from "../../src/features/organizations/domain.js";
 import type { PublicationFacts } from "../../src/features/programming/public.js";
 import { activateModules, type ApiModule } from "../../src/module.js";
 import { withMigratedDatabase } from "../../scripts/migrated-database.js";
@@ -131,6 +133,7 @@ beforeAll(async () => {
       devices: devices.devices,
       media: media.media,
       programming: programming.programming,
+      catalogs: catalogs.catalogs,
       limits: { ...limits, devices: limits.requests },
       manual: true,
     });
@@ -1070,6 +1073,358 @@ describe("publications: publishing, synchronization and retention", () => {
     ]);
   });
 
+  it("publishes price changes to the programs that show their catalog", async () => {
+    const a3 = await createBranch("aAdmin", companyA, "Praia");
+    const a4 = await createBranch("aAdmin", companyA, "Serra");
+    // The manager also manages Praia, through a grant of its own.
+    const grantId = randomUUID();
+    await sql.query(
+      `INSERT INTO membership_grants (id, company_id, membership_id, role, scope)
+       SELECT $1, company_id, id, 'BRANCH_MANAGER', 'BRANCHES' FROM memberships
+       WHERE company_id = $2 AND principal_id = $3`,
+      [grantId, companyA, people.aManager],
+    );
+    await sql.query(
+      "INSERT INTO membership_grant_branches (company_id, grant_id, branch_id) VALUES ($1, $2, $3)",
+      [companyA, grantId, a3.id],
+    );
+    const catalogs = `/companies/${companyA}/catalogs`;
+    const created = await call("aAdmin", "POST", catalogs, {
+      body: {
+        name: "Bebidas",
+        branchId: null,
+        fields: [
+          { label: "Nome", type: "text", required: true },
+          { label: "Preço", type: "money", currency: "BRL" },
+        ],
+      },
+    });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    const catalog = `${catalogs}/${created.body.id}`;
+    const [title, price] = created.body.fields as { id: string }[];
+    const coffee = await call("aAdmin", "POST", `${catalog}/records`, {
+      body: { values: { [title.id]: "Café" } },
+    });
+    expect(coffee.status, JSON.stringify(coffee.body)).toBe(201);
+    const prices = `${catalog}/records/${coffee.body.id}/prices/${price.id}`;
+    let version = coffee.body.version;
+    async function setPrice(person: Person, path: string, amount: number) {
+      const saved = await call(person, "PUT", path, {
+        body: { expectedVersion: version, amount },
+      });
+      if (saved.status === 200) version = saved.body.version;
+      return saved;
+    }
+    expect((await setPrice("aAdmin", prices, 500)).status).toBe(200);
+    const layout = await call("aAdmin", "POST", `${base}/layouts`, {
+      body: {
+        name: "Bebidas",
+        branchId: null,
+        definition: {
+          orientation: "landscape",
+          areas: [
+            {
+              key: "video",
+              name: "Vídeo",
+              x: 0,
+              y: 0,
+              width: 1280,
+              height: 1080,
+              z: 0,
+              kind: "media",
+            },
+            {
+              key: "menu",
+              name: "Bebidas",
+              x: 1280,
+              y: 0,
+              width: 640,
+              height: 1080,
+              z: 1,
+              kind: "catalog",
+              view: {
+                catalogId: created.body.id,
+                fields: [
+                  { fieldId: title.id, role: "title" },
+                  { fieldId: price.id, role: "price" },
+                ],
+                presentation: "menu",
+                textSize: 40,
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(layout.status, JSON.stringify(layout.body)).toBe(201);
+    async function shop(name: string, branchIds: string[]) {
+      const made = await group(name, branchIds);
+      const chosen = await call(
+        "aAdmin",
+        "PUT",
+        `${base}/groups/${made.id}/program/layout`,
+        { body: { expectedVersion: 1, layoutId: layout.body.id } },
+      );
+      expect(chosen.status, JSON.stringify(chosen.body)).toBe(200);
+      const published = await publish(`groups/${made.id}`);
+      expect(published.status, JSON.stringify(published.body)).toBe(201);
+      return made;
+    }
+    async function manifestOf(publicationId: string) {
+      const { rows } = await sql.query<{ text: string }>(
+        "SELECT convert_from(manifest, 'UTF8') AS text FROM publications WHERE id = $1",
+        [publicationId],
+      );
+      return JSON.parse(rows[0].text) as {
+        outputs: { key: string; default: unknown }[];
+        catalogs: {
+          prices: {
+            base: number | null;
+            overrides: { branchId: string; amount: number }[];
+          }[];
+        }[];
+      };
+    }
+    async function latestOf(groupId: string) {
+      const listed = await call(
+        "aAdmin",
+        "GET",
+        `${base}/groups/${groupId}/publications`,
+      );
+      return (listed.body.items as Body[])[0];
+    }
+    const praia = await shop("Praia", [a3.id]);
+    // A draft change after publication never rides on a price publication.
+    const clips = await playlist(null, "Clipes de bebidas", [
+      { mediaAssetId: png },
+    ]);
+    const program = await call(
+      "aAdmin",
+      "GET",
+      `${base}/groups/${praia.id}/program`,
+    );
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "PUT",
+          `${base}/groups/${praia.id}/program/outputs/video`,
+          {
+            body: {
+              expectedVersion: program.body.version,
+              defaultPlaylistId: clips.id,
+              rules: [],
+            },
+          },
+        )
+      ).status,
+    ).toBe(200);
+
+    // Praia's manager changes Praia's price: the intent becomes generation 2.
+    const list = `${catalog}/price-publications`;
+    expect(
+      (await setPrice("aManager", `${prices}/branches/${a3.id}`, 450)).status,
+    ).toBe(200);
+    expect((await call("aManager", "GET", list)).body.items).toMatchObject([
+      {
+        state: "pending",
+        target: { kind: "group", id: praia.id, name: "Praia" },
+        authorIsCaller: true,
+        generation: null,
+      },
+    ]);
+    expect(await publications.publishPrices()).toBe(1);
+    expect((await call("aManager", "GET", list)).body.items).toMatchObject([
+      { state: "published", reason: null, generation: 2 },
+    ]);
+    const second = await latestOf(praia.id);
+    expect(second).toMatchObject({
+      generation: 2,
+      origin: "price",
+      publishedBy: { isCaller: false },
+    });
+    const repriced = await manifestOf(second.id);
+    expect(repriced.outputs).toEqual([
+      { key: "video", default: null, rules: [] },
+      { key: "menu", default: { view: true }, rules: [] },
+    ]);
+    expect(repriced.catalogs[0].prices).toEqual([
+      expect.objectContaining({
+        base: 500,
+        overrides: [{ branchId: a3.id, amount: 450 }],
+      }),
+    ]);
+
+    // A program the manager cannot publish refuses the change, and nothing
+    // is saved.
+    const both = await shop("Praia e Serra", [a3.id, a4.id]);
+    expect(
+      code(await setPrice("aManager", `${prices}/branches/${a3.id}`, 400)),
+    ).toBe("PRICE_TARGET_FORBIDDEN");
+    const record = await call(
+      "aAdmin",
+      "GET",
+      `${catalog}/records/${coffee.body.id}`,
+    );
+    expect(record.body.version).toBe(version);
+    expect(record.body.overrides).toMatchObject([
+      { branch: { id: a3.id }, amount: 450 },
+    ]);
+
+    // Later changes coalesce per program; a person's publication settles
+    // what it includes.
+    expect((await setPrice("aAdmin", prices, 520)).status).toBe(200);
+    expect((await setPrice("aAdmin", prices, 530)).status).toBe(200);
+    const pending = (
+      (await call("aAdmin", "GET", list)).body.items as Body[]
+    ).filter((item) => item.state === "pending");
+    expect(pending.map((item) => (item.target as Body).id).sort()).toEqual(
+      [praia.id, both.id].sort(),
+    );
+    expect(new Set(pending.map((item) => item.priceSequence)).size).toBe(1);
+    expect((await publish(`groups/${both.id}`)).status).toBe(201);
+    expect(await publications.publishPrices()).toBe(1);
+    const settled = (await call("aAdmin", "GET", list)).body.items as Body[];
+    expect(
+      settled.find((item) => (item.target as Body).id === both.id),
+    ).toMatchObject({ state: "skipped", reason: "INCLUDED", generation: 2 });
+    expect(
+      settled.find(
+        (item) =>
+          (item.target as Body).id === praia.id && item.state !== "published",
+      ),
+    ).toBeUndefined();
+    expect(await latestOf(praia.id)).toMatchObject({
+      generation: 3,
+      origin: "price",
+    });
+    expect(
+      (await manifestOf((await latestOf(praia.id)).id)).catalogs[0].prices[0]
+        .base,
+    ).toBe(530);
+
+    // Removed authority blocks an intent until someone who may publish the
+    // program authorizes it again.
+    const removed = await call("aAdmin", "GET", `${base}/groups/${both.id}`);
+    expect(
+      (
+        await call("aAdmin", "DELETE", `${base}/groups/${both.id}`, {
+          body: { expectedVersion: removed.body.version },
+        })
+      ).status,
+    ).toBe(204);
+    // A Praia price stays local (IA-11): a program only for Serra shows the
+    // catalog but is not a target, so the manager may change it.
+    const serra = await shop("Serra", [a4.id]);
+    expect(
+      (await setPrice("aManager", `${prices}/branches/${a3.id}`, 410)).status,
+    ).toBe(200);
+    expect(
+      ((await call("aAdmin", "GET", list)).body.items as Body[])
+        .filter((item) => item.state === "pending")
+        .map((item) => (item.target as Body).id),
+    ).toEqual([praia.id]);
+    await sql.query(
+      "UPDATE membership_grants SET revoked_at = now() WHERE company_id = $1 AND id = $2",
+      [companyA, grantId],
+    );
+    expect(await publications.publishPrices()).toBe(1);
+    const [blocked] = (await call("aAdmin", "GET", list)).body.items as Body[];
+    expect(blocked).toMatchObject({
+      state: "blocked",
+      reason: "AUTHOR_NOT_AUTHORIZED",
+      authorIsCaller: false,
+    });
+    const retried = await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/price-publications/${blocked.id}/retry`,
+    );
+    expect(retried.status, JSON.stringify(retried.body)).toBe(200);
+    expect(retried.body).toMatchObject({
+      state: "pending",
+      reauthorized: true,
+      authorIsCaller: false,
+    });
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "POST",
+          `/companies/${companyA}/price-publications/${blocked.id}/retry`,
+        ),
+      ),
+    ).toBe("RESOURCE_VERSION_CONFLICT");
+    expect(await publications.publishPrices()).toBe(1);
+    expect(await latestOf(praia.id)).toMatchObject({
+      generation: 4,
+      origin: "price",
+      publishedBy: { isCaller: true },
+    });
+    const { rows: audited } = await sql.query<{
+      action: string;
+      details: Body;
+    }>(
+      `SELECT action, details FROM publication_audit_events
+       WHERE company_id = $1 AND action IN ('publication.price_reauthorized', 'publication.price_published')
+         AND details ->> 'intentId' = $2 ORDER BY occurred_at`,
+      [companyA, blocked.id],
+    );
+    expect(audited.map((row) => row.action)).toEqual([
+      "publication.price_reauthorized",
+      "publication.price_published",
+    ]);
+    expect(audited[0].details).toMatchObject({
+      previousState: "BLOCKED",
+      previousReason: "AUTHOR_NOT_AUTHORIZED",
+      outcome: "queued",
+    });
+
+    // A restored generation shows its old prices until the current ones
+    // follow as a price publication.
+    const first = (
+      (await call("aAdmin", "GET", `${base}/groups/${praia.id}/publications`))
+        .body.items as Body[]
+    ).find((item) => item.generation === 1)!;
+    const restored = await call(
+      "aAdmin",
+      "POST",
+      `${base}/groups/${praia.id}/publications/${first.id}/restore`,
+    );
+    expect(restored.status, JSON.stringify(restored.body)).toBe(201);
+    expect(restored.body.publication).toMatchObject({
+      generation: 5,
+      origin: "restore",
+    });
+    expect(await publications.publishPrices()).toBe(1);
+    const current = await latestOf(praia.id);
+    expect(current).toMatchObject({ generation: 6, origin: "price" });
+    expect((await manifestOf(current.id)).catalogs[0].prices).toEqual([
+      expect.objectContaining({
+        base: 530,
+        overrides: [{ branchId: a3.id, amount: 410 }],
+      }),
+    ]);
+    // A price too wide for its column fails the intent with the catalog
+    // problem, and screens keep the current generation.
+    expect((await setPrice("aAdmin", prices, 99_999_999_999)).status).toBe(200);
+    expect(await publications.publishPrices()).toBe(2);
+    const failed = (
+      (await call("aAdmin", "GET", list)).body.items as Body[]
+    ).slice(0, 2);
+    expect(failed.map((item) => (item.target as Body).id).sort()).toEqual(
+      [praia.id, serra.id].sort(),
+    );
+    for (const item of failed)
+      expect(item).toMatchObject({
+        state: "failed",
+        reason: "CATALOG_OVERFLOW",
+      });
+    expect(await latestOf(praia.id)).toMatchObject({ generation: 6 });
+    // Members who cannot see the catalog cannot list its publications.
+    expect(code(await call("bAdmin", "GET", list))).toBe("RESOURCE_NOT_FOUND");
+  });
+
   it("lets only scoped publishers publish", async () => {
     const local = await playlist(a1.id, "Centro noite", [
       { mediaAssetId: a1Png },
@@ -1629,6 +1984,7 @@ describe("publications: publishing, synchronization and retention", () => {
     // transaction, so they hold even while the module is unmounted.
     let guard: MediaReferenceGuard | undefined;
     let facts: PublicationFacts | undefined;
+    let priceListener: PriceChangeListener | undefined;
     const unmounted = (): never => {
       throw new Error("not active");
     };
@@ -1649,6 +2005,18 @@ describe("publications: publishing, synchronization and retention", () => {
         snapshot: unmounted,
         currentProgram: unmounted,
         followers: unmounted,
+        describePrograms: unmounted,
+        programSource: unmounted,
+        repriceCatalog: unmounted,
+      },
+      catalogs: {
+        registerUsageGuard: unmounted,
+        onPriceChange: (registered) => (priceListener = registered),
+        requireBindable: unmounted,
+        visible: unmounted,
+        describe: unmounted,
+        priceSequences: unmounted,
+        viewData: unmounted,
       },
     });
     const protectedBy = await database.$transaction((tx) =>
@@ -1663,6 +2031,26 @@ describe("publications: publishing, synchronization and retention", () => {
     ).rows[0].program_id;
     expect(
       await database.$transaction((tx) => facts!(tx, companyA, programId)),
+    ).toBe(true);
+    // Price changes reach the listener even while the module is unmounted;
+    // a catalog no program shows needs no authorization.
+    expect(
+      await database.$transaction((tx) =>
+        priceListener!(tx, {
+          access: companyAccess({
+            companyId: companyA,
+            companyStatus: "ACTIVE",
+            membershipId: randomUUID(),
+            principalId: randomUUID(),
+            responsible: false,
+            grants: [],
+            strong: true,
+          }),
+          catalogId: randomUUID(),
+          branchId: null,
+          sequence: 1,
+        }),
+      ),
     ).toBe(true);
 
     // At most 30 publications per program per hour.

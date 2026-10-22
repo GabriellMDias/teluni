@@ -3,6 +3,7 @@ import type {
   BindableCatalog,
   CatalogPort,
   CatalogViewData,
+  FieldType,
 } from "../catalogs/public.js";
 import type { HumanContext } from "../identity/public.js";
 import { MediaFailure, type MediaPort } from "../media/public.js";
@@ -32,6 +33,7 @@ import {
   type LayoutDocument,
   type LayoutInput,
   type Overflow,
+  type ViewDefinition,
 } from "./layouts.js";
 import type {
   LayoutRecord,
@@ -42,6 +44,10 @@ import type {
   CatalogSnapshot,
   LayoutSnapshot,
   LayoutSnapshotProblem,
+  PricedCatalogSnapshot,
+  PublishedCatalogCopy,
+  RepricedCatalog,
+  SnapshotPageEntry,
 } from "./public.js";
 
 export type AreaFit = Readonly<{
@@ -540,8 +546,6 @@ export class LayoutService {
     const item = await this.#repository.findLayout(companyId, layoutId);
     if (!item) return null;
     const definition = await this.#repository.definition(item, tx);
-    const reaches = (branchId: string) =>
-      reach === "all" || reach.has(branchId);
     const problems: LayoutSnapshotProblem[] = [];
     const data = new Map<string, CatalogViewData | null>();
     const bound = new Map<string, Set<string>>();
@@ -582,63 +586,15 @@ export class LayoutService {
       const fields = new Map(
         catalog?.catalog.fields.map((field) => [field.id, field]),
       );
-      const usableView =
-        catalog !== null && catalog.catalog.status === "ACTIVE";
-      if (!usableView)
-        problems.push({ code: "CATALOG_UNAVAILABLE", areaKey: area.key });
-      else if (
-        view.fields.some((field) => fields.get(field.fieldId)?.archived ?? true)
-      )
-        problems.push({ code: "CATALOG_FIELD_UNAVAILABLE", areaKey: area.key });
-      const records = usableView ? fitRecords(view, catalog) : [];
-      const fit = fitView(view, area, records);
-      if (fit.overflow.length > 0)
-        problems.push({ code: "CATALOG_OVERFLOW", areaKey: area.key });
-      // Groups are choice IDs, or ISO weekdays for an agenda.
-      const groupField = view.fields.find((field) => field.role === "group");
-      const choices = groupField
-        ? (fields.get(groupField.fieldId)?.choices ?? [])
-        : [];
-      const groupId = (group: number | null): string | null =>
-        group === null
-          ? null
-          : view.presentation === "agenda"
-            ? String(group)
-            : (choices[group]?.id ?? null);
-      const groupIndex = (id: string) =>
-        view.presentation === "agenda"
-          ? Number(id)
-          : choices.findIndex((choice) => choice.id === id);
-      const contents = definition.pages.flatMap((page) =>
-        page.contents.filter((content) => content.areaKey === area.key),
-      );
-      if (
-        contents.some(
-          (content) =>
-            content.viewPage !== null && content.viewPage > fit.entries.length,
-        )
-      )
-        problems.push({ code: "CATALOG_PAGE_MISSING", areaKey: area.key });
-      const groups = [
-        ...new Set(
-          contents.flatMap((content) =>
-            content.groupChoiceId ? [content.groupChoiceId] : [],
-          ),
+      const paged = paginateView(
+        view,
+        area,
+        catalog,
+        definition.pages.flatMap((page) =>
+          page.contents.filter((content) => content.areaKey === area.key),
         ),
-      ].map((group) => {
-        const index = groupIndex(group);
-        const alone = fitView(
-          view,
-          area,
-          records.filter((record) => record.group === index),
-        );
-        if (alone.entries.length > 1)
-          problems.push({ code: "CATALOG_GROUP_OVERFLOW", areaKey: area.key });
-        return {
-          group,
-          recordIds: (alone.entries[0] ?? []).map((entry) => entry.recordId),
-        };
-      });
+      );
+      problems.push(...paged.problems);
       const fieldIds = bound.get(view.catalogId) ?? new Set<string>();
       for (const field of view.fields) fieldIds.add(field.fieldId);
       bound.set(view.catalogId, fieldIds);
@@ -661,17 +617,12 @@ export class LayoutService {
           textSize: view.textSize,
           unavailable: view.unavailable,
           pageSeconds: view.pageSeconds,
-          pages: fit.entries.map((page) =>
-            page.map((entry) => ({
-              recordId: entry.recordId,
-              group: groupId(entry.group),
-            })),
-          ),
-          groups,
+          pages: paged.pages,
+          groups: paged.groups,
         },
       });
     }
-    const catalogs: CatalogSnapshot[] = [];
+    const catalogs: PricedCatalogSnapshot[] = [];
     for (const [catalogId, fieldIds] of bound) {
       const catalog = data.get(catalogId);
       if (!catalog) continue;
@@ -681,6 +632,7 @@ export class LayoutService {
       const money = fields.filter((field) => field.type === "money");
       catalogs.push({
         id: catalogId,
+        priceSequence: catalog.priceSequence,
         fields: fields.map((field) => ({
           id: field.id,
           type: field.type,
@@ -716,35 +668,7 @@ export class LayoutService {
             }),
           ),
         })),
-        prices: catalog.records.flatMap((record) =>
-          money.flatMap((field) => {
-            const facts = catalog.prices.get(record.id)?.get(field.id);
-            if (!facts) return [];
-            return [
-              {
-                recordId: record.id,
-                fieldId: field.id,
-                base: facts.base,
-                overrides: [...facts.overrides]
-                  .filter(([branchId]) => reaches(branchId))
-                  .map(([branchId, amount]) => ({ branchId, amount })),
-                promotions: facts.promotions
-                  .filter(
-                    (promotion) =>
-                      promotion.branchId === null ||
-                      reaches(promotion.branchId),
-                  )
-                  .map((promotion) => ({
-                    id: promotion.id,
-                    branchId: promotion.branchId,
-                    amount: promotion.amount,
-                    startsAt: promotion.startsAt,
-                    endsAt: promotion.endsAt,
-                  })),
-              },
-            ];
-          }),
-        ),
+        prices: snapshotPrices(catalog.records, catalog.prices, money, reach),
       });
     }
     const canvas = canvasOf(item);
@@ -771,6 +695,26 @@ export class LayoutService {
       mediaIds: [...media].sort(),
       problems,
     };
+  }
+
+  /**
+   * A published layout copy's catalog with its current prices: the copy's
+   * fields and records stay as published, prices are the catalog's current
+   * ones for the reach (records deleted since keep their published prices),
+   * and the views of the catalog are paginated again, because a price's
+   * width changes what fits. Null when the catalog no longer exists.
+   */
+  async repriceCatalog(
+    companyId: string,
+    published: PublishedCatalogCopy,
+    reach: "all" | ReadonlySet<string>,
+  ): Promise<RepricedCatalog | null> {
+    const current = await this.#catalogs.viewData(
+      companyId,
+      published.catalog.id,
+    );
+    if (!current) return null;
+    return repricedCopy(published, current, reach);
   }
 
   // Shared steps
@@ -1077,6 +1021,242 @@ export class LayoutService {
 
 /** The canvas of a layout, for wire views. */
 export const canvasOf = (item: LayoutRecord) => canvases[item.orientation];
+
+/**
+ * A view's pages and the records of each group a page names, paginated
+ * with the renderer contract's measure, and what blocks publishing them:
+ * an unavailable catalog or field, an overflowing record, a page the view
+ * no longer has or a group beyond one page.
+ */
+function paginateView(
+  view: ViewDefinition,
+  area: Readonly<{ key: string; width: number; height: number }>,
+  catalog: CatalogViewData | null,
+  contents: readonly Readonly<{
+    viewPage: number | null;
+    groupChoiceId: string | null;
+  }>[],
+): {
+  pages: SnapshotPageEntry[][];
+  groups: { group: string; recordIds: string[] }[];
+  problems: LayoutSnapshotProblem[];
+} {
+  const problems: LayoutSnapshotProblem[] = [];
+  const fields = new Map(
+    catalog?.catalog.fields.map((field) => [field.id, field]),
+  );
+  const usable = catalog !== null && catalog.catalog.status === "ACTIVE";
+  if (!usable)
+    problems.push({ code: "CATALOG_UNAVAILABLE", areaKey: area.key });
+  else if (
+    view.fields.some((field) => fields.get(field.fieldId)?.archived ?? true)
+  )
+    problems.push({ code: "CATALOG_FIELD_UNAVAILABLE", areaKey: area.key });
+  const records = usable ? fitRecords(view, catalog) : [];
+  const fit = fitView(view, area, records);
+  if (fit.overflow.length > 0)
+    problems.push({ code: "CATALOG_OVERFLOW", areaKey: area.key });
+  // Groups are choice IDs, or ISO weekdays for an agenda.
+  const groupField = view.fields.find((field) => field.role === "group");
+  const choices = groupField
+    ? (fields.get(groupField.fieldId)?.choices ?? [])
+    : [];
+  const groupId = (group: number | null): string | null =>
+    group === null
+      ? null
+      : view.presentation === "agenda"
+        ? String(group)
+        : (choices[group]?.id ?? null);
+  const groupIndex = (id: string) =>
+    view.presentation === "agenda"
+      ? Number(id)
+      : choices.findIndex((choice) => choice.id === id);
+  if (
+    contents.some(
+      (content) =>
+        content.viewPage !== null && content.viewPage > fit.entries.length,
+    )
+  )
+    problems.push({ code: "CATALOG_PAGE_MISSING", areaKey: area.key });
+  const groups = [
+    ...new Set(
+      contents.flatMap((content) =>
+        content.groupChoiceId ? [content.groupChoiceId] : [],
+      ),
+    ),
+  ].map((group) => {
+    const index = groupIndex(group);
+    const alone = fitView(
+      view,
+      area,
+      records.filter((record) => record.group === index),
+    );
+    if (alone.entries.length > 1)
+      problems.push({ code: "CATALOG_GROUP_OVERFLOW", areaKey: area.key });
+    return {
+      group,
+      recordIds: (alone.entries[0] ?? []).map((entry) => entry.recordId),
+    };
+  });
+  return {
+    pages: fit.entries.map((page) =>
+      page.map((entry) => ({
+        recordId: entry.recordId,
+        group: groupId(entry.group),
+      })),
+    ),
+    groups,
+    problems,
+  };
+}
+
+/**
+ * Prices as a publication carries them: per record and money field, the
+ * base price and only the branch prices and promotions of the branches
+ * the program reaches (scope-wide promotions included).
+ */
+function snapshotPrices(
+  records: readonly Readonly<{ id: string }>[],
+  prices: CatalogViewData["prices"],
+  money: readonly Readonly<{ id: string }>[],
+  reach: "all" | ReadonlySet<string>,
+): CatalogSnapshot["prices"] {
+  const reaches = (branchId: string) => reach === "all" || reach.has(branchId);
+  return records.flatMap((record) =>
+    money.flatMap((field) => {
+      const facts = prices.get(record.id)?.get(field.id);
+      if (!facts) return [];
+      return [
+        {
+          recordId: record.id,
+          fieldId: field.id,
+          base: facts.base,
+          overrides: [...facts.overrides]
+            .filter(([branchId]) => reaches(branchId))
+            .map(([branchId, amount]) => ({ branchId, amount })),
+          promotions: facts.promotions
+            .filter(
+              (promotion) =>
+                promotion.branchId === null || reaches(promotion.branchId),
+            )
+            .map((promotion) => ({
+              id: promotion.id,
+              branchId: promotion.branchId,
+              amount: promotion.amount,
+              startsAt: promotion.startsAt,
+              endsAt: promotion.endsAt,
+            })),
+        },
+      ];
+    }),
+  );
+}
+
+/** See `LayoutService.repriceCatalog`. */
+function repricedCopy(
+  published: PublishedCatalogCopy,
+  current: CatalogViewData,
+  reach: "all" | ReadonlySet<string>,
+): RepricedCatalog {
+  const copy = published.catalog;
+  const existing = new Set(current.records.map((record) => record.id));
+  // Records deleted since publication keep the prices they were published with.
+  const prices = new Map(
+    copy.records.map((record) => [
+      record.id,
+      existing.has(record.id)
+        ? (current.prices.get(record.id) ?? new Map())
+        : new Map(
+            copy.prices
+              .filter((price) => price.recordId === record.id)
+              .map((price) => [
+                price.fieldId,
+                {
+                  base: price.base,
+                  overrides: new Map(
+                    price.overrides.map((entry) => [
+                      entry.branchId,
+                      entry.amount,
+                    ]),
+                  ),
+                  promotions: price.promotions.map((promotion) => ({
+                    ...promotion,
+                    recordId: record.id,
+                    fieldId: price.fieldId,
+                  })),
+                },
+              ]),
+          ),
+    ]),
+  ) as CatalogViewData["prices"];
+  const fields = copy.fields.map((field) => ({
+    id: field.id,
+    label: field.label,
+    type: field.type as FieldType,
+    archived: false,
+    choices: field.choices ?? [],
+    currency: field.currency ?? null,
+  }));
+  const references = new Set(
+    fields.filter((field) => field.type === "reference").map((f) => f.id),
+  );
+  // The copy holds what this module published: a reference value is
+  // already the referenced item's title.
+  const data: CatalogViewData = {
+    catalog: {
+      id: copy.id,
+      name: "",
+      branchId: null,
+      status: "ACTIVE",
+      fields,
+    },
+    priceSequence: current.priceSequence,
+    records: copy.records.map((record) => ({
+      id: record.id,
+      available: record.available,
+      values: record.values as CatalogViewData["records"][number]["values"],
+    })),
+    prices,
+    referenceTitles: new Map(
+      copy.records.flatMap((record) =>
+        Object.entries(record.values).flatMap(([fieldId, value]) =>
+          references.has(fieldId) && typeof value === "string"
+            ? [[value, value] as const]
+            : [],
+        ),
+      ),
+    ),
+  };
+  const problems: LayoutSnapshotProblem[] = [];
+  const views = published.areas.flatMap((area) => {
+    if (area.view?.catalogId !== copy.id) return [];
+    const paged = paginateView(
+      // The copy holds a view this module validated and published.
+      area.view as unknown as ViewDefinition,
+      area,
+      data,
+      published.pages.flatMap((page) =>
+        page.contents.filter((content) => content.areaKey === area.key),
+      ),
+    );
+    problems.push(...paged.problems);
+    return [{ areaKey: area.key, pages: paged.pages, groups: paged.groups }];
+  });
+  return {
+    catalog: {
+      ...copy,
+      prices: snapshotPrices(
+        copy.records,
+        prices,
+        fields.filter((field) => field.type === "money"),
+        reach,
+      ),
+    },
+    priceSequence: current.priceSequence,
+    views,
+    problems,
+  };
+}
 
 /**
  * The records a view shows as text, with the widest price each may show.

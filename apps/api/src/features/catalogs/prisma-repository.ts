@@ -218,6 +218,37 @@ export class PrismaCatalogRepository {
     return this.#db.$transaction(work);
   }
 
+  /**
+   * Counts a price change: takes the catalog's counter row lock until the
+   * change commits, so numbers follow commit order, and returns the
+   * change's number.
+   */
+  async nextPriceSequence(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    catalogId: string,
+  ): Promise<number> {
+    const [row] = await tx.$queryRaw<{ sequence: bigint }[]>`
+      INSERT INTO catalog_price_sequences (company_id, catalog_id, sequence)
+      VALUES (${companyId}::uuid, ${catalogId}::uuid, 1)
+      ON CONFLICT (company_id, catalog_id)
+        DO UPDATE SET sequence = catalog_price_sequences.sequence + 1
+      RETURNING sequence`;
+    return Number(row.sequence);
+  }
+
+  /** The number of a catalog's latest committed price change (0 before any). */
+  async priceSequence(
+    companyId: string,
+    catalogId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    const [row] = await (tx ?? this.#db).$queryRaw<{ sequence: bigint }[]>`
+      SELECT sequence FROM catalog_price_sequences
+      WHERE company_id = ${companyId}::uuid AND catalog_id = ${catalogId}::uuid`;
+    return row ? Number(row.sequence) : 0;
+  }
+
   /** Reads that must see one snapshot, such as a catalog a publication copies. */
   snapshot<T>(work: (tx: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     return this.#db.$transaction(work, {

@@ -18,3 +18,6 @@ GRANT SELECT, INSERT, DELETE ON catalog_promotions TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON catalog_record_media TO orion_runtime;
 GRANT SELECT, INSERT, DELETE ON catalog_record_references TO orion_runtime;
 GRANT SELECT, INSERT ON catalog_audit_events TO orion_runtime;
+-- Price change counters only grow, one per price change.
+GRANT SELECT, INSERT ON catalog_price_sequences TO orion_runtime;
+GRANT UPDATE (sequence) ON catalog_price_sequences TO orion_runtime;

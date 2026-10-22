@@ -43,8 +43,12 @@ model Catalog {
   promotions    CatalogPromotion[]
   recordMedia   CatalogRecordMedia[]
   references    CatalogRecordReference[]
+  priceSequence CatalogPriceSequence?
   // Back-relation of the programming module's layouts; never traversed.
   layoutAreas   LayoutArea[]
+  // Back-relations of the publications module; never traversed.
+  publications  PublicationCatalog[]
+  priceIntents  PriceIntent[]
 
   @@unique([companyId, id], map: "catalogs_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "catalogs_company_created_idx")
@@ -198,4 +202,18 @@ model CatalogAuditEvent {
   @@unique([companyId, id], map: "catalog_audit_events_company_id_id_key")
   @@index([companyId, catalogId, occurredAt(sort: Desc), id(sort: Desc)], map: "catalog_audit_events_catalog_idx")
   @@map("catalog_audit_events")
+}
+
+/// The catalog's price changes, counted in commit order: each base, branch
+/// or promotion change takes this row's lock and adds one, so publications
+/// can tell which changes they include (catalog and composition design,
+/// automatic price publication).
+model CatalogPriceSequence {
+  companyId String  @map("company_id") @db.Uuid
+  catalogId String  @map("catalog_id") @db.Uuid
+  sequence  BigInt  @default(0)
+  catalog   Catalog @relation(fields: [companyId, catalogId], references: [companyId, id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@id([companyId, catalogId], map: "catalog_price_sequences_pkey")
+  @@map("catalog_price_sequences")
 }

@@ -52843,7 +52843,7 @@
     "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}": {
       "put": {
         "operationId": "setCatalogBasePrice",
-        "description": "Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts.",
+        "description": "Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
         "tags": ["Catalogs"],
         "security": [
           {
@@ -53639,14 +53639,15 @@
           "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
-          "CATALOG_ARCHIVED"
+          "CATALOG_ARCHIVED",
+          "PRICE_TARGET_FORBIDDEN"
         ]
       }
     },
     "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/branches/{branchId}": {
       "put": {
         "operationId": "setCatalogBranchPrice",
-        "description": "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication.",
+        "description": "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
         "tags": ["Catalogs"],
         "security": [
           {
@@ -54451,7 +54452,8 @@
           "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
-          "CATALOG_ARCHIVED"
+          "CATALOG_ARCHIVED",
+          "PRICE_TARGET_FORBIDDEN"
         ]
       }
     },
@@ -55126,7 +55128,7 @@
       },
       "post": {
         "operationId": "createCatalogPromotion",
-        "description": "Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price.",
+        "description": "Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
         "tags": ["Catalogs"],
         "security": [
           {
@@ -55822,14 +55824,15 @@
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
           "CATALOG_PROMOTION_CONFLICT",
-          "CATALOG_LIMIT_REACHED"
+          "CATALOG_LIMIT_REACHED",
+          "PRICE_TARGET_FORBIDDEN"
         ]
       }
     },
     "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/promotions/{promotionId}": {
       "delete": {
         "operationId": "deleteCatalogPromotion",
-        "description": "Remove a promotion. Promotions are never edited; remove one and add another to change it.",
+        "description": "Remove a promotion. Promotions are never edited; remove one and add another to change it. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
         "tags": ["Catalogs"],
         "security": [
           {
@@ -56429,7 +56432,8 @@
           "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
-          "CATALOG_ARCHIVED"
+          "CATALOG_ARCHIVED",
+          "PRICE_TARGET_FORBIDDEN"
         ]
       }
     },
@@ -81918,6 +81922,7 @@
                           "publishedAt",
                           "publishedBy",
                           "restoredFromGeneration",
+                          "origin",
                           "counts",
                           "manifestSha256",
                           "state",
@@ -81964,6 +81969,23 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "origin": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "manual"
+                              },
+                              {
+                                "type": "string",
+                                "const": "restore"
+                              },
+                              {
+                                "type": "string",
+                                "const": "price"
+                              }
+                            ],
+                            "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                           },
                           "counts": {
                             "type": "object",
@@ -82658,6 +82680,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -82704,6 +82727,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -82799,6 +82839,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -82845,6 +82886,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -83646,6 +83704,7 @@
                             "publishedAt",
                             "publishedBy",
                             "restoredFromGeneration",
+                            "origin",
                             "counts",
                             "manifestSha256",
                             "state",
@@ -83692,6 +83751,23 @@
                                   "type": "null"
                                 }
                               ]
+                            },
+                            "origin": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "manual"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "restore"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "price"
+                                }
+                              ],
+                              "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                             },
                             "counts": {
                               "type": "object",
@@ -84378,6 +84454,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -84424,6 +84501,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -84519,6 +84613,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -84565,6 +84660,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -85260,6 +85372,7 @@
                           "publishedAt",
                           "publishedBy",
                           "restoredFromGeneration",
+                          "origin",
                           "counts",
                           "manifestSha256",
                           "state",
@@ -85306,6 +85419,23 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "origin": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "manual"
+                              },
+                              {
+                                "type": "string",
+                                "const": "restore"
+                              },
+                              {
+                                "type": "string",
+                                "const": "price"
+                              }
+                            ],
+                            "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                           },
                           "counts": {
                             "type": "object",
@@ -86000,6 +86130,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -86046,6 +86177,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -86141,6 +86289,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -86187,6 +86336,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -86988,6 +87154,7 @@
                             "publishedAt",
                             "publishedBy",
                             "restoredFromGeneration",
+                            "origin",
                             "counts",
                             "manifestSha256",
                             "state",
@@ -87034,6 +87201,23 @@
                                   "type": "null"
                                 }
                               ]
+                            },
+                            "origin": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "manual"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "restore"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "price"
+                                }
+                              ],
+                              "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                             },
                             "counts": {
                               "type": "object",
@@ -87720,6 +87904,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -87766,6 +87951,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -87861,6 +88063,7 @@
                         "publishedAt",
                         "publishedBy",
                         "restoredFromGeneration",
+                        "origin",
                         "counts",
                         "manifestSha256",
                         "state",
@@ -87907,6 +88110,23 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "origin": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "manual"
+                            },
+                            {
+                              "type": "string",
+                              "const": "restore"
+                            },
+                            {
+                              "type": "string",
+                              "const": "price"
+                            }
+                          ],
+                          "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                         },
                         "counts": {
                           "type": "object",
@@ -88529,6 +88749,1579 @@
           "CSRF_VALIDATION_FAILED",
           "PUBLICATION_INVALID",
           "PUBLICATION_NOT_RESTORABLE"
+        ]
+      }
+    },
+    "/companies/{companyId}/catalogs/{catalogId}/price-publications": {
+      "get": {
+        "operationId": "listCatalogPricePublications",
+        "description": "The catalog's 50 most recent price publications, newest first: one per program whose latest publication shows the catalog, queued by a price change and published by the price processor as a new generation that changes only this catalog's prices. A pending intent coalesces later changes; the generation names the publication an intent produced or found already including its prices. Programs the caller cannot see have no target. Needs catalogs.view on the catalog.",
+        "tags": ["Publications"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "catalogId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["items"],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "state",
+                          "reason",
+                          "target",
+                          "priceSequence",
+                          "generation",
+                          "authorIsCaller",
+                          "reauthorized",
+                          "attempts",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "state": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "pending"
+                              },
+                              {
+                                "type": "string",
+                                "const": "published"
+                              },
+                              {
+                                "type": "string",
+                                "const": "skipped"
+                              },
+                              {
+                                "type": "string",
+                                "const": "blocked"
+                              },
+                              {
+                                "type": "string",
+                                "const": "failed"
+                              }
+                            ]
+                          },
+                          "reason": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "const": "INCLUDED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "UNCHANGED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "SUPERSEDED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "NOT_PUBLISHED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "CATALOG_DELETED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "AUTHOR_INACTIVE"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "AUTHOR_NOT_AUTHORIZED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "REACH_CHANGED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "MEDIA_UNAVAILABLE"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "CATALOG_UNAVAILABLE"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "CATALOG_FIELD_UNAVAILABLE"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "CATALOG_OVERFLOW"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "CATALOG_PAGE_MISSING"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "CATALOG_GROUP_OVERFLOW"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "RATE_LIMITED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "RESOURCE_VERSION_CONFLICT"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "COMPANY_SUSPENDED"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "ERROR"
+                                  }
+                                ],
+                                "description": "Why the intent was skipped (INCLUDED: a publication already has these prices; UNCHANGED: nothing the program reaches changed; SUPERSEDED: a pending intent covers it; NOT_PUBLISHED: the program's latest publication no longer shows the catalog; CATALOG_DELETED), blocked (AUTHOR_INACTIVE, AUTHOR_NOT_AUTHORIZED: whoever authorized it can no longer publish the program) or failed (REACH_CHANGED: the program now reaches branches its publication's prices do not cover; MEDIA_UNAVAILABLE; a catalog problem of the new prices; or, after repeated attempts, RATE_LIMITED, RESOURCE_VERSION_CONFLICT, COMPANY_SUSPENDED or ERROR). A pending intent may carry its last transient failure."
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "target": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": ["kind", "id", "name"],
+                                "properties": {
+                                  "kind": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "const": "group"
+                                      },
+                                      {
+                                        "type": "string",
+                                        "const": "device"
+                                      }
+                                    ]
+                                  },
+                                  "id": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "maxLength": 200
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "priceSequence": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "generation": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "authorIsCaller": {
+                            "type": "boolean"
+                          },
+                          "reauthorized": {
+                            "type": "boolean"
+                          },
+                          "attempts": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "maxItems": 50
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED",
+          "DEVICE_UNLINKED"
+        ]
+      }
+    },
+    "/companies/{companyId}/price-publications/{intentId}/retry": {
+      "post": {
+        "operationId": "retryPricePublication",
+        "description": "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program, with strong authentication.",
+        "tags": ["Publications"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "intentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "state",
+                    "reason",
+                    "target",
+                    "priceSequence",
+                    "generation",
+                    "authorIsCaller",
+                    "reauthorized",
+                    "attempts",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "state": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "pending"
+                        },
+                        {
+                          "type": "string",
+                          "const": "published"
+                        },
+                        {
+                          "type": "string",
+                          "const": "skipped"
+                        },
+                        {
+                          "type": "string",
+                          "const": "blocked"
+                        },
+                        {
+                          "type": "string",
+                          "const": "failed"
+                        }
+                      ]
+                    },
+                    "reason": {
+                      "anyOf": [
+                        {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "INCLUDED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "UNCHANGED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "SUPERSEDED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "NOT_PUBLISHED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "CATALOG_DELETED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "AUTHOR_INACTIVE"
+                            },
+                            {
+                              "type": "string",
+                              "const": "AUTHOR_NOT_AUTHORIZED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "REACH_CHANGED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "MEDIA_UNAVAILABLE"
+                            },
+                            {
+                              "type": "string",
+                              "const": "CATALOG_UNAVAILABLE"
+                            },
+                            {
+                              "type": "string",
+                              "const": "CATALOG_FIELD_UNAVAILABLE"
+                            },
+                            {
+                              "type": "string",
+                              "const": "CATALOG_OVERFLOW"
+                            },
+                            {
+                              "type": "string",
+                              "const": "CATALOG_PAGE_MISSING"
+                            },
+                            {
+                              "type": "string",
+                              "const": "CATALOG_GROUP_OVERFLOW"
+                            },
+                            {
+                              "type": "string",
+                              "const": "RATE_LIMITED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "RESOURCE_VERSION_CONFLICT"
+                            },
+                            {
+                              "type": "string",
+                              "const": "COMPANY_SUSPENDED"
+                            },
+                            {
+                              "type": "string",
+                              "const": "ERROR"
+                            }
+                          ],
+                          "description": "Why the intent was skipped (INCLUDED: a publication already has these prices; UNCHANGED: nothing the program reaches changed; SUPERSEDED: a pending intent covers it; NOT_PUBLISHED: the program's latest publication no longer shows the catalog; CATALOG_DELETED), blocked (AUTHOR_INACTIVE, AUTHOR_NOT_AUTHORIZED: whoever authorized it can no longer publish the program) or failed (REACH_CHANGED: the program now reaches branches its publication's prices do not cover; MEDIA_UNAVAILABLE; a catalog problem of the new prices; or, after repeated attempts, RATE_LIMITED, RESOURCE_VERSION_CONFLICT, COMPANY_SUSPENDED or ERROR). A pending intent may carry its last transient failure."
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "target": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["kind", "id", "name"],
+                          "properties": {
+                            "kind": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "const": "group"
+                                },
+                                {
+                                  "type": "string",
+                                  "const": "device"
+                                }
+                              ]
+                            },
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": {
+                              "type": "string",
+                              "maxLength": 200
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "priceSequence": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "generation": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "authorIsCaller": {
+                      "type": "boolean"
+                    },
+                    "reauthorized": {
+                      "type": "boolean"
+                    },
+                    "attempts": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "PERMISSION_DENIED",
+          "STRONG_AUTHENTICATION_REQUIRED",
+          "DEVICE_UNLINKED",
+          "CSRF_VALIDATION_FAILED",
+          "RESOURCE_VERSION_CONFLICT"
         ]
       }
     },

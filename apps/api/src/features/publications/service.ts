@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Readable } from "node:stream";
 import type { Prisma } from "../../generated/prisma/client.js";
+import type { CatalogPort } from "../catalogs/public.js";
 import { DeviceFailure, type DevicePort } from "../devices/public.js";
 import type { HumanContext } from "../identity/public.js";
 import type { MediaPort, PublishableMedia } from "../media/public.js";
@@ -11,6 +12,7 @@ import {
   type CompanyAccessPort,
 } from "../organizations/public.js";
 import {
+  ProgrammingFailure,
   zoneOffsets,
   type ProgramSnapshot,
   type ProgramSource,
@@ -28,6 +30,8 @@ import {
   layoutContentDigest,
   layoutManifestBytes,
   manifestBytes,
+  priceIntentPolicy,
+  priceRetryDelayMs,
   publicationPolicy,
   PublicationFailure,
   type AuthorizedPublication,
@@ -38,11 +42,20 @@ import {
   type PublicationContent,
   type PublicationProblem,
 } from "./domain.js";
+import {
+  queueIntent,
+  type ClaimedIntent,
+  type IntentOutcome,
+  type PriceIntentRecord,
+  type PrismaPriceIntentRepository,
+} from "./price-repository.js";
 import type {
   Actor,
+  CatalogCopy,
   DeliveredMedia,
   DeviceEventKind,
   PrismaPublicationRepository,
+  PublicationOrigin,
   PublicationRecord,
   StateRecord,
 } from "./prisma-repository.js";
@@ -57,6 +70,18 @@ export type PublicationView = PublicationRecord &
   Readonly<{
     state: "current" | "retained" | "pruned";
     isCaller: boolean;
+  }>;
+
+/** An intent as a catalog's panel shows it. */
+export type PriceIntentView = PriceIntentRecord &
+  Readonly<{
+    /** The program's group or screen, when the caller may see it. */
+    target: Readonly<{
+      kind: "group" | "device";
+      id: string;
+      name: string;
+    }> | null;
+    authorIsCaller: boolean;
   }>;
 
 export type CheckView = Readonly<{
@@ -145,7 +170,11 @@ type Built = Readonly<{
   problems: PublicationProblem[];
   counts: PublicationRecord["counts"];
   digest: Buffer;
+  catalogs: readonly CatalogCopy[];
 }>;
+
+/** The claim on an intent was lost while it was being processed. */
+class ClaimLost extends Error {}
 
 const publish = "publications.publish";
 const dayMs = 86_400_000;
@@ -208,6 +237,8 @@ export class PublicationService {
   readonly #devices: DevicePort;
   readonly #media: MediaPort;
   readonly #programming: ProgrammingPort;
+  readonly #catalogs: CatalogPort;
+  readonly #intents: PrismaPriceIntentRepository;
   readonly #keys: readonly SigningKey[];
   #keySet: Promise<PublicKeySet> | undefined;
   readonly #downloads = new Map<string, number>();
@@ -218,6 +249,8 @@ export class PublicationService {
     devices: DevicePort;
     media: MediaPort;
     programming: ProgrammingPort;
+    catalogs: CatalogPort;
+    intents: PrismaPriceIntentRepository;
     keys: readonly SigningKey[];
   }) {
     this.#repository = options.repository;
@@ -225,6 +258,8 @@ export class PublicationService {
     this.#devices = options.devices;
     this.#media = options.media;
     this.#programming = options.programming;
+    this.#catalogs = options.catalogs;
+    this.#intents = options.intents;
     this.#keys = options.keys;
   }
 
@@ -314,6 +349,8 @@ export class PublicationService {
             counts: built.counts,
             playlists: built.playlists,
             restoredFromGeneration: null,
+            origin: "MANUAL",
+            catalogs: built.catalogs,
           })),
         };
       },
@@ -424,6 +461,14 @@ export class PublicationService {
             counts: earlier.counts,
             playlists,
             restoredFromGeneration: earlier.generation,
+            origin: "RESTORE",
+            // The copy's prices are those of its time; the catalogs'
+            // current prices follow as price publications.
+            catalogs: await this.#repository.catalogs(
+              tx,
+              companyId,
+              earlier.id,
+            ),
           })),
         };
       },
@@ -431,6 +476,315 @@ export class PublicationService {
     return {
       publication: this.#view(result.publication, result.access),
       created: result.created,
+    };
+  }
+
+  // Automatic price publication
+
+  /**
+   * Turns one claimed intent into its outcome in one transaction: a new
+   * generation of the program's latest publication with the catalog's
+   * current prices, or why there is none. The intent is finished in the
+   * same transaction; a lost claim rolls everything back.
+   */
+  async publishPrices(intent: ClaimedIntent): Promise<IntentOutcome> {
+    try {
+      return await this.#repository.transaction(async (tx) => {
+        const outcome = await this.#priceOutcome(tx, intent);
+        if (!(await this.#intents.finish(tx, intent, outcome)))
+          throw new ClaimLost();
+        return outcome;
+      });
+    } catch (error) {
+      if (error instanceof ClaimLost)
+        return { retryInMs: 0, reason: "CLAIM_LOST" };
+      const code =
+        error instanceof PublicationFailure ||
+        error instanceof ProgrammingFailure ||
+        error instanceof OrganizationFailure
+          ? error.code
+          : null;
+      // Another generation came first, or a limit or suspension holds:
+      // try again later from the then latest publication.
+      if (
+        code !== "RATE_LIMITED" &&
+        code !== "RESOURCE_VERSION_CONFLICT" &&
+        code !== "COMPANY_SUSPENDED"
+      )
+        throw error;
+      const outcome: IntentOutcome = {
+        retryInMs:
+          code === "RESOURCE_VERSION_CONFLICT"
+            ? 1_000
+            : priceRetryDelayMs(intent.attempts),
+        reason: code,
+      };
+      await this.#intents.finish(null, intent, outcome);
+      return outcome;
+    }
+  }
+
+  async #priceOutcome(
+    tx: Prisma.TransactionClient,
+    intent: ClaimedIntent,
+  ): Promise<IntentOutcome> {
+    const { companyId, programId, catalogId } = intent;
+    const gone = (reason: string): IntentOutcome => ({
+      state: "SKIPPED",
+      reason,
+      publicationId: null,
+      includes: Number.MAX_SAFE_INTEGER,
+    });
+    const source = await this.#programming.programSource(companyId, programId);
+    const latest = await this.#repository.latest(companyId, programId, tx);
+    if (!source || !latest) return gone("NOT_PUBLISHED");
+    const copies = await this.#repository.catalogs(tx, companyId, latest.id);
+    const copy = copies.find((item) => item.catalogId === catalogId);
+    if (!copy) return gone("NOT_PUBLISHED");
+    if (copy.priceSequence >= intent.priceSequence)
+      return {
+        state: "SKIPPED",
+        reason: "INCLUDED",
+        publicationId: latest.id,
+        includes: copy.priceSequence,
+      };
+    // Authority is checked again now: removed authority blocks the intent
+    // until someone who may publish the program authorizes it again.
+    const authority =
+      intent.authorizedByMembershipId ?? intent.authorMembershipId;
+    const locked = await this.#companies.lockForMembership(
+      tx,
+      companyId,
+      authority,
+      latest.branchIds,
+    );
+    if (!locked) return { state: "BLOCKED", reason: "AUTHOR_INACTIVE" };
+    let target: ProgramTarget;
+    try {
+      target = await this.#programming.target(
+        tx,
+        locked.access,
+        source,
+        publish,
+      );
+    } catch (error) {
+      const code =
+        error instanceof OrganizationFailure ||
+        error instanceof ProgrammingFailure
+          ? error.code
+          : null;
+      if (code === "PERMISSION_DENIED" || code === "RESOURCE_NOT_FOUND")
+        return { state: "BLOCKED", reason: "AUTHOR_NOT_AUTHORIZED" };
+      throw error;
+    }
+    if (target.programId !== programId) return gone("NOT_PUBLISHED");
+    // The copy's prices cover the branches it was published for only.
+    if (!withinReach(target.reach, latest.branchIds))
+      return { state: "FAILED", reason: "REACH_CHANGED" };
+    const manifest = await this.#repository.manifest(companyId, latest.id, tx);
+    const stored = manifest
+      ? (JSON.parse(
+          manifest.toString("utf8"),
+        ) as Partial<LayoutPublicationContent> & { protocol: number })
+      : null;
+    const published = stored?.catalogs?.find((item) => item.id === catalogId);
+    if (!stored || stored.protocol !== 2 || !stored.layout || !published)
+      return gone("NOT_PUBLISHED");
+    const repriced = await this.#programming.repriceCatalog(
+      companyId,
+      {
+        areas: stored.layout.areas,
+        pages: stored.layout.pages,
+        catalog: published,
+      },
+      latest.branchIds.length === 0 ? "all" : new Set(latest.branchIds),
+    );
+    if (!repriced) return gone("CATALOG_DELETED");
+    if (repriced.problems.length > 0)
+      return { state: "FAILED", reason: repriced.problems[0].code };
+    const views = new Map(repriced.views.map((view) => [view.areaKey, view]));
+    const content: LayoutPublicationContent = {
+      layout: {
+        ...stored.layout,
+        areas: stored.layout.areas.map((area) => {
+          const view = views.get(area.key);
+          return view && area.view
+            ? { ...area, view: { ...area.view, ...view } }
+            : area;
+        }),
+      },
+      outputs: stored.outputs!,
+      catalogs: stored.catalogs!.map((item) =>
+        item.id === catalogId ? repriced.catalog : item,
+      ),
+      playlists: stored.playlists!,
+      media: stored.media!,
+    };
+    // The copy keeps its playlists and media, which must still be usable.
+    const playlists = await this.#repository.playlists(
+      tx,
+      companyId,
+      latest.id,
+    );
+    if (playlists.some((item) => !fits(item.branchId, target.reach)))
+      return { state: "FAILED", reason: "REACH_CHANGED" };
+    const media = new Map(
+      (
+        await this.#media.describeForPublication(
+          tx,
+          companyId,
+          content.media.map((item) => item.id),
+        )
+      ).map((item) => [item.id, item]),
+    );
+    if (
+      content.media.some((item) => {
+        const found = media.get(item.id);
+        return (
+          !found || !publishable(found) || found.display?.sha256 !== item.sha256
+        );
+      })
+    )
+      return { state: "FAILED", reason: "MEDIA_UNAVAILABLE" };
+    const result = await this.#record(
+      tx,
+      { principalId: locked.access.principalId, membershipId: authority },
+      companyId,
+      {
+        programId,
+        branchIds: target.branchIds,
+        payload: { protocol: 2, content: canonicalLayoutContent(content) },
+        digest: layoutContentDigest(content),
+        counts: latest.counts,
+        playlists,
+        restoredFromGeneration: null,
+        origin: "PRICE",
+        catalogs: copies.map((item) =>
+          item.catalogId === catalogId
+            ? { catalogId, priceSequence: repriced.priceSequence }
+            : item,
+        ),
+        price: {
+          base: latest.id,
+          intent,
+          catalogId,
+          priceSequence: repriced.priceSequence,
+        },
+      },
+    );
+    return {
+      state: result.created ? "PUBLISHED" : "SKIPPED",
+      reason: result.created ? null : "UNCHANGED",
+      publicationId: result.publication.id,
+      includes: repriced.priceSequence,
+    };
+  }
+
+  /** A catalog's recent price publications, for members who see the catalog. */
+  async pricePublications(
+    context: HumanContext,
+    companyId: string,
+    catalogId: string,
+  ): Promise<PriceIntentView[]> {
+    const access = await this.#companies.resolve(context, companyId);
+    if (!(await this.#catalogs.visible(access, catalogId)))
+      throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    const items = await this.#intents.list(
+      companyId,
+      catalogId,
+      priceIntentPolicy.listLimit,
+    );
+    const targets = await this.#programming.describePrograms(
+      access,
+      items.map((item) => item.programId),
+    );
+    return items.map((item) => this.#intentView(item, access, targets));
+  }
+
+  /**
+   * Authorizes a blocked or failed price publication again: the caller
+   * must be able to publish the program now, with strong authentication.
+   * The intent keeps its author and is due at once on the caller's
+   * authority, unless a pending one of the same program and catalog
+   * already covers it.
+   */
+  async retryPricePublication(
+    context: HumanContext,
+    companyId: string,
+    intentId: string,
+  ): Promise<PriceIntentView> {
+    const access = await this.#companies.resolve(context, companyId);
+    const before = await this.#intents.find(companyId, intentId);
+    const source = before
+      ? await this.#programming.programSource(companyId, before.programId)
+      : null;
+    if (!before || !source) throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    const target = await this.#programming.target(
+      null,
+      access,
+      source,
+      publish,
+    );
+    const updated = await this.#repository.transaction(async (tx) => {
+      const locked = await this.#companies.lockForWrite(
+        tx,
+        context,
+        companyId,
+        target.branchIds,
+      );
+      const lockedTarget = await this.#programming.target(
+        tx,
+        locked.access,
+        source,
+        publish,
+      );
+      const current = await this.#intents.lock(tx, companyId, intentId);
+      if (!current) throw new PublicationFailure("RESOURCE_NOT_FOUND");
+      if (current.state !== "BLOCKED" && current.state !== "FAILED")
+        throw new PublicationFailure("RESOURCE_VERSION_CONFLICT");
+      const outcome = await this.#intents.reauthorize(
+        tx,
+        current,
+        locked.access.membershipId,
+      );
+      await this.#repository.audit(
+        tx,
+        actorOf(context, locked.access),
+        companyId,
+        current.programId,
+        lockedTarget.branchIds,
+        "publication.price_reauthorized",
+        {
+          intentId,
+          catalogId: current.catalogId,
+          priceSequence: current.priceSequence,
+          authorMembershipId: current.authorMembershipId,
+          previousState: current.state,
+          previousReason: current.reason,
+          outcome,
+        },
+      );
+      return this.#intents.find(companyId, intentId, tx);
+    });
+    if (!updated) throw new PublicationFailure("RESOURCE_NOT_FOUND");
+    const targets = await this.#programming.describePrograms(access, [
+      updated.programId,
+    ]);
+    return this.#intentView(updated, access, targets);
+  }
+
+  #intentView(
+    item: PriceIntentRecord,
+    access: CompanyAccess,
+    targets: ReadonlyMap<
+      string,
+      Readonly<{ kind: "group" | "device"; id: string; name: string }>
+    >,
+  ): PriceIntentView {
+    return {
+      ...item,
+      target: targets.get(item.programId) ?? null,
+      authorIsCaller: item.authorMembershipId === access.membershipId,
     };
   }
 
@@ -626,13 +980,21 @@ export class PublicationService {
         mediaBytes: media.reduce((sum, item) => sum + item.size, 0),
       },
       digest: digestOf(payload),
+      catalogs: (layout?.catalogs ?? []).map((catalog) => ({
+        catalogId: catalog.id,
+        priceSequence: catalog.priceSequence,
+      })),
     };
   }
 
   /**
    * Under the company's publication lock: returns the latest publication
    * when its content is the same, otherwise checks the limits and records
-   * the next generation.
+   * the next generation. For a protocol 2 generation it then settles the
+   * price intents its catalog copies include and queues the price changes
+   * they miss, on the publisher's authority. A price publication names the
+   * generation it copied (`base`), and is refused with
+   * RESOURCE_VERSION_CONFLICT when another one came first.
    */
   async #record(
     tx: Prisma.TransactionClient,
@@ -646,6 +1008,14 @@ export class PublicationService {
       counts: PublicationRecord["counts"];
       playlists: readonly Readonly<{ id: string; branchId: string | null }>[];
       restoredFromGeneration: number | null;
+      origin: PublicationOrigin;
+      catalogs: readonly CatalogCopy[];
+      price?: Readonly<{
+        base: string;
+        intent: PriceIntentRecord;
+        catalogId: string;
+        priceSequence: number;
+      }>;
     },
   ): Promise<{ publication: PublicationRecord; created: boolean }> {
     await this.#repository.lockCompany(tx, companyId);
@@ -654,6 +1024,8 @@ export class PublicationService {
       input.programId,
       tx,
     );
+    if (input.price && latest?.id !== input.price.base)
+      throw new PublicationFailure("RESOURCE_VERSION_CONFLICT");
     if (latest?.contentSha256.equals(input.digest))
       return { publication: latest, created: false };
     const recent = await this.#repository.recentCounts(
@@ -695,8 +1067,10 @@ export class PublicationService {
         manifestSha256: manifest.sha256,
         counts: input.counts,
         restoredFromGeneration: input.restoredFromGeneration,
+        origin: input.origin,
         publishedAt,
         playlists: input.playlists,
+        catalogs: input.catalogs,
         media: input.payload.content.media.map((item) => ({
           id: item.id,
           sha256: Buffer.from(item.sha256, "hex"),
@@ -704,21 +1078,60 @@ export class PublicationService {
           contentType: item.contentType,
         })),
       },
-      input.restoredFromGeneration === null
-        ? "publication.published"
-        : "publication.restored",
+      input.origin === "PRICE"
+        ? "publication.price_published"
+        : input.restoredFromGeneration === null
+          ? "publication.published"
+          : "publication.restored",
       {
         publicationId: id,
         generation,
         ...(input.restoredFromGeneration === null
           ? {}
           : { restoredFromGeneration: input.restoredFromGeneration }),
+        ...(input.price
+          ? {
+              catalogId: input.price.catalogId,
+              priceSequence: input.price.priceSequence,
+              intentId: input.price.intent.id,
+              authorMembershipId: input.price.intent.authorMembershipId,
+            }
+          : {}),
         rules: input.counts.rules,
         playlists: input.counts.playlists,
         items: input.counts.items,
         media: input.counts.media,
       },
     );
+    if (input.catalogs.length > 0) {
+      const current = await this.#catalogs.priceSequences(
+        tx,
+        companyId,
+        input.catalogs.map((copy) => copy.catalogId),
+      );
+      for (const copy of input.catalogs) {
+        await this.#intents.settle(
+          tx,
+          companyId,
+          input.programId,
+          copy,
+          id,
+          input.price?.intent.id ?? null,
+        );
+        // A price change committed after the copy was read, which no
+        // intent covers yet, follows on the publisher's authority.
+        const committed = current.get(copy.catalogId) ?? 0;
+        if (committed > copy.priceSequence)
+          await queueIntent(
+            tx,
+            companyId,
+            input.programId,
+            copy.catalogId,
+            committed,
+            actor.membershipId,
+          );
+      }
+    }
     return { publication, created: true };
   }
 

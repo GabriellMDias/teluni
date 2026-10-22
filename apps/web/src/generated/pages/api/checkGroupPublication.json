@@ -141,6 +141,7 @@
                       "publishedAt",
                       "publishedBy",
                       "restoredFromGeneration",
+                      "origin",
                       "counts",
                       "manifestSha256",
                       "state",
@@ -174,6 +175,14 @@
                           { "type": "integer", "minimum": 1 },
                           { "type": "null" }
                         ]
+                      },
+                      "origin": {
+                        "anyOf": [
+                          { "type": "string", "const": "manual" },
+                          { "type": "string", "const": "restore" },
+                          { "type": "string", "const": "price" }
+                        ],
+                        "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                       },
                       "counts": {
                         "type": "object",
@@ -306,6 +315,7 @@
                   "publishedAt",
                   "publishedBy",
                   "restoredFromGeneration",
+                  "origin",
                   "counts",
                   "manifestSha256",
                   "state",
@@ -336,6 +346,14 @@
                       { "type": "integer", "minimum": 1 },
                       { "type": "null" }
                     ]
+                  },
+                  "origin": {
+                    "anyOf": [
+                      { "type": "string", "const": "manual" },
+                      { "type": "string", "const": "restore" },
+                      { "type": "string", "const": "price" }
+                    ],
+                    "description": "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices."
                   },
                   "counts": {
                     "type": "object",

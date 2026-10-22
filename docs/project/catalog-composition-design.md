@@ -198,7 +198,7 @@ Protocol negotiation is unchanged. The sync answer's `desired` names the desired
 A price save on a record of catalog C:
 
 1. **Authorizes the save.** Base, override or promotion scope, with strong authentication.
-2. **Finds the affected targets.** These are the programs whose latest publication includes C. The publication's catalog rows are indexed for this lookup.
+2. **Finds the affected targets.** These are the programs whose latest publication includes C and that the change reaches: a branch price or branch promotion reaches only programs that reach that branch, so a local price stays local (IA-11). The publication's catalog rows are indexed for this lookup.
 3. **Authorizes every target.** The saver must hold `publications.publish` on each one. If any is outside their scope, the whole save is refused with `PRICE_TARGET_FORBIDDEN`, and nothing is saved or distributed.
 4. **Commits the price and one durable intent per affected program** in the same transaction. Each intent holds the program, the price change's sequence number and the author.
 
@@ -206,7 +206,8 @@ A processor in the API (leased rows, like the mail outbox of ADR-0026) turns eac
 
 - It copies the program's latest publication content.
 - It replaces only that catalog's price rows with the current prices: base, overrides and promotions.
-- It publishes through the normal path with `restoredFromGeneration` null and `trigger: "price"`.
+- It paginates that catalog's views again, because a price's width changes what fits; a problem fails the intent with its code.
+- It publishes through the normal path with `restoredFromGeneration` null and `origin: "price"`.
 - It never takes drafts of rules, playlists, layouts or other records.
 
 Intents are coalesced per program, so the newest price wins and an older intent never overwrites a newer generation. Each intent is processed at most once per program and price sequence, so a retry is safe. Failures retry with back-off and stay visible as `failed` with the reason.
@@ -222,7 +223,7 @@ The panel shows each price save as saved, queued, published or failed per progra
 | `catalogs.manage`: create, rename, archive and delete catalogs; change schemas | Company | Branches (branch catalogs) | No (additional grant) | Yes, with `catalogs.view` | As the role |
 | `prices.edit`: base prices, branch overrides and promotions | Company | Branches | No (additional grant) | Yes, with `catalogs.view` | Always |
 
-Scope follows ownership: company catalogs need company scope for `catalogs.manage` and for base prices and company-wide promotions. A branch override or a branch promotion needs `prices.edit` on that branch, and record edits need `catalogs.edit` on the catalog's scope. From increment 4, a price save also needs `publications.publish` on every affected target.
+Scope follows ownership: company catalogs need company scope for `catalogs.manage` and for base prices and company-wide promotions. A branch override or a branch promotion needs `prices.edit` on that branch, and record edits need `catalogs.edit` on the catalog's scope. From increment 4, a price save also needs `publications.publish` on every target the change reaches.
 
 ## Abuse limits
 
@@ -250,7 +251,9 @@ Layout and program-layout changes use the programming audit with their own event
 | `catalog_record_media`, `catalog_record_references` | The media and records that record values name, mirrored in the same transaction so media deletion and record deletion can be guarded |
 | `catalog_audit_events` | Append-only audit with the branches each event concerns |
 | `layouts`, `layout_areas`, `layout_view_fields`, `layout_pages`, `layout_page_contents` (increment 2) | Layout drafts as validated rows: areas with their catalog view, the view's bound fields, pages, and what each page-controlled area shows |
-| `price_publication_intents` (increment 4) | Program, catalog, price sequence, author, state, attempts, lease |
+| `catalog_price_sequences` (increment 4) | Each catalog's price change counter, incremented in commit order |
+| `publication_catalogs` (increment 4) | The catalogs each protocol 2 publication copies, with the price sequence each copy includes |
+| `price_publication_intents` (increment 4) | Program, catalog, price sequence, author, re-authorizing member, state, reason, attempts, lease, resulting publication |
 
 Every table carries `company_id` with composite tenant references to `(company_id, id)` ([tenant data design](tenant-data-design.md)). Price and link rows also carry their record's catalog; the module keeps it and their field's catalog equal to the record's, because a tenant reference never targets a wider key. Record values are `CONFIDENTIAL` business data, and catalogs keep no personal data fields by design. A field labeled with personal meaning is still only text, and the panel warns against it.
 
@@ -275,6 +278,8 @@ New errors:
 - `CATALOG_ARCHIVED`, `CATALOG_NOT_EMPTY` and `CATALOG_IN_USE` for archived and deletable catalogs;
 - from increment 4, `PRICE_TARGET_FORBIDDEN`.
 
+From increment 4, `GET /companies/{companyId}/catalogs/{catalogId}/price-publications` lists a catalog's recent price publications per program, `POST /companies/{companyId}/price-publications/{intentId}/retry` authorizes a blocked or failed one again, and publications carry their `origin` (`manual`, `restore` or `price`).
+
 Field and record problems travel in the error envelope's bounded `issues` list (a JSON Pointer path, a stable reason and, for problems caused by stored data, a count), defined by the [error contract](../api/error-contract.md#validation-errors).
 
 These come with the existing access, `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CONFLICT`, `RATE_LIMITED` and `VALIDATION_FAILED`. The SDK and OpenAPI document are regenerated.
@@ -295,6 +300,8 @@ A **Catálogos** area per company (en-US "Catalogs"), shown with `catalogs.view`
   - the effective price per branch at a chosen local time.
 
   Amounts are typed and shown in the field's currency with the person's locale. Copy is in `pt-BR` and `en-US`.
+
+Increment 4 adds **Publicação nas telas** to the record page: what each price change did per program (queued, published as a generation, skipped, blocked or failed, with the reason), refreshed while some are queued, and a button that authorizes a blocked or failed one again. Publication history marks generations with automatically updated prices.
 
 Increment 2 adds the **Layouts** editor under Programação: a canvas preview with drag and resize, plus numeric inputs and arrow keys for keyboard users; the area list; the view editor; the fit report with overflow by record; pages; and JSON import and export.
 
@@ -414,7 +421,29 @@ Implementation decisions, taken under the owner's delegation:
 - **Prices** are evaluated for the screen's branch from the sync answer at the local minute, and the plan is made again at the next promotion start or end of a record it shows.
 - **Strictness.** Anything the API would never publish fails as `INVALID_MANIFEST`, and fades stay `INCOMPATIBLE`, as in protocol 1. Drawing areas, catalog text, images and mixed audio is the Android `app`'s, qualified on [PH-08](human-actions.md#ph-08) hardware (increment 5).
 
-Increments 4 and 5 are not implemented.
+**Increment 4 (automatic price publication, PJ-21 with PJ-11) is implemented, 2026-10-21:**
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| A forward migration adds each catalog's price sequence, the catalogs each publication copies (with existing protocol 2 publications backfilled), the intents and the publication's origin | [migration](../../apps/api/prisma/migrations/20261021000000_price_publication/migration.sql), [grants](../../apps/api/prisma/runtime-grants/publications.sql), [metadata](../../apps/api/prisma/metadata/publications.json) | The tenant structure test and the generated [database reference](../generated/database/schema.md) |
+| Every price change counts itself in commit order and runs the publications module's listener in its transaction: the targets it reaches, `PRICE_TARGET_FORBIDDEN` unless the author may publish all of them, and one coalesced intent per program | [catalogs service](../../apps/api/src/features/catalogs/service.ts), [listener and processor](../../apps/api/src/features/publications/price-processor.ts), [intents](../../apps/api/src/features/publications/price-repository.ts) | The [publications suite](../../apps/api/test/publications/integration.test.ts) against PostgreSQL as the runtime role |
+| The processor: leased claims, the author's authority checked again, a copy of the latest publication with the catalog's current prices for its reach and its views paginated again, publication with `origin: "price"`, and back-off, blocked, failed and skipped outcomes; publications settle the intents they include and queue changes their copy missed | [publications service](../../apps/api/src/features/publications/service.ts), [programming re-pricing](../../apps/api/src/features/programming/layouts-service.ts) | The publications suite: a price-only generation that leaves drafts out, refusal outside the author's scope with nothing saved, a local price that stays local, coalescing, settlement by a person's publication, blocking after revoked authority and re-authorization, catch-up after a restore, an overflowing price that fails |
+| The list of a catalog's price publications and re-authorization, with the publication's origin | [contracts](../../apps/api/src/features/publications/contracts.ts) | The publications suite |
+| The panel's Publicação nas telas list and the origin in publication history | [`pages.tsx`](../../apps/web/src/catalogs/pages.tsx), [`publications.tsx`](../../apps/web/src/programming/publications.tsx) | [Catalog browser component tests](../../apps/web/test/catalogs.browser.test.tsx) and the [end-to-end journey](../../apps/web/test/e2e/catalogs/journey.spec.ts), which changes a price and sees the new generation |
+
+Implementation decisions, taken under the owner's delegation:
+
+- **Counting changes.** Each catalog has a counter row that every price change increments under its row lock until commit, so sequences follow commit order. Each publication records the sequence its catalog copies include (read in the copy's repeatable-read snapshot), which makes "already published" exact.
+- **Serializing with publications.** The listener takes the company's publication lock shared, and publishing takes it exclusively. A change therefore either sees a publication committed before it, or the publication sees the change's committed sequence and queues the change on the publisher's authority. No change is missed between the two.
+- **Targets and authorization.** Base prices and scope-wide promotions reach every program showing the catalog; branch prices and branch promotions only those reaching that branch (or the whole company). The author needs `publications.publish` over each target's recorded branches, without hidden approval.
+- **Coalescing.** One pending intent per program and catalog. A later change replaces its sequence and author, so the newest change's author is the authority. A publication of the program settles intents whose changes it includes (`INCLUDED`).
+- **Revalidation (IA policies).** Before publishing, the processor rebuilds the authority's access from current grants, with strong authentication counted as proven at the save, and checks `publications.publish` on the program now. Removed authority blocks the intent (`AUTHOR_INACTIVE`, `AUTHOR_NOT_AUTHORIZED`). Someone who may publish the program authorizes it again, keeping the original author. A later authorized change of the same catalog publishes the current prices too.
+- **What a price publication changes.** It copies the latest generation and replaces that catalog's prices for the generation's reach, with records deleted since keeping their published prices. It paginates the catalog's views again. Rules, playlists, layouts, other catalogs and record values stay as published. A program whose reach grew fails with `REACH_CHANGED` until a person publishes it.
+- **Ordering.** A price publication names the generation it copied and is refused if another came first, then retried from the new latest one, so stale work never overwrites a newer generation.
+- **Restore.** A restored generation keeps its old prices; the catalogs' current prices follow at once as a price publication on the restorer's authority.
+- **Retries.** A newer generation retries after a second. Rate limits, suspension and unexpected errors retry with back-off (30 s doubling, at most an hour). After 8 attempts the intent fails. Finished intents are kept 30 days.
+
+Increment 5 is not implemented.
 
 ## Decisions
 

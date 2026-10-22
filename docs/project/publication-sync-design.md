@@ -162,7 +162,7 @@ The panel polls a screen's state every 5 seconds while its page is open, so an a
 
 ## History, restore and retention
 
-A program's history lists its publications, newest first, with generation, publisher, time, counts and whether it restores an earlier generation. **Restore** publishes an earlier generation's content again as a new generation, after checking that its playlists still fit the program's current reach and its media are still publishable; it never changes the drafts. A protocol 2 publication is also restored only while the program's reach stays within the branches it was published for, because its prices cover only those. Restore needs the same capability as publishing.
+A program's history lists its publications, newest first, with generation, publisher, time, counts and whether it restores an earlier generation. **Restore** publishes an earlier generation's content again as a new generation, after checking that its playlists still fit the program's current reach and its media are still publishable; it never changes the drafts. A protocol 2 publication is also restored only while the program's reach stays within the branches it was published for, because its prices cover only those. Restore needs the same capability as publishing. Since automatic price publication ([catalog and composition design](catalog-composition-design.md#automatic-price-publication)), the catalogs' current prices follow a restored protocol 2 generation at once as a price publication, and history marks each generation's origin: a person's publication, a restore or a price publication.
 
 A publication is **retained** while it is the latest of its program, while an active screen reported it as active, recovery or staging within the last seven days, or until 90 days after the next generation superseded it (AT-18). Hourly maintenance prunes the others: it deletes their manifest bytes and media references and keeps the row, so history still shows them as no longer restorable.
 
@@ -182,13 +182,13 @@ At most 30 publications per program per hour and 300 per company per day (`RATE_
 
 ## Audit
 
-`publication.published` and `publication.restored` events record the actor's membership, the program, its source kind and branches, the generation and counts, in the same transaction. Pruning is maintenance and is not attributed to a person. Device reports are operational records with 30-day retention, not audit.
+`publication.published` and `publication.restored` events record the actor's membership, the program, its source kind and branches, the generation and counts, in the same transaction. Automatic price publication adds `publication.price_published` (the authority's membership, with the catalog, its price sequence, the intent and its author) and `publication.price_reauthorized` (who authorized a blocked or failed intent again). Pruning is maintenance and is not attributed to a person. Device reports are operational records with 30-day retention, not audit.
 
 ## Data
 
 | Table | Purpose |
 | --- | --- |
-| `publications` | Company, program (composite reference, deleted with the program), generation (unique per program), protocol, content digest, manifest bytes (null once pruned), manifest SHA-256 and size, item and media counts and bytes, restored-from publication, publisher membership, published, superseded and pruned times |
+| `publications` | Company, program (composite reference, deleted with the program), generation (unique per program), protocol, content digest, manifest bytes (null once pruned), manifest SHA-256 and size, item and media counts and bytes, restored-from publication, origin (manual, restore or price), publisher membership, published, superseded and pruned times |
 | `publication_playlists` | Each playlist copied into a publication with the branch that owned it then, for restore checks |
 | `publication_media` | Each media item of a retained publication with its rendition SHA-256, size and type (composite reference to the media item); deleted when pruned |
 | `publication_device_states` | One row per screen: last report fields, time received and the desired publication answered |
@@ -239,7 +239,7 @@ Both increments were merged through [pull request #12](https://github.com/Gabrie
 
 Follow-up on 2026-10-20: the screen routes of this module and of `devices` count their pre-authentication limit (120 requests per minute) per presented credential under a ceiling of 6,000 per client address. Counted per address, it let about 60 screens behind one address, below the reference load of 100, exhaust it and appear offline.
 
-Increment 3, started 2026-10-20 with the [player design](player-design.md): `zoneOffsets` and `rotation` in the sync response and the player [conformance fixtures](../../apps/api/test/publications/conformance.json), which [`scripts/conformance.ts`](../../apps/api/scripts/conformance.ts) writes from the API's own serializer, signer and zone rules, checked by a [conformance test](../../apps/api/test/publications/conformance.test.ts). The same day, [protocol 2](catalog-composition-design.md#implementation-status) for programs with a layout: the manifest and digest, the sync answer's `branchId` and `desired.protocol`, restore within the reach a publication was made for, and its conformance fixtures. The player `core` parses and plans protocol 2 the same day. Pending: player conformance on devices (PJ-12), automatic price publication (PJ-21), commercial capping (PJ-27) and optional approvals (PJ-24).
+Increment 3, started 2026-10-20 with the [player design](player-design.md): `zoneOffsets` and `rotation` in the sync response and the player [conformance fixtures](../../apps/api/test/publications/conformance.json), which [`scripts/conformance.ts`](../../apps/api/scripts/conformance.ts) writes from the API's own serializer, signer and zone rules, checked by a [conformance test](../../apps/api/test/publications/conformance.test.ts). The same day, [protocol 2](catalog-composition-design.md#implementation-status) for programs with a layout: the manifest and digest, the sync answer's `branchId` and `desired.protocol`, restore within the reach a publication was made for, and its conformance fixtures. The player `core` parses and plans protocol 2 the same day. On 2026-10-21, [automatic price publication](catalog-composition-design.md#implementation-status): price changes queue intents under the shared publication lock, publications record the catalogs they copy and settle intents, and the price processor publishes generations with `origin: "price"`. Pending: player conformance on devices (PJ-12), commercial capping (PJ-27) and optional approvals (PJ-24).
 
 ## Decisions for review
 

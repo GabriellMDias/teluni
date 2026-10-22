@@ -983,7 +983,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts. */
+        /** @description Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
         put: operations["setCatalogBasePrice"];
         post?: never;
         delete?: never;
@@ -1000,7 +1000,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. */
+        /** @description Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
         put: operations["setCatalogBranchPrice"];
         post?: never;
         delete?: never;
@@ -1019,7 +1019,7 @@ export interface paths {
         /** @description Promotions of an item's money field that the caller may view (scope-wide ones and those of visible branches), by start. */
         get: operations["listCatalogPromotions"];
         put?: never;
-        /** @description Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price. */
+        /** @description Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
         post: operations["createCatalogPromotion"];
         delete?: never;
         options?: never;
@@ -1037,7 +1037,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Remove a promotion. Promotions are never edited; remove one and add another to change it. */
+        /** @description Remove a promotion. Promotions are never edited; remove one and add another to change it. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
         delete: operations["deleteCatalogPromotion"];
         options?: never;
         head?: never;
@@ -1508,6 +1508,40 @@ export interface paths {
         put?: never;
         /** @description Publish an earlier retained generation of a screen's own program, which needs the capability on the screen's branch again as a new generation, after checking its playlists against the program's current reach and its media; the drafts do not change. Content equal to the latest publication returns it with created false. Needs publications.publish. */
         post: operations["restoreDevicePublication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/catalogs/{catalogId}/price-publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The catalog's 50 most recent price publications, newest first: one per program whose latest publication shows the catalog, queued by a price change and published by the price processor as a new generation that changes only this catalog's prices. A pending intent coalesces later changes; the generation names the publication an intent produced or found already including its prices. Programs the caller cannot see have no target. Needs catalogs.view on the catalog. */
+        get: operations["listCatalogPricePublications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/price-publications/{intentId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program, with strong authentication. */
+        post: operations["retryPricePublication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -26520,6 +26554,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -26759,6 +26795,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -26792,6 +26830,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -27041,6 +27081,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -27275,6 +27317,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -27308,6 +27352,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -27544,6 +27590,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -27783,6 +27831,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -27816,6 +27866,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -28065,6 +28117,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -28299,6 +28353,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -28332,6 +28388,8 @@ export interface operations {
                                 isCaller: boolean;
                             };
                             restoredFromGeneration: number | null;
+                            /** @description manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices. */
+                            origin: "manual" | "restore" | "price";
                             counts: {
                                 rules: number;
                                 playlists: number;
@@ -28344,6 +28402,462 @@ export interface operations {
                             supersededAt: string | null;
                         };
                         created: boolean;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listCatalogPricePublications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                catalogId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            state: "pending" | "published" | "skipped" | "blocked" | "failed";
+                            reason: ("INCLUDED" | "UNCHANGED" | "SUPERSEDED" | "NOT_PUBLISHED" | "CATALOG_DELETED" | "AUTHOR_INACTIVE" | "AUTHOR_NOT_AUTHORIZED" | "REACH_CHANGED" | "MEDIA_UNAVAILABLE" | "CATALOG_UNAVAILABLE" | "CATALOG_FIELD_UNAVAILABLE" | "CATALOG_OVERFLOW" | "CATALOG_PAGE_MISSING" | "CATALOG_GROUP_OVERFLOW" | "RATE_LIMITED" | "RESOURCE_VERSION_CONFLICT" | "COMPANY_SUSPENDED" | "ERROR") | null;
+                            target: {
+                                kind: "group" | "device";
+                                id: string;
+                                name: string;
+                            } | null;
+                            priceSequence: number;
+                            generation: number | null;
+                            authorIsCaller: boolean;
+                            reauthorized: boolean;
+                            attempts: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    retryPricePublication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                intentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        state: "pending" | "published" | "skipped" | "blocked" | "failed";
+                        reason: ("INCLUDED" | "UNCHANGED" | "SUPERSEDED" | "NOT_PUBLISHED" | "CATALOG_DELETED" | "AUTHOR_INACTIVE" | "AUTHOR_NOT_AUTHORIZED" | "REACH_CHANGED" | "MEDIA_UNAVAILABLE" | "CATALOG_UNAVAILABLE" | "CATALOG_FIELD_UNAVAILABLE" | "CATALOG_OVERFLOW" | "CATALOG_PAGE_MISSING" | "CATALOG_GROUP_OVERFLOW" | "RATE_LIMITED" | "RESOURCE_VERSION_CONFLICT" | "COMPANY_SUSPENDED" | "ERROR") | null;
+                        target: {
+                            kind: "group" | "device";
+                            id: string;
+                            name: string;
+                        } | null;
+                        priceSequence: number;
+                        generation: number | null;
+                        authorIsCaller: boolean;
+                        reauthorized: boolean;
+                        attempts: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
                     };
                 };
             };

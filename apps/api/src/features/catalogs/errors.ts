@@ -61,6 +61,13 @@ export const catalogErrors = defineErrors({
     category: "conflict",
     retryable: false,
   },
+  PRICE_TARGET_FORBIDDEN: {
+    status: 403,
+    message:
+      "Screens show this catalog through programs you cannot publish, so its prices cannot change from your account. Ask someone who can publish them.",
+    category: "authorization",
+    retryable: false,
+  },
 });
 
 export const respond = errorResponder({

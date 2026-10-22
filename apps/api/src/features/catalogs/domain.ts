@@ -131,7 +131,8 @@ export type CatalogFailureCode =
   | "CATALOG_LIMIT_REACHED"
   | "CATALOG_ARCHIVED"
   | "CATALOG_NOT_EMPTY"
-  | "CATALOG_IN_USE";
+  | "CATALOG_IN_USE"
+  | "PRICE_TARGET_FORBIDDEN";
 
 /**
  * One problem with a request, located by a JSON Pointer into its body. The

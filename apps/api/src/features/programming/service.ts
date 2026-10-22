@@ -1564,6 +1564,53 @@ export class ProgrammingService {
     };
   }
 
+  programSource(
+    companyId: string,
+    programId: string,
+  ): Promise<ProgramSource | null> {
+    return this.#repository.sourceOf(companyId, programId);
+  }
+
+  async describePrograms(
+    access: CompanyAccess,
+    programIds: readonly string[],
+  ): Promise<
+    Map<string, { kind: "group" | "device"; id: string; name: string }>
+  > {
+    const companyId = access.companyId;
+    const described = new Map<
+      string,
+      { kind: "group" | "device"; id: string; name: string }
+    >();
+    const screens = new Map<string, string>();
+    for (const programId of new Set(programIds)) {
+      const source = await this.#repository.sourceOf(companyId, programId);
+      if (source?.kind === "device") screens.set(source.deviceId, programId);
+      else if (source?.kind === "group") {
+        const group = await this.#repository.findGroup(
+          companyId,
+          source.groupId,
+        );
+        if (group && groupVisible(access, group))
+          described.set(programId, {
+            kind: "group",
+            id: group.id,
+            name: group.name,
+          });
+      }
+    }
+    for (const device of await this.#devices.describe(null, companyId, [
+      ...screens.keys(),
+    ]))
+      if (decide(access, "programming.view", device.branchId) === "allow")
+        described.set(screens.get(device.id)!, {
+          kind: "device",
+          id: device.id,
+          name: device.name,
+        });
+    return described;
+  }
+
   async followers(companyId: string, source: ProgramSource): Promise<string[]> {
     let candidates: string[];
     if (source.kind === "group")

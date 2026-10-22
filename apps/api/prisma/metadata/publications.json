@@ -75,6 +75,10 @@
           "classification": "INTERNAL",
           "nullMeaning": "Published from the program's draft."
         },
+        "origin": {
+          "description": "Where the publication came from: MANUAL (a person published the draft), RESTORE (a person restored an earlier generation) or PRICE (the price processor republished the latest generation with a catalog's current prices).",
+          "classification": "INTERNAL"
+        },
         "published_by_principal_id": {
           "description": "Principal that published.",
           "classification": "INTERNAL"
@@ -118,7 +122,9 @@
         "publications_manifest_size": "The recorded size matches the stored manifest.",
         "publications_counts": "Counts are not negative and stay within the snapshot limits.",
         "publications_restored_from": "A restore names an earlier generation.",
-        "publications_pruned_after_superseded": "Only a superseded publication can be pruned."
+        "publications_pruned_after_superseded": "Only a superseded publication can be pruned.",
+        "publications_origin_known": "Only the three origins exist.",
+        "publications_origin_restore": "A restore, and only a restore, names the generation it restores."
       }
     },
     "publication_playlists": {
@@ -406,6 +412,129 @@
         "publication_audit_events_branch_ids_present": "The branch list is present and bounded.",
         "publication_audit_events_subject_type": "Subjects come from a closed set.",
         "publication_audit_events_details_object": "Details are a JSON object."
+      }
+    },
+    "publication_catalogs": {
+      "owner": "Publications",
+      "classification": "INTERNAL",
+      "description": "Each catalog a protocol 2 publication copies, with the price sequence its copy includes; a price change finds the programs whose latest publication copies its catalog here.",
+      "lifecycle": "Inserted with its publication; never updated. Deleted with the publication or the catalog.",
+      "columns": {
+        "company_id": {
+          "description": "Company that owns the publication; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "publication_id": {
+          "description": "Publication that copies the catalog.",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Copied catalog.",
+          "classification": "INTERNAL"
+        },
+        "price_sequence": {
+          "description": "The catalog's price sequence when it was copied: the copy includes every price change up to it.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "publication_catalogs_pkey": "One row per catalog and publication.",
+        "publication_catalogs_sequence_nonnegative": "Sequences start at 0.",
+        "publication_catalogs_catalog_idx": "Finds the publications that copy a catalog.",
+        "publication_catalogs_company_id_publication_id_fkey": "The publication belongs to the same company; rows go with it.",
+        "publication_catalogs_company_id_catalog_id_fkey": "The catalog belongs to the same company; rows go with it."
+      }
+    },
+    "price_publication_intents": {
+      "owner": "Publications",
+      "classification": "INTERNAL",
+      "description": "Durable requests to publish a catalog's current prices to a program, committed with the price change that caused them; the API's processor claims due ones under a lease and turns each into a new generation that changes only that catalog's prices.",
+      "lifecycle": "Inserted or coalesced by a price change; claimed, retried and finished by the processor or re-authorized by a person. Finished rows are deleted 30 days after their last update, and rows go with their program or catalog.",
+      "columns": {
+        "id": {
+          "description": "Intent identifier.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Company that owns the program and catalog; immutable (tenant key).",
+          "classification": "INTERNAL"
+        },
+        "program_id": {
+          "description": "Program whose latest publication copies the catalog.",
+          "classification": "INTERNAL"
+        },
+        "catalog_id": {
+          "description": "Catalog whose prices changed.",
+          "classification": "INTERNAL"
+        },
+        "price_sequence": {
+          "description": "The catalog's price sequence of the newest change the intent publishes.",
+          "classification": "INTERNAL"
+        },
+        "author_membership_id": {
+          "description": "Membership that made the newest price change; kept as the change's author.",
+          "classification": "INTERNAL"
+        },
+        "authorized_by_membership_id": {
+          "description": "Membership that authorized the intent again after it was blocked or failed, whose authority the processor then checks.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Nobody authorized it again; the author's authority is checked."
+        },
+        "state": {
+          "description": "PENDING, PUBLISHED, SKIPPED (nothing to publish), BLOCKED (its authority was removed) or FAILED.",
+          "classification": "INTERNAL"
+        },
+        "reason": {
+          "description": "Stable code of why the intent was skipped, blocked or failed, or of its last transient failure.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Nothing to explain: pending without failures, or published."
+        },
+        "attempts": {
+          "description": "Processing attempts so far.",
+          "classification": "INTERNAL"
+        },
+        "next_attempt_at": {
+          "description": "When a pending intent is next due.",
+          "classification": "INTERNAL"
+        },
+        "lease_expires_at": {
+          "description": "End of the current processing claim.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not claimed."
+        },
+        "publication_id": {
+          "description": "Publication the intent produced, or the current one it found already including its prices.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No publication yet, or none applies."
+        },
+        "created_at": {
+          "description": "When the first change of the intent was committed.",
+          "classification": "INTERNAL"
+        },
+        "updated_at": {
+          "description": "When the intent last changed.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "price_publication_intents_pkey": "Intent identifier.",
+        "price_publication_intents_company_id_id_key": "Tenant key for composite references.",
+        "price_publication_intents_state_known": "Only the five states exist.",
+        "price_publication_intents_sequence_positive": "An intent follows at least one counted price change.",
+        "price_publication_intents_attempts_nonnegative": "Attempts are counted from 0.",
+        "price_publication_intents_lease_pending": "Only pending intents are claimed.",
+        "price_publication_intents_publication_outcome": "Only published and skipped intents name a publication.",
+        "price_publication_intents_catalog_idx": "Lists a catalog's recent intents for the panel.",
+        "price_publication_intents_program_idx": "Finds a program's intents.",
+        "price_publication_intents_one_pending": "One pending intent per program and catalog; later changes coalesce into it.",
+        "price_publication_intents_due_idx": "Due pending intents, in claiming order.",
+        "price_publication_intents_finished_idx": "Finished intents, in retention-cleanup order.",
+        "price_publication_intents_company_id_fkey": "The intent belongs to an existing company.",
+        "price_publication_intents_company_id_program_id_fkey": "The program belongs to the same company; intents go with it.",
+        "price_publication_intents_company_id_catalog_id_fkey": "The catalog belongs to the same company; intents go with it.",
+        "price_publication_intents_company_id_author_membership_id_fkey": "The author is a membership of the same company.",
+        "price_publication_intents_company_id_authorized_by_members_fkey": "The re-authorizing member belongs to the same company.",
+        "price_publication_intents_company_id_publication_id_fkey": "The publication belongs to the same company."
       }
     }
   },

@@ -72,6 +72,13 @@ export const publicationSchema = Type.Object(
       Type.Integer({ minimum: 1 }),
       Type.Null(),
     ]),
+    origin: Type.Union(
+      [Type.Literal("manual"), Type.Literal("restore"), Type.Literal("price")],
+      {
+        description:
+          "manual: a person published the draft; restore: a person restored an earlier generation; price: the price processor republished the latest generation with a catalog's current prices.",
+      },
+    ),
     counts,
     manifestSha256: sha256Hex,
     state: Type.Union([
@@ -468,9 +475,111 @@ const keySetSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const priceReason = Type.Union(
+  [
+    // Skipped
+    Type.Literal("INCLUDED"),
+    Type.Literal("UNCHANGED"),
+    Type.Literal("SUPERSEDED"),
+    Type.Literal("NOT_PUBLISHED"),
+    Type.Literal("CATALOG_DELETED"),
+    // Blocked
+    Type.Literal("AUTHOR_INACTIVE"),
+    Type.Literal("AUTHOR_NOT_AUTHORIZED"),
+    // Failed, or the last transient failure of a pending intent
+    Type.Literal("REACH_CHANGED"),
+    Type.Literal("MEDIA_UNAVAILABLE"),
+    Type.Literal("CATALOG_UNAVAILABLE"),
+    Type.Literal("CATALOG_FIELD_UNAVAILABLE"),
+    Type.Literal("CATALOG_OVERFLOW"),
+    Type.Literal("CATALOG_PAGE_MISSING"),
+    Type.Literal("CATALOG_GROUP_OVERFLOW"),
+    Type.Literal("RATE_LIMITED"),
+    Type.Literal("RESOURCE_VERSION_CONFLICT"),
+    Type.Literal("COMPANY_SUSPENDED"),
+    Type.Literal("ERROR"),
+  ],
+  {
+    description:
+      "Why the intent was skipped (INCLUDED: a publication already has these prices; UNCHANGED: nothing the program reaches changed; SUPERSEDED: a pending intent covers it; NOT_PUBLISHED: the program's latest publication no longer shows the catalog; CATALOG_DELETED), blocked (AUTHOR_INACTIVE, AUTHOR_NOT_AUTHORIZED: whoever authorized it can no longer publish the program) or failed (REACH_CHANGED: the program now reaches branches its publication's prices do not cover; MEDIA_UNAVAILABLE; a catalog problem of the new prices; or, after repeated attempts, RATE_LIMITED, RESOURCE_VERSION_CONFLICT, COMPANY_SUSPENDED or ERROR). A pending intent may carry its last transient failure.",
+  },
+);
+
+const priceIntentSchema = Type.Object(
+  {
+    id: uuid,
+    state: Type.Union([
+      Type.Literal("pending"),
+      Type.Literal("published"),
+      Type.Literal("skipped"),
+      Type.Literal("blocked"),
+      Type.Literal("failed"),
+    ]),
+    reason: Type.Union([priceReason, Type.Null()]),
+    /** The program's group or screen; null when the caller cannot see it. */
+    target: Type.Union([
+      Type.Object(
+        {
+          kind: Type.Union([Type.Literal("group"), Type.Literal("device")]),
+          id: uuid,
+          name: Type.String({ maxLength: 200 }),
+        },
+        { additionalProperties: false },
+      ),
+      Type.Null(),
+    ]),
+    priceSequence: Type.Integer({ minimum: 1 }),
+    generation: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+    authorIsCaller: Type.Boolean(),
+    reauthorized: Type.Boolean(),
+    attempts: count,
+    createdAt: instant,
+    updatedAt: instant,
+  },
+  { additionalProperties: false },
+);
+
 export const publicationOperations: readonly ApiOperation[] = [
   ...programOperations("group"),
   ...programOperations("device"),
+  {
+    method: "GET",
+    url: "/companies/:companyId/catalogs/:catalogId/price-publications",
+    operationId: "listCatalogPricePublications",
+    access: "session",
+    description:
+      "The catalog's 50 most recent price publications, newest first: one per program whose latest publication shows the catalog, queued by a price change and published by the price processor as a new generation that changes only this catalog's prices. A pending intent coalesces later changes; the generation names the publication an intent produced or found already including its prices. Programs the caller cannot see have no target. Needs catalogs.view on the catalog.",
+    schema: {
+      params: Type.Object(
+        { companyId: uuid, catalogId: uuid },
+        { additionalProperties: false },
+      ),
+      response: {
+        200: Type.Object(
+          { items: Type.Array(priceIntentSchema, { maxItems: 50 }) },
+          { additionalProperties: false },
+        ),
+        ...common,
+      },
+    },
+    expectedErrors: [...scoped],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/price-publications/:intentId/retry",
+    operationId: "retryPricePublication",
+    access: "session",
+    description:
+      "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program, with strong authentication.",
+    schema: {
+      params: Type.Object(
+        { companyId: uuid, intentId: uuid },
+        { additionalProperties: false },
+      ),
+      response: { 200: priceIntentSchema, ...common },
+    },
+    expectedErrors: [...mutation, "RESOURCE_VERSION_CONFLICT"],
+  },
   {
     method: "GET",
     url: "/companies/:companyId/devices/:deviceId/sync-state",

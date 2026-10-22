@@ -55,6 +55,14 @@ export function createProgrammingModule(options: {
     currentProgram: (companyId, deviceId) =>
       require().currentProgram(companyId, deviceId),
     followers: (companyId, source) => require().followers(companyId, source),
+    describePrograms: (access, programIds) =>
+      require().describePrograms(access, programIds),
+    programSource: (companyId, programId) =>
+      require().programSource(companyId, programId),
+    repriceCatalog: (companyId, published, reach) => {
+      if (!layouts) throw new Error("The programming module is not active");
+      return layouts.repriceCatalog(companyId, published, reach);
+    },
   };
   options.media.registerReferenceGuard("playlist-draft", (tx, companyId, id) =>
     service ? service.mediaReferences(tx, companyId, id) : Promise.resolve([]),
