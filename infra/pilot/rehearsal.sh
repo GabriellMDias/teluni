@@ -35,14 +35,19 @@ compose() {
 
 cleanup() {
   local status=$?
+  set +e
   if [ "$status" -ne 0 ]; then
     for project in "$source_project" "$restored_project"; do
-      compose "$project" --profile tools logs --no-color --tail 80 2>/dev/null || true
+      compose "$project" --profile tools logs --no-color --tail 80 2>/dev/null
     done
   fi
   for project in "$source_project" "$restored_project"; do
-    compose "$project" --profile tools down --volumes --remove-orphans >/dev/null 2>&1 || true
+    compose "$project" --profile tools down --volumes --remove-orphans >/dev/null 2>&1
   done
+  # The backup container writes the repository as root; remove its files
+  # through a container so an unprivileged runner can delete the rest.
+  docker run --rm --entrypoint sh --volume "$work/repository:/repository" \
+    "teluni/backup:$TELUNI_RELEASE" -c 'rm -rf /repository/* /repository/.[!.]*' >/dev/null 2>&1
   rm -rf "$work"
   exit "$status"
 }
