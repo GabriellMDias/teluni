@@ -3,7 +3,8 @@
   theme (Apache License 2.0). Changed for Teluni: choosing a new password
   always ends the person's other sessions, as password recovery must (P15 in
   docs/project/identity-and-access.md), instead of offering a checkbox that
-  starts unchecked.
+  starts unchecked. Keycloak ends them before it checks the password policy,
+  so a rejected password also ends them; that errs toward revocation.
 -->
 <#import "template.ftl" as layout>
 <#import "field.ftl" as field>
