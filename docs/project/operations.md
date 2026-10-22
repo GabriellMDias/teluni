@@ -4,7 +4,7 @@
 
 ## Constraints and current state
 
-**Decided constraint:** no present cloud-service budget. The owner intends to use a personal residential server for development, tests and potentially initial customers, moving to a VPS/cloud when revenue or operational need justifies it. **Accepted initial architecture under ADR-0021:** Debian Linux, Docker Compose, a reverse proxy with HTTPS, local persistent media, automated backups and suitable monitoring. Real-customer use remains subject to PH-10 readiness gates. None is a deployed Teluni environment or executable procedure in this repository.
+**Decided constraint:** no present cloud-service budget. The owner intends to use a personal residential server for development, tests and potentially initial customers, moving to a VPS/cloud when revenue or operational need justifies it. **Accepted initial architecture under ADR-0021:** Debian Linux, Docker Compose, a reverse proxy with HTTPS, local persistent media, automated backups and suitable monitoring. Real-customer use remains subject to PH-10 readiness gates. None is a deployed Teluni environment or executable procedure in this repository. On 2026-10-22 the [pilot deployment and recovery design](deployment-design.md) and ADR-0033 decided, under the owner's delegation, the exposure path, proxy, composition, backups and recovery targets that PJ-13 builds.
 
 Follow inherited [production access](../security/production-access.md), [secrets management](../security/secrets-management.md), [retention](../security/data-retention.md), [observability](../reliability/observability.md), [alerting](../reliability/alerting.md), and [runbook authoring](../runbooks/authoring.md). This plan does not grant production authority. Write tested deployment/recovery runbooks when the environment exists, rather than speculative commands now.
 
@@ -26,7 +26,7 @@ Do not add queues, multiple backend services, a managed object store, CDN, Kuber
 
 [PH-10](human-actions.md#ph-10) requires an actual host/network inventory: CPU/RAM/disk and growth, upload bandwidth, data caps, power/reboot recovery, router/firewall, public address or CGNAT, ISP restrictions, available domain, certificate renewal, secure remote administration and backup connectivity. Keep private addresses, credentials and sensitive topology out of tracked public documentation.
 
-A tunnel, free DNS option or any video-delivery intermediary requires evaluation of current terms, limits, privacy, security, transfer cost and failure behavior before selection. Do not assume Cloudflare Tunnel, DNS, or video distribution automatically provides an acceptable production path. No such provider is selected here.
+A tunnel, free DNS option or any video-delivery intermediary requires evaluation of current terms, limits, privacy, security, transfer cost and failure behavior before selection. Do not assume Cloudflare Tunnel, DNS, or video distribution automatically provides an acceptable production path. The [deployment design](deployment-design.md#reaching-the-residential-host) evaluated them and selects end-to-end TLS on the host, reached directly or through a TCP relay that never terminates TLS.
 
 Before any real pilot, record and demonstrate:
 
@@ -34,7 +34,7 @@ Before any real pilot, record and demonstrate:
 - Development/test and customer data, identities, credentials and backups are separated; logs/diagnostics are redacted; real data does not enter development fixtures.
 - Durable database and media survive container recreation, controlled app updates and host reboot. Schema migrations use reviewed release procedures and an explicit recovery plan.
 - Offline playback has been tested independently from backend availability. A home outage still prevents new uploads, publication, pairing, current monitoring and some recovery; communicate these limits to pilot participants.
-- The owner agrees measurable availability, maintenance, incident contact, backup RPO/RTO and support expectations. [Commercial policies](commercial-policies.md) select no initial formal availability SLA; actual support coverage and cost/capacity evidence remain PH-18. Do not advertise the delegated example paid quotas as measured host capacity. No commercial SLA is implied by the architecture.
+- The owner agrees measurable availability, maintenance, incident contact, backup RPO/RTO and support expectations. Availability, maintenance and RPO/RTO are decided in the [deployment design](deployment-design.md#recovery-and-availability-targets); incident contact and support coverage remain PH-18. [Commercial policies](commercial-policies.md) select no initial formal availability SLA; actual support coverage and cost/capacity evidence remain PH-18. Do not advertise the delegated example paid quotas as measured host capacity. No commercial SLA is implied by the architecture.
 
 Until verified, external exposure and real-customer operation are **pending**, even if development works locally.
 

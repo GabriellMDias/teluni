@@ -1170,6 +1170,123 @@
     "text": "References\n[Catalog and composition design](../project/catalog-composition-design.md)\n[Configurable catalogs policy](../project/release-policies.md#configurable-catalogs)\n[Security and internationalization](../project/security-and-i18n.md)\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\n"
   },
   {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "anchor": "adr-0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "text": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n**Status:** accepted\n**Date:** 2026-10-22\n**Acceptance scope:** On 2026-10-22 the owner asked the agent to take every pending decision that is only a decision, which extends the delegation recorded with PH-25. The agent accepted this decision under that delegation together with the decisions of the [deployment design](../project/deployment-design.md); merging the pull request that adds it is the repository review. Acceptance establishes the direction for building and rehearsing the deployment in PJ-13. It does not verify the owner's host or network (PH-10), create any account, or authorize exposing a host.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0021 chose a single residential Debian host with Docker Compose, a reverse proxy with HTTPS and durable local media. It deliberately selected no tunnel, proxy, object store or provider, and it made real-customer use conditional on off-host recovery and owner-approved recovery targets. Residential lines in Brazil are often behind CGNAT or block inbound ports, and the owner has no recurring cloud budget.\nScreens download video renditions, and people upload videos of up to 1 GiB in a single request. Sessions are server-managed cookies, and media are private to their company. Screens play for up to seven days without the server (AT-15), which bounds how long a recovery can take.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nTLS ends on the owner's host, in a Caddy reverse proxy that obtains Let's Encrypt certificates. The host is reached directly when the line has a usable public address. Otherwise it is reached through a TCP relay on a free-tier virtual machine that forwards encrypted traffic through a WireGuard tunnel opened by the host. No TLS-terminating tunnel, CDN or proxy service sits in front of Teluni.\nBackups are restic snapshots, encrypted on the host, of the PostgreSQL dumps followed by the content-addressed media objects. They are written every 6 hours to an S3-compatible bucket at a separate provider, initially Backblaze B2, and kept for at most about 35 days. Secrets are excluded from snapshots and kept offline by the owner.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nEnding TLS on the host keeps session cookies, credentials and private media away from intermediaries. The relay is replaceable and holds nothing.\nA TLS-terminating free tunnel would solve CGNAT, but its terms restrict serving video outside paid products. Its reported upload cap is below the media limit, and it would see every session.\nWrite-once media named by their hash, and purge delayed by at least 30 days, make \"dump first, then objects\" a consistent set without stopping the service. The restore check verifies it.\nClient-side encryption lets a free off-host bucket hold customer data as ciphertext only. Deduplication keeps 6-hourly snapshots within the free allowance at pilot scale.\nA 6-hour recovery point and a 72-hour worst-case recovery time keep screens playing through any recovery under AT-15.\nAssumptions: provider allowances (Oracle Cloud's outbound transfer, Backblaze B2's free storage and downloads) are as reported in October 2026. They can change, so the destination and relay must stay replaceable. Whether the owner's line needs the relay is unknown until PH-10.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A TLS-terminating tunnel (Cloudflare Tunnel or similar)",
+    "anchor": "a-tls-terminating-tunnel-cloudflare-tunnel-or-similar",
+    "text": "A TLS-terminating tunnel (Cloudflare Tunnel or similar)\nFree, and it avoids port forwarding, but it ends TLS at the provider. It conflicts with the CDN terms for video, and its reported 100 MB upload cap rejects valid uploads. Rejected for this service.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Running everything on the free-tier virtual machine",
+    "anchor": "running-everything-on-the-free-tier-virtual-machine",
+    "text": "Running everything on the free-tier virtual machine\nRemoves the residential risks at no cost. It would, however, put customer data under the provider's idle-reclamation and account terms with no paid support. It is kept only as a relay.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Continuous WAL archiving",
+    "anchor": "continuous-wal-archiving",
+    "text": "Continuous WAL archiving\nReduces the recovery point to minutes, at the cost of a second backup and restore mechanism. Deferred until a customer needs a smaller recovery point.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nNo intermediary sees decrypted traffic or backups.\nNo recurring cost at pilot scale, and every external piece (relay, bucket, mail relay) can be replaced without changing the application.\nDeleted data leaves backups within about 35 days, which the data handling policies can state.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe owner operates certificates, the relay and backup monitoring. A failed backup is only noticed through the alerts the deployment design requires.\nLosing the offline restic password loses every backup. Losing the secret key rings after a restore invalidates sessions and sealed mail credentials.\nFree tiers can change their terms. The design names fallbacks, but switching still takes work.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nPJ-13 builds the Compose bundle, the backup, restore and verification scripts, and a rehearsal that CI runs. The real-host rehearsal and runbooks wait for PH-10. Moving to a paid VPS later keeps the same composition, with the relay removed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\n[Deployment design](../project/deployment-design.md)\n[Deployment and migration planning](../project/operations.md)\n[Data retention](../security/data-retention.md)\n[Media library design](../project/media-library-design.md)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -1257,7 +1374,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n[ADR-0033](0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nExpose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1285,140 +1402,5 @@
     "heading": "Decision",
     "anchor": "decision",
     "text": "Decision\nState the architectural decision clearly.\nThis section should make it possible to understand the chosen direction without inferring it from the alternatives or rationale.\nExample form:\nThis repository will ...\n\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nExplain why this option was selected.\nFocus on the tradeoffs, constraints, and evidence that materially influenced the decision.\nDo not list only advantages.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternative A",
-    "anchor": "alternative-a",
-    "text": "Alternative A\nBriefly describe the alternative and why it was not selected.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternative B",
-    "anchor": "alternative-b",
-    "text": "Alternative B\nBriefly describe the alternative and why it was not selected.\nRemove unused alternative sections rather than inventing alternatives.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nDescribe meaningful benefits.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nDescribe accepted costs, limitations, or additional responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nDescribe important deployment, compatibility, data, security, or migration consequences when applicable.\nRemove this subsection when there is no meaningful operational or migration impact.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nInclude only useful references.\nLink relevant [current policies](../README.md), [related ADRs](README.md), design documents, and evidence. Use actual relative Markdown links to existing records; remove unused references.\nIf this ADR supersedes another accepted ADR, update that ADR to reference this one as its replacement.\n"
-  },
-  {
-    "id": "repository/docs/AGENTS",
-    "title": "Documentation Instructions",
-    "group": "Agent instructions",
-    "kind": "repository",
-    "heading": "Documentation Instructions",
-    "anchor": "documentation-instructions",
-    "text": "Documentation Instructions\nUse [the task index](README.md) to locate the owner of the information being changed. Read [contributing guidance](contributing.md) when creating, moving, or maintaining documentation.\nPreserve normative meaning, exceptions, and the distinction between requirements, examples, accepted decisions, and implementation availability. Check governing ADRs before treating a choice as unresolved.\nKeep one authoritative policy for each concern. Use links and scoped reading routes rather than copying policy into indexes or agent instructions.\nWhen moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.\nKeep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.\nUse only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Error Contract",
-    "anchor": "api-error-contract",
-    "text": "API Error Contract\n[Task index](../README.md) · [API principles](principles.md) · [Error handling](../architecture/error-handling.md) · [Compatibility](versioning.md)\nThis policy owns public failure semantics. The API's [shared error registry, envelope schema, and responder](../../apps/api/src/errors.ts) and each composed module's registered codes are canonical; the [public registry composition](../../apps/api/src/error-registry.ts) gives each code exactly one owner and rejects any duplicate, even an identical definition, and the [generated error reference](../generated/api/errors.md) lists implemented codes, messages, categories, HTTP statuses, and retry classifications. Module route contracts declare expected operation errors. Follow [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) when generating OpenAPI and SDK representations.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Error Envelope",
-    "anchor": "error-envelope",
-    "text": "Error Envelope\nThe implemented API envelope has a top-level `error` object with required `code`, `message`, and `requestId`, plus optional `traceId`, `errorId` and `issues`. The schema prohibits additional fields. A synthetic example is:\n{\n  \"error\": {\n    \"code\": \"RESOURCE_VERSION_CONFLICT\",\n    \"message\": \"The request changed; reload it before trying again.\",\n    \"requestId\": \"req_00000000-0000-4000-8000-000000000001\"\n  }\n}\n\nThe runtime generates fresh request IDs, adds trace correlation when available, and assigns unexpected failures an error occurrence ID. These are opaque support references, not credentials; knowing one must not grant telemetry access. See [request handling](../../apps/api/src/app.ts) for construction and reporting.\nThe envelope has **no retry object** and no free-form `details`. Its only structured extension is the optional `issues` list described under [validation errors](#validation-errors). Registry `retryable` metadata is documentation/classification, not a serialized promise that any write is safe to repeat. Rate limiting uses the HTTP `Retry-After` header. The extension rules below apply when consumers need additional structured information; do not implement hypothetical fields merely because examples in a policy mention them.\n[Health probes](../../apps/api/src/health-contracts.ts) use their own documented status response, including when unavailable; do not confuse a probe status with an application error envelope.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Error Code Format",
-    "anchor": "error-code-format",
-    "text": "Error Code Format\nPublic codes use stable semantic `UPPER_SNAKE_CASE` names. Clients branch on codes and deliberately defined structured fields, never on message text or internal exception classes. Messages are safe human explanations and may change for clarity or product localization without changing the code's meaning. Canonical repository descriptions remain English.\nInfrastructure identifiers such as SQLSTATE, ORM codes, provider exceptions, filesystem paths, or runtime class names are not public semantics. Map failures to the condition consumers need to understand. Reuse an existing code for the same meaning; do not create a code for every code path, collapse materially different consumer actions into one generic code, or reuse a retired code for a new meaning.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Error Code Ownership",
-    "anchor": "error-code-ownership",
-    "text": "Error Code Ownership\nThe feature/application owner defines business failures; the API boundary owns cross-cutting public mappings. The registry provides one canonical definition, and operation metadata refers to it. The registry enumerates stable public conditions, not every possible database/network/library exception. Do not maintain an independent manual registry in prose or generated clients.\nFor a new code, determine its semantic owner, expected/unexpected category, public disclosure safety, consumer action, status mapping, retry implications, optional details, and compatibility impact. Update canonical code, operation declarations, tests, and generated references together. Each module's implementation conventions explain its authorization-sensitive classification order.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Validation Errors",
-    "anchor": "validation-errors",
-    "text": "Validation Errors\nThe implemented validation response is `400 VALIDATION_FAILED` with the common envelope. Do not expose validator exceptions or echo submitted values. Structural validation is distinct from a valid request that conflicts with current domain state.\nField-level problems use the envelope's optional `issues`, defined once in the [shared envelope schema](../../apps/api/src/errors.ts):\nEach issue has a `path` (a JSON Pointer into the request body, never a database or ORM path) and a stable `UPPER_SNAKE_CASE` `reason`.\nAn issue may add `fieldId`, naming a stored field that is absent from the body, and `count`, saying how many stored items cause the problem.\nAn issue never echoes a submitted value.\nThe responder keeps at most 50 issues, so an attacker-controlled payload cannot create an unbounded response. Unknown body fields still fail structural validation first.\nA module sends issues only for the codes whose operations document their reasons. Today these are the catalogs module's `CATALOG_SCHEMA_INVALID`, `CATALOG_RECORD_INVALID` and `CATALOG_RECORD_REFERENCED`. Other codes, including `VALIDATION_FAILED`, carry none.\nClients branch on `code` and may use `reason` to point at the field; they must tolerate unknown reasons. Adding a reason is additive; changing a reason's meaning follows [compatibility review](versioning.md).\n"
   }
 ]

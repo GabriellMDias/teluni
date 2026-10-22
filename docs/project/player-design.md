@@ -47,6 +47,18 @@ The activity is the only user interface. Each update and process start goes thro
 
 An uncaught exception is recorded locally (code and stack frames of the player only, never content or credentials) before the process ends. In the managed profile the system restarts the HOME activity, which AT-07 qualifies.
 
+## Supported hardware envelope
+
+Decided on 2026-10-22 under the owner's delegation (the decision part of [PH-08](human-actions.md#ph-08)). This is the envelope that devices are bought and qualified against. Only PH-08 measurements on a real model make that model supported.
+
+- **Platform.** Android TV OS or Google TV, certified by Google (Play Protect certified) and homologated by Anatel, running Android 9 or later. `minSdk` stays 26, but Android 8 devices are not bought for the pilot because their security updates have ended. Smart TVs on other systems (Samsung Tizen, LG webOS, Roku) and Fire OS are outside the envelope. On those TVs an HDMI device inside the envelope is used instead.
+- **Uncertified "TV box" devices** sold without Anatel homologation are excluded, even when they run Android. They often ship with modified firmware and preinstalled malware, which the device credential cannot protect against.
+- **Form.** The pilot's reference class is a Google TV HDMI streaming device (for example a Xiaomi TV Box S, second generation), which works with whatever TV the customer already has. A TV with Google TV built in is qualified separately per model.
+- **Minimums.** 2 GB of RAM, 8 GB of storage with at least 4 GB free for the media store after setup, hardware decoding of H.264 High 4.1 at 1080p30 with AAC, and 1080p HDMI output.
+- **Network.** Ethernet where the installation allows it (through a USB adapter on sticks), otherwise 5 GHz Wi-Fi. Playback needs no bandwidth once a generation is staged; staging time grows with media size.
+- **Installation.** The device must allow the managed profile: a factory reset, then `adb` over the network or USB to set the device owner before any Google account is added.
+- **Orientation.** Landscape at 0 and 180 degrees on every model. Portrait (90 and 270) only on models where PH-08 shows the rotation works with hardware decoding.
+
 ## Enrollment and credential
 
 The player follows the [device enrollment design](device-enrollment-design.md):
@@ -250,6 +262,7 @@ The agent took these decisions on 2026-10-20 under the owner's delegation:
 9. **Playback.** ExoPlayer for images and videos with the next item prepared, fit without distortion, muted in protocol 1, schedule boundaries timed on the monotonic clock, and failed items skipped and reported.
 10. **Updates.** Server-distributed APKs verified by SHA-256 and signing certificate, installed by the device owner inside a local window. No downgrade: rollback is a roll-forward release (ADR-0031).
 11. **Platform floor.** `minSdk` 26 and JDK 17. Dependencies: Kotlin, kotlinx.serialization, OkHttp and Nimbus JOSE + JWT in `core`, and Media3 in `app`, all pinned and checksum-verified.
+12. **Hardware envelope (2026-10-22, same delegation).** Certified Android TV or Google TV devices with Android 9 or later, Anatel homologation, 2 GB of RAM, 8 GB of storage and H.264 1080p30 hardware decoding. A Google TV HDMI device is the pilot's reference class. Uncertified TV boxes and non-Android smart TVs are excluded ([envelope](#supported-hardware-envelope)).
 
 ## Alternatives considered
 
