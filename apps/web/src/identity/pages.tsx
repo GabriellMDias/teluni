@@ -6,6 +6,7 @@ import {
   listSessions,
   loginHref,
   sessionQuery,
+  signUpHref,
   sessionsKey,
   terminateAllSessions,
   terminateSession,
@@ -57,6 +58,11 @@ export function SignInPage({
               {t.signInButton}
             </a>
             <p className="hint">{t.signInHint}</p>
+            <p className="sign-up">
+              {t.signUpPrompt}{" "}
+              <a href={signUpHref(returnTo ?? "/")}>{t.signUpLink}</a>
+            </p>
+            <p className="hint">{t.signUpHint}</p>
           </>
         )}
       </section>

@@ -62,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. */
+        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. */
         get: operations["startLogin"];
         put?: never;
         post?: never;
@@ -1766,6 +1766,7 @@ export interface operations {
             query?: {
                 returnTo?: string;
                 assurance?: "strong" | "recent";
+                intent?: "signup";
             };
             header?: never;
             path?: never;

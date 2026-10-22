@@ -32,6 +32,18 @@ export function teluniThemeFiles(): { source: string; target: string }[] {
       target: `${themeRoot}/resources/css/teluni.css`,
     },
     {
+      source: resolve(theme, "login-update-password.ftl"),
+      target: `${themeRoot}/login-update-password.ftl`,
+    },
+    {
+      source: resolve(theme, "messages/messages_pt_BR.properties"),
+      target: `${themeRoot}/messages/messages_pt_BR.properties`,
+    },
+    {
+      source: resolve(theme, "messages/messages_en.properties"),
+      target: `${themeRoot}/messages/messages_en.properties`,
+    },
+    {
       source: resolve(repositoryRoot, "apps/web/src/assets/brand-mark.svg"),
       target: `${themeRoot}/resources/img/brand-mark.svg`,
     },

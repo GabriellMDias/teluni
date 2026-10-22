@@ -20,7 +20,7 @@ Compose reads per-host values from the environment and secrets from env files in
 | --- | --- |
 | `TELUNI_CONFIG_DIR`, `TELUNI_APP_HOST`, `TELUNI_AUTH_HOST`, `TELUNI_APEX_HOST`, `TELUNI_ACME_EMAIL`, `TELUNI_RELEASE` | Compose interpolation, for example in `/etc/teluni/compose.env` for the systemd units |
 | `postgres.env` | `POSTGRES_PASSWORD` and the passwords of the `teluni_owner`, `orion_runtime` and `keycloak` roles |
-| `release.env` | `ORION_MIGRATION_DATABASE_URL` (the owner role) and the realm step's Keycloak administrator, origin, audience and client secrets |
+| `release.env` | `ORION_MIGRATION_DATABASE_URL` (the owner role) and the realm step's Keycloak administrator, origin, audience and client secrets, plus the `TELUNI_MAIL_SMTP_*` and `TELUNI_MAIL_FROM` settings that Keycloak's own mail uses (TLS required) |
 | `keycloak.env` | `KC_DB_PASSWORD` and the bootstrap administrator, which is disabled after the realm exists |
 | `api.env` | The API settings of the [configuration reference](../../docs/generated/configuration/api.md); the Compose file sets `TELUNI_TRUSTED_PROXIES` to the proxy's fixed address |
 | `backup.env` | `PGPASSWORD`, `RESTIC_REPOSITORY`, `RESTIC_PASSWORD` and the bucket's credentials (for Backblaze B2, `B2_ACCOUNT_ID` and `B2_ACCOUNT_KEY`) |
@@ -39,4 +39,4 @@ On a network that intercepts TLS, set `TELUNI_BUILD_CA_FILE` to its CA certifica
 
 ## Not yet here
 
-The relay listener with PROXY protocol for a line behind CGNAT, alert delivery for failed backups and renewals, and the runbooks for installation, updates and restore arrive with the real host (PH-10). Keycloak's own production mail needs authenticated SMTP in the realm contract, which PJ-24 adds.
+The relay listener with PROXY protocol for a line behind CGNAT, alert delivery for failed backups and renewals, and the runbooks for installation, updates and restore arrive with the real host (PH-10).

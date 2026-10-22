@@ -66,6 +66,9 @@ CMD ["database"]
 FROM ${KEYCLOAK_IMAGE} AS keycloak-build
 COPY --chown=1000:0 apps/api/keycloak/themes/teluni/login/theme.properties /opt/keycloak/themes/teluni/login/theme.properties
 COPY --chown=1000:0 apps/api/keycloak/themes/teluni/login/resources/css/teluni.css /opt/keycloak/themes/teluni/login/resources/css/teluni.css
+COPY --chown=1000:0 apps/api/keycloak/themes/teluni/login/login-update-password.ftl /opt/keycloak/themes/teluni/login/login-update-password.ftl
+COPY --chown=1000:0 apps/api/keycloak/themes/teluni/login/messages/messages_pt_BR.properties /opt/keycloak/themes/teluni/login/messages/messages_pt_BR.properties
+COPY --chown=1000:0 apps/api/keycloak/themes/teluni/login/messages/messages_en.properties /opt/keycloak/themes/teluni/login/messages/messages_en.properties
 COPY --chown=1000:0 apps/web/src/assets/brand-mark.svg /opt/keycloak/themes/teluni/login/resources/img/brand-mark.svg
 COPY --chown=1000:0 apps/web/public/fonts/plus-jakarta-sans.ttf /opt/keycloak/themes/teluni/login/resources/fonts/plus-jakarta-sans.ttf
 COPY --chown=1000:0 apps/web/public/fonts/OFL.txt /opt/keycloak/themes/teluni/login/resources/fonts/OFL.txt

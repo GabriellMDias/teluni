@@ -45,6 +45,32 @@ async function database(): Promise<void> {
   console.log("release_database_ready");
 }
 
+/**
+ * Keycloak's mail goes through the API's relay (D-13): the same TELUNI_MAIL_
+ * settings, with TLS required because this step serves real environments.
+ */
+function realmMail() {
+  const host = process.env.TELUNI_MAIL_SMTP_HOST;
+  if (!host) return {};
+  const security = process.env.TELUNI_MAIL_SMTP_SECURITY ?? "starttls";
+  if (security !== "tls" && security !== "starttls")
+    throw new Error(
+      "Realm mail needs TELUNI_MAIL_SMTP_SECURITY tls or starttls.",
+    );
+  const transport: "tls" | "starttls" = security;
+  const username = process.env.TELUNI_MAIL_SMTP_USERNAME;
+  const password = process.env.TELUNI_MAIL_SMTP_PASSWORD;
+  return {
+    smtp: {
+      host,
+      port: Number(process.env.TELUNI_MAIL_SMTP_PORT ?? 587),
+      from: required("TELUNI_MAIL_FROM"),
+      security: transport,
+      ...(username && password ? { credentials: { username, password } } : {}),
+    },
+  };
+}
+
 async function realm(): Promise<void> {
   const publicOrigin = required("TELUNI_PUBLIC_ORIGIN");
   await provisionTeluniRealm(await administrator(), {
@@ -56,6 +82,7 @@ async function realm(): Promise<void> {
     provisionerClientSecret: required(
       "TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET",
     ),
+    ...realmMail(),
   });
   console.log("release_realm_ready");
 }
