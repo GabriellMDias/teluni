@@ -125,6 +125,15 @@ services:
     volumes:
       - $work/repository:/repository
 YAML
+  # On a network that intercepts TLS, the builds need its CA certificate.
+  if [ -n "${TELUNI_BUILD_CA_FILE:-}" ]; then
+    {
+      for service in release keycloak api proxy backup; do
+        printf '  %s:\n    build:\n      secrets: [extra-ca]\n' "$service"
+      done
+      printf 'secrets:\n  extra-ca:\n    file: %s\n' "$TELUNI_BUILD_CA_FILE"
+    } >>"$work/rehearsal.yaml"
+  fi
 }
 
 wait_healthy() {

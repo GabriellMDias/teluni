@@ -8,8 +8,6 @@ name: teluni
 x-build: &build
   context: ../..
   dockerfile: infra/pilot/Dockerfile
-  # An extra CA certificate for networks that intercept TLS during builds.
-  secrets: [extra-ca]
 
 services:
   postgres:
@@ -151,10 +149,6 @@ networks:
   back:
     internal: true
   egress: {}
-
-secrets:
-  extra-ca:
-    file: ${TELUNI_BUILD_CA_FILE:-/dev/null}
 
 volumes:
   postgres: {}

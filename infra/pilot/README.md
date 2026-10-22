@@ -35,7 +35,7 @@ From this directory, with the environment above:
 - `docker compose run --rm backup snapshot`, `maintain`, `restore [ID]`, `verify [--hash]` and `snapshots` manage backups. `restore` refuses databases or a media volume that are not empty, so it runs on a fresh project before the rest of the stack starts.
 - `./rehearsal.sh` rehearses all of it on this machine, using loopback ports 80 and 443 and Caddy's local CA.
 
-On a network that intercepts TLS, set `TELUNI_BUILD_CA_FILE` to its CA certificate so the build can reach the npm registry; it is passed as a build secret and never stored in an image. When the file is outside this directory, Buildx also needs `BUILDX_BAKE_ENTITLEMENTS_FS=0` to read it.
+On a network that intercepts TLS, set `TELUNI_BUILD_CA_FILE` to its CA certificate before running the rehearsal, so the build can reach the npm registry. The rehearsal passes it as the Dockerfile's optional `extra-ca` build secret, which is never stored in an image. When the file is outside this directory, Buildx also needs `BUILDX_BAKE_ENTITLEMENTS_FS=0` to read it.
 
 ## Not yet here
 
