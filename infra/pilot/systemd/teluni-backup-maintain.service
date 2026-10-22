@@ -1,0 +1,10 @@
+# Prunes expired snapshots and reads a 5% sample of the repository.
+[Unit]
+Description=Teluni backup maintenance
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/teluni/infra/pilot
+EnvironmentFile=/etc/teluni/compose.env
+ExecStart=/usr/bin/docker compose run --rm backup maintain

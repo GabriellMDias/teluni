@@ -1,0 +1,13 @@
+{
+  "kind": "repository",
+  "source": "infra/AGENTS.md",
+  "title": "Infrastructure Instructions",
+  "html": "<p>This directory holds declarative deployment and operational infrastructure only, never business logic (<a href=\"/docs/repository/docs/architecture/repository-structure\">repository structure</a>). Read the <a href=\"/docs/repository/docs/project/deployment-design\">pilot deployment and recovery design</a> and <a href=\"/docs/repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots\">ADR-0033</a> before changing anything under <code>pilot/</code>.</p>\n<ul>\n<li>Never commit secrets, real hostnames' credentials or environment files with values. Secrets reach containers only from the env files in the host's root-only configuration directory; the rehearsal generates disposable ones.</li>\n<li>Pin every base image by digest and every tool by exact version. Application images are built from this repository; runtime code never imports anything from here.</li>\n<li>Configuration keys come from the <a href=\"/docs/repository/docs/generated/configuration/api\">configuration reference</a>; do not invent API settings here. A new setting is added to <code>apps/api/src/config.ts</code> first.</li>\n<li>TLS ends in the proxy on the owner's host (ADR-0033). Do not add a TLS-terminating tunnel, CDN or a public route to the API's health endpoints or Keycloak's admin console.</li>\n<li>Run <code>infra/pilot/rehearsal.sh</code> after changing images, the composition, the proxy or the backup script; CI runs it as the Deployment rehearsal job.</li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "infrastructure-instructions",
+      "text": "Infrastructure Instructions",
+      "level": 1
+    }
+  ]
+}

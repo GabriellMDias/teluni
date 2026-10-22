@@ -41,6 +41,29 @@ describe("API configuration boundary", () => {
     expect(Object.isFrozen(clientConfigFrom(config))).toBe(true);
   });
 
+  it("accepts trusted proxy addresses and ranges, and trusts none by default", () => {
+    expect(parseServerConfig({ ORION_ENV: "test" }).trustedProxies).toEqual([]);
+    expect(
+      parseServerConfig({
+        ORION_ENV: "production",
+        TELUNI_TRUSTED_PROXIES: " 172.20.0.0/16, 10.0.0.2 ,fd00::/8",
+      }).trustedProxies,
+    ).toEqual(["172.20.0.0/16", "10.0.0.2", "fd00::/8"]);
+  });
+
+  it.each([
+    "proxy.internal",
+    "10.0.0.0/33",
+    "fd00::/129",
+    "10.0.0.1/8/1",
+    "10.0.0.0/x",
+    "10.0.0.1,",
+  ])("rejects the trusted proxy entry %s", (value) => {
+    expect(() =>
+      parseServerConfig({ ORION_ENV: "test", TELUNI_TRUSTED_PROXIES: value }),
+    ).toThrow("Invalid API configuration");
+  });
+
   it.each([
     { ORION_ENV: "other" },
     { ORION_ENV: "test", ORION_API_PORT: "abc" },

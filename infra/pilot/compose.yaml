@@ -1,0 +1,164 @@
+# The pilot deployment (docs/project/deployment-design.md, ADR-0033).
+# Secrets and per-environment values come from env files in
+# $TELUNI_CONFIG_DIR (root-only on the host); see infra/pilot/README.md.
+# Images are built from this repository; base images are pinned by digest in
+# the Dockerfile.
+name: teluni
+
+x-build: &build
+  context: ../..
+  dockerfile: infra/pilot/Dockerfile
+  # An extra CA certificate for networks that intercept TLS during builds.
+  secrets: [extra-ca]
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16.15-trixie@sha256:9e2cf6287f25c3151f4c9421ccce2b17f3e60061c111a29165e0d2cdd9ff0a97
+    env_file: ${TELUNI_CONFIG_DIR:?set TELUNI_CONFIG_DIR}/postgres.env
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/10-teluni.sh:ro
+    networks: [back]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username postgres --dbname teluni"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  release:
+    image: teluni/release:${TELUNI_RELEASE:-local}
+    build: { <<: *build, target: release }
+    env_file: ${TELUNI_CONFIG_DIR}/release.env
+    networks: [back]
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  keycloak:
+    image: teluni/keycloak:${TELUNI_RELEASE:-local}
+    build: { <<: *build, target: keycloak }
+    env_file: ${TELUNI_CONFIG_DIR}/keycloak.env
+    environment:
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_HOSTNAME: https://${TELUNI_AUTH_HOST:?set TELUNI_AUTH_HOST}
+      KC_HOSTNAME_ADMIN: http://127.0.0.1:8081
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+    # The admin console only on the host's loopback, reached over the
+    # administration tunnel.
+    ports: ["127.0.0.1:8081:8080"]
+    networks: [front, back]
+    depends_on:
+      postgres: { condition: service_healthy }
+    # Ready only once the main server answers: its readiness endpoint reports
+    # UP while the server is still bootstrapping the database.
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /realms/master HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200 '",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  api:
+    image: teluni/api:${TELUNI_RELEASE:-local}
+    build: { <<: *build, target: api }
+    env_file: ${TELUNI_CONFIG_DIR}/api.env
+    environment:
+      ORION_RELEASE_ID: ${TELUNI_RELEASE:-local}
+      # Only the proxy may set the client address that request limits count.
+      TELUNI_TRUSTED_PROXIES: 172.30.10.2
+    volumes:
+      - media:/var/lib/teluni/media
+    read_only: true
+    tmpfs: [/tmp]
+    networks: [front, back]
+    depends_on:
+      release: { condition: service_completed_successfully }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health/ready').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  proxy:
+    image: teluni/proxy:${TELUNI_RELEASE:-local}
+    build: { <<: *build, target: proxy }
+    environment:
+      TELUNI_APP_HOST: ${TELUNI_APP_HOST:?set TELUNI_APP_HOST}
+      TELUNI_AUTH_HOST: ${TELUNI_AUTH_HOST}
+      TELUNI_APEX_HOST: ${TELUNI_APEX_HOST:?set TELUNI_APEX_HOST}
+      TELUNI_ACME_EMAIL: ${TELUNI_ACME_EMAIL:?set TELUNI_ACME_EMAIL}
+      TELUNI_CADDY_OPTIONS: ${TELUNI_CADDY_OPTIONS:-}
+    ports:
+      - "${TELUNI_HTTP_BIND:-80}:80"
+      - "${TELUNI_HTTPS_BIND:-443}:443"
+      - "${TELUNI_HTTPS_BIND:-443}:443/udp"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      front:
+        ipv4_address: 172.30.10.2
+        # Services reach the public names through the proxy, so no hairpin
+        # NAT through the router is needed.
+        aliases:
+          - ${TELUNI_APP_HOST}
+          - ${TELUNI_AUTH_HOST}
+    depends_on:
+      api: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    restart: unless-stopped
+
+  # Run on demand or from the systemd timer: docker compose run --rm backup
+  backup:
+    image: teluni/backup:${TELUNI_RELEASE:-local}
+    build: { <<: *build, target: backup }
+    profiles: [tools]
+    env_file: ${TELUNI_CONFIG_DIR}/backup.env
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      TELUNI_MEDIA_DIR: /media
+    volumes:
+      - media:/media
+      - restic-cache:/root/.cache/restic
+    networks: [back, egress]
+
+networks:
+  front:
+    ipam:
+      config:
+        # Dynamic addresses come from the upper half, keeping the proxy's
+        # fixed address free.
+        - subnet: 172.30.10.0/24
+          ip_range: 172.30.10.128/25
+  # No route out: PostgreSQL and the release step need none.
+  back:
+    internal: true
+  egress: {}
+
+secrets:
+  extra-ca:
+    file: ${TELUNI_BUILD_CA_FILE:-/dev/null}
+
+volumes:
+  postgres: {}
+  media: {}
+  caddy-data: {}
+  caddy-config: {}
+  restic-cache: {}

@@ -4078,6 +4078,26 @@
       "file": "pages/repository/docs/versioning.json"
     },
     {
+      "id": "repository/infra/AGENTS",
+      "kind": "repository",
+      "title": "Infrastructure Instructions",
+      "group": "Agent instructions",
+      "source": "infra/AGENTS.md",
+      "summary": "This directory holds declarative deployment and operational infrastructure only, never business logic (repository structure). Read the pilot deployment and recovery design and…",
+      "headings": [],
+      "file": "pages/repository/infra/AGENTS.json"
+    },
+    {
+      "id": "repository/infra/pilot/README",
+      "kind": "repository",
+      "title": "Pilot Deployment",
+      "group": "Project guides",
+      "source": "infra/pilot/README.md",
+      "summary": "The declarative pilot deployment of the deployment design and ADR-0033: one Debian host running Docker Compose. Nothing here is deployed; installing it on the real host waits…",
+      "headings": [],
+      "file": "pages/repository/infra/pilot/README.json"
+    },
+    {
       "id": "repository/packages/sdk/AGENTS",
       "kind": "repository",
       "title": "SDK-local Instructions",
@@ -4146,8 +4166,8 @@
         "count": 29,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0032.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0033.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0032.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0033.json", "count": 110, "kinds": ["repository"] },
       { "file": "search/0034.json", "count": 120, "kinds": ["repository"] },
       { "file": "search/0035.json", "count": 173, "kinds": ["repository"] },
       { "file": "search/0036.json", "count": 156, "kinds": ["repository"] },
@@ -4156,15 +4176,15 @@
       { "file": "search/0039.json", "count": 75, "kinds": ["repository"] },
       { "file": "search/0040.json", "count": 70, "kinds": ["repository"] },
       { "file": "search/0041.json", "count": 52, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 74, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 55, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 73, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 56, "kinds": ["repository"] },
       { "file": "search/0044.json", "count": 47, "kinds": ["repository"] },
       { "file": "search/0045.json", "count": 75, "kinds": ["repository"] },
       { "file": "search/0046.json", "count": 64, "kinds": ["repository"] },
       { "file": "search/0047.json", "count": 103, "kinds": ["repository"] },
       { "file": "search/0048.json", "count": 91, "kinds": ["repository"] },
-      { "file": "search/0049.json", "count": 4, "kinds": ["repository"] }
+      { "file": "search/0049.json", "count": 9, "kinds": ["repository"] }
     ],
-    "count": 1957
+    "count": 1962
   }
 }

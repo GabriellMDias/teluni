@@ -1,0 +1,11 @@
+# Every 6 hours, catching up after downtime (RPO of 6 hours).
+[Unit]
+Description=Teluni backup every 6 hours
+
+[Timer]
+OnCalendar=*-*-* 00/6:15:00
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

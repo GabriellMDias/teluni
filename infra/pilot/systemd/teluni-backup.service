@@ -1,0 +1,12 @@
+# Takes one snapshot (docs/project/deployment-design.md#backups-and-restore).
+# Install with teluni-backup.timer; adjust WorkingDirectory to the checkout.
+[Unit]
+Description=Teluni backup snapshot
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/teluni/infra/pilot
+EnvironmentFile=/etc/teluni/compose.env
+ExecStart=/usr/bin/docker compose run --rm backup snapshot

@@ -23,6 +23,8 @@ export function createApp(
     modules?: readonly RegisteredModule[];
     /** Readiness of configured dependencies, such as the database. */
     checkReady?: () => Promise<boolean>;
+    /** Reverse proxies whose forwarded client address is trusted. */
+    trustedProxies?: readonly string[];
   } = {},
 ) {
   // A module that streams large uploads raises the server's request
@@ -39,6 +41,11 @@ export function createApp(
     genReqId: () => `req_${randomUUID()}`,
     requestTimeout,
     connectionTimeout: 10_000,
+    // Only listed proxies may set the client address that request limits
+    // count; anyone else's X-Forwarded-For is ignored.
+    trustProxy: options.trustedProxies?.length
+      ? [...options.trustedProxies]
+      : false,
     // Multi-type schemas (such as catalog item values) keep a value of any
     // listed type as sent; an anyOf would let coercion rewrite it.
     ajv: { customOptions: { allowUnionTypes: true } },

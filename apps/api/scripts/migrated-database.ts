@@ -1,36 +1,12 @@
 import { execFile } from "node:child_process";
-import { readdir, readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { resolve } from "node:path";
 import { GenericContainer, Wait } from "testcontainers";
 import pg from "pg";
+import { applyRuntimeGrants } from "./runtime-grants.js";
 
 const run = promisify(execFile);
 const appRoot = resolve(import.meta.dirname, "..");
-const runtimeGrants = resolve(appRoot, "prisma/runtime-grants");
-
-/** Least-privilege runtime grants that each module declares beside its schema. */
-export async function runtimeGrantStatements(
-  directory = runtimeGrants,
-): Promise<string[]> {
-  let files: string[];
-  try {
-    files = (await readdir(directory)).filter((name) => name.endsWith(".sql"));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw error;
-  }
-  const statements: string[] = [];
-  for (const file of files.sort())
-    statements.push(
-      ...(await readFile(resolve(directory, file), "utf8"))
-        .replace(/--[^\n]*/g, "")
-        .split(";")
-        .map((statement) => statement.trim())
-        .filter(Boolean),
-    );
-  return statements;
-}
 
 /** Compare only Prisma-representable structure; SQL-only objects use catalog checks. */
 export async function assertPrismaSchemaMatchesDatabase(
@@ -105,9 +81,7 @@ export async function withMigratedDatabase<T>(
       await admin.query(
         "CREATE ROLE orion_runtime LOGIN PASSWORD 'runtime_test'",
       );
-      await admin.query("GRANT USAGE ON SCHEMA public TO orion_runtime");
-      for (const statement of await runtimeGrantStatements())
-        await admin.query(statement);
+      await applyRuntimeGrants(admin);
     } finally {
       await admin.end();
     }

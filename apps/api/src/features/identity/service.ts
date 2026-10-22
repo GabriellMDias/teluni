@@ -139,6 +139,8 @@ export class IdentityService {
     );
     const id = randomUUID();
     const loginHandle = newSecret();
+    // Retention upkeep rides on sign-in starts, which are rare and bounded.
+    await this.#repository.purgeEnded();
     await this.#repository.createLoginAttempt({
       id,
       handleHash: hashSecret(loginHandle),

@@ -38,7 +38,7 @@ Retention runs from the stated trigger. "With the company" means until the compa
 | Device enrollments | Unclaimed: 1 day after expiry. Claimed: 30 days after the claim | Deleted | [Devices](device-enrollment-design.md) |
 | Outbound email messages | 30 days after their final state; sealed credentials erased at the final state | Deleted | [Mail](invitation-delivery-design.md) |
 | Invitation recipient addresses | 90 days after the invitation becomes final | Replaced by a tombstone | Organizations |
-| Sessions and login attempts | 30 days after a session ends (expiry, sign-out or termination) or an attempt expires | Deleted; the identity module has no cleanup yet, which PJ-24 adds | [Identity](identity-session-design.md) |
+| Sessions and login attempts | 30 days after a session ends (expiry, sign-out or termination) or an attempt expires | Deleted in bounded batches as people sign in | [Identity](identity-session-design.md#implementation-status) |
 | Organization and module audit events | With the company | Deleted with the company's content, except entries the commercial ledger needs | Organizations, each module |
 | Commercial ledger (periods, licenses, settlements; no content) | 5 years after the period ends, until PH-19 and PH-28 confirm the fiscal duration | Deleted | PJ-27 |
 | Application logs on the host | 14 days | Rotated out | [Deployment](deployment-design.md#host-administration-and-monitoring) |

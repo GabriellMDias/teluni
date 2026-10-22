@@ -33,7 +33,7 @@ The product domain is `teluni.app` ([branding](branding/README.md#approved-name-
 - The proxy strips the `/api` prefix exactly as the development server does, so the API keeps one path layout everywhere. Screens are configured with `https://app.teluni.app/api`.
 - Keycloak's admin console and master realm are never routed publicly. Administrators reach them only over the host's administration tunnel.
 - One origin for the panel and API keeps cookies host-only and CSRF origin checks simple. It also avoids CORS.
-- **Client addresses.** Rate limits count per client address, so the API must see the real one. Caddy sets `X-Forwarded-For`, and the API trusts that header only from the proxy's address. That needs a new trusted-proxy setting, added with the deployment bundle; without it every request would share the proxy's address. On the relay path, the relay sends PROXY protocol v2, and Caddy accepts it only from the tunnel's address.
+- **Client addresses.** Rate limits count per client address, so the API must see the real one. Caddy sets `X-Forwarded-For`, and the API trusts that header only from the proxy's address, named in `TELUNI_TRUSTED_PROXIES`; without it every request would share the proxy's address. On the relay path, the relay sends PROXY protocol v2, and Caddy accepts it only from the tunnel's address.
 
 ## Reaching the residential host
 
@@ -132,13 +132,26 @@ Screens play through outages; publishing, pairing, sign-in and monitoring stop. 
 
 ## Delivery increments
 
-1. **Deployment bundle (PJ-13).** In the repository: the API's trusted-proxy setting, container images for the API (with FFmpeg) and Keycloak (with the theme), the Compose file, the Caddyfile, the backup, restore and verification scripts, and a local rehearsal that brings the stack up, writes data, backs it up to a local S3-compatible server, restores it into a fresh project and verifies it. CI runs the rehearsal.
-2. **Runbooks** for install, update, backup failure, restore and host migration, written against the real host once PH-10 provides it.
+1. **Deployment bundle (PJ-13).** In the repository: the API's trusted-proxy setting, container images for the API (with FFmpeg) and Keycloak (with the theme), the Compose file, the Caddyfile, the backup, restore and verification scripts, and a local rehearsal that brings the stack up, writes data, backs it up to a repository on the machine, restores it into a fresh project and verifies it. CI runs the rehearsal.
+2. **Real-host additions and runbooks**, written against the real host once PH-10 provides it: the relay listener with PROXY protocol if the line needs it, alert delivery, Keycloak's authenticated production mail (PJ-24), and runbooks for install, update, backup failure, restore and host migration.
 3. **Real-host qualification**: the readiness gate in [operations](operations.md#residential-exposure-and-readiness-gate), the timed restore and a recorded RPO and RTO.
 
 ## Implementation status
 
-Not started. Nothing is deployed.
+Increment 1, the deployment bundle, is implemented in [`infra/pilot`](../../infra/pilot/README.md) (2026-10-22). Nothing is deployed.
+
+| Capability | Source | Evidence |
+| --- | --- | --- |
+| Client addresses from trusted proxies only | `TELUNI_TRUSTED_PROXIES` in [`config.ts`](../../apps/api/src/config.ts), `trustProxy` in [`app.ts`](../../apps/api/src/app.ts) | [App test](../../apps/api/test/app.test.ts): `X-Forwarded-For` counts only from a listed proxy; [configuration tests](../../apps/api/test/config.test.ts) reject malformed entries |
+| Images: API on Ubuntu 24.04 with FFmpeg 6.1 and an unprivileged user, release, Keycloak with the theme built for PostgreSQL, Caddy with the panel, backup with PostgreSQL 16 tools and restic | [`Dockerfile`](../../infra/pilot/Dockerfile), digest-pinned bases | Built by the rehearsal; a [test](../../apps/api/test/identity/keycloak-image.test.ts) keeps the theme files equal to `teluniThemeFiles()` |
+| Composition: fixed proxy address, internal back network, loopback-only admin console, read-only API root filesystem, aliases so services reach public names through the proxy | [`compose.yaml`](../../infra/pilot/compose.yaml), [`Caddyfile`](../../infra/pilot/Caddyfile), [`postgres/init.sh`](../../infra/pilot/postgres/init.sh) | Rehearsal: panel and deep links served, API health and Keycloak admin and master realm not public, apex redirect, realm discovery and the API's login redirect through TLS |
+| Release step: migrations with the owner role, runtime grants, realm provisioning, ending Keycloak sessions | [`scripts/release.ts`](../../apps/api/scripts/release.ts), [`scripts/runtime-grants.ts`](../../apps/api/scripts/runtime-grants.ts) | Rehearsal |
+| Backups: dumps then media objects to restic, retention, maintenance, restore into empty projects only, sessions deleted after a restore, object verification | [`backup/teluni-backup.sh`](../../infra/pilot/backup/teluni-backup.sh), [`systemd/`](../../infra/pilot/systemd/teluni-backup.timer) | Rehearsal: snapshot, restore into a new project, SHA-256 verification of every object, equal row counts, the restored stack serving the realm and login |
+| Local and CI rehearsal | [`rehearsal.sh`](../../infra/pilot/rehearsal.sh), the Deployment rehearsal job in [CI](../../.github/workflows/ci.yml) | Passed locally on 2026-10-22 |
+
+Rehearsal findings fixed in the bundle: Keycloak's readiness endpoint reports UP while it still bootstraps its database, so its health check and the release step wait for the main server; the proxy's fixed address is kept out of the network's dynamic range.
+
+Not yet implemented (increment 2, with the real host): the relay listener with PROXY protocol, alert delivery, Keycloak's authenticated production mail, the runbooks, and the timed rehearsal on the owner's host.
 
 ## Decisions
 

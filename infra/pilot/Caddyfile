@@ -1,0 +1,64 @@
+# Reverse proxy of the pilot deployment (docs/project/deployment-design.md).
+# TLS ends here with automatic certificates; the hostnames come from the
+# environment set in compose.yaml.
+{
+	email {$TELUNI_ACME_EMAIL}
+	# Empty in production; the rehearsal sets local_certs to use Caddy's own CA.
+	{$TELUNI_CADDY_OPTIONS}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-Server
+	}
+}
+
+{$TELUNI_APP_HOST} {
+	import security_headers
+	encode zstd gzip
+
+	# The API's health endpoints are for the host, not the internet.
+	handle /api/health/* {
+		respond 404
+	}
+
+	# The API keeps one path layout everywhere: the prefix is stripped, as the
+	# development server does. Uploads of up to 1 GiB stream through.
+	handle_path /api/* {
+		reverse_proxy api:3000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		root * /srv/panel
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Only the teluni realm's public endpoints; the admin console, the master
+# realm and everything else stay private.
+{$TELUNI_AUTH_HOST} {
+	import security_headers
+
+	@public path /realms/teluni/* /resources/*
+	handle @public {
+		reverse_proxy keycloak:8080
+	}
+
+	handle {
+		respond 404
+	}
+}
+
+{$TELUNI_APEX_HOST} {
+	import security_headers
+	redir https://{$TELUNI_APP_HOST}{uri} permanent
+}
