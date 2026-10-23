@@ -10,6 +10,7 @@ import { sessionKey } from "../src/identity/api.js";
 import { browserLocale } from "../src/locale.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
+import { shellMessages } from "../src/shell-messages.js";
 import { formatInstant } from "../src/organizations/members.js";
 import { organizationMessages } from "../src/organizations/messages.js";
 import {
@@ -46,6 +47,10 @@ async function open(path: string, signedIn = true) {
       </ModuleNavigation>
     </QueryClientProvider>,
   );
+  if (matchMedia("(max-width: 760px)").matches)
+    await screen
+      .getByRole("button", { name: shellMessages[locale].menu })
+      .click();
   return { screen, router, client };
 }
 
@@ -438,6 +443,10 @@ test("paginates localized history and resets the cursor when changing views", as
   await expect
     .element(screen.getByText(t.historyActions["company.updated"]))
     .toBeVisible();
+  if (matchMedia("(max-width: 760px)").matches)
+    await screen
+      .getByRole("button", { name: shellMessages[locale].menu })
+      .click();
   await screen.getByRole("link", { name: t.settingsTitle }).click();
   expect(router.state.location.search).toEqual({ view: "settings" });
   await expect
@@ -1605,4 +1614,36 @@ test("explains a recipient mismatch without accepting", async () => {
     .element(screen.getByRole("button", { name: t.acceptButton }))
     .not.toBeInTheDocument();
   sessionStorage.removeItem("teluni.invitation");
+});
+
+test("removes company navigation after a denied refetch even when cached access remains", async () => {
+  let revoked = false;
+  respond((url) =>
+    url.pathname.endsWith("/branches")
+      ? { body: { items: [], nextCursor: null } }
+      : revoked
+        ? {
+            status: 403,
+            body: { error: { code: "PERMISSION_DENIED", message: "Denied" } },
+          }
+        : { body: { ...memberCompany, access: administratorAccess } },
+  );
+  const { screen, client } = await open(companyPath);
+  await expect
+    .element(screen.getByRole("link", { name: t.settingsTitle }))
+    .toBeVisible();
+  revoked = true;
+  await client.invalidateQueries({ queryKey: companyKey(companyId) });
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.PERMISSION_DENIED);
+  expect(client.getQueryData(companyKey(companyId))).toBeDefined();
+  await expect
+    .element(screen.getByRole("link", { name: t.settingsTitle }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(
+      screen.getByRole("group", { name: memberCompany.company.displayName }),
+    )
+    .not.toBeInTheDocument();
 });

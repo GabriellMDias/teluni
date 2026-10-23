@@ -93,7 +93,7 @@ export function OrganizationsNavigation() {
   const session = useQuery({ ...sessionQuery, enabled: !isDocumentation });
   if (isDocumentation || !session.data) return null;
   return (
-    <Link to="/companies" lang={locale}>
+    <Link to="/companies" lang={locale} activeOptions={{ exact: true }}>
       <NavigationIcon name="companies" />
       {t.navCompanies}
     </Link>

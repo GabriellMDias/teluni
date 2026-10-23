@@ -4,6 +4,15 @@
     "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Static analysis",
+    "anchor": "static-analysis",
+    "text": "Static analysis\nOrion will use **ESLint** as its primary linting and extensible static-analysis platform.\nESLint configuration will use its modern **Flat Config** model.\nTypeScript-aware linting will use **typescript-eslint**.\nWhere rules materially benefit from TypeScript type information, Orion will use typed linting based on the TypeScript project model, preferring Project Service-based configuration where appropriate.\nType-aware rules may cost more execution time than syntax-only linting. Orion accepts this cost when the rules provide meaningful correctness, safety, or maintainability benefits.\nLint rules should primarily enforce correctness, safety, maintainability, framework constraints, and other meaningful source-code properties.\nPure formatting concerns should normally remain the responsibility of the formatter rather than being duplicated as lint rules.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Formatting",
     "anchor": "formatting",
     "text": "Formatting\nOrion will use **Prettier** as its source formatter for supported repository file types.\nFormatting and formatting validation will remain distinct operations.\nConceptually:\npnpm format\n    → intentionally rewrite files\n\npnpm format:check\n    → verify formatting without rewriting files\n\nThe canonical validation workflow will use formatting checks rather than automatic formatting.\nFormatting configuration should remain minimal unless a concrete repository requirement justifies additional customization.\nReplacing the formatter in the future does not necessarily require a new ADR if the change preserves the formatting responsibility and canonical validation model established here.\n"

@@ -10,6 +10,7 @@ import { sessionKey } from "../src/identity/api.js";
 import { browserLocale } from "../src/locale.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
+import { shellMessages } from "../src/shell-messages.js";
 import { organizationMessages } from "../src/organizations/messages.js";
 import type {
   DeviceProgramming,
@@ -163,6 +164,13 @@ async function open(path: string) {
       </ModuleNavigation>
     </QueryClientProvider>,
   );
+  if (
+    path === `/companies/${companyId}` &&
+    matchMedia("(max-width: 760px)").matches
+  )
+    await screen
+      .getByRole("button", { name: shellMessages[locale].menu })
+      .click();
   return { screen, router };
 }
 

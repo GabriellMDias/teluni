@@ -12,6 +12,7 @@ import type { Media } from "../src/media/api.js";
 import { mediaMessages } from "../src/media/messages.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
+import { shellMessages } from "../src/shell-messages.js";
 import { organizationMessages } from "../src/organizations/messages.js";
 
 const companyId = "00000000-0000-4000-8000-000000000001";
@@ -97,6 +98,13 @@ async function open(path: string) {
       </ModuleNavigation>
     </QueryClientProvider>,
   );
+  if (
+    path === `/companies/${companyId}` &&
+    matchMedia("(max-width: 760px)").matches
+  )
+    await screen
+      .getByRole("button", { name: shellMessages[locale].menu })
+      .click();
   return { screen, router, client };
 }
 

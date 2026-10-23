@@ -9,6 +9,8 @@ const ptBR = {
   companiesEyebrow: "Organização",
   companiesTitle: "Suas empresas",
   companyUnavailableTitle: "Empresa indisponível",
+  companyContext: "Empresa atual",
+  switchCompany: "Trocar empresa",
   companiesLead: "Empresas às quais você tem acesso.",
   companiesEmpty:
     "Você ainda não participa de nenhuma empresa. Crie a primeira abaixo.",
@@ -330,6 +332,8 @@ const enUS: OrganizationMessages = {
   companiesEyebrow: "Organization",
   companiesTitle: "Your companies",
   companyUnavailableTitle: "Company unavailable",
+  companyContext: "Current company",
+  switchCompany: "Switch company",
   companiesLead: "Companies you have access to.",
   companiesEmpty:
     "You are not part of any company yet. Create the first one below.",

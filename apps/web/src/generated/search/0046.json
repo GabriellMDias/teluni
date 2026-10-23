@@ -4,6 +4,42 @@
     "title": "Teluni Programming Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Panel",
+    "anchor": "panel",
+    "text": "Panel\nA **Programação** area per company (en-US \"Programming\"), shown with `programming.view`:\n**Playlists**: list with scope and search; the editor adds ready media from the library through a picker filtered by the playlist's scope, reorders items with buttons and keyboard, edits image durations, shows total duration and saves the whole list.\n**Grupos**: list, creation with the branch span, member screens with join and leave, and the group's schedules.\n**Screen programming** on each Telas detail page: source (group or individual) with the unpublished-destination confirmation, time zone (explicit or branch), schedules of the effective source and the preview.\n**Schedules editor**: one row per rule (playlist, weekdays, all-day or times, dates), the default playlist, conflict errors next to both rules, and a seven-day local timeline with resolution notes.\nCopy is in `pt-BR` and `en-US`, times use the person's locale with the screen's zone named, and every control is reachable by keyboard.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nDomain unit tests: rule validation for each field, the wall-clock conflict check (touching, overlapping, overnight, final-date clip, long and open-ended spans), zone resolution for gaps and repeated hours, the handoff clip, segment filling with and without defaults and range limits.\nThe shared fixture suite run through the evaluator.\nIntegration tests against PostgreSQL with two companies and differently scoped members: playlist scope and media visibility, group span and partial visibility, assignment confirmation and versions, permission denials for each capability and role, reference guards on media, playlists, groups and branches, limits, ID substitution across companies, and audit rows.\nBrowser component tests for the playlist editor, the schedules editor with conflicts and the assignment confirmation, and one end-to-end journey: upload media, build a playlist, create a group, add a paired screen, schedule it and read its timeline.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Delivery increments",
+    "anchor": "delivery-increments",
+    "text": "Delivery increments\nAPI module, schema and migration, playlists and items, groups, settings and assignments, programs and rules with validation, the evaluator and fixtures, timelines, guards, device time zone, audit, contracts and SDK.\nPanel pages for playlists, groups, screen programming, schedules and the timeline, with browser and end-to-end tests.\nHardening with PJ-11 (published destinations and published references) and PJ-20 (layout areas as outputs).\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Implementation status",
+    "anchor": "implementation-status",
+    "text": "Implementation status\nImplemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-24](human-actions.md#ph-24):\nThe [`programming` API module](../../apps/api/src/features/programming/AGENTS.md), its reviewed migration (which also adds the devices' `time_zone` column and lets profiles delegate the programming capabilities), runtime grants, schema metadata and the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK.\n`programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities; `programming.assign` requires strong authentication.\nThe pure evaluator and conflict validation in [`schedule.ts`](../../apps/api/src/features/programming/schedule.ts) on `temporal-polyfill`, with the [canonical fixtures](../../apps/api/test/programming/schedule-fixtures.json) run by [the evaluator tests](../../apps/api/test/programming/schedule.test.ts).\nThe media reference guard, the branch archive guard for explicit spans and the devices move hook; the explicit device time zone in device detail, update and `GET /device/self`.\nThe [two-company integration suite](../../apps/api/test/programming/integration.test.ts) against PostgreSQL as the runtime role with the organizations, devices and media modules.\nIncrement 2, the same day:\nThe panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation and step-up, and confirmed deletion; the screen page's time zone setting and programming link.\n[Browser component tests](../../apps/web/test/programming.browser.test.tsx) and the [programming journey](../../apps/web/test/e2e/programming/journey.spec.ts).\nPending: increment 3 with PJ-11 and PJ-20.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Decisions for review",
     "anchor": "decisions-for-review",
     "text": "Decisions for review\n**Program model.** Reusable playlists owned like media (company or one branch); one program per group and per screen; a screen without a group, or with individual programming selected, uses its own program; one full-screen output now, with layout areas as further outputs in PJ-20.\n**Group span.** A group covers the whole company or a fixed set of branches; only screens of those branches join; authority over a group requires authority over every branch of its span.\n**Rule representation.** ISO weekdays, local start and end at minute precision, an explicit all-day flag, a first date and an optional inclusive final date; no zone stored on rules; the zone comes from the screen, otherwise its branch.\n**Conflict validation.** Reject overlapping windows on the same output by comparing them in local wall-clock time, independent of zones, over the complete rule set saved atomically; touching windows are allowed.\n**DST handoff refinement.** Gaps resolve to the first valid instant and repeated hours to the earlier occurrence for starts and the later for ends, as selected; additionally, an end never extends past the next window's start on the same output. This refines P14 so that two close windows can never overlap in a repeated hour, which wall-clock validation cannot see, instead of rejecting otherwise valid schedules in zones with DST.\n**Evaluator and library (ADR-0029).** A pure TypeScript evaluator in the API on the Temporal API through the `temporal-polyfill` package until Node.js ships Temporal; canonical JSON fixtures owned by the API and run by the player in PJ-12; preview computed only by the API.\n**Items and transitions.** Images 1 to 3,600 s (10 s default), videos at full duration, playlists loop, boundaries interrupt; transitions `CUT` or `FADE` of 250 to 2,000 ms, with fades accepted at publication only on qualified profiles.\n**Permissions.** `programming.view`, `programming.edit` and `programming.assign` as in the table, all delegable; operators author drafts but do not assign; assigning needs strong authentication like managing screens.\n**Assignment confirmation.** Assignments are separate from program edits, use the screen's settings version and require an explicit confirmation while the destination is unpublished, which is every destination until PJ-11.\n**Lifecycle.** Playlists and groups are deleted only when unused, with a confirmation; media used by playlists cannot be deleted; archived media stays in playlists but cannot be added.\n**Limits.** 1,000 playlists, 100 groups and 2,000 programs per company; 500 items per playlist; 200 rules per output; timelines of 31 days and 2,000 segments.\nApproval authorizes implementation of PJ-10 in local and CI environments. It does not publish anything to screens (PJ-11), qualify fades or schedule timing on hardware (PH-08, PJ-12) or design layout areas (PJ-20).\n"
