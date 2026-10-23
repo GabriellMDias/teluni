@@ -35,7 +35,7 @@ The wordmark is titlecase **Teluni**, set in **Plus Jakarta Sans Semibold**. The
 | Light ink | `#E2E8F0` | Wordmark/text on navy |
 | Supporting neutrals | `#334155`, `#64748B`, `#CBD5E1` | Supporting text, borders and separation as appropriate to contrast |
 
-**Light application:** navy text with blue/teal screen tiles on off-white. **Dark application:** light text with brighter-blue/teal tiles on navy. The actual shell uses a dark header and a light page; the header symbol sits on an off-white tile. These brand variants do not imply that a full application dark-mode switch exists.
+**Light application:** navy text with blue/teal screen tiles on off-white. **Dark application:** light text with brighter-blue/teal tiles on navy. The product shell now has desktop sidebar navigation and System/Light/Dark appearance selection, with semantic colors for shared controls and surfaces. The developer portal and separate Keycloak pages retain their existing presentation. Theme implementation and remaining screen qualification belong to [PJ-41](../implementation-plan.md#pj-41-interface-alignment); the brand proofs alone are not evidence of complete product coverage.
 
 Use teal as an accent or a background with dark text, rather than small text on off-white. [Measured contrast and export dimensions](review.json) describe the artwork, not a blanket accessibility certification. Favicon proofs cover 16/32 px and navigation proofs 24/32 px. Android adaptive/store exports still depend on the future player's packaging requirements.
 
@@ -51,8 +51,8 @@ Use teal as an accent or a background with dark text, rather than small text on 
 | [Identity board](assets/connected-tiles/identity-board.png) | Approved visual reference; illustrative panels do not implement product workflows |
 | [Light application](assets/connected-tiles/application-light.png) / [dark application](assets/connected-tiles/application-dark.png) | Fixed visual brand proofs |
 | [Small-size proof](assets/connected-tiles/small-size-proof.png) | Actual-size symbol review |
-| [Desktop app](assets/connected-tiles/web-home-desktop.png) / [documentation](assets/connected-tiles/web-docs-desktop.png) | Actual local web integration screenshots |
-| [Mobile app](assets/connected-tiles/web-home-mobile.png) / [documentation](assets/connected-tiles/web-docs-mobile.png) | Actual local mobile integration screenshots |
+| [Desktop app](assets/connected-tiles/web-home-desktop.png) / [documentation](assets/connected-tiles/web-docs-desktop.png) | Historical PJ-04 local integration screenshots (2026-10-17); current interface evolution is tracked by PJ-41 |
+| [Mobile app](assets/connected-tiles/web-home-mobile.png) / [documentation](assets/connected-tiles/web-docs-mobile.png) | Historical PJ-04 mobile integration screenshots (2026-10-17); current interface evolution is tracked by PJ-41 |
 | [Light/dark surfaces](assets/connected-tiles/symbol-surfaces.png) | Runtime SVG inspected against both brand surfaces |
 | [Asset inventory](assets.json) | Selected kit's SVG/PNG exports and runtime source locations |
 
@@ -67,6 +67,10 @@ After changing the approved mark, run `pnpm -C apps/web identity:write` to regen
 For a kit raster proof with an installed external SVG renderer: `rsvg-convert assets/connected-tiles/symbol.svg -w 32 -h 32 -o assets/connected-tiles/favicon-32.png`. This is an external rendering utility, not a new pnpm command. The outlined wordmark needs no font loading; live specimen text in application SVGs can use fallback rendering, while supplied PNGs remain fixed proofs.
 
 Review home, documentation, mobile navigation, favicon and touch icon at actual sizes; verify local font loading, keyboard/accessibility behavior and light/dark brand surfaces. Run focused web checks and full `pnpm validate`. UI/player mockups remain illustrative; no product workflow or Android application is introduced by the identity kit.
+
+## Planned product interface alignment
+
+On 2026-10-23 the owner requested explicit planning for a product interface aligned with the identity board's light/dark examples, then authorized continued development and a pull request. [PJ-41](../implementation-plan.md#pj-41-interface-alignment) owns the delivery sequence, scope and acceptance criteria. Its first increment implements the shared responsive shell, appearance selection and semantic product colors; incremental adoption and final visual qualification remain open before pilot acceptance. PJ-04 retains its original brand integration scope. The board remains illustrative for workflows, copy and imagery, while its visual direction now has an explicit product delivery task.
 
 ## PH-07 status
 

@@ -4,6 +4,51 @@
     "title": "ADR-0022: License Teluni under Apache-2.0",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nLicense Teluni repository source and documentation, including independently developed product material, under the unmodified Apache License, Version 2.0. Retain the root `LICENSE` as the canonical terms and use SPDX identifier `Apache-2.0` in the root, API, web and SDK package metadata. Update README and project documentation to make the scope explicit.\nPreserve Orion provenance and its applicable rights/notices. Do not relabel third-party dependencies or separately licensed material. Do not invent a named copyright holder or NOTICE without confirmed attribution. This decision concerns repository licensing; SaaS pricing, support and customer service terms remain separate product decisions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThe owner explicitly selected Apache-2.0 rather than delegating the legal choice to an agent. Applying the existing standard text consistently to Teluni resolves the previous distinction between inherited foundation licensing and undecided product licensing, without changing architecture or runtime behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Keep product licensing undecided",
+    "anchor": "keep-product-licensing-undecided",
+    "text": "Keep product licensing undecided\nThis was the documented state. It no longer reflects the owner's explicit instruction and leaves the intended licensing scope unclear.\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
+    "title": "ADR-0022: License Teluni under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nTeluni's source/documentation license is explicit and consistent with the standard license file and package metadata.\nThe product decision remains separate from the historical Orion ADR and commercial pricing decisions.\n"
@@ -1366,41 +1411,5 @@
     "heading": "Architecture Decision Records",
     "anchor": "architecture-decision-records",
     "text": "Architecture Decision Records\nUse this index to locate governing decisions without reading the full history. Each linked record owns its status, decision, rationale, and consequences. Acceptance does not imply implementation; see [validation availability](../validation.md) and the [technology map](../architecture/technology-decisions.md).\nFor a new decision, read [authoring policy](authoring.md), inspect related records, and use the [proposed template](template.md). Current behavior belongs in the [policy index](../README.md), not in rewritten historical ADRs.\n"
-  },
-  {
-    "id": "repository/docs/adr/README",
-    "title": "Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision index",
-    "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n[ADR-0033](0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nExpose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-NNNN: Decision Title",
-    "anchor": "adr-nnnn-decision-title",
-    "text": "ADR-NNNN: Decision Title\n**Status:** proposed\n**Date:** YYYY-MM-DD\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nDescribe the architectural problem or constraint that requires a decision.\nInclude only the context necessary to understand:\nwhy a decision is needed;\nwhich systems or boundaries are affected;\nwhich constraints materially influence the choice;\nwhich assumptions matter.\nAvoid turning this section into a complete implementation design.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nState the architectural decision clearly.\nThis section should make it possible to understand the chosen direction without inferring it from the alternatives or rationale.\nExample form:\nThis repository will ...\n\n"
   }
 ]

@@ -15,7 +15,7 @@
   border-bottom-color: #60a5fa;
 }
 .header-nav .button-text {
-  color: #fff;
+  color: var(--color-surface);
   font-size: 0.9rem;
   text-decoration: none;
   padding: 0.25rem 0;
@@ -36,12 +36,25 @@
   }
 }
 .workspace-loading {
-  color: #475569;
+  color: var(--color-muted);
   text-align: center;
   margin-top: 4rem;
 }
 .workspace-hero {
-  margin: 0.5rem 0 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  margin: 0 0 1.75rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: linear-gradient(120deg, var(--color-surface), var(--color-selected));
+}
+.workspace-hero-mark {
+  flex: none;
+  width: clamp(100px, 14vw, 180px);
+  height: auto;
 }
 .workspace-hero h1 {
   font-size: clamp(1.8rem, 4vw, 2.6rem);
@@ -49,7 +62,7 @@
   margin: 0.3rem 0 0.55rem;
 }
 .workspace-hero p:last-child {
-  color: #475569;
+  color: var(--color-muted);
   max-width: 44rem;
   line-height: 1.5;
 }
@@ -73,7 +86,7 @@
   justify-content: space-between;
   gap: 0.25rem 1rem;
   padding: 0.75rem 0.9rem;
-  border: 1px solid #d7e0e7;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
 }
 .workspace-companies a {
@@ -83,8 +96,13 @@
   display: inline-block;
   margin-top: 0.4rem;
 }
-@media (max-width: 760px) {
+@media (max-width: 1100px) {
   .workspace-grid {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .workspace-hero-mark {
+    display: none;
   }
 }

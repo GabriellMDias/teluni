@@ -109,7 +109,9 @@ test("the application shell presents the project identity and the development po
   await page.goto(webUrl());
   await expect(page).toHaveURL(`${webUrl()}/sign-in`);
   await expect(page).toHaveTitle(projectName);
-  await expect(page.locator(".brand")).toContainText(projectName);
+  await expect(
+    page.getByRole("link", { name: projectName, exact: true }),
+  ).toHaveAttribute("href", "/");
   await expect(
     page.getByRole("heading", { level: 1, name: `Sign in to ${projectName}` }),
   ).toBeVisible();

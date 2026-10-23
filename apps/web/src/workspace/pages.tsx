@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "@tanstack/react-router";
+import brandMark from "../assets/brand-mark.svg";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale } from "../locale.js";
 import { listCompanies } from "../organizations/api.js";
@@ -43,9 +44,18 @@ function HomePage({ strong }: { strong: boolean }) {
   return (
     <div className="workspace-home" lang={locale}>
       <header className="workspace-hero">
-        <p className="eyebrow">{t.homeEyebrow}</p>
-        <h1>{t.homeTitle}</h1>
-        <p>{t.homeLead}</p>
+        <div>
+          <p className="eyebrow">{t.homeEyebrow}</p>
+          <h1>{t.homeTitle}</h1>
+          <p>{t.homeLead}</p>
+        </div>
+        <img
+          className="workspace-hero-mark"
+          src={brandMark}
+          alt=""
+          width="180"
+          height="180"
+        />
       </header>
       <div className="workspace-grid">
         <section className="panel" aria-labelledby="home-companies-title">

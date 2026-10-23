@@ -1,0 +1,55 @@
+/* Semantic application colors. The developer portal keeps the light defaults. */
+:root {
+  --font-body: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-page: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-ink: #0f172a;
+  --color-muted: #526278;
+  --color-border: #cbd5e1;
+  --color-input-border: #94a3b8;
+  --color-link: #1d4ed8;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-on-primary: #ffffff;
+  --color-focus: #2563eb;
+  --color-selected: #eaf1ff;
+  --color-accent: #14b8a6;
+  --color-info-ink: #1e3a5f;
+  --color-info-bg: #eff6ff;
+  --color-info-border: #93b4df;
+  --color-danger-ink: #991b1b;
+  --color-danger-bg: #fff1f2;
+  --color-danger-border: #e6a2ac;
+  --color-danger-button: #a3261b;
+  --color-success-ink: #166534;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #86bd9b;
+  --shadow-panel: 0 6px 22px #0f172a06;
+  --radius-panel: 16px;
+  --radius-control: 9px;
+  --space-page: clamp(1rem, 3vw, 2.5rem);
+}
+
+.product-shell[data-theme="dark"] {
+  --color-page: #0b1220;
+  --color-surface: #0f1b2d;
+  --color-surface-muted: #17253b;
+  --color-ink: #e2e8f0;
+  --color-muted: #a8b8cf;
+  --color-border: #334155;
+  --color-input-border: #64748b;
+  --color-link: #93c5fd;
+  --color-focus: #60a5fa;
+  --color-selected: #19375c;
+  --color-info-ink: #bfdbfe;
+  --color-info-bg: #152d49;
+  --color-info-border: #365e85;
+  --color-danger-ink: #fecdd3;
+  --color-danger-bg: #3c1b2a;
+  --color-danger-border: #9c5264;
+  --color-success-ink: #bbf7d0;
+  --color-success-bg: #12342c;
+  --color-success-border: #39735c;
+  --shadow-panel: 0 6px 22px #00000018;
+}

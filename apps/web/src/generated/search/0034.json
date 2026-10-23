@@ -4,6 +4,15 @@
     "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nOrion introduces TypeBox as another foundational dependency that contributors must learn.\nDevelopers familiar with Zod may need to adapt to a JSON Schema-oriented modeling style.\nSome JavaScript-native or transformation-oriented schema patterns are intentionally unsuitable for canonical wire contracts.\nGenerating OpenAPI and SDK artifacts adds build and validation steps.\nKeeping first-party clients behind the generated OpenAPI boundary introduces more indirection than importing TypeScript types directly.\n`openapi-typescript` and `openapi-fetch` do not provide the richer generated convenience functions or framework-specific hooks available from larger SDK generators.\nOperation metadata such as descriptions and stable `operationId` values must be maintained deliberately.\nConfiguration parsing requires explicit code in addition to schema definition because raw environment values commonly use string representations.\nRestricting environment access requires architectural enforcement to prevent convenience-driven direct `process.env` usage from spreading.\nOpenAPI cannot by itself express every runtime or business semantic that documentation may need, so authored API documentation remains necessary for intent and behavior not represented by the contract.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
     "text": "Operational or Migration Impact\nOrion does not currently have an established API contract or configuration-validation implementation that must be migrated.\nThe initial API implementation will therefore adopt TypeBox contracts directly.\nRepository implementation must introduce compatible versions of:\ntypebox\n@fastify/type-provider-typebox\nOpenAPI generation tooling\nopenapi-typescript\nopenapi-fetch\n\nwhen the corresponding application and SDK content actually exists.\nThe generated OpenAPI description should initially target a supported OpenAPI 3.1.x representation.\nThe exact OpenAPI patch version and generator configuration must be pinned through repository tooling.\nAPI operations must define stable unique `operationId` values before generated SDKs or external API publication rely on them.\nA TypeScript SDK package should not be created until a real consumer requires it.\nWhen created, its generated contract types must originate from OpenAPI rather than direct imports from server implementation types.\nOther-language SDK generators should be selected only when corresponding consumers exist.\nRepository validation must eventually detect stale generated OpenAPI or SDK artifacts once those artifacts are introduced.\nBootstrap configuration must be validated before Fastify begins listening for requests or before workers begin accepting jobs.\nApplications must progressively restrict `process.env` or equivalent raw configuration access to the designated bootstrap/configuration boundary.\nSensitive configuration values must remain excluded from generated documentation, logging, telemetry, and error output according to existing Orion security policies.\nRoutine compatible upgrades of TypeBox, OpenAPI tooling, `openapi-typescript`, or `openapi-fetch` do not require a new ADR when they preserve the responsibilities and contract architecture established here.\nReplacing TypeBox as Orion's canonical contract schema system, replacing OpenAPI as the primary interoperable API description, or materially changing the API contract architecture would require a new ADR that supersedes this decision.\n"
@@ -1060,23 +1069,5 @@
     "heading": "Incremental validation capabilities",
     "anchor": "incremental-validation-capabilities",
     "text": "Incremental validation capabilities\nNot every validation category must exist before the repository contains the corresponding capability.\nThe validation system will grow with the repository.\nFor example:\ninitial foundation\n├── format:check\n├── lint\n├── typecheck\n└── architecture\n\nafter application code exists\n├── unit tests\n├── integration tests\n├── generated artifacts\n├── web build\n├── browser tests\n└── E2E tests\n\nA capability should enter required CI validation when the repository contains meaningful content that the capability protects.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Pull-request validation",
-    "anchor": "pull-request-validation",
-    "text": "Pull-request validation\nRequired CI validation will run for pull requests targeting the primary protected branch.\nPull requests must pass the required validation gate before normal merge.\nThe primary branch should be protected so that repository correctness does not depend on contributors remembering to execute checks manually.\nDirect pushes or administrative bypass mechanisms, when permitted by repository governance, must remain exceptional rather than the ordinary delivery workflow.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Primary-branch validation",
-    "anchor": "primary-branch-validation",
-    "text": "Primary-branch validation\nCI will also run after changes reach the primary branch.\nPull-request validation reduces risk but does not make primary-branch validation redundant.\nPrimary-branch execution verifies the exact merged commit and provides a stable post-merge signal for future release, deployment, packaging, or downstream automation.\n"
   }
 ]

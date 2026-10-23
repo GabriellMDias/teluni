@@ -17,13 +17,13 @@
   align-items: flex-start;
 }
 .devices-danger {
-  border-top: 1px solid #d7e0e7;
+  border-top: 1px solid var(--color-border);
   padding-top: 1rem;
 }
 .devices-panel .button-danger {
-  background: #a3261b;
-  border-color: #a3261b;
-  color: #fff;
+  background: var(--color-danger-button);
+  border-color: var(--color-danger-button);
+  color: var(--color-on-primary);
 }
 .devices-panel .button-danger:disabled {
   opacity: 0.55;

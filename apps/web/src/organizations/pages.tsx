@@ -790,6 +790,7 @@ export function CompanyPage({
   if (company.isError)
     return (
       <section className="panel organization-panel" lang={locale}>
+        <h1>{t.companyUnavailableTitle}</h1>
         {company.error instanceof ApiFailure &&
         company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
           <StepUpPrompt returnTo={returnTo} />

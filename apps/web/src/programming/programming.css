@@ -21,7 +21,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
-  border: 1px solid #d7e0e7;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
   overflow-wrap: anywhere;
@@ -46,7 +46,7 @@
   gap: 0.25rem 1rem;
 }
 .programming-picker {
-  border: 1px dashed #9fb1bf;
+  border: 1px dashed var(--color-input-border);
   border-radius: 8px;
   padding: 1rem;
   margin: 1rem 0;
@@ -67,7 +67,7 @@
   overflow-wrap: anywhere;
 }
 .programming-rule {
-  border: 1px solid #d7e0e7;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.75rem;
   display: flex;
@@ -93,7 +93,7 @@
 .programming-timeline td {
   text-align: left;
   padding: 0.35rem 0.75rem;
-  border-bottom: 1px solid #eef2f5;
+  border-bottom: 1px solid var(--color-surface-muted);
   overflow-wrap: anywhere;
 }
 .programming-panel .checkbox-row {
@@ -102,13 +102,13 @@
   align-items: flex-start;
 }
 .programming-danger {
-  border-top: 1px solid #d7e0e7;
+  border-top: 1px solid var(--color-border);
   padding-top: 1rem;
 }
 .programming-panel .button-danger {
-  background: #a3261b;
-  border-color: #a3261b;
-  color: #fff;
+  background: var(--color-danger-button);
+  border-color: var(--color-danger-button);
+  color: var(--color-on-primary);
 }
 .programming-panel .button-danger:disabled {
   opacity: 0.55;
@@ -137,10 +137,11 @@
   position: relative;
   margin: 0 auto;
   background:
+    /* The composition canvas has its own fixed preview colors. */
     repeating-linear-gradient(0deg, #eef2f5 0 1px, transparent 1px 10%),
     repeating-linear-gradient(90deg, #eef2f5 0 1px, transparent 1px 10%),
     #f8fafb;
-  border: 1px solid #9fb1bf;
+  border: 1px solid var(--color-input-border);
   overflow: hidden;
   touch-action: none;
 }
@@ -169,7 +170,7 @@ div.layout-area {
   outline: 3px solid #1f6feb;
 }
 .layout-area.flagged {
-  outline: 3px solid #a3261b;
+  outline: 3px solid var(--color-danger-button);
 }
 .layout-area:focus-visible {
   outline: 3px solid #f2b705;
@@ -199,7 +200,7 @@ div.layout-area {
   min-width: 0;
 }
 .layout-settings {
-  border: 1px solid #d7e0e7;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.75rem;
 }
@@ -214,7 +215,7 @@ div.layout-area {
 .layout-geometry,
 .layout-view,
 .layout-audio {
-  border: 1px solid #d7e0e7;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
 }
@@ -239,7 +240,7 @@ div.layout-area {
   gap: 0.5rem;
 }
 .layout-pages > li {
-  border: 1px solid #d7e0e7;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.75rem;
 }
@@ -253,11 +254,11 @@ div.layout-area {
 }
 .layout-field-issue {
   margin: 0;
-  color: #9b1c1c;
+  color: var(--color-danger-ink);
 }
 .layout-fit .layout-overflow {
   flex-basis: 100%;
-  color: #9b1c1c;
+  color: var(--color-danger-ink);
 }
 .layout-editor {
   display: flex;

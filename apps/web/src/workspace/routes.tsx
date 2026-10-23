@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createRoute, Link, useRouterState } from "@tanstack/react-router";
 import { sessionQuery } from "../identity/api.js";
+import { NavigationIcon } from "../navigation-icon.js";
 import { rootRoute } from "../shell.js";
 import { EntryPage, useWorkspaceMessages } from "./pages.js";
 import "./workspace.css";
@@ -25,6 +26,7 @@ export function WorkspaceNavigation() {
   if (isDocumentation || !session.data) return null;
   return (
     <Link to="/" lang={locale} activeOptions={{ exact: true }}>
+      <NavigationIcon name="home" />
       {t.navHome}
     </Link>
   );

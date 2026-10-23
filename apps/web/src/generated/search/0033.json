@@ -4,6 +4,15 @@
     "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Formatting",
+    "anchor": "formatting",
+    "text": "Formatting\nOrion will use **Prettier** as its source formatter for supported repository file types.\nFormatting and formatting validation will remain distinct operations.\nConceptually:\npnpm format\n    → intentionally rewrite files\n\npnpm format:check\n    → verify formatting without rewriting files\n\nThe canonical validation workflow will use formatting checks rather than automatic formatting.\nFormatting configuration should remain minimal unless a concrete repository requirement justifies additional customization.\nReplacing the formatter in the future does not necessarily require a new ADR if the change preserves the formatting responsibility and canonical validation model established here.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Architecture and dependency enforcement",
     "anchor": "architecture-and-dependency-enforcement",
     "text": "Architecture and dependency enforcement\nOrion will use **dependency-cruiser** as its initial dependency-graph and architecture-rule enforcement tool for JavaScript and TypeScript code.\nDependency rules should be encoded mechanically where dependency-cruiser or another appropriate repository mechanism can express them reliably.\nThese rules may include:\nforbidden dependency directions;\nforbidden imports between applications or packages;\nisolation of domain and application layers from infrastructure concerns;\nrestrictions on importing application internals across boundaries;\ncircular dependency detection;\nunresolved dependency detection;\npackage dependency consistency;\nrestrictions between production and development-only dependencies;\nother dependency-graph invariants defined by Orion architecture.\nArchitecture documentation remains the source of architectural intent.\nMechanical rules implement enforceable portions of that intent and must remain consistent with the authored architecture documentation.\ndependency-cruiser does not define Orion's architecture. It verifies dependency properties derived from Orion's architecture.\nIf a future architecture rule cannot be expressed appropriately by dependency-cruiser, another focused validation mechanism may be introduced rather than weakening the architectural requirement.\n"
@@ -979,14 +988,5 @@
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nOrion has one default schema model for API contracts and bootstrap configuration.\nCanonical API contracts are executable and machine-readable.\nTypeScript types can be derived from the same schemas used for runtime boundary validation.\nFastify can consume the same schema representations for request validation and response serialization.\nOpenAPI is generated rather than independently maintained.\nExternal API contracts remain language-independent despite TypeScript being Orion's primary implementation language.\nFirst-party clients exercise the same external API contract that other consumers use.\nStable `operationId` values provide durable machine-readable operation identities.\nTypeScript SDK types can be regenerated deterministically from the OpenAPI description.\n`openapi-fetch` keeps the default TypeScript client runtime small and close to Web Platform APIs.\nOther-language SDKs can be introduced without changing the server contract architecture.\nGenerated artifacts can participate in the canonical `pnpm validate` workflow.\nTransport representations remain distinct from domain and persistence models.\nConfiguration is validated before application startup.\nArbitrary `process.env` access is removed from ordinary application code.\nConfiguration parsing behavior becomes explicit and centralized.\nInvalid foundational configuration fails early rather than being discovered during request processing.\nConfiguration reference documentation can eventually be generated from canonical metadata.\nThe architecture remains compatible with AI tools that consume structured API descriptions.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nOrion introduces TypeBox as another foundational dependency that contributors must learn.\nDevelopers familiar with Zod may need to adapt to a JSON Schema-oriented modeling style.\nSome JavaScript-native or transformation-oriented schema patterns are intentionally unsuitable for canonical wire contracts.\nGenerating OpenAPI and SDK artifacts adds build and validation steps.\nKeeping first-party clients behind the generated OpenAPI boundary introduces more indirection than importing TypeScript types directly.\n`openapi-typescript` and `openapi-fetch` do not provide the richer generated convenience functions or framework-specific hooks available from larger SDK generators.\nOperation metadata such as descriptions and stable `operationId` values must be maintained deliberately.\nConfiguration parsing requires explicit code in addition to schema definition because raw environment values commonly use string representations.\nRestricting environment access requires architectural enforcement to prevent convenience-driven direct `process.env` usage from spreading.\nOpenAPI cannot by itself express every runtime or business semantic that documentation may need, so authored API documentation remains necessary for intent and behavior not represented by the contract.\n"
   }
 ]

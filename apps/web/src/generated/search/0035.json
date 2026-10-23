@@ -4,6 +4,24 @@
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Pull-request validation",
+    "anchor": "pull-request-validation",
+    "text": "Pull-request validation\nRequired CI validation will run for pull requests targeting the primary protected branch.\nPull requests must pass the required validation gate before normal merge.\nThe primary branch should be protected so that repository correctness does not depend on contributors remembering to execute checks manually.\nDirect pushes or administrative bypass mechanisms, when permitted by repository governance, must remain exceptional rather than the ordinary delivery workflow.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Primary-branch validation",
+    "anchor": "primary-branch-validation",
+    "text": "Primary-branch validation\nCI will also run after changes reach the primary branch.\nPull-request validation reduces risk but does not make primary-branch validation redundant.\nPrimary-branch execution verifies the exact merged commit and provides a stable post-merge signal for future release, deployment, packaging, or downstream automation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Manual execution",
     "anchor": "manual-execution",
     "text": "Manual execution\nImportant CI workflows should support manual execution where GitHub Actions provides an appropriate mechanism.\nThis supports:\ndiagnostics;\ninfrastructure investigation;\nvalidation after configuration changes;\ncontrolled reruns;\nfuture release workflows.\nManual execution must not require a separate validation implementation.\n"
@@ -1510,50 +1528,5 @@
     "heading": "Context",
     "anchor": "context",
     "text": "Context\nTeluni is derived from Orion, whose source already carries Apache-2.0 under ADR-0016. That foundation decision explicitly leaves independently developed product licensing to the product owner. Teluni's owner explicitly approved Apache License 2.0 for Teluni on 2026-10-17; this record documents that owner-authorized decision. The repository already contains the standard root license text, but its README and human actions previously said product licensing was undecided.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nLicense Teluni repository source and documentation, including independently developed product material, under the unmodified Apache License, Version 2.0. Retain the root `LICENSE` as the canonical terms and use SPDX identifier `Apache-2.0` in the root, API, web and SDK package metadata. Update README and project documentation to make the scope explicit.\nPreserve Orion provenance and its applicable rights/notices. Do not relabel third-party dependencies or separately licensed material. Do not invent a named copyright holder or NOTICE without confirmed attribution. This decision concerns repository licensing; SaaS pricing, support and customer service terms remain separate product decisions.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe owner explicitly selected Apache-2.0 rather than delegating the legal choice to an agent. Applying the existing standard text consistently to Teluni resolves the previous distinction between inherited foundation licensing and undecided product licensing, without changing architecture or runtime behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Keep product licensing undecided",
-    "anchor": "keep-product-licensing-undecided",
-    "text": "Keep product licensing undecided\nThis was the documented state. It no longer reflects the owner's explicit instruction and leaves the intended licensing scope unclear.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
   }
 ]

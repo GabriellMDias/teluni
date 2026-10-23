@@ -6,6 +6,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { rootRoute } from "../shell.js";
+import { NavigationIcon } from "../navigation-icon.js";
 import { logout, sessionQuery } from "./api.js";
 import { loginErrorReasons, type LoginErrorReason } from "./messages.js";
 import { SessionsPage, SignInPage, useIdentityMessages } from "./pages.js";
@@ -65,18 +66,23 @@ export function IdentityNavigation() {
   if (!session.data)
     return (
       <Link to="/sign-in" lang={locale}>
+        <NavigationIcon name="signIn" />
         {t.navSignIn}
       </Link>
     );
   return (
     <span className="identity-nav" lang={locale}>
-      <Link to="/account/sessions">{t.navSessions}</Link>
+      <Link to="/account/sessions">
+        <NavigationIcon name="sessions" />
+        {t.navSessions}
+      </Link>
       <button
         type="button"
         className="button-text"
         onClick={() => signOut.mutate()}
         disabled={signOut.isPending}
       >
+        <NavigationIcon name="signOut" />
         {signOut.isPending ? t.signingOut : t.navSignOut}
       </button>
     </span>
