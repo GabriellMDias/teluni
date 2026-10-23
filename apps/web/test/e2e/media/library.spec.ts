@@ -122,7 +122,7 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   expect((await ranged.body()).length).toBe(100);
 
   await page.getByRole("link", { name: "Voltar para mídia" }).click();
-  await page.getByRole("link", { name: "logo" }).click();
+  await page.getByRole("link", { name: "logo", exact: true }).click();
   await afterNavigation(
     page.getByRole("heading", { name: "logo" }),
   ).toBeVisible();
@@ -150,7 +150,7 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   await page.getByRole("link", { name: "Voltar para mídia" }).click();
   await page.getByRole("link", { name: "Lixeira" }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/media?view=trash`);
-  await page.getByRole("link", { name: "logo" }).click();
+  await page.getByRole("link", { name: "logo", exact: true }).click();
   await expect(page.getByText("Exclusão definitiva em")).toBeVisible();
   await page.getByRole("button", { name: "Restaurar da lixeira" }).click();
   await expect(page.getByRole("status")).toContainText("Mídia restaurada.");

@@ -4,6 +4,15 @@
     "title": "Teluni Media Library Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Abuse limits",
+    "anchor": "abuse-limits",
+    "text": "Abuse limits\nProposed initial values, each answering `RATE_LIMITED` with `Retry-After`:\nAt most 5 assets in `UPLOADING` per person and 20 per company.\nAt most 200 asset creations per company per day.\nAt most 20 assets in `PROCESSING` per company, so one company cannot monopolize the processor.\nThe upload `PUT` has no request-size limit beyond the declared size, a 2-hour request timeout and an idle timeout of 60 seconds without bytes.\nCommercial original-media quotas (2 GiB trial, 10 GiB paid) and their warnings arrive with PJ-27, which will count each original object once per company as the commercial policies require; the creation request is where admission will be checked.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Data",
     "anchor": "data",
     "text": "Data\nAll tables belong to the media module, with Prisma models in `prisma/schema/media.prisma`, semantic metadata, runtime grants and one reviewed migration.\nTable\nContents\nNotes\n`media_objects`\n`(company_id, sha256)` key, byte size, content type, created time\nOne row per stored file per company; publication and purge serialize on a transaction-scoped advisory lock per object\n`media_assets`\n`(company_id, id)`, optional composite `(company_id, branch_id)` reference, name, tags, kind, status, rejection reason, declared type and size, original/display/thumbnail object hashes (composite references to `media_objects`), inspected facts, processing stage/progress/attempts/lease, created-by membership, created/ready/archived/deleted/purge-after/purged times, version\nComposite tenant references; runtime role never updates `company_id` or `branch_id`\n`media_audit_events`\nCompany, actor, action, target asset, allowlisted details\nAppend-only; `media.created`, `media.uploaded`, `media.ready`, `media.failed`, `media.rejected`, `media.renamed`, `media.tagged`, `media.archived`, `media.restored`, `media.deleted`, `media.trash_restored`, `media.purged`, `media.discarded`. Details hold IDs, kinds, sizes and reason codes, never file names of other assets, hashes or paths\nNames, tags, inspected facts and the stored bytes are `CONFIDENTIAL`. The original file name is used as the default name only; it is not stored separately.\n"
@@ -673,14 +682,5 @@
     "heading": "Contracts",
     "anchor": "contracts",
     "text": "Contracts\nVersioned JSON operations under `/companies/{companyId}/programming/...` for playlists (list with scope and name filters and cursors, create, get, rename, replace items, change transition, delete), groups (list, create, get, rename, change span, delete), group and device programs (get, replace one output's rules and default), device settings (get, assign), the rule check and the two timelines; plus the time-zone field on device detail and update. Errors use the existing envelope with the codes named in this design. The SDK and OpenAPI document are regenerated.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Panel",
-    "anchor": "panel",
-    "text": "Panel\nA **Programação** area per company (en-US \"Programming\"), shown with `programming.view`:\n**Playlists**: list with scope and search; the editor adds ready media from the library through a picker filtered by the playlist's scope, reorders items with buttons and keyboard, edits image durations, shows total duration and saves the whole list.\n**Grupos**: list, creation with the branch span, member screens with join and leave, and the group's schedules.\n**Screen programming** on each Telas detail page: source (group or individual) with the unpublished-destination confirmation, time zone (explicit or branch), schedules of the effective source and the preview.\n**Schedules editor**: one row per rule (playlist, weekdays, all-day or times, dates), the default playlist, conflict errors next to both rules, and a seven-day local timeline with resolution notes.\nCopy is in `pt-BR` and `en-US`, times use the person's locale with the screen's zone named, and every control is reachable by keyboard.\n"
   }
 ]

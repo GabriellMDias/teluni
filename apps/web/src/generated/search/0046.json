@@ -4,6 +4,15 @@
     "title": "Teluni Programming Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Panel",
+    "anchor": "panel",
+    "text": "Panel\nA **Programação** area per company (en-US \"Programming\"), shown with `programming.view`:\n**Playlists**: list with scope and search; the editor adds ready media from the library through a picker filtered by the playlist's scope, reorders items with buttons and keyboard, edits image durations, shows total duration and saves the whole list.\n**Grupos**: list, creation with the branch span, member screens with join and leave, and the group's schedules.\n**Screen programming** on each Telas detail page: source (group or individual) with the unpublished-destination confirmation, time zone (explicit or branch), schedules of the effective source and the preview.\n**Schedules editor**: one row per rule (playlist, weekdays, all-day or times, dates), the default playlist, conflict errors next to both rules, and a seven-day local timeline with resolution notes.\nCopy is in `pt-BR` and `en-US`, times use the person's locale with the screen's zone named, and every control is reachable by keyboard.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Verification",
     "anchor": "verification",
     "text": "Verification\nDomain unit tests: rule validation for each field, the wall-clock conflict check (touching, overlapping, overnight, final-date clip, long and open-ended spans), zone resolution for gaps and repeated hours, the handoff clip, segment filling with and without defaults and range limits.\nThe shared fixture suite run through the evaluator.\nIntegration tests against PostgreSQL with two companies and differently scoped members: playlist scope and media visibility, group span and partial visibility, assignment confirmation and versions, permission denials for each capability and role, reference guards on media, playlists, groups and branches, limits, ID substitution across companies, and audit rows.\nBrowser component tests for the playlist editor, the schedules editor with conflicts and the assignment confirmation, and one end-to-end journey: upload media, build a playlist, create a group, add a paired screen, schedule it and read its timeline.\n"
