@@ -8,7 +8,7 @@ const ptBR = {
   homeEyebrow: "Início",
   homeTitle: "Boas-vindas ao Teluni",
   homeLead:
-    "Gerencie suas empresas, filiais e equipes. Telas, mídias e programação chegam nas próximas versões.",
+    "Organize suas telas, conteúdos e programação em um só lugar. Escolha uma empresa para começar.",
   companiesTitle: "Suas empresas",
   companiesEmpty:
     "Você ainda não participa de nenhuma empresa. Crie a primeira para começar, ou aceite um convite recebido por e-mail.",
@@ -35,7 +35,7 @@ const enUS: WorkspaceMessages = {
   homeEyebrow: "Home",
   homeTitle: "Welcome to Teluni",
   homeLead:
-    "Manage your companies, branches and teams. Screens, media and programming arrive in upcoming versions.",
+    "Bring your screens, content and programming together. Choose a company to get started.",
   companiesTitle: "Your companies",
   companiesEmpty:
     "You are not part of any company yet. Create the first one to get started, or accept an invitation you received by email.",

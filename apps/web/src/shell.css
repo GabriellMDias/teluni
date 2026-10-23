@@ -1,0 +1,201 @@
+.product-shell {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+  color: var(--color-ink);
+  background: var(--color-page);
+  color-scheme: light;
+}
+.product-shell[data-theme="dark"] {
+  color-scheme: dark;
+}
+.product-sidebar {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow-y: auto;
+  padding: 2rem 1rem 1.25rem;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+.product-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0.7rem 2.5rem;
+  color: var(--color-ink);
+  font-size: 1.6rem;
+  font-weight: 750;
+  letter-spacing: -0.06em;
+  text-decoration: none;
+}
+.product-brand img {
+  flex: none;
+}
+.product-navigation,
+.product-navigation .identity-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+.product-navigation a,
+.product-navigation .button-text {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+.product-navigation a:hover,
+.product-navigation .button-text:hover:not(:disabled) {
+  color: var(--color-ink);
+  background: var(--color-surface-muted);
+}
+.product-navigation a[data-status="active"] {
+  color: var(--color-link);
+  background: var(--color-selected);
+}
+.navigation-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+.product-navigation .identity-nav {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+.product-tagline {
+  margin: auto 0.85rem 0;
+  padding-top: 3rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+.product-workspace {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+}
+.product-topbar {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 84px;
+  padding: 1rem var(--space-page);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.product-workspace-label {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+.product-theme {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+.product-theme select {
+  font: inherit;
+  color: var(--color-ink);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 0.55rem 0.7rem;
+}
+.product-shell .main-content {
+  width: 100%;
+  max-width: 1280px;
+  padding: var(--space-page) var(--space-page) 4rem;
+  overflow-wrap: anywhere;
+}
+.product-shell :focus-visible {
+  outline-color: var(--color-focus);
+}
+.product-menu {
+  display: none;
+}
+.product-skip {
+  position: fixed;
+  z-index: 60;
+  top: -8rem;
+  left: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-control);
+}
+.product-skip:focus {
+  top: 1rem;
+}
+@media (max-width: 760px) {
+  .product-shell {
+    display: flex;
+    flex-direction: column;
+  }
+  .product-sidebar {
+    position: static;
+    order: 1;
+    height: auto;
+    padding: 1rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .product-sidebar[data-open="false"] {
+    display: none;
+  }
+  .product-brand {
+    margin: 0 0.85rem 1rem;
+  }
+  .product-tagline {
+    display: none;
+  }
+  .product-workspace {
+    display: contents;
+  }
+  .product-topbar {
+    order: 0;
+    min-height: 72px;
+  }
+  .product-shell .main-content {
+    order: 2;
+  }
+  .product-workspace-label {
+    display: none;
+  }
+  .product-menu {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem;
+  }
+  .product-menu svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+}

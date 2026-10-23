@@ -19,6 +19,10 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 7. Reopen an action with `[ ]` if later evidence invalidates completion, access expires, or configuration changes, and record why.
 8. A conditional item that becomes unnecessary remains `[ ]` with status `changed`, an explicit reason, and its future trigger or replacement.
 
+## Interface planning request of 2026-10-23
+
+The owner requested explicit planning for a product interface aligned with the Connected Tiles identity board's light/dark examples, then authorized continued development and creation of a pull request on the same day. [PJ-41](implementation-plan.md#pj-41-interface-alignment) records the first interface increment and the remaining adoption/qualification work. PH-07's completed visual-direction selection and PJ-04's original brand integration remain intact. No new external account, credential or human blocker is required for this local implementation; existing production and pilot prerequisites remain in force.
+
 ## Safe configuration handoff
 
 - Record configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.

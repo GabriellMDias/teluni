@@ -44,7 +44,7 @@ const ptBR = {
   productPoints: [
     "Organize empresas, filiais e equipes com acessos separados.",
     "Convide pessoas por e-mail e defina o que cada uma pode fazer.",
-    "Telas, mídias e programação chegam nas próximas versões.",
+    "Gerencie telas, mídias e programação no espaço de cada empresa.",
   ],
   loginErrors: {
     login_failed: "Não foi possível concluir a entrada. Tente novamente.",
@@ -122,7 +122,7 @@ const enUS: IdentityMessages = {
   productPoints: [
     "Organize companies, branches and teams with separate access.",
     "Invite people by email and decide what each one can do.",
-    "Screens, media and programming arrive in upcoming versions.",
+    "Manage screens, media and programming within each company's workspace.",
   ],
   loginErrors: {
     login_failed: "Sign-in could not be completed. Try again.",

@@ -62,4 +62,4 @@ Audit relevant membership/role changes, device pair/revoke/reassignment, publica
 - Localize units and numeric presentation without changing persisted semantic meaning. Currency, decimal/grouping separators, longer translations and different date conventions must be tested.
 - Define the Android schedule/time interpretation with the same contract fixtures as backend preview. Changing UI language must not change actual publication timing or tenant permission.
 
-The identity web module establishes this boundary with a typed pt-BR/en-US message catalog, Portuguese by default unless the browser prefers English, without selecting a library (D-10 remains open). Localization of the existing foundation shell and documentation portal is not performed.
+The product workflows and product shell use typed pt-BR/en-US message catalogs, Portuguese by default unless the browser prefers English, without selecting a library (D-10 remains open). This includes the product navigation and appearance controls delivered in [PJ-41](implementation-plan.md#pj-41-interface-alignment). The separate developer documentation portal remains in English.

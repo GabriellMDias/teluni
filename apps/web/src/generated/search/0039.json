@@ -4,6 +4,51 @@
     "title": "Database Principles",
     "group": "Database guides",
     "kind": "repository",
+    "heading": "Data Types",
+    "anchor": "data-types",
+    "text": "Data Types\nChoose types for meaning: explicit states instead of invalid boolean combinations, exact numeric representations for precision-sensitive values, and structured columns for stable fields requiring constraints, indexing, classification, and querying. Avoid undocumented sentinel values. Enums and custom types have schema-evolution implications.\nDocument units, precision, scale, rounding, and currency relationships where relevant. Floating point is unsuitable by default for exact monetary amounts. Distinguish calendar dates, wall-clock times, instants, durations, and time zones. Add lifecycle timestamps only when useful and define who advances them. `updated_at` is neither an audit history nor automatically a reliable concurrency/ordering token.\nJSON is a deliberate flexible representation, not a substitute for schema design. Persisted JSON and free-form metadata still require validation, classification, redaction, migration, and compatibility rules. Large binaries need a decision considering access patterns, transaction requirements, backup, retention, and cost; if stored externally, database ownership/reference and object lifecycle must remain consistent.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Identifiers",
+    "anchor": "identifiers",
+    "text": "Identifiers\nDefine identity scope and distinguish internal primary keys, public resource IDs, provider IDs, natural business keys, and idempotency keys. Stable primary keys are preferred; use mutable natural keys only with understood consequences. Public and storage identity may coincide deliberately but should not be coupled accidentally. Generated IDs must not encode sensitive information or serve as authorization.\nEach module's implementation conventions record its identifier and timestamp choices, such as immutable UUIDs and database-clock timestamps. One module's choices do not force every domain to use identical semantics.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Query Design",
+    "anchor": "query-design",
+    "text": "Query Design\nRetrieve the fields needed by the caller, with explicit projections where they improve clarity, performance, or security. Read models may differ from write models. Bound collections under [API policy](../api/principles.md#pagination) and parameterize untrusted values in SQL. ORM convenience must not hide material N+1 query costs.\nCreate indexes for demonstrated query, ordering, or integrity requirements. Review existing indexes, composite-column order, specialized/partial behavior, write/storage cost, and creation impact. Uniqueness indexes enforce semantics as well as performance. Do not index every column or remove apparently redundant indexes without query evidence. Use safe query plans, timing, and query-count investigation before adding caches or speculative optimization.\nNormalize for integrity and ownership; denormalize when actual read/performance needs justify synchronization cost. Every persisted projection, counter, cached aggregate, search index, or materialized view needs a canonical source, update/refresh mechanism, staleness expectation, recovery/rebuild strategy, and owner. Caches must not become the only copy of critical durable truth.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database-native behavior",
+    "anchor": "database-native-behavior",
+    "text": "Database-native behavior\nViews, materialized views, functions, procedures, generated columns, and triggers are architectural behavior and part of migration/compatibility review. Explain purpose and consumers, important expressions, transaction assumptions, activation, writes, and cascading/recursive effects. Undocumented application-owned triggers or state-changing procedures are prohibited. Database notifications do not automatically become the application event architecture.\nUse additional stores, CQRS, event sourcing, separate databases/services, or analytical isolation only when requirements justify their consistency, operations, and recovery cost. A modular monolith may share one physical database while preserving logical ownership. Reporting should not erase ownership boundaries, and financial ledger requirements need their own domain design rather than mutable balances by default.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Access, classification, and lifecycle",
+    "anchor": "access-classification-and-lifecycle",
+    "text": "Access, classification, and lifecycle\nUse machine-readable [classification](../security/data-classification.md) near the schema. Sensitive fields require proportionate controls for projections, grants, telemetry, backups, exports, replicas, and support access. Read-only access can still disclose data. Encryption at rest does not lower classification; field encryption requires explicit key-management, search, rotation, migration, and recovery design. Password hashes remain restricted. Do not put infrastructure secrets in ordinary business tables for convenience.\nSeparate runtime and migration credentials when privileges differ; the current runtime uses `ORION_DATABASE_URL`, and only the Prisma CLI receives `ORION_MIGRATION_DATABASE_URL`. See the [API runtime guide](../../apps/api/README.md#configuration-and-database-access) for the implemented restricted role. [Secrets management](../security/secrets-management.md) and [production access](../security/production-access.md) govern operational access. Significant administrative access should be attributable; database tools must not become silent authorization bypasses.\n[Data retention](../security/data-retention.md) owns deletion, soft-delete justification, archival, copies, backup/recovery, and audit lifecycle. Replicas inherit data controls and may return stale reads. If business audit history is required, model it explicitly; ordinary logs and modification timestamps do not provide authoritative auditability. Development/test seeds must be synthetic and distinct from production bootstrap/reference-data evolution.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
     "heading": "Runtime reliability",
     "anchor": "runtime-reliability",
     "text": "Runtime reliability\nConnection pools are finite resources; size them against actual application concurrency, database limits, replicas, and deployment scale. Saturation needs evidence, not reflexively larger pools. Bound query waits and propagate cancellation where supported and safe. Observe latency, pool wait, transaction failure, lock contention/deadlocks, timeouts, migration duration, and replica lag where relevant.\nFollow [redaction](../security/telemetry-redaction.md): raw SQL and parameters may disclose sensitive data. Translate known constraint failures to owned semantic errors, preserve unexpected failures as safe observable internal errors, and do not expose database implementation details publicly. [Health policy](../reliability/health-checks.md) distinguishes database-dependent readiness from process liveness.\n"
@@ -637,41 +682,5 @@
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-16",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "outbound_emails",
-    "anchor": "outbound_emails",
-    "text": "outbound_emails\nTransactional outbox of email messages: a producer records the intent in its own transaction and the dispatcher delivers it through the SMTP relay at least once.\nOwner: Mail. Classification: CONFIDENTIAL.\nLifecycle: Created PENDING by a producer; becomes SENT when the relay accepts it, FAILED after a permanent rejection or the last attempt, or CANCELLED by its producer. The sealed secret is erased at the final state, and the row is deleted 30 days later (provisional until PH-13).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated message UUID; also the stable source of the email Message-ID across retries.\n—\n—\n`producer`\n`character varying(64)`\nno\n—\nINTERNAL\nCapability that enqueued the message and owns its meaning, for example organizations.invitation.\n—\n—\n`producer_reference`\n`uuid`\nno\n—\nINTERNAL\nIdentifier of the producer's record the message reports, such as an invitation ID.\n—\n—\n`template`\n`character varying(64)`\nno\n—\nINTERNAL\nProducer-registered template rendered when the message is sent.\n—\n—\n`locale`\n`character varying(16)`\nno\n—\nINTERNAL\nTemplate locale: pt-BR or en-US.\n—\n—\n`recipient`\n`character varying(254)`\nno\n—\nCONFIDENTIAL\nNormalized recipient address.\n—\n—\n`parameters`\n`jsonb`\nno\n—\nCONFIDENTIAL\nAllowlisted, non-secret template parameters as a JSON object of strings.\n—\n—\n`sealed_secret`\n`bytea`\nyes\n—\nRESTRICTED\nAES-256-GCM sealed secret parameter (such as an invitation credential) under the mail key ring, bound to the message ID.\nThe message has no secret parameter, or it reached a final state and the secret was erased.\n—\n`status`\n`\"OutboundEmailStatus\"`\nno\n`'PENDING'::\"OutboundEmailStatus\"`\nINTERNAL\nPENDING until sent, failed or cancelled.\n—\n—\n`attempts`\n`integer`\nno\n`0`\nINTERNAL\nDelivery attempts claimed so far, including an attempt interrupted by a crash.\n—\nattempts\n`next_attempt_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nEarliest instant the dispatcher may claim the pending message again.\n—\nUTC instant, millisecond precision\n`lease_expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nEnd of the current dispatcher's claim; also its ownership token when recording the outcome.\nNo dispatcher has claimed the message yet.\nUTC instant, millisecond precision\n`last_failure`\n`character varying(32)`\nyes\n—\nINTERNAL\nClass of the latest failed attempt: connection, timeout, tls, authentication, rejected or unexpected. Never raw provider text.\nNo attempt has failed.\n—\n`last_reply_code`\n`integer`\nyes\n—\nINTERNAL\nSMTP reply code of the latest failed attempt.\nNo failure, or the failure carried no SMTP reply.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the producer enqueued the message.\n—\nUTC instant, millisecond precision\n`finalized_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the message reached SENT, FAILED or CANCELLED; starts the retention period.\nThe message is still pending.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-17",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`outbound_emails_attempts_nonnegative`\n`CHECK ((attempts >= 0))`\nAttempt counts never go negative.\n`outbound_emails_final_state`\n`CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") = (finalized_at IS NULL)))`\nA final instant exists exactly for messages that are no longer pending.\n`outbound_emails_parameters_object`\n`CHECK ((jsonb_typeof(parameters) = 'object'::text))`\nTemplate parameters are a JSON object.\n`outbound_emails_pkey`\n`PRIMARY KEY (id)`\nUnique message identity.\n`outbound_emails_secret_only_pending`\n`CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") OR (sealed_secret IS NULL)))`\nA sealed secret survives only while the message is pending.\n`outbound_emails_due_idx`\n`CREATE INDEX outbound_emails_due_idx ON public.outbound_emails USING btree (next_attempt_at) WHERE (status = 'PENDING'::\"OutboundEmailStatus\")`\nClaims due pending messages in order without scanning final ones.\n`outbound_emails_finalized_idx`\n`CREATE INDEX outbound_emails_finalized_idx ON public.outbound_emails USING btree (finalized_at) WHERE (status <> 'PENDING'::\"OutboundEmailStatus\")`\nFinds final messages whose retention period has ended.\n`outbound_emails_producer_idx`\n`CREATE INDEX outbound_emails_producer_idx ON public.outbound_emails USING btree (producer, producer_reference)`\nFinds a producer's messages to report delivery state or cancel them.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "media_objects",
-    "anchor": "media_objects",
-    "text": "media_objects\nOne stored file of a company on the media volume, named by the SHA-256 of its bytes: an original upload, a display rendition or a thumbnail. Identical bytes are stored once per company and never shared across companies.\nOwner: Media. Classification: CONFIDENTIAL.\nLifecycle: Inserted when a file is published into the volume, under this row's lock, before the referencing asset commits. Deleted by purge, with the file, once no asset of the company references it. Rows never change.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the object; part of the key so objects never cross tenants.\n—\n—\n`sha256`\n`bytea`\nno\n—\nCONFIDENTIAL\nSHA-256 of the object's bytes; with the company it names the file on the media volume.\n—\n—\n`byte_size`\n`bigint`\nno\n—\nINTERNAL\nSize of the stored file.\n—\nbytes\n`content_type`\n`character varying(64)`\nno\n—\nINTERNAL\nServer-determined media type of the stored file, sent when it is delivered.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the object was first stored.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-18",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`media_objects_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn object belongs to an existing company.\n`media_objects_pkey`\n`PRIMARY KEY (company_id, sha256)`\nOne row per company and content hash.\n`media_objects_sha256_length`\n`CHECK ((octet_length(sha256) = 32))`\nThe key is a SHA-256 digest.\n`media_objects_size_positive`\n`CHECK ((byte_size > 0))`\nStored files are never empty.\n"
   }
 ]

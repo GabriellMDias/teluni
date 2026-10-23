@@ -8,6 +8,7 @@ const ptBR = {
   navCompanies: "Empresas",
   companiesEyebrow: "Organização",
   companiesTitle: "Suas empresas",
+  companyUnavailableTitle: "Empresa indisponível",
   companiesLead: "Empresas às quais você tem acesso.",
   companiesEmpty:
     "Você ainda não participa de nenhuma empresa. Crie a primeira abaixo.",
@@ -328,6 +329,7 @@ const enUS: OrganizationMessages = {
   navCompanies: "Companies",
   companiesEyebrow: "Organization",
   companiesTitle: "Your companies",
+  companyUnavailableTitle: "Company unavailable",
   companiesLead: "Companies you have access to.",
   companiesEmpty:
     "You are not part of any company yet. Create the first one below.",

@@ -571,6 +571,15 @@
     "title": "Teluni Human Actions",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Interface planning request of 2026-10-23",
+    "anchor": "interface-planning-request-of-2026-10-23",
+    "text": "Interface planning request of 2026-10-23\nThe owner requested explicit planning for a product interface aligned with the Connected Tiles identity board's light/dark examples, then authorized continued development and creation of a pull request on the same day. [PJ-41](implementation-plan.md#pj-41-interface-alignment) records the first interface increment and the remaining adoption/qualification work. PH-07's completed visual-direction selection and PJ-04's original brand integration remain intact. No new external account, credential or human blocker is required for this local implementation; existing production and pilot prerequisites remain in force.\n"
+  },
+  {
+    "id": "repository/docs/project/human-actions",
+    "title": "Teluni Human Actions",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Safe configuration handoff",
     "anchor": "safe-configuration-handoff",
     "text": "Safe configuration handoff\nRecord configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.\nName only implemented configuration keys and link the [generated configuration reference](../generated/configuration/api.md); do not invent variable names in advance.\nHumans place secrets directly into the selected protected secret store or an explicitly documented ignored local file. Contributors verify presence and authorized behavior without printing secret contents.\nUse synthetic local and test data and ephemeral credentials where possible. Production secrets must not be prerequisites for ordinary development or CI.\n"

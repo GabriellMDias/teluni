@@ -23,7 +23,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.75rem;
-  border: 1px solid #d7e0e7;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
   overflow-wrap: anywhere;
@@ -69,10 +69,10 @@
 }
 .catalog-field-issue {
   margin: 0;
-  color: #9b1c1c;
+  color: var(--color-danger-ink);
 }
 .catalog-price {
-  border-top: 1px solid #d7e0e7;
+  border-top: 1px solid var(--color-border);
   margin-top: 1rem;
   padding-top: 0.5rem;
 }
@@ -80,7 +80,7 @@
   width: 9rem;
 }
 .catalog-danger {
-  border: 1px solid #e3b4b4;
+  border: 1px solid var(--color-danger-border);
   border-radius: 8px;
   padding: 1rem;
   margin-top: 2rem;

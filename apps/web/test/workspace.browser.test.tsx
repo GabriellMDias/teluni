@@ -11,6 +11,7 @@ import { identityMessages } from "../src/identity/messages.js";
 import { browserLocale } from "../src/locale.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
+import { shellMessages } from "../src/shell-messages.js";
 import { workspaceMessages } from "../src/workspace/messages.js";
 
 const locale = browserLocale();
@@ -114,6 +115,11 @@ test("shows a signed-in person's companies and account on the home page", async 
   await expect
     .element(screen.getByRole("link", { name: t.twoStepButton }))
     .toHaveAttribute("href", "/api/auth/login?returnTo=%2F&assurance=strong");
+  // The browser runner's small viewport uses the navigation disclosure.
+  if (matchMedia("(max-width: 760px)").matches)
+    await screen
+      .getByRole("button", { name: shellMessages[locale].menu })
+      .click();
   await expect
     .element(screen.getByRole("link", { name: t.navHome }))
     .toHaveAttribute("data-status", "active");
