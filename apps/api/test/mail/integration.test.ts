@@ -206,8 +206,10 @@ describe("mail outbox", () => {
     const mail = moduleWith({ transport, random: () => 0.5 });
     const id = await enqueue(mail, "retry@example.test", "secret-value");
     await mail.runOnce();
+    // Compare at the column's millisecond precision: storing a deadline can
+    // round it up by half a millisecond relative to an unrounded clock.
     const { rows } = await sql.query<{ wait: number }>(
-      "SELECT EXTRACT(EPOCH FROM next_attempt_at - now())::float8 AS wait FROM outbound_emails WHERE id = $1",
+      "SELECT EXTRACT(EPOCH FROM next_attempt_at - statement_timestamp()::timestamptz(3))::float8 AS wait FROM outbound_emails WHERE id = $1",
       [id],
     );
     expect(rows[0].wait).toBeGreaterThan(50);

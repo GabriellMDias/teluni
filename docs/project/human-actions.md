@@ -23,6 +23,8 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 The owner requested explicit planning for a product interface aligned with the Connected Tiles identity board's light/dark examples, then authorized continued development and creation of a pull request on the same day. After merging PR #25, the owner accepted the visual result and requested continued development. [PJ-41](implementation-plan.md#pj-41-interface-alignment) records the company-navigation increment and the remaining adoption/qualification work. PH-07's completed visual-direction selection and PJ-04's original brand integration remain intact. No new external account, credential or human blocker is required for this local implementation; existing production and pilot prerequisites remain in force.
 
+The owner subsequently requested correction of PR #26's CI failure. The [CI qualification correction](implementation-plan.md#ci-qualification-correction) records the runner prerequisites and mail-test precision fix. It requires no new owner account, credential or repository privilege; current-head CI qualification remains part of the implementation work.
+
 ## Safe configuration handoff
 
 - Record configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.

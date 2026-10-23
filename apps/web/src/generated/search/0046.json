@@ -4,6 +4,24 @@
     "title": "Teluni Programming Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nDomain unit tests: rule validation for each field, the wall-clock conflict check (touching, overlapping, overnight, final-date clip, long and open-ended spans), zone resolution for gaps and repeated hours, the handoff clip, segment filling with and without defaults and range limits.\nThe shared fixture suite run through the evaluator.\nIntegration tests against PostgreSQL with two companies and differently scoped members: playlist scope and media visibility, group span and partial visibility, assignment confirmation and versions, permission denials for each capability and role, reference guards on media, playlists, groups and branches, limits, ID substitution across companies, and audit rows.\nBrowser component tests for the playlist editor, the schedules editor with conflicts and the assignment confirmation, and one end-to-end journey: upload media, build a playlist, create a group, add a paired screen, schedule it and read its timeline.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Delivery increments",
+    "anchor": "delivery-increments",
+    "text": "Delivery increments\nAPI module, schema and migration, playlists and items, groups, settings and assignments, programs and rules with validation, the evaluator and fixtures, timelines, guards, device time zone, audit, contracts and SDK.\nPanel pages for playlists, groups, screen programming, schedules and the timeline, with browser and end-to-end tests.\nHardening with PJ-11 (published destinations and published references) and PJ-20 (layout areas as outputs).\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Implementation status",
     "anchor": "implementation-status",
     "text": "Implementation status\nImplemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-24](human-actions.md#ph-24):\nThe [`programming` API module](../../apps/api/src/features/programming/AGENTS.md), its reviewed migration (which also adds the devices' `time_zone` column and lets profiles delegate the programming capabilities), runtime grants, schema metadata and the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK.\n`programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities; `programming.assign` requires strong authentication.\nThe pure evaluator and conflict validation in [`schedule.ts`](../../apps/api/src/features/programming/schedule.ts) on `temporal-polyfill`, with the [canonical fixtures](../../apps/api/test/programming/schedule-fixtures.json) run by [the evaluator tests](../../apps/api/test/programming/schedule.test.ts).\nThe media reference guard, the branch archive guard for explicit spans and the devices move hook; the explicit device time zone in device detail, update and `GET /device/self`.\nThe [two-company integration suite](../../apps/api/test/programming/integration.test.ts) against PostgreSQL as the runtime role with the organizations, devices and media modules.\nIncrement 2, the same day:\nThe panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation and step-up, and confirmed deletion; the screen page's time zone setting and programming link.\n[Browser component tests](../../apps/web/test/programming.browser.test.tsx) and the [programming journey](../../apps/web/test/e2e/programming/journey.spec.ts).\nPending: increment 3 with PJ-11 and PJ-20.\n"

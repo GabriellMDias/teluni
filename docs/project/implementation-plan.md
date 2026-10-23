@@ -115,6 +115,12 @@ Verification (2026-10-23): 72 web unit tests and all 92 browser component tests 
 
 The full Windows `pnpm validate` attempt passed the static, architecture, documentation, provenance and generated-reference gates, then stopped at the unchanged API suite: 284 passed, 15 failed and 24 skipped across 34 files (9 failed). The failures include the native-path comparison and media-volume reserve described above, plus timeouts in the provider/database/invitation/layout fixtures during host resource contention. API, storage controls and test timeouts were not changed. These results are not a passing complete gate; the current PR's Linux CI must be reported separately from PR #25's earlier success.
 
+### CI qualification correction
+
+The owner requested correction of PR #26's CI failure on 2026-10-23. At head `573e0101ab769aa384b7ff24869586a749c81015`, [run 39961221283](https://github.com/GabriellMDias/teluni/actions/runs/39961221283) attempt 1 failed in unchanged API fixtures: the Testcontainers host-port image was missing, and the retry check observed 60.000043 seconds against its 60-second bound. Attempt 2 passed all 323 API, 72 web unit and 92 browser tests, plus build and smoke, but exhausted the 35-minute job budget after about 28 minutes preparing system packages through the Azure Ubuntu mirror; E2E had started and did not complete.
+
+The corrective increment keeps that job budget and every test assertion: CI uses the Ubuntu archive over HTTPS with bounded package-network retries/timeouts, reuses Playwright's refreshed package index for FFmpeg, and pre-pulls the job's explicit Testcontainers host-port helper image before parallel fixtures. The mail integration test compares the deadline with a database statement timestamp cast to the same millisecond precision as `next_attempt_at`; storage can round a deadline upward by half a millisecond, so comparing it to an unrounded clock produced a false upper-bound failure. Runtime retry timing, migrations and permissions are unchanged. The focused mail integration/domain run passed all 11 tests. Full qualification of the corrected head remains pending its own CI result; earlier attempts are diagnostic evidence only.
+
 ## Phase sequence and exit criteria
 
 These phases are an initial roadmap, not permission to implement. Dependencies can be refined using pilot evidence without deleting unresolved work. No dates, staffing, price or capacity commitments are inferred from the brief.

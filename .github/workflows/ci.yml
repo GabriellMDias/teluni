@@ -20,6 +20,9 @@ jobs:
     name: Validate
     runs-on: ubuntu-24.04
     timeout-minutes: 35
+    env:
+      # Match the host-port helper selected by the pinned Testcontainers version.
+      SSHD_CONTAINER_IMAGE: testcontainers/sshd:1.4.0
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,10 +34,23 @@ jobs:
         with:
           cache: true
           require-lockfile: true
+      - name: Prepare Ubuntu package downloads
+        run: |
+          # The Azure mirror exhausted most of the job budget at about 50 kB/s.
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80teluni-ci > /dev/null
       - name: Install Chromium and system libraries for browser checks
         run: pnpm -C apps/web exec playwright install --with-deps chromium
       - name: Install FFmpeg for media processing tests
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        # Playwright has already refreshed the package index.
+        run: sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Pull the Testcontainers host-port helper before parallel fixtures
+        timeout-minutes: 5
+        run: docker pull "$SSHD_CONTAINER_IMAGE"
       - name: Run repository validation
         env:
           ORION_RELEASE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
