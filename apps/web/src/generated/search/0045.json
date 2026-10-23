@@ -1,5 +1,14 @@
 [
   {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Alternatives considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives considered\n**`sharp` (libvips) for images.** Fast and well maintained, but it parses untrusted images inside the API process and adds a native dependency next to FFmpeg, which the videos need anyway. FFmpeg 6.1 applies EXIF orientation and strips metadata, so one isolated tool covers both kinds.\n**Object storage (S3-compatible, for example MinIO) now.** It would separate storage from the host, but adds a service to operate on a single-host pilot with no budget. ADR-0021 already keeps the interface replaceable.\n**Storing media in PostgreSQL large objects.** Transactional, but it inflates backups and database I/O with gigabytes of video and makes range reads and streaming harder.\n**Global deduplication across companies.** Saves space but lets one company infer that another holds a given file and couples tenant deletion; per-company deduplication keeps tenants independent.\n**Resumable uploads (tus) now.** Better for unstable connections, but adds a protocol and its state; deferred until measurements show the need.\n**Sending originals to screens and relying on device decoders.** Avoids conversion, but makes playback depend on every device's codec support, which FR-04 and the release policies rule out.\n**A separate processing service or queue broker.** Stronger isolation and scaling, but the pilot runs one process on one host (ADR-0021); child processes with timeouts and limits give isolation now, and a separate container is the deployment-level step in PJ-13.\n"
+  },
+  {
     "id": "repository/docs/project/mvp",
     "title": "Teluni Initial Release Requirements and Acceptance",
     "group": "Project guides",

@@ -29,14 +29,14 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.1.1",
-    "@vitest/browser-playwright": "5.0.1",
+    "@vitest/browser-playwright": "5.0.5",
     "jose": "6.2.12",
     "oxc-transform-react": "0.145.0",
     "pg": "8.16.3",
     "testcontainers": "12.1.0",
     "typescript": "6.0.3",
-    "vite": "8.3.1",
-    "vitest": "5.0.1",
+    "vite": "8.3.5",
+    "vitest": "5.0.5",
     "vitest-browser-react": "2.3.0"
   }
 }
