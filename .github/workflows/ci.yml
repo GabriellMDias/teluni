@@ -37,9 +37,9 @@ jobs:
       - name: Prepare Ubuntu package downloads
         run: |
           # The Azure mirror exhausted most of the job budget at about 50 kB/s.
-          for source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
+          for source in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources /etc/apt/apt-mirrors.txt; do
             if [ -f "$source" ]; then
-              sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+              sudo sed -i 's|http://azure\.archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
             fi
           done
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/80teluni-ci > /dev/null
