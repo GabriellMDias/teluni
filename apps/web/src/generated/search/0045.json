@@ -4,6 +4,33 @@
     "title": "Teluni Media Library Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Contracts",
+    "anchor": "contracts",
+    "text": "Contracts\nHuman operations (session access, CSRF as elsewhere): `GET /companies/{companyId}/media` (paginated, cursor-bound; filters by kind, status, scope, tag and name text), `POST .../media` (create), `GET .../media/{assetId}`, `PUT .../media/{assetId}/content` (upload bytes), `GET .../media/{assetId}/content` (download a variant), `PATCH .../media/{assetId}` (name, tags, expected version), `POST .../media/{assetId}/archive`, `.../restore`, `.../delete`, `.../restore-deleted` and `DELETE .../media/{assetId}` (discard). All are TypeBox contracts in the OpenAPI document; the shared module contract gains the `application/octet-stream` request body and a binary response so the document describes them. The web uses the generated SDK except for the upload body, which it sends with `XMLHttpRequest` to report progress. New expected errors: `MEDIA_TYPE_UNSUPPORTED`, `MEDIA_TOO_LARGE`, `MEDIA_UPLOAD_INCOMPLETE`, `MEDIA_NOT_UPLOADING`, `MEDIA_NOT_READY`, `MEDIA_IN_USE`, `MEDIA_STORAGE_FULL`, `MEDIA_INVALID_STATE`, plus the existing `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CONFLICT`, `RATE_LIMITED`, `VALIDATION_FAILED` and access errors. Rejection reasons (`MEDIA_TYPE_MISMATCH`, `MEDIA_TYPE_UNSUPPORTED`, `MEDIA_TOO_LARGE`, `MEDIA_DIMENSIONS_EXCEEDED`, `MEDIA_DURATION_EXCEEDED`, `MEDIA_UNREADABLE`, `MEDIA_CONVERSION_FAILED`) are a closed enumeration on the asset, not HTTP errors.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Panel",
+    "anchor": "panel",
+    "text": "Panel\nA **Media** view per company (pt-BR \"Mídia\") shows a grid of thumbnails with name, kind, duration or dimensions, scope and state, with filters by kind, scope, tag and state and a name search, limited to what the person may view. **Upload** accepts several files (button or drag and drop), asks for the scope when the person may upload to more than one, shows per-file progress and then the preparation state, and explains rejections. The asset page shows the preview (image, or video with controls), facts, scope, tags and history of state, and offers rename, tags, archive and restore, delete with a confirmation naming the asset, and download of the original where allowed. Administrators see a **Trash** filter with restore. Copy is in `pt-BR` and `en-US`.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nDomain unit tests: signature detection, declared-type matching, probe interpretation for every bound (axis, pixels, duration, frame rate, codecs, animation), the remux-or-transcode decision, lifecycle transitions and permission decisions.\nProcessing tests with real FFmpeg against generated fixtures: JPEG with EXIF orientation and location metadata (rotated and stripped), PNG with transparency, oversized and over-pixel images, animated WebP, a spoofed extension, truncated and corrupted files, a polyglot file, compliant H.264 (remuxed), HEVC and VP9 (transcoded), portrait video with rotation metadata, a video over 60 minutes declared as short (rejected from the probe), and a timeout.\nIntegration tests against PostgreSQL with two companies and differently scoped members: creation and upload allowed and denied by scope, company assets visible to branch members but not editable, ID substitution across companies, cursors, versions, size mismatch and interrupted uploads, abuse limits, concurrent processing claims, reference guards blocking delete and purge, purge after 30 days keeping objects still used by another asset, and audit rows.\nDelivery tests: authorization on every variant, range requests, headers, and no route answering for another company's asset.\nBrowser component tests for the library, upload progress and the delete confirmation, and one end-to-end journey: upload an image and a video, wait until ready, preview, archive, delete and restore from trash.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Delivery increments",
     "anchor": "delivery-increments",
     "text": "Delivery increments\nModule, schema, migration, configuration, object store, upload, inspection, processor, renditions, list, detail, delivery, rename, tags, archive and restore, audit and the panel library with upload and preview.\nDelete to trash, restore from trash, purge, reference port and guards, discard, maintenance (expired uploads, work files, orphan objects) and the trash view.\nExplicit sharing with selected branches, storage accounting per company for PJ-27 and the end-to-end journey hardening.\n"
@@ -664,14 +691,5 @@
     "heading": "Delivery increments",
     "anchor": "delivery-increments",
     "text": "Delivery increments\nAPI module, schema and migration, playlists and items, groups, settings and assignments, programs and rules with validation, the evaluator and fixtures, timelines, guards, device time zone, audit, contracts and SDK.\nPanel pages for playlists, groups, screen programming, schedules and the timeline, with browser and end-to-end tests.\nHardening with PJ-11 (published destinations and published references) and PJ-20 (layout areas as outputs).\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Implementation status",
-    "anchor": "implementation-status",
-    "text": "Implementation status\nImplemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-24](human-actions.md#ph-24):\nThe [`programming` API module](../../apps/api/src/features/programming/AGENTS.md), its reviewed migration (which also adds the devices' `time_zone` column and lets profiles delegate the programming capabilities), runtime grants, schema metadata and the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK.\n`programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities; `programming.assign` requires strong authentication.\nThe pure evaluator and conflict validation in [`schedule.ts`](../../apps/api/src/features/programming/schedule.ts) on `temporal-polyfill`, with the [canonical fixtures](../../apps/api/test/programming/schedule-fixtures.json) run by [the evaluator tests](../../apps/api/test/programming/schedule.test.ts).\nThe media reference guard, the branch archive guard for explicit spans and the devices move hook; the explicit device time zone in device detail, update and `GET /device/self`.\nThe [two-company integration suite](../../apps/api/test/programming/integration.test.ts) against PostgreSQL as the runtime role with the organizations, devices and media modules.\nIncrement 2, the same day:\nThe panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation and step-up, and confirmed deletion; the screen page's time zone setting and programming link.\n[Browser component tests](../../apps/web/test/programming.browser.test.tsx) and the [programming journey](../../apps/web/test/e2e/programming/journey.spec.ts).\nPending: increment 3 with PJ-11 and PJ-20.\n"
   }
 ]

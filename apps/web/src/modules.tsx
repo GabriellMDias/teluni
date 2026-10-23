@@ -3,6 +3,7 @@ import { catalogRoutes } from "./catalogs/routes.js";
 import { deviceRoutes } from "./devices/routes.js";
 import { identityRoutes, IdentityNavigation } from "./identity/routes.js";
 import { mediaRoutes } from "./media/routes.js";
+import { CompanyNavigation } from "./organizations/navigation.js";
 import {
   organizationRoutes,
   OrganizationsNavigation,
@@ -36,6 +37,7 @@ export const routeTree = rootRoute.addChildren([
 export const moduleNavigation: readonly ComponentType[] = [
   WorkspaceNavigation,
   OrganizationsNavigation,
+  CompanyNavigation,
   ...(developerPortal ? [developerPortal.DocumentationNavigation] : []),
   IdentityNavigation,
 ];

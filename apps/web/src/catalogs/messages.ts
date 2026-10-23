@@ -6,6 +6,7 @@ import type { FieldType } from "./api.js";
 
 const ptBR = {
   title: "Catálogos",
+  listTitle: "Lista de catálogos",
   lead: "Produtos, cardápios, agendas e outras listas com os campos que você definir. Preços ficam exatos, na moeda de cada campo.",
   backToCompany: "Voltar para a empresa",
   backToCatalogs: "Voltar para catálogos",
@@ -309,6 +310,7 @@ type Messages = typeof ptBR;
 
 const enUS: Messages = {
   title: "Catalogs",
+  listTitle: "Catalog list",
   lead: "Products, menus, agendas and other lists with the fields you define. Prices stay exact, in each field's currency.",
   backToCompany: "Back to the company",
   backToCatalogs: "Back to catalogs",

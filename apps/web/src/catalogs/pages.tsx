@@ -449,7 +449,7 @@ function CatalogList({
   };
   return (
     <section aria-labelledby="catalog-list-title">
-      <h2 id="catalog-list-title">{t.title}</h2>
+      <h2 id="catalog-list-title">{t.listTitle}</h2>
       <form
         role="search"
         className="catalog-filters"

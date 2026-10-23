@@ -70,7 +70,7 @@ Review home, documentation, mobile navigation, favicon and touch icon at actual 
 
 ## Planned product interface alignment
 
-On 2026-10-23 the owner requested explicit planning for a product interface aligned with the identity board's light/dark examples, then authorized continued development and a pull request. [PJ-41](../implementation-plan.md#pj-41-interface-alignment) owns the delivery sequence, scope and acceptance criteria. Its first increment implements the shared responsive shell, appearance selection and semantic product colors; incremental adoption and final visual qualification remain open before pilot acceptance. PJ-04 retains its original brand integration scope. The board remains illustrative for workflows, copy and imagery, while its visual direction now has an explicit product delivery task.
+On 2026-10-23 the owner requested explicit planning for a product interface aligned with the identity board's light/dark examples, then authorized continued development and a pull request. [PJ-41](../implementation-plan.md#pj-41-interface-alignment) owns the delivery sequence, scope and acceptance criteria. Its first increment implements the shared responsive shell, appearance selection and semantic product colors; the following increment moves company context and its available workflow links into the sidebar. Final visual qualification remains open before pilot acceptance. PJ-04 retains its original brand integration scope. The board remains illustrative for workflows, copy and imagery, while its visual direction now has an explicit product delivery task.
 
 ## PH-07 status
 

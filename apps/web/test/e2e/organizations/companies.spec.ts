@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { actionLink, mailedLink } from "../identity/mail.ts";
 import {
   choosePassword,
@@ -17,6 +17,19 @@ import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 test.use({ locale: "pt-BR", actionTimeout: 20_000, navigationTimeout: 30_000 });
 test.describe.configure({ mode: "serial", timeout: 120_000 });
 const afterNavigation = expect.configure({ timeout: 20_000 });
+
+async function openCompanySection(page: Page, name: string) {
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  if (
+    (await menu.isVisible()) &&
+    (await menu.getAttribute("aria-expanded")) === "false"
+  )
+    await menu.click();
+  await page
+    .getByRole("navigation", { name: "Navegação principal" })
+    .getByRole("link", { name, exact: true })
+    .click();
+}
 
 let stack: IdentityStack;
 
@@ -101,7 +114,7 @@ test("creates a company, verifies in two steps and manages branches, settings, m
   await expect(page.getByText("Arquivada", { exact: false })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
-  await page.getByRole("link", { name: "Configurações da empresa" }).click();
+  await openCompanySection(page, "Configurações da empresa");
   await page.getByRole("button", { name: "Editar configurações" }).click();
   await page.getByLabel("Nome da empresa").fill("Lanchonete Central Renovada");
   await page.getByLabel("Fuso horário").selectOption("America/Manaus");
@@ -121,7 +134,7 @@ test("creates a company, verifies in two steps and manages branches, settings, m
     page.getByText("English (United States)", { exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Histórico de alterações" }).click();
+  await openCompanySection(page, "Histórico de alterações");
   await expect(
     page.getByText("Configurações da empresa alteradas", { exact: true }),
   ).toBeVisible();
@@ -195,7 +208,7 @@ test("creates a company, verifies in two steps and manages branches, settings, m
       ).status(),
     ).toBe(403);
 
-    await page.getByRole("link", { name: "Membros", exact: true }).click();
+    await openCompanySection(page, "Membros");
     const memberRow = page
       .locator(".branch-list > li")
       .filter({ hasText: stack.member.email });
@@ -335,7 +348,7 @@ test("creates a company, verifies in two steps and manages branches, settings, m
       page.getByText(/Seu acesso: Administrador · Responsável pela empresa/),
     ).toBeVisible();
     await expect(page.getByRole("status")).toHaveCount(0);
-    await page.getByRole("link", { name: "Histórico de alterações" }).click();
+    await openCompanySection(page, "Histórico de alterações");
     await expect(
       page.getByText("Responsabilidade transferida", { exact: true }),
     ).toBeVisible();

@@ -51,14 +51,36 @@
 }
 .company-navigation {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
-  margin: 1.5rem 0;
-  padding-bottom: 0.75rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 1rem 0 0;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
-.company-navigation [aria-current="page"] {
-  font-weight: 700;
+.company-navigation-context {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0 1rem;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.company-navigation-context span {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.company-navigation-context strong {
+  font-size: 0.9rem;
+}
+.product-navigation .company-navigation-switch {
+  color: var(--color-link);
+  font-size: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 .company-settings dt {
   font-weight: 600;
