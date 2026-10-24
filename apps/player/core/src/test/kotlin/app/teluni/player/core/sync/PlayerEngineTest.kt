@@ -368,6 +368,24 @@ class PlayerEngineTest {
         Files.walk(root).use { paths -> paths.filter(Files::isRegularFile).toList() }
 
     @Test
+    fun `retries a lost erasure confirmation from memory without restoring private state`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        server.status = "unlinked"
+        server.erasureFailures = 1
+        assertEquals(SyncOutcome.Cleared(confirmed = false), engine.sync())
+        assertNull(vault.value)
+        assertNull(engine.identity())
+        assertEquals(emptyList(), files())
+        assertTrue(engine.retryErasureConfirmation())
+        assertEquals(1, server.erasures)
+        assertTrue(engine.retryErasureConfirmation())
+        assertEquals(1, server.erasures)
+        assertEquals(emptyList(), files())
+    }
+
+    @Test
     fun `erases while a staging attempt runs and leaves nothing behind`() {
         val engine = paired()
         server.publish(publication("pub-a"))

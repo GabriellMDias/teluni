@@ -258,25 +258,52 @@
     "kind": "repository",
     "heading": "Current state",
     "anchor": "current-state",
-    "text": "Current state\nOnly `core`, the first delivery increment, exists. It is a Kotlin library for the plain JVM that holds every rule the screen follows. The Android `app` module (activity, rendering with Media3, the Keystore credential vault, device-owner integration) is the next increment and is not implemented. No APK is built yet, and no device has run any of this.\nPackage in `core/src/main/kotlin/app/teluni/player/core/`\nResponsibility\n`schedule/`\nThe schedule evaluator ported from the API, rule validation, and resolution of local times against the zone offsets the server sends\n`protocol/`\nStrict parsing and checks of protocol 1 manifests and of protocol 2 manifests with layouts and catalog snapshots (another protocol is refused as incompatible), and ES256 statement verification with Nimbus JOSE + JWT\n`catalog/`\nEffective prices of protocol 2 catalogs, ported from the API\n`time/`\nTrusted time: a monotonic anchor from each sync, a persisted lower bound, and the system clock after a reboot only when it is plausible\n`store/`\nApp-private storage: atomically replaced records, exact manifests and write-once media named by SHA-256\n`sync/`\nThe device API over OkHttp, and the engine for enrollment, synchronization, staging with resumable verified downloads, activation, recovery and erasure\n`playback/`\nWhat plays now and until when, or which neutral output and why; for a layout, what each area shows, with the coordinated page cycle, catalog view pages and prices for the screen's branch\n"
+    "text": "Current state\n`core` holds the portable rules. The Android `app` adds a TV activity, code-based enrollment, an AES-256-GCM Android Keystore vault, a foreground synchronization service, Media3 image/video rendering, protocol 2 areas and catalog views, rotation, neutral output and device-owner HOME/lock-task integration. Debug and unsigned release APKs can be built. Local emulator verification is recorded in the [implementation status](../../docs/project/player-design.md#implementation-status); it does not qualify physical hardware or the release/update channel.\nPackage in `core/src/main/kotlin/app/teluni/player/core/`\nResponsibility\n`schedule/`\nThe schedule evaluator ported from the API, rule validation, and resolution of local times against the zone offsets the server sends\n`protocol/`\nStrict parsing and checks of protocol 1 manifests and of protocol 2 manifests with layouts and catalog snapshots (another protocol is refused as incompatible), and ES256 statement verification with Nimbus JOSE + JWT\n`catalog/`\nEffective prices of protocol 2 catalogs, ported from the API\n`time/`\nTrusted time: a monotonic anchor from each sync, a persisted lower bound, and the system clock after a reboot only when it is plausible\n`store/`\nApp-private storage: atomically replaced records, exact manifests and write-once media named by SHA-256\n`sync/`\nThe device API over OkHttp, and the engine for enrollment, synchronization, staging with resumable verified downloads, activation, recovery and erasure\n`playback/`\nWhat plays now and until when, or which neutral output and why; for a layout, what each area shows, with the coordinated page cycle, catalog view pages and prices for the screen's branch\n"
   },
   {
     "id": "repository/apps/player/README",
     "title": "Teluni Android TV Player",
     "group": "Workspace guides",
     "kind": "repository",
-    "heading": "Commands",
-    "anchor": "commands",
-    "text": "Commands\nRun from `apps/player` with JDK 17 or later:\n./gradlew check\n\n`check` runs the `core` tests. They read the repository's shared fixtures where the API owns them:\n[schedule fixtures](../api/test/programming/schedule-fixtures.json);\n[protocol conformance file](../api/test/publications/conformance.json), which `pnpm -C apps/api conformance:write` writes from the API's own code;\n[OpenAPI document](../../docs/generated/api/openapi.json), against which the player's wire models are checked.\nThe wrapper pins Gradle 8.14.3 with its SHA-256. Dependencies are pinned in [`gradle/libs.versions.toml`](gradle/libs.versions.toml), locked per configuration in `gradle.lockfile`, and verified against the SHA-256 checksums in [`gradle/verification-metadata.xml`](gradle/verification-metadata.xml). After changing a dependency, refresh both and review the diff:\n./gradlew :core:dependencies --write-locks\n./gradlew --no-configuration-cache --write-verification-metadata sha256 check\n\nWrite the verification metadata without the configuration cache and preferably from an empty Gradle cache (`GRADLE_USER_HOME` pointing to a new directory). A cached configuration skips resolutions, and the metadata then misses artifacts that a clean build, such as CI's, needs.\n"
+    "heading": "Build and checks",
+    "anchor": "build-and-checks",
+    "text": "Build and checks\nUse JDK 17 and the Android SDK (`ANDROID_HOME`): platform `platforms;android-37.0` and build tools `build-tools;36.0.0`. The runtime floor remains Android 8/API 26; supported pilot hardware has its separate [envelope](../../docs/project/player-design.md#supported-hardware-envelope). From this directory:\n./gradlew --no-daemon check :app:assembleDebug :app:assembleRelease\n\n`check` runs core tests, Android adapter/UI tests with Robolectric (API 35 on JDK 17) and Android lint. Debug output is `app/build/outputs/apk/debug/app-debug.apk`; the unsigned release is `app/build/outputs/apk/release/app-release-unsigned.apk`. Release signing is not configured: PH-27 remains open. `pnpm validate` checks the rest of the repository, separately from this Gradle gate.\nThe core tests consume the API-owned [schedule fixtures](../api/test/programming/schedule-fixtures.json), [protocol conformance file](../api/test/publications/conformance.json) and [OpenAPI document](../../docs/generated/api/openapi.json). Robolectric's Android platform is also a pinned, locked and checksum-verified Gradle dependency; its runtime is offline after resolution.\nThe wrapper pins Gradle 9.6.0 and its SHA-256, with Android Gradle Plugin 9.4.1 and Media3 1.11.1 in the [version catalog](gradle/libs.versions.toml). Refresh dependency locks and verification metadata together, review the complete diff, then run again without write flags:\n./gradlew --no-configuration-cache --write-locks --write-verification-metadata sha256 :core:dependencies :app:dependencies check :app:assembleDebug :app:assembleRelease\n./gradlew --no-daemon check :app:assembleDebug :app:assembleRelease\n\nUse a fresh Gradle cache when auditing metadata completeness. Do not disable dependency verification to resolve a build failure.\n"
   },
   {
     "id": "repository/apps/player/README",
     "title": "Teluni Android TV Player",
     "group": "Workspace guides",
     "kind": "repository",
-    "heading": "Environment notes",
-    "anchor": "environment-notes",
-    "text": "Environment notes\n**Cloud development environment.** Its network policy refuses `downloads.gradle.org` and `dl.google.com` ([PH-26](../../docs/project/human-actions.md#ph-26)):\nThe wrapper cannot download Gradle there. Run the preinstalled `/opt/gradle/bin/gradle` (also 8.14.3) from this directory instead of `./gradlew`.\nThe Android Gradle plugin, AndroidX and Media3 cannot be resolved there, which blocks the `app` module.\n**Android API floor.** Code in `core` must run on Android 8.0 (API 26). From the JDK it uses only `java.time`, `java.nio.file`, `java.security` and `java.util.concurrent`, which that floor provides. The build compiles against the Java 17 API and emits Java 17 bytecode.\n"
+    "heading": "Local emulator",
+    "anchor": "local-emulator",
+    "text": "Local emulator\nAndroid Studio is optional. Install JDK 17 and Google's command-line tools, then install these SDK packages (the current Android CLI uses `/` separators; legacy `sdkmanager` uses `;`):\nandroid sdk install platforms/android-37.0 build-tools/36.0.0 platform-tools emulator system-images/android-36/android-tv/x86_64\n\nCreate an AVD named `teluni-tv-api36` with the Android TV x86_64 image and the `tv_1080p` device profile. With the legacy AVD manager:\navdmanager create avd -n teluni-tv-api36 -k 'system-images;android-36;android-tv;x86_64' -d tv_1080p\n\nStart the [local API and panel](../../docs/setup.md), then run from the repository root:\npnpm player:dev\n\nThe command builds the debug APK, opens the emulator if needed, waits up to four minutes for startup, installs the APK and opens the player. It never provisions device ownership, resets an emulator or erases player data. `ANDROID_HOME`, `JAVA_HOME`, `GRADLE_USER_HOME`, `ANDROID_SERIAL` and `TELUNI_PLAYER_AVD` override its local defaults. Without overrides it looks in `~/.local/share/teluni-android-sdk`, `~/.local/share/teluni-toolchains/jdk17` and `~/.cache/teluni-player-gradle`, using `emulator-5554` and `teluni-tv-api36`. The emulator needs KVM access and a graphical desktop; software graphics are selected for reproducible local testing.\nOn the setup screen, choose **Connect** with the remote/keyboard. The debug default `http://10.0.2.2:3000` reaches the host API through the Android Emulator's host alias. In the host browser, open the panel at `http://127.0.0.1:5173`, choose a company and branch, then **Screens → Pair screen** and enter the displayed code. Assign a published program through the screen's programming page. The player downloads, verifies and activates it automatically. Use arrows and Enter as the TV remote; OK/Enter during playback displays a status card for 30 seconds.\nChanging media, playlists or schedules in the panel requires publication before screens receive them. A configured, paired player restores its cached generation and credential after a process restart; offline output remains bounded by the verified authorization and trusted clock. Basic installation stays outside the physical unattended-operation qualification.\nTo reset only a disposable test player's data (this erases its identity and cached content):\nadb -s emulator-5554 shell pm clear app.teluni.player\n\nUnlink the previous screen in the panel before pairing a new identity. Do not reset a real pilot device as a testing shortcut.\n"
+  },
+  {
+    "id": "repository/apps/player/README",
+    "title": "Teluni Android TV Player",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Configuration and security",
+    "anchor": "configuration-and-security",
+    "text": "Configuration and security\nThe app owns one operator-entered, non-secret API endpoint, validated by `PlayerEndpoint` at setup and startup. It is stored atomically in app-private `endpoint.txt`, is client-visible and contains no authentication material. No default is supplied in release builds. The address must be HTTPS, without user information, query or fragment; a paired installation keeps its endpoint until its data is deliberately erased. No API server secrets or human tokens are embedded in the APK.\nOnly debug builds allow HTTP for `10.0.2.2`, `127.0.0.1` and `localhost`, enforced both by the parser and a debug-only network security resource. Release builds require HTTPS and system certificate validation. There is no global cleartext or certificate-validation bypass.\nDevice credentials are generated by core and encrypted with a non-exportable Android Keystore AES key. Backup and device transfer are disabled. An unreadable credential causes core to discard the old identity and content. Pairing codes are displayed only during enrollment; telemetry records bounded error codes, without credentials, statements, manifests, media, pairing codes or raw exception messages. Crash diagnostics contain only player stack frame names/line numbers in the private `diagnostics/last-crash.txt` file.\n"
+  },
+  {
+    "id": "repository/apps/player/README",
+    "title": "Teluni Android TV Player",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Managed installation",
+    "anchor": "managed-installation",
+    "text": "Managed installation\nUse a factory-reset, explicitly designated pilot/test device with no accounts. Install the appropriately signed APK through `adb`, then provision the player as device owner:\nadb shell dpm set-device-owner app.teluni.player/.PlayerAdminReceiver\nadb shell am start -n app.teluni.player/.PlayerActivity\n\nThe app checks actual device ownership before allowlisting itself for lock task and registering its persistent HOME activity. It never tries to grant itself ownership. The boot receiver launches only that owner profile; normal sideloads remain ordinary apps. Do not factory-reset a device merely to try this command. The release key (PH-27), update distribution, credential rotation and physical boot/crash/power-loss qualification (PH-08) remain pending.\n"
+  },
+  {
+    "id": "repository/apps/player/README",
+    "title": "Teluni Android TV Player",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Environment evidence",
+    "anchor": "environment-evidence",
+    "text": "Environment evidence\nThe old cloud environment refused Gradle and Google Maven downloads on 2026-10-20 (PH-26). On the owner's local Linux host on 2026-10-24, both endpoints returned HTTP 200 and the wrapper, Android dependencies, SDK and Android TV image downloaded successfully. This local evidence does not change the historical cloud policy or qualify a physical device.\n"
   },
   {
     "id": "repository/apps/web/AGENTS",
@@ -529,59 +556,5 @@
     "heading": "Alternatives Considered",
     "anchor": "alternatives-considered",
     "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
-    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "npm Workspaces",
-    "anchor": "npm-workspaces",
-    "text": "npm Workspaces\nnpm provides native workspace support and is distributed with Node.js, which reduces the amount of additional tooling required to begin development.\nIt would be capable of supporting a basic Orion workspace.\nIt was not selected because pnpm provides a stronger combination of workspace-oriented capabilities, explicit local package relationships, dependency isolation, dependency-version coordination, and installation efficiency for the type of monorepo Orion intends to become.\nUsing npm primarily because it is bundled with Node.js would reduce one installation concern but would not provide enough architectural benefit to outweigh pnpm's monorepo-oriented capabilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
-    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Yarn Workspaces",
-    "anchor": "yarn-workspaces",
-    "text": "Yarn Workspaces\nYarn provides mature workspace functionality and additional dependency-management capabilities suitable for monorepos.\nIt was not selected because pnpm provides the capabilities Orion currently requires with a dependency model and workspace workflow that align well with the project's preference for explicit package relationships and relatively conventional Node.js package semantics.\nSelecting Yarn would not provide a material architectural advantage for Orion sufficient to justify preferring it over pnpm.\n"
-  },
-  {
-    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
-    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Dedicated Monorepo Task Runner from the Beginning",
-    "anchor": "dedicated-monorepo-task-runner-from-the-beginning",
-    "text": "Dedicated Monorepo Task Runner from the Beginning\nTools such as Turborepo and Nx can provide dependency-aware task execution, caching, affected-project analysis, and CI optimizations beyond basic workspace execution.\nThese capabilities may become valuable as Orion grows.\nThey were not selected for the initial repository foundation because Orion does not yet have enough projects or expensive tasks to demonstrate a need for advanced task orchestration.\nIntroducing one now would add another configuration and execution layer before its benefits could be measured against actual repository behavior.\nThe decision is therefore deferred rather than rejected.\nA dedicated task runner should be reconsidered when repository scale or CI performance provides evidence that pnpm's native task execution is no longer sufficient.\n"
-  },
-  {
-    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
-    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
-    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion uses one package manager for TypeScript and Node.js applications, packages, and engineering tooling.\nApplications and shared packages participate in a common workspace and dependency graph.\nA shared lockfile provides deterministic dependency resolution across the monorepo.\nFirst-party package relationships can be expressed explicitly with the `workspace:` protocol.\nPackages are encouraged to declare the dependencies they actually use.\nDependency versions can be coordinated centrally with catalogs when doing so provides genuine value.\nLocal development and CI can use the same package-management behavior.\npnpm provides native mechanisms for selecting and executing commands across workspace packages.\nOrion avoids introducing a separate task-orchestration abstraction before it solves a demonstrated problem.\nThe repository retains a straightforward migration path to Turborepo, Nx, or another task runner if future scale justifies one.\nPackage management and advanced task orchestration remain separate architectural concerns.\nStable repository-level commands can hide future changes to the underlying orchestration mechanism from contributors and AI agents where practical.\n"
-  },
-  {
-    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
-    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nContributors and execution environments must have the repository-selected pnpm version available rather than relying only on npm bundled with Node.js.\npnpm's dependency layout and workspace semantics require contributors to understand some pnpm-specific behavior.\nSome packages or tools that implicitly assume traditional npm dependency layouts may require compatibility configuration.\nA single workspace lockfile can produce larger lockfile changes as the repository grows.\nCatalogs, workspace protocols, filtering, and other pnpm-specific capabilities increase coupling to pnpm if used extensively.\nWithout a dedicated task runner, Orion initially does not receive advanced computation caching, automatic affected-project analysis, remote caching, or distributed task execution.\nRepository-wide validation may perform more work than necessary as the monorepo grows until task orchestration is reconsidered.\nTask dependencies must initially remain simple enough to be managed without a dedicated task graph.\n"
   }
 ]

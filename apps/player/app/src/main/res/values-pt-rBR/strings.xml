@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Teluni Player</string>
+    <string name="service_channel">Sincronização da tela</string>
+    <string name="service_status">O Teluni Player está em execução</string>
+    <string name="pairing_description">Pareamento do player</string>
+    <string name="pairing_instructions">Teluni\n\n%1$s\n\nNo painel, acesse Telas → Parear tela.\nO código é renovado automaticamente.</string>
+    <string name="connection_status">Teluni\n\n%1$s</string>
+    <string name="endpoint_instructions">Informe o endereço da API para conectar esta tela.</string>
+    <string name="endpoint_description">Endereço da API</string>
+    <string name="connect">Conectar</string>
+    <string name="connecting">Conectando…</string>
+    <string name="invalid_endpoint">Use um endereço HTTPS válido. O APK de desenvolvimento também aceita a API local.</string>
+    <string name="configuration_failed">Não foi possível salvar a configuração. Reinicie o aplicativo.</string>
+    <string name="status_card">Teluni · %1$s\n%2$s</string>
+    <string name="awaiting_publication">Aguardando programação autorizada</string>
+    <string name="clock_untrusted">Aguardando uma referência confiável de horário</string>
+    <string name="authorization_expired">Aguardando renovação da autorização</string>
+    <string name="playing_publication">Reproduzindo programação</string>
+    <string name="connected">Conectado</string>
+    <string name="awaiting_pairing">Aguardando pareamento</string>
+    <string name="offline">Sem conexão — nova tentativa automática</string>
+    <string name="unauthorized">Credencial não reconhecida</string>
+    <string name="incompatible">Atualização do player necessária</string>
+    <string name="storage_error">Não foi possível abrir o armazenamento</string>
+    <string name="staging_failed">Falha ao preparar conteúdo — nova tentativa automática</string>
+    <string name="unlinked">Tela desvinculada</string>
+    <string name="player_error">Falha no player — nova tentativa automática</string>
+    <string name="render_failed">Não foi possível exibir esta programação</string>
+    <string name="unavailable">Indisponível</string>
+    <string name="value_yes">Sim</string>
+    <string name="value_no">Não</string>
+    <string-array name="weekdays"><item>Segunda-feira</item><item>Terça-feira</item><item>Quarta-feira</item><item>Quinta-feira</item><item>Sexta-feira</item><item>Sábado</item><item>Domingo</item></string-array>
+</resources>

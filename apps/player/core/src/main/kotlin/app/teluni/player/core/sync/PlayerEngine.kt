@@ -137,6 +137,9 @@ public class PlayerEngine(
     @Volatile
     private var failures = 0
 
+    /** Kept only in memory after erasure, so a lost confirmation can be retried during this process. */
+    private var pendingErasureCredential: String? = null
+
     /** Set while an erasure waits for staging to stop. */
     @Volatile
     private var erasing = false
@@ -739,16 +742,24 @@ public class PlayerEngine(
                         progress = null
                     }
                     if (credential == null) return false
-                    return try {
-                        api.confirmErasure(credential)
-                        true
-                    } catch (_: IOException) {
-                        false
-                    }
+                    pendingErasureCredential = credential
+                    return retryErasureConfirmation()
                 }
             }
         } finally {
             erasing = false
+        }
+    }
+
+    /** Retries the latest erased identity's confirmation; never restores its credential to disk. */
+    public fun retryErasureConfirmation(): Boolean = synchronized(syncing) {
+        val credential = pendingErasureCredential ?: return true
+        try {
+            api.confirmErasure(credential)
+            pendingErasureCredential = null
+            true
+        } catch (_: IOException) {
+            false
         }
     }
 

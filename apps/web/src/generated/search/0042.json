@@ -4,6 +4,33 @@
     "title": "Teluni Brand Identity",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Canonical sources and asset kit",
+    "anchor": "canonical-sources-and-asset-kit",
+    "text": "Canonical sources and asset kit\nAsset\nOwner / use\n[Runtime brand mark](../../../apps/web/src/assets/brand-mark.svg)\nCanonical Connected Tiles symbol; shell, portal and SVG favicon consume this source\n[Runtime touch icon](../../../apps/web/src/assets/brand-touch-icon.png)\nDerived 180×180 PNG generated from the runtime SVG on `#F8FAFC`\n[Light logo](assets/connected-tiles/logo-light.svg) / [dark logo](assets/connected-tiles/logo-dark.svg)\nOutlined institutional lockups; live app text remains accessible\n[Wordmark](assets/connected-tiles/wordmark.svg)\nOutlined lettering for standalone brand use\n[Monochrome symbol](assets/connected-tiles/symbol-monochrome.svg)\nSingle-ink applications with preserved tile gaps\n[Identity board](assets/connected-tiles/identity-board.png)\nApproved visual reference; illustrative panels do not implement product workflows\n[Light application](assets/connected-tiles/application-light.png) / [dark application](assets/connected-tiles/application-dark.png)\nFixed visual brand proofs\n[Small-size proof](assets/connected-tiles/small-size-proof.png)\nActual-size symbol review\n[Desktop app](assets/connected-tiles/web-home-desktop.png) / [documentation](assets/connected-tiles/web-docs-desktop.png)\nHistorical PJ-04 local integration screenshots (2026-10-17); current interface evolution is tracked by PJ-41\n[Mobile app](assets/connected-tiles/web-home-mobile.png) / [documentation](assets/connected-tiles/web-docs-mobile.png)\nHistorical PJ-04 mobile integration screenshots (2026-10-17); current interface evolution is tracked by PJ-41\n[Light/dark surfaces](assets/connected-tiles/symbol-surfaces.png)\nRuntime SVG inspected against both brand surfaces\n[Asset inventory](assets.json)\nSelected kit's SVG/PNG exports and runtime source locations\nThe kit's standalone symbol is an export of the runtime mark; do not evolve it independently. Logo/application SVGs are exact-color vector artwork with outlined wordmark lettering. PNGs are derived review exports. The generated reference board can contain approximate typography/color annotations; the runtime SVG, outlined exports and palette above define the current identity.\n"
+  },
+  {
+    "id": "repository/docs/project/branding/README",
+    "title": "Teluni Brand Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Web integration and regeneration",
+    "anchor": "web-integration-and-regeneration",
+    "text": "Web integration and regeneration\nThe shell, documentation rail, browser favicon and the Keycloak sign-in theme (which mounts it from `apps/web/src/assets`) use the canonical SVG. The web stylesheet, and the sign-in theme through the same file, serve Plus Jakarta Sans from [the local font file](../../../apps/web/public/fonts/plus-jakarta-sans.ttf). The public font directory includes its [OFL license](../../../apps/web/public/fonts/OFL.txt) and [upstream source metadata](../../../apps/web/public/fonts/sources.json), which are copied into the static build along with the font. Third-party font software retains its own license.\nAfter changing the approved mark, run `pnpm -C apps/web identity:write` to regenerate the runtime touch PNG through the existing Playwright exporter. Commit SVG and PNG together. The export background is `#F8FAFC`; do not edit the PNG independently or replace it with a board image. Refresh kit symbol/touch copies from these canonical outputs, then regenerate size-specific proofs if needed.\nFor a kit raster proof with an installed external SVG renderer: `rsvg-convert assets/connected-tiles/symbol.svg -w 32 -h 32 -o assets/connected-tiles/favicon-32.png`. This is an external rendering utility, not a new pnpm command. The outlined wordmark needs no font loading; live specimen text in application SVGs can use fallback rendering, while supplied PNGs remain fixed proofs.\nReview home, documentation, mobile navigation, favicon and touch icon at actual sizes; verify local font loading, keyboard/accessibility behavior and light/dark brand surfaces. Run focused web checks and full `pnpm validate`. UI/player mockups remain illustrative; no product workflow or Android application is introduced by the identity kit.\n"
+  },
+  {
+    "id": "repository/docs/project/branding/README",
+    "title": "Teluni Brand Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Planned product interface alignment",
+    "anchor": "planned-product-interface-alignment",
+    "text": "Planned product interface alignment\nOn 2026-10-23 the owner requested explicit planning for a product interface aligned with the identity board's light/dark examples, then authorized continued development and a pull request. [PJ-41](../implementation-plan.md#pj-41-interface-alignment) owns the delivery sequence, scope and acceptance criteria. Its first increment implements the shared responsive shell, appearance selection and semantic product colors; the following increment moves company context and its available workflow links into the sidebar. Final visual qualification remains open before pilot acceptance. PJ-04 retains its original brand integration scope. The board remains illustrative for workflows, copy and imagery, while its visual direction now has an explicit product delivery task.\n"
+  },
+  {
+    "id": "repository/docs/project/branding/README",
+    "title": "Teluni Brand Identity",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "PH-07 status",
     "anchor": "ph-07-status",
     "text": "PH-07 status\nVisual direction selection is complete and Connected Tiles is integrated into the web app. PJ-04 is **completed**: desktop/mobile inspection verified image/font loading and responsive layout; full local `pnpm validate` passed, including 16 E2E tests. [Review evidence](review.json) records the runtime checks. PH-07 remains **in progress** solely for dated non-secret domain registration/control evidence when ownership is claimed and the outcome/disposition of trademark research before public brand commitments. Selection and integration do not certify registration or legal clearance. The defensive domain remains an option unless the owner authorizes registration.\n"
@@ -529,32 +556,5 @@
     "heading": "Decisions",
     "anchor": "decisions",
     "text": "Decisions\nThe agent took these decisions on 2026-10-22 under the owner's delegation:\n**Hostnames.** `app.teluni.app` for the panel and the API under `/api`, `auth.teluni.app` for the `teluni` realm only, and `teluni.app` redirecting to the panel.\n**End-to-end TLS.** TLS ends on the owner's host. The host is reached directly when the line allows it, or through a TCP relay on a free-tier VM over WireGuard; no TLS-terminating tunnel or CDN is used (ADR-0033).\n**Proxy.** Caddy 2 with automatic Let's Encrypt certificates, as the only published service. The API trusts forwarded client addresses only from it, and the relay passes them with PROXY protocol v2.\n**Composition.** Four Compose services (proxy, API, Keycloak, PostgreSQL), digest-pinned images, secrets as files, one-off privileged migrations and internal networks.\n**Email.** Resend's free plan over SMTP with implicit TLS from `no-reply@notify.teluni.app`, staged DMARC, and Brevo as fallback.\n**Google sign-in.** One web client per environment with the Keycloak broker redirect URI and the `openid`, `email` and `profile` scopes.\n**Backups.** restic snapshots every 6 hours to Backblaze B2, holding database dumps then media objects, kept for at most about 35 days, with secrets backed up separately offline (ADR-0033).\n**Targets.** RPO 6 hours; RTO 4 hours with the host intact and 72 hours if it is lost; a 99% internal monthly availability objective; and the maintenance window above.\n**Administration.** Key-only SSH, WireGuard administration, a minimal firewall, 14-day logs and four email alerts.\n"
-  },
-  {
-    "id": "repository/docs/project/deployment-design",
-    "title": "Teluni Pilot Deployment and Recovery Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Alternatives considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives considered\n**Cloudflare Tunnel.** Free, and it removes CGNAT problems, but TLS ends at Cloudflare. The CDN terms restrict serving video and large files outside paid products, and the reported 100 MB upload cap rejects valid videos. It would also put every session cookie in a third party's path.\n**A paid VPS for everything.** Removes residential risks, but contradicts the current budget. It stays the migration target in [operations](operations.md#future-host-or-storage-migration) when revenue or measured risk justifies it.\n**Running the whole stack on the free-tier VM.** The free VM is subject to the provider's idle reclamation and account terms. Hosting customer data there makes those terms a single point of failure. As a relay it holds nothing and can be replaced in minutes.\n**nginx with certbot, or Traefik.** Both work. Caddy needs the least configuration for automatic certificates and has no separate renewal job to monitor.\n**PostgreSQL continuous archiving (WAL) for a smaller RPO.** Gives minutes of data loss, but needs a second backup mechanism and its own restore procedure. Six hours fits the pilot, and archiving can be added when a customer needs it.\n**Brevo as the first email choice.** Higher daily cap, but its free plan adds branding to every message, including invitations and recovery mail.\n**Backups to a second disk or another directory.** Does not survive the loss of the host, which ADR-0021 requires.\n"
-  },
-  {
-    "id": "repository/docs/project/device-enrollment-design",
-    "title": "Teluni Device Enrollment and Lifecycle Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Teluni Device Enrollment and Lifecycle Design",
-    "anchor": "teluni-device-enrollment-and-lifecycle-design",
-    "text": "Teluni Device Enrollment and Lifecycle Design\n[Release policies](release-policies.md#offline-authorization-and-clock-trust) · [Security requirements](security-and-i18n.md#pairing-and-device-lifecycle) · [Identity and access policies](identity-and-access.md#permission-model-and-default-matrix) · [Tenant data design](tenant-data-design.md) · [ADR-0027](../adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md) · [PH-22](human-actions.md#ph-22)\n"
-  },
-  {
-    "id": "repository/docs/project/device-enrollment-design",
-    "title": "Teluni Device Enrollment and Lifecycle Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Status and scope",
-    "anchor": "status-and-scope",
-    "text": "Status and scope\n**Approved detailed design for the server side of D-03, 2026-10-19.** The owner approved all nine [decisions for review](#decisions-for-review) as proposed under [PH-22](human-actions.md#ph-22), including ADR-0027, and asked for implementation in [PJ-08](implementation-plan.md#current-work). Approval authorizes implementation in local and CI environments with simulated players; [implementation status](#implementation-status) records what exists.\nIn scope: the device identity and its company/branch assignment, temporary-code enrollment, the device credential and how the API authenticates it, reported capabilities and the configured rotation (FR-03), the server's offline authorization deadline (AT-15), renaming, moving between branches, unlinking, erasure confirmation and reassignment (FR-02, P24), permissions, abuse limits, audit, data, contracts, panel workflow and verification.\nOut of scope, with their owners: the Android application and its secure local storage, clock estimation and enforcement of the deadline on the device (D-07, PJ-12); signed authorization envelopes, manifests and synchronization (D-04, PJ-11); content assignment to devices and groups (PJ-10); trial, license and quota admission for enrollment (PJ-27); qualifying any hardware or orientation profile (PH-08). The design leaves explicit hooks for each and claims none of them.\n"
   }
 ]

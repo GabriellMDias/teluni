@@ -9,6 +9,7 @@
     "pnpm": "11.25.0"
   },
   "scripts": {
+    "player:dev": "node apps/player/scripts/dev.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,yaml,yml}\" \".*.mjs\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,yaml,yml}\" \".*.mjs\"",
     "db:generate": "pnpm -C apps/api db:generate",

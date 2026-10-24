@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Teluni Player</string>
+    <string name="service_channel">Screen synchronization</string>
+    <string name="service_status">Teluni Player is running</string>
+    <string name="brand_name" translatable="false">Teluni</string>
+    <string name="debug_endpoint" translatable="false">http://10.0.2.2:3000</string>
+    <string name="pairing_description">Player pairing</string>
+    <string name="pairing_instructions">Teluni\n\n%1$s\n\nIn the panel, open Screens → Pair screen.\nThe code renews automatically.</string>
+    <string name="connection_status">Teluni\n\n%1$s</string>
+    <string name="endpoint_instructions">Enter the API address to connect this screen.</string>
+    <string name="endpoint_hint" translatable="false">https://api.example.com</string>
+    <string name="endpoint_description">API address</string>
+    <string name="connect">Connect</string>
+    <string name="connecting">Connecting…</string>
+    <string name="invalid_endpoint">Enter a valid HTTPS address. The development APK also accepts the local API.</string>
+    <string name="configuration_failed">Could not save the configuration. Restart the app.</string>
+    <string name="status_card">Teluni · %1$s\n%2$s</string>
+    <string name="awaiting_publication">Waiting for authorized programming</string>
+    <string name="clock_untrusted">Waiting for a trusted time reference</string>
+    <string name="authorization_expired">Waiting for renewed authorization</string>
+    <string name="playing_publication">Playing programming</string>
+    <string name="connected">Connected</string>
+    <string name="awaiting_pairing">Waiting for pairing</string>
+    <string name="offline">Offline — retrying automatically</string>
+    <string name="unauthorized">Credential not recognized</string>
+    <string name="incompatible">Player update required</string>
+    <string name="storage_error">Could not open storage</string>
+    <string name="staging_failed">Could not prepare content — retrying automatically</string>
+    <string name="unlinked">Screen unlinked</string>
+    <string name="player_error">Player failure — retrying automatically</string>
+    <string name="render_failed">Could not display this programming</string>
+    <string name="unavailable">Unavailable</string>
+    <string name="value_yes">Yes</string>
+    <string name="value_no">No</string>
+    <string-array name="weekdays"><item>Monday</item><item>Tuesday</item><item>Wednesday</item><item>Thursday</item><item>Friday</item><item>Saturday</item><item>Sunday</item></string-array>
+</resources>

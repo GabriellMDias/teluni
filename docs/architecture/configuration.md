@@ -16,6 +16,7 @@ Current sources are:
 | --- | --- |
 | API | [`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty. |
 | Web | [`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md). |
+| Player | [`PlayerEndpoint`](../../apps/player/app/src/main/kotlin/app/teluni/player/PlatformAdapters.kt) validates the operator-entered API address at setup/startup. Client-visible, non-secret, app-private and atomically stored; no release default. See [player configuration](../../apps/player/README.md#configuration-and-security) for HTTPS and debug loopback constraints. |
 
 The API metadata records type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.
 

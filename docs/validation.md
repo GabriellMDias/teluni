@@ -9,7 +9,7 @@ pnpm install --frozen-lockfile
 pnpm validate
 ```
 
-`pnpm validate` runs the independently available checks below in order and stops at the first failure. It does not build the Android TV player in `apps/player`, a Gradle build checked with `./gradlew check` (JDK 17 or later) and by the **Player** CI job; see its [README](../apps/player/README.md). It also does not rehearse the pilot deployment: `infra/pilot/rehearsal.sh` (Docker with Compose, and free loopback ports 80 and 443) does, and the **Deployment rehearsal** CI job runs it; see the [pilot deployment README](../infra/pilot/README.md). It is non-interactive and does not fix tracked files. Run a narrower script to diagnose a particular failure.
+`pnpm validate` runs the independently available checks below in order and stops at the first failure. It does not build the Android TV player in `apps/player`, a Gradle build checked with `./gradlew check :app:assembleDebug :app:assembleRelease` (JDK 17 and the Android SDK) and by the **Player** CI job; see its [README](../apps/player/README.md). It also does not rehearse the pilot deployment: `infra/pilot/rehearsal.sh` (Docker with Compose, and free loopback ports 80 and 443) does, and the **Deployment rehearsal** CI job runs it; see the [pilot deployment README](../infra/pilot/README.md). It is non-interactive and does not fix tracked files. Run a narrower script to diagnose a particular failure.
 
 | Command | Current check |
 | --- | --- |

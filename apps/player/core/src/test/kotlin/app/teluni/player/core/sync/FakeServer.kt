@@ -66,6 +66,7 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
     val rateLimitedMedia = AtomicInteger(0)
     var keyFetches = 0
     var erasures = 0
+    var erasureFailures = 0
     private var credentialHash: String? = null
     private var paired = false
 
@@ -91,6 +92,10 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
 
     override fun confirmErasure(credential: String) {
         authorize(credential)
+        if (erasureFailures > 0) {
+            erasureFailures--
+            throw java.io.IOException("Synthetic connection interruption")
+        }
         erasures += 1
     }
 

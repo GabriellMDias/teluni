@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Breaking Change Checklist",
+    "anchor": "breaking-change-checklist",
+    "text": "Breaking Change Checklist\nBefore completing a compatibility-sensitive change, establish:\nConsumers, release evidence, independence, persistence/replay lifetime, and required direction/window.\nStructural, semantic, behavioral, operational, and security impact; whether atomic or additive evolution is possible.\nOrdered application, schema, configuration, infrastructure, credential, and message states, including new-writer/old-reader safety.\nRollback or forward-recovery expectations and any urgent security override.\nCanonical transition state, tests for supported combinations, safe usage evidence, and completion criteria.\nOwnership and removal conditions for every temporary compatibility path.\nDo not introduce `v2`, a package major, or a payload schema version merely to avoid this analysis. Compatibility exists to protect real consumers while keeping the foundation maintainable.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "React Components and Design Practices",
+    "anchor": "react-components-and-design-practices",
+    "text": "React Components and Design Practices\n[Web application](../../apps/web/README.md) · [Living Documentation](living-documentation.md) · [Component reference](../generated/components/web.md)\nThis policy owns component reuse, classification, documentation and styling in the existing React application. It extends the application-owned UI direction in [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) and the source/distribution separation in [ADR-0018](../adr/orion/0018-isolate-internal-documentation-from-product-distribution.md). No separate UI package, framework, component vendor or theme provider is selected.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Inspect before implementing",
+    "anchor": "inspect-before-implementing",
+    "text": "Inspect before implementing\nBefore implementing equivalent UI, contributors and AI agents must inspect the shared [component entry point](../../apps/web/src/components.tsx), its [metadata](../../apps/web/src/components.docs.json), applicable feature-owned `components.docs.json` files, and the generated reference or local `/docs/components` catalog. Use `rg --files apps/web/src` and targeted searches for the responsibility and existing controls, then read candidate implementation and tests. The catalog is curated; absence from it is not proof that equivalent private UI does not exist.\nCompare responsibility, native semantics, props, states, accessibility, styling hooks and ownership before choosing reuse. Reuse when these genuinely match. Extend an existing component compatibly when the responsibility remains the same. Similar appearance alone does not justify sharing; keep business validation, permissions, credential handling, API calls and workflow state in their feature.\nIf no suitable component exists, start with native HTML or a local feature component. Extract shared presentation only for demonstrated reuse or a concrete stable primitive, with a narrow contract and an owner. Do not create a wrapper for every element, a speculative component for every category, a large configurable component for unrelated workflows, or a second implementation of equivalent behavior. Explain meaningful reuse or extraction decisions in the change; static checks cannot prove that an agent inspected existing UI.\n"
+  },
+  {
     "id": "repository/docs/architecture/web-components",
     "title": "React Components and Design Practices",
     "group": "Architecture",
@@ -727,23 +754,5 @@
     "heading": "catalog_price_overrides",
     "anchor": "catalog_price_overrides",
     "text": "catalog_price_overrides\nThe price of one record's MONEY field for one branch of a company catalog, replacing the base price there.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Set, changed or removed one branch at a time with the record's observed version, which each change bumps; deleted with the record.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the catalog (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.\n—\n—\n`record_id`\n`uuid`\nno\n—\nINTERNAL\nRecord whose price is overridden.\n—\n—\n`field_id`\n`uuid`\nno\n—\nINTERNAL\nMONEY field whose price is overridden.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch where the override applies.\n—\n—\n`amount`\n`bigint`\nno\n—\nCONFIDENTIAL\nPrice in the field currency's minor units, 0 to 10^12.\n—\nminor units of the field's ISO 4217 currency\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-3",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalog_price_overrides_amount_range`\n`CHECK (((amount >= 0) AND (amount <= '1000000000000'::bigint)))`\nAmounts are 0 to 10^12 minor units.\n`catalog_price_overrides_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company.\n`catalog_price_overrides_company_id_catalog_id_fkey`\n`FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe catalog belongs to the same company.\n`catalog_price_overrides_company_id_field_id_fkey`\n`FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe field belongs to the same company; the module checks it belongs to the record's catalog.\n`catalog_price_overrides_company_id_record_id_fkey`\n`FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe record belongs to the same company; overrides are deleted with it.\n`catalog_price_overrides_pkey`\n`PRIMARY KEY (company_id, record_id, field_id, branch_id)`\nOne override per record, field and branch.\n`catalog_price_overrides_branch_idx`\n`CREATE INDEX catalog_price_overrides_branch_idx ON public.catalog_price_overrides USING btree (company_id, branch_id)`\nFinds a branch's overrides.\n`catalog_price_overrides_field_idx`\n`CREATE INDEX catalog_price_overrides_field_idx ON public.catalog_price_overrides USING btree (company_id, catalog_id, field_id)`\nFinds the overrides of a field for schema checks.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "catalog_promotions",
-    "anchor": "catalog_promotions",
-    "text": "catalog_promotions\nA promotional price of one record's MONEY field within a local wall-clock window, for the whole catalog scope or one branch.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Created and deleted, never edited; windows of the same price whose branch scopes intersect never overlap. Deleted with the record.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable promotion UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the catalog (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.\n—\n—\n`record_id`\n`uuid`\nno\n—\nINTERNAL\nRecord whose price is promoted.\n—\n—\n`field_id`\n`uuid`\nno\n—\nINTERNAL\nMONEY field whose price is promoted.\n—\n—\n`branch_id`\n`uuid`\nyes\n—\nINTERNAL\nBranch where the promotion applies.\nThe promotion applies to the whole catalog scope.\n—\n`amount`\n`bigint`\nno\n—\nCONFIDENTIAL\nPromotional price in the field currency's minor units, 0 to 10^12.\n—\nminor units of the field's ISO 4217 currency\n`starts_at`\n`timestamp(0) without time zone`\nno\n—\nINTERNAL\nLocal wall-clock start, inclusive, evaluated in each screen's time zone.\n—\nlocal date and time without zone, minute precision\n`ends_at`\n`timestamp(0) without time zone`\nno\n—\nINTERNAL\nLocal wall-clock end, exclusive.\n—\nlocal date and time without zone, minute precision\n`created_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that created the promotion.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n"
   }
 ]

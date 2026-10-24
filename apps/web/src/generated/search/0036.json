@@ -1,5 +1,122 @@
 [
   {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nStaging plus recovery versions consume additional storage and need safe garbage collection.\nCached content cannot be immediately recalled from unreachable devices; expiry/revocation rules need explicit review.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nAtomicity across PostgreSQL and media storage needs durable intent/reconciliation. The player needs proven local activation durability and a supported backend/player overlap. Player/release qualification under PJ-11/PJ-12/PJ-14 requires representative network/power-cut and stale/reordered message cases, not only unit tests.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0020: Adopt a Native Android TV Player",
+    "anchor": "adr-0020-adopt-a-native-android-tv-player",
+    "text": "ADR-0020: Adopt a Native Android TV Player\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe intended first player is Android TV, with continuous image/video playback, local persistence, temporary-code pairing and offline recovery. Orion supplies TypeScript API/web foundations but deliberately does not select a mobile/native stack. No Android application or hardware validation exists in Teluni.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt an independently built/distributed native Android TV player using Kotlin and Android Media3/ExoPlayer, with durable local media/configuration/synchronization state. Consume versioned backend HTTP contracts; do not import backend or web implementation. Keep player credentials in reviewed platform-protected storage.\nMinimum platform version, supported devices/codecs/orientations, persistence library, packaging, startup/unattended behavior and controlled update/rollback mechanisms remain pending validation. Architecture acceptance does not imply every Android TV or Smart TV is supported.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThis is the owner's preferred initial direction and matches the requested native device lifecycle and local-playback responsibilities. There are no completed benchmarks or device tests establishing that it meets the reliability envelope. A separate runtime is justified by installation and hardware lifecycle, while backend distribution is not.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Web player first:** remains a possible future platform, but browser lifecycle, storage and unattended playback would need separate validation. It is not the requested MVP target.\n**Other Smart TV or dedicated-computer players:** could expand coverage later; validating multiple platforms now would widen MVP support and test obligations without pilot evidence.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nGives the first player a clear device-specific owner and keeps interoperable contracts with Orion.\nAllows targeted validation of local storage, playback and restart behavior on pilot hardware.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nAdds Android build/signing/distribution, hardware testing and old-client compatibility responsibilities.\nMedia capability and unattended behavior must be verified per supported device; TypeScript tooling cannot establish them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nSupported-device/release qualification under PH-08/PJ-12/PJ-14 requires the pilot hardware matrix, chosen installation/update policy and playback/reboot/power-loss evidence. No application directory, Gradle project, dependency or signing credential is created in this documentation stage.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-propose-a-native-android-tv-player",
+    "title": "ADR-0020: Adopt a Native Android TV Player",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Product components and pending decisions](../project/architecture.md)\n[MVP acceptance](../project/mvp.md)\n[Additional runtime boundaries](../architecture/application-boundaries.md#additional-runtime-boundaries)\n"
+  },
+  {
     "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
     "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
     "group": "Decisions",
@@ -1447,41 +1564,5 @@
     "heading": "ADR Instructions",
     "anchor": "adr-instructions",
     "text": "ADR Instructions\nConsult the [decision index](README.md) and [authoring policy](authoring.md) before creating or changing an ADR.\nStart new proposals with the [template](template.md) and `proposed` status. Acceptance is distinct from implementation completion.\nPreserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.\nRetain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.\nUpdate current policy and reciprocal supersession references when an accepted architectural change requires them.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Authoring Architecture Decision Records",
-    "anchor": "authoring-architecture-decision-records",
-    "text": "Authoring Architecture Decision Records\nUse the [decision index](README.md) to search existing decisions and the [template](template.md) to draft a record. ADRs preserve decision history and rationale; current policy describes current architecture. Git, migrations, changelogs, design documents, and runbooks retain their separate responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "When a decision needs an ADR",
-    "anchor": "when-a-decision-needs-an-adr",
-    "text": "When a decision needs an ADR\nCreate an ADR for a significant choice whose rationale a future contributor cannot reliably infer from implementation. Relevant effects include system boundaries, dependency direction, ownership, runtime/deployment topology, security, persistence, public contracts, cross-cutting technology, operational behavior, and long-term maintainability.\nConsider the breadth, reversibility, long-term dependency, plausible alternatives, integrity/security implications, and risk of losing the reasoning. Ordinary local refactors, fixes, tests, small helpers, individual indexes, and routine dependency additions do not each need an ADR. Major technology choices generally do. Existing foundation policies do not each need retroactive ADRs.\nAn ADR records a sufficiently concrete architectural conclusion, not every discussion or rejected idea. It must not become a task tracker, changelog, runbook, detailed implementation design, or snapshot of volatile vendor data. A separate RFC system is not required. Bundle decisions only when their rationale and lifecycle belong together; avoid giant records deciding unrelated parts of the stack.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Lifecycle and historical integrity",
-    "anchor": "lifecycle-and-historical-integrity",
-    "text": "Lifecycle and historical integrity\nStatus\nMeaning\n`proposed`\nUnder active consideration; implementation must not assume finality unless explicitly exploratory\n`accepted`\nApproved architectural direction; implementation and current documentation should align, allowing an explicit migration period\n`rejected`\nConsidered and deliberately not adopted\n`superseded`\nPreviously accepted, then replaced by another decision; link the replacement\n`deprecated`\nHistorically relevant but no longer appropriate for new architecture; use sparingly when replacement is transitional or incomplete\nDo not add statuses without a clear need. Normal transitions are proposed to accepted/rejected and accepted to superseded/deprecated. Do not normally revert historical decisions to proposed; create a new record when reconsidering them.\nAccepted does not mean implemented or released. Track pending/partial/completed implementation through normal issues, tasks, or pull requests, not extra ADR statuses. Exploratory work and proofs of concept provide evidence but do not themselves establish acceptance. Long-lived production implementation should generally not rely on an unresolved major proposal.\nAccepted substantive history should remain immutable. Non-semantic spelling, formatting, broken-link, and obvious-typo corrections may be acceptable, but must not change historical meaning. When architecture changes, create a new ADR. Retain the old record, mark it superseded, and add reciprocal `Supersedes` / `Superseded by` references. Keep the original date. For partial supersession, identify precisely what remains valid, what changed, and which decision replaces it.\nRejected records can preserve useful evaluation and constraints; a changed context can justify reconsideration in a new ADR. Do not treat rejection as a permanent prohibition. Purely local abandoned proposals may be removed before meaningful shared history; preserve broadly reviewed or referenced proposals as rejected where useful. Do not record every immediately dismissed idea.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Identity and metadata",
-    "anchor": "identity-and-metadata",
-    "text": "Identity and metadata\nUse monotonic numeric identifiers and descriptive English filenames of the form `NNNN-short-decision-title.md`. Numbers identify records, not importance, domain, priority, or version. Gaps are acceptable. Never reuse or renumber identifiers already in shared history. Resolve parallel numbering conflicts before merge; an unshared identifier may be changed.\nWhen a foundation upgrade brings an already published identifier that collides with a project decision, retain both records and their identifiers. Import the foundation record under `docs/adr/orion/`, with its own decision index and corrected relative links. Each directory is an identifier namespace; validation enforces unique IDs and index membership within each namespace and the same metadata requirements for every record. New Teluni decisions remain in `docs/adr/`; this exception preserves independent published histories rather than allocating new product namespaces.\nRecord title, status, date, context, decision, and consequences. For accepted records, the date should generally be the acceptance date. Titles should describe the decision rather than merely name a topic. Preserve identifiers once merged and referenced.\nSimple Markdown metadata is the current format. `pnpm docs:check` validates filenames, matching titles/IDs, status, ISO dates, required sections, and index membership. Preserve these field names as tooling contracts. Supersession semantics still require review; no automatic numbering or supersession checker is implemented. ADR files remain canonical; avoid duplicate status stores or custom ADR software without a concrete need.\n"
   }
 ]
