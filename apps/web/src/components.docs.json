@@ -1,7 +1,134 @@
 {
   "components": [
     {
+      "name": "Button",
+      "category": "Actions",
+      "scope": "shared",
+      "owner": "Web UI",
+      "summary": "A native action button with explicit variants and safe pending behavior.",
+      "usage": "Use for actions. Use a link for navigation. Keep a visible accessible name; choose type=submit explicitly inside forms. Native button props and refs are forwarded.",
+      "accessibility": "Uses a native button and visible focus. Pending disables activation and sets aria-busy; preserve meaningful button text while work is pending.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "meaning": "Visible action name or content with an equivalent accessible name.",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "button | submit | reset",
+          "meaning": "Native form behavior; the safe default does not submit a form.",
+          "required": false,
+          "default": "button"
+        },
+        {
+          "name": "variant",
+          "type": "primary | secondary",
+          "meaning": "Semantic action emphasis, styled through product-owned tokens.",
+          "required": false,
+          "default": "secondary"
+        },
+        {
+          "name": "pending",
+          "type": "boolean",
+          "meaning": "Disables activation and exposes aria-busy while the caller owns pending work.",
+          "required": false,
+          "default": "false"
+        },
+        {
+          "name": "…buttonProps",
+          "type": "ComponentPropsWithRef<\"button\">",
+          "meaning": "Native props such as disabled, onClick, className, ref and ARIA attributes are forwarded."
+        }
+      ],
+      "states": [
+        "Default and primary",
+        "Hover and keyboard focus",
+        "Disabled",
+        "Pending",
+        "Product token override"
+      ],
+      "examples": [
+        {
+          "id": "button-states",
+          "label": "Action states and product styling",
+          "description": "Local actions, disabled and pending states, and a scoped token override.",
+          "code": "<Button variant=\"primary\" onClick={save}>Save</Button>\n<Button pending>Saving…</Button>",
+          "live": true
+        }
+      ]
+    },
+    {
+      "name": "TextField",
+      "category": "Inputs",
+      "scope": "composed",
+      "owner": "Web UI",
+      "summary": "A labeled native input with linked hints and validation messages.",
+      "usage": "Use for a single native input with a persistent label. The caller owns value, validation and submission. Keep domain-specific validation and credentials in the feature; use other native controls for multiline text or selection.",
+      "accessibility": "Associates label and input through a stable id; links hint and error descriptions and sets aria-invalid for errors. Native required, disabled, ref and keyboard behavior are preserved. The feature owns dynamic error summaries or announcements.",
+      "props": [
+        {
+          "name": "type",
+          "type": "Text-entry native input types",
+          "meaning": "Supports text, email, password, search, tel, url, number and native date/time inputs. Use separate native controls for checkbox, radio, file, range or other selection behavior.",
+          "required": false,
+          "default": "text"
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "meaning": "Persistent accessible label; a placeholder cannot replace it.",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "meaning": "Optional DOM id; a stable useId value is generated when absent.",
+          "required": false,
+          "default": "Generated with useId"
+        },
+        {
+          "name": "hint",
+          "type": "string",
+          "meaning": "Optional help linked to the input through aria-describedby.",
+          "required": false
+        },
+        {
+          "name": "error",
+          "type": "string",
+          "meaning": "Caller-owned validation message linked to the input; also marks it invalid.",
+          "required": false
+        },
+        {
+          "name": "…inputProps",
+          "type": "ComponentPropsWithRef<\"input\">",
+          "meaning": "Native value/defaultValue, onChange, type, required, disabled, className, ref and ARIA props are forwarded. Existing aria-describedby references are retained."
+        }
+      ],
+      "states": [
+        "Empty and populated",
+        "Hint",
+        "Validation error",
+        "Required",
+        "Disabled",
+        "Keyboard focus"
+      ],
+      "examples": [
+        {
+          "id": "text-field-states",
+          "label": "Labeled input and validation",
+          "description": "Synthetic form input with a hint, validation message and disabled state.",
+          "code": "<TextField label=\"Name\" hint=\"Shown to your colleagues.\" required />\n<TextField label=\"Email\" type=\"email\" error=\"Enter an email address.\" />",
+          "live": true
+        }
+      ]
+    },
+    {
       "name": "ErrorNotice",
+      "category": "Feedback",
+      "scope": "composed",
+      "owner": "Web UI",
       "summary": "Displays a public API failure message and an optional reload action.",
       "props": [
         {

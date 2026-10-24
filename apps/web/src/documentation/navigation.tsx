@@ -6,19 +6,22 @@ export function DocLink({
   children,
   className,
   current,
+  group,
 }: {
   id?: string;
   hash?: string;
   children: ReactNode;
   className?: string;
   current?: boolean;
+  group?: string;
 }) {
   return (
     <Link
       to="/docs/$"
       params={{ _splat: id }}
       hash={hash}
-      search={{}}
+      search={group ? { group } : {}}
+      activeOptions={{ exact: true }}
       className={className}
       aria-current={current ? "page" : undefined}
     >

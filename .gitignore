@@ -4,6 +4,7 @@ apps/api/src/generated/prisma/
 *.tsbuildinfo
 coverage/
 playwright-report/
+.vitest/
 test-results/
 .dev-media/
 .env

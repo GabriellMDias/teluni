@@ -23,9 +23,11 @@ export function HomePage() {
           <code>apps/api/src/modules.ts</code>.
         </p>
       )}
-      <p>
-        <Link to="/docs">Read the living documentation</Link>
-      </p>
+      {__ORION_INTERNAL_DOCS__ && (
+        <p>
+          <Link to="/docs">Read the living documentation</Link>
+        </p>
+      )}
     </section>
   );
 }

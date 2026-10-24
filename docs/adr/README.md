@@ -6,6 +6,8 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 
 ## Decision index
 
+Teluni's decision identifiers remain stable. The [imported Orion decision index](orion/README.md) preserves later foundation records whose identifiers overlap Teluni's independent history.
+
 | Record | Decision |
 | --- | --- |
 | [ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md) | Select TypeScript and Node.js as the Primary Language and Runtime |

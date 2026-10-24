@@ -55,7 +55,19 @@ The portal needs no API, database, identity provider, or `.env.local`. After the
 
 To try an API route, also run the API as described above, open an API operation, enter declared inputs and a token when the operation requires one, then select **Send request**. Writes require explicit acknowledgement. Tokens and responses remain in memory; no request executes automatically. Cancellation/timeouts do not prove a write was undone. Without the API, reading remains available and request failures are shown safely.
 
-After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Teluni's production build (`pnpm -C apps/web build`) deliberately excludes the portal, so read it through the development server; `vite preview` serves the product build only. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.
+After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. A normal `pnpm -C apps/web build` excludes the internal portal and all of its generated assets. For an explicitly authorized internal artifact or local production-preview check, use PowerShell process environment variables:
+
+```powershell
+$env:ORION_WEB_DOCUMENTATION = 'internal'
+$env:ORION_WEB_INTERNAL_DOCS_ACCESS = 'external'
+try { pnpm -C apps/web build } finally {
+  Remove-Item Env:ORION_WEB_DOCUMENTATION
+  Remove-Item Env:ORION_WEB_INTERNAL_DOCS_ACCESS
+}
+pnpm -C apps/web exec vite preview --host 127.0.0.1
+```
+
+Open `/docs` on the printed loopback port. The access setting acknowledges external enforcement; it does not install or verify it. Before any internal deployment, follow [the full-artifact access policy](architecture/living-documentation.md#build-and-deployment-boundary). Preview always serves the already-built artifact. Rebuild without those variables before product distribution. Internal static serving needs the SPA fallback for nested routes plus protection for every asset; no deployment provider is selected here.
 
 ## Persistent local environment
 

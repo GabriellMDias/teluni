@@ -236,5 +236,13 @@ test("keeps denied company access explicit in the dark shell", async ({
     "data-theme",
     "dark",
   );
+  await expect(page.getByRole("alert")).toHaveCSS(
+    "color",
+    "rgb(254, 205, 211)",
+  );
+  await expect(page.getByRole("alert")).toHaveCSS(
+    "background-color",
+    "rgb(60, 27, 42)",
+  );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

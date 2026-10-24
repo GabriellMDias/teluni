@@ -6,6 +6,8 @@ Configuration is an explicit application dependency: validate it before use, exp
 
 ## Canonical Configuration Schema
 
+Web engineering-tool inclusion is controlled separately by the non-secret process environment selection in [the documentation build policy](living-documentation.md#build-and-deployment-boundary). It is evaluated by Vite configuration, is excluded from the API `.env.example` schema, and grants neither browser credentials nor hosting access.
+
 Each application owns a canonical schema with derived types where practical. Define each setting's name, type, purpose, required/optional state, default, validation constraints, classification, secret status, client visibility, and operational consequences. Document the owner, permitted changes, environment scope, and whether a restart is required. Descriptions explain semantics rather than repeat the name.
 
 Current sources are:

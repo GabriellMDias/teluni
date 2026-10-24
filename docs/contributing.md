@@ -22,6 +22,8 @@ Completion requires, as applicable: correct implementation, respected boundaries
 
 ## Documentation ownership
 
+The [audience and publication policy](architecture/living-documentation.md#documentation-audiences-and-publication) separates internal engineering knowledge, product guidance, and public API documentation. Updating the complete internal catalog does not approve external publication. Preserve its developer/agent sources while keeping production distribution and application presentation independent.
+
 | Information | Authoritative location |
 | --- | --- |
 | Current architectural policy and intended behavior | Relevant policy under `docs/` |

@@ -164,7 +164,6 @@ for (const [name, document] of documents) {
 }
 
 const adrDirectory = "docs/adr/";
-const adrIndex = documents.get(`${adrDirectory}README.md`);
 const adrIds = new Set<string>();
 let adrCount = 0;
 for (const [name, document] of documents) {
@@ -173,8 +172,14 @@ for (const [name, document] of documents) {
   if (!match) continue;
   adrCount += 1;
   const id = match[1];
-  if (adrIds.has(id)) errors.push(`${name}: duplicate ADR identifier ${id}`);
-  adrIds.add(id);
+  const directory = path.posix.dirname(name);
+  if (directory !== "docs/adr" && directory !== "docs/adr/orion")
+    errors.push(`${name}: unsupported ADR namespace ${directory}`);
+  const identity = `${directory}/${id}`;
+  const adrIndex = documents.get(`${directory}/README.md`);
+  if (adrIds.has(identity))
+    errors.push(`${name}: duplicate ADR identifier ${id}`);
+  adrIds.add(identity);
   if (!new RegExp(`^# ADR-${id}: .+`, "m").test(document.source))
     errors.push(`${name}: title does not match ADR identifier`);
   if (
@@ -195,7 +200,7 @@ for (const [name, document] of documents) {
       (link) => link.split("#", 1)[0] === path.basename(name),
     )
   ) {
-    errors.push(`${name}: absent from docs/adr/README.md`);
+    errors.push(`${name}: absent from ${directory}/README.md`);
   }
 }
 

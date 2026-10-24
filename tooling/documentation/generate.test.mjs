@@ -14,6 +14,7 @@ import path from "node:path";
 import { URL, fileURLToPath } from "node:url";
 import test from "node:test";
 import { buildDocumentation } from "./build.mjs";
+import { componentDependencies, readComponents } from "./components.mjs";
 import { readSources, synchronizeOutputs } from "./files.mjs";
 import {
   documentationPaths,
@@ -29,6 +30,262 @@ const root = path.resolve(
 const sources = await readSources(root);
 const run = promisify(execFile);
 const sourceBase = "https://example.test/acme/ledger/blob/main/";
+
+function componentFixture() {
+  return new Map([
+    [
+      "apps/web/src/components.tsx",
+      "export function Example({ label }: { label: string }) { return null; }\nfunction PrivateHelper() { return null; }",
+    ],
+    [
+      "apps/web/src/components.docs.json",
+      JSON.stringify({
+        components: [
+          {
+            name: "Example",
+            summary: "Example control.",
+            usage: "Use for an example.",
+            accessibility: "Has an accessible name.",
+            props: [
+              { name: "label", type: "string", meaning: "Accessible label." },
+            ],
+            states: ["Default"],
+            examples: [
+              {
+                id: "legacy-example",
+                label: "Example",
+                description: "Synthetic example.",
+              },
+            ],
+          },
+        ],
+      }),
+    ],
+    [
+      "apps/web/src/documentation/examples.tsx",
+      'export function Example({id}) { switch(id) { case "legacy-example": return null; } }',
+    ],
+  ]);
+}
+
+function changeComponent(fixture, mutate) {
+  const metadata = JSON.parse(fixture.get("apps/web/src/components.docs.json"));
+  mutate(metadata.components[0], metadata);
+  fixture.set("apps/web/src/components.docs.json", JSON.stringify(metadata));
+}
+
+test("legacy component metadata preserves IDs and live examples with additive defaults", () => {
+  const result = readComponents(componentFixture());
+  assert.equal(result.components[0].id, "Example");
+  assert.equal(result.components[0].category, "Uncategorized");
+  assert.equal(result.components[0].scope, "shared");
+  assert.equal(result.components[0].owner, "apps/web/src/components.tsx");
+  assert.equal(result.components[0].examples[0].live, true);
+  assert.ok(result.categories.includes("Overlays"));
+});
+
+test("component metadata cannot override the safe renderer discriminator", async () => {
+  const changed = new Map(sources);
+  const metadata = JSON.parse(changed.get("apps/web/src/components.docs.json"));
+  metadata.components[0].kind = "repository";
+  metadata.components[0].html =
+    '<img src="invalid" onerror="throw new Error()">';
+  changed.set("apps/web/src/components.docs.json", JSON.stringify(metadata));
+  const outputs = await buildDocumentation(changed);
+  const page = JSON.parse(
+    outputs.get(
+      `apps/web/src/generated/pages/components/${metadata.components[0].id ?? metadata.components[0].name}.json`,
+    ),
+  );
+  assert.equal(page.kind, "component");
+});
+
+test("feature metadata supports custom categories, stable IDs and static examples without documenting private exports", () => {
+  const fixture = componentFixture();
+  changeComponent(fixture, (_component, metadata) => {
+    metadata.featureMetadata = ["apps/web/src/metrics/components.docs.json"];
+  });
+  const feature = JSON.parse(fixture.get("apps/web/src/components.docs.json"))
+    .components[0];
+  fixture.set(
+    "apps/web/src/metrics/chart.tsx",
+    "export const Chart = () => null; export function PrivatePanel() { return null; }",
+  );
+  fixture.set(
+    "apps/web/src/metrics/components.docs.json",
+    JSON.stringify({
+      categories: ["Charts"],
+      source: "apps/web/src/metrics/chart.tsx",
+      components: [
+        {
+          ...feature,
+          name: "Chart",
+          id: "metrics.Chart",
+          category: "Charts",
+          owner: "Metrics UI",
+          props: [],
+          examples: [
+            {
+              id: "metrics-chart",
+              label: "Chart",
+              description: "Local source example.",
+              code: "<Chart />",
+            },
+          ],
+        },
+      ],
+    }),
+  );
+  const result = readComponents(fixture);
+  const chart = result.components.find((item) => item.name === "Chart");
+  assert.equal(chart.scope, "feature-specific");
+  assert.equal(chart.id, "metrics.Chart");
+  assert.equal(chart.examples[0].live, false);
+  assert.ok(result.categories.includes("Charts"));
+  assert.equal(result.components.length, 2);
+});
+
+test("component export verification handles arrow values, type-only exports and local re-exports", () => {
+  const fixture = componentFixture();
+  fixture.set(
+    "apps/web/src/ui/example.tsx",
+    "export const Example = () => null; export type ExampleProps = {};",
+  );
+  fixture.set(
+    "apps/web/src/components.tsx",
+    "export { Example, type ExampleProps } from './ui/example.js';",
+  );
+  assert.equal(readComponents(fixture).components.length, 1);
+  changeComponent(fixture, (component) => {
+    component.source = "apps/web/src/ui/example.tsx";
+  });
+  assert.equal(readComponents(fixture).components[0].scope, "shared");
+  changeComponent(fixture, (component) => {
+    delete component.source;
+  });
+  fixture.set(
+    "apps/web/src/components.tsx",
+    "import { Example } from './ui/example.js'; export { Example }; export type PrivateType = {}; export const Undocumented = () => null;",
+  );
+  assert.throws(
+    () => readComponents(fixture),
+    /every exported web component.*Undocumented/,
+  );
+  fixture.set(
+    "apps/web/src/components.tsx",
+    "export * from './ui/example.js';",
+  );
+  assert.equal(readComponents(fixture).components.length, 1);
+  fixture.set(
+    "apps/web/src/components.tsx",
+    "export { Example as Renamed } from './ui/example.js';",
+  );
+  changeComponent(fixture, (component) => {
+    component.name = "Renamed";
+    component.id = "Example";
+  });
+  assert.equal(readComponents(fixture).components[0].id, "Example");
+});
+
+test("type-only specifiers do not load source and destructured shared exports need metadata", () => {
+  const fixture = componentFixture();
+  const source = `${fixture.get("apps/web/src/components.tsx")}\nexport { type ExternalProps } from 'external-types'; export { type LocalProps } from './private-types.js';`;
+  fixture.set("apps/web/src/components.tsx", source);
+  assert.deepEqual(
+    componentDependencies("apps/web/src/components.tsx", source, new Set()),
+    [],
+  );
+  assert.equal(readComponents(fixture).components.length, 1);
+  for (const declaration of [
+    "export const { Control: Undocumented } = controls;",
+    "const [, { Control: Undocumented }] = controls; export { Undocumented };",
+  ]) {
+    fixture.set("apps/web/src/components.tsx", `${source}\n${declaration}`);
+    assert.throws(
+      () => readComponents(fixture),
+      /every exported web component.*Undocumented/,
+    );
+  }
+});
+
+test("component metadata rejects invalid classification, props, examples and missing sources", () => {
+  for (const mutate of [
+    (component) => {
+      component.category = "Unknown category";
+    },
+    (component) => {
+      component.scope = "global";
+    },
+    (component) => {
+      component.owner = " ";
+    },
+    (component) => {
+      component.source = "../../private.tsx";
+    },
+    (component) => {
+      component.source = "apps/web/src/missing.tsx";
+    },
+    (component) => {
+      component.exportName = "Missing";
+    },
+    (component) => {
+      component.id = "../escape";
+    },
+    (component) => {
+      component.props.push(component.props[0]);
+    },
+    (component) => {
+      component.props[0].required = "yes";
+    },
+    (component) => {
+      component.states = [];
+    },
+    (component) => {
+      component.examples[0].id = "missing-renderer";
+    },
+    (component) => {
+      component.examples[0].live = false;
+    },
+    (component, metadata) => {
+      metadata.categories = ["Charts", "Charts"];
+    },
+    (component, metadata) => {
+      metadata.components.push(component);
+    },
+  ]) {
+    const fixture = componentFixture();
+    changeComponent(fixture, mutate);
+    assert.throws(() => readComponents(fixture), /Component documentation:/);
+  }
+  const fixture = componentFixture();
+  fixture.set("apps/web/src/components.docs.json", "null");
+  assert.throws(() => readComponents(fixture), /component metadata is missing/);
+});
+
+test("broken and cyclic component re-exports fail without executing source", () => {
+  const fixture = componentFixture();
+  fixture.set(
+    "apps/web/src/components.tsx",
+    "export { Example } from './missing.js';",
+  );
+  assert.throws(() => readComponents(fixture), /broken component re-export/);
+  fixture.set(
+    "apps/web/src/components.tsx",
+    "export * from './ui/example.js';",
+  );
+  fixture.set(
+    "apps/web/src/ui/example.tsx",
+    "export * from '../components.js';",
+  );
+  assert.throws(() => readComponents(fixture), /cyclic component re-export/);
+  fixture.set("apps/web/src/components.tsx", "export function Example( {");
+  assert.throws(() => readComponents(fixture), /invalid component syntax/);
+  fixture.set(
+    "apps/web/src/components.tsx",
+    "export function Example() { return null; } export default () => null;",
+  );
+  assert.throws(() => readComponents(fixture), /explicit named exports/);
+});
 
 async function temporaryDirectory(t) {
   const directory = await mkdtemp(
@@ -117,6 +374,79 @@ test("Markdown links and duplicate heading anchors remain local and deterministi
   assert.throws(
     () => rewriteLink("../../outside", "docs/a.md", available, sourceBase),
     /escapes repository/,
+  );
+});
+
+test("feature component discovery follows selected re-exports and refuses ignored source files", async (t) => {
+  const directory = await temporaryDirectory(t);
+  await run("git", ["init", "--quiet"], { cwd: directory });
+  for (const [name, content] of sources) {
+    await mkdir(path.dirname(path.join(directory, name)), { recursive: true });
+    await writeFile(path.join(directory, name), content);
+  }
+  const prefix = "apps/web/src/contacts/";
+  await mkdir(path.join(directory, prefix), { recursive: true });
+  await writeFile(
+    path.join(directory, prefix, "card.tsx"),
+    "export const Card = () => null;",
+  );
+  await writeFile(
+    path.join(directory, prefix, "components.tsx"),
+    "export { Card } from './card.js';",
+  );
+  await writeFile(
+    path.join(directory, prefix, "private.tsx"),
+    "export function PrivateCard() { return null; }",
+  );
+  const metadata = {
+    components: [
+      {
+        name: "Card",
+        summary: "Contact card.",
+        usage: "Contact presentation.",
+        accessibility: "Readable contact name.",
+        props: [],
+        states: ["Default"],
+        examples: [
+          {
+            id: "contact-card",
+            label: "Card",
+            description: "Source only.",
+            code: "<Card />",
+          },
+        ],
+      },
+    ],
+  };
+  await writeFile(
+    path.join(directory, prefix, "components.docs.json"),
+    JSON.stringify(metadata),
+  );
+  const discovered = await readSources(directory);
+  assert.ok(discovered.has(`${prefix}components.docs.json`));
+  assert.ok(discovered.has(`${prefix}card.tsx`));
+  assert.ok(!discovered.has(`${prefix}private.tsx`));
+  assert.equal(
+    readComponents(discovered).components.find((item) => item.name === "Card")
+      .scope,
+    "feature-specific",
+  );
+  const pruned = new Map(
+    [...discovered].filter(([name]) => !name.startsWith(prefix)),
+  );
+  assert.ok(
+    !readComponents(pruned).components.some((item) => item.name === "Card"),
+  );
+  await writeFile(path.join(directory, ".gitignore"), `${prefix}card.tsx\n`);
+  await assert.rejects(readSources(directory), /broken component re-export/);
+  await rm(path.join(directory, ".gitignore"));
+  await run("git", ["add", "."], { cwd: directory });
+  for (const name of ["components.docs.json", "components.tsx", "card.tsx"])
+    await rm(path.join(directory, prefix, name));
+  const removed = await readSources(directory);
+  assert.ok(!removed.has(`${prefix}components.docs.json`));
+  assert.ok(
+    !readComponents(removed).components.some((item) => item.name === "Card"),
   );
 });
 

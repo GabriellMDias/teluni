@@ -1,5 +1,59 @@
 [
   {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established package manager or application workspace that must be migrated.\nRepository implementation must pin the selected pnpm version mechanically and establish the workspace configuration and shared lockfile.\nLocal development and CI must use the pinned package-manager version to minimize environment-specific dependency-resolution differences.\nChanges to the pnpm patch or supported major version do not require a new ADR when they preserve the package and workspace strategy established here.\nAdding catalogs, filters, or other pnpm-native mechanisms does not inherently require a new ADR when they remain implementation details consistent with this decision.\nIntroducing a dedicated monorepo task runner may require a new ADR if it establishes a significant repository-wide execution, caching, or CI abstraction.\nReplacing pnpm as the package or workspace manager would be an architectural change and should supersede this ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [repository structure](../architecture/repository-structure.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)\nExternal reference: pnpm documentation — workspaces, workspace protocol, catalogs, dependency management, and build-script controls.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "anchor": "adr-0003-establish-repository-validation-and-architecture-enforcement",
+    "text": "ADR-0003: Establish Repository Validation and Architecture Enforcement\n**Status:** accepted\n**Date:** 2026-09-12\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a canonical way for human contributors, AI agents, local development environments, and CI to determine whether a repository change satisfies the engineering rules currently implemented by the project.\nThe foundation already defines architectural boundaries, dependency rules, testing expectations, documentation responsibilities, and a preference for mechanical enforcement over conventions that exist only in prose.\nAs the monorepo grows, contributors must not need to reconstruct a different validation procedure for each application or package.\nThe repository therefore requires:\none deterministic validation entry point;\nconsistent TypeScript type checking;\nstatic analysis capable of using TypeScript type information where valuable;\nconsistent source formatting;\nmechanical validation of dependency and architectural boundaries;\na workflow that can expand as testing, generated artifacts, security validation, and build checks are introduced;\nequivalent validation semantics between local development and CI.\nThe validation workflow must also support Orion's AI-first development model.\nAn agent should be able to make a coherent change and execute one documented command to determine whether the repository accepts that change according to the checks currently implemented.\nValidation and automatic modification are different responsibilities.\nA validation command that silently rewrites source files makes it harder to determine whether a change being reviewed originated from the contributor or from the validation process itself. Orion therefore requires the canonical validation workflow to inspect repository state without intentionally rewriting source files.\nOrion also requires architectural rules to become mechanically enforceable where practical.\nRules such as allowed dependency directions, forbidden cross-boundary imports, package isolation, and dependency cycles should not rely exclusively on documentation or contributor discipline.\nThe repository does not yet require advanced monorepo task orchestration. ADR-0002 establishes pnpm's native workspace execution as the initial mechanism for repository-wide commands.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will expose a single canonical repository validation entry point:\npnpm validate\n\n`pnpm validate` will be the authoritative local command for determining whether a coherent repository change satisfies the validation checks currently implemented by Orion.\nThe same validation capabilities must be used by CI rather than reimplemented as CI-specific logic.\nThe canonical validation workflow will be:\ndeterministic;\nnon-interactive;\nsuitable for local development and automated environments;\nnon-mutating with respect to tracked source files;\ncomposable from independently executable validation responsibilities;\nextensible as new repository capabilities are introduced.\nThe exact internal ordering and parallelization of checks are implementation details as long as their correctness requirements and failure semantics are preserved.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Type checking",
+    "anchor": "type-checking",
+    "text": "Type checking\nThe **TypeScript compiler (`tsc`)** will be the authoritative mechanism for TypeScript type checking.\nLinting tools will not be treated as substitutes for TypeScript compilation or type checking.\nType checking should run without intentionally modifying source files.\nTypeScript project references may be introduced later when repository scale, build performance, or package relationships demonstrate sufficient value. They are not required solely because Orion uses a monorepo.\n"
+  },
+  {
     "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
     "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
     "group": "Decisions",
@@ -934,68 +988,5 @@
     "heading": "gRPC",
     "anchor": "grpc",
     "text": "gRPC\ngRPC provides strongly typed service contracts, efficient binary communication, code generation, streaming, and strong service-to-service characteristics.\nIt can be appropriate for specialized internal communication or high-performance service boundaries.\nIt was not selected as Orion's primary general application API because HTTP/JSON with OpenAPI provides a more broadly accessible default for browsers, third-party integrations, human inspection, and heterogeneous external consumers.\ngRPC may be introduced later for specialized internal communication requirements.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Zod",
-    "anchor": "zod",
-    "text": "Zod\nZod provides an excellent TypeScript-first runtime validation model and strong developer ergonomics.\nModern Zod versions can also generate JSON Schema, which makes Zod technically capable of participating in Orion's contract architecture.\nIt was not selected because Orion's canonical contract model is explicitly centered on JSON Schema-compatible wire representations.\nTypeBox begins directly from JSON Schema representations while still providing TypeScript inference.\nThis reduces the conceptual translation between the authored contract, Fastify's validation and serialization model, and generated OpenAPI.\nZod remains appropriate for a scoped application-specific problem when a concrete integration materially benefits from it, but it is not part of Orion's default schema foundation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Manually Authored OpenAPI",
-    "anchor": "manually-authored-openapi",
-    "text": "Manually Authored OpenAPI\nOrion could maintain an `openapi.yaml` or equivalent document as the primary source of API contracts.\nThis would provide an explicitly language-independent contract from the beginning.\nIt was not selected because runtime validation schemas would then either need to be generated from OpenAPI or maintained separately.\nOrion already requires executable server-side schemas, and maintaining independent runtime schemas and OpenAPI descriptions would create unnecessary duplication and drift risk.\nGenerated OpenAPI preserves language-independent interoperability without introducing another manually maintained source of truth.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rich Generated SDKs as the Default",
-    "anchor": "rich-generated-sdks-as-the-default",
-    "text": "Rich Generated SDKs as the Default\nTools such as Orval, Hey API, or general-purpose OpenAPI generators can generate operation-specific functions, framework integrations, data-fetching hooks, mocks, and larger client SDKs.\nThese capabilities can be valuable.\nThey were not selected as Orion's initial TypeScript golden path because they introduce more generated runtime code and can couple API generation to frontend-framework decisions that have not yet been made.\nThe initial approach of generated types plus a thin typed Fetch client is smaller and more reversible.\nA richer generator may be selected later if concrete client-development requirements justify it.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Direct Server Contract Imports from First-Party Clients",
-    "anchor": "direct-server-contract-imports-from-first-party-clients",
-    "text": "Direct Server Contract Imports from First-Party Clients\nBecause Orion uses a TypeScript monorepo, a web application could import TypeScript types or schemas directly from the server-side contract package.\nThis would provide excellent compile-time ergonomics.\nIt was not selected as the default client integration because it would bypass the language-independent API boundary.\nGenerating client types from OpenAPI continuously verifies that the API remains consumable as an actual external contract and avoids recreating a TypeScript-specific RPC coupling implicitly.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Separate Configuration Schema Library",
-    "anchor": "separate-configuration-schema-library",
-    "text": "Separate Configuration Schema Library\nOrion could use a different library, such as Zod or a specialized environment-validation package, for bootstrap configuration.\nThis may provide concise environment-variable parsing APIs.\nIt was not selected because TypeBox already fulfills the required runtime-schema role and introducing another schema system would add a second convention for essentially the same trust-boundary responsibility.\nExplicit parsing combined with TypeBox validation provides sufficient capability while keeping the foundation more consistent.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion has one default schema model for API contracts and bootstrap configuration.\nCanonical API contracts are executable and machine-readable.\nTypeScript types can be derived from the same schemas used for runtime boundary validation.\nFastify can consume the same schema representations for request validation and response serialization.\nOpenAPI is generated rather than independently maintained.\nExternal API contracts remain language-independent despite TypeScript being Orion's primary implementation language.\nFirst-party clients exercise the same external API contract that other consumers use.\nStable `operationId` values provide durable machine-readable operation identities.\nTypeScript SDK types can be regenerated deterministically from the OpenAPI description.\n`openapi-fetch` keeps the default TypeScript client runtime small and close to Web Platform APIs.\nOther-language SDKs can be introduced without changing the server contract architecture.\nGenerated artifacts can participate in the canonical `pnpm validate` workflow.\nTransport representations remain distinct from domain and persistence models.\nConfiguration is validated before application startup.\nArbitrary `process.env` access is removed from ordinary application code.\nConfiguration parsing behavior becomes explicit and centralized.\nInvalid foundational configuration fails early rather than being discovered during request processing.\nConfiguration reference documentation can eventually be generated from canonical metadata.\nThe architecture remains compatible with AI tools that consume structured API descriptions.\n"
   }
 ]

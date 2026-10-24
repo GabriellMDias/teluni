@@ -148,7 +148,7 @@ export function DocumentationPage() {
     component: [
       { id: "props", text: "Props", level: 2 },
       { id: "usage", text: "Usage and accessibility", level: 2 },
-      { id: "examples", text: "Live examples", level: 2 },
+      { id: "examples", text: "Examples", level: 2 },
     ],
   };
   const outline =
@@ -160,7 +160,7 @@ export function DocumentationPage() {
           : (defaultHeadings[entry.kind] ?? [])
         : [];
   return (
-    <div className="docs-workspace">
+    <main className="docs-workspace">
       <a className="docs-skip" href={`#${titleId}`}>
         Skip to documentation
       </a>
@@ -198,7 +198,11 @@ export function DocumentationPage() {
             <DocLink current={!id}>Overview</DocLink>
             <p className="docs-nav-label">Reference</p>
             {sections.slice(0, 3).map((s) => (
-              <DocLink id={s.id} key={s.id} current={id === s.id}>
+              <DocLink
+                id={s.id}
+                key={s.id}
+                current={id === s.id || id.startsWith(`${s.id}/`)}
+              >
                 {s.title}
               </DocLink>
             ))}
@@ -389,6 +393,6 @@ export function DocumentationPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

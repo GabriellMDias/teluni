@@ -26,6 +26,7 @@ pnpm validate
 | `pnpm references:check` | Checks API configuration, errors, OpenAPI, and migrated-PostgreSQL references; independently regenerates SDK types from the committed OpenAPI and compares without changing tracked files. Text comparisons normalize checkout line endings, so Windows CRLF does not masquerade as generated-content drift. |
 | `pnpm docs:references:check` | Derives the portal catalog, local Markdown/reference pages, search shards, and component Markdown; rejects incomplete metadata, unsafe source content, or missing/stale/orphaned generated output. `pnpm docs:references:write` intentionally regenerates these artifacts. |
 | `pnpm docs:references:test` | Tests deterministic generation, local links/heading IDs, hostile content, supported schema/reference handling, large inventories, and generated-output lifecycle. |
+| `pnpm docs:isolation:test` | Builds actual default and explicit internal artifacts in temporary directories; inspects included modules and emitted assets, checks production routes/search/previews in Chromium, preserves application-owned help at `/docs`, and rejects accidental product imports. Tests fail-closed selection and internal-access acknowledgement without imposing a product home layout. Host access controls require separate deployment evidence. |
 | `pnpm test` | Runs API Vitest tests, including module tests against migrated PostgreSQL, and web component tests in a real Chromium-family browser through Vitest Browser Mode/Playwright. |
 | `pnpm build` | Emits Node-compatible ESM for `apps/api` and a static Vite production build for `apps/web` to ignored `dist/` directories, then checks browser assets for known server-only markers. |
 | `pnpm smoke` | Starts the emitted API to check invalid configuration, trace propagation, failed OTLP export, and health, then runs each module process smoke in `apps/api/scripts/smoke/` against the same build. |
@@ -61,11 +62,15 @@ Add validation capabilities only when their implementations exist. Individual re
 
 ## Choosing verification
 
+Component metadata checks cover the curated shared entry point and explicitly registered feature components, rather than every private React component. Generator tests exercise legacy defaults, category extensions, local re-exports, broken/ignored sources and metadata failures; browser tests cover native button/form semantics, input associations/ref forwarding, scoped product tokens, category navigation and inert feature examples. See [component ownership](architecture/web-components.md).
+
 Use [testing strategy](architecture/testing-strategy.md) for risk and test-layer selection. During documentation work, run `pnpm docs:check` for links, anchors, reachability, and ADR metadata; use `pnpm docs:references:check` when reviewing generated portal/component output. Run the full `pnpm validate` for substantial work. Structural checks do not replace semantic review, preservation of requirements/ADRs, or the final diff review.
 
 When adding a capability, extend the applicable checks and update this command inventory in the same change. Examples of future commands in ADRs are not evidence that those commands have been implemented.
 
 ## Living Documentation manual browser checks
+
+Use the local development portal or an explicitly selected loopback internal preview from [setup](setup.md#living-documentation-portal). Default production previews intentionally have no portal. Keep the anonymous-denial/authorized-access checks for a real internal host separate from local browser evidence.
 
 The automated browser suites run within `pnpm test` and `pnpm validate` and must be reported from actual runs. Use this checklist for human-observed acceptance after material portal changes, and record its results as dated evidence in the repository's plan or human actions.
 

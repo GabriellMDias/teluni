@@ -1,0 +1,81 @@
+/* Semantic fallbacks are local to components; products override inherited tokens. */
+.ui-button,
+.ui-field,
+.ui-notice {
+  font-family: var(--ui-font-family, inherit);
+  font-size: var(--ui-font-size, 1rem);
+  line-height: 1.5;
+}
+.ui-button {
+  color: var(--ui-color-text, #182638);
+  background: var(--ui-color-surface, #fff);
+  border: 1px solid var(--ui-color-border, #b5c4d2);
+  border-radius: var(--ui-radius, 0.4375rem);
+  padding: var(--ui-space-2, 0.5rem) var(--ui-space-4, 1rem);
+  cursor: pointer;
+}
+.ui-button-primary {
+  color: var(--ui-color-on-action, #fff);
+  background: var(--ui-color-action, #185f9b);
+  border-color: var(--ui-color-action, #185f9b);
+  font-weight: var(--ui-font-weight-semibold, 650);
+}
+.ui-button:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.ui-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.ui-button:focus-visible,
+.ui-field-control:focus-visible {
+  outline: 3px solid var(--ui-color-focus, #256ec3);
+  outline-offset: 3px;
+}
+.ui-field {
+  display: grid;
+  gap: var(--ui-space-2, 0.5rem);
+  color: var(--ui-color-text, #182638);
+}
+.ui-field label {
+  font-weight: var(--ui-font-weight-semibold, 650);
+}
+.ui-field .ui-field-control {
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+  color: var(--ui-color-text, #182638);
+  background: var(--ui-color-surface, #fff);
+  border: 1px solid var(--ui-color-border, #b5c4d2);
+  border-radius: var(--ui-radius, 0.4375rem);
+  padding: var(--ui-space-3, 0.75rem);
+}
+.ui-field-control[aria-invalid="true"] {
+  border-color: var(--ui-color-danger, #812723);
+}
+.ui-field-control:disabled {
+  opacity: 0.6;
+}
+.ui-field-hint,
+.ui-field-error {
+  margin: 0;
+  font-size: 0.875em;
+}
+.ui-field-hint {
+  color: var(--ui-color-muted, #536677);
+}
+.ui-field-error {
+  color: var(--ui-color-danger, #812723);
+}
+.ui-notice.notice-error {
+  color: var(--ui-color-danger, #812723);
+  background: var(--ui-color-danger-surface, #fff0ee);
+  border: 1px solid var(--ui-color-danger-border, #e6b6b2);
+  border-radius: var(--ui-radius, 0.4375rem);
+  padding: var(--ui-space-3, 0.75rem) var(--ui-space-4, 1rem);
+}
+.ui-notice .ui-button {
+  display: block;
+  margin-top: var(--ui-space-3, 0.75rem);
+}

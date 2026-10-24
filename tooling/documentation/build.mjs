@@ -1,5 +1,6 @@
 import prettier from "prettier";
 import { Buffer } from "node:buffer";
+import { readComponents, componentMarkdown } from "./components.mjs";
 import {
   documentGroup,
   documentId,
@@ -268,96 +269,8 @@ export async function buildDocumentation(sources) {
   const errorsText = await read("docs/generated/api/errors.md");
   markdownRows(errorsText, "| Code |");
 
-  const componentText = await read("apps/web/src/components.docs.json");
-  const componentSource = await read("apps/web/src/components.tsx");
-  const portalSource = await read("apps/web/src/documentation/examples.tsx");
-  const componentMetadata = JSON.parse(componentText);
-  const components = componentMetadata.components;
-  if (!Array.isArray(components)) fail("component metadata is missing");
-  const actualExports = [
-    ...componentSource.matchAll(/export function ([A-Z][A-Za-z0-9]*)\(/g),
-  ].map((match) => match[1]);
-  if (
-    actualExports.length !== components.length ||
-    actualExports.some((name) => !components.some((item) => item.name === name))
-  )
-    fail("every exported web component needs owned metadata");
-  const exampleIds = new Set();
-  for (const component of components) {
-    if (
-      !actualExports.includes(component.name) ||
-      !component.summary ||
-      !component.usage ||
-      !component.accessibility ||
-      !Array.isArray(component.props) ||
-      !component.props.length ||
-      !Array.isArray(component.states) ||
-      !component.states.length ||
-      !Array.isArray(component.examples) ||
-      !component.examples.length
-    )
-      fail(`incomplete metadata for ${component.name}`);
-    if (
-      component.props.some(
-        (prop) => !prop.name || !prop.type || !prop.meaning,
-      ) ||
-      component.states.some(
-        (state) => typeof state !== "string" || !state.trim(),
-      )
-    )
-      fail(`incomplete prop or state metadata for ${component.name}`);
-    for (const example of component.examples) {
-      if (
-        !example.id ||
-        !example.label ||
-        !example.description ||
-        exampleIds.has(example.id)
-      )
-        fail(`missing or duplicate example metadata for ${component.name}`);
-      if (!portalSource.includes(`case "${example.id}":`))
-        fail(`missing live example renderer for ${example.id}`);
-      exampleIds.add(example.id);
-    }
-  }
-
-  const componentMarkdown = [
-    "# Web Component Reference",
-    "",
-    "<!-- Generated from apps/web/src/components.docs.json and verified against components.tsx. Do not edit. -->",
-    "",
-    "[Living documentation](../../architecture/living-documentation.md) · [Component source](../../../apps/web/src/components.tsx)",
-    "",
-    ...components.flatMap((component) => [
-      `## ${component.name}`,
-      "",
-      component.summary,
-      "",
-      "### Props",
-      "",
-      "| Name | Type | Meaning |",
-      "| --- | --- | --- |",
-      ...component.props.map(
-        (prop) =>
-          `| \`${prop.name.replaceAll("|", "\\|")}\` | \`${prop.type.replaceAll("|", "\\|")}\` | ${prop.meaning.replaceAll("|", "\\|")} |`,
-      ),
-      "",
-      "### States",
-      "",
-      ...component.states.map((state) => `- ${state}`),
-      "",
-      `Accessibility: ${component.accessibility}`,
-      "",
-      `Usage: ${component.usage}`,
-      "",
-      "### Examples",
-      "",
-      ...component.examples.map(
-        (example) =>
-          `- **${example.label}** (\`${example.id}\`): ${example.description}`,
-      ),
-      "",
-    ]),
-  ].join("\n");
+  const { components, categories } = readComponents(sources);
+  const generatedComponentMarkdown = componentMarkdown(components);
 
   const entries = [];
   const records = [];
@@ -449,23 +362,36 @@ export async function buildDocumentation(sources) {
   )) {
     await addEntry(
       {
-        id: `components/${component.name}`,
+        id: `components/${component.id}`,
         kind: "component",
         title: component.name,
-        group: "Web components",
-        source: "apps/web/src/components.tsx",
+        group: component.category,
+        category: component.category,
+        scope: component.scope,
+        owner: component.owner,
+        metadataSource: component.metadataSource,
+        source: component.source,
         summary: component.summary,
         headings: [],
       },
-      { kind: "component", ...component },
+      {
+        ...component,
+        kind: "component",
+        sourceUrl:
+          sourceBase +
+          component.source.split("/").map(encodeURIComponent).join("/"),
+        metadataUrl:
+          sourceBase +
+          component.metadataSource.split("/").map(encodeURIComponent).join("/"),
+      },
       [{ text: JSON.stringify(component) }],
     );
   }
-  outputs.set("docs/generated/components/web.md", componentMarkdown);
+  outputs.set("docs/generated/components/web.md", generatedComponentMarkdown);
   const documents = new Map(
     [...sources].filter(([name]) => name.endsWith(".md")),
   );
-  documents.set("docs/generated/components/web.md", componentMarkdown);
+  documents.set("docs/generated/components/web.md", generatedComponentMarkdown);
   const available = new Set(documents.keys());
   for (const [source, text] of [...documents].sort(([a], [b]) =>
     a.localeCompare(b, "en"),
@@ -519,6 +445,7 @@ export async function buildDocumentation(sources) {
       version: 1,
       title: `${projectName} Living Documentation`,
       api: { title: openapi.info.title, version: openapi.info.version },
+      componentCategories: categories,
       entries,
       search: { shards, count: records.length },
     }),

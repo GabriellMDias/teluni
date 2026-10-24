@@ -16,10 +16,10 @@ import { workspaceRoutes, WorkspaceNavigation } from "./workspace/routes.js";
 // here and contribute its application and home-page links to moduleNavigation.
 //
 // The Living Documentation portal is a development aid, not part of the
-// product (owner direction, 2026-10-19). Only the Vite development server
-// mounts it; production builds drop this branch, so neither the portal's
+// product (owner direction, 2026-10-19). The foundation build boundary
+// selects it; production builds drop this branch, so neither the portal's
 // code nor its generated pages are emitted.
-const developerPortal = import.meta.env.DEV
+const developerPortal = __ORION_INTERNAL_DOCS__
   ? await import("./documentation-routes.js")
   : undefined;
 

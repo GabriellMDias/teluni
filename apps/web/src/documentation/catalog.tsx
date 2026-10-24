@@ -25,6 +25,26 @@ export function Catalog({
           ? "No entries exist in this section yet."
           : `${entryCount} entries in this section. Choose a collection or open a reference.`}
       </p>
+      {id === "components" && (
+        <nav
+          aria-label="Component categories"
+          className="docs-component-categories"
+        >
+          <DocLink id="components" current={!group}>
+            All components
+          </DocLink>
+          {(manifest.componentCategories ?? groups).map((category) => (
+            <DocLink
+              key={category}
+              id="components"
+              group={category}
+              current={group === category}
+            >
+              {category}
+            </DocLink>
+          ))}
+        </nav>
+      )}
       {folders.length > 0 && (
         <div className="docs-collections">
           {folders.map(({ name, count }) => (
@@ -43,7 +63,7 @@ export function Catalog({
           ))}
         </div>
       )}
-      {groups.length > 0 && (
+      {id === "api" && groups.length > 0 && (
         <label className="docs-catalog-filter">
           API group{" "}
           <select
@@ -66,6 +86,9 @@ export function Catalog({
         </label>
       )}
       <div className="docs-entry-list">
+        {id === "components" && group && entries.length === 0 && (
+          <p>No components match this category.</p>
+        )}
         {entries.map((entry) => (
           <DocLink key={entry.id} id={entry.id} className="docs-entry">
             <div>
@@ -80,6 +103,12 @@ export function Catalog({
               {entry.path && <code>{entry.path}</code>}
             </div>
             <p>{entry.summary}</p>
+            {entry.kind === "component" && (
+              <p className="docs-muted">
+                {entry.category ?? "Uncategorized"} · {entry.scope ?? "shared"}{" "}
+                · {entry.owner ?? entry.source}
+              </p>
+            )}
             <span aria-hidden="true">→</span>
           </DocLink>
         ))}

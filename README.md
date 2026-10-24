@@ -12,9 +12,13 @@ This repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f0
 
 The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.
 
+The [Orion v3.0.0 upgrade](docs/project/foundation-upgrade-v3.md) integrates the documentation distribution boundary and React component catalog while retaining Teluni's product composition and Connected Tiles identity. Initialization provenance remains unchanged; the manifest records the integrated foundation commit after validation.
+
 The initial product brief is documented. Real email sending (the D-13 [invitation and email delivery design](docs/project/invitation-delivery-design.md) is implemented locally with Mailpit; a real sender awaits PH-17), custom profile capabilities beyond the organization module, recovery codes for two-step verification, the Android TV player's application and device qualification, and production deployment remain unfinished. The owner accepted the [product architecture directions](docs/project/architecture.md) in ADR-0018–ADR-0021 and ADR-0023–ADR-0025 on 2026-10-18. The D-01 [tenant data](docs/project/tenant-data-design.md) and D-02 [identity/session](docs/project/identity-session-design.md) designs were approved that day with an explicit request to implement PJ-24/PJ-03. Their implementation status and remaining work are recorded in the designs and plan; other detailed designs and release-readiness checks remain pending. No real-environment deployment is authorized by those approvals. The [pilot deployment](infra/pilot/README.md) of the D-08 [deployment design](docs/project/deployment-design.md) is built and rehearsed locally and in CI; installing it on a real host awaits PH-10.
 
 ## Start here
+
+The portal is an internal development tool. Default production builds exclude its UI and generated assets; developers and agents retain the full repository knowledge and local `/docs` workflow. Product and public documentation use separately approved sources and application-owned UI. See [documentation audiences, build controls, and migration](docs/architecture/living-documentation.md).
 
 | Task | Entry point |
 | --- | --- |

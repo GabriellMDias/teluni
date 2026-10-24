@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution.md",
+  "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+  "html": "<p><strong>Status:</strong> accepted</p>\n<p><strong>Date:</strong> 2026-10-23</p>\n<h2 id=\"context\">Context</h2>\n<p>The owner requires a complete engineering knowledge system for developers and AI agents while separating it from product UI and public documentation. The existing portal uses the React/Vite application, deterministic generated references, a lazy UI import, local search, and synthetic previews. Lazy loading still emits its entire internal catalog and downloads into production artifacts. Removing navigation or adding a browser route guard would leave those files downloadable.</p>\n<p>ADR-0008 already selects Vite and code splitting. Development-only identity behavior already uses build-time exclusion. ADR-0017 retains the portal and its sources in projects and makes composition and brand assets project-owned; it does not require shipping engineering assets in product builds. This decision complements that source-retention contract by defining distribution and publication explicitly. These mechanisms can support the requested separation without selecting another framework, authentication provider, or deployment topology.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Retain the full internal source catalog, generators, local <code>/docs</code> routes, search, previews, and AI-readable references. Treat the portal as a development tool. Exclude its routes, imports, UI styles, generated pages, search assets and reference downloads from every default production web build, in Orion and derived projects. Fail the product build if an accidental included import bypasses that boundary.</p>\n<p>Allow explicit internal builds only with an operator acknowledgement that a trusted external host enforces access to the entire artifact. This build selection grants no permission and supplies no authentication. A real internal deployment requires authorization and verified host controls over assets and downloads as well as routes; API controls remain unchanged.</p>\n<p>Product documentation belongs to the product's UI, audience, ownership and release process. Public API documentation uses a separately approved source inventory, including referenced schemas and examples. Neither public surface inherits or filters the internal catalog automatically. The foundation does not introduce a public publisher in this change.</p>\n<p>Keep portal layout/navigation/styles inside its optional import boundary. Applications retain control of their shell, home, modules, brand and documentation presentation. Preserve the existing toolchain, repository/manifest contract, local URLs, and generated-source ownership.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Compile-time selection removes actual emitted bytes and reuses Vite rather than introducing an application boundary solely for packaging. Independent publication sources prevent an internal addition from becoming a public disclosure. Retaining complete generation keeps engineering discovery and agent context intact. External hosting enforcement accommodates an explicitly authorized internal deployment without inventing a provider or pretending static client checks protect downloads.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"hide-links-or-require-a-browser-login\">Hide links or require a browser login</h3>\n<p>This changes navigation but leaves static references and search content downloadable. It does not establish the required distribution or trust boundary.</p>\n<h3 id=\"remove-the-portal-and-internal-sources-during-derivation\">Remove the portal and internal sources during derivation</h3>\n<p>This reduces product bytes but also removes developer and agent capabilities, generated-reference validation, and a reusable engineering workflow.</p>\n<h3 id=\"introduce-a-separate-documentation-application-immediately\">Introduce a separate documentation application immediately</h3>\n<p>A separate application may be justified by future independent hosting requirements. It is unnecessary for current build exclusion and would add workspace, routing, and validation responsibilities before a concrete deployment exists.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Default products contain no internal portal or generated documentation assets.</li>\n<li>Local engineering workflows and canonical AI-readable knowledge remain available.</li>\n<li>Product and public documentation can evolve independently of engineering navigation and branding.</li>\n<li>Artifact and browser tests cover exclusion, explicit inclusion, accidental imports, and existing local behavior.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Internal deployment operators must explicitly select and protect a distinct artifact; the build cannot verify their real host's access controls.</li>\n<li>Products that previously used <code>/docs</code> as end-user help must migrate those links and content.</li>\n<li>Public documentation requires an approved source inventory and a product-owned publication implementation when needed.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>Production <code>/docs</code> availability intentionally changes; source, local routes, generators, SDKs, database and manifest schemas remain compatible. Rebuild and remove stale deployed assets rather than only changing links. Existing intentional internal deployments must select the protected internal build. The <a href=\"/docs/repository/docs/architecture/living-documentation#existing-project-migration\">migration policy</a> describes adoption. No derived repository, release, remote push, provider, or deployment is changed by this implementation.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/architecture/living-documentation\">Living Documentation policy</a></li>\n<li><a href=\"/docs/repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications\">ADR-0008: web stack</a></li>\n<li><a href=\"/docs/repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline\">ADR-0017: clean derived baseline</a></li>\n<li><a href=\"/docs/repository/docs/project-derivation\">Project derivation</a></li>\n<li><a href=\"https://github.com/GabriellMDias/teluni/blob/main/apps/web/scripts/documentation-build.test.mjs\" rel=\"noreferrer noopener\">Build isolation tests</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0018-isolate-internal-documentation-from-product-distribution",
+      "text": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "hide-links-or-require-a-browser-login",
+      "text": "Hide links or require a browser login",
+      "level": 3
+    },
+    {
+      "id": "remove-the-portal-and-internal-sources-during-derivation",
+      "text": "Remove the portal and internal sources during derivation",
+      "level": 3
+    },
+    {
+      "id": "introduce-a-separate-documentation-application-immediately",
+      "text": "Introduce a separate documentation application immediately",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

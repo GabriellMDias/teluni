@@ -22,7 +22,11 @@ export function catalogPage(
     }
   }
   const listed = group
-    ? direct.filter((entry) => entry.tags?.includes(group))
+    ? direct.filter((entry) =>
+        id === "components"
+          ? (entry.category ?? "Uncategorized") === group
+          : entry.tags?.includes(group),
+      )
     : direct;
   const size = 24;
   const pageCount = Math.max(
@@ -44,8 +48,14 @@ export function catalogPage(
       Math.max(0, end - folders.size),
     ),
     groups:
-      id === "api"
-        ? [...new Set(direct.flatMap((entry) => entry.tags ?? []))]
-        : [],
+      id === "components"
+        ? [
+            ...new Set(
+              direct.map((entry) => entry.category ?? "Uncategorized"),
+            ),
+          ].sort()
+        : id === "api"
+          ? [...new Set(direct.flatMap((entry) => entry.tags ?? []))]
+          : [],
   };
 }
