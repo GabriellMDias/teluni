@@ -5,6 +5,31 @@
   gap: 0.5rem 0.75rem;
   margin: 1rem 0;
 }
+.devices-panel {
+  overflow-wrap: anywhere;
+}
+.devices-panel input,
+.devices-panel select {
+  min-width: 0;
+  max-width: 100%;
+}
+.devices-list li {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-muted);
+}
+.devices-list li > a {
+  align-self: flex-start;
+  font-weight: 650;
+}
+.devices-pair {
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.5rem;
+}
 .devices-panel .pairing-code {
   font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
   font-size: 1.25rem;
@@ -15,6 +40,13 @@
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
+}
+.devices-panel .checkbox-row input[type="checkbox"] {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.15rem 0 0;
+  accent-color: var(--color-primary);
 }
 .devices-danger {
   border-top: 1px solid var(--color-border);

@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
+import { Button, TextField } from "../components.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale } from "../locale.js";
 import {
@@ -52,11 +53,7 @@ function Failure({
   return (
     <div role="alert" className="notice notice-error">
       {describe(error, t, operation)}
-      {onReload && (
-        <button type="button" onClick={onReload}>
-          {t.reload}
-        </button>
-      )}
+      {onReload && <Button onClick={onReload}>{t.reload}</Button>}
     </div>
   );
 }
@@ -194,7 +191,7 @@ function PairForm({
   });
   function submit(event: FormEvent) {
     event.preventDefault();
-    pair.mutate();
+    if (!pair.isPending && branchId && !mustReload(pair.error)) pair.mutate();
   }
   const paired = pair.data;
   return (
@@ -205,8 +202,8 @@ function PairForm({
     >
       <h2 id="pair-title">{t.pairTitle}</h2>
       <p>{t.pairLead}</p>
-      <label htmlFor="pair-code">{t.fieldCode}</label>
-      <input
+      <TextField
+        label={t.fieldCode}
         id="pair-code"
         className="pairing-code"
         required
@@ -217,8 +214,8 @@ function PairForm({
         value={userCode}
         onChange={(event) => setUserCode(event.target.value.toUpperCase())}
       />
-      <label htmlFor="pair-name">{t.fieldName}</label>
-      <input
+      <TextField
+        label={t.fieldName}
         id="pair-name"
         required
         maxLength={80}
@@ -283,13 +280,14 @@ function PairForm({
           </span>
         </p>
       )}
-      <button
+      <Button
         type="submit"
-        className="button-primary"
-        disabled={pair.isPending || !branchId}
+        variant="primary"
+        pending={pair.isPending}
+        disabled={!branchId || mustReload(pair.error)}
       >
         {pair.isPending ? t.pairing : t.pair}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -545,8 +543,8 @@ function ConfigureForm({
       }}
     >
       <h2 id="configure-title">{t.editTitle}</h2>
-      <label htmlFor="device-name">{t.fieldName}</label>
-      <input
+      <TextField
+        label={t.fieldName}
         id="device-name"
         required
         maxLength={80}
@@ -567,18 +565,15 @@ function ConfigureForm({
           </option>
         ))}
       </select>
-      <label htmlFor="device-time-zone">{t.timeZoneLabel}</label>
-      <input
+      <TextField
+        label={t.timeZoneLabel}
         id="device-time-zone"
         maxLength={64}
         value={zone}
         placeholder={device.branch.timeZone}
-        aria-describedby="device-time-zone-hint"
+        hint={t.timeZoneHint(device.branch.timeZone)}
         onChange={(event) => setZone(event.target.value)}
       />
-      <p id="device-time-zone-hint" className="hint">
-        {t.timeZoneHint(device.branch.timeZone)}
-      </p>
       {save.error && (
         <Failure
           error={save.error}
@@ -589,13 +584,14 @@ function ConfigureForm({
           }}
         />
       )}
-      <button
+      <Button
         type="submit"
-        className="button-primary"
-        disabled={save.isPending || unchanged || mustReload(save.error)}
+        variant="primary"
+        pending={save.isPending}
+        disabled={unchanged || mustReload(save.error)}
       >
         {save.isPending ? t.saving : t.save}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -653,9 +649,13 @@ function MoveForm({
           }}
         />
       )}
-      <button type="submit" disabled={move.isPending || mustReload(move.error)}>
+      <Button
+        type="submit"
+        pending={move.isPending}
+        disabled={mustReload(move.error)}
+      >
         {t.move}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -704,13 +704,14 @@ function UnlinkForm({
           }}
         />
       )}
-      <button
+      <Button
         type="submit"
         className="button-danger"
-        disabled={!confirmed || unlink.isPending || mustReload(unlink.error)}
+        pending={unlink.isPending}
+        disabled={!confirmed || mustReload(unlink.error)}
       >
         {t.unlink}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -743,13 +744,13 @@ function ResetForm({
           }}
         />
       )}
-      <button
-        type="button"
-        disabled={reset.isPending || mustReload(reset.error)}
+      <Button
+        pending={reset.isPending}
+        disabled={mustReload(reset.error)}
         onClick={() => reset.mutate()}
       >
         {t.reset}
-      </button>
+      </Button>
     </section>
   );
 }

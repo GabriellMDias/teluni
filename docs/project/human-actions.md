@@ -10,7 +10,7 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## Maintaining this checklist
 
-The owner authorized the [Orion v3.0.0 upgrade](foundation-upgrade-v3.md) on 2026-10-23, including autonomous migration, validation, commits and pull-request preparation, followed by the [post-upgrade audit](foundation-upgrade-v3.md#post-upgrade-audit). Implementation and local Linux qualification include the post-baseline aggregate and player checks; [PR #28](https://github.com/GabriellMDias/teluni/pull/28) records the audit corrections and their validation. It requires no new product decision, provider credential or production access. After the required PR checks pass, the owner must review the upgrade and integrate it with a merge commit under [PH-02](#ph-02); existing pilot, device and production prerequisites remain open at their original triggers.
+The owner authorized the [Orion v3.0.0 upgrade](foundation-upgrade-v3.md) on 2026-10-23, followed by the [post-upgrade audit](foundation-upgrade-v3.md#post-upgrade-audit). [PR #28](https://github.com/GabriellMDias/teluni/pull/28) passed its final required CI gate and was integrated with merge commit `6ab489c`, verified on 2026-10-24; PJ-42 is completed. Existing pilot, device and production prerequisites remain open at their original triggers. Ordinary development continues under the owner's subsequent authorization; it grants no production access or deployment authority.
 
 1. Inspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first.
 2. Keep one stable `PH-NN` ID per coherent action; never reuse or renumber IDs. Split broad items into independently verifiable actions as they become concrete, and add newly discovered actions immediately.
@@ -28,6 +28,8 @@ The owner requested explicit planning for a product interface aligned with the C
 The owner subsequently requested correction of PR #26's CI failure. The [CI qualification correction](implementation-plan.md#ci-qualification-correction) records the runner prerequisites and mail-test precision fix. It requires no new owner account, credential or repository privilege; current-head CI qualification remains part of the implementation work.
 
 ## Safe configuration handoff
+
+On 2026-10-24 the owner requested autonomous development after the local product test. The Orion upgrade is merged under PJ-42. The [device workflow interface increment](implementation-plan.md#device-workflow-interface-increment) continues PJ-41 using existing components and approved behavior. It requires no new human action, provider access or product decision. Device qualification and production prerequisites remain open at their original triggers.
 
 - Record configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.
 - Name only implemented configuration keys and link the [generated configuration reference](../generated/configuration/api.md); do not invent variable names in advance.

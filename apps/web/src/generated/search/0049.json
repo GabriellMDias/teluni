@@ -1,5 +1,86 @@
 [
   {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Correction and recovery",
+    "anchor": "correction-and-recovery",
+    "text": "Correction and recovery\nContainment reduces harm; eradication removes cause or malicious persistence. Track temporary mitigations separately from permanent fixes. Correct the actual defect, vulnerable dependency, unauthorized account/grant, injected configuration, or broken lifecycle rather than declaring a feature disablement a permanent solution.\nRestore normal operation only with reasonable evidence that harm is contained, critical invariants hold, and dependencies/monitoring and renewed containment options are ready. Recovery may need canaries, gradual traffic, controlled queue resume, rate limits, priority, or batching. Backlog processing must account for duplicate/stale messages, idempotency, current authorization, and provider side effects.\nDistinguish provider failure from application integration defects; provider status pages are supporting evidence, not proof of application behavior. Provider compromise can require rotation, exposure assessment, disablement, and coordinated communication.\nFor corruption/loss, choose the smallest correct repair or restore. A production restore can overwrite current data and requires explicit authorization plus recovery-point/data-loss, schema compatibility, and retention/deletion analysis. Point-in-time recovery, if supported, still needs scoped verification and reconciliation. Follow [data retention and restoration](data-retention.md#backups-restore-and-deletion-replay) and applicable migration/compatibility policy.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Recovery verification and incident closure",
+    "anchor": "recovery-verification-and-incident-closure",
+    "text": "Recovery verification and incident closure\nA cleared alert or successful command alone does not establish recovery. Verify affected user behavior, relevant error/latency/progress/health signals, backlog control, data counts/invariants/reconciliation, and security properties. Confirm compromised credentials are unusable, unauthorized permissions/persistence are removed, and protective controls work. High-impact recovery may need a justified observation period to detect relapse.\nClose only after impact has ended, safe operation and critical recovery are verified, final scope/severity are understood, required communication is complete, evidence is safely stored, and emergency access is revoked or handled under its explicit expiry. Any unresolved cause or temporary mitigation needs owned follow-up; do not silently leave it as permanent architecture.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Communication and authority",
+    "anchor": "communication-and-authority",
+    "text": "Communication and authority\nShare accurate, timely, audience-appropriate updates when impact/severity/scope changes, major mitigation occurs, recovery begins, or resolution is verified. State confirmed facts, working hypotheses, and open questions separately. Include affected function, impact onset, current mitigation, and required user action where appropriate without exposing secrets or unnecessary active-vulnerability detail.\nCoordinate relevant responders, support, customers, partners, leadership, and security/legal stakeholders according to real need; not every incident reaches every audience. External disclosure timing and legal notification obligations depend on actual jurisdiction, data, scope, contracts, and organization. This document invents neither deadlines nor authority to send messages.\n[Production access](production-access.md) still applies during incidents. Scoped temporary elevation and emergency timing do not create universal administration. Break-glass is for genuine normal-control-path failure/insufficiency and must be reviewed afterward. Reconcile emergency repository-managed configuration or infrastructure changes back into source control.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "AI assistance and automation",
+    "anchor": "ai-assistance-and-automation",
+    "text": "AI assistance and automation\nAuthorized agents can correlate safe evidence, synthesize timelines, inspect source, find runbooks, and propose hypotheses. An incident does not grant an agent extra production authority. Keep raw secrets outside its context and prefer sanitized evidence to broad exports. Plausible AI explanations remain hypotheses until supported; never execute destructive mitigation solely because one sounds convincing. Agent recommendations/actions need the same authorization and verification as human actions.\nAutomation can collect safe diagnostics or perform explicit bounded actions when tested. High-impact automated containment requires confidence and acceptable false-positive risk; prefer reversibility. Repeated self-healing may expose underlying instability and should be observable. Do not introduce automated containment, arbitrary incident channels, or new operational tooling as a documentation placeholder.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Post-incident review",
+    "anchor": "post-incident-review",
+    "text": "Post-incident review\nSignificant incidents need a durable proportional review of impact/timeline, detection, cause/contributors, response/recovery, what worked, friction, and where luck limited harm. Avoid blame and simplistic “human error” conclusions: identify why unsafe action was possible, detection delayed, and recovery hard. Blameless review still requires accountable owners and corrections.\nPrioritize concrete actions by recurrence risk, impact reduction, and effort. Prefer tests, schema constraints, safer defaults/permissions, CI checks, bounded repair tools, better alerts, and tested recovery over reminders or many low-value tasks. Confirmed software defects should receive meaningful regression tests whenever practical. Add targeted safe telemetry rather than dumping payloads after an investigation gap.\nIncident histories may live in the incident system; durable policy, tests, tooling, runbooks, and significant ADR decisions belong in the repository. Update recurring-response runbooks only for real repeatable conditions. Track temporary mitigation removal, detection gaps, access/redaction/retention improvements, and completion ownership.\nIncident metrics may assess detection, containment, recovery, and recurrence, but must define ambiguous terms such as MTTR and not rank individuals simplistically. Averages hide distributions; incident count alone ignores severity. Exercise relevant response through safe tabletop scenarios, synthetic security cases, restore/rotation drills, or controlled failure injection as maturity permits. Untested recovery capabilities must not be assumed reliable.\n"
+  },
+  {
+    "id": "repository/docs/security/incident-response",
+    "title": "Incident Response",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Incident response checklist",
+    "anchor": "incident-response-checklist",
+    "text": "Incident response checklist\nAt declaration, identify owner, impact/time/environment, scope/severity, security/data risk, current trend, safe containment, evidence, relevant changes, and communication audience. For security, include affected identity/credential/boundary, continuing access/persistence, revocation and verification. For data, include affected subjects/copies, safe writes, restore/reconciliation and obligations. For reliability, include user capability, dependencies, release compatibility, backlog, and recovery evidence.\nBefore closure, verify service/security/data recovery, temporary-access handling, evidence retention, communication, and owned mitigation/corrective follow-up. Significant lessons must update their canonical policy or implementation rather than remaining only in incident prose.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Production Access",
+    "anchor": "production-access",
+    "text": "Production Access\nThis policy owns privileged operational access. [Authentication](authentication.md), [authorization](authorization.md), [secrets](secrets-management.md), and [classification](data-classification.md) supply the underlying controls. [Incident response](incident-response.md) and [runbooks](../runbooks/README.md) do not expand anyone's authority.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Scope and current availability",
+    "anchor": "scope-and-current-availability",
+    "text": "Scope and current availability\nProduction is a separate trust boundary from local development, CI, tests, staging, and previews. Routine development and maintenance should work through local/synthetic environments and sanitized observability without broad production access. Human access requires an operational purpose and the minimum capability for the necessary time.\nProvider IAM, concrete operational roles, just-in-time access, approval/break-glass workflows, bastions/private networking, device trust, and session recording remain deployment-specific decisions. [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) governs accepted CI/supply-chain direction; it does not mean production access tooling is deployed. Do not invent provider commands or begin deployment work to complete this policy.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Identities, privilege, and access request",
+    "anchor": "identities-privilege-and-access-request",
+    "text": "Identities, privilege, and access request\nUse attributable identities and distinguish humans from service, CI, and deployment actors. Shared human accounts and borrowing an automation identity undermine audit/revocation and should be avoided. Match authentication strength and any recent/step-up requirement to risk. Named cloud-console access must use narrow roles; provider root/owner accounts are break-glass capabilities, not routine accounts.\nSeparate observation, data read/write, deployment, infrastructure, IAM/security administration, and secret administration where practical. An actor who grants privileges need not hold every resource permission. Deploying must not imply viewing raw credentials. Prefer delegated use, workload identity, temporary credentials, or controlled tooling over secret disclosure. Scope by system, resource, operation, environment, time, and classification; add region/tenant scope only where needed.\nAn access request should identify actor, task/reason, target environment/resource, minimum capability, duration, related incident/work item, data classification, and whether safer telemetry/read-only tools suffice. Temporary access should expire automatically where supported; standing privilege needs operational justification, narrow scope, and review. Bounded sessions/idle timeouts reduce unattended access risk; concurrency/device/session-recording controls are requirement-driven, not mandated products.\n"
+  },
+  {
     "id": "repository/docs/security/production-access",
     "title": "Production Access",
     "group": "Security",

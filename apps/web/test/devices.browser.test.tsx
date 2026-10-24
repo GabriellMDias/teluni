@@ -272,6 +272,63 @@ test("explains an invalid code without saying why it failed", async () => {
     .toMatchTextContent(t.errors.PAIRING_CODE_INVALID);
 });
 
+test("blocks repeated pairing while pending and reconciles a lost response before another attempt", async () => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let writes = 0;
+  let paired = false;
+  respond(async (url, request) => {
+    if (url.pathname.endsWith("/devices") && request.method === "POST") {
+      writes += 1;
+      await pending;
+      paired = true;
+      throw new TypeError("Synthetic lost response");
+    }
+    if (url.pathname.endsWith("/devices"))
+      return {
+        body: {
+          items: paired ? [device({ name: "Vitrine" })] : [],
+          nextCursor: null,
+        },
+      };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["devices.view", "devices.manage"]) };
+  });
+  const { screen } = await open(screensPath);
+  try {
+    await screen.getByLabelText(t.fieldCode).fill("BCDF-GHJK");
+    await screen.getByLabelText(t.fieldName).fill("Vitrine");
+    await screen.getByRole("button", { name: t.pair, exact: true }).click();
+    await expect
+      .element(screen.getByRole("button", { name: t.pairing }))
+      .toHaveAttribute("aria-busy", "true");
+    await expect
+      .element(screen.getByRole("button", { name: t.pairing }))
+      .toBeDisabled();
+    release();
+    await expect
+      .element(screen.getByRole("alert"))
+      .toMatchTextContent(t.unknownWrite);
+    await expect
+      .element(screen.getByRole("button", { name: t.pair, exact: true }))
+      .toBeDisabled();
+    document.querySelector<HTMLFormElement>(".devices-pair")!.requestSubmit();
+    expect(writes).toBe(1);
+    await screen.getByRole("button", { name: t.reload, exact: true }).click();
+    await expect
+      .element(screen.getByRole("link", { name: "Vitrine", exact: true }))
+      .toBeVisible();
+    expect(writes).toBe(1);
+    await expect
+      .element(screen.getByLabelText(t.fieldCode))
+      .toHaveValue("BCDF-GHJK");
+  } finally {
+    release();
+  }
+});
+
 test("asks for step-up when managing screens needs strong authentication", async () => {
   respond((url) => {
     if (url.pathname.endsWith("/devices"))
