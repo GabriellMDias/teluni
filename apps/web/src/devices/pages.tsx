@@ -616,6 +616,17 @@ function MoveForm({
     mutationFn: () => moveDevice(companyId, device, target),
     onSuccess: (changed) => onChanged(changed, t.moved),
   });
+  if (branches.isError)
+    return (
+      <section aria-labelledby="move-title">
+        <h2 id="move-title">{t.moveTitle}</h2>
+        <Failure
+          error={branches.error}
+          operation="read"
+          onReload={() => void branches.refetch()}
+        />
+      </section>
+    );
   if (branches.isPending || destinations.length === 0) return null;
   return (
     <form
@@ -627,6 +638,7 @@ function MoveForm({
       }}
     >
       <h2 id="move-title">{t.moveTitle}</h2>
+      {branches.data.truncated && <p className="hint">{t.branchesTruncated}</p>}
       <label htmlFor="move-branch">{t.moveTo}</label>
       <select
         id="move-branch"

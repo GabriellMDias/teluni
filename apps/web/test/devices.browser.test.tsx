@@ -451,6 +451,75 @@ test("asks to reload after a version conflict", async () => {
   });
 });
 
+test("shows and recovers a failed destination lookup before offering a move", async () => {
+  let unavailable = true;
+  respond((url) => {
+    if (url.pathname.endsWith("/branches"))
+      return unavailable
+        ? {
+            status: 503,
+            body: {
+              error: { code: "SERVICE_UNAVAILABLE", message: "Unavailable" },
+            },
+          }
+        : { body: branches };
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    if (url.pathname.endsWith("/sync-state"))
+      return {
+        body: {
+          deviceId,
+          connection: "never",
+          lastContactAt: null,
+          source: "individual",
+          desired: null,
+          publication: "unknown",
+          reported: null,
+        },
+      };
+    return { body: company(["devices.view", "devices.manage"]) };
+  });
+  const { screen, client } = await open(`${screensPath}/${deviceId}`);
+  await expect
+    .element(
+      screen.getByRole("region", { name: t.moveTitle }).getByRole("alert"),
+    )
+    .toMatchTextContent(t.errors.SERVICE_UNAVAILABLE);
+  await expect
+    .element(screen.getByRole("button", { name: t.move, exact: true }))
+    .not.toBeInTheDocument();
+  unavailable = false;
+  await screen
+    .getByRole("region", { name: t.moveTitle })
+    .getByRole("button", { name: t.reload })
+    .click();
+  await expect
+    .element(
+      screen
+        .getByRole("form", { name: t.moveTitle })
+        .getByRole("button", { name: t.move, exact: true }),
+    )
+    .toBeEnabled();
+  await expect.element(screen.getByLabelText(t.moveTo)).toHaveValue(branchB);
+  unavailable = true;
+  await client.invalidateQueries({
+    queryKey: ["devices", "branches", companyId],
+  });
+  await expect
+    .element(
+      screen.getByRole("region", { name: t.moveTitle }).getByRole("alert"),
+    )
+    .toMatchTextContent(t.errors.SERVICE_UNAVAILABLE);
+  await expect.element(screen.getByLabelText(t.moveTo)).not.toBeInTheDocument();
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.some(
+        ([input]) => input instanceof Request && input.method === "POST",
+      ),
+  ).toBe(false);
+});
+
 const publicationId = "00000000-0000-4000-8000-0000000000b1";
 
 test("shows a screen's synchronization as the screen reported it", async () => {
