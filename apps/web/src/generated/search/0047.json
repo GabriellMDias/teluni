@@ -4,6 +4,51 @@
     "title": "Teluni Release Policies",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Teluni Release Policies",
+    "anchor": "teluni-release-policies",
+    "text": "Teluni Release Policies\n[Requirements](mvp.md) · [Acceptance targets](release-targets.md) · [Playback and synchronization](playback-and-sync.md) · [PH-09](human-actions.md#ph-09)\n"
+  },
+  {
+    "id": "repository/docs/project/release-policies",
+    "title": "Teluni Release Policies",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Decision status and ownership",
+    "anchor": "decision-status-and-ownership",
+    "text": "Decision status and ownership\n**Decided on 2026-10-18:** these product policies consolidate the owner's questionnaire and the remaining choices explicitly delegated to engineering. They extend the earlier company-to-screen requirements to freeform composition and configurable catalogs. Product capability and quality take priority over reducing scope solely for an MVP label. None of these decisions proves implementation, hardware capacity or release readiness.\nThis document owns observable business behavior. [Acceptance targets](release-targets.md) own numeric limits and qualification goals; [playback/sync](playback-and-sync.md) owns the proposed delivery lifecycle; [architecture](architecture.md#pending-decisions) and ADRs own remaining technical choices. PH-08/PH-10/PH-11/PH-13 and PJ-07 retain their separate hardware, operations, identity, privacy and architecture reviews.\n"
+  },
+  {
+    "id": "repository/docs/project/release-policies",
+    "title": "Teluni Release Policies",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Assignment and publication",
+    "anchor": "assignment-and-publication",
+    "text": "Assignment and publication\nSupport individual-device assignment and persistent company-owned groups. A device belongs to zero or one programming group; a group may span authorized branches of the same company. Check all target references and permissions on the server.\nA grouped device follows its group unless an authorized user explicitly selects individual programming. That choice replaces the complete group programming, retains membership and is visibly identified in the panel. Returning to the group is explicit; a membership edit does not silently remove the exception.\nConfirming an assignment/source change requests the destination's latest published programming without another publish action. An intentionally unpublished destination is permitted after a clear pre-confirmation indication: after applying the authorized change, the player shows local neutral output until its first valid publication. A failed or unseen synchronization instead preserves valid state.\nOrdinary layout, schema, record, playlist and schedule edits are drafts until deliberately published. An exception applies to an authorized **price save**: it automatically records publication intent for affected published bindings and produces a new validated version. A price save never mutates a snapshot in place or publishes unrelated drafts. This exception concerns designated monetary price semantics, not every numeric/custom field.\n[PH-11 identity/access policies](identity-and-access.md#publication-impact-and-delayed-work) require whole-mutation rejection when any affected target is unauthorized, without partial distribution or automatic approval fallback. Optional company approval rules distinguish a proposal from the effective price save: only an authorized independent approval commits the effective price and initiates automatic publication. No proposal is reported as an already-applied price.\nDistinguish saved, queued, failed, published, downloaded and active states. If automatic price publication fails, show the pending/failure state and retry/reconcile durably; do not report that disconnected TVs have changed. Duplicate saves/retries and concurrent edits must not replay an obsolete price over a newer one. Invalid input is rejected before accepting a price change.\nA publication contains consistent layout/schema/record/price/media versions. Activation requires its complete supported resource set; failure preserves the last valid generation. Rollback still applies current authorization and content-validity rules and cannot resurrect an expired promotion.\n"
+  },
+  {
+    "id": "repository/docs/project/release-policies",
+    "title": "Teluni Release Policies",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Configurable catalogs",
+    "anchor": "configurable-catalogs",
+    "text": "Configurable catalogs\nCatalogs are tenant-owned, user-configurable collections with typed field definitions and records. They are not restricted to product tables or a fixed mandatory set of product fields. Users can add fields and define required/optional values; products, menus and public weekly agendas are examples of reusable configurations. A weekly-agenda record describes displayed data and does not implicitly become a player publication schedule.\nProvide reviewed field types for text, numbers, booleans, dates/times, selections, monetary values, authorized media and scoped record references as appropriate. Exact type schemas and storage remain technical design work. Validate field definitions, values, references, sizes and nesting. Customization does not permit arbitrary code, SQL, executable markup or unrestricted external data access, and does not imply unbounded resources.\nStable field identity and schema versions must preserve bindings. Renaming a label must not silently change meaning. A destructive schema/type change needs explicit migration/reference handling; published versions remain bound to their original validated schema and values. Importing/copying layouts or catalog definitions does not grant access to another company's media or records.\nProduct configurations can use description/image/category/availability, normal/promotional monetary values and variation/combo references without imposing those fields on an agenda or another catalog. This defines extensible data and presentation, not an ERP/POS transaction engine. Ordinary catalog edits retain draft/publication separation; designated price updates use the automatic publication exception above.\n**Delegated commercial defaults:** a company-level base price may be overridden by branch. Every monetary value has explicit currency and exact representation; do not convert currencies automatically. Preview the effective branch value. A promotional price applies only within its published validity, then falls back to the normal price. Reject competing promotion periods for the same product/branch. Hide unavailable products by default; a component may explicitly show an unavailable indication instead. All of these rules must be evaluable from a valid offline publication.\nCatalog views bind selected fields into a list/table/menu/agenda rather than relying only on flattened artwork. Support automatic pagination with configurable timing, grouping by an available chosen field and an explicit minimum readable text size, plus manual pagination. Never silently clip names/prices or shrink text indefinitely; an unresolvable overflow needs visible validation. Generic catalogs need no mandatory category or price field.\n"
+  },
+  {
+    "id": "repository/docs/project/release-policies",
+    "title": "Teluni Release Policies",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Composition and regional playback",
+    "anchor": "composition-and-regional-playback",
+    "text": "Composition and regional playback\nProvide a freeform editor to create, position and resize simultaneous areas. A group is a programming source, not a limit on area count. Validate geometry, orientation, references and the supported rendering profile; do not silently drop a function to fit a device.\nLayouts have a structured, versioned textual representation with validated copy/import/export, revision history and preview. Serialization, editor/renderer libraries and wire schemas remain subject to technical review; AI is not required.\nAreas advance independently by default, with optional coordinated areas/pages. This owner-approved hybrid mode replaces compulsory whole-screen progression while retaining that capability when selected. Coordination within one TV does not approve synchronization across separate TVs.\nEach area may have its own schedules and optional default. Its active schedule selects the area's content and is not overwritten by a global page transition. After the exception ends, return to the current page's applicable content, then its configured default, otherwise a neutral area; do not restart unrelated independent areas. Preview must expose these regional exceptions to page coordination. Coordinated page changes use one transition point for the participating page-controlled areas; a regional exception temporarily keeps its own eligible output.\nWhen no schedule or default applies, keep that area's geometry and neutral background without automatically redistributing the layout. A complete programming source with no eligible output uses safe local no-programming output. Never borrow a group default while an individual override is selected.\nCoordinated pages have explicit duration, with an automatic suggestion covering the longest video. Reject ordinary page durations that would cut a full video. Shorter videos finish and hold their last frame until the page changes; static content remains visible. Independent areas retain their per-item durations. Scheduled boundaries override ordinary completion and may interrupt any current item/page.\nSupport several concurrent videos subject to a measured device profile. Ordinary video playback uses its complete original duration; per-item trimming is not part of the selected baseline. Independent image items use the default/configurable bounds in the target specification.\nSupport individual audio mute/volume controls and multiple audible areas. **Delegated safe default:** newly created areas start muted and mixed audio requires deliberate configuration; do not impose a universal one-audio-area limit. Qualification must test the supported mix, output controls and recovery.\nDuring an already-active presentation, isolate a rendering failure to its area: attempt bounded recovery, then show still-valid regional contingency content or neutral output, preserve unaffected areas and report the failure. Keep a coordinated group's logical page timeline; a failed area may rejoin at the current valid state instead of forcing every area to restart. Whole-generation staging/integrity failures remain distinct and preserve the previous valid generation.\nOffer direct cuts and configurable fades with preview only on validated profiles. A fade never extends expired commercial content; when necessary at an expiry boundary use an immediate cut. Advanced effects remain separate scope.\n"
+  },
+  {
+    "id": "repository/docs/project/release-policies",
+    "title": "Teluni Release Policies",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Time and scheduling",
     "anchor": "time-and-scheduling",
     "text": "Time and scheduling\nUse per-device local business time: explicit device timezone, otherwise the deliberately selected branch timezone. Never inherit the server host timezone. Cross-branch groups therefore interpret local recurring hours per target. Locale changes do not change timing.\nStart instants are inclusive and end instants exclusive. Reject overlapping schedules competing for the same output/area; intentional concurrent content in different areas is permitted. Do not resolve conflicts by implicit priority, last edit or creation order. Backend preview and player must share fixtures.\nPermit overnight windows anchored to the starting weekday: Friday 22:00–02:00 ends Saturday at 02:00. Date-only final validity includes that complete local day and ends at the next local midnight, clipping any overnight window at that limit. If Friday is the last valid day, its 22:00–02:00 window therefore ends at Saturday 00:00. Reject equal start/end times as ambiguous and provide a separate explicit all-day option.\nFollow geographic timezone rules. For nonexistent local boundaries use the first valid instant; for ambiguous boundaries use the earlier occurrence for a start and the later occurrence for an end. Show the resolved result in preview, validate conflicts after resolving it and do not duplicate publication/execution solely because clocks repeat. Exact library/fixture implementation remains technical work.\nWhen eligible scheduled output changes, interrupt the current item instead of waiting for completion. Apply this to the affected regional output or page-controlled coordinated participants; an unrelated independent area continues. Timing tolerances and trusted-clock bounds are defined in the acceptance targets, not claimed measurements.\n"
@@ -574,86 +619,5 @@
     "heading": "Readiness",
     "anchor": "readiness",
     "text": "Readiness\nReadiness asks whether this runtime can safely accept its expected work now. Failure normally removes new traffic/job claiming without terminating the process. Consider required initialization/configuration, truly critical dependencies/resources, and draining. A process can be live and unready while a dependency recovers.\nClassify dependencies by actual application responsibility. Optional email/analytics/cache failure may permit degraded operation; a broker can be critical for a worker without being critical to a read API. A nominally optional cache can become critical if fallback overloads the database, so use tested behavior. Do not map every circuit breaker, dependency outage, or individual module to whole-process unready automatically.\nDefine “degraded” explicitly if used. Independent read/write capabilities may justify scoped routing, separate runtimes, or bounded degraded responses when real requirements demand it; do not create dozens of probes preemptively. Health aggregation for a dashboard is not orchestration health authority. Readiness is minimum work-acceptance evidence, not complete correctness, SLO compliance, or a customer-specific domain validation.\n"
-  },
-  {
-    "id": "repository/docs/reliability/health-checks",
-    "title": "Health Checks",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Startup check and shutdown",
-    "anchor": "startup-check-and-shutdown",
-    "text": "Startup check and shutdown\nStartup distinguishes legitimate initialization time from failure. Bound initialization and fail visibly when it cannot finish. Invalid required configuration generally needs fast failure, while recoverable dependency outages may allow a process to wait/recover if designed to do so. Permanently bad credentials must become observable configuration defects rather than indefinite restart loops. Validate expensive deterministic configuration/schema compatibility at an appropriate boundary rather than repeating full inspection per probe.\nA runtime known to be incompatible with its database schema must not serve unsafe work; the current API connectivity probe does not establish that guarantee. Readiness must precede deployment success, not process creation alone.\nOn shutdown/maintenance, become unready, stop new work, drain in-flight operations within the allowed window, then terminate. A draining process can remain live. Workers must stop claiming and follow their queue's safe completion/release semantics. Do not use liveness failure simply to take an instance out of traffic. Deployment rollback/failure decisions must follow actual release policy and compatibility.\n"
-  },
-  {
-    "id": "repository/docs/reliability/health-checks",
-    "title": "Health Checks",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Probe safety and dependency cost",
-    "anchor": "probe-safety-and-dependency-cost",
-    "text": "Probe safety and dependency cost\nChecks must be read-only, cheap, deterministic, and bounded. Never create/delete business records, send messages/email, charge payments, or mutate providers as a routine probe. Avoid data-dependent/random sample rows, full scans/joins, migration replay, schema diffs, all-system tests, and full integrity validation. Cheap connectivity/constant queries should use runtime credentials where practical so an administrator's success does not hide runtime permission failure.\nDo not poll every third party on every probe. Provider checks can consume quotas, cost, and availability; observed error/latency/circuit state may be better evidence. Readiness can remain valid when the service safely queues, retries later, degrades, or returns bounded dependency failures. Long integrity checks belong to separate monitoring unless a discovered defect makes work unsafe.\nEach dependency wait needs a short timeout, with total latency comfortably inside the caller's budget. Parallel independent checks can help but must remain resource-bounded. Account for replica count × frequency, concurrent checks, lingering work after wait deadlines, and recovery thundering herds. Probe cost should not scale with user/table/history size. Define success/failure thresholds or hysteresis only when needed to balance responsiveness and flapping; cached health introduces explicit staleness/recovery delay.\nKeep health handlers simple and responsive during partial degradation. Basic transport/security/correlation middleware may apply; avoid expensive business orchestration or authorization where unnecessary. If saturation prevents safe new work, readiness needs a deliberate decision coordinated with timeouts/retries/backpressure, not a generic restart rule.\n"
-  },
-  {
-    "id": "repository/docs/reliability/health-checks",
-    "title": "Health Checks",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Output, monitoring, and security",
-    "anchor": "output-monitoring-and-security",
-    "text": "Output, monitoring, and security\nMachine probes need deterministic minimal state and matching transport status. Detailed diagnostics are a separate authorized surface with stable logical dependency names, not raw hostnames/IPs, configuration, topology, credentials, stack traces, or exceptions. An unauthenticated minimal probe must not become an account/tenant/session inspection endpoint. Network isolation can support probe access but never authorizes a public diagnostic dump.\nProbe response schemas and behavior are compatibility contracts for load balancers, orchestrators, deployers, and monitors. Coordinate changes with consumers. Public correlation IDs are optional and must remain safe. Prefer state-transition evidence over a log/error issue per poll; suppress/sample routine successes and avoid repeated warnings during known outages. Trace health sparingly and use underlying dependency signals where possible.\nProbe failures alone do not determine incident urgency: assess duration, replicas, traffic, error rate, and actual capability. One failed replica may recover automatically; all unready replicas can indicate a shared dependency or bad release. Uptime checks answer external DNS/TLS/routing/reachability; synthetic transactions use isolated data and separate safety controls to test real workflows. Neither replaces readiness.\n"
-  },
-  {
-    "id": "repository/docs/reliability/health-checks",
-    "title": "Health Checks",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Health check testing and review",
-    "anchor": "health-check-testing-and-review",
-    "text": "Health check testing and review\nTest actual startup, required-dependency failure, optional degradation where supported, liveness independence, invalid configuration, bounded wait, drain/new-work rejection, safe response shape, and critical recovery transitions. Complex caching/hysteresis needs transition coverage. Do not use production business records as probe fixtures.\nBefore changing a check, identify consumer/owner, exact question, expected recovery action, dependency criticality, safe work during outage, runtime identity, full-scale cost, timeout/cancellation semantics, response security, compatibility, and tests. Add a real runbook only for known repeatable failures. Consult [validation](../validation.md) and the runtime README for available checks; hosting integrations remain out of scope until selected.\n"
-  },
-  {
-    "id": "repository/docs/reliability/logging",
-    "title": "Logging",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Logging",
-    "anchor": "logging",
-    "text": "Logging\nThis policy owns structured operational log events, levels, correlation, and reporting boundaries. [Observability](observability.md) explains signal selection; [redaction](../security/telemetry-redaction.md) owns what may be captured. Logs are diagnostic evidence, not an authoritative audit ledger, business database, analytics warehouse, or substitute for metrics/traces/error reporting.\n"
-  },
-  {
-    "id": "repository/docs/reliability/logging",
-    "title": "Logging",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Current implementation and contract",
-    "anchor": "current-implementation-and-contract",
-    "text": "Current implementation and contract\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects Pino production JSON logs and centralized `request_id`, `trace_id`, `span_id` correlation, with `trace_flags` when useful. Local pretty output is permitted. Public API field naming remains a separate contract.\nThe API [logger](../../apps/api/src/logging.ts) emits JSON with service, environment, release identifier, redaction, and active `trace_id`/`span_id` where available. Fastify supplies `request_id` in request-scoped logs. The [request/error boundary](../../apps/api/src/app.ts) reports safe status and diagnostics without request bodies or URLs, and suppresses successful health-request logs. Existing underscore-separated messages such as `http_request` are current event names; the examples below explain semantics, not replacement names to adopt silently.\n"
-  },
-  {
-    "id": "repository/docs/reliability/logging",
-    "title": "Logging",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Event and field design",
-    "anchor": "event-and-field-design",
-    "text": "Event and field design\nUse stable semantic event names plus explicit fields, optionally with a concise English message. Names should survive ordinary refactoring rather than describe private methods. Existing event names, fields, units, and meanings consumed by alerts/dashboards/runbooks are operational contracts; do not rename them casually. Human sentence text is not a query contract. Prefer standard conventions where suitable and avoid several spellings for one concept.\nCommon context includes producer, environment, release when available, operation, bounded result, explicit duration unit, and relevant request/trace/span/error/job/event IDs. Actor and resource owner must not share an ambiguous field meaning. Do not redefine reserved platform fields. Logs can support justified high-cardinality IDs better than metrics, but classification, search/index cost, and access still apply.\nCross-cutting infrastructure owns logger creation, serialization, redaction, context, and transport; application owners choose useful event meaning/fields. Inject a logger or use safe scoped runtime context/child loggers rather than unrestricted mutable globals. Enrich shared fields centrally where practical. Context from one request/job must never reach another, including pooled or asynchronous execution. Typed critical-event helpers may help but do not require a custom type for every trivial log.\n"
-  },
-  {
-    "id": "repository/docs/reliability/logging",
-    "title": "Logging",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Logging levels",
-    "anchor": "logging-levels",
-    "text": "Logging levels\nPino level\nMeaning\n`trace`\nRare detailed diagnostics; disabled in normal production, safe even if enabled\n`debug`\nInvestigation detail too verbose for routine production; normal diagnosability must not depend on it\n`info`\nMeaningful normal operation/lifecycle, not every successful function call\n`warn`\nUnexpected degradation, retry, fallback, or deprecated use worth investigation if frequent\n`error`\nUnexpected failed operation or terminal failure needing investigation\n`fatal`\nProcess cannot continue safely; termination is normally expected\nSeverity follows operational meaning, not HTTP status, exception existence, monetary value, or business importance. Expected validation, missing resources, invalid credentials, permission denials, normal duplicate delivery, and business rejections do not automatically warrant warnings/errors. They can contribute to aggregate or security signals where justified. Avoid level inflation.\n"
-  },
-  {
-    "id": "repository/docs/reliability/logging",
-    "title": "Logging",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Reporting boundaries",
-    "anchor": "reporting-boundaries",
-    "text": "Reporting boundaries\nReport an unexpected failure once at an explicit authoritative boundary, with safe context and correlation. Intermediate layers may enrich/translate/rethrow without logging identical failure again. Adapter and caller must agree who reports; a dedicated error tracker does not require duplicate stacks at every layer. Follow [error reporting](error-reporting.md) and [error handling](../architecture/error-handling.md).\nUseful boundaries include request completion, job lifecycle/outcome, significant dependency interactions, process startup/shutdown, and the unexpected-error handler. Completion logs usually provide more value than separate request-start logs; justify both before doubling volume. Expected client errors should not generate stacks. Important jobs/messages need stable identity, type/consumer, attempt, duration, outcome, and safe retry/terminal-failure evidence; never log whole payloads.\nCapture safe dependency name/operation/duration/result/reason where useful, keeping provider codes distinct from the API's public codes. Database diagnostics favor normalized operations, latency, and conflict categories, not rows. [Migration logs](../database/migrations.md) should identify migration/release/environment and start/completion/duration/result without secrets. Lifecycle logs should make readiness, shutdown, drain, and startup failure understandable.\n"
   }
 ]
