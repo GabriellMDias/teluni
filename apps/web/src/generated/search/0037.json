@@ -1,12 +1,174 @@
 [
   {
+    "id": "repository/docs/adr/authoring",
+    "title": "Authoring Architecture Decision Records",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Content and evidence",
+    "anchor": "content-and-evidence",
+    "text": "Content and evidence\n**Context:** explain the actual problem, relevant constraints, scope, timing, and assumptions. Avoid unnecessary implementation detail.\n**Decision:** state the chosen direction clearly enough to understand independently of the alternatives.\n**Rationale:** explain the material tradeoffs, evidence, and constraints. Distinguish confirmed evidence, reasoned tradeoffs, and assumptions.\n**Alternatives:** describe serious alternatives considered; do not fabricate alternatives or evaluation evidence to fill a template.\n**Consequences:** include benefits, costs, limitations, new responsibilities, security/operational effects, and reversibility or migration costs where relevant. Formal scoring is not required.\n**References:** link relevant repository policy, earlier decisions, designs, benchmarks, proofs of concept, and durable evidence. Avoid unnecessary dependency graphs and large volatile datasets. Preserve enough explanation that disappearing external links do not destroy the rationale.\nUse current evidence at decision time when product capability, support lifecycle, pricing, security status, or provider limits matter. Vendor documentation can support constraints but must not be the sole location of the explanation. Detailed implementation and operational migration steps normally belong outside the ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/authoring",
+    "title": "Authoring Architecture Decision Records",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Creation, review, and acceptance",
+    "anchor": "creation-review-and-acceptance",
+    "text": "Creation, review, and acceptance\nSearch the index and related policies for the same question, accepted direction, superseded decision, or rejected alternative. Determine whether this is an architectural decision rather than an implementation detail.\nAllocate the next available identifier, copy the template, and use `proposed` status.\nDocument context, explicit direction, meaningful alternatives, rationale, constraints, and positive and negative consequences while the context is still known.\nReview in proportion to impact: is the problem real, the complexity justified, and the choice consistent with existing architecture? Identify conflicts and intentional deviations explicitly.\nAccept or reject through repository review. For a small team, review, merge, and accepted status are sufficient; do not add governance ceremony without a concrete need.\nOn acceptance, update affected current documentation and implement the selected direction with relevant verification. Do not retain rejected experimental paths unnecessarily.\nFor supersession, additionally identify changed constraints, reciprocal references, affected current policy, and compatibility/migration work. For rejection, record decisive reasons, preferred alternatives where applicable, and conditions that could justify reconsideration.\nRetrospective ADRs should say the decision was already in effect. Record only known reasoning and state uncertainty rather than inventing a historical evaluation. Significant principle deviations belong in the decision and corresponding current-policy update. When later accepted decisions supersede older records, follow the replacement and current policy rather than treating the superseded record as current architecture.\n"
+  },
+  {
+    "id": "repository/docs/adr/authoring",
+    "title": "Authoring Architecture Decision Records",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Maintenance and deferred mechanisms",
+    "anchor": "maintenance-and-deferred-mechanisms",
+    "text": "Maintenance and deferred mechanisms\nRoutine maintenance should be limited to permitted corrections and supersession metadata. Current architecture must remain discoverable without reading the entire chronological ADR history. Keep descriptive titles, explicit technologies/concepts, and useful related references.\nFrontmatter, automatic numbering, generated indexing, status/supersession validation, approval workflows, and required reviewers remain tooling or organizational decisions. Introduce them only when justified. ADRs should preserve meaningful reasoning without becoming bureaucratic records for every change.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "anchor": "adr-0018-isolate-internal-documentation-from-product-distribution",
+    "text": "ADR-0018: Isolate Internal Documentation from Product Distribution\n**Status:** accepted\n**Date:** 2026-10-23\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner requires a complete engineering knowledge system for developers and AI agents while separating it from product UI and public documentation. The existing portal uses the React/Vite application, deterministic generated references, a lazy UI import, local search, and synthetic previews. Lazy loading still emits its entire internal catalog and downloads into production artifacts. Removing navigation or adding a browser route guard would leave those files downloadable.\nADR-0008 already selects Vite and code splitting. Development-only identity behavior already uses build-time exclusion. ADR-0017 retains the portal and its sources in projects and makes composition and brand assets project-owned; it does not require shipping engineering assets in product builds. This decision complements that source-retention contract by defining distribution and publication explicitly. These mechanisms can support the requested separation without selecting another framework, authentication provider, or deployment topology.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nRetain the full internal source catalog, generators, local `/docs` routes, search, previews, and AI-readable references. Treat the portal as a development tool. Exclude its routes, imports, UI styles, generated pages, search assets and reference downloads from every default production web build, in Orion and derived projects. Fail the product build if an accidental included import bypasses that boundary.\nAllow explicit internal builds only with an operator acknowledgement that a trusted external host enforces access to the entire artifact. This build selection grants no permission and supplies no authentication. A real internal deployment requires authorization and verified host controls over assets and downloads as well as routes; API controls remain unchanged.\nProduct documentation belongs to the product's UI, audience, ownership and release process. Public API documentation uses a separately approved source inventory, including referenced schemas and examples. Neither public surface inherits or filters the internal catalog automatically. The foundation does not introduce a public publisher in this change.\nKeep portal layout/navigation/styles inside its optional import boundary. Applications retain control of their shell, home, modules, brand and documentation presentation. Preserve the existing toolchain, repository/manifest contract, local URLs, and generated-source ownership.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nCompile-time selection removes actual emitted bytes and reuses Vite rather than introducing an application boundary solely for packaging. Independent publication sources prevent an internal addition from becoming a public disclosure. Retaining complete generation keeps engineering discovery and agent context intact. External hosting enforcement accommodates an explicitly authorized internal deployment without inventing a provider or pretending static client checks protect downloads.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Hide links or require a browser login",
+    "anchor": "hide-links-or-require-a-browser-login",
+    "text": "Hide links or require a browser login\nThis changes navigation but leaves static references and search content downloadable. It does not establish the required distribution or trust boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Remove the portal and internal sources during derivation",
+    "anchor": "remove-the-portal-and-internal-sources-during-derivation",
+    "text": "Remove the portal and internal sources during derivation\nThis reduces product bytes but also removes developer and agent capabilities, generated-reference validation, and a reusable engineering workflow.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Introduce a separate documentation application immediately",
+    "anchor": "introduce-a-separate-documentation-application-immediately",
+    "text": "Introduce a separate documentation application immediately\nA separate application may be justified by future independent hosting requirements. It is unnecessary for current build exclusion and would add workspace, routing, and validation responsibilities before a concrete deployment exists.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nDefault products contain no internal portal or generated documentation assets.\nLocal engineering workflows and canonical AI-readable knowledge remain available.\nProduct and public documentation can evolve independently of engineering navigation and branding.\nArtifact and browser tests cover exclusion, explicit inclusion, accidental imports, and existing local behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nInternal deployment operators must explicitly select and protect a distinct artifact; the build cannot verify their real host's access controls.\nProducts that previously used `/docs` as end-user help must migrate those links and content.\nPublic documentation requires an approved source inventory and a product-owned publication implementation when needed.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nProduction `/docs` availability intentionally changes; source, local routes, generators, SDKs, database and manifest schemas remain compatible. Rebuild and remove stale deployed assets rather than only changing links. Existing intentional internal deployments must select the protected internal build. The [migration policy](../../architecture/living-documentation.md#existing-project-migration) describes adoption. No derived repository, release, remote push, provider, or deployment is changed by this implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Living Documentation policy](../../architecture/living-documentation.md)\n[ADR-0008: web stack](../0008-select-react-vite-and-tanstack-for-web-applications.md)\n[ADR-0017: clean derived baseline](../0017-start-derived-projects-from-a-clean-foundation-baseline.md)\n[Project derivation](../../project-derivation.md)\n[Build isolation tests](../../../apps/web/scripts/documentation-build.test.mjs)\n"
+  },
+  {
+    "id": "repository/docs/adr/orion/README",
+    "title": "Imported Orion Architecture Decisions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Imported Orion Architecture Decisions",
+    "anchor": "imported-orion-architecture-decisions",
+    "text": "Imported Orion Architecture Decisions\n[Teluni decision index](../README.md) · [Identity and metadata policy](../authoring.md#identity-and-metadata)\nThese accepted foundation records retain their published identifiers, dates and rationale. They have a separate namespace because Orion and Teluni allocated identifiers independently after derivation. Only relative links change on import; Teluni's existing records remain in their original paths.\nRecord\nDecision\n[Orion ADR-0018](0018-isolate-internal-documentation-from-product-distribution.md)\nIsolate Internal Documentation from Product Distribution\n"
+  },
+  {
+    "id": "repository/docs/adr/README",
+    "title": "Architecture Decision Records",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Architecture Decision Records",
+    "anchor": "architecture-decision-records",
+    "text": "Architecture Decision Records\nUse this index to locate governing decisions without reading the full history. Each linked record owns its status, decision, rationale, and consequences. Acceptance does not imply implementation; see [validation availability](../validation.md) and the [technology map](../architecture/technology-decisions.md).\nFor a new decision, read [authoring policy](authoring.md), inspect related records, and use the [proposed template](template.md). Current behavior belongs in the [policy index](../README.md), not in rewritten historical ADRs.\n"
+  },
+  {
     "id": "repository/docs/adr/README",
     "title": "Architecture Decision Records",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n[ADR-0033](0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nExpose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n"
+    "text": "Decision index\nTeluni's decision identifiers remain stable. The [imported Orion decision index](orion/README.md) preserves later foundation records whose identifiers overlap Teluni's independent history.\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n[ADR-0033](0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nExpose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -123,7 +285,7 @@
     "kind": "repository",
     "heading": "Documentation Instructions",
     "anchor": "documentation-instructions",
-    "text": "Documentation Instructions\nUse [the task index](README.md) to locate the owner of the information being changed. Read [contributing guidance](contributing.md) when creating, moving, or maintaining documentation.\nPreserve normative meaning, exceptions, and the distinction between requirements, examples, accepted decisions, and implementation availability. Check governing ADRs before treating a choice as unresolved.\nKeep one authoritative policy for each concern. Use links and scoped reading routes rather than copying policy into indexes or agent instructions.\nWhen moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.\nKeep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.\nUse only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.\n"
+    "text": "Documentation Instructions\nUse [the task index](README.md) to locate the owner of the information being changed. Read [contributing guidance](contributing.md) when creating, moving, or maintaining documentation.\nPreserve normative meaning, exceptions, and the distinction between requirements, examples, accepted decisions, and implementation availability. Check governing ADRs before treating a choice as unresolved.\nKeep one authoritative policy for each concern. Use links and scoped reading routes rather than copying policy into indexes or agent instructions.\nWhen moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.\nKeep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.\nUse only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.\nClassify documentation by [audience and publication](architecture/living-documentation.md#documentation-audiences-and-publication). Inclusion in the internal catalog never approves public distribution; preserve canonical engineering sources when changing build exposure.\n"
   },
   {
     "id": "repository/docs/api/error-contract",
@@ -492,7 +654,7 @@
     "kind": "repository",
     "heading": "Shared Contracts",
     "anchor": "shared-contracts",
-    "text": "Shared Contracts\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
+    "text": "Shared Contracts\nThe [internal documentation portal](living-documentation.md#build-and-deployment-boundary) reuses the web toolchain behind a compile-time distribution boundary. Its UI is an engineering tool and imposes no layout, navigation, or identity on a product. Product help and public API documentation have separately approved sources and application-owned presentation; sharing a repository does not grant publication authority.\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
   },
   {
     "id": "repository/docs/architecture/application-boundaries",
@@ -573,7 +735,7 @@
     "kind": "repository",
     "heading": "Canonical Configuration Schema",
     "anchor": "canonical-configuration-schema",
-    "text": "Canonical Configuration Schema\nEach application owns a canonical schema with derived types where practical. Define each setting's name, type, purpose, required/optional state, default, validation constraints, classification, secret status, client visibility, and operational consequences. Document the owner, permitted changes, environment scope, and whether a restart is required. Descriptions explain semantics rather than repeat the name.\nCurrent sources are:\nApplication\nCanonical input and representation\nAPI\n[`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty.\nWeb\n[`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md).\nThe API metadata records type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.\nAvoid independent definitions in code, READMEs, examples, and deployment files when they can derive from the schema. Generated references must never contain actual secrets. Changes to the API source require regeneration through [artifact tooling](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage); new applications need their own schema and explicit example/check.\n"
+    "text": "Canonical Configuration Schema\nWeb engineering-tool inclusion is controlled separately by the non-secret process environment selection in [the documentation build policy](living-documentation.md#build-and-deployment-boundary). It is evaluated by Vite configuration, is excluded from the API `.env.example` schema, and grants neither browser credentials nor hosting access.\nEach application owns a canonical schema with derived types where practical. Define each setting's name, type, purpose, required/optional state, default, validation constraints, classification, secret status, client visibility, and operational consequences. Document the owner, permitted changes, environment scope, and whether a restart is required. Descriptions explain semantics rather than repeat the name.\nCurrent sources are:\nApplication\nCanonical input and representation\nAPI\n[`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty.\nWeb\n[`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md).\nThe API metadata records type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.\nAvoid independent definitions in code, READMEs, examples, and deployment files when they can derive from the schema. Generated references must never contain actual secrets. Changes to the API source require regeneration through [artifact tooling](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage); new applications need their own schema and explicit example/check.\n"
   },
   {
     "id": "repository/docs/architecture/configuration",
@@ -880,122 +1042,5 @@
     "heading": "Application Internal Dependency Direction",
     "anchor": "application-internal-dependency-direction",
     "text": "Application Internal Dependency Direction\nOuter delivery adapters normally depend on application behavior and stable domain concepts. Infrastructure implements capabilities needed by the application; bootstrap selects and wires concrete adapters. Stable business behavior must not become dependent on HTTP, ORM records, application bootstrap, or vendor details without architectural justification.\nDirect imports are suitable for stable pure dependencies. Inject replaceable infrastructure where that clarifies ownership/testing, without introducing a framework or an interface for every class. Pass only the configuration a capability needs. Avoid ambient configuration, global registries, service locators, mutable singletons, and arbitrary initialization of unrelated infrastructure.\nClient pages/features use the SDK/client boundary rather than having generic UI components issue arbitrary backend calls. Persistence interfaces protect meaningful ownership or behavior; do not introduce a repository abstraction for every table. ORM records, domain entities, wire contracts, and view models may share a representation only when their semantics actually align.\nProvider SDKs belong near meaningful integration boundaries. An adapter should express an application capability, not duplicate a vendor API simply to hide its name. Domain telemetry must not unnecessarily couple business behavior to a particular telemetry vendor.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Package and Domain Boundaries",
-    "anchor": "package-and-domain-boundaries",
-    "text": "Package and Domain Boundaries\n[Repository structure](repository-structure.md#packages) defines when a package is justified. These constraints apply when the corresponding responsibility exists:\nResponsibility\nDependency constraints\nDomain\nStable primitives/standard-library capabilities as needed; avoid direct HTTP/UI, ORM/database, cloud/broker, filesystem infrastructure, telemetry-vendor, or application dependencies.\nWire contracts\nSchema validation, serialization, identifiers, and stable primitives; avoid application internals, ORM models, framework request objects, UI, and deployment infrastructure.\nDatabase\nDrivers, ORM/migration/schema tooling, and telemetry integration; may implement stable persistence contracts, never import applications.\nSDK\nPublic contracts, transport/serialization, and generated types; no backend internals, database access, private domain implementation, or secrets.\nConfiguration\nShared validation/loading primitives; keep application settings application-owned and expose narrow inputs.\nTesting\nPublic APIs and test-only infrastructure; production code must not import testing code. Broader test access must not conceal an invalid runtime design.\nUI\nExplicitly compatible client runtimes; no dependency from backend/domain code onto client UI.\nUse supported package exports, including deliberate public subpaths. Do not reach into `src/internal` or use a barrel to flatten unrelated ownership. A public API provider owns its semantics and stability; the consumer owns why it needs that dependency.\nReads across domains create coupling just as writes do. Identify table/concept ownership, synchronous or asynchronous interaction, and the public capability before directly querying another domain's data. Avoid circular business ownership; canonical event contracts must not depend on producer/consumer internals. Shared identifiers require shared meaning: a database ID, provider ID, business ID, and correlation ID are not interchangeable merely because all are strings.\nPublic API/errors must not expose private ORM enums, internal exception classes, stack traces, driver messages, aggregates, or provider identifiers unless intentionally part of the contract. Map internal results to stable public schemas/codes. Separately released APIs, SDKs, and event schemas require an explicit [compatibility transition](versioning-and-compatibility.md) when broken.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Client/Server Dependency Rules",
-    "anchor": "clientserver-dependency-rules",
-    "text": "Client/Server Dependency Rules\nClients may consume public contracts, SDKs, and explicitly client-safe primitives. They must not import database clients, server credentials/configuration, backend internals, private adapters, filesystem APIs, or server-only SDKs. A shared package must remain safe for every runtime it supports. Secrets must never enter client bundles, generated clients, or public configuration.\nThe web application depends on the workspace SDK package (`packages/sdk`); the API owns its executable wire contracts. Shared code never imports foundation-only reference modules; only the composition files `apps/api/src/modules.ts` and `apps/web/src/modules.tsx` may compose them. Generated artifacts remain identifiable, reproducible, and unedited by hand; semantic documentation belongs to the canonical owner.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Adding or Changing Dependencies",
-    "anchor": "adding-or-changing-dependencies",
-    "text": "Adding or Changing Dependencies\nBefore a new edge, identify its responsibility, canonical owner, public API, permitted direction, platform compatibility, cycle risk, and runtime/deployment coupling. Search existing capabilities before adding a new abstraction. If a legitimate need conflicts with the model, report and resolve that conflict explicitly.\nFor third-party libraries, follow [contributing guidance](../contributing.md#change-workflow) and assess maintenance, security, license, maturity, runtime/bundle cost, portability, testability, lock-in, and overlap. Declare directly used dependencies in the owning application/package; do not rely on undeclared transitives. Optional dependencies must represent genuinely optional capabilities. Dynamic imports, reflection, and plugins need real use cases and must not evade enforcement.\nCycles are forbidden by default. Resolve their ownership by moving a shared responsibility lower, merging one concept, or revising the boundary; do not hide them with lazy imports, global registration, duplicated interfaces, or initialization order. Remove intermediate layers that add no meaning. High fan-out warrants a responsibility review; high fan-in requires focused APIs, stability, careful compatibility, minimal dependencies, and strong tests. Neither metric alone decides correctness.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Mechanical Enforcement",
-    "anchor": "mechanical-enforcement",
-    "text": "Mechanical Enforcement\n`pnpm architecture` runs [dependency-cruiser configuration](../../.dependency-cruiser.mjs) locally and in `pnpm validate`/CI. It rejects cycles, unresolved imports, cross-application imports, package-to-application imports, runtime-to-tooling/infra imports, known client-to-server paths, Node built-ins in browser/SDK runtime, and configured domain-to-infrastructure paths. Type-aware [ESLint restrictions](../../eslint.config.mjs) also reject direct browser/SDK imports of known server infrastructure libraries. `pnpm architecture:test` exercises representative forbidden and permitted edges, including a flat `domain.ts` module and emitted-bundle exclusion.\nEnforcement is path-based, not a proof of every policy above. The domain rule covers named `domain/` directories and flat `domain.ts` modules but cannot infer all business ownership. Browser restrictions list known server libraries rather than every possible unsafe external dependency; the web build also has a [bundle check](../../apps/web/scripts/check-bundle.mjs). Public-surface restrictions, undeclared dependencies, data ownership, dynamic edges, and arbitrary platform leakage require review or additional targeted checks. Generated directories, emitted `dist/` bundles, and dependency internals are excluded from the import scan. Bundler chunk relationships are derived from the checked source graph and must not make architecture results depend on whether a build has already run.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Dependency Enforcement",
-    "anchor": "dependency-enforcement",
-    "text": "Dependency Enforcement\nExtend checks when real boundaries appear. Failures should identify the violating edge, rule, reason, and corrective route. Keep the same core checks available locally and in CI; do not silently weaken them to pass a change. When introducing stricter rules, measure existing violations, prevent new ones, migrate deliberately, remove exceptions, and make the rule fully blocking.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Temporary Exceptions",
-    "anchor": "temporary-exceptions",
-    "text": "Temporary Exceptions\nDocument a significant temporary exception's edge, reason, scope, risk, and removal condition; track it mechanically where practical. It must not become permanent silently. A permanent exception to a major dependency rule normally needs an ADR and corresponding policy/enforcement updates.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Handling",
-    "anchor": "error-handling",
-    "text": "Error Handling\n[Documentation index](../README.md) · [API error contract](../api/error-contract.md) · [Error reporting](../reliability/error-reporting.md)\nThis page owns failure semantics and translation between layers. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) governs executable contracts and [ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) diagnostic signals. Separate what happened, what the caller may know, what the user sees, and what trusted diagnostics need.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Categories",
-    "anchor": "error-categories",
-    "text": "Error Categories\nCategory\nMeaning and handling\nValidation\nInput shape or constraints are invalid. Return stable, safe caller-actionable semantics; structured field details require a public schema.\nDomain\nA valid request violates a business rule/state. Describe business meaning rather than a database/provider failure.\nAuthentication\nIdentity cannot be established. Avoid unnecessary credential/account-existence disclosure.\nAuthorization\nAn actor lacks permission. Enforce at the trusted boundary and avoid exposing protected resource information.\nNot found\nA resource cannot be resolved. Security policy may require indistinguishable not-found/denied behavior.\nConflict\nState, uniqueness, idempotency, or concurrent version prevents the action. Map to the intended business condition.\nRate limit\nA threshold is exceeded. Expose useful retry guidance where safe without revealing anti-abuse internals.\nExternal dependency/infrastructure\nA provider, database, queue, filesystem, network, or runtime fails. Translate at its boundary according to operation semantics.\nUnexpected internal\nA defect, broken invariant, unmodeled response, or unexpected dependency failure. Capture once, correlate, and return a safe generic result.\nThese categories classify meaning, not guaranteed retry safety or operational severity. The same provider can produce a business rejection, transient outage, or internal credential/configuration incident.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Expected vs Unexpected Failures",
-    "anchor": "expected-vs-unexpected-failures",
-    "text": "Expected vs Unexpected Failures\nExpected failures are modeled outcomes such as invalid input, missing access, or an invalid transition. They should not automatically receive the severity/alerting of an unexpected exception. Unexpected failures need diagnostic telemetry and, when the operating environment supplies it, centralized error reporting.\nCatch only where the boundary can recover, translate, enrich, retry safely, compensate, or report. Otherwise propagate to its owner. Never turn every failure into “not found,” swallow exceptions as `null`, or claim success when a required effect failed. Assertions detect impossible internal states; they do not replace validation of external input.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Contract",
-    "anchor": "error-contract",
-    "text": "Error Contract\nThe API already has a canonical [`errorRegistry`, envelope schema, and safe builder](../../apps/api/src/errors.ts), with a [generated reference](../generated/api/errors.md). [API error policy](../api/error-contract.md) owns serialization, status mapping, and operation metadata. Add codes there rather than inventing a parallel format. The current envelope contains code, safe message, required request ID, and optional trace/error IDs; it has no arbitrary details property.\nStable public codes are machine-readable, normally uppercase, English, owned by the relevant capability, and independent of localization. Consumers branch on codes rather than message text, class names, SQLSTATE, ORM codes, or provider exceptions. HTTP status expresses protocol-level meaning and may cover several distinct application errors; domain logic must not depend on HTTP status.\nChoose public granularity according to meaningful consumer actions. Avoid both one generic error for every domain outcome and a permanent code for every internal branch. Public details, if added, need explicit safe schemas. Human messages can evolve or be localized and should explain the problem/action without internal jargon, filesystem paths, SQL, hostnames, or stack traces. Never reuse a code for a different meaning; renaming, removing, or changing consumed codes requires [compatibility review](versioning-and-compatibility.md).\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Translation and Ownership",
-    "anchor": "translation-and-ownership",
-    "text": "Translation and Ownership\nDomain behavior owns business failures; application services own operation outcomes; adapters own technical failures; transport owns protocol mapping; clients own presentation; observability owns diagnostic capture. Expose concepts appropriate to each consumer.\nPreserve an original cause internally where useful and supported, subject to privacy/redaction. A known unique constraint may mean an idempotency conflict, whereas a foreign-key failure may indicate a defect. Translate from demonstrated semantics, not a blanket mapping of all driver failures. Keep internal provider/database classifications distinct from the smaller public surface. Enrich with safe structured context without unpredictably mutating shared error objects.\nRetryability depends on the operation, not just error type. Preserve [unknown outcomes](delivery-and-side-effects.md#unknown-outcome), where a timed-out mutation may already have succeeded. Follow [delivery policy](delivery-and-side-effects.md) for retry ownership, idempotency, partial effects, reconciliation, and compensation. Transaction failures must abort required atomic work; a catch must not accidentally commit partial state. Compensation is domain behavior, not generic exception handling.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Correlation Identifiers",
-    "anchor": "correlation-identifiers",
-    "text": "Correlation Identifiers\nA request ID identifies a boundary request; a trace ID identifies causal distributed execution; an error ID identifies an occurrence/report. Event/job IDs serve their own durable work identities. Preserve appropriate correlation rather than treating them as interchangeable. Safe support references must not encode sensitive data.\nUse one authoritative unexpected-error reporting point; lower layers can preserve/enrich context without logging the same exception again. Safe structured diagnostics may include operation, bounded category, request/trace/error ID, attempt, duration, environment, and release. Actor/entity identifiers require classification approval. [Logging](../reliability/logging.md), [tracing](../reliability/tracing.md), and [redaction](../security/telemetry-redaction.md) own capture rules.\nNever intentionally emit credentials, tokens, authorization headers, payment secrets, or other prohibited data in errors, logs, breadcrumbs, traces, or metrics. Do not attach personal data merely because it could help debugging. Stack traces/causes may contain sensitive values; trusted capture still requires filtering. Development may expose additional detail only when explicitly safe, while preserving business semantics. The current API uses allowlisted diagnostics rather than arbitrary exception messages/stacks.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Runtime and Client Boundaries",
-    "anchor": "runtime-and-client-boundaries",
-    "text": "Runtime and Client Boundaries\nEach executable needs an appropriate final boundary for unexpected failures: HTTP handler, worker handler, process handling, or UI boundary as applicable. It captures/correlates failures, provides a safe result where possible, and prevents silent failure; it does not replace explicit handling of expected outcomes. If required initialization fails or process state is unsafe, fail startup or terminate under the runtime's [lifecycle policy](../reliability/health-checks.md) rather than continue partially functional without an explicit degraded mode.\nJob/event consumers must distinguish invalid contracts, business rejection, duplicates, transient dependency failures, poison messages, and consumer defects. Retain safe job/trace/attempt context and bound retries so repeated failures are visible.\nClients interpret stable contracts and present user-correctable failures locally: field feedback, sign-in, denied access, or conflict recovery as appropriate. Unexpected crashes need a safe global experience and risk-appropriate reporting with release/correlation context. Do not display raw backend diagnostics. Support should be able to investigate with safe reference, release, and time rather than relying only on screenshots.\nA centralized error-reporting provider and baseline browser instrumentation are not selected by this page. Where reporting is introduced, retain safe grouping, release/environment/trace correlation, and source-map/symbolication capability. Diagnostic artifacts require controlled access; source maps need not be public. Metrics use bounded categories, and [alerts](../reliability/alerting.md) address actionable impact rather than every expected rejection. Formal SLOs/error budgets require operational needs, not merely the presence of telemetry.\n"
   }
 ]

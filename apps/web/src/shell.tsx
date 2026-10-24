@@ -17,10 +17,11 @@ import "./shell.css";
 function Shell() {
   const isDocumentation = useRouterState({
     select: (state) =>
-      state.location.pathname === "/docs" ||
-      state.location.pathname.startsWith("/docs/"),
+      __ORION_INTERNAL_DOCS__ &&
+      (state.location.pathname === "/docs" ||
+        state.location.pathname.startsWith("/docs/")),
   });
-  return isDocumentation ? <DocumentationShell /> : <ProductShell />;
+  return isDocumentation ? <Outlet /> : <ProductShell />;
 }
 
 function ProductShell() {
@@ -104,34 +105,6 @@ function ProductShell() {
           <Outlet />
         </main>
       </div>
-    </div>
-  );
-}
-
-// The development portal retains its existing light presentation and never
-// reads the product's session or appearance preference.
-function DocumentationShell() {
-  const navigation = useModuleNavigation();
-  return (
-    <div className="app-shell">
-      <header className="site-header">
-        <div className="site-header-inner">
-          <Link to="/" className="brand">
-            <img src={brandMark} alt="" width="32" height="32" />
-            {__PROJECT_NAME__}
-            <span> / Documentation</span>
-          </Link>
-          <span className="header-note">Living documentation</span>
-          <nav aria-label="Application" className="header-nav">
-            {navigation.map((Item, index) => (
-              <Item key={index} />
-            ))}
-          </nav>
-        </div>
-      </header>
-      <main className="main-content documentation-main">
-        <Outlet />
-      </main>
     </div>
   );
 }

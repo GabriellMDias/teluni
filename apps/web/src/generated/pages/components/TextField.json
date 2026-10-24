@@ -1,0 +1,72 @@
+{
+  "name": "TextField",
+  "category": "Inputs",
+  "scope": "composed",
+  "owner": "Web UI",
+  "summary": "A labeled native input with linked hints and validation messages.",
+  "usage": "Use for a single native input with a persistent label. The caller owns value, validation and submission. Keep domain-specific validation and credentials in the feature; use other native controls for multiline text or selection.",
+  "accessibility": "Associates label and input through a stable id; links hint and error descriptions and sets aria-invalid for errors. Native required, disabled, ref and keyboard behavior are preserved. The feature owns dynamic error summaries or announcements.",
+  "props": [
+    {
+      "name": "type",
+      "type": "Text-entry native input types",
+      "meaning": "Supports text, email, password, search, tel, url, number and native date/time inputs. Use separate native controls for checkbox, radio, file, range or other selection behavior.",
+      "required": false,
+      "default": "text"
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Persistent accessible label; a placeholder cannot replace it.",
+      "required": true
+    },
+    {
+      "name": "id",
+      "type": "string",
+      "meaning": "Optional DOM id; a stable useId value is generated when absent.",
+      "required": false,
+      "default": "Generated with useId"
+    },
+    {
+      "name": "hint",
+      "type": "string",
+      "meaning": "Optional help linked to the input through aria-describedby.",
+      "required": false
+    },
+    {
+      "name": "error",
+      "type": "string",
+      "meaning": "Caller-owned validation message linked to the input; also marks it invalid.",
+      "required": false
+    },
+    {
+      "name": "…inputProps",
+      "type": "ComponentPropsWithRef<\"input\">",
+      "meaning": "Native value/defaultValue, onChange, type, required, disabled, className, ref and ARIA props are forwarded. Existing aria-describedby references are retained."
+    }
+  ],
+  "states": [
+    "Empty and populated",
+    "Hint",
+    "Validation error",
+    "Required",
+    "Disabled",
+    "Keyboard focus"
+  ],
+  "examples": [
+    {
+      "id": "text-field-states",
+      "label": "Labeled input and validation",
+      "description": "Synthetic form input with a hint, validation message and disabled state.",
+      "code": "<TextField label=\"Name\" hint=\"Shown to your colleagues.\" required />\n<TextField label=\"Email\" type=\"email\" error=\"Enter an email address.\" />",
+      "live": true
+    }
+  ],
+  "id": "TextField",
+  "exportName": "TextField",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

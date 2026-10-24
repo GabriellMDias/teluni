@@ -2,6 +2,17 @@
   "version": 1,
   "title": "Teluni Living Documentation",
   "api": { "title": "Teluni API", "version": "1.0.0" },
+  "componentCategories": [
+    "Actions",
+    "Inputs",
+    "Forms",
+    "Data Display",
+    "Feedback",
+    "Navigation",
+    "Overlays",
+    "Layout",
+    "Uncategorized"
+  ],
   "entries": [
     {
       "id": "api/acceptInvitation",
@@ -2758,14 +2769,46 @@
       "file": "pages/database/schedule_rules.json"
     },
     {
+      "id": "components/Button",
+      "kind": "component",
+      "title": "Button",
+      "group": "Actions",
+      "category": "Actions",
+      "scope": "shared",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A native action button with explicit variants and safe pending behavior.",
+      "headings": [],
+      "file": "pages/components/Button.json"
+    },
+    {
       "id": "components/ErrorNotice",
       "kind": "component",
       "title": "ErrorNotice",
-      "group": "Web components",
+      "group": "Feedback",
+      "category": "Feedback",
+      "scope": "composed",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
       "source": "apps/web/src/components.tsx",
       "summary": "Displays a public API failure message and an optional reload action.",
       "headings": [],
       "file": "pages/components/ErrorNotice.json"
+    },
+    {
+      "id": "components/TextField",
+      "kind": "component",
+      "title": "TextField",
+      "group": "Inputs",
+      "category": "Inputs",
+      "scope": "composed",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A labeled native input with linked hints and validation messages.",
+      "headings": [],
+      "file": "pages/components/TextField.json"
     },
     {
       "id": "repository/AGENTS",
@@ -3268,6 +3311,26 @@
       "file": "pages/repository/docs/adr/authoring.json"
     },
     {
+      "id": "repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution",
+      "kind": "repository",
+      "title": "ADR-0018: Isolate Internal Documentation from Product Distribution",
+      "group": "Decisions",
+      "source": "docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution.md",
+      "summary": "The owner requires a complete engineering knowledge system for developers and AI agents while separating it from product UI and public documentation. The existing portal uses…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution.json"
+    },
+    {
+      "id": "repository/docs/adr/orion/README",
+      "kind": "repository",
+      "title": "Imported Orion Architecture Decisions",
+      "group": "Decisions",
+      "source": "docs/adr/orion/README.md",
+      "summary": "These accepted foundation records retain their published identifiers, dates and rationale. They have a separate namespace because Orion and Teluni allocated identifiers…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/orion/README.json"
+    },
+    {
       "id": "repository/docs/adr/README",
       "kind": "repository",
       "title": "Architecture Decision Records",
@@ -3413,7 +3476,7 @@
       "title": "Living Documentation",
       "group": "Architecture",
       "source": "docs/architecture/living-documentation.md",
-      "summary": "The Living Documentation portal is the repository's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web…",
+      "summary": "The Living Documentation portal is an internal engineering tool: the repository's local, searchable interface to repository knowledge and generated references. It uses the…",
       "headings": [],
       "file": "pages/repository/docs/architecture/living-documentation.json"
     },
@@ -3466,6 +3529,16 @@
       "summary": "Compatibility protects consumers that cannot change atomically. This page owns cross-boundary evolution; API, database, configuration, and security policies own their specific…",
       "headings": [],
       "file": "pages/repository/docs/architecture/versioning-and-compatibility.json"
+    },
+    {
+      "id": "repository/docs/architecture/web-components",
+      "kind": "repository",
+      "title": "React Components and Design Practices",
+      "group": "Architecture",
+      "source": "docs/architecture/web-components.md",
+      "summary": "This policy owns component reuse, classification, documentation and styling in the existing React application. It extends the application-owned UI direction in ADR-0008 and the…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/web-components.json"
     },
     {
       "id": "repository/docs/contributing",
@@ -3543,7 +3616,7 @@
       "title": "Web Component Reference",
       "group": "Generated references",
       "source": "docs/generated/components/web.md",
-      "summary": "Displays a public API failure message and an optional reload action.",
+      "summary": "A native action button with explicit variants and safe pending behavior.",
       "headings": [],
       "file": "pages/repository/docs/generated/components/web.json"
     },
@@ -3646,6 +3719,16 @@
       "summary": "Approved detailed design for the server side of D-03, 2026-10-19. The owner approved all nine decisions for review as proposed under PH-22, including ADR-0027, and asked for…",
       "headings": [],
       "file": "pages/repository/docs/project/device-enrollment-design.json"
+    },
+    {
+      "id": "repository/docs/project/foundation-upgrade-v3",
+      "kind": "repository",
+      "title": "Orion v3.0.0 Upgrade",
+      "group": "Project guides",
+      "source": "docs/project/foundation-upgrade-v3.md",
+      "summary": "PJ-42 adopts the published Orion v3.0.0 release on the owner's 2026-10-23 instruction. The tag resolves to aafb920a3616f51c0da4b145dbee61a4bf5c3cc7. Git verifies that the…",
+      "headings": [],
+      "file": "pages/repository/docs/project/foundation-upgrade-v3.json"
     },
     {
       "id": "repository/docs/project/human-actions",
@@ -4166,25 +4249,25 @@
         "count": 29,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0032.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0033.json", "count": 111, "kinds": ["repository"] },
-      { "file": "search/0034.json", "count": 119, "kinds": ["repository"] },
-      { "file": "search/0035.json", "count": 170, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 157, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 111, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0039.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0032.json", "count": 65, "kinds": ["repository"] },
+      { "file": "search/0033.json", "count": 110, "kinds": ["repository"] },
+      { "file": "search/0034.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0035.json", "count": 164, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 165, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 116, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 115, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 83, "kinds": ["repository"] },
       { "file": "search/0040.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 57, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 73, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 56, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 41, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 76, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 95, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 94, "kinds": ["repository"] },
-      { "file": "search/0049.json", "count": 19, "kinds": ["repository"] }
+      { "file": "search/0041.json", "count": 63, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 62, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 63, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 37, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 73, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0049.json", "count": 60, "kinds": ["repository"] }
     ],
-    "count": 1967
+    "count": 2006
   }
 }

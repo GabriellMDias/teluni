@@ -6,3 +6,4 @@
 - When moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.
 - Keep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.
 - Use only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.
+- Classify documentation by [audience and publication](architecture/living-documentation.md#documentation-audiences-and-publication). Inclusion in the internal catalog never approves public distribution; preserve canonical engineering sources when changing build exposure.

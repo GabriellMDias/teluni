@@ -13,6 +13,15 @@ const projectName = (
   ) as { name: string }
 ).name;
 const overviewTitle = `${projectName} documentation`;
+const componentMetadata = JSON.parse(
+  readFileSync(
+    new URL("../../src/components.docs.json", import.meta.url),
+    "utf8",
+  ),
+) as {
+  source?: string;
+  components: { name: string; source?: string; owner?: string }[];
+};
 
 const webUrl = () => process.env.ORION_E2E_WEB_URL!;
 const sections = (page: Page) =>
@@ -29,7 +38,7 @@ test("documentation sections isolate details and preserve deep links and browser
   page,
 }) => {
   await openDocument(page, "/docs", overviewTitle);
-  for (const selector of [".docs-brand-symbol", ".brand img"]) {
+  for (const selector of [".docs-brand-symbol"]) {
     const mark = page.locator(selector);
     await expect(mark).toBeVisible();
     await expect(mark).toHaveJSProperty("complete", true);
@@ -37,6 +46,7 @@ test("documentation sections isolate details and preserve deep links and browser
       await mark.evaluate((image: HTMLImageElement) => image.naturalWidth),
     ).toBeGreaterThan(0);
   }
+  await expect(page.locator(".site-header")).toHaveCount(0);
   const favicon = page.locator('link[rel="icon"]');
   const iconResponse = await page.request.get(
     new URL((await favicon.getAttribute("href"))!, page.url()).href,
@@ -417,11 +427,97 @@ test("API explorer cancellation discards late responses and response markup stay
   await expect(explorer.locator("img")).toHaveCount(0);
 });
 
+test("component categories, source ownership and reference previews are discoverable without API requests", async ({
+  page,
+}) => {
+  const apiRequests: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/"))
+      apiRequests.push(request.url());
+  });
+  await openDocument(page, "/docs/components", "Components");
+  const categories = page.getByRole("navigation", {
+    name: "Component categories",
+  });
+  await categories.getByRole("link", { name: "Actions", exact: true }).click();
+  await expect(page).toHaveURL(/group=Actions/);
+  await expect
+    .poll(async () => {
+      const labels = await page
+        .locator(".docs-entry .docs-muted")
+        .allTextContents();
+      return (
+        labels.length > 0 &&
+        labels.every((label) => label.startsWith("Actions ·"))
+      );
+    })
+    .toBe(true);
+  await page.reload();
+  await expect(
+    categories.getByRole("link", { name: "Actions", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(categories.locator('a[aria-current="page"]')).toHaveCount(1);
+  const categoryNames = await categories.getByRole("link").allTextContents();
+  let missingCategory = "Unregistered category";
+  while (categoryNames.includes(missingCategory)) missingCategory += "_";
+  await page.goto(
+    `${webUrl()}/docs/components?group=${encodeURIComponent(missingCategory)}`,
+  );
+  await expect(
+    page.getByText("No components match this category."),
+  ).toBeVisible();
+  await openDocument(page, "/docs/components/Button", "Button");
+  await expect(
+    sections(page).getByRole("link", { name: "Overview", exact: true }),
+  ).not.toHaveAttribute("aria-current");
+  await expect(
+    sections(page).getByRole("link", { name: "Components", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page
+      .getByRole("navigation", { name: "On this page", exact: true })
+      .getByRole("link", { name: "Examples", exact: true }),
+  ).toHaveAttribute("href", "#examples");
+  const buttonMetadata = componentMetadata.components.find(
+    (component) => component.name === "Button",
+  );
+  const buttonSource =
+    buttonMetadata?.source ??
+    componentMetadata.source ??
+    "apps/web/src/components.tsx";
+  await expect(page.locator(".docs-facts")).toContainText(
+    buttonMetadata?.owner ?? buttonSource,
+  );
+  await expect(
+    page.getByRole("link", { name: "Component source", exact: true }),
+  ).toHaveAttribute("href", /\/apps\/web\/src\//);
+  await expect(page.locator(".docs-source")).toContainText(buttonSource);
+  await page.getByRole("button", { name: "Save example", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("no request was made");
+  await expect(
+    page.getByRole("button", { name: "Saving example…", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Product token override", exact: true }),
+  ).toHaveCSS("background-color", "rgb(37, 78, 70)");
+  await openDocument(page, "/docs/components/TextField", "TextField");
+  await page
+    .getByRole("textbox", { name: "Example name", exact: true })
+    .fill("Synthetic name");
+  await expect(
+    page.getByRole("textbox", { name: "Example email", exact: true }),
+  ).toHaveAccessibleDescription("Enter an email address.");
+  expect(apiRequests).toEqual([]);
+  await expectNoStoredUserData(page);
+});
+
 for (const [path, title] of [
   ["/docs", overviewTitle],
   ["/docs/api/getReadiness", "getReadiness"],
   ["/docs/database", "Data dictionary"],
   ["/docs/components/ErrorNotice", "ErrorNotice"],
+  ["/docs/components/Button", "Button"],
+  ["/docs/components/TextField", "TextField"],
   ["/docs/repository/docs/setup", "Development Setup"],
   [
     "/docs/repository/docs/project-derivation",

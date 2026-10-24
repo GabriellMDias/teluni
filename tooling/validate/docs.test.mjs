@@ -49,6 +49,38 @@ test("installed tool skills are excluded while project documentation stays valid
     let result = check();
     assert.equal(result.status, 0, result.stderr);
 
+    const decision = (id) =>
+      `# ADR-${id}: Preserve Published Identity\n\n**Status:** accepted\n\n**Date:** 2026-10-23\n\n## Context\n\nIndependent histories.\n\n## Decision\n\nRetain identifiers.\n\n## Rationale\n\nStable references.\n\n## Consequences\n\nSeparate indexes.\n`;
+    await write("docs/guide.md", "# Guide\n\n[Decisions](adr/README.md)\n");
+    await write(
+      "docs/adr/README.md",
+      "# Decisions\n\n[Project](0018-project.md)\n\n[Orion](orion/README.md)\n",
+    );
+    await write("docs/adr/0018-project.md", decision("0018"));
+    await write(
+      "docs/adr/orion/README.md",
+      "# Orion decisions\n\n[Foundation](0018-foundation.md)\n",
+    );
+    await write("docs/adr/orion/0018-foundation.md", decision("0018"));
+    result = check();
+    assert.equal(result.status, 0, result.stderr);
+
+    await write("docs/adr/orion/0018-duplicate.md", decision("0018"));
+    await write("docs/adr/orion/0019-invalid.md", "# Invalid record\n");
+    await write("docs/adr/other/0018-project.md", decision("0018"));
+    result = check();
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /duplicate ADR identifier 0018/);
+    assert.match(result.stderr, /absent from docs\/adr\/orion\/README.md/);
+    assert.match(result.stderr, /title does not match ADR identifier/);
+    assert.match(result.stderr, /missing or invalid ADR status/);
+    assert.match(result.stderr, /missing ISO ADR date/);
+    assert.match(result.stderr, /missing Context section/);
+    assert.match(result.stderr, /unsupported ADR namespace docs\/adr\/other/);
+    await rm(path.join(root, "docs/adr/orion/0018-duplicate.md"));
+    await rm(path.join(root, "docs/adr/orion/0019-invalid.md"));
+    await rm(path.join(root, "docs/adr/other/0018-project.md"));
+
     await write("docs/orphan.md", "# Orphan\n");
     await write("docs/guide.md", "# Guide\n\n[Missing](missing.md)\n");
     await write("apps/api/.agents/notes.md", "# Notes\n");

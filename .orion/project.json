@@ -15,6 +15,6 @@
     },
     "remote": "orion-upstream",
     "initializedFromCommit": "53bcc705a9f68f01aa1bbea3a0f4df4a009577ea",
-    "baselineCommit": "53bcc705a9f68f01aa1bbea3a0f4df4a009577ea"
+    "baselineCommit": "aafb920a3616f51c0da4b145dbee61a4bf5c3cc7"
   }
 }

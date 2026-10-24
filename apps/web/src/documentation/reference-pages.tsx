@@ -37,9 +37,26 @@ type ComponentPage = {
   summary: string;
   usage: string;
   accessibility: string;
-  props: { name: string; type: string; meaning: string }[];
+  category?: string;
+  scope?: string;
+  owner?: string;
+  sourceUrl?: string;
+  metadataUrl?: string;
+  props: {
+    name: string;
+    type: string;
+    meaning: string;
+    required?: boolean;
+    default?: string;
+  }[];
   states: string[];
-  examples: { id: string; label: string; description: string }[];
+  examples: {
+    id: string;
+    label: string;
+    description: string;
+    code?: string;
+    live?: boolean;
+  }[];
 };
 type RepositoryPage = { kind: "repository"; html: string; headings: Heading[] };
 type Page = ApiPage | DatabasePage | ComponentPage | RepositoryPage;
@@ -244,16 +261,47 @@ function ComponentDetail({ data }: { data: ComponentPage }) {
   return (
     <>
       <p className="docs-lead">{data.summary}</p>
+      <dl className="docs-facts">
+        <div>
+          <dt>Category</dt>
+          <dd>{data.category ?? "Uncategorized"}</dd>
+        </div>
+        <div>
+          <dt>Reuse scope</dt>
+          <dd>{data.scope ?? "shared"}</dd>
+        </div>
+        {data.owner && (
+          <div>
+            <dt>Owner</dt>
+            <dd>{data.owner}</dd>
+          </div>
+        )}
+      </dl>
+      <p className="docs-resource-links">
+        {data.sourceUrl && <a href={data.sourceUrl}>Component source</a>}
+        {data.metadataUrl && <a href={data.metadataUrl}>Owned metadata</a>}
+      </p>
       <section id="props">
         <h2>Props</h2>
-        <RecordTable
-          rows={data.props.map((prop) => ({
-            Prop: prop.name,
-            Type: prop.type,
-            Meaning: prop.meaning,
-          }))}
-          label="Component properties"
-        />
+        {data.props.length ? (
+          <RecordTable
+            rows={data.props.map((prop) => ({
+              Prop: prop.name,
+              Type: prop.type,
+              Meaning: prop.meaning,
+              Required:
+                prop.required === undefined
+                  ? "See type"
+                  : prop.required
+                    ? "Yes"
+                    : "No",
+              Default: prop.default ?? "—",
+            }))}
+            label="Component properties"
+          />
+        ) : (
+          <p>No component-specific props are declared.</p>
+        )}
       </section>
       <section id="usage">
         <h2>Usage and accessibility</h2>
@@ -267,15 +315,21 @@ function ComponentDetail({ data }: { data: ComponentPage }) {
         </ul>
       </section>
       <section id="examples">
-        <h2>Live examples</h2>
+        <h2>Examples</h2>
         <p className="docs-muted">
-          Examples use the actual components. Input stays in this preview.
+          Live previews use the actual components and keep input local.
+          Code-only examples are not executed.
         </p>
         {data.examples.map((example) => (
           <section key={example.id}>
             <h3>{example.label}</h3>
             <p>{example.description}</p>
-            <Example id={example.id} />
+            {example.code && (
+              <pre>
+                <code>{example.code}</code>
+              </pre>
+            )}
+            {(example.live ?? !example.code) && <Example id={example.id} />}
           </section>
         ))}
       </section>

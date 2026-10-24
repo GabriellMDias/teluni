@@ -59,3 +59,22 @@ test("API group filtering precedes pagination and keeps other groups discoverabl
     folders: [],
   });
 });
+
+test("component categories filter before pagination and keep legacy entries discoverable", () => {
+  const inventory: Entry[] = Array.from({ length: 50 }, (_, index) => ({
+    ...entry(`components/Action${index}`),
+    kind: "component",
+    category: "Actions",
+  }));
+  inventory.push({ ...entry("components/Legacy"), kind: "component" });
+  const result = catalogPage(inventory, "components", 3, "Actions");
+  expect(result.entries).toHaveLength(26 - 24);
+  expect(result.pageCount).toBe(3);
+  expect(result.groups).toEqual(["Actions", "Uncategorized"]);
+  expect(
+    catalogPage(inventory, "components", 1, "Uncategorized").entries[0].id,
+  ).toBe("components/Legacy");
+  expect(catalogPage(inventory, "components", 1, "Overlays").entries).toEqual(
+    [],
+  );
+});

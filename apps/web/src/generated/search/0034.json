@@ -4,6 +4,69 @@
     "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Zod",
+    "anchor": "zod",
+    "text": "Zod\nZod provides an excellent TypeScript-first runtime validation model and strong developer ergonomics.\nModern Zod versions can also generate JSON Schema, which makes Zod technically capable of participating in Orion's contract architecture.\nIt was not selected because Orion's canonical contract model is explicitly centered on JSON Schema-compatible wire representations.\nTypeBox begins directly from JSON Schema representations while still providing TypeScript inference.\nThis reduces the conceptual translation between the authored contract, Fastify's validation and serialization model, and generated OpenAPI.\nZod remains appropriate for a scoped application-specific problem when a concrete integration materially benefits from it, but it is not part of Orion's default schema foundation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Manually Authored OpenAPI",
+    "anchor": "manually-authored-openapi",
+    "text": "Manually Authored OpenAPI\nOrion could maintain an `openapi.yaml` or equivalent document as the primary source of API contracts.\nThis would provide an explicitly language-independent contract from the beginning.\nIt was not selected because runtime validation schemas would then either need to be generated from OpenAPI or maintained separately.\nOrion already requires executable server-side schemas, and maintaining independent runtime schemas and OpenAPI descriptions would create unnecessary duplication and drift risk.\nGenerated OpenAPI preserves language-independent interoperability without introducing another manually maintained source of truth.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rich Generated SDKs as the Default",
+    "anchor": "rich-generated-sdks-as-the-default",
+    "text": "Rich Generated SDKs as the Default\nTools such as Orval, Hey API, or general-purpose OpenAPI generators can generate operation-specific functions, framework integrations, data-fetching hooks, mocks, and larger client SDKs.\nThese capabilities can be valuable.\nThey were not selected as Orion's initial TypeScript golden path because they introduce more generated runtime code and can couple API generation to frontend-framework decisions that have not yet been made.\nThe initial approach of generated types plus a thin typed Fetch client is smaller and more reversible.\nA richer generator may be selected later if concrete client-development requirements justify it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Direct Server Contract Imports from First-Party Clients",
+    "anchor": "direct-server-contract-imports-from-first-party-clients",
+    "text": "Direct Server Contract Imports from First-Party Clients\nBecause Orion uses a TypeScript monorepo, a web application could import TypeScript types or schemas directly from the server-side contract package.\nThis would provide excellent compile-time ergonomics.\nIt was not selected as the default client integration because it would bypass the language-independent API boundary.\nGenerating client types from OpenAPI continuously verifies that the API remains consumable as an actual external contract and avoids recreating a TypeScript-specific RPC coupling implicitly.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Separate Configuration Schema Library",
+    "anchor": "separate-configuration-schema-library",
+    "text": "Separate Configuration Schema Library\nOrion could use a different library, such as Zod or a specialized environment-validation package, for bootstrap configuration.\nThis may provide concise environment-variable parsing APIs.\nIt was not selected because TypeBox already fulfills the required runtime-schema role and introducing another schema system would add a second convention for essentially the same trust-boundary responsibility.\nExplicit parsing combined with TypeBox validation provides sufficient capability while keeping the foundation more consistent.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion has one default schema model for API contracts and bootstrap configuration.\nCanonical API contracts are executable and machine-readable.\nTypeScript types can be derived from the same schemas used for runtime boundary validation.\nFastify can consume the same schema representations for request validation and response serialization.\nOpenAPI is generated rather than independently maintained.\nExternal API contracts remain language-independent despite TypeScript being Orion's primary implementation language.\nFirst-party clients exercise the same external API contract that other consumers use.\nStable `operationId` values provide durable machine-readable operation identities.\nTypeScript SDK types can be regenerated deterministically from the OpenAPI description.\n`openapi-fetch` keeps the default TypeScript client runtime small and close to Web Platform APIs.\nOther-language SDKs can be introduced without changing the server contract architecture.\nGenerated artifacts can participate in the canonical `pnpm validate` workflow.\nTransport representations remain distinct from domain and persistence models.\nConfiguration is validated before application startup.\nArbitrary `process.env` access is removed from ordinary application code.\nConfiguration parsing behavior becomes explicit and centralized.\nInvalid foundational configuration fails early rather than being discovered during request processing.\nConfiguration reference documentation can eventually be generated from canonical metadata.\nThe architecture remains compatible with AI tools that consume structured API descriptions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nOrion introduces TypeBox as another foundational dependency that contributors must learn.\nDevelopers familiar with Zod may need to adapt to a JSON Schema-oriented modeling style.\nSome JavaScript-native or transformation-oriented schema patterns are intentionally unsuitable for canonical wire contracts.\nGenerating OpenAPI and SDK artifacts adds build and validation steps.\nKeeping first-party clients behind the generated OpenAPI boundary introduces more indirection than importing TypeScript types directly.\n`openapi-typescript` and `openapi-fetch` do not provide the richer generated convenience functions or framework-specific hooks available from larger SDK generators.\nOperation metadata such as descriptions and stable `operationId` values must be maintained deliberately.\nConfiguration parsing requires explicit code in addition to schema definition because raw environment values commonly use string representations.\nRestricting environment access requires architectural enforcement to prevent convenience-driven direct `process.env` usage from spreading.\nOpenAPI cannot by itself express every runtime or business semantic that documentation may need, so authored API documentation remains necessary for intent and behavior not represented by the contract.\n"
@@ -1015,59 +1078,5 @@
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
     "text": "Operational or Migration Impact\nOrion already selected Pino as the Fastify runtime logger, so structured logging implementation does not require replacement.\nThe initial observability implementation should introduce OpenTelemetry before instrumented infrastructure is initialized.\nServer bootstrap should follow an ordering compatible with:\nconfiguration\n    ↓\nobservability initialization\n    ↓\ninstrumentation registration\n    ↓\nPrisma / Fastify / HTTP infrastructure\n    ↓\napplication composition\n\nFastify instrumentation should use `@fastify/otel`.\nPrisma tracing should use the supported Prisma OpenTelemetry instrumentation compatible with the repository's selected Prisma version.\nHTTP instrumentation must support distributed context propagation for inbound and outbound calls.\nPino tracing correlation should inject active `trace_id` and `span_id` values centrally rather than requiring manual fields at each logging call.\nPino configuration must establish production JSON logging and centralized redaction.\nThe initial server-side telemetry export should support OTLP through configuration.\nProduction deployments may send OTLP either:\napplication\n    → Collector\n    → backend\n\nor, for simpler environments:\napplication\n    → compatible backend\n\nwithout changing domain or application code.\nTelemetry resource identity must be configured explicitly for each executable service.\nSampling must be externally configurable and must not require source-code changes.\nGraceful shutdown should attempt to flush buffered telemetry before process termination when practical.\nNo OpenTelemetry Logs SDK integration, browser instrumentation, observability vendor, or external error-reporting provider is required by the initial Orion implementation.\nRepository validation should verify observability configuration and architecture where such verification can be performed mechanically.\nOperational dashboards, alert thresholds, telemetry retention, and backend-specific infrastructure remain deployment concerns and may be documented by application-specific runbooks.\nRoutine compatible upgrades to OpenTelemetry, Pino, Fastify instrumentation, Prisma instrumentation, or OTLP exporters do not require a new ADR when the responsibilities established here remain unchanged.\nSelecting a particular observability backend for one deployment does not supersede this ADR.\nReplacing OpenTelemetry as the observability standard, replacing Pino as the logging strategy, or materially changing the responsibility boundaries defined here would require an ADR that supersedes this decision.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated policy: [error handling](../architecture/error-handling.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [logging](../reliability/logging.md)\nRelated policy: [observability](../reliability/observability.md)\nRelated policy: [data classification](../security/data-classification.md)\nRelated policy: [secrets management](../security/secrets-management.md)\nExternal reference: OpenTelemetry JavaScript documentation.\nExternal reference: OpenTelemetry specification and semantic conventions.\nExternal reference: OpenTelemetry Protocol documentation.\nExternal reference: OpenTelemetry Collector documentation.\nExternal reference: `@fastify/otel` documentation.\nExternal reference: Prisma OpenTelemetry tracing documentation.\nExternal reference: OpenTelemetry Pino instrumentation documentation.\nExternal reference: Pino documentation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "anchor": "adr-0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "text": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion requires a continuous-integration strategy that converts the repository validation contract established by ADR-0003 into an enforceable pull-request and primary-branch quality gate.\nThe CI system must support the repository as it grows from a small TypeScript monorepo into potentially large applications containing:\nbackend services;\nReact web applications;\nshared packages;\ndatabase migrations;\ngenerated API artifacts;\nintegration tests using real infrastructure;\nbrowser tests;\nend-to-end tests;\narchitecture validation;\nsecurity checks.\nThe CI strategy must preserve a fundamental Orion principle:\nlocal validation\n    =\nCI validation capabilities\n\nCI must not become a separate implementation of repository correctness.\nA contributor or AI agent should be able to reproduce a CI failure locally using repository-owned commands rather than reverse-engineering workflow YAML.\nThe repository has already established:\npnpm validate\n\nas its canonical repository validation entry point.\nCI must orchestrate those capabilities without duplicating their logic.\nThe CI system must also address software supply-chain risks.\nA modern TypeScript repository depends on:\nnpm packages;\ntransitive dependencies;\nGitHub Actions;\ngenerated lockfiles;\nbrowser binaries;\ncontainer images;\nexternal development tools.\nDependency updates must therefore be automated enough to prevent stagnation while remaining reviewable and controlled.\nGitHub is the repository platform assumed by the current Orion foundation, making GitHub Actions a natural CI candidate.\nHowever, GitHub-specific workflow mechanics must remain an orchestration concern rather than leak into application architecture.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nOrion will use **GitHub Actions as its primary continuous-integration platform**.\nCI will execute repository-owned validation commands and will not duplicate linting, formatting, type-checking, testing, architecture, generation, or build logic directly in workflow YAML.\nThe primary model is:\ndeveloper / AI agent\n        ↓\nrepository commands\n        ↓\npnpm validate\n        ↓\nsame capabilities\n        ↓\nGitHub Actions\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Canonical validation contract",
-    "anchor": "canonical-validation-contract",
-    "text": "Canonical validation contract\n`pnpm validate` remains the canonical repository validation contract.\nCI may decompose validation capabilities into separate jobs for:\nparallel execution;\nclearer failure reporting;\nresource isolation;\nbrowser requirements;\ncontainer requirements;\nfuture sharding.\nFor example, CI may conceptually execute:\nformat / lint / architecture\ntypecheck\nunit tests\nintegration tests\nbrowser tests\nE2E tests\ngenerated-artifact validation\nbuild validation\n\nas independent jobs.\nThose jobs must invoke repository scripts implementing the same capabilities available locally.\nWorkflow YAML must not contain an independent implementation of validation logic.\nFor example, this is preferred:\nGitHub Actions\n    ↓\npnpm test:integration\n\nrather than embedding database setup, test discovery, test filters, and project-specific test semantics exclusively inside the workflow.\nThe stable interface is the repository command.\nThe CI workflow is an orchestrator.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Incremental validation capabilities",
-    "anchor": "incremental-validation-capabilities",
-    "text": "Incremental validation capabilities\nNot every validation category must exist before the repository contains the corresponding capability.\nThe validation system will grow with the repository.\nFor example:\ninitial foundation\n├── format:check\n├── lint\n├── typecheck\n└── architecture\n\nafter application code exists\n├── unit tests\n├── integration tests\n├── generated artifacts\n├── web build\n├── browser tests\n└── E2E tests\n\nA capability should enter required CI validation when the repository contains meaningful content that the capability protects.\n"
   }
 ]

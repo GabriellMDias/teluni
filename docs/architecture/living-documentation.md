@@ -2,7 +2,43 @@
 
 [Documentation index](../README.md) · [Portal setup](../setup.md#living-documentation-portal) · [Contributing](../contributing.md)
 
-The Living Documentation portal is the repository's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Its routes and header link are composed in each repository's `modules.tsx`; a product may mount them only in development builds so its public build carries no repository knowledge. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.
+The Living Documentation portal is an internal engineering tool: the repository's local, searchable interface to repository knowledge and generated references. It uses the existing React/Vite toolchain and is excluded from production builds by default. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources. [ADR-0018](../adr/orion/0018-isolate-internal-documentation-from-product-distribution.md) records the distribution boundary.
+
+## Documentation audiences and publication
+
+| Audience | Sources and ownership | Distribution and presentation |
+| --- | --- | --- |
+| Internal engineering | Architecture, ADRs, Data Dictionary, component examples, repository knowledge, configuration and complete internal API references; existing repository sources and generators remain canonical. | Local `/docs` development tool and explicitly authorized protected internal artifacts. Full catalog/search and AI-readable Markdown/JSON remain available to developers and authorized agents. |
+| Product documentation | Product-owner-approved workflows, help, and user guidance owned by the application. | The application chooses its layout, UX, routes, identity, localization, access rules, and release lifecycle. The portal is not a required product screen or design system. |
+| Public API documentation | Explicitly approved operations, schemas, descriptions, examples, errors, and referenced-schema closure for supported external consumers. | A deliberately authored or generated public surface with its own reviewed source inventory and publication process. The complete internal OpenAPI artifact is not automatically a public contract. |
+
+Before publishing product or public documentation, record the owning application, intended audience, exact approved source files/operations and referenced content, approval evidence, and applicable access policy in that publication's reviewed configuration or source inventory. New sources require explicit approval. Never use the internal manifest, a crawl of `docs/`, search shards, repository instruction files, or an exclusion list over the internal catalog as a public source selector. Review links, examples, descriptions, schema references, downloads, search indexes, and copied assets for the same audience; approval of a page does not approve every linked internal source. Reuse rendering or generation mechanics only with an independent allowlist and output boundary.
+
+There is no public documentation publisher or `public` portal mode in the foundation. A product may implement one when needed, using the approved source inventory above and appropriate tests. The current generator intentionally remains complete for internal engineering; narrowing it to make a public bundle would degrade developer and agent knowledge. A public API operation or an unauthenticated local reading route does not classify the whole engineering catalog as public.
+
+## Build and deployment boundary
+
+[`internalDocumentationEnabled`](../../apps/web/scripts/documentation-build.ts) selects inclusion at Vite configuration time, independently of repository identity, application modules, and mode names:
+
+| Invocation / process environment | Internal portal |
+| --- | --- |
+| `pnpm -C apps/web dev` (Vite serve), no selection | Enabled for local development on loopback |
+| `pnpm build` or `pnpm -C apps/web build`, no selection, including custom Vite modes | Excluded for Orion and derived projects |
+| `ORION_WEB_DOCUMENTATION=disabled` | Excluded in development and builds |
+| `ORION_WEB_DOCUMENTATION=internal` during development | Enabled locally |
+| `ORION_WEB_DOCUMENTATION=internal` during build | Requires `ORION_WEB_INTERNAL_DOCS_ACCESS=external`; otherwise the build fails |
+
+These are non-secret process environment build controls read by Vite configuration, not `VITE_*` browser values or runtime settings. They are not read from `.env.local`. Only the boolean build constant reaches client code. Invalid selections fail rather than falling back. Preview serves the already selected artifact; changing its environment cannot add or remove documentation. Select a fresh product build before distribution; never reuse an internal artifact as a public deployment.
+
+The compile-time branch removes documentation routes and the dynamic import, so the portal UI/CSS, catalog, page JSON, search worker/shards, and downloadable internal API/database/component/error references are absent from the default emitted web artifact. Lazy loading or hiding links alone does not meet this requirement. The build plugin rejects accidental included imports of internal modules or generated references from product code; [artifact tests](../../apps/web/scripts/documentation-build.test.mjs) inspect emitted files/modules and exercise default and internal builds in a browser. Canonical repository files, committed generated references, generation/freshness checks, and the typed SDK are retained. Distribute `apps/web/dist`, not the source repository or a parent directory containing internal references.
+
+An authorized internal deployment must enforce authentication and authorization at the trusted hosting boundary for the entire internal artifact, including every hashed asset, search shard, download, direct URL, and cache/CDN response. `ORION_WEB_INTERNAL_DOCS_ACCESS=external` is an explicit operator acknowledgement of this responsibility; it does not implement or verify access control. The static SPA has no selected documentation identity provider. An in-page login, route guard, hidden navigation, API bearer token, or robots directive cannot protect already downloadable static files. Keep API enforcement intact and verify anonymous denial and authorized access against the actual host before deployment. Default local reading remains credential-free; exposing the development server is not a deployment strategy.
+
+The internal portal owns its navigation, layout and scoped styles. The application shell and home remain replaceable application UI, with optional local developer links; product builds contain neither these links nor portal presentation. Projects can customize their own shell, home, module composition, and assets without adopting portal UX. No new application, framework, hosted service, or authentication provider is introduced.
+
+### Existing project migration
+
+On adopting this change through a reviewed Orion upgrade, keep the existing manifest schema and source catalog. No database or SDK migration is required. Development `/docs` URLs and generator commands are preserved. Production `/docs` availability intentionally changes: rebuild the product to remove old emitted assets, remove stale assets from the destination according to its deployment procedure, and replace product links that previously depended on the engineering portal. Projects that intentionally deployed the portal must explicitly select an internal build and verify full-artifact host access controls, or migrate their product/public guidance to separately approved sources. Review customized Vite/shell imports against the build guard; do not bypass it to retain a public internal catalog. Project initialization preserves the tooling and sources and inherits the safe production default without adding configuration or changing provenance.
 
 ## Information architecture
 
@@ -34,6 +70,8 @@ The navigation brand displays the Orion foundation revision. At Vite startup/bui
 Authored guidance owns intent, constraints, rationale, and procedures. The portal may summarize, index, or render those sources but must not invent missing meaning. Accepted ADRs retain decision-time context and status. Repository policy, current implementation, and deliberately conditional capabilities remain distinguishable.
 
 ## Generation and drift protection
+
+Component architecture and the extensible category/ownership/reuse contract are owned by [component policy](web-components.md). Root and co-located feature metadata normalize into the existing manifest, detail JSON and Markdown reference. Source/export verification uses the installed TypeScript parser, follows local re-exports, and documents only curated shared exports or explicitly registered feature components. Legacy fields, component URLs and registered live examples remain compatible; code-only examples never execute. The catalog and search remain internal under the distribution boundary above.
 
 The [generator entry point](../../tooling/documentation/generate.mjs) delegates discovery/output handling, Markdown rendering, and reference transformation to small tooling modules. It emits `apps/web/src/generated/manifest.json`, individual JSON files under `pages/`, bounded search assets under `search/`, and the component Markdown reference. The manifest contains navigation metadata, not the repository body text. Repository outlines load with their page. The browser loads only the selected page; the application workflow lazy-loads the documentation UI separately.
 

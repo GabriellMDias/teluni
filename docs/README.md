@@ -29,6 +29,7 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Find selected technology decisions | [Technology decisions](architecture/technology-decisions.md) |
 | Place code or create an application/package | [Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md) |
 | Add imports or shared dependencies | [Dependency rules](architecture/dependency-rules.md) |
+| Reuse or create React components, extend their catalog, or define product styling/themes | [Component architecture and design practices](architecture/web-components.md) |
 | Model failures and translate boundaries | [Error handling](architecture/error-handling.md) |
 | Add configuration | [Configuration](architecture/configuration.md) |
 | Choose test coverage and execution layers | [Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md) |

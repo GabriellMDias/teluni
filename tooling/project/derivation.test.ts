@@ -437,6 +437,20 @@ void test("project templates render complete documents whose local links resolve
   );
   for (const path of [projectPlanPath, projectHumanActionsPath, "README.md"])
     assert.ok(rendered.has(path), `${path} is project-owned`);
+  for (const path of [
+    "apps/web/src/documentation.tsx",
+    "apps/web/src/generated/manifest.json",
+    "apps/web/scripts/documentation-build.ts",
+    "tooling/documentation/generate.mjs",
+    "docs/architecture/living-documentation.md",
+    "docs/generated/api/openapi.json",
+  ])
+    assert.ok(
+      !contract.foundationOnly.some(
+        (entry) => path === entry || path.startsWith(`${entry}/`),
+      ),
+      `${path} remains available to developers and agents`,
+    );
   const documents = new Map<string, string>(
     [...rendered].flatMap(([path, content]) =>
       path.endsWith(".md") && typeof content === "string"

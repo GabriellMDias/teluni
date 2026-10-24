@@ -10,6 +10,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { documentationPaths } from "./markdown.mjs";
+import { componentDependencies, isComponentMetadata } from "./components.mjs";
 
 const run = promisify(execFile);
 const generatedRoot = "apps/web/src/generated";
@@ -31,14 +32,15 @@ export async function readSources(root) {
   );
   const names = new Set([
     ...documentationPaths(stdout.split("\0").filter(Boolean)),
+    ...stdout.split("\0").filter(isComponentMetadata),
     ...fixedSources,
   ]);
   const sources = new Map();
-  for (const name of [...names].sort()) {
+  async function readSource(name) {
     try {
       await lstat(path.join(root, name));
     } catch (error) {
-      if (error.code === "ENOENT" && !fixedSources.includes(name)) continue;
+      if (error.code === "ENOENT" && !fixedSources.includes(name)) return;
       throw error;
     }
     // Git symlinks must never let publication read files outside the checkout.
@@ -51,6 +53,22 @@ export async function readSources(root) {
         throw new Error(`Symlink is not a documentation input: ${name}`);
     }
     sources.set(name, await readFile(path.join(root, name), "utf8"));
+  }
+  for (const name of [...names].sort()) await readSource(name);
+  const available = new Set(stdout.split("\0").filter(Boolean));
+  const pending = [...sources.keys()].filter(isComponentMetadata).sort();
+  pending.push("apps/web/src/components.tsx");
+  const visited = new Set();
+  while (pending.length) {
+    const name = pending.shift();
+    if (visited.has(name)) continue;
+    visited.add(name);
+    if (!available.has(name) && !fixedSources.includes(name))
+      throw new Error(`Component source is not Git-discovered: ${name}`);
+    if (!sources.has(name)) await readSource(name);
+    if (!sources.has(name))
+      throw new Error(`Missing component source: ${name}`);
+    pending.push(...componentDependencies(name, sources.get(name), available));
   }
   return sources;
 }

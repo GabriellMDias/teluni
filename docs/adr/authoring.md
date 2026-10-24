@@ -32,6 +32,8 @@ Rejected records can preserve useful evaluation and constraints; a changed conte
 
 Use monotonic numeric identifiers and descriptive English filenames of the form `NNNN-short-decision-title.md`. Numbers identify records, not importance, domain, priority, or version. Gaps are acceptable. Never reuse or renumber identifiers already in shared history. Resolve parallel numbering conflicts before merge; an unshared identifier may be changed.
 
+When a foundation upgrade brings an already published identifier that collides with a project decision, retain both records and their identifiers. Import the foundation record under `docs/adr/orion/`, with its own decision index and corrected relative links. Each directory is an identifier namespace; validation enforces unique IDs and index membership within each namespace and the same metadata requirements for every record. New Teluni decisions remain in `docs/adr/`; this exception preserves independent published histories rather than allocating new product namespaces.
+
 Record title, status, date, context, decision, and consequences. For accepted records, the date should generally be the acceptance date. Titles should describe the decision rather than merely name a topic. Preserve identifiers once merged and referenced.
 
 Simple Markdown metadata is the current format. `pnpm docs:check` validates filenames, matching titles/IDs, status, ISO dates, required sections, and index membership. Preserve these field names as tooling contracts. Supersession semantics still require review; no automatic numbering or supersession checker is implemented. ADR files remain canonical; avoid duplicate status stores or custom ADR software without a concrete need.

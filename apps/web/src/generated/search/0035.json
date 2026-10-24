@@ -1,5 +1,59 @@
 [
   {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated policy: [error handling](../architecture/error-handling.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [logging](../reliability/logging.md)\nRelated policy: [observability](../reliability/observability.md)\nRelated policy: [data classification](../security/data-classification.md)\nRelated policy: [secrets management](../security/secrets-management.md)\nExternal reference: OpenTelemetry JavaScript documentation.\nExternal reference: OpenTelemetry specification and semantic conventions.\nExternal reference: OpenTelemetry Protocol documentation.\nExternal reference: OpenTelemetry Collector documentation.\nExternal reference: `@fastify/otel` documentation.\nExternal reference: Prisma OpenTelemetry tracing documentation.\nExternal reference: OpenTelemetry Pino instrumentation documentation.\nExternal reference: Pino documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "anchor": "adr-0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "text": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a continuous-integration strategy that converts the repository validation contract established by ADR-0003 into an enforceable pull-request and primary-branch quality gate.\nThe CI system must support the repository as it grows from a small TypeScript monorepo into potentially large applications containing:\nbackend services;\nReact web applications;\nshared packages;\ndatabase migrations;\ngenerated API artifacts;\nintegration tests using real infrastructure;\nbrowser tests;\nend-to-end tests;\narchitecture validation;\nsecurity checks.\nThe CI strategy must preserve a fundamental Orion principle:\nlocal validation\n    =\nCI validation capabilities\n\nCI must not become a separate implementation of repository correctness.\nA contributor or AI agent should be able to reproduce a CI failure locally using repository-owned commands rather than reverse-engineering workflow YAML.\nThe repository has already established:\npnpm validate\n\nas its canonical repository validation entry point.\nCI must orchestrate those capabilities without duplicating their logic.\nThe CI system must also address software supply-chain risks.\nA modern TypeScript repository depends on:\nnpm packages;\ntransitive dependencies;\nGitHub Actions;\ngenerated lockfiles;\nbrowser binaries;\ncontainer images;\nexternal development tools.\nDependency updates must therefore be automated enough to prevent stagnation while remaining reviewable and controlled.\nGitHub is the repository platform assumed by the current Orion foundation, making GitHub Actions a natural CI candidate.\nHowever, GitHub-specific workflow mechanics must remain an orchestration concern rather than leak into application architecture.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **GitHub Actions as its primary continuous-integration platform**.\nCI will execute repository-owned validation commands and will not duplicate linting, formatting, type-checking, testing, architecture, generation, or build logic directly in workflow YAML.\nThe primary model is:\ndeveloper / AI agent\n        ↓\nrepository commands\n        ↓\npnpm validate\n        ↓\nsame capabilities\n        ↓\nGitHub Actions\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Canonical validation contract",
+    "anchor": "canonical-validation-contract",
+    "text": "Canonical validation contract\n`pnpm validate` remains the canonical repository validation contract.\nCI may decompose validation capabilities into separate jobs for:\nparallel execution;\nclearer failure reporting;\nresource isolation;\nbrowser requirements;\ncontainer requirements;\nfuture sharding.\nFor example, CI may conceptually execute:\nformat / lint / architecture\ntypecheck\nunit tests\nintegration tests\nbrowser tests\nE2E tests\ngenerated-artifact validation\nbuild validation\n\nas independent jobs.\nThose jobs must invoke repository scripts implementing the same capabilities available locally.\nWorkflow YAML must not contain an independent implementation of validation logic.\nFor example, this is preferred:\nGitHub Actions\n    ↓\npnpm test:integration\n\nrather than embedding database setup, test discovery, test filters, and project-specific test semantics exclusively inside the workflow.\nThe stable interface is the repository command.\nThe CI workflow is an orchestrator.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Incremental validation capabilities",
+    "anchor": "incremental-validation-capabilities",
+    "text": "Incremental validation capabilities\nNot every validation category must exist before the repository contains the corresponding capability.\nThe validation system will grow with the repository.\nFor example:\ninitial foundation\n├── format:check\n├── lint\n├── typecheck\n└── architecture\n\nafter application code exists\n├── unit tests\n├── integration tests\n├── generated artifacts\n├── web build\n├── browser tests\n└── E2E tests\n\nA capability should enter required CI validation when the repository contains meaningful content that the capability protects.\n"
+  },
+  {
     "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
@@ -1420,113 +1474,5 @@
     "heading": "References",
     "anchor": "references",
     "text": "References\n[Product components and pending decisions](../project/architecture.md)\n[MVP acceptance](../project/mvp.md)\n[Additional runtime boundaries](../architecture/application-boundaries.md#additional-runtime-boundaries)\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "anchor": "adr-0021-adopt-a-single-host-pilot-with-portable-persistent-storage",
-    "text": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe owner currently has no cloud-service budget and intends to evaluate a personal residential server for development and first pilots. Network exposure, CGNAT, domain, hardware capacity, backup destination and acceptable downtime have not been verified. Orion does not select a production deployment platform.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt an initial Debian host with Docker Compose, HTTPS reverse-proxy ingress, private PostgreSQL and media on durable mounted storage outside disposable containers. Keep environment-specific endpoints/configuration out of domain identity. Media storage remains a cohesive capability with replaceable filesystem I/O, allowing a later S3-compatible implementation when justified.\nReal-customer exposure is conditional on network/security review, owner-approved availability and recovery targets, off-host backup/restore proof and tested player behavior during outages. No tunnel, DNS, proxy, object-storage or cloud provider is selected or presumed to satisfy these gates.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nOne host and local media fit the stated budget and avoid premature distributed operations. Stable logical asset identity, explicit configuration and tested recovery make a host/storage move tractable. They do not remove single-host failure or bandwidth constraints, nor make a future migration automatic.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Immediate paid VPS/cloud:** potentially changes power/network risk, but needs an actual affordable operating budget. Revisit with revenue or a demonstrated operational requirement.\n**Distributed services or orchestration first:** adds deployment and failure-management costs without measured need at the initial pilot scope.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nKeeps the first operating model understandable and limits mandatory paid infrastructure.\nEstablishes persistent state and endpoint portability as design obligations before deployment.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nResidential availability, uplink and physical security remain material risks; no production SLA follows from Compose.\nDatabase-plus-media consistency, off-host recovery, secure exposure and maintenance remain owner/operator responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nReal-customer deployment readiness under PH-10/PJ-13 requires the host/network inventory, endpoint migration strategy and timed recovery rehearsal. Implementation must later supply tested deployment/recovery runbooks and release procedures. No container manifest or production change is introduced here.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage",
-    "title": "ADR-0021: Adopt a Single-Host Pilot with Portable Persistent Storage",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Deployment and migration planning](../project/operations.md)\n[Production access](../security/production-access.md)\n[Configuration](../architecture/configuration.md)\n[Data retention and recovery](../security/data-retention.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0022: License Teluni under Apache-2.0",
-    "anchor": "adr-0022-license-teluni-under-apache-20",
-    "text": "ADR-0022: License Teluni under Apache-2.0\n**Status:** accepted\n**Date:** 2026-10-17\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-license-teluni-under-apache-2-0",
-    "title": "ADR-0022: License Teluni under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni is derived from Orion, whose source already carries Apache-2.0 under ADR-0016. That foundation decision explicitly leaves independently developed product licensing to the product owner. Teluni's owner explicitly approved Apache License 2.0 for Teluni on 2026-10-17; this record documents that owner-authorized decision. The repository already contains the standard root license text, but its README and human actions previously said product licensing was undecided.\n"
   }
 ]

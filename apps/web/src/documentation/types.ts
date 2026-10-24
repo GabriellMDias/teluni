@@ -12,6 +12,10 @@ export type Entry = {
   method?: string;
   path?: string;
   tags?: string[];
+  category?: string;
+  scope?: "shared" | "composed" | "feature-specific";
+  owner?: string;
+  metadataSource?: string;
 };
 export type SearchRecord = {
   id: string;
@@ -36,6 +40,7 @@ export type Manifest = {
   version: number;
   title: string;
   entries: Entry[];
+  componentCategories?: string[];
   search: {
     shards: { file: string; count: number; kinds?: string[] }[];
     count: number;

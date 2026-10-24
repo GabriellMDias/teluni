@@ -1,0 +1,66 @@
+{
+  "name": "Button",
+  "category": "Actions",
+  "scope": "shared",
+  "owner": "Web UI",
+  "summary": "A native action button with explicit variants and safe pending behavior.",
+  "usage": "Use for actions. Use a link for navigation. Keep a visible accessible name; choose type=submit explicitly inside forms. Native button props and refs are forwarded.",
+  "accessibility": "Uses a native button and visible focus. Pending disables activation and sets aria-busy; preserve meaningful button text while work is pending.",
+  "props": [
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "Visible action name or content with an equivalent accessible name.",
+      "required": true
+    },
+    {
+      "name": "type",
+      "type": "button | submit | reset",
+      "meaning": "Native form behavior; the safe default does not submit a form.",
+      "required": false,
+      "default": "button"
+    },
+    {
+      "name": "variant",
+      "type": "primary | secondary",
+      "meaning": "Semantic action emphasis, styled through product-owned tokens.",
+      "required": false,
+      "default": "secondary"
+    },
+    {
+      "name": "pending",
+      "type": "boolean",
+      "meaning": "Disables activation and exposes aria-busy while the caller owns pending work.",
+      "required": false,
+      "default": "false"
+    },
+    {
+      "name": "…buttonProps",
+      "type": "ComponentPropsWithRef<\"button\">",
+      "meaning": "Native props such as disabled, onClick, className, ref and ARIA attributes are forwarded."
+    }
+  ],
+  "states": [
+    "Default and primary",
+    "Hover and keyboard focus",
+    "Disabled",
+    "Pending",
+    "Product token override"
+  ],
+  "examples": [
+    {
+      "id": "button-states",
+      "label": "Action states and product styling",
+      "description": "Local actions, disabled and pending states, and a scoped token override.",
+      "code": "<Button variant=\"primary\" onClick={save}>Save</Button>\n<Button pending>Saving…</Button>",
+      "live": true
+    }
+  ],
+  "id": "Button",
+  "exportName": "Button",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

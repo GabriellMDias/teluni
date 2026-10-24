@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 // Teluni's production build is the public product: the Living Documentation
-// portal is a development aid served only by the Vite development server
+// portal is an internal aid, selected by the foundation build boundary
 // (owner direction, 2026-10-19). Fail when portal code or generated pages
 // reach the build output.
 const assets = resolve(import.meta.dirname, "../dist/assets");

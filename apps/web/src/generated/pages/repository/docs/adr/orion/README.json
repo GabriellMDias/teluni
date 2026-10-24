@@ -1,0 +1,13 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/orion/README.md",
+  "title": "Imported Orion Architecture Decisions",
+  "html": "<p><a href=\"/docs/repository/docs/adr/README\">Teluni decision index</a> · <a href=\"/docs/repository/docs/adr/authoring#identity-and-metadata\">Identity and metadata policy</a></p>\n<p>These accepted foundation records retain their published identifiers, dates and rationale. They have a separate namespace because Orion and Teluni allocated identifiers independently after derivation. Only relative links change on import; Teluni's existing records remain in their original paths.</p>\n<table>\n<thead>\n<tr>\n<th>Record</th>\n<th>Decision</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><a href=\"/docs/repository/docs/adr/orion/0018-isolate-internal-documentation-from-product-distribution\">Orion ADR-0018</a></td>\n<td>Isolate Internal Documentation from Product Distribution</td>\n</tr>\n</tbody>\n</table>\n",
+  "headings": [
+    {
+      "id": "imported-orion-architecture-decisions",
+      "text": "Imported Orion Architecture Decisions",
+      "level": 1
+    }
+  ]
+}

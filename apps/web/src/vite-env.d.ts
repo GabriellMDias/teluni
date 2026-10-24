@@ -9,3 +9,6 @@ declare const __ORION_FOUNDATION_VERSION__: {
 
 /** Display name from `.orion/project.json`, embedded at build time. */
 declare const __PROJECT_NAME__: string;
+
+/** Internal engineering tool; false in every default production build. */
+declare const __ORION_INTERNAL_DOCS__: boolean;
