@@ -75,6 +75,8 @@ const ptBR = {
   endAllHint:
     "Encerra também esta sessão e as sessões abertas em outros dispositivos.",
   twoStepTitle: "Verificação em duas etapas",
+  twoStepDevelopment:
+    "Verificação em duas etapas dispensada neste ambiente local de desenvolvimento.",
   twoStepMissing:
     "Esta sessão não usou verificação em duas etapas. Administradores, gerentes e quem publica conteúdo precisam dela.",
   twoStepDone: "Esta sessão foi verificada em duas etapas em",
@@ -152,6 +154,8 @@ const enUS: IdentityMessages = {
   endAllSessions: "End all sessions",
   endAllHint: "Also ends this session and sessions open on other devices.",
   twoStepTitle: "Two-step verification",
+  twoStepDevelopment:
+    "Two-step verification is waived in this local development environment.",
   twoStepMissing:
     "This session did not use two-step verification. Administrators, managers and people who publish content need it.",
   twoStepDone: "This session was verified in two steps at",

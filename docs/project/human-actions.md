@@ -266,6 +266,8 @@ On 2026-10-22 the owner asked the agent to take every pending decision that is o
 
 ## PH-20
 
+**Local testing follow-up, 2026-10-24:** The owner explicitly requested optional two-step verification for the local development environment. The [development assurance exception](identity-session-design.md#local-development-assurance-exception) and [PJ-24 increment](implementation-plan.md#local-development-mfa-option) record the guarded implementation. This authorizes the machine-local setting only; production MFA and real-environment qualification gates remain required. No new human blocker is introduced.
+
 - [x] **Review and approve the proposed D-01 tenant data and D-02 identity/session designs.**
 
 **Status:** completed. **Owner:** project owner, with engineering/security review.

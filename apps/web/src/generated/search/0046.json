@@ -1,5 +1,23 @@
 [
   {
+    "id": "repository/docs/project/playback-and-sync",
+    "title": "Teluni Offline Playback and Synchronization",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Failure and recovery acceptance",
+    "anchor": "failure-and-recovery-acceptance",
+    "text": "Failure and recovery acceptance\nCondition\nRequired observable outcome / evidence\nServer/network outage after sync\nLocal media/catalog/region scheduling continues within AT-10/AT-15/AT-16; verify expected neutral state at expiry/uncertain time\nInterrupted download or expired access\nSafe bounded retry/resume only when verified; active generation continues; no partial asset activation\nInvalid schema, binding, manifest, media or incompatible profile\nReject staging with bounded actionable diagnostics; keep active valid output; no infinite hot retry or cross-tenant reference\nInsufficient storage/memory\nRespect AT-05, refuse unsafe preparation and preserve active/recovery assets; do not remove functions silently\nPower/process failure at prepare/switch\nRecover a complete eligible generation and reconcile partial/orphan staging; qualify AT-06–AT-10 on representative devices\nDuplicate/reordered/concurrent price/publication work\nReconcile idempotently; exclude unrelated drafts, stale-price rollback and mixed generations\nRegional runtime failure or no-match\nIsolate the affected output under policy, retain other geometry/output and report actual degradation\nDate/DST/clock/promotion boundary\nPreview/player fixture agreement and AT-13/AT-16; never revive expired output through fallback or rollback\nRevoked/unlinked/unreachable device\nReject future protected access; enforce local authorization deadline; distinguish pending/confirmed erasure and require cleanup before reassignment\nIncompatible generation or failed player update\nFollow AT-26 support window; preserve allowed playback, report incompatibility, use qualified update/rollback recovery\nHost move or database/media restore\nReconcile device intent, ownership/revocation and publication resources in an isolated rehearsal; never leak credentials or point devices at an untested recovery endpoint\nEvery interruption boundary needs automated contract/security fixtures and physical hardware/network/power evidence, not only happy-path mocks. All future product target measurements remain pending. PH-08/PJ-12/PJ-14 own device qualification; PH-10/PJ-13 own host/restore/migration readiness.\n"
+  },
+  {
+    "id": "repository/docs/project/player-design",
+    "title": "Teluni Android TV Player Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Teluni Android TV Player Design",
+    "anchor": "teluni-android-tv-player-design",
+    "text": "Teluni Android TV Player Design\n[Offline playback and synchronization](playback-and-sync.md) · [Release policies](release-policies.md) · [Acceptance targets](release-targets.md) · [Device enrollment design](device-enrollment-design.md) · [Media library design](media-library-design.md) · [Programming design](programming-design.md) · [Publication and synchronization design](publication-sync-design.md) · [ADR-0019](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md) · [ADR-0020](../adr/0020-propose-a-native-android-tv-player.md) · [ADR-0031](../adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\n"
+  },
+  {
     "id": "repository/docs/project/player-design",
     "title": "Teluni Android TV Player Design",
     "group": "Project guides",
@@ -664,32 +682,5 @@
     "heading": "Teluni Product Documentation",
     "anchor": "teluni-product-documentation",
     "text": "Teluni Product Documentation\nThis is the entry point for Teluni-specific product and architecture planning. The product owner's brief of 2026-10-17 is the source of the initial requirements. Engineering documentation is in English; product copy can be localized. Foundation-wide policy remains in the [documentation task index](../README.md).\n"
-  },
-  {
-    "id": "repository/docs/project/README",
-    "title": "Teluni Product Documentation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Reading routes and ownership",
-    "anchor": "reading-routes-and-ownership",
-    "text": "Reading routes and ownership\nQuestion\nCanonical document\nWhat is Teluni, who uses it, and what is the commercial hypothesis?\n[Product vision](product.md)\nWhat name/domains and visual identity are approved?\n[Teluni brand identity](branding/README.md)\nWhat belongs in the initial release, and how will it be accepted?\n[Release requirements and acceptance](mvp.md)\nWhich product policies were selected, including the PH-09 questionnaire and delegated choices?\n[Release policies](release-policies.md)\nWhat numeric limits and qualification goals were selected, and which measurements remain pending?\n[Release acceptance targets](release-targets.md)\nWhich pilot/trial, pricing, license, quota, support and cancellation policies are approved?\n[Initial commercial policies](commercial-policies.md)\nWhat are the accepted architecture directions, proposed module details and unresolved technical choices?\n[Product architecture](architecture.md)\nHow must publication, local playback, and recovery behave?\n[Offline playback and synchronization](playback-and-sync.md)\nHow can the residential pilot operate and later move to another host?\n[Deployment and migration planning](operations.md)\nWhat must tenancy, identity, data protection, and localization protect?\n[Security and internationalization](security-and-i18n.md)\nWhich human login, recovery, session and permission policies did the owner select?\n[Human identity and access](identity-and-access.md)\nWhat evidence supports the accepted identity provider, and what remains unqualified?\n[Identity-provider evaluation](identity-provider-evaluation.md)\nHow will tenant-owned data be constrained and scoped in persistence (approved D-01)?\n[Tenant data ownership and access design](tenant-data-design.md)\nHow will Keycloak, principals, browser sessions and assurance integrate with the API (approved D-02)?\n[Human identity and session integration design](identity-session-design.md)\nHow will company invitations and durable transactional email work (approved D-13)?\n[Company invitation and durable email delivery design](invitation-delivery-design.md)\nHow will screens be enrolled, authenticated, moved and unlinked (approved D-03 server side)?\n[Device enrollment and lifecycle design](device-enrollment-design.md)\nHow are media files uploaded, validated, converted, stored and deleted (approved D-05)?\n[Media library design](media-library-design.md)\nHow are playlists, groups and schedules modeled, validated and evaluated in local time (approved D-06)?\n[Programming design](programming-design.md)\nHow are programs published, and how do screens synchronize, verify and report them (approved D-04 server side)?\n[Publication and synchronization design](publication-sync-design.md)\nHow does the Android TV player store, verify, schedule and play publications, keep time and update (decided D-07)?\n[Player design](player-design.md)\nHow do catalogs, prices, promotions, layouts and automatic price publication work (decided D-11)?\n[Catalog and composition design](catalog-composition-design.md)\nHow is the pilot host reached, composed, backed up and recovered, and which email and sign-in providers does it use (decided D-08)?\n[Pilot deployment and recovery design](deployment-design.md)\nWhat may customers upload, how long is each kind of data kept, and how do export, deletion and incidents work (PH-13 decisions)?\n[Data handling policies](data-handling-policies.md)\nWhat could prevent delivery or safe operation?\n[Risks and dependencies](risks.md)\nWhat is the phase sequence and current execution state?\n[Implementation plan](implementation-plan.md)\nWhich decisions or external prerequisites need a human?\n[Human actions](human-actions.md)\nThe owning contributor updates each document with changes to its subject, links related requirements rather than copying them, and regenerates the documentation portal through the [contributing workflow](../contributing.md). Stable requirement, decision, risk, task, and human-action IDs support traceability; they are documentation references, not implemented registries or API identifiers.\n"
-  },
-  {
-    "id": "repository/docs/project/README",
-    "title": "Teluni Product Documentation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Meaning of status",
-    "anchor": "meaning-of-status",
-    "text": "Meaning of status\nProduct/design status\nMeaning\n**Decided**\nA product requirement or inherited accepted direction agreed for planning. It does not mean implemented.\n**Proposed**\nA candidate solution or acceptance policy requiring evaluation/review. New ADRs start as `proposed` and become accepted only through explicit review/approval under the [ADR process](../adr/authoring.md).\n**Pending**\nAn unanswered choice or investigation; no default has been silently selected.\n**Future**\nOutside the approved initial release and not authorized for immediate implementation.\n**Implemented**\nSupported by repository code and verification evidence.\nTask statuses (`pending`, `in progress`, `completed`, `blocked`, `changed`) have the separate meaning defined by the implementation plan. A completed documentation task establishes a specification, not a completed product capability.\n"
-  },
-  {
-    "id": "repository/docs/project/README",
-    "title": "Teluni Product Documentation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Verified baseline",
-    "anchor": "verified-baseline",
-    "text": "Verified baseline\nThe [manifest](../../.orion/project.json) identifies a derived Teluni project, initialized from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. [API composition](../../apps/api/src/modules.ts) and [web composition](../../apps/web/src/modules.tsx) contain `identity` and `organizations`: sign-in, server-managed sessions, OTP step-up, company creation with creator membership/responsibility, scoped standard-role access, branches and atomic audit. Their tables and references exist; their local tests use disposable Keycloak and PostgreSQL. Membership administration and the broader identity/access scope remain in progress in PJ-03/PJ-24. No player application, media service, deployment manifest or provisioned real environment exists.\nThis documentation stage does not authorize implementation, deployment, external publication, or acquisition of paid services. The [plan](implementation-plan.md#phase-sequence-and-exit-criteria) identifies the next review and delivery gates.\n"
   }
 ]

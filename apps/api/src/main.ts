@@ -61,6 +61,7 @@ try {
         provisionerClientId: config.provisionerClientId!,
         provisionerClientSecret: config.provisionerClientSecret!,
         sessionKeys: parseSessionKeys(config.sessionKeys),
+        developmentMfaMode: config.developmentMfaMode,
       }
     : undefined;
   const mail = config.mailKeys

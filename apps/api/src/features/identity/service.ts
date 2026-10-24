@@ -105,6 +105,7 @@ export class IdentityService {
   readonly #publicOrigin: string;
   readonly #issuer: string;
   readonly #events: IdentityEvents;
+  readonly #developmentMfaBypass: boolean;
 
   constructor(options: {
     repository: PrismaIdentityRepository;
@@ -115,6 +116,8 @@ export class IdentityService {
     /** Issuer whose subjects this service manages. */
     issuer: string;
     events: IdentityEvents;
+    /** Only the module's guarded local-development mode may enable this. */
+    developmentMfaBypass?: boolean;
   }) {
     this.#repository = options.repository;
     this.#provider = options.provider;
@@ -123,6 +126,7 @@ export class IdentityService {
     this.#publicOrigin = options.publicOrigin;
     this.#issuer = options.issuer;
     this.#events = options.events;
+    this.#developmentMfaBypass = options.developmentMfaBypass ?? false;
   }
 
   /**
@@ -137,8 +141,10 @@ export class IdentityService {
   ): Promise<{ redirectTo: URL; loginHandle: string }> {
     // Step-up asks for the strong level; "recent" also forces a new
     // authentication so the strong factor is at most five minutes old.
-    const requestedAssurance = assurance ? assuranceLevels.strong : null;
-    const maxAgeSeconds = assurance === "recent" ? 0 : null;
+    const requestedAssurance =
+      assurance && !this.#developmentMfaBypass ? assuranceLevels.strong : null;
+    const maxAgeSeconds =
+      assurance === "recent" && !this.#developmentMfaBypass ? 0 : null;
     const challenge = await this.#unavailableAs503(() =>
       this.#provider.newChallenge(),
     );
@@ -345,10 +351,18 @@ export class IdentityService {
     return {
       principalId: session.principalId,
       sessionId: session.id,
-      assuranceLevel: session.assuranceLevel,
+      // Local development simulates effective assurance only after every real
+      // identity/session check. Never persist it or label it provider AAL2.
+      assuranceLevel: this.#developmentMfaBypass
+        ? "teluni-development"
+        : session.assuranceLevel,
       authenticatedAt: session.authenticatedAt,
-      strongAuthenticatedAt: session.strongAuthenticatedAt,
-      strongAuthenticationAgeSeconds: session.strongAuthenticationAgeSeconds,
+      strongAuthenticatedAt: this.#developmentMfaBypass
+        ? new Date()
+        : session.strongAuthenticatedAt,
+      strongAuthenticationAgeSeconds: this.#developmentMfaBypass
+        ? 0
+        : session.strongAuthenticationAgeSeconds,
       scopes: verified.scopes,
       pending,
     };
