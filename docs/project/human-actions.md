@@ -10,7 +10,7 @@ Teluni (https://github.com/GabriellMDias/teluni) was initialized from Orion (htt
 
 ## Maintaining this checklist
 
-The owner authorized the [Orion v3.0.0 upgrade](foundation-upgrade-v3.md) on 2026-10-23, including autonomous migration, validation, commits and pull-request preparation. It requires no new product decision, provider credential or production access. Integration into `main` remains review-owned and must retain merge ancestry under [PH-02](#ph-02); existing pilot, device and production prerequisites remain open at their original triggers.
+The owner authorized the [Orion v3.0.0 upgrade](foundation-upgrade-v3.md) on 2026-10-23, including autonomous migration, validation, commits and pull-request preparation. Implementation and local Linux qualification are complete, including the post-baseline aggregate and player checks. It requires no new product decision, provider credential or production access. After the required PR checks pass, the owner must review the upgrade and integrate it with a merge commit under [PH-02](#ph-02); existing pilot, device and production prerequisites remain open at their original triggers.
 
 1. Inspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first.
 2. Keep one stable `PH-NN` ID per coherent action; never reuse or renumber IDs. Split broad items into independently verifiable actions as they become concrete, and add newly discovered actions immediately.

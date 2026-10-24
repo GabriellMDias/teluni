@@ -294,7 +294,7 @@
     "kind": "repository",
     "heading": "Orion v3.0.0 foundation upgrade",
     "anchor": "orion-v300-foundation-upgrade",
-    "text": "Orion v3.0.0 foundation upgrade\nTask\nScope\nStatus\nEvidence and dependencies\nPJ-42\nIntegrate Orion v3.0.0 through the official merge, pruning, regeneration and baseline workflow, preserving Teluni behavior and product identity.\nin progress\nOwner-authorized on 2026-10-23. [Upgrade evidence](foundation-upgrade-v3.md) records the exact target, ancestry, conflict decisions and validation. No deployment or Teluni release is authorized.\n"
+    "text": "Orion v3.0.0 foundation upgrade\nTask\nScope\nStatus\nEvidence and dependencies\nPJ-42\nIntegrate Orion v3.0.0 through the official merge, pruning, regeneration and baseline workflow, preserving Teluni behavior and product identity.\nin progress\nOwner-authorized on 2026-10-23. Implementation, provenance recording and the complete post-baseline `pnpm validate` passed; the player passed all 90 JVM tests on Linux/JDK 17. [Upgrade evidence](foundation-upgrade-v3.md) records the exact target, preservation audit and qualification limits. Pull-request review, remote CI and integration remain pending. No deployment or Teluni release is authorized.\n"
   },
   {
     "id": "repository/docs/project/implementation-plan",

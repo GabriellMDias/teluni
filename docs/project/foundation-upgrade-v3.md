@@ -23,7 +23,7 @@ The upgrade branch is `codex/orion-upgrade-v3.0.0`, based on Teluni `origin/main
 
 Regeneration completed with the documented commands: frozen install, `db:generate`, API `references:write`, SDK `generate`, and `docs:references:write`. API/SDK/database/configuration contracts remain unchanged. All validation stages have been qualified, including recovery of the browser configuration integration issue described above:
 
-| Check | Local result before baseline recording |
+| Check | Local result, including the final post-baseline aggregate |
 | --- | --- |
 | Formatting, lint, types, architecture, documentation, agent instructions, environment example, migration history and provenance | Passed; affected configuration/documentation checks repeated after repairs |
 | Derivation / documentation generator / distribution isolation | 26 / 21 / 2 tests passed |
@@ -39,6 +39,8 @@ Native Windows qualification remains limited: its Keycloak-image test compares W
 
 `pnpm audit` reports three existing moderate Nodemailer advisories in Teluni's unchanged `nodemailer@10.1.2` dependency (GHSA-8c8m-p3m8-cjg8, GHSA-m943-m63m-w62w and GHSA-85x2-q946-cp5h). They require a separate dependency follow-up; no high or critical findings were reported. This upgrade does not claim to complete that remediation or the existing pilot/security prerequisites.
 
-The reviewed merge is ready for the documented `orion:record-baseline` step. After committing provenance, the complete `pnpm validate` aggregate must be rerun before handoff; its final result remains pending.
+The integration commit `6aff2b33db904a6eac844ecfd568fb1aab965bf8` has both Teluni `6e29fb4c69e50fd91a5fc02d0b41269ad4afc324` and Orion `aafb920a3616f51c0da4b145dbee61a4bf5c3cc7` as parents. The official `orion:record-baseline` command fetched and verified canonical upstream ancestry from a clean checkout; commit `1dfd88fd1811b2d518c36de8f1b9e2f224dd9dd8` records the new baseline. The complete `pnpm validate` aggregate then exited successfully on that exact commit in the Linux runner, leaving its worktree clean. Final evidence-only documentation changes are regenerated and checked separately.
+
+The preservation audit against pre-upgrade Teluni `6e29fb4` finds no changes under API source/tests, Prisma schemas/migrations/grants/metadata, the SDK, the player, infrastructure, CI workflows, product feature directories or brand assets. Deliberate shared-shell changes preserve product navigation and styling and are covered by browser/E2E tests. Existing accepted Teluni ADRs retain their content and identifiers. CI still checks out full Git history, validates the locked dependency graph, runs the complete repository and player gates and requires the deployment rehearsal; this upgrade changes none of those controls. The rehearsal runs an isolated CI environment and does not deploy Teluni.
 
 Review and merge remain pending. The pull request must use a merge commit so Orion's identities remain ancestors. This work authorizes no Teluni release, deployment, production migration or device qualification. The Android application and real-device work retain their existing PJ-12 and PH-08/PH-26/PH-27 status.
