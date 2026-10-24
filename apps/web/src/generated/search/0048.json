@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Safe content and volume",
+    "anchor": "safe-content-and-volume",
+    "text": "Safe content and volume\nEmit explicit allowlisted projections, not entire requests/responses, ORM/domain objects, collections, configuration, environments, SQL parameters, or exception payloads. Do not embed sensitive runtime values in arbitrary interpolated messages. Credentials are prohibited even in debug/development modes; protected headers/query strings, filenames, IP/device/location/user content, and provider data require the [redaction policy](../security/telemetry-redaction.md). Trusted internal stacks require safe authoritative handling and must not be returned publicly.\nBound event size, field lengths, collection summaries, nesting, and line structure. Truncation is not secret removal; hashing is not automatic anonymization. Avoid uncontrolled multiline messages and arbitrary console output in runtime application code now that a canonical logger exists; tooling scripts can have different output requirements. Remove temporary debugging output before completion.\nSuccessful health checks and frequent polling should generally be suppressed, reduced, or sampled; failures/state changes may matter. High-volume success logs require demonstrated value. Do not blindly sample errors, security, migration, or rare events where complete visibility matters. Deterministic request/trace sampling can preserve correlation when appropriate. Logs must not be the sole source of important numeric metrics when dedicated measurements fit, nor duplicate every trace span or canonical business event.\nDynamic production verbosity, if introduced, must be authorized, bounded in time/scope, auditable where appropriate, and safe. It must not disable redaction, dump payloads/environment, or expose stacks. Temporary incident diagnostics need an owner/removal plan. Collection, storage, indexing, retention, and sampling remain deployment concerns; do not make an unavailable backend a business dependency.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Testing and review",
+    "anchor": "testing-and-review",
+    "text": "Testing and review\nTest redaction, correlation/isolation, security-sensitive logging, and meaningful operational event contracts using captured/in-memory output rather than requiring a production vendor. Use synthetic secrets and assert absence as well as safe evidence presence. Do not test every ordinary message or wording edit. Quiet successful tests should surface relevant captured diagnostics when failures occur.\nBefore adding an event/field, identify its operational question, owner, stable meaning, level, required fields/classification, units/vocabulary, volume/bounds, existing equivalent signal, duplicate-report risk, automatic context opportunity, and tests. When evidence is missing, choose the smallest useful log, span, metric, error context, or runbook change. Future schema/static enforcement should follow real value; current checks are listed in [validation](../validation.md).\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metrics",
+    "anchor": "metrics",
+    "text": "Metrics\nThis policy owns aggregate measurements, units, dimensions, cardinality, and measurement semantics. Use [logs](logging.md), [traces](tracing.md), or [error reports](error-reporting.md) to investigate individual requests/resources. A custom metric must answer a recurring numerical operational question rather than measure every available value.\n"
+  },
+  {
     "id": "repository/docs/reliability/metrics",
     "title": "Metrics",
     "group": "Reliability",
@@ -925,32 +952,5 @@
     "heading": "Identities, privilege, and access request",
     "anchor": "identities-privilege-and-access-request",
     "text": "Identities, privilege, and access request\nUse attributable identities and distinguish humans from service, CI, and deployment actors. Shared human accounts and borrowing an automation identity undermine audit/revocation and should be avoided. Match authentication strength and any recent/step-up requirement to risk. Named cloud-console access must use narrow roles; provider root/owner accounts are break-glass capabilities, not routine accounts.\nSeparate observation, data read/write, deployment, infrastructure, IAM/security administration, and secret administration where practical. An actor who grants privileges need not hold every resource permission. Deploying must not imply viewing raw credentials. Prefer delegated use, workload identity, temporary credentials, or controlled tooling over secret disclosure. Scope by system, resource, operation, environment, time, and classification; add region/tenant scope only where needed.\nAn access request should identify actor, task/reason, target environment/resource, minimum capability, duration, related incident/work item, data classification, and whether safer telemetry/read-only tools suffice. Temporary access should expire automatically where supported; standing privilege needs operational justification, narrow scope, and review. Bounded sessions/idle timeouts reduce unattended access risk; concurrency/device/session-recording controls are requirement-driven, not mandated products.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Approval",
-    "anchor": "approval",
-    "text": "Approval\nHigher-risk capabilities may require stronger approval according to privilege, destructiveness, classification, and urgency. Read-only diagnostics and unrestricted administration do not need identical workflows. Avoid unrestricted self-approval for high-risk access where separation is practical; small teams may combine requester/approver/responder with compensating auditability, time limits, and controls.\nHonor explicit delegated authority and the actual operational approval mechanism. A runbook, repository access, or technical ability is not authorization. Security-sensitive access must fail closed if permission cannot be established; access-system outage does not justify an implicit bypass.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Break-glass access",
-    "anchor": "break-glass-access",
-    "text": "Break-glass access\nUse break-glass only for genuine emergencies when normal mechanisms are unavailable or insufficient. Additional normal workflow steps are not an emergency. Protect emergency identities/credentials according to the selected architecture and [secrets policy](secrets-management.md); ordinary notes, chat, Git, or unapproved stores are not acceptable credential locations.\nGrant only necessary privilege, make use visible promptly to appropriate operators where practical, preserve attribution/audit, limit duration, revoke afterward, and review every use. Record why it was needed, why normal access failed, scope/owner, affected credentials, notifications, and improvements. Offline emergency access requires an explicit strongly controlled design; do not fabricate one in an incident.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Investigation and operational tools",
-    "anchor": "investigation-and-operational-tools",
-    "text": "Investigation and operational tools\nPrefer metrics, logs, traces, error reports, safe diagnostics, and scoped read-only inspection before shells, writes, secret reveal, or administrators. Read-only still exposes confidential data and can exhaust CPU, memory, I/O, locks, or connections. Query tooling should enforce bounded results/timeouts, safe exports, and appropriate audit. Masked/field-limited views can reduce exposure; masking does not automatically declassify data. Sensitive search inputs must not be logged indiscriminately.\nPurpose-built tools should expose only required capabilities, such as safe status inspection or a bounded repair. Admin APIs require strong authentication, authorization, validation, bounds, and audit even on internal networks. Internal placement is defense in depth, not authority. Prefer reviewed repository-controlled infrastructure/configuration and deployment automation where they exist. Emergency manual changes must be reconciled back into the repository afterward.\nShell/container/filesystem access can expose mounted credentials, private data, and network capabilities; do not enable SSH out of habit or make it the first debugging step. Remote debuggers can pause or mutate production and expose memory; require explicit operational justification. Profilers need low-overhead design and access control. Memory/core dumps are highly sensitive artifacts and need reviewed, restricted handling.\n"
   }
 ]

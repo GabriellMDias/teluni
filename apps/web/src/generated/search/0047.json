@@ -4,6 +4,24 @@
     "title": "Teluni Release Policies",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Time and scheduling",
+    "anchor": "time-and-scheduling",
+    "text": "Time and scheduling\nUse per-device local business time: explicit device timezone, otherwise the deliberately selected branch timezone. Never inherit the server host timezone. Cross-branch groups therefore interpret local recurring hours per target. Locale changes do not change timing.\nStart instants are inclusive and end instants exclusive. Reject overlapping schedules competing for the same output/area; intentional concurrent content in different areas is permitted. Do not resolve conflicts by implicit priority, last edit or creation order. Backend preview and player must share fixtures.\nPermit overnight windows anchored to the starting weekday: Friday 22:00–02:00 ends Saturday at 02:00. Date-only final validity includes that complete local day and ends at the next local midnight, clipping any overnight window at that limit. If Friday is the last valid day, its 22:00–02:00 window therefore ends at Saturday 00:00. Reject equal start/end times as ambiguous and provide a separate explicit all-day option.\nFollow geographic timezone rules. For nonexistent local boundaries use the first valid instant; for ambiguous boundaries use the earlier occurrence for a start and the later occurrence for an end. Show the resolved result in preview, validate conflicts after resolving it and do not duplicate publication/execution solely because clocks repeat. Exact library/fixture implementation remains technical work.\nWhen eligible scheduled output changes, interrupt the current item instead of waiting for completion. Apply this to the affected regional output or page-controlled coordinated participants; an unrelated independent area continues. Timing tolerances and trusted-clock bounds are defined in the acceptance targets, not claimed measurements.\n"
+  },
+  {
+    "id": "repository/docs/project/release-policies",
+    "title": "Teluni Release Policies",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Media and deletion lifecycle",
+    "anchor": "media-and-deletion-lifecycle",
+    "text": "Media and deletion lifecycle\nThe acceptance targets define configurable ingestion bounds separately from supported playback profiles and commercial quotas. Validate declared and inspected file type, size, decoded dimensions, duration, compatibility and scoped references; exact allowed codecs/containers require D-05 review.\nPreserve originals and create compatible renditions when validated processing is supported. Show preparation/progress/preview and keep publications unavailable until their required renditions are durable. If safe conversion is unavailable, reject with an actionable reason. Do not silently remove areas or distort content to compensate for an unsupported device. Processing isolation/tools/capacity remain technical and host-readiness work.\nArchiving removes media from new selections but does not break existing references. Block physical deletion while referenced by drafts, active/staged/recovery generations or protected retained publications; disclose only references the caller may see. Assisted removal of draft references needs confirmation and never rewrites issued snapshots. Retention expiration alone is insufficient for garbage collection: reference protection, device reconciliation and the offline envelope must also permit removal.\nKeep active and previous valid player generations plus valid staging resources. Preflight new resources and the reserved-space target; insufficient capacity preserves valid playback and reports required capacity rather than deleting protected resources. Deduplicate shared immutable assets when accounting for generations. Catalog schema/record/media references need the same reference-aware lifecycle; legal/privacy retention remains PH-13.\n"
+  },
+  {
+    "id": "repository/docs/project/release-policies",
+    "title": "Teluni Release Policies",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Offline authorization and clock trust",
     "anchor": "offline-authorization-and-clock-trust",
     "text": "Offline authorization and clock trust\n[Commercial policies](commercial-policies.md#payment-expiry-cancellation-and-retention) additionally bound future playback authorization by known trial/paid/grace deadlines; the shorter commercial or seven-day offline bound wins. This does not change already-issued unreachable leases retroactively, relax identity/security controls or select a credential mechanism. Commercial restriction, security suspension and confirmed erasure remain distinct.\nThe target specification fixes the maximum offline authorization interval and clock-uncertainty bound. After authorization expires, show neutral output and request reconnection. Revocation denies new protected server operations; an unreachable device may retain playback until its local authorization expires. Do not claim remote erasure while unreachable or extend authorization by restoring an older generation.\nDetectable incompatible clock jumps or insufficient trusted time suspend time-dependent schedules/prices and produce neutral output with diagnostics. Do not guess promotional validity or claim all wrong clocks can be detected without a reference. Elapsed-time retries and business wall-clock time are separate. Reboot/offline trusted-time estimation and credential mechanisms require threat-model/technical review using established security components.\nUnlink requires explicit authorized confirmation, server revocation and a distinct pending-clear state for offline devices. On reconnection clear private local content/configuration/credentials. Reassignment to another company requires verified cleanup or controlled reset before new pairing. Distinguish revoked access, unreachable device and confirmed erasure; failure/retry must never expose the previous tenant's data.\n"
@@ -637,32 +655,5 @@
     "heading": "Reporting boundaries",
     "anchor": "reporting-boundaries",
     "text": "Reporting boundaries\nReport an unexpected failure once at an explicit authoritative boundary, with safe context and correlation. Intermediate layers may enrich/translate/rethrow without logging identical failure again. Adapter and caller must agree who reports; a dedicated error tracker does not require duplicate stacks at every layer. Follow [error reporting](error-reporting.md) and [error handling](../architecture/error-handling.md).\nUseful boundaries include request completion, job lifecycle/outcome, significant dependency interactions, process startup/shutdown, and the unexpected-error handler. Completion logs usually provide more value than separate request-start logs; justify both before doubling volume. Expected client errors should not generate stacks. Important jobs/messages need stable identity, type/consumer, attempt, duration, outcome, and safe retry/terminal-failure evidence; never log whole payloads.\nCapture safe dependency name/operation/duration/result/reason where useful, keeping provider codes distinct from the API's public codes. Database diagnostics favor normalized operations, latency, and conflict categories, not rows. [Migration logs](../database/migrations.md) should identify migration/release/environment and start/completion/duration/result without secrets. Lifecycle logs should make readiness, shutdown, drain, and startup failure understandable.\n"
-  },
-  {
-    "id": "repository/docs/reliability/logging",
-    "title": "Logging",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Safe content and volume",
-    "anchor": "safe-content-and-volume",
-    "text": "Safe content and volume\nEmit explicit allowlisted projections, not entire requests/responses, ORM/domain objects, collections, configuration, environments, SQL parameters, or exception payloads. Do not embed sensitive runtime values in arbitrary interpolated messages. Credentials are prohibited even in debug/development modes; protected headers/query strings, filenames, IP/device/location/user content, and provider data require the [redaction policy](../security/telemetry-redaction.md). Trusted internal stacks require safe authoritative handling and must not be returned publicly.\nBound event size, field lengths, collection summaries, nesting, and line structure. Truncation is not secret removal; hashing is not automatic anonymization. Avoid uncontrolled multiline messages and arbitrary console output in runtime application code now that a canonical logger exists; tooling scripts can have different output requirements. Remove temporary debugging output before completion.\nSuccessful health checks and frequent polling should generally be suppressed, reduced, or sampled; failures/state changes may matter. High-volume success logs require demonstrated value. Do not blindly sample errors, security, migration, or rare events where complete visibility matters. Deterministic request/trace sampling can preserve correlation when appropriate. Logs must not be the sole source of important numeric metrics when dedicated measurements fit, nor duplicate every trace span or canonical business event.\nDynamic production verbosity, if introduced, must be authorized, bounded in time/scope, auditable where appropriate, and safe. It must not disable redaction, dump payloads/environment, or expose stacks. Temporary incident diagnostics need an owner/removal plan. Collection, storage, indexing, retention, and sampling remain deployment concerns; do not make an unavailable backend a business dependency.\n"
-  },
-  {
-    "id": "repository/docs/reliability/logging",
-    "title": "Logging",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Testing and review",
-    "anchor": "testing-and-review",
-    "text": "Testing and review\nTest redaction, correlation/isolation, security-sensitive logging, and meaningful operational event contracts using captured/in-memory output rather than requiring a production vendor. Use synthetic secrets and assert absence as well as safe evidence presence. Do not test every ordinary message or wording edit. Quiet successful tests should surface relevant captured diagnostics when failures occur.\nBefore adding an event/field, identify its operational question, owner, stable meaning, level, required fields/classification, units/vocabulary, volume/bounds, existing equivalent signal, duplicate-report risk, automatic context opportunity, and tests. When evidence is missing, choose the smallest useful log, span, metric, error context, or runbook change. Future schema/static enforcement should follow real value; current checks are listed in [validation](../validation.md).\n"
-  },
-  {
-    "id": "repository/docs/reliability/metrics",
-    "title": "Metrics",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Metrics",
-    "anchor": "metrics",
-    "text": "Metrics\nThis policy owns aggregate measurements, units, dimensions, cardinality, and measurement semantics. Use [logs](logging.md), [traces](tracing.md), or [error reports](error-reporting.md) to investigate individual requests/resources. A custom metric must answer a recurring numerical operational question rather than measure every available value.\n"
   }
 ]

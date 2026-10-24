@@ -4,6 +4,33 @@
     "title": "Production Access",
     "group": "Security",
     "kind": "repository",
+    "heading": "Approval",
+    "anchor": "approval",
+    "text": "Approval\nHigher-risk capabilities may require stronger approval according to privilege, destructiveness, classification, and urgency. Read-only diagnostics and unrestricted administration do not need identical workflows. Avoid unrestricted self-approval for high-risk access where separation is practical; small teams may combine requester/approver/responder with compensating auditability, time limits, and controls.\nHonor explicit delegated authority and the actual operational approval mechanism. A runbook, repository access, or technical ability is not authorization. Security-sensitive access must fail closed if permission cannot be established; access-system outage does not justify an implicit bypass.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Break-glass access",
+    "anchor": "break-glass-access",
+    "text": "Break-glass access\nUse break-glass only for genuine emergencies when normal mechanisms are unavailable or insufficient. Additional normal workflow steps are not an emergency. Protect emergency identities/credentials according to the selected architecture and [secrets policy](secrets-management.md); ordinary notes, chat, Git, or unapproved stores are not acceptable credential locations.\nGrant only necessary privilege, make use visible promptly to appropriate operators where practical, preserve attribution/audit, limit duration, revoke afterward, and review every use. Record why it was needed, why normal access failed, scope/owner, affected credentials, notifications, and improvements. Offline emergency access requires an explicit strongly controlled design; do not fabricate one in an incident.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Investigation and operational tools",
+    "anchor": "investigation-and-operational-tools",
+    "text": "Investigation and operational tools\nPrefer metrics, logs, traces, error reports, safe diagnostics, and scoped read-only inspection before shells, writes, secret reveal, or administrators. Read-only still exposes confidential data and can exhaust CPU, memory, I/O, locks, or connections. Query tooling should enforce bounded results/timeouts, safe exports, and appropriate audit. Masked/field-limited views can reduce exposure; masking does not automatically declassify data. Sensitive search inputs must not be logged indiscriminately.\nPurpose-built tools should expose only required capabilities, such as safe status inspection or a bounded repair. Admin APIs require strong authentication, authorization, validation, bounds, and audit even on internal networks. Internal placement is defense in depth, not authority. Prefer reviewed repository-controlled infrastructure/configuration and deployment automation where they exist. Emergency manual changes must be reconciled back into the repository afterward.\nShell/container/filesystem access can expose mounted credentials, private data, and network capabilities; do not enable SSH out of habit or make it the first debugging step. Remote debuggers can pause or mutate production and expose memory; require explicit operational justification. Profilers need low-overhead design and access control. Memory/core dumps are highly sensitive artifacts and need reviewed, restricted handling.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
     "heading": "Manual data changes",
     "anchor": "manual-data-changes",
     "text": "Manual data changes\nDirect production writes bypass validation, domain rules, authorization, audit, and delivery behavior. Prefer application-aware admin operations, reviewed repair scripts, controlled migrations, or reconciliation. Separate runtime, migration, human-read, and administrative database identities; elevated migration credentials must not become normal runtime credentials.\nA repair must identify the violated invariant, affected records, desired canonical state, why ordinary workflow is insufficient, required side effects, concurrency handling, idempotency, verification, failure handling, and real rollback or forward recovery. Significant/reusable scripts should live in the repository for review/testing; retain the exact significant one-off procedure in an appropriate script, incident record, migration, or runbook. Repair tooling must not become a permanent unrestricted admin interface.\n"

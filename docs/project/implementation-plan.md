@@ -89,7 +89,7 @@ Every contributor or coding agent performing implementation work must maintain t
 
 | Task | Scope | Status | Evidence and dependencies |
 | --- | --- | --- | --- |
-| PJ-42 | Integrate Orion v3.0.0 through the official merge, pruning, regeneration and baseline workflow, preserving Teluni behavior and product identity. | in progress | Owner-authorized on 2026-10-23. Implementation, provenance recording and the complete post-baseline `pnpm validate` passed; the player passed all 90 JVM tests on Linux/JDK 17. [Upgrade evidence](foundation-upgrade-v3.md) records the exact target, preservation audit and qualification limits. Pull-request review, remote CI and integration remain pending. No deployment or Teluni release is authorized. |
+| PJ-42 | Integrate Orion v3.0.0 through the official merge, pruning, regeneration and baseline workflow, preserving Teluni behavior and product identity. | in progress | Owner-authorized on 2026-10-23. Implementation, provenance recording and the complete post-baseline `pnpm validate` passed; the player passed all 90 JVM tests on Linux/JDK 17. The [post-upgrade audit](foundation-upgrade-v3.md#post-upgrade-audit) preserves product behavior, patches three inherited Nodemailer advisories and removes tracked test diagnostics. [PR #28](https://github.com/GabriellMDias/teluni/pull/28) owns the post-correction validation/CI evidence; review and integration remain pending. No deployment or Teluni release is authorized. |
 
 ## PJ-41 interface alignment
 
