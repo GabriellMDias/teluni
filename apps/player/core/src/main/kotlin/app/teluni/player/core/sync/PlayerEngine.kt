@@ -14,11 +14,14 @@ import app.teluni.player.core.protocol.StatementRejected
 import app.teluni.player.core.protocol.StatementVerifier
 import app.teluni.player.core.protocol.sha256Hex
 import app.teluni.player.core.schedule.ZoneOffsets
+import app.teluni.player.core.store.CrashJournal
+import app.teluni.player.core.store.AtomicFiles
 import app.teluni.player.core.store.PlayerState
 import app.teluni.player.core.store.PlayerStore
 import app.teluni.player.core.store.StoredGeneration
 import app.teluni.player.core.time.ClockRecord
 import app.teluni.player.core.time.ClockSource
+import app.teluni.player.core.time.TrustedTime
 import app.teluni.player.core.time.TrustedClock
 import app.teluni.player.core.time.instantOrNull
 import java.io.IOException
@@ -34,26 +37,19 @@ import java.security.SecureRandom
 import java.time.DateTimeException
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
 import java.util.Base64
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-
-/** Keeps the device credential; the Android app wraps it with an Android Keystore key. */
-public interface CredentialVault {
-    /** The 32-byte credential, or null when none is stored or it cannot be read back. */
-    public fun load(): ByteArray?
-
-    public fun save(credential: ByteArray)
-
-    public fun erase()
-}
 
 /** Who this screen is: its device ID once paired and the company pinned from its first statement. */
 @Serializable
@@ -70,6 +66,14 @@ public data class SyncRecord(
     /** The screen's branch, for protocol 2 branch prices; absent in records of older releases. */
     val branchId: String? = null,
 )
+
+public enum class SyncFailure { EXCHANGE, CREDENTIAL_ROTATION }
+
+/** Pairing data is for display only; neither codes nor credentials belong in diagnostics. */
+public class EnrollmentProgress(public val enrollment: EnrollmentStarted?, public val next: Duration) {
+    public val paired: Boolean get() = enrollment == null
+    override fun toString(): String = "EnrollmentProgress(paired=$paired)"
+}
 
 public sealed interface SyncOutcome {
     /** Synchronized; staging is needed when the desired publication is not active or an old attempt remains. */
@@ -88,7 +92,7 @@ public sealed interface SyncOutcome {
     public data object Incompatible : SyncOutcome
 
     /** The request failed; try again after `retry`. */
-    public data class Failed(val retry: Duration) : SyncOutcome
+    public data class Failed(val retry: Duration, val failure: SyncFailure = SyncFailure.EXCHANGE) : SyncOutcome
 
     public data object NotPaired : SyncOutcome
 }
@@ -127,15 +131,29 @@ public class PlayerEngine(
     }
     private val lock = Any()
     private val syncing = Any()
-    private val staging = Any()
+    private val staging = ReentrantLock()
     private var statement: Statement? = null
     private var publications = mutableMapOf<String, Publication>()
+    private val unavailableMedia = mutableSetOf<String>()
+    private val mediaVersions = mutableMapOf<String, Long>()
+    private var lastScrubbed: String? = null
 
     @Volatile
     private var progress: SyncReport.Staging? = null
 
     @Volatile
     private var failures = 0
+
+    /** Kept only in memory after erasure, so a lost confirmation can be retried during this process. */
+    private var pendingErasureCredential: String? = null
+
+    /** The credential that actually received clearRequired; never used to confirm before erasure. */
+    @Volatile
+    private var clearingCredential: String? = null
+
+    @Volatile
+    public var pendingEnrollment: EnrollmentStarted? = null
+        private set
 
     /** Set while an erasure waits for staging to stop. */
     @Volatile
@@ -178,7 +196,7 @@ public class PlayerEngine(
 
     private fun credential(): String? {
         val credential = vault.load() ?: return null.also { forgetWithoutCredential() }
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(credential)
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(credential.current)
     }
 
     /**
@@ -191,8 +209,13 @@ public class PlayerEngine(
         synchronized(lock) {
             store.eraseAll()
             vault.erase()
+            clearingCredential = null
+            pendingEnrollment = null
             statement = null
             publications.clear()
+            unavailableMedia.clear()
+            mediaVersions.clear()
+            lastScrubbed = null
             progress = null
         }
     }
@@ -211,17 +234,25 @@ public class PlayerEngine(
      * Starts an enrollment with a new credential, from an empty store as the
      * device enrollment design requires; an expired code always starts a new one.
      */
-    public fun startEnrollment(report: DeviceReport): EnrollmentStarted {
-        synchronized(lock) {
-            store.eraseAll()
-            statement = null
-            publications.clear()
-            progress = null
+    public fun startEnrollment(report: DeviceReport): EnrollmentStarted = staging.withLock {
+        synchronized(syncing) {
+            synchronized(lock) {
+                store.eraseAll()
+                clearingCredential = null
+                pendingEnrollment = null
+                statement = null
+                publications.clear()
+                unavailableMedia.clear()
+                mediaVersions.clear()
+                lastScrubbed = null
+                progress = null
+            }
+            val credential = ByteArray(32).also(random::nextBytes)
+            vault.save(Credentials(credential))
+            val hash = MessageDigest.getInstance("SHA-256").digest(credential)
+            api.startEnrollment(Base64.getUrlEncoder().withoutPadding().encodeToString(hash), report)
+                .also { pendingEnrollment = it }
         }
-        val credential = ByteArray(32).also(random::nextBytes)
-        vault.save(credential)
-        val hash = MessageDigest.getInstance("SHA-256").digest(credential)
-        return api.startEnrollment(Base64.getUrlEncoder().withoutPadding().encodeToString(hash), report)
     }
 
     /** Polls an enrollment; when paired, records the device ID. */
@@ -230,8 +261,28 @@ public class PlayerEngine(
         val status = api.enrollmentStatus(enrollmentId, credential)
         if (status.status == "paired") {
             saveRecord(PlayerStore.Record.IDENTITY, Identity.serializer(), Identity(requireNotNull(status.deviceId)))
+            pendingEnrollment = null
+        } else if (status.status == "expired") {
+            pendingEnrollment = null
         }
         return status
+    }
+
+    /** The server's poll result, never elapsed client time, decides whether an attempt is replaced. */
+    public fun advanceEnrollment(report: DeviceReport): EnrollmentProgress = staging.withLock {
+        synchronized(syncing) {
+            if (identity() != null) return EnrollmentProgress(null, Duration.ZERO)
+            val pending = pendingEnrollment?.takeIf { vault.load() != null }
+            if (pending != null) {
+                val result = pollEnrollment(pending.enrollmentId)
+                if (result.status == "paired") return EnrollmentProgress(null, Duration.ZERO)
+                if (result.status != "expired") {
+                    return EnrollmentProgress(pending, Duration.ofSeconds(result.pollIntervalSeconds.coerceIn(5, 60).toLong()))
+                }
+            }
+            val started = startEnrollment(report)
+            EnrollmentProgress(started, Duration.ofSeconds(started.pollIntervalSeconds.coerceIn(5, 60).toLong()))
+        }
     }
 
     // Synchronization
@@ -244,10 +295,35 @@ public class PlayerEngine(
             active = state.active?.let { SyncReport.Active(it.publicationId, requireNotNull(it.activatedAt)) },
             recovery = state.recovery?.let { SyncReport.Recovery(it.publicationId) },
             staging = progress,
-            playback = playback.name,
+            playback = synchronized(lock) {
+                if (playback == PlaybackCondition.PLAYING && store.state().active?.let(::parsed)?.media?.values
+                    ?.any { it.sha256 in unavailableMedia } == true) PlaybackCondition.DEGRADED.name else playback.name
+            },
             storage = store.space().let { SyncReport.Storage(it.free, it.total) }.takeIf { it.freeBytes <= it.totalBytes },
-            deviceTime = Instant.ofEpochMilli(clockSource.wallMillis()).toString(),
+            deviceTime = deviceTime(),
+            diagnostics = clockDiagnostics(),
         )
+    }
+
+    /** An impossible device date must not prevent synchronization from repairing the time reference. */
+    private fun deviceTime(): String? {
+        val instant = Instant.ofEpochMilli(clockSource.wallMillis())
+        return instant.takeIf { it.atOffset(ZoneOffset.UTC).year in 0..9999 }?.toString()
+    }
+
+    private fun clockDiagnostics(): SyncReport.Diagnostics = synchronized(clock) {
+        val status = when (clock.now()) {
+            is TrustedTime.Anchored -> "ANCHORED"
+            is TrustedTime.Estimated -> "ESTIMATED"
+            TrustedTime.Untrusted -> "UNTRUSTED"
+        }
+        // Keep the exact signed millisecond difference only when JSON can represent it safely.
+        val skew = try {
+            clock.systemSkew()?.toMillis()?.takeIf { it in -9_007_199_254_740_991L..9_007_199_254_740_991L }
+        } catch (_: ArithmeticException) {
+            null
+        }
+        SyncReport.Diagnostics(status, skew, CrashJournal(store).count())
     }
 
     /**
@@ -255,24 +331,109 @@ public class PlayerEngine(
      * unlinked screen erases itself here, after the exchange releases its lock.
      */
     public fun sync(): SyncOutcome {
-        val outcome = synchronized(syncing) { exchange() }
+        if (clearingCredential != null) return SyncOutcome.Cleared(erase())
+        // A pending handover is resolved exclusively, before any old-credential work resumes.
+        var outcome = synchronized(syncing) {
+            if (vault.load()?.pending != null) null else exchange()
+        } ?: staging.withLock { synchronized(syncing) { rotateExchange() } }
+        // Rotation is maintenance: never wait for a download and postpone the next regular exchange.
+        if (outcome is SyncOutcome.Synced && rotationDue() && !staging.isHeldByCurrentThread && staging.tryLock()) {
+            try {
+                synchronized(syncing) {
+                    if (!erasing && rotationDue()) outcome = rotateExchange()
+                }
+            } finally { staging.unlock() }
+        }
         return if (outcome is SyncOutcome.Cleared) SyncOutcome.Cleared(erase()) else outcome
     }
 
-    private fun exchange(): SyncOutcome {
+    private fun rotationTime(): Instant? = (clock.now() as? TrustedTime.Anchored)?.instant?.takeIf {
+        it.atOffset(ZoneOffset.UTC).year in 0..9999
+    }
+
+    private fun rotationDue(): Boolean {
+        val credentials = vault.load() ?: return false
+        if (credentials.pending != null) return true
+        if (syncRecord()?.status != "active") return false
+        val now = rotationTime() ?: return false
+        val previous = credentials.rotatedAt ?: return true
+        return now < previous || Duration.between(previous, now) >= Duration.ofDays(30)
+    }
+
+    /** Caller holds staging then syncing: no in-flight request may outlive its credential. */
+    private fun rotateExchange(): SyncOutcome {
         val identity = identity() ?: return SyncOutcome.NotPaired
-        val credential = credential() ?: return SyncOutcome.NotPaired
-        val timed = try {
-            api.sync(credential, report())
+        var credentials = vault.load() ?: return SyncOutcome.NotPaired
+        try {
+            val preparedHere = credentials.pending == null
+            if (preparedHere) {
+                val pending = ByteArray(32).also(random::nextBytes)
+                credentials = Credentials(credentials.current, pending, credentials.rotatedAt)
+                // Persist BOTH secrets before registering a hash or using the candidate.
+                vault.save(credentials)
+            }
+            val candidate = Base64.getUrlEncoder().withoutPadding().encodeToString(requireNotNull(credentials.pending))
+            // This may already have been promoted by a response lost before process death.
+            val proof = if (preparedHere) registerCandidate(credentials, candidate) else try {
+                api.sync(candidate, report())
+            } catch (failure: ApiFailure) {
+                if (failure.code != "DEVICE_UNAUTHORIZED") throw failure
+                val current = Base64.getUrlEncoder().withoutPadding().encodeToString(credentials.current)
+                val checked = exchange(current)
+                if (checked !is SyncOutcome.Synced || syncRecord()?.status != "active") return checked
+                registerCandidate(credentials, candidate)
+            }
+            val accepted = acceptAnswer(proof, identity, candidate)
+            // Keep the durable candidate after unexpected answers; never lose the server's possible current secret.
+            // Clearing must not depend on writing a promoted vault to a full or failing disk.
+            if (accepted is SyncOutcome.Cleared) return accepted
+            if (accepted is SyncOutcome.Synced) {
+                val now = rotationTime() ?: return rotationFailed(null)
+                vault.save(Credentials(requireNotNull(credentials.pending), rotatedAt = now))
+            }
+            return accepted
         } catch (failure: ApiFailure) {
+            return when (failure.code) {
+                "DEVICE_UNAUTHORIZED" -> SyncOutcome.Unauthorized
+                "PROTOCOL_UNSUPPORTED" -> SyncOutcome.Incompatible
+                else -> rotationFailed(failure.retryAfter)
+            }
+        } catch (_: IOException) { return rotationFailed(null) }
+    }
+
+    private fun rotationFailed(retryAfter: Duration?): SyncOutcome.Failed =
+        failed(retryAfter).copy(failure = SyncFailure.CREDENTIAL_ROTATION)
+
+    private fun registerCandidate(credentials: Credentials, candidate: String): Timed<SyncAnswer> {
+        val current = Base64.getUrlEncoder().withoutPadding().encodeToString(credentials.current)
+        val hash = MessageDigest.getInstance("SHA-256").digest(requireNotNull(credentials.pending))
+        try {
+            api.rotateCredential(current, Base64.getUrlEncoder().withoutPadding().encodeToString(hash))
+        } catch (failure: ApiFailure) {
+            if (failure.code == "ENROLLMENT_REJECTED") {
+                // Explicit rejection leaves the proven current credential valid. Try a fresh candidate later.
+                vault.save(Credentials(credentials.current, rotatedAt = credentials.rotatedAt))
+            }
+            throw failure
+        }
+        return api.sync(candidate, report())
+    }
+
+    private fun exchange(credential: String? = credential()): SyncOutcome {
+        val identity = identity() ?: return SyncOutcome.NotPaired
+        if (credential == null) return SyncOutcome.NotPaired
+        val timed = try { api.sync(credential, report()) }
+        catch (failure: ApiFailure) {
             return when (failure.code) {
                 "DEVICE_UNAUTHORIZED" -> SyncOutcome.Unauthorized
                 "PROTOCOL_UNSUPPORTED" -> SyncOutcome.Incompatible
                 else -> failed(failure.retryAfter)
             }
-        } catch (_: IOException) {
-            return failed(null)
-        }
+        } catch (_: IOException) { return failed(null) }
+        return acceptAnswer(timed, identity, credential)
+    }
+
+    private fun acceptAnswer(timed: Timed<SyncAnswer>, identity: Identity, credential: String): SyncOutcome {
         failures = 0
         val answer = timed.value
         val serverTime = try {
@@ -281,19 +442,24 @@ public class PlayerEngine(
             return failed(null)
         }
         clock.anchor(serverTime, timed.sentMonotonic, timed.receivedMonotonic)
+        if (answer.clearRequired || answer.status == "unlinked") {
+            clearingCredential = credential
+            return SyncOutcome.Cleared(confirmed = false)
+        }
         checkpoint()
-        if (answer.clearRequired || answer.status == "unlinked") return SyncOutcome.Cleared(confirmed = false)
         saveRecord(
             PlayerStore.Record.SYNC,
             SyncRecord.serializer(),
             SyncRecord(answer.status, answer.timeZone, answer.zoneOffsets, answer.rotation, answer.desired, answer.branchId),
         )
         answer.authorization?.let { accept(it, identity, credential) }
-        val state = store.state()
         val desired = answer.desired?.publicationId
-        // A leftover attempt for anything else is cleared by the next stage.
-        val stagingNeeded = (desired != null && desired != state.active?.publicationId) ||
-            (state.staging != null && state.staging.publicationId != desired)
+        // Also repair missing active media, even when the desired generation has not changed.
+        val stagingNeeded = synchronized(lock) {
+            val state = store.state()
+            (desired != null && (desired != state.active?.publicationId || load(state.active) == null)) ||
+                (state.staging != null && state.staging.publicationId != desired)
+        }
         return SyncOutcome.Synced(Duration.ofSeconds(answer.nextSyncSeconds.toLong().coerceIn(5, 3600)), stagingNeeded)
     }
 
@@ -363,13 +529,15 @@ public class PlayerEngine(
      * Stages the desired publication of the latest sync and activates it
      * when complete. Progress and failures appear in the next report.
      */
-    public fun stage(): StagingOutcome = synchronized(staging) { stageDesired() }
+    public fun stage(): StagingOutcome = staging.withLock { stageDesired() }
 
     private fun stageDesired(): StagingOutcome {
+        if (erasing || clearingCredential != null || vault.load()?.pending != null) return StagingOutcome.Idle
         val identity = identity() ?: return StagingOutcome.Idle
         val credential = credential() ?: return StagingOutcome.Idle
         val desired = syncRecord()?.desired
-        if (desired == null || store.state().active?.publicationId == desired.publicationId) {
+        val complete = synchronized(lock) { store.state().active?.let { it.publicationId == desired?.publicationId && load(it) != null } == true }
+        if (desired == null || complete) {
             dropStaging()
             return StagingOutcome.Idle
         }
@@ -380,7 +548,9 @@ public class PlayerEngine(
             val publication = fetchManifest(desired, identity, credential)
             // A superseded attempt's files are no longer protected: free their space first.
             synchronized(lock) { collect(store.state()) }
-            val needed = publication.media.values.filter { !store.hasMedia(it.sha256, it.size) }.distinctBy { it.sha256 }
+            val needed = synchronized(lock) {
+                publication.media.values.filter { it.sha256 in unavailableMedia || !store.hasMedia(it.sha256, it.size) }.distinctBy { it.sha256 }
+            }
             val total = needed.sumOf { it.size }
             preflight(needed.sumOf { it.size - partialSize(it.sha256, it.size) })
             download(publication, needed, total, credential, desired.publicationId)
@@ -528,7 +698,7 @@ public class PlayerEngine(
         if (offset > 0) Files.newInputStream(partial).use { input -> digestAll(input, digest) }
         if (offset == media.size) {
             if (hex(digest) == media.sha256) {
-                store.commitMedia(media.sha256)
+                commitMedia(media.sha256)
                 return
             }
             Files.delete(partial)
@@ -566,7 +736,15 @@ public class PlayerEngine(
             Files.deleteIfExists(partial)
             throw StagingFailure(StagingFailureCode.INTEGRITY_FAILED, "Media does not match its SHA-256")
         }
-        store.commitMedia(media.sha256)
+        commitMedia(media.sha256)
+    }
+
+    /** A repaired active file must reopen even if no integrity scan observed its damaged bytes. */
+    private fun commitMedia(hash: String) = synchronized(lock) {
+        store.commitMedia(hash)
+        if (store.state().active?.let(::parsed)?.media?.values?.any { it.sha256 == hash } == true) {
+            mediaVersions[hash] = (mediaVersions[hash] ?: 0) + 1
+        }
     }
 
     /**
@@ -641,8 +819,12 @@ public class PlayerEngine(
         }
         val state = store.state()
         val activated = StoredGeneration(publicationId, publication.sha256, instant.toString())
-        val next = PlayerState(active = activated, recovery = state.active, staging = null)
+        // Repairing the active generation preserves its activation time and the previous recovery generation.
+        val next = if (state.active?.publicationId == publicationId) state.copy(staging = null)
+        else PlayerState(active = activated, recovery = state.active, staging = null)
         store.saveState(next)
+        val hashes = publication.media.values.map { it.sha256 }.toSet()
+        unavailableMedia.removeAll(hashes)
         progress = null
         collect(next)
         StagingOutcome.Activated(publicationId)
@@ -681,7 +863,7 @@ public class PlayerEngine(
 
     /** A stored generation with its manifest and every media file, or null when anything is missing. */
     private fun load(generation: StoredGeneration): Publication? =
-        parsed(generation)?.takeIf { publication -> publication.media.values.all { store.hasMedia(it.sha256, it.size) } }
+        parsed(generation)?.takeIf { publication -> publication.media.values.all { it.sha256 !in unavailableMedia && store.hasMedia(it.sha256, it.size) } }
 
     /**
      * Deletes what no kept generation needs (AT-19): the active and recovery
@@ -695,17 +877,72 @@ public class PlayerEngine(
         val stagingMedia = state.staging?.let(::parsed)?.media?.values?.map { it.sha256 }?.toSet()
         store.collect(keepPublications, keepMedia, if (state.staging == null) emptySet() else stagingMedia)
         publications = publications.filterKeys { it in keepPublications }.toMutableMap()
+        unavailableMedia.retainAll(keepMedia)
+        mediaVersions.keys.retainAll(keepMedia)
     }
+
+    private data class PlaybackSnapshot(
+        val active: Publication?,
+        val statement: Statement?,
+        val unavailable: Set<String>,
+        val versions: Map<String, Long>,
+    )
 
     /** What to show now, from the active generation, the latest statement and trusted time. */
     public fun plan(): Plan {
-        // Activation and startup reconciliation already established that the active generation is complete.
-        val (active, statement) = synchronized(lock) {
-            store.state().active?.let(::parsed) to latestStatement()
+        val snapshot = synchronized(lock) {
+            if (erasing || clearingCredential != null) return Plan.Neutral(PlaybackCondition.SETUP, null)
+            PlaybackSnapshot(store.state().active?.let(::parsed), latestStatement(), unavailableMedia.toSet(), mediaVersions.toMap())
         }
         val record = syncRecord()
         val zone = record?.zoneOffsets?.let(::zoneOffsets)
-        return PlaybackPlanner.plan(active, statement, clock.now(), zone, record?.branchId)
+        return PlaybackPlanner.plan(snapshot.active, snapshot.statement, clock.now(), zone, record?.branchId,
+            snapshot.unavailable, snapshot.versions)
+    }
+
+    /**
+     * Re-hashes one referenced file per call, or the file a decoder rejected.
+     * The app runs this off the UI thread at low priority. Sharing the staging
+     * lock prevents a failed check from deleting a replacement just committed
+     * by a download. Hashing never holds the playback/state lock.
+     * Returns true only when a missing, unreadable or mismatched file was removed
+     * from usable output; decoder failures with intact bytes need no download.
+     */
+    public fun scrubMedia(failedSha256: String? = null): Boolean = staging.withLock {
+        if (erasing || clearingCredential != null) return false
+        val candidate = synchronized(lock) {
+            val state = store.state()
+            val referenced = listOfNotNull(state.active, state.recovery, state.staging)
+                .mapNotNull(::parsed).flatMap { it.media.values }.distinctBy { it.sha256 }.sortedBy { it.sha256 }
+            if (failedSha256 != null) referenced.firstOrNull { it.sha256 == failedSha256 }
+            else (referenced.firstOrNull { it.sha256 > (lastScrubbed ?: "") } ?: referenced.firstOrNull())
+                ?.also { lastScrubbed = it.sha256 }
+        } ?: return false
+        val digest = MessageDigest.getInstance("SHA-256")
+        val valid = try {
+            store.hasMedia(candidate.sha256, candidate.size) && Files.newInputStream(store.mediaFile(candidate.sha256)).use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    if (erasing || Thread.currentThread().isInterrupted) return false
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    digest.update(buffer, 0, read)
+                }
+                hex(digest) == candidate.sha256
+            }
+        } catch (_: IOException) {
+            false
+        }
+        if (valid) return false
+        synchronized(lock) {
+            // Enrollment/credential loss can clear the store while a hash is read.
+            if (erasing || listOfNotNull(store.state().active, store.state().recovery, store.state().staging)
+                .mapNotNull(::parsed).none { publication -> publication.media.values.any { it.sha256 == candidate.sha256 } }) return false
+            unavailableMedia += candidate.sha256
+            Files.deleteIfExists(store.mediaFile(candidate.sha256))
+            AtomicFiles.syncDirectory(store.mediaFile(candidate.sha256).parent)
+        }
+        true
     }
 
     private fun zoneOffsets(answer: ZoneOffsetsAnswer): ZoneOffsets? = try {
@@ -728,27 +965,40 @@ public class PlayerEngine(
     public fun erase(): Boolean {
         erasing = true
         try {
-            synchronized(staging) {
+            staging.withLock {
                 synchronized(syncing) {
-                    val credential = credential()
+                    val credential = clearingCredential ?: credential()
                     synchronized(lock) {
                         store.eraseAll()
                         vault.erase()
+                        clearingCredential = null
+                        pendingEnrollment = null
                         statement = null
                         publications.clear()
+                        unavailableMedia.clear()
+                        mediaVersions.clear()
+                        lastScrubbed = null
                         progress = null
                     }
                     if (credential == null) return false
-                    return try {
-                        api.confirmErasure(credential)
-                        true
-                    } catch (_: IOException) {
-                        false
-                    }
+                    pendingErasureCredential = credential
+                    return retryErasureConfirmation()
                 }
             }
         } finally {
             erasing = false
+        }
+    }
+
+    /** Retries the latest erased identity's confirmation; never restores its credential to disk. */
+    public fun retryErasureConfirmation(): Boolean = synchronized(syncing) {
+        val credential = pendingErasureCredential ?: return true
+        try {
+            api.confirmErasure(credential)
+            pendingErasureCredential = null
+            true
+        } catch (_: IOException) {
+            false
         }
     }
 

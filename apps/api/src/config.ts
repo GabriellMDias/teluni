@@ -42,6 +42,10 @@ export const serverConfigSchema = Type.Object(
     ),
     provisionerClientSecret: Type.Optional(Type.String({ minLength: 16 })),
     sessionKeys: Type.Optional(Type.String({ minLength: 1 })),
+    developmentMfaMode: Type.Union([
+      Type.Literal("required"),
+      Type.Literal("optional"),
+    ]),
     mailSmtpHost: Type.Optional(
       Type.String({ pattern: "^[A-Za-z0-9.-]{1,253}$" }),
     ),
@@ -87,6 +91,18 @@ type ConfigMetadata = {
 };
 
 export const configReference = Object.freeze([
+  {
+    key: "developmentMfaMode",
+    name: "TELUNI_DEV_MFA_MODE",
+    type: "required | optional",
+    required: false,
+    default: "required",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Optional MFA for local development only: simulates strong and recent assurance after normal authenticated-session checks, without persisting it. Requires development and loopback API, panel and issuer; rejected elsewhere. Restart the API after changing it.",
+  },
   {
     key: "environment",
     name: "ORION_ENV",
@@ -603,6 +619,7 @@ export function parseServerConfig(
     ...(env.TELUNI_SESSION_KEYS === undefined
       ? {}
       : { sessionKeys: env.TELUNI_SESSION_KEYS }),
+    developmentMfaMode: env.TELUNI_DEV_MFA_MODE ?? "required",
     ...(env.TELUNI_MAIL_SMTP_HOST === undefined
       ? {}
       : { mailSmtpHost: env.TELUNI_MAIL_SMTP_HOST }),
@@ -736,6 +753,21 @@ export function parseServerConfig(
     )
       throw new Error("Invalid API configuration: public origin");
     parseSessionKeys(candidate.sessionKeys!);
+  }
+  if (candidate.developmentMfaMode === "optional") {
+    const loopback = (value: string | undefined) =>
+      value !== undefined &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(new URL(value).hostname);
+    if (
+      candidate.environment !== "development" ||
+      !["localhost", "127.0.0.1", "::1"].includes(candidate.host) ||
+      !candidate.sessionKeys ||
+      !loopback(candidate.publicOrigin) ||
+      !loopback(candidate.tokenIssuer)
+    )
+      throw new Error(
+        "Invalid API configuration: optional MFA requires local development identity settings",
+      );
   }
   const mailValues = [
     candidate.mailSmtpHost,

@@ -1,5 +1,275 @@
 [
   {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database Retry Boundary",
+    "anchor": "database-retry-boundary",
+    "text": "Database Retry Boundary\nRetry the complete logical transaction, including its reads and business assumptions, not only the last failed statement. Everything in that boundary can execute again. Inspect driver, repository, service, SDK, proxy, and caller policies to avoid multiplying retries; normally one layer owns retries for a failure.\nA timeout/cancellation or lost connection during commit may mean the operation committed and the response was lost. Propagate cancellation where supported and safe, clean up transactions reliably, and preserve unknown outcomes when relevant. Idempotency, state lookup, or reconciliation must resolve retry safety; a transient connection failure does not prove a write did not occur. Follow the owning module's recovery conventions for current behavior and [delivery retry rules](../architecture/delivery-and-side-effects.md) for broader workflows.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Authorization, audit, and derived reads",
+    "anchor": "authorization-audit-and-derived-reads",
+    "text": "Authorization, audit, and derived reads\nFor database-dependent authorization, define the consistency point between permission/ownership checks and the protected write. Immediate revocation requirements may affect transaction, token, and cache design; a distant precheck is insufficient when those semantics require freshness. Do not invent immediate revocation guarantees from short-lived tokens alone.\nWhen a required audit record and business change share a database boundary, they may need to commit atomically. External audit/event delivery requires durable intent and recovery; diagnostic logs are not authoritative business audit. Publish no event implying durable state before commit, and do not rely on unrecorded post-commit publication where delivery is required.\nRead replicas, caches, projections, and materialized views introduce staleness. Define whether an operation requires read-your-writes, its acceptable delay, canonical source, update/invalidation, repair, and failure behavior. “Eventually consistent” requires a process that actually repairs divergence. Cache stampede mitigations or single-writer/partitioned processing are optional responses to real load, not defaults; partition order does not imply global order.\nDatabase plus object storage needs partial-failure design such as temporary upload/finalization, orphan cleanup, and reconciliation. Distributed workflows must define convergence, compensation, or safe manual intervention rather than pretend to share one atomic commit. Do not claim exactly-once effects without end-to-end evidence.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Performance, observability, and repair",
+    "anchor": "performance-observability-and-repair",
+    "text": "Performance, observability, and repair\nBatch sizes affect transaction duration, lock scope, failure granularity, and memory. Large updates may need batching under [migration policy](migrations.md#backfills). Investigate hot rows/indexes, contention, and retry patterns with evidence before redesigning consistency.\nUse stable semantic operation names and bounded safe telemetry for latency, conflict/retry counts, lock waits, deadlocks, attempts, and final outcomes where useful. Trace meaningful latency/failure boundaries rather than every trivial query. Never dump rows or sensitive query values during conflict diagnostics; follow [redaction](../security/telemetry-redaction.md).\nRepair by retry, reconciliation, or intervention must be part of the design. Rare states requiring manual action must be detectable, diagnosable, and safe to repair through a concrete runbook. Separate high-risk audit requirements from diagnostic logging. Production signals can reveal duplicates, stuck work, and failed reconciliation that tests cannot exhaustively predict.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Testing and verification",
+    "anchor": "testing-and-verification",
+    "text": "Testing and verification\nUse real PostgreSQL for guarantees involving rollback, constraints, isolation, and locks. Sequential mocks cannot prove concurrent safety. Coordinate competing operations explicitly where practical rather than sleeping and hoping they overlap; avoid deadlock tests tied to undocumented scheduler timing.\nVerify relevant cases: mid-operation failure leaves no partial state; concurrent uniqueness/create claims produce one consistent result; stale versions conflict; competing transitions cannot both win; retry limits and complete-transaction restart behave safely; process interruption and response loss preserve documented recovery. The [delivery test requirements](../architecture/delivery-and-side-effects.md#verification) cover duplicate delivery, idempotency, external failure, and reconciliation when introduced. Testing and review remain necessary even where static checks can help.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "New Transaction Checklist",
+    "anchor": "new-transaction-checklist",
+    "text": "New Transaction Checklist\nBefore implementing or changing a state-changing operation:\nIdentify the invariant, owner, participating writes, concurrency sources, duplicate possibility, and applicable authorization/audit consistency.\nChoose constraints, atomic writes, versioning, isolation, locks, or explicit reservations proportionally; explain scope and maximum duration.\nDetermine conflict/error semantics, full retry boundary and owner, transient categories, attempt/time bounds, and safety of every repeated action.\nResolve halfway failure, external-success/database-failure, commit ambiguity, lost response, and crash windows without unsupported rollback or exactly-once claims.\nAdd deterministic integration evidence, safe operational signals, and recovery/repair guidance. Update the owning domain and generated contract/metadata when behavior changes.\n"
+  },
+  {
+    "id": "repository/docs/generated/api/errors",
+    "title": "API Error Registry",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "API Error Registry",
+    "anchor": "api-error-registry",
+    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`CSRF_VALIDATION_FAILED`\n403\nauthentication\nno\nThe request could not be verified as coming from the Teluni panel. Reload the page and try again.\n`STRONG_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires two-step verification. Confirm your identity and try again.\n`RECENT_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires a recent two-step verification. Confirm your identity and try again.\n`SESSION_LIMIT_REACHED`\n409\nconflict\nno\nYou already have the maximum number of active sessions. End one of them to continue.\n`MEMBERSHIP_REMOVED`\n409\nconflict\nno\nThis membership was removed and cannot be reactivated.\n`RESPONSIBLE_ADMINISTRATOR_PROTECTED`\n409\nconflict\nno\nTransfer responsibility before suspending or removing the responsible administrator.\n`LAST_ADMINISTRATOR_REQUIRED`\n409\nconflict\nno\nThe company must retain an active administrator.\n`RESPONSIBLE_APPROVAL_REQUIRED`\n403\nauthorization\nno\nOnly the company's responsible administrator can approve this administrator change.\n`SUCCESSOR_NOT_ELIGIBLE`\n409\nconflict\nno\nResponsibility can only pass to another active company administrator.\n`RESPONSIBILITY_TRANSFER_PENDING`\n409\nconflict\nno\nA responsibility transfer is already waiting for acceptance. Cancel it first.\n`RESPONSIBILITY_TRANSFER_NOT_PENDING`\n409\nconflict\nno\nThis responsibility transfer was already decided or has expired.\n`PERMISSION_DENIED`\n403\nauthorization\nno\nYou do not have permission to perform this action.\n`COMPANY_SUSPENDED`\n403\nauthorization\nno\nThis company is suspended. Contact Teluni support.\n`RESOURCE_VERSION_CONFLICT`\n409\nconflict\nno\nThe resource changed; reload it before trying again.\n`IDEMPOTENCY_KEY_REUSED`\n409\nconflict\nno\nThe creation key was used for different content.\n`BRANCH_NAME_IN_USE`\n409\nconflict\nno\nAnother active branch of this company already uses that name.\n`BRANCH_ARCHIVED`\n409\nconflict\nno\nThe branch is archived and cannot be changed.\n`PROFILE_NAME_IN_USE`\n409\nconflict\nno\nAnother active access profile of this company already uses that name.\n`PROFILE_ARCHIVED`\n409\nconflict\nno\nThe access profile is archived and cannot be changed.\n`PROFILE_IN_USE`\n409\nconflict\nno\nMembers still hold this access profile. Revoke their grants before archiving it.\n`PROFILE_LIMIT_REACHED`\n409\nconflict\nno\nThe company already has the maximum number of active access profiles.\n`BRANCH_IN_USE`\n409\nconflict\nno\nThe branch still has active resources, such as paired screens. Move or unlink them before archiving it.\n`INVITATION_PENDING`\n409\nconflict\nno\nA pending invitation for this address already exists. Resend it instead.\n`INVITATION_NO_LONGER_VALID`\n409\nconflict\nno\nThis invitation is no longer valid. Ask for a new one.\n`INVITATION_RECIPIENT_MISMATCH`\n403\nauthorization\nno\nThis invitation was sent to another email address. Sign in with that address to accept it.\n`MEMBERSHIP_SUSPENDED`\n409\nconflict\nno\nYour access to this company is suspended. Contact a company administrator.\n`PAIRING_CODE_INVALID`\n409\nconflict\nno\nThis code is not valid. Check the code shown on the screen, or restart pairing on the screen to get a new one.\n`ENROLLMENT_REJECTED`\n409\nconflict\nno\nThis credential cannot be used. Generate a new credential on the device.\n`ROTATION_UNSUPPORTED`\n409\nconflict\nno\nThe screen did not report support for this rotation.\n`DEVICE_UNAUTHORIZED`\n401\nauthentication\nno\nThe device credential is not valid for this operation.\n`DEVICE_UNLINKED`\n409\nconflict\nno\nThis screen was unlinked and can no longer change.\n`DEVICE_ERASURE_NOT_PENDING`\n409\nconflict\nno\nThis screen has no pending erasure to record.\n`MEDIA_TYPE_UNSUPPORTED`\n400\nvalidation\nno\nThis file type is not supported. Use a JPEG, PNG or WebP image, or an MP4, MOV, WebM or MKV video.\n`MEDIA_TOO_LARGE`\n400\nvalidation\nno\nThis file is too large. Images may have up to 20 MiB and videos up to 1 GiB.\n`MEDIA_UPLOAD_INCOMPLETE`\n400\nvalidation\nyes\nThe upload did not deliver exactly the declared file. Send the whole file again.\n`MEDIA_NOT_UPLOADING`\n409\nconflict\nno\nThis media item already received its file.\n`MEDIA_NOT_READY`\n409\nconflict\nyes\nThis media item is not ready to be shown yet.\n`MEDIA_IN_USE`\n409\nconflict\nno\nThis media item is still used by programming or a publication and cannot be deleted.\n`MEDIA_STORAGE_FULL`\n503\navailability\nyes\nThe media storage is nearly full, so new uploads are paused. Contact support.\n`MEDIA_INVALID_STATE`\n409\nconflict\nno\nThis media item cannot do that in its current state.\n`CATALOG_SCHEMA_INVALID`\n409\nconflict\nno\nThe fields cannot be saved this way. Each issue names the field and the reason, with how many items cause it when stored data does.\n`CATALOG_RECORD_INVALID`\n409\nconflict\nno\nThe item's values do not match the catalog's fields. Each issue names the field and the reason.\n`CATALOG_RECORD_REFERENCED`\n409\nconflict\nno\nOther items refer to this item, so it cannot be deleted. Change those items first.\n`CATALOG_PROMOTION_CONFLICT`\n409\nconflict\nno\nAnother promotion of this price overlaps this period for the same branches.\n`CATALOG_LIMIT_REACHED`\n409\nconflict\nno\nA catalog limit was reached: 200 catalogs per company, 60 fields or 5,000 items per catalog, or 100 promotions per price.\n`CATALOG_ARCHIVED`\n409\nconflict\nno\nThis catalog is archived. Restore it before changing it.\n`CATALOG_NOT_EMPTY`\n409\nconflict\nno\nOnly an empty catalog can be deleted. Delete its items first.\n`CATALOG_IN_USE`\n409\nconflict\nno\nA field of another catalog or a layout uses this catalog, so it cannot be deleted.\n`PRICE_TARGET_FORBIDDEN`\n403\nauthorization\nno\nScreens show this catalog through programs you cannot publish, so its prices cannot change from your account. Ask someone who can publish them.\n`PROGRAMMING_LIMIT_REACHED`\n409\nconflict\nno\nThis company reached a programming limit: 1,000 playlists, 500 layouts, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output.\n`PLAYLIST_IN_USE`\n409\nconflict\nno\nThis playlist is still used by a schedule or a default and cannot be deleted.\n`PLAYLIST_SCOPE_MISMATCH`\n409\nconflict\nno\nThis playlist or media item belongs to a branch the programming does not cover. Use company content or content of that single branch.\n`GROUP_NAME_IN_USE`\n409\nconflict\nno\nAnother programming group of this company already has this name.\n`GROUP_HAS_MEMBERS`\n409\nconflict\nno\nRemove the screens from this group before deleting it.\n`GROUP_SPAN_EXCLUDES_DEVICE`\n409\nconflict\nno\nThe group does not cover the screen's branch. Change the group's branches or choose another group.\n`SCHEDULE_TIMES_EQUAL`\n400\nvalidation\nno\nA schedule cannot start and end at the same time. Use the all-day option for a whole day.\n`SCHEDULE_CONFLICT`\n409\nconflict\nno\nTwo schedules of the same screen output overlap. Check the schedules to find them.\n`ASSIGNMENT_CONFIRMATION_REQUIRED`\n409\nconflict\nno\nThe chosen programming is not published yet, so the screen will show neutral output. Confirm to continue.\n`LAYOUT_INVALID`\n409\nconflict\nno\nThe layout cannot be saved this way. Each issue names the area, view or page and the reason.\n`LAYOUT_IN_USE`\n409\nconflict\nno\nPrograms use this layout. Choose another layout for them before deleting it.\n`LAYOUT_SCOPE_MISMATCH`\n409\nconflict\nno\nThis layout belongs to a branch the programming does not cover. Use a company layout or a layout of that single branch.\n`LAYOUT_CHANGE_CONFIRMATION_REQUIRED`\n409\nconflict\nno\nThis change removes schedules or defaults of areas that no longer exist or no longer take a default playlist. Each issue names the output; confirm to remove them.\n`TIMELINE_TOO_LARGE`\n400\nvalidation\nno\nThis period has too many schedule changes to show at once. Choose a shorter period.\n`PUBLICATION_INVALID`\n409\nconflict\nno\nThis programming cannot be published as it is. Check it to see what must change first.\n`PUBLICATION_NOT_RESTORABLE`\n409\nconflict\nno\nThis publication is no longer kept and cannot be restored. Publish the current programming instead.\n`PROTOCOL_UNSUPPORTED`\n409\nconflict\nno\nThis player supports no synchronization protocol the server offers. Update the player.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Web Component Reference",
+    "anchor": "web-component-reference",
+    "text": "Web Component Reference\n[Component architecture](../../architecture/web-components.md) · [Living documentation](../../architecture/living-documentation.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Button",
+    "anchor": "button",
+    "text": "Button\nA native action button with explicit variants and safe pending behavior.\nCategory: Actions. Scope: shared. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Button`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`children`\n`ReactNode`\nVisible action name or content with an equivalent accessible name.\nYes\n—\n`type`\n`button | submit | reset`\nNative form behavior; the safe default does not submit a form.\nNo\nbutton\n`variant`\n`primary | secondary`\nSemantic action emphasis, styled through product-owned tokens.\nNo\nsecondary\n`pending`\n`boolean`\nDisables activation and exposes aria-busy while the caller owns pending work.\nNo\nfalse\n`…buttonProps`\n`ComponentPropsWithRef<\"button\">`\nNative props such as disabled, onClick, className, ref and ARIA attributes are forwarded.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states",
+    "text": "States\nDefault and primary\nHover and keyboard focus\nDisabled\nPending\nProduct token override\nAccessibility: Uses a native button and visible focus. Pending disables activation and sets aria-busy; preserve meaningful button text while work is pending.\nUsage: Use for actions. Use a link for navigation. Keep a visible accessible name; choose type=submit explicitly inside forms. Native button props and refs are forwarded.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples",
+    "text": "Examples\n**Action states and product styling** (`button-states`): Local actions, disabled and pending states, and a scoped token override.\n<Button variant=\"primary\" onClick={save}>Save</Button>\n<Button pending>Saving…</Button>\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "TextField",
+    "anchor": "textfield",
+    "text": "TextField\nA labeled native input with linked hints and validation messages.\nCategory: Inputs. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `TextField`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-1",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`type`\n`Text-entry native input types`\nSupports text, email, password, search, tel, url, number and native date/time inputs. Use separate native controls for checkbox, radio, file, range or other selection behavior.\nNo\ntext\n`label`\n`string`\nPersistent accessible label; a placeholder cannot replace it.\nYes\n—\n`id`\n`string`\nOptional DOM id; a stable useId value is generated when absent.\nNo\nGenerated with useId\n`hint`\n`string`\nOptional help linked to the input through aria-describedby.\nNo\n—\n`error`\n`string`\nCaller-owned validation message linked to the input; also marks it invalid.\nNo\n—\n`…inputProps`\n`ComponentPropsWithRef<\"input\">`\nNative value/defaultValue, onChange, type, required, disabled, className, ref and ARIA props are forwarded. Existing aria-describedby references are retained.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-1",
+    "text": "States\nEmpty and populated\nHint\nValidation error\nRequired\nDisabled\nKeyboard focus\nAccessibility: Associates label and input through a stable id; links hint and error descriptions and sets aria-invalid for errors. Native required, disabled, ref and keyboard behavior are preserved. The feature owns dynamic error summaries or announcements.\nUsage: Use for a single native input with a persistent label. The caller owns value, validation and submission. Keep domain-specific validation and credentials in the feature; use other native controls for multiline text or selection.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-1",
+    "text": "Examples\n**Labeled input and validation** (`text-field-states`): Synthetic form input with a hint, validation message and disabled state.\n<TextField label=\"Name\" hint=\"Shown to your colleagues.\" required />\n<TextField label=\"Email\" type=\"email\" error=\"Enter an email address.\" />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "ErrorNotice",
+    "anchor": "errornotice",
+    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\nCategory: Feedback. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `ErrorNotice`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-2",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\nSee type\n—\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\nSee type\n—\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\nSee type\n—\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\nSee type\n—\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-2",
+    "text": "States\nFailure message\nFailure message with reload action\nAccessibility: Uses role=alert so the failure is announced; the optional reload control is a native button.\nUsage: Pass the original error to preserve stable-code mapping. Offer reload only when the current data can be refreshed, and never imply that an unknown write outcome failed.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-2",
+    "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n"
+  },
+  {
+    "id": "repository/docs/generated/configuration/api",
+    "title": "API Configuration Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "API Configuration Reference",
+    "anchor": "api-configuration-reference",
+    "text": "API Configuration Reference\n[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)\nNo values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. The devices module additionally requires `TELUNI_DEVICE_CODE_KEYS`, the media module `TELUNI_MEDIA_STORAGE_PATH` and the publications module `TELUNI_SYNC_SIGNING_KEYS`. API modules that require the database, bearer authentication, human identity, mail, device code keys, media storage or signing keys stay unmounted until those settings exist, and production startup fails instead.\nEnvironment variable\nType\nRequired\nDefault\nVisibility\nClassification\nSecret\nPurpose\n`TELUNI_DEV_MFA_MODE`\nrequired | optional\nno\n`required`\nserver\nINTERNAL\nno\nOptional MFA for local development only: simulates strong and recent assurance after normal authenticated-session checks, without persisting it. Requires development and loopback API, panel and issuer; rejected elsewhere. Restart the API after changing it.\n`ORION_ENV`\ndevelopment | test | production\nyes\n—\nserver\nINTERNAL\nno\nRuntime environment.\n`ORION_RELEASE_ID`\nartifact identifier, 1..128 ASCII letters/digits/._-\nno\n`local`\nserver\nINTERNAL\nno\nActual artifact revision for correlated logs and traces; local for unversioned development.\n`ORION_API_HOST`\nnonempty string\nno\n`127.0.0.1`\nserver\nINTERNAL\nno\nListen address; loopback by default.\n`ORION_API_PORT`\ninteger 0..65535\nno\n`3000`\nserver\nINTERNAL\nno\nListen port; zero selects an ephemeral port.\n`TELUNI_TRUSTED_PROXIES`\ncomma-separated IP addresses or CIDR ranges, at most 16\nno\n—\nserver\nINTERNAL\nno\nReverse proxies whose X-Forwarded-For and X-Forwarded-Proto headers are trusted, so request limits count the real client address; none by default.\n`ORION_LOG_LEVEL`\nPino level\nno\n`info`\nserver\nINTERNAL\nno\nStructured log threshold.\n`ORION_SHUTDOWN_TIMEOUT_MS`\ninteger 100..30000\nno\n`5000`\nserver\nINTERNAL\nno\nTotal graceful shutdown deadline.\n`ORION_OTLP_ENDPOINT`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nOptional OTLP HTTP collector base URL.\n`ORION_TRACE_SAMPLE_RATIO`\nnumber 0..1\nno\n`1`\nserver\nINTERNAL\nno\nTrace sampling probability.\n`ORION_DATABASE_URL`\nPostgreSQL URL\nno\n—\nserver\nRESTRICTED\nyes\nRuntime PostgreSQL credential; enables the database for modules that require it and adds it to readiness.\n`ORION_TOKEN_ISSUER`\nissuer URL\nno\n—\nserver\nINTERNAL\nno\nExpected access-token issuer; configure with audience and JWKS URL to enable bearer authentication.\n`ORION_TOKEN_AUDIENCE`\nnonempty string\nno\n—\nserver\nINTERNAL\nno\nExpected API access-token audience.\n`ORION_TOKEN_JWKS_URL`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nTrusted issuer public-key endpoint.\n`TELUNI_PUBLIC_ORIGIN`\norigin URL (scheme, host, optional port)\nno\n—\nserver\nINTERNAL\nno\nBrowser-visible panel origin for OIDC callbacks, cookie security and CSRF origin checks; HTTPS outside loopback development.\n`TELUNI_OIDC_CLIENT_ID`\nclient identifier\nno\n—\nserver\nINTERNAL\nno\nConfidential human-login OIDC client used by the server-managed session boundary.\n`TELUNI_OIDC_CLIENT_SECRET`\nsecret string, at least 16 characters\nno\n—\nserver\nRESTRICTED\nyes\nCredential of the human-login OIDC client.\n`TELUNI_IDENTITY_PROVISIONER_CLIENT_ID`\nclient identifier\nno\n—\nserver\nINTERNAL\nno\nService-account client that writes the administrator-only application principal attribute.\n`TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET`\nsecret string, at least 16 characters\nno\n—\nserver\nRESTRICTED\nyes\nCredential of the principal provisioner service account.\n`TELUNI_SESSION_KEYS`\ncomma-separated id:base64url 32-byte keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring for provider-token encryption and CSRF tokens; the first key protects new values, all keys remain readable during rotation.\n`TELUNI_MAIL_SMTP_HOST`\nhost name or address\nno\n—\nserver\nINTERNAL\nno\nSMTP submission relay for transactional email; configure with the sender and mail key ring to enable the mail module.\n`TELUNI_MAIL_SMTP_PORT`\ninteger 1..65535\nno\n`587`\nserver\nINTERNAL\nno\nSMTP submission relay port.\n`TELUNI_MAIL_SMTP_SECURITY`\ntls | starttls | none\nno\n`starttls`\nserver\nINTERNAL\nno\nImplicit TLS or mandatory STARTTLS with certificate verification; none only for a loopback test sink outside production.\n`TELUNI_MAIL_SMTP_USERNAME`\nstring, 1..256 characters\nno\n—\nserver\nINTERNAL\nno\nSMTP authentication user; configured together with the password, or both omitted for an unauthenticated test sink.\n`TELUNI_MAIL_SMTP_PASSWORD`\nsecret string, 1..512 characters\nno\n—\nserver\nRESTRICTED\nyes\nSMTP authentication credential of the mail relay.\n`TELUNI_MAIL_FROM`\nemail address\nno\n—\nserver\nINTERNAL\nno\nSender address of transactional email; its domain must be authorized for the relay.\n`TELUNI_MAIL_KEYS`\ncomma-separated id:base64url 32-byte keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values.\n`TELUNI_DEVICE_CODE_KEYS`\ncomma-separated id:base64url 32-byte keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring for the HMAC that stores screen pairing codes; the first key protects new codes, all keys remain readable during rotation. Enables the devices module.\n`TELUNI_MEDIA_STORAGE_PATH`\nabsolute directory path\nno\n—\nserver\nINTERNAL\nno\nDirectory on durable storage that holds media objects and work files on one filesystem; enables the media module.\n`TELUNI_MEDIA_FFMPEG_PATH`\nexecutable name or path\nno\n`ffmpeg`\nserver\nINTERNAL\nno\nFFmpeg 6.1 or later executable that converts media in isolated child processes.\n`TELUNI_MEDIA_FFPROBE_PATH`\nexecutable name or path\nno\n`ffprobe`\nserver\nINTERNAL\nno\nffprobe 6.1 or later executable that inspects uploaded media in isolated child processes.\n`TELUNI_MEDIA_PROCESSING_CONCURRENCY`\ninteger 1..4\nno\n`1`\nserver\nINTERNAL\nno\nMedia processing jobs this API process runs at once.\n`TELUNI_SYNC_SIGNING_KEYS`\ncomma-separated id:base64url PKCS#8 DER EC P-256 private keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring that signs screen authorization statements (ADR-0030); the first key signs, and every key's public half stays available to screens during rotation. Enables the publications module.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Database Reference",
+    "anchor": "database-reference",
+    "text": "Database Reference\n[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "catalogs",
+    "anchor": "catalogs",
+    "text": "catalogs\nA user-defined typed collection, such as products, a menu or a weekly agenda, owned by a company or one branch.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Created with an empty schema. Renames, archiving, restoring and schema saves bump the version; schema saves also bump the schema version. Deleted at runtime only when it has no records and no other catalog's reference field targets it. The owning scope never changes. See docs/project/catalog-composition-design.md.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable catalog UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the catalog; immutable (tenant key).\n—\n—\n`branch_id`\n`uuid`\nyes\n—\nINTERNAL\nBranch that owns the catalog; immutable.\nThe catalog belongs to the whole company and every member who may view catalogs sees it.\n—\n`name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nDisplay name chosen by members, trimmed, 1 to 120 characters.\n—\n—\n`status`\n`\"CatalogStatus\"`\nno\n`'ACTIVE'::\"CatalogStatus\"`\nINTERNAL\nACTIVE, or ARCHIVED (read-only until restored).\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version of the catalog and its schema, starting at 1.\n—\n—\n`schema_version`\n`integer`\nno\n`1`\nINTERNAL\nCounts schema saves, starting at 1, so published snapshots can name the schema they copied.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change to the catalog row.\n—\nUTC instant, millisecond precision\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalogs_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe owning branch belongs to the same company.\n`catalogs_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA catalog belongs to an existing company.\n`catalogs_name_trimmed`\n`CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))`\nNames are trimmed and not empty.\n`catalogs_pkey`\n`PRIMARY KEY (id)`\nUnique catalog identity.\n`catalogs_version_positive`\n`CHECK (((version >= 1) AND (schema_version >= 1)))`\nVersions start at 1.\n`catalogs_company_created_idx`\n`CREATE INDEX catalogs_company_created_idx ON public.catalogs USING btree (company_id, created_at DESC, id DESC)`\nLists a company's catalogs newest first with keyset cursors.\n`catalogs_company_id_id_key`\n`CREATE UNIQUE INDEX catalogs_company_id_id_key ON public.catalogs USING btree (company_id, id)`\nTenant key for catalogs.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "catalog_fields",
+    "anchor": "catalog_fields",
+    "text": "catalog_fields\nOne field of a catalog's schema: a stable identifier, a label that may change, a type that never changes, and type settings.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Saved as part of the whole ordered field list. Archiving keeps the values and hides the field from editing. Deleted at runtime only while no record, override or promotion holds a value for it, and with its catalog.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated stable field UUID; record values are keyed by it.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the catalog (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog whose schema holds the field; immutable.\n—\n—\n`position`\n`integer`\nno\n—\nINTERNAL\nZero-based order in the schema, 0 to 59, unique within the catalog by the module.\n—\n—\n`label`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nDisplay label chosen by members, trimmed, 1 to 80 characters; renaming never changes meaning.\n—\n—\n`type`\n`\"CatalogFieldType\"`\nno\n—\nINTERNAL\nTEXT, LONG_TEXT, NUMBER, BOOLEAN, DATE, TIME, WEEKDAYS, SELECTION, MONEY, MEDIA or REFERENCE; immutable.\n—\n—\n`required`\n`boolean`\nno\n`false`\nINTERNAL\nWhether every record must hold a value; never true for MONEY fields.\n—\n—\n`settings`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nValidated type settings: maximum length, decimal places and bounds, selection choices with stable identifiers, or whether promotions are allowed.\n—\n—\n`currency`\n`character(3)`\nyes\n—\nINTERNAL\nISO 4217 alphabetic code of a MONEY field; immutable (ADR-0032).\nThe field is not a MONEY field.\n—\n`target_catalog_id`\n`uuid`\nyes\n—\nINTERNAL\nCatalog whose records a REFERENCE field points to; immutable.\nThe field is not a REFERENCE field.\n—\n`archived_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the field was archived.\nThe field is active.\nUTC instant, millisecond precision\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the field was added.\n—\nUTC instant, millisecond precision\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes-1",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalog_fields_company_id_catalog_id_fkey`\n`FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nA field belongs to a catalog of the same company and is deleted with it.\n`catalog_fields_company_id_target_catalog_id_fkey`\n`FOREIGN KEY (company_id, target_catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA reference target is a catalog of the same company that cannot be deleted while targeted.\n`catalog_fields_currency`\n`CHECK ((((type = 'MONEY'::\"CatalogFieldType\") = (currency IS NOT NULL)) AND ((currency IS NULL) OR (currency ~ '^[A-Z]{3}$'::text))))`\nMONEY fields, and only they, carry a three-letter uppercase currency code.\n`catalog_fields_label_trimmed`\n`CHECK ((((label)::text = btrim((label)::text)) AND (char_length((label)::text) >= 1)))`\nLabels are trimmed and not empty.\n`catalog_fields_money_optional`\n`CHECK ((NOT ((type = 'MONEY'::\"CatalogFieldType\") AND required)))`\nMONEY fields are never required, because prices are saved separately.\n`catalog_fields_pkey`\n`PRIMARY KEY (id)`\nUnique field identity.\n`catalog_fields_position_range`\n`CHECK (((\"position\" >= 0) AND (\"position\" <= 59)))`\nA schema has at most 60 positions.\n`catalog_fields_settings_object`\n`CHECK ((jsonb_typeof(settings) = 'object'::text))`\nSettings are a JSON object.\n`catalog_fields_target`\n`CHECK (((type = 'REFERENCE'::\"CatalogFieldType\") = (target_catalog_id IS NOT NULL)))`\nREFERENCE fields, and only they, carry a target catalog.\n`catalog_fields_catalog_position_idx`\n`CREATE INDEX catalog_fields_catalog_position_idx ON public.catalog_fields USING btree (company_id, catalog_id, \"position\")`\nReads a schema in order.\n`catalog_fields_company_id_id_key`\n`CREATE UNIQUE INDEX catalog_fields_company_id_id_key ON public.catalog_fields USING btree (company_id, id)`\nTenant key that prices and record links reference.\n`catalog_fields_target_idx`\n`CREATE INDEX catalog_fields_target_idx ON public.catalog_fields USING btree (company_id, target_catalog_id)`\nFinds the reference fields that target a catalog.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "catalog_records",
+    "anchor": "catalog_records",
+    "text": "catalog_records\nOne entry of a catalog: its values keyed by field identifier, including the base price of each MONEY field, its availability and its position.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Created and updated one at a time with the observed version; value, availability, price and position changes bump it. Deleted at runtime with its overrides, promotions and join rows, only while no other record references it.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable record UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the record (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog the record belongs to; immutable.\n—\n—\n`position`\n`integer`\nno\n—\nINTERNAL\nSort key in the catalog's stored order, spaced so a move usually changes one row; ties order by id.\n—\n—\n`available`\n`boolean`\nno\n`true`\nINTERNAL\nWhether the record is available; views hide unavailable records unless they show them as unavailable.\n—\n—\n`field_values`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nValidated JSON object from field UUID to value: trimmed text, canonical decimal strings, booleans, local dates and times, sorted weekdays, choice identifiers, media and record UUIDs, and base prices as integer minor units (ADR-0032). At most 16 KiB as serialized by the API.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1.\n—\n—\n`created_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that created the record.\n—\n—\n`updated_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that made the last change.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes-2",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalog_records_company_id_catalog_id_fkey`\n`FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA record belongs to a catalog of the same company, which cannot be deleted while it has records.\n`catalog_records_company_id_created_by_membership_id_fkey`\n`FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe creator is a membership of the same company.\n`catalog_records_company_id_updated_by_membership_id_fkey`\n`FOREIGN KEY (company_id, updated_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe last updater is a membership of the same company.\n`catalog_records_pkey`\n`PRIMARY KEY (id)`\nUnique record identity.\n`catalog_records_position_range`\n`CHECK ((\"position\" >= 0))`\nPositions are not negative.\n`catalog_records_values_object`\n`CHECK (((jsonb_typeof(field_values) = 'object'::text) AND (octet_length((field_values)::text) <= 32768)))`\nValues are a JSON object with a storage backstop above the API's 16 KiB limit.\n`catalog_records_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`catalog_records_catalog_position_idx`\n`CREATE INDEX catalog_records_catalog_position_idx ON public.catalog_records USING btree (company_id, catalog_id, \"position\", id)`\nLists a catalog's records in stored order with keyset cursors.\n`catalog_records_company_id_id_key`\n`CREATE UNIQUE INDEX catalog_records_company_id_id_key ON public.catalog_records USING btree (company_id, id)`\nTenant key that prices, record links and references target.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "catalog_price_overrides",
+    "anchor": "catalog_price_overrides",
+    "text": "catalog_price_overrides\nThe price of one record's MONEY field for one branch of a company catalog, replacing the base price there.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Set, changed or removed one branch at a time with the record's observed version, which each change bumps; deleted with the record.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the catalog (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.\n—\n—\n`record_id`\n`uuid`\nno\n—\nINTERNAL\nRecord whose price is overridden.\n—\n—\n`field_id`\n`uuid`\nno\n—\nINTERNAL\nMONEY field whose price is overridden.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch where the override applies.\n—\n—\n`amount`\n`bigint`\nno\n—\nCONFIDENTIAL\nPrice in the field currency's minor units, 0 to 10^12.\n—\nminor units of the field's ISO 4217 currency\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes-3",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalog_price_overrides_amount_range`\n`CHECK (((amount >= 0) AND (amount <= '1000000000000'::bigint)))`\nAmounts are 0 to 10^12 minor units.\n`catalog_price_overrides_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company.\n`catalog_price_overrides_company_id_catalog_id_fkey`\n`FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe catalog belongs to the same company.\n`catalog_price_overrides_company_id_field_id_fkey`\n`FOREIGN KEY (company_id, field_id) REFERENCES catalog_fields(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe field belongs to the same company; the module checks it belongs to the record's catalog.\n`catalog_price_overrides_company_id_record_id_fkey`\n`FOREIGN KEY (company_id, record_id) REFERENCES catalog_records(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe record belongs to the same company; overrides are deleted with it.\n`catalog_price_overrides_pkey`\n`PRIMARY KEY (company_id, record_id, field_id, branch_id)`\nOne override per record, field and branch.\n`catalog_price_overrides_branch_idx`\n`CREATE INDEX catalog_price_overrides_branch_idx ON public.catalog_price_overrides USING btree (company_id, branch_id)`\nFinds a branch's overrides.\n`catalog_price_overrides_field_idx`\n`CREATE INDEX catalog_price_overrides_field_idx ON public.catalog_price_overrides USING btree (company_id, catalog_id, field_id)`\nFinds the overrides of a field for schema checks.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "catalog_promotions",
+    "anchor": "catalog_promotions",
+    "text": "catalog_promotions\nA promotional price of one record's MONEY field within a local wall-clock window, for the whole catalog scope or one branch.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Created and deleted, never edited; windows of the same price whose branch scopes intersect never overlap. Deleted with the record.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable promotion UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the catalog (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.\n—\n—\n`record_id`\n`uuid`\nno\n—\nINTERNAL\nRecord whose price is promoted.\n—\n—\n`field_id`\n`uuid`\nno\n—\nINTERNAL\nMONEY field whose price is promoted.\n—\n—\n`branch_id`\n`uuid`\nyes\n—\nINTERNAL\nBranch where the promotion applies.\nThe promotion applies to the whole catalog scope.\n—\n`amount`\n`bigint`\nno\n—\nCONFIDENTIAL\nPromotional price in the field currency's minor units, 0 to 10^12.\n—\nminor units of the field's ISO 4217 currency\n`starts_at`\n`timestamp(0) without time zone`\nno\n—\nINTERNAL\nLocal wall-clock start, inclusive, evaluated in each screen's time zone.\n—\nlocal date and time without zone, minute precision\n`ends_at`\n`timestamp(0) without time zone`\nno\n—\nINTERNAL\nLocal wall-clock end, exclusive.\n—\nlocal date and time without zone, minute precision\n`created_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that created the promotion.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n"
+  },
+  {
     "id": "repository/docs/generated/database/schema",
     "title": "Database Reference",
     "group": "Generated references",
@@ -157,6 +427,24 @@
     "title": "Database Reference",
     "group": "Generated references",
     "kind": "repository",
+    "heading": "device_audit_event_branches",
+    "anchor": "device_audit_event_branches",
+    "text": "device_audit_event_branches\nImmutable event-time branch scope of a device lifecycle event. A move concerns both branches; unknown legacy scope has no rows and is visible only to company administrators.\nOwner: Devices. Classification: CONFIDENTIAL.\nLifecycle: Inserted with its event in the same transaction; append-only. Backfill uses only branch IDs explicitly recorded in immutable pairing, move or unlink details.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany shared by the event and the branch.\n—\n—\n`event_id`\n`uuid`\nno\n—\nINTERNAL\nAudit event that concerns the branch.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch the event concerns.\n—\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes-13",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`device_audit_event_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company; mixed-company audit scopes are unrepresentable.\n`device_audit_event_branches_company_id_event_id_fkey`\n`FOREIGN KEY (company_id, event_id) REFERENCES device_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe event belongs to the same company.\n`device_audit_event_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe row belongs to an existing company.\n`device_audit_event_branches_pkey`\n`PRIMARY KEY (event_id, branch_id)`\nA branch appears at most once per event.\n`device_audit_event_branches_branch_idx`\n`CREATE INDEX device_audit_event_branches_branch_idx ON public.device_audit_event_branches USING btree (company_id, branch_id)`\nSupports finding the events that concern a branch.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
     "heading": "principals",
     "anchor": "principals",
     "text": "principals\nProvider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.\nOwner: Identity. Classification: CONFIDENTIAL.\nLifecycle: Created at first verified login; never deleted by the runtime. Disablement is a state change. Retention and erasure follow PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nApplication-generated immutable principal UUID, written to the provider's administrator-only attribute and asserted by access tokens as orion_principal_id.\n—\n—\n`issuer`\n`character varying(512)`\nno\n—\nINTERNAL\nExact OIDC issuer that authenticated this principal; together with subject it is the provider association.\n—\n—\n`subject`\n`character varying(255)`\nno\n—\nCONFIDENTIAL\nProvider-assigned stable subject identifier at the issuer; never used as the application identity.\n—\n—\n`status`\n`\"PrincipalStatus\"`\nno\n`'ACTIVE'::\"PrincipalStatus\"`\nINTERNAL\nACTIVE principals can hold sessions; DISABLED principals are globally denied within the 30-second revocation bound.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of principal provisioning.\n—\nUTC instant, millisecond precision\n`disabled_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant of global disablement.\nThe principal is active.\nUTC instant, millisecond precision\n`display_name`\n`character varying(200)`\nyes\n—\nCONFIDENTIAL\nPresentation name from the last verified login; never used as identity or authorization evidence.\nNo bounded display name has been obtained from a verified login.\n—\n`verified_email`\n`character varying(320)`\nyes\n—\nCONFIDENTIAL\nPresentation email snapshot from the last verified login; never used to link accounts, grant access or accept invitations.\nNo bounded verified email snapshot has been obtained.\n—\n"
@@ -167,7 +455,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-13",
+    "anchor": "constraints-and-indexes-14",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`principals_disabled_state`\n`CHECK (((status = 'DISABLED'::\"PrincipalStatus\") = (disabled_at IS NOT NULL)))`\nA disablement instant exists exactly for disabled principals.\n`principals_display_name_nonblank`\n`CHECK (((display_name IS NULL) OR (btrim((display_name)::text) <> ''::text)))`\nA presentation name, when present, cannot be blank.\n`principals_issuer_nonblank`\n`CHECK (((issuer)::text ~ '^https?://[^[:space:]]+$'::text))`\nIssuer is an absolute HTTP(S) URL without whitespace.\n`principals_pkey`\n`PRIMARY KEY (id)`\nUnique immutable application principal identity.\n`principals_subject_nonblank`\n`CHECK (((subject)::text ~ '[^[:space:]]'::text))`\nProvider subject cannot be blank.\n`principals_verified_email_nonblank`\n`CHECK (((verified_email IS NULL) OR (btrim((verified_email)::text) <> ''::text)))`\nA verified-login email snapshot, when present, cannot be blank.\n`principals_issuer_subject_key`\n`CREATE UNIQUE INDEX principals_issuer_subject_key ON public.principals USING btree (issuer, subject)`\nOne application principal per provider identity; concurrent first logins converge on one row.\n"
   },
   {
@@ -185,7 +473,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-14",
+    "anchor": "constraints-and-indexes-15",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`human_sessions_absolute_after_creation`\n`CHECK (((absolute_expires_at > created_at) AND (absolute_expires_at <= (created_at + '12:00:00'::interval))))`\nAbsolute expiry follows creation by at most the selected 12-hour maximum.\n`human_sessions_idle_bounds`\n`CHECK (((idle_timeout_seconds >= 60) AND (idle_timeout_seconds <= 7200)))`\nInactivity bound stays between one minute and the two-hour operator maximum.\n`human_sessions_pkey`\n`PRIMARY KEY (id)`\nUnique session identity.\n`human_sessions_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA session belongs to an existing principal; principals cannot be deleted while sessions exist.\n`human_sessions_revocation_reason_known`\n`CHECK (((revocation_reason IS NULL) OR ((revocation_reason)::text = ANY ((ARRAY['LOGOUT'::character varying, 'TERMINATED_BY_USER'::character varying, 'EXPIRED'::character varying, 'REPLACED'::character varying, 'PROVIDER_LOGOUT'::character varying, 'PROVIDER_INACTIVE'::character varying, 'REFRESH_REJECTED'::character varying, 'PRINCIPAL_DISABLED'::character varying, 'PRINCIPAL_MISMATCH'::character varying])::text[]))))`\nRevocation reason is one of the documented values.\n`human_sessions_revocation_state`\n`CHECK (((state = 'REVOKED'::\"HumanSessionState\") = ((revoked_at IS NOT NULL) AND (revocation_reason IS NOT NULL))))`\nRevocation instant and reason exist exactly for revoked sessions.\n`human_sessions_token_hash_sha256`\n`CHECK ((octet_length(token_hash) = 32))`\nCredential hash is exactly one SHA-256 digest.\n`human_sessions_principal_state_idx`\n`CREATE INDEX human_sessions_principal_state_idx ON public.human_sessions USING btree (principal_id, state)`\nSupports counting and listing a principal's sessions by state.\n`human_sessions_provider_session_idx`\n`CREATE INDEX human_sessions_provider_session_idx ON public.human_sessions USING btree (provider_session_id)`\nSupports back-channel logout by provider session identifier.\n`human_sessions_token_hash_key`\n`CREATE UNIQUE INDEX human_sessions_token_hash_key ON public.human_sessions USING btree (token_hash)`\nOne session per cookie credential; supports lookup by credential hash.\n"
   },
   {
@@ -203,7 +491,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-15",
+    "anchor": "constraints-and-indexes-16",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`oidc_login_attempts_expiry_bounds`\n`CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))`\nAn attempt expires after creation and within 10 minutes.\n`oidc_login_attempts_handle_sha256`\n`CHECK ((octet_length(handle_hash) = 32))`\nHandle hash is exactly one SHA-256 digest.\n`oidc_login_attempts_max_age_bounds`\n`CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))`\nRequested maximum authentication age cannot be negative.\n`oidc_login_attempts_pkey`\n`PRIMARY KEY (id)`\nUnique attempt identity.\n`oidc_login_attempts_return_relative`\n`CHECK (((return_to)::text ~ '^/'::text))`\nReturn path is relative to the panel origin.\n`oidc_login_attempts_state_nonblank`\n`CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))`\nState uses the base64url alphabet and cannot be blank.\n`oidc_login_attempts_handle_hash_key`\n`CREATE UNIQUE INDEX oidc_login_attempts_handle_hash_key ON public.oidc_login_attempts USING btree (handle_hash)`\nOne attempt per browser handle; supports consumption by handle.\n"
   },
   {
@@ -221,7 +509,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-16",
+    "anchor": "constraints-and-indexes-17",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
   },
   {
@@ -239,7 +527,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-17",
+    "anchor": "constraints-and-indexes-18",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`outbound_emails_attempts_nonnegative`\n`CHECK ((attempts >= 0))`\nAttempt counts never go negative.\n`outbound_emails_final_state`\n`CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") = (finalized_at IS NULL)))`\nA final instant exists exactly for messages that are no longer pending.\n`outbound_emails_parameters_object`\n`CHECK ((jsonb_typeof(parameters) = 'object'::text))`\nTemplate parameters are a JSON object.\n`outbound_emails_pkey`\n`PRIMARY KEY (id)`\nUnique message identity.\n`outbound_emails_secret_only_pending`\n`CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") OR (sealed_secret IS NULL)))`\nA sealed secret survives only while the message is pending.\n`outbound_emails_due_idx`\n`CREATE INDEX outbound_emails_due_idx ON public.outbound_emails USING btree (next_attempt_at) WHERE (status = 'PENDING'::\"OutboundEmailStatus\")`\nClaims due pending messages in order without scanning final ones.\n`outbound_emails_finalized_idx`\n`CREATE INDEX outbound_emails_finalized_idx ON public.outbound_emails USING btree (finalized_at) WHERE (status <> 'PENDING'::\"OutboundEmailStatus\")`\nFinds final messages whose retention period has ended.\n`outbound_emails_producer_idx`\n`CREATE INDEX outbound_emails_producer_idx ON public.outbound_emails USING btree (producer, producer_reference)`\nFinds a producer's messages to report delivery state or cancel them.\n"
   },
   {
@@ -257,7 +545,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-18",
+    "anchor": "constraints-and-indexes-19",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`media_objects_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn object belongs to an existing company.\n`media_objects_pkey`\n`PRIMARY KEY (company_id, sha256)`\nOne row per company and content hash.\n`media_objects_sha256_length`\n`CHECK ((octet_length(sha256) = 32))`\nThe key is a SHA-256 digest.\n`media_objects_size_positive`\n`CHECK ((byte_size > 0))`\nStored files are never empty.\n"
   },
   {
@@ -275,7 +563,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-19",
+    "anchor": "constraints-and-indexes-20",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`media_assets_attempts_nonnegative`\n`CHECK ((processing_attempts >= 0))`\nAttempt counts never go below zero.\n`media_assets_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe owning branch belongs to the same company.\n`media_assets_company_id_created_by_membership_id_fkey`\n`FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe creating membership belongs to the same company.\n`media_assets_company_id_display_sha256_fkey`\n`FOREIGN KEY (company_id, display_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe display rendition is an object of the same company.\n`media_assets_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn item belongs to an existing company.\n`media_assets_company_id_original_sha256_fkey`\n`FOREIGN KEY (company_id, original_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe original is an object of the same company.\n`media_assets_company_id_thumbnail_sha256_fkey`\n`FOREIGN KEY (company_id, thumbnail_sha256) REFERENCES media_objects(company_id, sha256) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe thumbnail is an object of the same company.\n`media_assets_created_by_principal_id_fkey`\n`FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe creator is a known principal.\n`media_assets_declared_size_positive`\n`CHECK ((declared_size > 0))`\nA declared size is positive.\n`media_assets_dimensions_positive`\n`CHECK ((((width IS NULL) OR (width > 0)) AND ((height IS NULL) OR (height > 0))))`\nDimensions are positive.\n`media_assets_hash_lengths`\n`CHECK ((((original_sha256 IS NULL) OR (octet_length(original_sha256) = 32)) AND ((display_sha256 IS NULL) OR (octet_length(display_sha256) = 32)) AND ((thumbnail_sha256 IS NULL) OR (octet_length(thumbnail_sha256) = 32))))`\nObject references are SHA-256 digests.\n`media_assets_name_trimmed`\n`CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))`\nNames are stored trimmed and nonempty.\n`media_assets_pkey`\n`PRIMARY KEY (id)`\nUnique media item identity.\n`media_assets_progress_range`\n`CHECK (((processing_progress IS NULL) OR ((processing_progress >= 0) AND (processing_progress <= 100))))`\nProgress is a percentage.\n`media_assets_purged_state`\n`CHECK (((status = 'PURGED'::\"MediaStatus\") = (purged_at IS NOT NULL)))`\nA purge instant is recorded exactly for purged items.\n`media_assets_rejection_state`\n`CHECK (((status = 'REJECTED'::\"MediaStatus\") = (rejection_reason IS NOT NULL)))`\nA rejection reason exists exactly for rejected items.\n`media_assets_tags_bounded`\n`CHECK (((tags IS NOT NULL) AND (cardinality(tags) <= 10)))`\nTags are present and at most ten.\n`media_assets_trash_state`\n`CHECK (((status = 'DELETED'::\"MediaStatus\") = (purge_after IS NOT NULL)))`\nA purge instant exists exactly for items in the trash.\n`media_assets_unusable_without_renditions`\n`CHECK (((status <> ALL (ARRAY['UPLOADING'::\"MediaStatus\", 'REJECTED'::\"MediaStatus\", 'FAILED'::\"MediaStatus\", 'PURGED'::\"MediaStatus\"])) OR ((display_sha256 IS NULL) AND (thumbnail_sha256 IS NULL))))`\nItems that are not usable hold no renditions.\n`media_assets_usable_objects`\n`CHECK (((status <> ALL (ARRAY['READY'::\"MediaStatus\", 'ARCHIVED'::\"MediaStatus\", 'DELETED'::\"MediaStatus\"])) OR ((original_sha256 IS NOT NULL) AND (display_sha256 IS NOT NULL) AND (thumbnail_sha256 IS NOT NULL) AND (width IS NOT NULL) AND (height IS NOT NULL) AND (ready_at IS NOT NULL))))`\nReady, archived and deleted items keep all their objects and facts.\n`media_assets_version_positive`\n`CHECK ((version >= 1))`\nVersions start at one.\n`media_assets_video_duration`\n`CHECK (((duration_ms IS NULL) OR ((kind = 'VIDEO'::\"MediaKind\") AND (duration_ms > 0))))`\nOnly videos have a positive duration.\n`media_assets_company_created_idx`\n`CREATE INDEX media_assets_company_created_idx ON public.media_assets USING btree (company_id, created_at DESC, id DESC)`\nLists a company's items newest first with stable keyset pagination.\n`media_assets_company_id_id_key`\n`CREATE UNIQUE INDEX media_assets_company_id_id_key ON public.media_assets USING btree (company_id, id)`\nTenant key for references to media items.\n`media_assets_company_status_idx`\n`CREATE INDEX media_assets_company_status_idx ON public.media_assets USING btree (company_id, status)`\nCounts a company's open uploads and processing items for abuse limits.\n`media_assets_display_idx`\n`CREATE INDEX media_assets_display_idx ON public.media_assets USING btree (company_id, display_sha256)`\nFinds whether another item still references an object before it is deleted.\n`media_assets_original_idx`\n`CREATE INDEX media_assets_original_idx ON public.media_assets USING btree (company_id, original_sha256)`\nFinds whether another item still references an object before it is deleted.\n`media_assets_processing_idx`\n`CREATE INDEX media_assets_processing_idx ON public.media_assets USING btree (status, next_attempt_at)`\nFinds items due for processing and expired uploads and trash.\n`media_assets_thumbnail_idx`\n`CREATE INDEX media_assets_thumbnail_idx ON public.media_assets USING btree (company_id, thumbnail_sha256)`\nFinds whether another item still references an object before it is deleted.\n"
   },
   {
@@ -293,7 +581,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-20",
+    "anchor": "constraints-and-indexes-21",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`media_audit_events_actor_principal_id_fkey`\n`FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe actor is a known principal.\n`media_audit_events_company_id_actor_membership_id_fkey`\n`FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe acting membership belongs to the same company.\n`media_audit_events_company_id_asset_id_fkey`\n`FOREIGN KEY (company_id, asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe item belongs to the same company.\n`media_audit_events_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn event belongs to an existing company.\n`media_audit_events_details_object`\n`CHECK ((jsonb_typeof(details) = 'object'::text))`\nDetails are a JSON object.\n`media_audit_events_pkey`\n`PRIMARY KEY (id)`\nUnique event identity.\n`media_audit_events_asset_time_idx`\n`CREATE INDEX media_audit_events_asset_time_idx ON public.media_audit_events USING btree (company_id, asset_id, occurred_at DESC, id DESC)`\nReads an item's history newest first.\n`media_audit_events_company_id_id_key`\n`CREATE UNIQUE INDEX media_audit_events_company_id_id_key ON public.media_audit_events USING btree (company_id, id)`\nTenant key for events.\n"
   },
   {
@@ -311,7 +599,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-21",
+    "anchor": "constraints-and-indexes-22",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`companies_created_by_principal_id_fkey`\n`FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe creator is an existing principal.\n`companies_creation_fingerprint_format`\n`CHECK ((creation_fingerprint ~ '^[0-9a-f]{64}$'::text))`\nCreation fingerprints are lowercase SHA-256 hex values.\n`companies_creation_key_format`\n`CHECK (((creation_key)::text ~ '^[A-Za-z0-9._~-]+$'::text))`\nCreation keys use the documented opaque ASCII alphabet.\n`companies_default_locale_supported`\n`CHECK (((default_locale)::text = ANY ((ARRAY['pt-BR'::character varying, 'en-US'::character varying])::text[])))`\nOnly the supported interface locales.\n`companies_display_name_nonblank`\n`CHECK (((display_name)::text ~ '[^[:space:]]'::text))`\nCompany name cannot be blank.\n`companies_pkey`\n`PRIMARY KEY (id)`\nUnique immutable company identity.\n`companies_time_zone_nonblank`\n`CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))`\nTime zone has the IANA identifier shape; the API validates it against the runtime's zone database.\n`companies_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`companies_creator_key_unique`\n`CREATE UNIQUE INDEX companies_creator_key_unique ON public.companies USING btree (created_by_principal_id, creation_key)`\nOne company per creator and creation key, including racing retries.\n"
   },
   {
@@ -329,7 +617,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-22",
+    "anchor": "constraints-and-indexes-23",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA branch belongs to an existing company.\n`branches_name_nonblank`\n`CHECK (((name)::text ~ '[^[:space:]]'::text))`\nBranch name cannot be blank.\n`branches_pkey`\n`PRIMARY KEY (id)`\nUnique branch identity.\n`branches_time_zone_nonblank`\n`CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))`\nTime zone has the IANA identifier shape.\n`branches_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`branches_company_active_name_unique`\n`CREATE UNIQUE INDEX branches_company_active_name_unique ON public.branches USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"BranchStatus\")`\nActive branch names are unique within a company, ignoring case, including racing creations.\n`branches_company_id_id_key`\n`CREATE UNIQUE INDEX branches_company_id_id_key ON public.branches USING btree (company_id, id)`\nTenant key that tenant references target.\n`branches_company_status_name_idx`\n`CREATE INDEX branches_company_status_name_idx ON public.branches USING btree (company_id, status, name)`\nSupports listing a company's branches by state and name.\n"
   },
   {
@@ -347,286 +635,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-23",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`memberships_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA membership belongs to an existing company.\n`memberships_pkey`\n`PRIMARY KEY (id)`\nUnique membership identity.\n`memberships_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe member is an existing principal.\n`memberships_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`memberships_company_id_id_key`\n`CREATE UNIQUE INDEX memberships_company_id_id_key ON public.memberships USING btree (company_id, id)`\nTenant key that tenant references target.\n`memberships_company_principal_current_key`\n`CREATE UNIQUE INDEX memberships_company_principal_current_key ON public.memberships USING btree (company_id, principal_id) WHERE (status <> 'REMOVED'::\"MembershipStatus\")`\nAt most one current (not REMOVED) membership per principal and company; a removed membership stays as history and the person can return through a new membership.\n`memberships_principal_status_idx`\n`CREATE INDEX memberships_principal_status_idx ON public.memberships USING btree (principal_id, status)`\nSupports listing a principal's companies.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "company_responsibilities",
-    "anchor": "company_responsibilities",
-    "text": "company_responsibilities\nThe company's designated responsible administrator, who approves additional administrators (P10).\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created with the company; moves to another active administrator only when that successor accepts a pending responsibility transfer.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany whose responsibility this row records; one row per company.\n—\n—\n`membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership of the responsible administrator in the same company.\n—\n—\n`assigned_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the assignment.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-24",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`company_responsibilities_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nResponsibility belongs to an existing company.\n`company_responsibilities_company_id_membership_id_fkey`\n`FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe responsible membership belongs to the same company.\n`company_responsibilities_pkey`\n`PRIMARY KEY (company_id)`\nExactly one responsible administrator per company.\n`company_responsibilities_membership_key`\n`CREATE UNIQUE INDEX company_responsibilities_membership_key ON public.company_responsibilities USING btree (company_id, membership_id)`\nSupports the composite reference to the responsible membership.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "access_profiles",
-    "anchor": "access_profiles",
-    "text": "access_profiles\nCompany-customized access profile: a named set of delegable business capabilities that grants can carry instead of a standard role.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; edited with expected versions, so every holder's access follows the current capabilities; archived rather than deleted, and only when no effective grant holds it.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable profile UUID; public resource ID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nOwning company; immutable (tenant key).\n—\n—\n`name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nProfile name, unique among the company's active profiles regardless of case.\n—\n—\n`capabilities`\n`text[]`\nno\n—\nINTERNAL\nDelegable capability names (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); company administration is never delegable through a profile.\n—\n—\n`status`\n`\"AccessProfileStatus\"`\nno\n`'ACTIVE'::\"AccessProfileStatus\"`\nINTERNAL\nACTIVE profiles can be granted; ARCHIVED profiles are retained for attribution.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token incremented once per successful change.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change; not audit history.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-25",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`access_profiles_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA profile belongs to an existing company.\n`access_profiles_delegable_capabilities`\n`CHECK (((cardinality(capabilities) >= 1) AND (capabilities <@ ARRAY['branches.view'::text, 'invitations.manage'::text, 'audit.view'::text, 'devices.view'::text, 'devices.manage'::text, 'media.view'::text, 'media.upload'::text, 'media.archive'::text, 'programming.view'::text, 'programming.edit'::text, 'programming.assign'::text, 'publications.publish'::text, 'catalogs.view'::text, 'catalogs.edit'::text, 'catalogs.manage'::text, 'prices.edit'::text])))`\nA profile names at least one capability, all of them delegable.\n`access_profiles_name_nonblank`\n`CHECK ((btrim((name)::text) <> ''::text))`\nProfile name cannot be blank.\n`access_profiles_pkey`\n`PRIMARY KEY (id)`\nUnique profile identity.\n`access_profiles_version_positive`\n`CHECK ((version >= 1))`\nRejects invalid concurrency versions.\n`access_profiles_company_active_name_unique`\n`CREATE UNIQUE INDEX access_profiles_company_active_name_unique ON public.access_profiles USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"AccessProfileStatus\")`\nActive profile names are unique within a company, ignoring case.\n`access_profiles_company_id_id_key`\n`CREATE UNIQUE INDEX access_profiles_company_id_id_key ON public.access_profiles USING btree (company_id, id)`\nTenant key that grants target.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "membership_grants",
-    "anchor": "membership_grants",
-    "text": "membership_grants\nA standard role or a company-customized access profile granted to a membership over the whole company or explicit branches; grants combine additively.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Effective from starts_at until expires_at or revoked_at; company administrators revoke grants, never delete them, and expired or revoked grants are retained for attribution.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated grant UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany of the grant; immutable (tenant key).\n—\n—\n`membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that holds the grant.\n—\n—\n`role`\n`\"AccessRole\"`\nyes\n—\nINTERNAL\nStandard role preset: COMPANY_ADMINISTRATOR, BRANCH_MANAGER or OPERATOR; capabilities are defined by the application.\nThe grant carries an access profile instead.\n—\n`scope`\n`\"GrantScope\"`\nno\n—\nINTERNAL\nCOMPANY covers every branch, including future ones; BRANCHES covers only the listed branches.\n—\n—\n`starts_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nInstant the grant becomes effective.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant a temporary grant stops being effective; no automatic renewal.\nThe grant does not expire.\nUTC instant, millisecond precision\n`granted_by_membership_id`\n`uuid`\nyes\n—\nINTERNAL\nMembership that granted it, for attribution.\nGranted by company creation.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`revoked_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nInstant a company administrator revoked the grant; revocation is terminal.\nThe grant has not been revoked.\nUTC instant, millisecond precision\n`profile_id`\n`uuid`\nyes\n—\nINTERNAL\nCompany-customized access profile whose current capabilities the grant confers.\nThe grant carries a standard role instead.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-26",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`membership_grants_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA grant belongs to an existing company.\n`membership_grants_company_id_granted_by_membership_id_fkey`\n`FOREIGN KEY (company_id, granted_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe grantor, when present, is a membership of the same company.\n`membership_grants_company_id_membership_id_fkey`\n`FOREIGN KEY (company_id, membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe holder is a membership of the same company.\n`membership_grants_company_id_profile_id_fkey`\n`FOREIGN KEY (company_id, profile_id) REFERENCES access_profiles(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe profile belongs to the same company; mixed-company profiles are unrepresentable.\n`membership_grants_company_role_scope`\n`CHECK (((role <> 'COMPANY_ADMINISTRATOR'::\"AccessRole\") OR (scope = 'COMPANY'::\"GrantScope\")))`\nCompany administration is always company-wide.\n`membership_grants_expiry_after_start`\n`CHECK (((expires_at IS NULL) OR (expires_at > starts_at)))`\nA temporary grant expires after it starts.\n`membership_grants_pkey`\n`PRIMARY KEY (id)`\nUnique grant identity.\n`membership_grants_role_or_profile`\n`CHECK ((num_nonnulls(role, profile_id) = 1))`\nA grant carries exactly one standard role or one access profile.\n`membership_grants_company_id_id_key`\n`CREATE UNIQUE INDEX membership_grants_company_id_id_key ON public.membership_grants USING btree (company_id, id)`\nTenant key that branch scopes target.\n`membership_grants_membership_idx`\n`CREATE INDEX membership_grants_membership_idx ON public.membership_grants USING btree (company_id, membership_id)`\nSupports resolving a membership's grants.\n`membership_grants_profile_idx`\n`CREATE INDEX membership_grants_profile_idx ON public.membership_grants USING btree (company_id, profile_id)`\nSupports finding the grants that hold a profile.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "membership_grant_branches",
-    "anchor": "membership_grant_branches",
-    "text": "membership_grant_branches\nExplicit branches covered by a BRANCHES-scoped grant; new branches never join silently.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Written with the grant; retained while the grant exists.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany shared by the grant and the branch.\n—\n—\n`grant_id`\n`uuid`\nno\n—\nINTERNAL\nGrant whose scope includes the branch.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch covered by the grant.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-27",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`membership_grant_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company; mixed-company scopes are unrepresentable.\n`membership_grant_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe scope belongs to an existing company.\n`membership_grant_branches_company_id_grant_id_fkey`\n`FOREIGN KEY (company_id, grant_id) REFERENCES membership_grants(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe grant belongs to the same company.\n`membership_grant_branches_pkey`\n`PRIMARY KEY (grant_id, branch_id)`\nA branch appears at most once in a grant's scope.\n`membership_grant_branches_branch_idx`\n`CREATE INDEX membership_grant_branches_branch_idx ON public.membership_grant_branches USING btree (company_id, branch_id)`\nSupports finding the grants that cover a branch.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "organization_audit_events",
-    "anchor": "organization_audit_events",
-    "text": "organization_audit_events\nAppend-only attributable record of company, branch, membership and grant changes, written in the same transaction as each change.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Never updated or deleted by the runtime; retention follows PH-13.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated event UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany whose change the event records.\n—\n—\n`occurred_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the change.\n—\nUTC instant, millisecond precision\n`actor_principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPrincipal who performed the change.\n—\n—\n`actor_membership_id`\n`uuid`\nyes\n—\nINTERNAL\nActor's membership in the company.\nThe actor had no membership yet, as when creating the company.\n—\n`action`\n`character varying(64)`\nno\n—\nINTERNAL\nStable dotted action identifier, such as company.created or branch.archived.\n—\n—\n`target_type`\n`character varying(32)`\nno\n—\nINTERNAL\nKind of changed resource, such as company or branch.\n—\n—\n`target_id`\n`uuid`\nno\n—\nINTERNAL\nIdentifier of the changed resource.\n—\n—\n`details`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nAllowlisted non-secret change details: changed field names and, for branch events, the branch name at the time of the event. Never secrets or full payloads.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-28",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`organization_audit_events_action_format`\n`CHECK (((action)::text ~ '^[a-z]+(\\.[a-z_]+)+$'::text))`\nActions use the stable dotted identifier format.\n`organization_audit_events_actor_principal_id_fkey`\n`FOREIGN KEY (actor_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe actor is an existing principal.\n`organization_audit_events_company_id_actor_membership_id_fkey`\n`FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe actor membership, when present, belongs to the same company.\n`organization_audit_events_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn event belongs to an existing company.\n`organization_audit_events_details_object`\n`CHECK ((jsonb_typeof(details) = 'object'::text))`\nDetails are always a JSON object.\n`organization_audit_events_pkey`\n`PRIMARY KEY (id)`\nUnique event identity.\n`organization_audit_events_target_type_format`\n`CHECK (((target_type)::text ~ '^[a-z_]+$'::text))`\nTarget types use lowercase identifiers.\n`organization_audit_events_company_id_id_key`\n`CREATE UNIQUE INDEX organization_audit_events_company_id_id_key ON public.organization_audit_events USING btree (company_id, id)`\nTenant key for future references to events.\n`organization_audit_events_company_time_idx`\n`CREATE INDEX organization_audit_events_company_time_idx ON public.organization_audit_events USING btree (company_id, occurred_at DESC, id DESC)`\nSupports company-scoped newest-first audit pagination.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "organization_audit_event_branches",
-    "anchor": "organization_audit_event_branches",
-    "text": "organization_audit_event_branches\nBranches an organization audit event concerns; branch managers read only events whose branches all lie within their own branches.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Written with the event; never updated or deleted by the runtime. An event without rows is a company-level operation.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany shared by the event and the branch.\n—\n—\n`event_id`\n`uuid`\nno\n—\nINTERNAL\nAudit event that concerns the branch.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch the event concerns.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-29",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`organization_audit_event_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company; mixed-company audit scopes are unrepresentable.\n`organization_audit_event_branches_company_id_event_id_fkey`\n`FOREIGN KEY (company_id, event_id) REFERENCES organization_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe event belongs to the same company.\n`organization_audit_event_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe row belongs to an existing company.\n`organization_audit_event_branches_pkey`\n`PRIMARY KEY (event_id, branch_id)`\nA branch appears at most once per event.\n`organization_audit_event_branches_branch_idx`\n`CREATE INDEX organization_audit_event_branches_branch_idx ON public.organization_audit_event_branches USING btree (company_id, branch_id)`\nSupports finding the events that concern a branch.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "responsibility_transfers",
-    "anchor": "responsibility_transfers",
-    "text": "responsibility_transfers\nA responsible administrator's proposal to hand company responsibility to another active administrator; it takes effect only when that successor accepts.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created PENDING; becomes ACCEPTED, DECLINED by the successor, CANCELLED by the proposer, or EXPIRED after seven days. Retained for attribution; no runtime deletion.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated transfer UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany whose responsibility would move; immutable (tenant key).\n—\n—\n`from_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership of the responsible administrator who proposed the transfer.\n—\n—\n`to_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership of the proposed successor, who must still be an active company administrator when accepting.\n—\n—\n`status`\n`\"ResponsibilityTransferStatus\"`\nno\n`'PENDING'::\"ResponsibilityTransferStatus\"`\nINTERNAL\nPENDING until the successor accepts or declines, the proposer cancels, or the proposal expires.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the proposal.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the pending proposal can no longer be accepted.\n—\nUTC instant, millisecond precision\n`decided_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the proposal stopped being pending.\nThe proposal is still pending.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-30",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`responsibility_transfers_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA transfer belongs to an existing company.\n`responsibility_transfers_company_id_from_membership_id_fkey`\n`FOREIGN KEY (company_id, from_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe proposer is a membership of the same company.\n`responsibility_transfers_company_id_to_membership_id_fkey`\n`FOREIGN KEY (company_id, to_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe successor is a membership of the same company.\n`responsibility_transfers_decision_state`\n`CHECK (((status = 'PENDING'::\"ResponsibilityTransferStatus\") = (decided_at IS NULL)))`\nA decision instant exists exactly for proposals that are no longer pending.\n`responsibility_transfers_distinct_parties`\n`CHECK ((from_membership_id <> to_membership_id))`\nA responsible administrator cannot propose themselves.\n`responsibility_transfers_expiry_after_creation`\n`CHECK ((expires_at > created_at))`\nA proposal expires after it was made.\n`responsibility_transfers_pkey`\n`PRIMARY KEY (id)`\nUnique transfer identity.\n`responsibility_transfers_company_id_id_key`\n`CREATE UNIQUE INDEX responsibility_transfers_company_id_id_key ON public.responsibility_transfers USING btree (company_id, id)`\nTenant key for future references to transfers.\n`responsibility_transfers_one_pending`\n`CREATE UNIQUE INDEX responsibility_transfers_one_pending ON public.responsibility_transfers USING btree (company_id) WHERE (status = 'PENDING'::\"ResponsibilityTransferStatus\")`\nAt most one pending transfer per company, including racing proposals.\n`responsibility_transfers_successor_idx`\n`CREATE INDEX responsibility_transfers_successor_idx ON public.responsibility_transfers USING btree (company_id, to_membership_id)`\nSupports finding the proposals addressed to a successor.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "company_invitations",
-    "anchor": "company_invitations",
-    "text": "company_invitations\nAn invitation for a recipient address to join a company with one grant; only the person signed in with that verified address can accept it.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created PENDING with a seven-day validity; becomes ACCEPTED, REVOKED by an inviter, REPLACED by a resend or EXPIRED. The recipient address is replaced by a tombstone (NULL) 90 days after the invitation becomes final (provisional until PH-13); the row and its audit events remain.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated invitation UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany the invitation admits to; immutable (tenant key).\n—\n—\n`recipient_email`\n`character varying(254)`\nyes\n—\nCONFIDENTIAL\nTrimmed, lower-cased recipient address the accepting identity's verified email must equal.\nThe invitation is final and its retention period ended, so the address was erased.\n—\n`credential_hash`\n`bytea`\nno\n—\nRESTRICTED\nSHA-256 hash of the invitation's 256-bit credential; the credential itself is never stored in plaintext.\n—\n—\n`role`\n`\"AccessRole\"`\nno\n—\nINTERNAL\nStandard role the accepted invitation grants.\n—\n—\n`scope`\n`\"GrantScope\"`\nno\n—\nINTERNAL\nCOMPANY or explicit BRANCHES listed in company_invitation_branches; administration is always company-wide.\n—\n—\n`grant_expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nExpiry of the granted access once accepted; never renewed automatically (P30).\nThe granted access does not expire.\nUTC instant, millisecond precision\n`invited_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership of the inviter, whose authority is rechecked at acceptance.\n—\n—\n`status`\n`\"InvitationStatus\"`\nno\n`'PENDING'::\"InvitationStatus\"`\nINTERNAL\nPENDING until accepted, revoked, replaced or expired.\n—\n—\n`message_id`\n`uuid`\nyes\n—\nINTERNAL\nOutbound email that carries the invitation, owned by the mail module; a soft reference, because the mail module deletes final messages after their retention period.\nNo message was recorded.\n—\n`replaces_invitation_id`\n`uuid`\nyes\n—\nINTERNAL\nPending invitation this one replaced through a resend.\nThe invitation was not created by a resend.\n—\n`accepted_membership_id`\n`uuid`\nyes\n—\nINTERNAL\nMembership that received the invited grant on acceptance.\nThe invitation was not accepted.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the invitation was created.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the pending invitation can no longer be accepted.\n—\nUTC instant, millisecond precision\n`decided_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the invitation stopped being pending.\nThe invitation is still pending.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-31",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`company_invitations_acceptance_state`\n`CHECK (((status = 'ACCEPTED'::\"InvitationStatus\") = (accepted_membership_id IS NOT NULL)))`\nExactly the accepted invitations name the membership that received the grant.\n`company_invitations_administrator_company_wide`\n`CHECK (((role <> 'COMPANY_ADMINISTRATOR'::\"AccessRole\") OR (scope = 'COMPANY'::\"GrantScope\")))`\nAdministration is never branch-scoped.\n`company_invitations_company_id_accepted_membership_id_fkey`\n`FOREIGN KEY (company_id, accepted_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe accepting membership belongs to the same company.\n`company_invitations_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nAn invitation belongs to an existing company.\n`company_invitations_company_id_invited_by_membership_id_fkey`\n`FOREIGN KEY (company_id, invited_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe inviter is a membership of the same company.\n`company_invitations_company_id_replaces_invitation_id_fkey`\n`FOREIGN KEY (company_id, replaces_invitation_id) REFERENCES company_invitations(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA resend replaces an invitation of the same company.\n`company_invitations_credential_hash_length`\n`CHECK ((octet_length(credential_hash) = 32))`\nThe stored credential hash is a SHA-256 digest.\n`company_invitations_decision_state`\n`CHECK (((status = 'PENDING'::\"InvitationStatus\") = (decided_at IS NULL)))`\nA decision instant exists exactly for invitations that are no longer pending.\n`company_invitations_expiry_after_creation`\n`CHECK ((expires_at > created_at))`\nAn invitation expires after it was created.\n`company_invitations_grant_expiry_after_creation`\n`CHECK (((grant_expires_at IS NULL) OR (grant_expires_at > created_at)))`\nA temporary grant ends after the invitation was created.\n`company_invitations_pending_recipient`\n`CHECK (((status <> 'PENDING'::\"InvitationStatus\") OR (recipient_email IS NOT NULL)))`\nA pending invitation always has its recipient address.\n`company_invitations_pkey`\n`PRIMARY KEY (id)`\nUnique invitation identity.\n`company_invitations_recipient_normalized`\n`CHECK (((recipient_email)::text = lower(btrim((recipient_email)::text))))`\nRecipient addresses are stored trimmed and lower-cased.\n`company_invitations_company_id_id_key`\n`CREATE UNIQUE INDEX company_invitations_company_id_id_key ON public.company_invitations USING btree (company_id, id)`\nTenant key for references to invitations.\n`company_invitations_company_time_idx`\n`CREATE INDEX company_invitations_company_time_idx ON public.company_invitations USING btree (company_id, created_at DESC, id DESC)`\nLists a company's invitations newest first with stable keyset pagination.\n`company_invitations_credential_key`\n`CREATE UNIQUE INDEX company_invitations_credential_key ON public.company_invitations USING btree (credential_hash)`\nFinds an invitation by credential hash; credentials never collide.\n`company_invitations_one_pending`\n`CREATE UNIQUE INDEX company_invitations_one_pending ON public.company_invitations USING btree (company_id, recipient_email) WHERE (status = 'PENDING'::\"InvitationStatus\")`\nAt most one pending invitation per company and address, including racing requests.\n`company_invitations_recipient_idx`\n`CREATE INDEX company_invitations_recipient_idx ON public.company_invitations USING btree (recipient_email, created_at)`\nCounts recent invitations to one address across companies for the abuse limit.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "company_invitation_branches",
-    "anchor": "company_invitation_branches",
-    "text": "company_invitation_branches\nExplicit branches of a branch-scoped invitation; all must still be active when it is accepted.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created with its invitation and never changed.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nOwning company; immutable (tenant key).\n—\n—\n`invitation_id`\n`uuid`\nno\n—\nINTERNAL\nBranch-scoped invitation.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nA branch the accepted grant will cover.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-32",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`company_invitation_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company.\n`company_invitation_branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nRows belong to an existing company.\n`company_invitation_branches_company_id_invitation_id_fkey`\n`FOREIGN KEY (company_id, invitation_id) REFERENCES company_invitations(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe invitation belongs to the same company.\n`company_invitation_branches_pkey`\n`PRIMARY KEY (invitation_id, branch_id)`\nEach branch appears once per invitation.\n`company_invitation_branches_branch_idx`\n`CREATE INDEX company_invitation_branches_branch_idx ON public.company_invitation_branches USING btree (company_id, branch_id)`\nFinds invitations that name a branch.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "playlists",
-    "anchor": "playlists",
-    "text": "playlists\nAn ordered, looping list of media items owned by a company or one branch, with its transition. Several programs may schedule the same playlist.\nOwner: Programming. Classification: CONFIDENTIAL.\nLifecycle: Created empty; renames, transition changes and item replacements bump the version. Deleted at runtime, with its items, only when no schedule rule or default uses it. The owning scope never changes. See docs/project/programming-design.md.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable playlist UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the playlist; immutable (tenant key).\n—\n—\n`branch_id`\n`uuid`\nyes\n—\nINTERNAL\nBranch that owns the playlist; immutable.\nThe playlist belongs to the whole company and every member who may view programming sees it.\n—\n`name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nDisplay name chosen by members, trimmed, 1 to 120 characters.\n—\n—\n`transition`\n`\"PlaylistTransition\"`\nno\n`'CUT'::\"PlaylistTransition\"`\nINTERNAL\nCUT or FADE between items.\n—\n—\n`fade_ms`\n`integer`\nyes\n—\nINTERNAL\nFade duration between items.\nThe transition is CUT.\nmilliseconds\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-33",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`playlists_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe owning branch belongs to the same company.\n`playlists_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA playlist belongs to an existing company.\n`playlists_fade`\n`CHECK ((((transition = 'CUT'::\"PlaylistTransition\") AND (fade_ms IS NULL)) OR ((transition = 'FADE'::\"PlaylistTransition\") AND ((fade_ms >= 250) AND (fade_ms <= 2000)))))`\nA fade carries a duration from 250 to 2,000 ms and a cut carries none.\n`playlists_name_trimmed`\n`CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))`\nNames are trimmed and not empty.\n`playlists_pkey`\n`PRIMARY KEY (id)`\nUnique playlist identity.\n`playlists_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`playlists_company_created_idx`\n`CREATE INDEX playlists_company_created_idx ON public.playlists USING btree (company_id, created_at DESC, id DESC)`\nLists a company's playlists newest first with keyset cursors.\n`playlists_company_id_id_key`\n`CREATE UNIQUE INDEX playlists_company_id_id_key ON public.playlists USING btree (company_id, id)`\nTenant key for playlists.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "playlist_items",
-    "anchor": "playlist_items",
-    "text": "playlist_items\nOne position of a playlist: the media item it plays and, for an image, how long.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: Replaced as a whole list when members save the playlist's items; deleted with the playlist (cascade inside the module). The same media item may appear at several positions.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the playlist (tenant key).\n—\n—\n`playlist_id`\n`uuid`\nno\n—\nINTERNAL\nPlaylist the item belongs to.\n—\n—\n`position`\n`integer`\nno\n—\nINTERNAL\nZero-based play order, 0 to 499.\n—\n—\n`media_asset_id`\n`uuid`\nno\n—\nINTERNAL\nMedia item played at this position.\n—\n—\n`duration_ms`\n`integer`\nyes\n—\nINTERNAL\nHow long an image is shown, 1,000 to 3,600,000.\nThe item is a video and plays its whole duration.\nmilliseconds\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-34",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`playlist_items_company_id_media_asset_id_fkey`\n`FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe media item belongs to the same company and cannot be removed while referenced.\n`playlist_items_company_id_playlist_id_fkey`\n`FOREIGN KEY (company_id, playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe playlist belongs to the same company; items are deleted with it.\n`playlist_items_duration_range`\n`CHECK (((duration_ms IS NULL) OR ((duration_ms >= 1000) AND (duration_ms <= 3600000))))`\nImage durations stay within 1 to 3,600 seconds.\n`playlist_items_pkey`\n`PRIMARY KEY (company_id, playlist_id, \"position\")`\nOne item per playlist position.\n`playlist_items_position_range`\n`CHECK (((\"position\" >= 0) AND (\"position\" <= 499)))`\nAt most 500 positions.\n`playlist_items_media_idx`\n`CREATE INDEX playlist_items_media_idx ON public.playlist_items USING btree (company_id, media_asset_id)`\nFinds the playlists that use a media item, for the media reference guard.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "programming_groups",
-    "anchor": "programming_groups",
-    "text": "programming_groups\nA company-owned group of screens that share one program, spanning the whole company or a fixed set of branches.\nOwner: Programming. Classification: CONFIDENTIAL.\nLifecycle: Created with its program; renames and span changes bump the version. Deleted at runtime, with its program and span rows, only when it has no member screens.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable group UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the group; immutable (tenant key).\n—\n—\n`name`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nDisplay name, trimmed, 1 to 80 characters, unique in the company ignoring case.\n—\n—\n`all_branches`\n`boolean`\nno\n—\nINTERNAL\nTrue when the group spans every branch of the company; otherwise programming_group_branches lists its span.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-35",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`programming_groups_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA group belongs to an existing company.\n`programming_groups_name_trimmed`\n`CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))`\nNames are trimmed and not empty.\n`programming_groups_pkey`\n`PRIMARY KEY (id)`\nUnique group identity.\n`programming_groups_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`programming_groups_company_id_id_key`\n`CREATE UNIQUE INDEX programming_groups_company_id_id_key ON public.programming_groups USING btree (company_id, id)`\nTenant key for groups.\n`programming_groups_company_name_unique`\n`CREATE UNIQUE INDEX programming_groups_company_name_unique ON public.programming_groups USING btree (company_id, lower((name)::text))`\nGroup names are unique in a company, ignoring case.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "programming_group_branches",
-    "anchor": "programming_group_branches",
-    "text": "programming_group_branches\nThe explicit branch span of a group that does not cover the whole company.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: Replaced when the group's span changes; deleted with the group (cascade inside the module). While a row names a branch, archiving that branch is refused.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the group (tenant key).\n—\n—\n`group_id`\n`uuid`\nno\n—\nINTERNAL\nGroup whose span this row belongs to.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch inside the group's span.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-36",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`programming_group_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company.\n`programming_group_branches_company_id_group_id_fkey`\n`FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe group belongs to the same company; rows are deleted with it.\n`programming_group_branches_pkey`\n`PRIMARY KEY (company_id, group_id, branch_id)`\nEach branch appears once in a group's span.\n`programming_group_branches_branch_idx`\n`CREATE INDEX programming_group_branches_branch_idx ON public.programming_group_branches USING btree (company_id, branch_id)`\nFinds groups whose span names a branch, for the branch archive guard.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "programs",
-    "anchor": "programs",
-    "text": "programs\nThe draft programming of one source: exactly one group or one screen.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its layout or first output is saved and kept with the device record. Saving an output or choosing a layout bumps the version, and so does a layout save that removes outputs with content.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable program UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the program; immutable (tenant key).\n—\n—\n`group_id`\n`uuid`\nyes\n—\nINTERNAL\nGroup the program belongs to.\nThe program belongs to a screen.\n—\n`device_id`\n`uuid`\nyes\n—\nINTERNAL\nScreen the program belongs to.\nThe program belongs to a group.\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1; the API reports 0 for a program not yet saved.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n`layout_id`\n`uuid`\nyes\n—\nINTERNAL\nLayout whose areas are the program's outputs.\nThe program has no layout and a single screen output.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-37",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`programs_company_id_device_id_fkey`\n`FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe screen belongs to the same company.\n`programs_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA program belongs to an existing company.\n`programs_company_id_group_id_fkey`\n`FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe group belongs to the same company; its program is deleted with it.\n`programs_company_id_layout_id_fkey`\n`FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe layout belongs to the same company; a layout that programs use cannot be deleted.\n`programs_one_source`\n`CHECK (((group_id IS NULL) <> (device_id IS NULL)))`\nA program belongs to exactly one group or one screen.\n`programs_pkey`\n`PRIMARY KEY (id)`\nUnique program identity.\n`programs_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`programs_company_id_id_key`\n`CREATE UNIQUE INDEX programs_company_id_id_key ON public.programs USING btree (company_id, id)`\nTenant key for programs.\n`programs_device_key`\n`CREATE UNIQUE INDEX programs_device_key ON public.programs USING btree (company_id, device_id)`\nA screen has at most one program.\n`programs_group_key`\n`CREATE UNIQUE INDEX programs_group_key ON public.programs USING btree (company_id, group_id)`\nA group has at most one program.\n`programs_layout_idx`\n`CREATE INDEX programs_layout_idx ON public.programs USING btree (company_id, layout_id)`\nFinds the programs that use a layout, for layout saves and deletion.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "program_outputs",
-    "anchor": "program_outputs",
-    "text": "program_outputs\nOne output of a program (the full screen now; layout areas later) with its optional default playlist.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: Created or updated when the output is saved; deleted with the program (cascade inside the module).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the program (tenant key).\n—\n—\n`program_id`\n`uuid`\nno\n—\nINTERNAL\nProgram the output belongs to.\n—\n—\n`output_key`\n`character varying(32)`\nno\n—\nINTERNAL\nOutput key: screen for a program without a layout, otherwise the key of one of its layout's areas.\n—\n—\n`default_playlist_id`\n`uuid`\nyes\n—\nINTERNAL\nPlaylist shown when no schedule applies.\nThe output shows neutral output when no schedule applies.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-38",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`program_outputs_company_id_default_playlist_id_fkey`\n`FOREIGN KEY (company_id, default_playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe default playlist belongs to the same company and cannot be deleted while used.\n`program_outputs_company_id_program_id_fkey`\n`FOREIGN KEY (company_id, program_id) REFERENCES programs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe program belongs to the same company; outputs are deleted with it.\n`program_outputs_key_shape`\n`CHECK (((output_key)::text ~ '^[a-z][a-z0-9-]{0,15}$'::text))`\nOutput keys have the area key shape: a lowercase letter, then up to 15 lowercase letters, digits or hyphens.\n`program_outputs_pkey`\n`PRIMARY KEY (company_id, program_id, output_key)`\nOne row per program output.\n`program_outputs_default_idx`\n`CREATE INDEX program_outputs_default_idx ON public.program_outputs USING btree (company_id, default_playlist_id)`\nFinds outputs using a playlist as default, for the playlist delete check.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "schedule_rules",
-    "anchor": "schedule_rules",
-    "text": "schedule_rules\nA recurring local-time window that assigns a playlist to one output of a program. Rules store local values only; zones apply per screen when evaluating.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: Replaced as the whole rule set of an output when it is saved, after conflict validation; deleted with the program (cascade inside the module).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated rule UUID, new on every save.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the program (tenant key).\n—\n—\n`program_id`\n`uuid`\nno\n—\nINTERNAL\nProgram the rule belongs to.\n—\n—\n`output_key`\n`character varying(32)`\nno\n—\nINTERNAL\nOutput the rule programs: screen for a program without a layout, otherwise an area key of its layout.\n—\n—\n`position`\n`integer`\nno\n—\nINTERNAL\nDisplay order inside the output, 0 to 199.\n—\n—\n`playlist_id`\n`uuid`\nno\n—\nINTERNAL\nPlaylist shown during the window.\n—\n—\n`weekdays`\n`integer`\nno\n—\nINTERNAL\nBitmask of the ISO weekdays on which a window starts, bit 0 for Monday, 1 to 127.\n—\n—\n`all_day`\n`boolean`\nno\n—\nINTERNAL\nTrue when each window covers the whole local day.\n—\n—\n`start_minute`\n`integer`\nyes\n—\nINTERNAL\nLocal start of the window.\nThe rule is all-day.\nminute of the local day, 0 to 1,439\n`end_minute`\n`integer`\nyes\n—\nINTERNAL\nLocal end of the window; earlier than the start ends on the next day, 0 means the following midnight.\nThe rule is all-day.\nminute of the local day, 0 to 1,439\n`starts_on`\n`date`\nno\n—\nINTERNAL\nFirst local date on which a window may start.\n—\nlocal calendar date\n`ends_on`\n`date`\nyes\n—\nINTERNAL\nFinal local date, inclusive; windows clip at the midnight that ends it.\nThe rule has no final date.\nlocal calendar date\n"
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`memberships_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA membership belongs to an existing company.\n`memberships_pkey`\n`PRIMARY KEY (id)`\nUnique membership identity.\n`memberships_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe member is an existing principal.\n`memberships_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`memberships_company_id_id_key`\n`CREATE UNIQUE INDEX memberships_company_id_id_key ON public.memberships USING btree (company_id, id)`\nTenant key that tenant references target.\n`memberships_company_principal_current_key`\n`CREATE UNIQUE INDEX memberships_company_principal_current_key ON public.memberships USING btree (company_id, principal_id) WHERE (status <> 'REMOVED'::\"MembershipStatus\")`\nAt most one current (not REMOVED) membership per principal and company; a removed membership stays as history and the person can return through a new membership.\n`memberships_principal_status_idx`\n`CREATE INDEX memberships_principal_status_idx ON public.memberships USING btree (principal_id, status)`\nSupports listing a principal's companies.\n"
   }
 ]

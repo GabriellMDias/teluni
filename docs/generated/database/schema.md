@@ -444,6 +444,30 @@ Lifecycle: Inserted in the transaction of the change it records; never updated o
 | `device_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX device_audit_events_company_id_id_key ON public.device_audit_events USING btree (company_id, id)` | Tenant key of device audit events. |
 | `device_audit_events_device_time_idx` | `CREATE INDEX device_audit_events_device_time_idx ON public.device_audit_events USING btree (company_id, device_id, occurred_at DESC, id DESC)` | Lists a device's events newest first. |
 
+## device_audit_event_branches
+
+Immutable event-time branch scope of a device lifecycle event. A move concerns both branches; unknown legacy scope has no rows and is visible only to company administrators.
+
+Owner: Devices. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted with its event in the same transaction; append-only. Backfill uses only branch IDs explicitly recorded in immutable pairing, move or unlink details.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company shared by the event and the branch. | — | — |
+| `event_id` | `uuid` | no | — | INTERNAL | Audit event that concerns the branch. | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch the event concerns. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `device_audit_event_branches_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company; mixed-company audit scopes are unrepresentable. |
+| `device_audit_event_branches_company_id_event_id_fkey` | `FOREIGN KEY (company_id, event_id) REFERENCES device_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The event belongs to the same company. |
+| `device_audit_event_branches_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The row belongs to an existing company. |
+| `device_audit_event_branches_pkey` | `PRIMARY KEY (event_id, branch_id)` | A branch appears at most once per event. |
+| `device_audit_event_branches_branch_idx` | `CREATE INDEX device_audit_event_branches_branch_idx ON public.device_audit_event_branches USING btree (company_id, branch_id)` | Supports finding the events that concern a branch. |
+
 ## principals
 
 Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.
@@ -1702,12 +1726,16 @@ Lifecycle: Inserted at a screen's first synchronization and overwritten by each 
 | `storage_free_bytes` | `bigint` | yes | — | INTERNAL | Free storage the screen reported. | Not reported. | bytes |
 | `storage_total_bytes` | `bigint` | yes | — | INTERNAL | Total storage the screen reported. | Not reported. | bytes |
 | `device_time` | `timestamp(3) with time zone` | yes | — | INTERNAL | The screen's clock reading when it reported. | Not reported. | UTC instant, millisecond precision |
+| `clock_state` | `character varying(16)` | yes | — | CONFIDENTIAL | Player-reported time reference: ANCHORED to a server exchange in this boot, ESTIMATED from a plausible system clock after reboot, or UNTRUSTED. Never an authorization input. | The latest report supplied no diagnostics (including legacy players). | — |
+| `clock_skew_millis` | `bigint` | yes | — | CONFIDENTIAL | Player-reported system wall time minus anchored business time, signed milliseconds within the JSON safe-integer range. No skew is inferred from estimated or untrusted time. | No anchored reference or the exact difference cannot be represented safely. | milliseconds |
+| `crash_count` | `integer` | yes | — | CONFIDENTIAL | Player-reported cumulative uncaught crash count since this pairing, saturated at 2147483647. Crash messages and frames are never uploaded. | No diagnostics or the local count is unreadable or unknown. | — |
 
 ### Constraints and indexes
 
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `publication_device_states_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The screen belongs to the same company. |
+| `publication_device_states_diagnostics` | `CHECK ((((clock_state IS NULL) AND (clock_skew_millis IS NULL) AND (crash_count IS NULL)) OR ((clock_state IS NOT NULL) AND ((clock_state)::text = ANY ((ARRAY['ANCHORED'::character varying, 'ESTIMATED'::character varying, 'UNTRUSTED'::character varying])::text[])) AND ((clock_skew_millis IS NULL) OR (((clock_state)::text = 'ANCHORED'::text) AND ((clock_skew_millis >= '-9007199254740991'::bigint) AND (clock_skew_millis <= '9007199254740991'::bigint)))) AND ((crash_count IS NULL) OR (crash_count >= 0)))))` | Diagnostics are absent together for legacy reports, otherwise clock state is known, skew requires an anchor and safe-integer milliseconds, and a known crash count is nonnegative. |
 | `publication_device_states_failure` | `CHECK (((staging_failure IS NULL) OR ((staging_failure)::text = ANY ((ARRAY['STORAGE_FULL'::character varying, 'DOWNLOAD_FAILED'::character varying, 'INTEGRITY_FAILED'::character varying, 'INVALID_MANIFEST'::character varying, 'INCOMPATIBLE'::character varying])::text[]))))` | Failure codes come from a closed set. |
 | `publication_device_states_pkey` | `PRIMARY KEY (company_id, device_id)` | One state per screen. |
 | `publication_device_states_playback` | `CHECK (((playback)::text = ANY ((ARRAY['PLAYING'::character varying, 'NEUTRAL'::character varying, 'AUTHORIZATION_EXPIRED'::character varying, 'CLOCK_UNTRUSTED'::character varying, 'DEGRADED'::character varying, 'SETUP'::character varying])::text[])))` | Playback conditions come from a closed set. |

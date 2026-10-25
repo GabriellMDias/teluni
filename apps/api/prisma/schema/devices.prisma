@@ -93,20 +93,36 @@ model DeviceClaimFailure {
 }
 
 model DeviceAuditEvent {
-  id                String      @id @db.Uuid
-  companyId         String      @map("company_id") @db.Uuid
-  deviceId          String      @map("device_id") @db.Uuid
-  occurredAt        DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(3)
-  actorPrincipalId  String?     @map("actor_principal_id") @db.Uuid
-  actorMembershipId String?     @map("actor_membership_id") @db.Uuid
-  action            String      @db.VarChar(64)
-  details           Json        @default("{}")
-  company           Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  device            Device      @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
-  actor             Principal?  @relation("DeviceAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  actorMembership   Membership? @relation("DeviceAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  id                String                   @id @db.Uuid
+  companyId         String                   @map("company_id") @db.Uuid
+  deviceId          String                   @map("device_id") @db.Uuid
+  occurredAt        DateTime                 @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String?                  @map("actor_principal_id") @db.Uuid
+  actorMembershipId String?                  @map("actor_membership_id") @db.Uuid
+  action            String                   @db.VarChar(64)
+  details           Json                     @default("{}")
+  company           Company                  @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  device            Device                   @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Principal?               @relation("DeviceAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branches          DeviceAuditEventBranch[]
+  actorMembership   Membership?              @relation("DeviceAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([companyId, id], map: "device_audit_events_company_id_id_key")
   @@index([companyId, deviceId, occurredAt(sort: Desc), id(sort: Desc)], map: "device_audit_events_device_time_idx")
   @@map("device_audit_events")
+}
+
+// Immutable event-time scope. Missing rows mean unknown/legacy scope, never
+// the device's current branch; only company administrators see those events.
+model DeviceAuditEventBranch {
+  companyId String           @map("company_id") @db.Uuid
+  eventId   String           @map("event_id") @db.Uuid
+  branchId  String           @map("branch_id") @db.Uuid
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  event     DeviceAuditEvent @relation(fields: [companyId, eventId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  branch    Branch           @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([eventId, branchId], map: "device_audit_event_branches_pkey")
+  @@index([companyId, branchId], map: "device_audit_event_branches_branch_idx")
+  @@map("device_audit_event_branches")
 }

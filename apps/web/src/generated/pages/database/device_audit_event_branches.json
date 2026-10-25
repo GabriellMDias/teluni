@@ -1,0 +1,67 @@
+{
+  "kind": "database",
+  "name": "device_audit_event_branches",
+  "description": "Immutable event-time branch scope of a device lifecycle event. A move concerns both branches; unknown legacy scope has no rows and is visible only to company administrators.",
+  "owner": "Devices",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted with its event in the same transaction; append-only. Backfill uses only branch IDs explicitly recorded in immutable pairing, move or unlink details.",
+  "columns": [
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Company shared by the event and the branch.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "event_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Audit event that concerns the branch.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Branch the event concerns.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "device_audit_event_branches_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The branch belongs to the same company; mixed-company audit scopes are unrepresentable."
+    },
+    {
+      "Object": "device_audit_event_branches_company_id_event_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, event_id) REFERENCES device_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The event belongs to the same company."
+    },
+    {
+      "Object": "device_audit_event_branches_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The row belongs to an existing company."
+    },
+    {
+      "Object": "device_audit_event_branches_pkey",
+      "Physical definition": "PRIMARY KEY (event_id, branch_id)",
+      "Purpose": "A branch appears at most once per event."
+    },
+    {
+      "Object": "device_audit_event_branches_branch_idx",
+      "Physical definition": "CREATE INDEX device_audit_event_branches_branch_idx ON public.device_audit_event_branches USING btree (company_id, branch_id)",
+      "Purpose": "Supports finding the events that concern a branch."
+    }
+  ]
+}

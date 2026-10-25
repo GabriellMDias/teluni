@@ -69,6 +69,23 @@ class HttpDeviceApiTest {
     }
 
     @Test
+    fun `rotates with only the candidate hash in the body and requires the documented acknowledgement`() {
+        server.enqueue(MockResponse.Builder().code(204).build())
+        api.rotateCredential("current-secret", "candidate-hash")
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/device/self/credential", request.url.encodedPath)
+        assertEquals("Bearer current-secret", request.headers["Authorization"])
+        assertEquals("""{"credentialHash":"candidate-hash"}""", requireNotNull(request.body).utf8())
+        server.enqueue(MockResponse.Builder().code(429).addHeader("Retry-After", "41")
+            .body("""{"error":{"code":"RATE_LIMITED"}}""").build())
+        val failure = assertFailsWith<ApiFailure> { api.rotateCredential("current-secret", "candidate-hash") }
+        assertEquals(Duration.ofSeconds(41), failure.retryAfter)
+        server.enqueue(MockResponse.Builder().code(200).body("{}").build())
+        assertFailsWith<ApiFailure> { api.rotateCredential("current-secret", "candidate-hash") }
+    }
+
+    @Test
     fun `maps the error envelope and Retry-After`() {
         server.enqueue(
             MockResponse.Builder().code(429).addHeader("Retry-After", "17")

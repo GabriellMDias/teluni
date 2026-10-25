@@ -1,3 +1,4 @@
+import type { AuditVisibility } from "../organizations/public.js";
 import { randomUUID } from "node:crypto";
 import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
@@ -42,6 +43,13 @@ export type DeviceActor = Readonly<{
   principalId: string;
   membershipId: string;
 }> | null;
+
+export type DeviceAuditRecord = Readonly<{
+  id: string;
+  occurredAt: Date;
+  actorPrincipalId: string | null;
+  action: string;
+}>;
 
 type DeviceRow = {
   id: string;
@@ -97,13 +105,19 @@ async function writeAudit(
   actor: DeviceActor,
   action: string,
   details: Record<string, unknown>,
+  branchIds: readonly string[],
 ): Promise<void> {
+  const id = randomUUID();
   await tx.$executeRaw`
     INSERT INTO device_audit_events (id, company_id, device_id,
       actor_principal_id, actor_membership_id, action, details)
-    VALUES (${randomUUID()}::uuid, ${companyId}::uuid, ${deviceId}::uuid,
+    VALUES (${id}::uuid, ${companyId}::uuid, ${deviceId}::uuid,
       ${actor?.principalId ?? null}::uuid, ${actor?.membershipId ?? null}::uuid,
       ${action}, ${JSON.stringify(details)}::jsonb)`;
+  for (const branchId of new Set(branchIds))
+    await tx.$executeRaw`
+      INSERT INTO device_audit_event_branches (company_id, event_id, branch_id)
+      VALUES (${companyId}::uuid, ${id}::uuid, ${branchId}::uuid)`;
 }
 
 /**
@@ -305,10 +319,18 @@ export class PrismaDeviceRepository {
       throw error;
     }
     if (!row) throw new Error("Device insert returned no row");
-    await writeAudit(tx, input.companyId, id, actor, "device.paired", {
-      branchId: input.branchId,
-      rotation: input.rotation,
-    });
+    await writeAudit(
+      tx,
+      input.companyId,
+      id,
+      actor,
+      "device.paired",
+      {
+        branchId: input.branchId,
+        rotation: input.rotation,
+      },
+      [input.branchId],
+    );
     return record(row);
   }
 
@@ -345,6 +367,51 @@ export class PrismaDeviceRepository {
       ORDER BY paired_at DESC, id DESC
       LIMIT ${options.limit}`;
     return rows.map(record);
+  }
+
+  /** Authorize immutable event scope before ordering/limiting, never the current branch. */
+  async listAuditEvents(
+    companyId: string,
+    deviceId: string,
+    visibility: AuditVisibility,
+    options: { limit: number; before?: { occurredAt: Date; id: string } },
+  ): Promise<DeviceAuditRecord[]> {
+    const before = options.before
+      ? Prisma.sql`AND (e.occurred_at, e.id) < (${options.before.occurredAt}, ${options.before.id}::uuid)`
+      : Prisma.empty;
+    const visible =
+      visibility.kind === "all"
+        ? Prisma.sql`TRUE`
+        : Prisma.sql`
+      EXISTS (SELECT 1 FROM device_audit_event_branches eb
+        WHERE eb.company_id = e.company_id AND eb.event_id = e.id)
+      AND ${
+        visibility.branches === "all"
+          ? Prisma.sql`TRUE`
+          : Prisma.sql`
+        NOT EXISTS (SELECT 1 FROM device_audit_event_branches eb
+          WHERE eb.company_id = e.company_id AND eb.event_id = e.id
+            AND eb.branch_id NOT IN (${Prisma.join(visibility.branches.map((id) => Prisma.sql`${id}::uuid`))}))`
+      }`;
+    const rows = await this.#db.$queryRaw<
+      {
+        id: string;
+        occurred_at: Date;
+        actor_principal_id: string | null;
+        action: string;
+      }[]
+    >`
+      SELECT e.id, e.occurred_at, e.actor_principal_id, e.action
+      FROM device_audit_events e
+      WHERE e.company_id = ${companyId}::uuid AND e.device_id = ${deviceId}::uuid
+        AND ${visible} ${before}
+      ORDER BY e.occurred_at DESC, e.id DESC LIMIT ${options.limit}`;
+    return rows.map((row) => ({
+      id: row.id,
+      occurredAt: row.occurred_at,
+      actorPrincipalId: row.actor_principal_id,
+      action: row.action,
+    }));
   }
 
   async find(
@@ -465,6 +532,9 @@ export class PrismaDeviceRepository {
         actor,
         action,
         details,
+        change.kind === "move"
+          ? [current.branchId, change.branchId]
+          : [current.branchId],
       );
     return record(row);
   }
@@ -531,7 +601,7 @@ export class PrismaDeviceRepository {
   /** The unlinked device confirms clearing; its credential hash is deleted. */
   async confirmErasure(identity: DeviceIdentity): Promise<void> {
     await this.#db.$transaction(async (tx) => {
-      const [row] = await tx.$queryRaw<{ id: string }[]>`
+      const [row] = await tx.$queryRaw<{ id: string; branch_id: string }[]>`
         UPDATE devices SET erasure = 'CONFIRMED', credential_hash = NULL,
           next_credential_hash = NULL,
           erasure_recorded_at = statement_timestamp(),
@@ -539,7 +609,7 @@ export class PrismaDeviceRepository {
           updated_at = GREATEST(statement_timestamp(), updated_at + interval '1 millisecond')
         WHERE company_id = ${identity.companyId}::uuid AND id = ${identity.id}::uuid
           AND status = 'REVOKED' AND erasure IN ('PENDING', 'RESET_RECORDED')
-        RETURNING id`;
+        RETURNING id, branch_id`;
       if (!row) throw new DeviceFailure("DEVICE_UNAUTHORIZED");
       await writeAudit(
         tx,
@@ -548,6 +618,7 @@ export class PrismaDeviceRepository {
         null,
         "device.erasure_confirmed",
         { afterResetRecord: identity.erasure === "RESET_RECORDED" },
+        [row.branch_id],
       );
     });
   }

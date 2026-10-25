@@ -123,6 +123,7 @@
                       "active",
                       "staging",
                       "playback",
+                      "diagnostics",
                       "storage"
                     ],
                     "properties": {
@@ -250,6 +251,39 @@
                           { "type": "string", "const": "SETUP" }
                         ]
                       },
+                      "diagnostics": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "clock",
+                              "systemSkewMillis",
+                              "crashCount"
+                            ],
+                            "properties": {
+                              "clock": {
+                                "anyOf": [
+                                  { "type": "string", "const": "ANCHORED" },
+                                  { "type": "string", "const": "ESTIMATED" },
+                                  { "type": "string", "const": "UNTRUSTED" }
+                                ]
+                              },
+                              "systemSkewMillis": {
+                                "type": ["integer", "null"],
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "crashCount": {
+                                "type": ["integer", "null"],
+                                "minimum": 0,
+                                "maximum": 2147483647
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          { "type": "null" }
+                        ]
+                      },
                       "storage": {
                         "anyOf": [
                           {
@@ -357,6 +391,7 @@
                   "active",
                   "staging",
                   "playback",
+                  "diagnostics",
                   "storage"
                 ],
                 "properties": {
@@ -469,6 +504,35 @@
                       { "type": "string", "const": "CLOCK_UNTRUSTED" },
                       { "type": "string", "const": "DEGRADED" },
                       { "type": "string", "const": "SETUP" }
+                    ]
+                  },
+                  "diagnostics": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": ["clock", "systemSkewMillis", "crashCount"],
+                        "properties": {
+                          "clock": {
+                            "anyOf": [
+                              { "type": "string", "const": "ANCHORED" },
+                              { "type": "string", "const": "ESTIMATED" },
+                              { "type": "string", "const": "UNTRUSTED" }
+                            ]
+                          },
+                          "systemSkewMillis": {
+                            "type": ["integer", "null"],
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "crashCount": {
+                            "type": ["integer", "null"],
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      { "type": "null" }
                     ]
                   },
                   "storage": {

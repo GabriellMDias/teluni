@@ -82,6 +82,16 @@ pnpm -C apps/web dev
 
 `dev:services up` creates or starts named containers (PostgreSQL on `127.0.0.1:55433`, Keycloak on `localhost:8180` with its management port on `9180`, Mailpit with SMTP on `127.0.0.1:1025` and its inbox on `http://127.0.0.1:8025`) with named volumes, applies the committed migrations and runtime grants, provisions the `teluni` realm with the Teluni sign-in theme, creates the synthetic developer account `dev@teluni.test`, creates the ignored `.dev-media/` media volume, and writes the root `.env.local` the API loads (the media module also needs FFmpeg on `PATH`). Machine-local credentials (database, Keycloak bootstrap administrator, client secrets, key rings and the developer password) are generated once and kept in the ignored `.env.dev-services`; a previous `.env.local` is copied to `.env.local.before-dev-services`. Open `http://127.0.0.1:5173`; invitation and verification emails arrive in the Mailpit inbox. Rerun `up` after pulling new migrations or realm changes. `pnpm -C apps/api dev:services down` stops the containers and keeps their data; `reset` removes containers, volumes, network and `.dev-media/` so the next `up` starts empty. Keycloak's back-channel logout cannot reach an API listening on loopback, so in this environment provider-side sign-outs end panel sessions through the 30-second revalidation instead. These are development services only; never point the script or its credentials at shared or production systems.
 
+### Optional two-step verification during local development
+
+MFA is required by default. To test local administrative workflows with password sign-in alone, add this server-only setting to the ignored root `.env.local` and restart the API:
+
+```dotenv
+TELUNI_DEV_MFA_MODE=optional
+```
+
+This mode requires `ORION_ENV=development`, a loopback API listener and loopback panel and identity-provider URLs; startup rejects it elsewhere, including `test` and `production`. It waives both strong and recent assurance requirements after the ordinary verified login/session boundary, while preserving tenant permissions, CSRF, expiry and revocation. The session page labels the local exception explicitly. Nothing is stored as a provider MFA event, and no authenticator is removed. Change the value to `required` (or remove the setting) and restart the API to restore enforcement immediately, including for existing sessions. `dev:services up` preserves an existing explicit choice in `.env.local`. Automated qualification keeps the required default, except for the focused local-mode test. See the [identity design](project/identity-session-design.md#local-development-assurance-exception) for the boundary.
+
 ## Try sign-in locally
 
 The identity workflow needs a Keycloak that the API calls back, so it runs as a disposable stack rather than with `.env.local`. With Docker running, from the repository root:

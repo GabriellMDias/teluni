@@ -90,6 +90,9 @@ model PublicationDeviceState {
   storageFreeBytes      BigInt?   @map("storage_free_bytes")
   storageTotalBytes     BigInt?   @map("storage_total_bytes")
   deviceTime            DateTime? @map("device_time") @db.Timestamptz(3)
+  clockState            String?   @map("clock_state") @db.VarChar(16)
+  clockSkewMillis       BigInt?   @map("clock_skew_millis")
+  crashCount            Int?      @map("crash_count")
   device                Device    @relation(fields: [companyId, deviceId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@id([companyId, deviceId], map: "publication_device_states_pkey")

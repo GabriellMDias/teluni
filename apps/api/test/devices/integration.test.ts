@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import pino from "pino";
@@ -5,7 +6,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../../src/app.js";
 import { createDatabase, type Database } from "../../src/database.js";
 import { createDevicesModule } from "../../src/features/devices/module.js";
-import type { HumanSessionPort } from "../../src/features/identity/public.js";
+import {
+  SessionFailure,
+  type HumanSessionPort,
+} from "../../src/features/identity/public.js";
 import { createOrganizationsModule } from "../../src/features/organizations/module.js";
 import { activateModules, type ApiModule } from "../../src/module.js";
 import { withMigratedDatabase } from "../../scripts/migrated-database.js";
@@ -17,6 +21,7 @@ import { withMigratedDatabase } from "../../scripts/migrated-database.js";
 type App = ReturnType<typeof createApp>["app"];
 let app: App;
 let sql: pg.Client;
+let runtimeDatabaseUrl: string;
 let database: Database;
 let release: () => void;
 let stopped: Promise<void>;
@@ -24,6 +29,7 @@ let stopped: Promise<void>;
 const people = {
   aAdmin: randomUUID(),
   aManager: randomUUID(),
+  aAuditor: randomUUID(),
   aOperator: randomUUID(),
   bAdmin: randomUUID(),
   guesser: randomUUID(),
@@ -34,9 +40,7 @@ const sessions: HumanSessionPort = {
   authenticate: ({ headers }) => {
     const principalId = headers["x-test-principal"] as string | undefined;
     if (!principalId)
-      return Promise.reject(
-        Object.assign(new Error("no session"), { code: "AUTH" }),
-      );
+      return Promise.reject(new SessionFailure("AUTHENTICATION_REQUIRED"));
     const strong = headers["x-test-strong"] === "true";
     return Promise.resolve({
       principalId,
@@ -62,6 +66,7 @@ beforeAll(async () => {
   let ready!: () => void;
   const started = new Promise<void>((resolve) => (ready = resolve));
   stopped = withMigratedDatabase(async (runtimeUrl, migrationUrl) => {
+    runtimeDatabaseUrl = runtimeUrl;
     sql = new pg.Client({ connectionString: migrationUrl });
     await sql.connect();
     for (const [name, id] of Object.entries(people))
@@ -278,7 +283,278 @@ describe("devices: enrollment, scope and lifecycle", () => {
     b1 = await createBranch("bAdmin", companyB, "Matriz");
     await grantBranches("aManager", companyA, "BRANCH_MANAGER", [a1.id]);
     await grantBranches("aOperator", companyA, "OPERATOR", [a1.id]);
+    await grantBranches("aAuditor", companyA, "BRANCH_MANAGER", [a1.id, a2.id]);
   }, 60_000);
+
+  type AuditEvent = {
+    id: string;
+    action: string;
+    occurredAt: string;
+    actorPrincipalId: string | null;
+  };
+  const events = (result: Result) => result.body.items as AuditEvent[];
+  const historyPath = (id: string) =>
+    `/companies/${companyA}/devices/${id}/audit-events`;
+
+  it("reads only immutable lifecycle scope and distinguishes device erasure from a recorded reset", async () => {
+    const tv = await enroll();
+    const paired = await pair("aAdmin", companyA, a2.id, tv.userCode);
+    const id = paired.body.id;
+    await call("aAdmin", "PATCH", `/companies/${companyA}/devices/${id}`, {
+      strong: true,
+      body: { expectedVersion: 1, name: "Before move" },
+    });
+    await call("aAdmin", "POST", `/companies/${companyA}/devices/${id}/move`, {
+      strong: true,
+      body: { expectedVersion: 2, branchId: a1.id },
+    });
+    await call("aAdmin", "PATCH", `/companies/${companyA}/devices/${id}`, {
+      strong: true,
+      body: {
+        expectedVersion: 3,
+        name: "After move",
+        rotation: 90,
+        timeZone: "UTC",
+      },
+    });
+    const own = await call("aManager", "GET", historyPath(id), {
+      strong: true,
+    });
+    expect(own.status).toBe(200);
+    expect(
+      events(own)
+        .map((event) => event.action)
+        .sort(),
+    ).toEqual([
+      "device.renamed",
+      "device.rotation_changed",
+      "device.time_zone_changed",
+    ]);
+    const wider = await call("aAuditor", "GET", historyPath(id), {
+      strong: true,
+    });
+    expect(events(wider)).toHaveLength(6);
+    expect(events(wider).some((event) => event.action === "device.moved")).toBe(
+      true,
+    );
+    await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/devices/${id}/unlink`,
+      { strong: true, body: { expectedVersion: 4 } },
+    );
+    await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/devices/${id}/reset-record`,
+      { strong: true, body: { expectedVersion: 5 } },
+    );
+    expect(
+      (
+        await call(null, "POST", "/device/self/erasure", {
+          credential: tv.credential,
+        })
+      ).status,
+    ).toBe(204);
+    const final = await call("aManager", "GET", historyPath(id), {
+      strong: true,
+    });
+    expect(events(final)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "device.reset_recorded",
+          actorPrincipalId: people.aAdmin,
+        }),
+        expect.objectContaining({
+          action: "device.erasure_confirmed",
+          actorPrincipalId: null,
+        }),
+      ]),
+    );
+    for (const event of events(final))
+      expect(Object.keys(event).sort()).toEqual([
+        "action",
+        "actorPrincipalId",
+        "id",
+        "occurredAt",
+      ]);
+    expect(JSON.stringify(final.body)).not.toContain(tv.credential);
+    expect(JSON.stringify(final.body)).not.toContain(tv.hash);
+    const scopes = await sql.query<{ count: number }>(
+      "SELECT count(*)::int AS count FROM device_audit_event_branches eb JOIN device_audit_events e ON e.id = eb.event_id WHERE e.device_id = $1 AND e.action = 'device.moved'",
+      [id],
+    );
+    expect(scopes.rows[0].count).toBe(2);
+  });
+
+  it("denies hidden screens, cross-company substitutions, bearer-only humans and missing audit authority", async () => {
+    const tv = await enroll();
+    const paired = await pair("aAdmin", companyA, a1.id, tv.userCode);
+    const path = historyPath(paired.body.id);
+    expect(code(await call("aOperator", "GET", path))).toBe(
+      "PERMISSION_DENIED",
+    );
+    expect(code(await call("aManager", "GET", path))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    expect(code(await call("bAdmin", "GET", path, { strong: true }))).toBe(
+      "RESOURCE_NOT_FOUND",
+    );
+    expect(
+      code(
+        await call(
+          "bAdmin",
+          "GET",
+          `/companies/${companyB}/devices/${paired.body.id}/audit-events`,
+          { strong: true },
+        ),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(
+      (await call(null, "GET", path, { credential: tv.credential })).status,
+    ).toBe(401);
+    const other = await enroll();
+    const hidden = await pair("aAdmin", companyA, a2.id, other.userCode);
+    expect(
+      code(
+        await call("aManager", "GET", historyPath(hidden.body.id), {
+          strong: true,
+        }),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(
+      code(await call("aAdmin", "GET", path + "?cursor=bad", { strong: true })),
+    ).toBe("VALIDATION_FAILED");
+  });
+
+  it("filters before pagination with equal-time ties and binds cursors to current device, person and scope", async () => {
+    const tv = await enroll();
+    const paired = await pair("aAdmin", companyA, a1.id, tv.userCode);
+    const id = paired.body.id;
+    const visible: string[] = [];
+    // Newer hidden and unknown events must not consume a branch auditor's page.
+    for (let i = 0; i < 215; i++) {
+      const eventId = randomUUID();
+      await sql.query(
+        "INSERT INTO device_audit_events (id, company_id, device_id, occurred_at, action, details) VALUES ($1, $2, $3, '2027-01-01T00:00:00Z', 'device.renamed', $4)",
+        [eventId, companyA, id, { private: "SYNTHETIC_SECRET" }],
+      );
+      if (i < 105) visible.push(eventId);
+      if (i < 210)
+        await sql.query(
+          "INSERT INTO device_audit_event_branches (company_id, event_id, branch_id) VALUES ($1,$2,$3)",
+          [companyA, eventId, i < 105 ? a1.id : a2.id],
+        );
+    }
+    visible.sort().reverse();
+    const path = historyPath(id);
+    const first = await call("aManager", "GET", path + "?limit=100", {
+      strong: true,
+    });
+    expect(events(first).map((event) => event.id)).toEqual(
+      visible.slice(0, 100),
+    );
+    const cursor = first.body.nextCursor as string;
+    expect(cursor).toBeTypeOf("string");
+    const next = await call(
+      "aManager",
+      "GET",
+      path + `?limit=100&cursor=${cursor}`,
+      { strong: true },
+    );
+    expect(events(next).map((event) => event.id)).toEqual([
+      ...visible.slice(100),
+      expect.any(String),
+    ]);
+    expect(next.body.nextCursor).toBeNull();
+    expect(JSON.stringify(next.body)).not.toContain("SYNTHETIC_SECRET");
+    expect(
+      code(
+        await call("aAdmin", "GET", path + `?cursor=${cursor}`, {
+          strong: true,
+        }),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    const other = await enroll();
+    const otherDevice = await pair("aAdmin", companyA, a1.id, other.userCode);
+    expect(
+      code(
+        await call(
+          "aManager",
+          "GET",
+          historyPath(otherDevice.body.id) + `?cursor=${cursor}`,
+          { strong: true },
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    const broad = await call("aAuditor", "GET", path + "?limit=1", {
+      strong: true,
+    });
+    // Remove a branch while keeping the current device visible.
+    const removed = await sql.query<{ grant_id: string }>(
+      "DELETE FROM membership_grant_branches WHERE company_id = $1 AND branch_id = $2 AND grant_id IN (SELECT g.id FROM membership_grants g JOIN memberships m ON m.company_id = g.company_id AND m.id = g.membership_id WHERE m.principal_id = $3) RETURNING grant_id",
+      [companyA, a2.id, people.aAuditor],
+    );
+    try {
+      expect(
+        code(
+          await call(
+            "aAuditor",
+            "GET",
+            path + `?cursor=${broad.body.nextCursor as string}`,
+            { strong: true },
+          ),
+        ),
+      ).toBe("VALIDATION_FAILED");
+    } finally {
+      for (const row of removed.rows)
+        await sql.query(
+          "INSERT INTO membership_grant_branches (company_id, grant_id, branch_id) VALUES ($1,$2,$3)",
+          [companyA, row.grant_id, a2.id],
+        );
+    }
+    const all = await call("aAdmin", "GET", path + "?limit=100", {
+      strong: true,
+    });
+    expect(events(all)).toHaveLength(100);
+  });
+
+  it("keeps event scope append-only and rejects cross-company event or branch references", async () => {
+    const tv = await enroll();
+    const paired = await pair("aAdmin", companyA, a1.id, tv.userCode);
+    const event = await sql.query<{ id: string }>(
+      "SELECT id FROM device_audit_events WHERE device_id = $1 LIMIT 1",
+      [paired.body.id],
+    );
+    const runtime = new pg.Client({ connectionString: runtimeDatabaseUrl });
+    await runtime.connect();
+    try {
+      await expect(
+        runtime.query(
+          "DELETE FROM device_audit_event_branches WHERE event_id = $1",
+          [event.rows[0].id],
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+      await expect(
+        runtime.query(
+          "UPDATE device_audit_event_branches SET branch_id = $1 WHERE event_id = $2",
+          [a2.id, event.rows[0].id],
+        ),
+      ).rejects.toMatchObject({ code: "42501" });
+    } finally {
+      await runtime.end();
+    }
+    for (const values of [
+      [companyB, event.rows[0].id, b1.id],
+      [companyA, event.rows[0].id, b1.id],
+    ])
+      await expect(
+        sql.query(
+          "INSERT INTO device_audit_event_branches (company_id,event_id,branch_id) VALUES ($1,$2,$3)",
+          values,
+        ),
+      ).rejects.toMatchObject({ code: "23503" });
+  });
 
   it("starts an enrollment with a displayable code and never reuses a credential", async () => {
     const screen = player();
@@ -846,7 +1122,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
 
   it("stops renewing authorization for a suspended company", async () => {
     const screen = await enroll();
-    await pair("bAdmin", companyB, b1.id, screen.userCode);
+    const paired = await pair("bAdmin", companyB, b1.id, screen.userCode);
     await sql.query("UPDATE companies SET status = 'SUSPENDED' WHERE id = $1", [
       companyB,
     ]);
@@ -858,6 +1134,16 @@ describe("devices: enrollment, scope and lifecycle", () => {
         status: "suspended",
         authorizedUntil: null,
       });
+      expect(
+        code(
+          await call(
+            "bAdmin",
+            "GET",
+            `/companies/${companyB}/devices/${paired.body.id}/audit-events`,
+            { strong: true },
+          ),
+        ),
+      ).toBe("COMPANY_SUSPENDED");
       const another = await enroll();
       expect(
         code(await pair("bAdmin", companyB, b1.id, another.userCode)),
@@ -878,5 +1164,49 @@ describe("devices: enrollment, scope and lifecycle", () => {
       expect(details).not.toMatch(
         /credential|code|hash|address|[A-Za-z0-9_-]{43}/i,
       );
+  });
+  it("backfills only complete immutable legacy scope without guessing from a current branch", async () => {
+    const tv = await enroll();
+    const paired = await pair("aAdmin", companyA, a1.id, tv.userCode);
+    const records = [
+      ["device.paired", { branchId: a2.id }],
+      ["device.moved", { fromBranchId: a1.id, toBranchId: a2.id }],
+      ["device.unlinked", { branchId: a1.id }],
+      ["device.renamed", {}],
+      ["device.moved", { fromBranchId: b1.id, toBranchId: a1.id }],
+    ] as const;
+    const ids: string[] = [];
+    await sql.query("BEGIN");
+    try {
+      for (const [action, details] of records) {
+        const id = randomUUID();
+        ids.push(id);
+        await sql.query(
+          "INSERT INTO device_audit_events (id,company_id,device_id,action,details) VALUES ($1,$2,$3,$4,$5)",
+          [id, companyA, paired.body.id, action, details],
+        );
+      }
+      await sql.query("DROP TABLE device_audit_event_branches");
+      await sql.query(
+        await readFile(
+          new URL(
+            "../../prisma/migrations/20261024020000_device_audit_scope/migration.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      const counts: number[] = [];
+      for (const id of ids) {
+        const result = await sql.query<{ count: number }>(
+          "SELECT count(*)::int AS count FROM device_audit_event_branches WHERE event_id = $1",
+          [id],
+        );
+        counts.push(result.rows[0].count);
+      }
+      expect(counts).toEqual([1, 2, 1, 0, 0]);
+    } finally {
+      await sql.query("ROLLBACK");
+    }
   });
 });

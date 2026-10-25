@@ -583,3 +583,247 @@ test("shows a screen's synchronization as the screen reported it", async () => {
     )
     .toBeVisible();
 });
+
+test.each([
+  { clock: "ANCHORED", skew: 60_000, crashes: 0, warning: false },
+  { clock: "ANCHORED", skew: 60_001, crashes: 2, warning: true },
+  { clock: "ANCHORED", skew: -60_001, crashes: 1, warning: true },
+  { clock: "ANCHORED", skew: 0, crashes: 2_147_483_647, warning: false },
+  { clock: "UNTRUSTED", skew: null, crashes: 0, warning: false },
+  { clock: "ESTIMATED", skew: null, crashes: null, warning: false },
+  { clock: null, skew: null, crashes: null, warning: false },
+])(
+  "shows player diagnostics without inferring missing values: $clock $skew",
+  async ({ clock, skew, crashes, warning }) => {
+    const state = {
+      deviceId,
+      connection: "online",
+      lastContactAt: null,
+      source: "none",
+      desired: null,
+      publication: "neutral",
+      reported: {
+        receivedAt: "2026-10-24T12:00:00.000Z",
+        appVersion: "1.0.0",
+        protocol: 2,
+        active: null,
+        staging: null,
+        playback: "PLAYING",
+        storage: null,
+        diagnostics: clock
+          ? { clock, systemSkewMillis: skew, crashCount: crashes }
+          : null,
+      },
+    };
+    respond((url) => {
+      if (url.pathname.endsWith("/sync-state")) return { body: state };
+      if (url.pathname.endsWith(`/devices/${deviceId}`))
+        return { body: device() };
+      if (url.pathname.endsWith("/branches")) return { body: branches };
+      return { body: company(["devices.view"]) };
+    });
+    const { screen } = await open(`${screensPath}/${deviceId}`);
+    const sync = screen.getByTestId("screen-sync");
+    await expect.element(sync.getByText(t.sync.clockLabel)).toBeVisible();
+    await expect
+      .element(
+        sync
+          .getByText(
+            clock
+              ? t.sync.clock[clock as keyof typeof t.sync.clock]
+              : t.sync.unknownDiagnostic,
+            { exact: true },
+          )
+          .first(),
+      )
+      .toBeVisible();
+    if (crashes !== null)
+      await expect
+        .element(
+          sync.getByText(
+            `${crashes === 2_147_483_647 ? "≥ " : ""}${new Intl.NumberFormat(locale).format(crashes)}`,
+            { exact: true },
+          ),
+        )
+        .toBeVisible();
+    if (skew === null)
+      await expect
+        .element(sync.getByText(t.sync.skewUnavailable))
+        .toBeVisible();
+    else
+      await expect
+        .element(
+          sync.getByText(
+            new Intl.NumberFormat(locale, {
+              style: "unit",
+              unit: "second",
+              signDisplay: "always",
+              maximumFractionDigits: 3,
+            }).format(skew / 1000),
+            { exact: true },
+          ),
+        )
+        .toBeVisible();
+    if (warning)
+      await expect.element(screen.getByText(t.sync.skewWarning)).toBeVisible();
+    else
+      await expect
+        .element(screen.getByText(t.sync.skewWarning))
+        .not.toBeInTheDocument();
+  },
+);
+
+test("pages screen history through URL search and safely labels actors and unknown actions", async () => {
+  const requests: string[] = [];
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      const cursor = url.searchParams.get("cursor");
+      requests.push(cursor ?? "first");
+      return {
+        body: {
+          items: cursor
+            ? [
+                {
+                  id: "old",
+                  action: "device.paired",
+                  actorPrincipalId: "other",
+                  occurredAt: "2026-10-20T12:00:00.000Z",
+                },
+              ]
+            : [
+                {
+                  id: "new",
+                  action: "device.erasure_confirmed",
+                  actorPrincipalId: null,
+                  occurredAt: "2026-10-24T12:00:00.000Z",
+                },
+                {
+                  id: "reset",
+                  action: "device.reset_recorded",
+                  actorPrincipalId: "synthetic",
+                  occurredAt: "2026-10-23T12:00:00.000Z",
+                },
+                {
+                  id: "unknown",
+                  action: "constructor",
+                  actorPrincipalId: "other",
+                  occurredAt: "2026-10-22T12:00:00.000Z",
+                  details: { secret: "SYNTHETIC_SECRET" },
+                },
+              ],
+          nextCursor: cursor ? null : "older",
+        },
+      };
+    }
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    return { body: company(["devices.view", "audit.view"]) };
+  });
+  const { screen, router } = await open(
+    `${screensPath}/${deviceId}?view=history`,
+  );
+  const history = screen.getByTestId("screen-history");
+  await expect
+    .element(screen.getByRole("link", { name: t.detailsTitle, exact: true }))
+    .toHaveAttribute("aria-current", "false");
+  await expect
+    .element(screen.getByRole("link", { name: t.historyTitle, exact: true }))
+    .toHaveAttribute("aria-current", "page");
+  await expect
+    .element(history.getByText(t.historyDevice, { exact: false }))
+    .toBeVisible();
+  await expect
+    .element(
+      history.getByRole("listitem").getByText(t.historyYou, { exact: false }),
+    )
+    .toBeVisible();
+  await expect
+    .element(history.getByText(t.historyActions["device.reset_recorded"]))
+    .toBeVisible();
+  await expect.element(history.getByText(t.historyUnknown)).toBeVisible();
+  await expect
+    .element(screen.getByText("SYNTHETIC_SECRET"))
+    .not.toBeInTheDocument();
+  await history.getByRole("link", { name: t.nextPage }).click();
+  await expect
+    .element(history.getByText(t.historyActions["device.paired"]))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    view: "history",
+    cursor: "older",
+  });
+  await history.getByRole("link", { name: t.firstPage }).click();
+  await expect
+    .element(history.getByText(t.historyActions["device.erasure_confirmed"]))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({ view: "history" });
+  expect(requests).toEqual(["first", "older", "first"]);
+});
+
+test.each([false, true])(
+  "does not fetch screen audit without current permission (step-up: %s)",
+  async (stepUp) => {
+    let reads = 0;
+    respond((url) => {
+      if (url.pathname.endsWith("/audit-events")) {
+        reads++;
+        return { body: { items: [], nextCursor: null } };
+      }
+      if (url.pathname.endsWith(`/devices/${deviceId}`))
+        return { body: device() };
+      return { body: company(["devices.view"], stepUp ? ["audit.view"] : []) };
+    });
+    const { screen } = await open(`${screensPath}/${deviceId}?view=history`);
+    await expect
+      .element(screen.getByRole(stepUp ? "status" : "alert"))
+      .toBeVisible();
+    expect(reads).toBe(0);
+    if (stepUp) {
+      const link = screen.getByRole("link", { name: t.stepUpButton });
+      await expect
+        .element(link)
+        .toHaveAttribute("href", expect.stringContaining("view%3Dhistory"));
+    } else
+      await expect
+        .element(screen.getByRole("link", { name: t.historyTitle }))
+        .not.toBeInTheDocument();
+  },
+);
+
+test("reloads a failed history read without showing private errors and supports a deep page link", async () => {
+  let fail = true;
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      expect(url.searchParams.get("cursor")).toBe("older");
+      return fail
+        ? {
+            status: 403,
+            body: {
+              error: {
+                code: "PERMISSION_DENIED",
+                message: "SYNTHETIC_SECRET",
+                requestId: "synthetic",
+              },
+            },
+          }
+        : { body: { items: [], nextCursor: null } };
+    }
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    return { body: company(["devices.view", "audit.view"]) };
+  });
+  const { screen } = await open(
+    `${screensPath}/${deviceId}?view=history&cursor=older`,
+  );
+  const history = screen.getByTestId("screen-history");
+  await expect.element(history.getByRole("alert")).toBeVisible();
+  await expect
+    .element(screen.getByText("SYNTHETIC_SECRET"))
+    .not.toBeInTheDocument();
+  fail = false;
+  await history.getByRole("button", { name: t.reload }).click();
+  await expect.element(history.getByText(t.historyEmpty)).toBeVisible();
+  await expect
+    .element(history.getByRole("link", { name: t.firstPage }))
+    .toBeVisible();
+});

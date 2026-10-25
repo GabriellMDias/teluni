@@ -141,6 +141,14 @@ The organizations module now enforces strong authentication for standard company
 
 **Not yet implemented:** idle-timeout warnings and draft protection in the panel; passkeys and recovery codes as `teluni-aal2` factors (OTP is the only second factor so far); per-membership idle limits (every session currently uses the 30-minute administrative bound, the stricter value); global disablement as a platform operation; Google (PH-16). Real environments still need PH-10 and PH-15–PH-17.
 
+## Local development assurance exception
+
+On 2026-10-24 the owner requested optional two-step verification for local development. `TELUNI_DEV_MFA_MODE` defaults to `required`; `optional` is accepted only with `ORION_ENV=development`, a loopback API listener, and loopback public origin and issuer. The identity module repeats the environment/origin/issuer guard for direct composition. This is a testing exception to the production P12/P14 requirements, not a new authentication method or a product company policy. [Setup](../setup.md#optional-two-step-verification-during-local-development) owns activation and restart instructions.
+
+In optional mode, login does not request AAL2 or recent authentication from Keycloak. After all ordinary session, signature, principal, CSRF, expiry and provider-revalidation checks succeed, the identity boundary projects effective strong/recent assurance for local business workflows only. It reports `assuranceLevel=teluni-development`, and the session page labels the waiver instead of claiming two-step verification. The stored provider ACR and strong-authentication timestamp are unchanged. Disabling the setting therefore restores the actual stored assurance on the next request, including for existing cookies. Other authorization and transaction checks remain active; no account credentials, authenticator enrollment or provider flow are rewritten.
+
+The [local-mode integration test](../../apps/api/test/identity/development-mfa.test.ts) uses real Keycloak and migrated PostgreSQL to verify password-only step-up, the absence of OTP enrollment/fabricated stored assurance, enforcement after recomposition with `required`, CSRF and missing-session rejection, and logout. Configuration tests reject nondevelopment/nonloopback and invalid values; the [session-page test](../../apps/web/test/identity.browser.test.tsx) checks the explicit development label. Real environment provisioning and required-mode assurance qualification remain unchanged.
+
 ## Alternatives considered
 
 | Alternative | Disposition |

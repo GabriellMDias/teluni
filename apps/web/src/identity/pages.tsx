@@ -192,7 +192,9 @@ export function SessionsPage() {
       <p>{t.sessionsLead}</p>
       <section className="two-step" aria-labelledby="two-step-title">
         <h2 id="two-step-title">{t.twoStepTitle}</h2>
-        {session.data.strongAuthenticatedAt ? (
+        {session.data.assuranceLevel === "teluni-development" ? (
+          <p role="status">{t.twoStepDevelopment}</p>
+        ) : session.data.strongAuthenticatedAt ? (
           <p>
             {t.twoStepDone}{" "}
             {format.format(new Date(session.data.strongAuthenticatedAt))}.

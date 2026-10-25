@@ -7,11 +7,14 @@ import type { CompanyAccess } from "./domain.js";
 import type { CompanyDescription } from "./prisma-repository.js";
 
 export {
+  auditVisibility,
   branchReach,
   decide,
   isTimeZone,
   OrganizationFailure,
   requireCapability,
+  reachableWithStrongAuthentication,
+  type AuditVisibility,
   type Capability,
   type CompanyAccess,
 } from "./domain.js";

@@ -554,3 +554,10 @@ export function connection(lastContact: Date | null, now: Date): Connection {
   if (seconds <= publicationPolicy.offlineAfterSeconds) return "stale";
   return "offline";
 }
+
+/** Untrusted, bounded health facts reported by a player; never an authorization input. */
+export type PlayerDiagnostics = Readonly<{
+  clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+  systemSkewMillis: number | null;
+  crashCount: number | null;
+}>;

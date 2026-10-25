@@ -11,3 +11,5 @@ GRANT UPDATE (branch_id, name, time_zone, rotation, status, erasure, credential_
 GRANT SELECT, INSERT ON device_claim_failures TO orion_runtime;
 GRANT DELETE ON device_claim_failures TO orion_runtime;
 GRANT SELECT, INSERT ON device_audit_events TO orion_runtime;
+
+GRANT SELECT, INSERT ON device_audit_event_branches TO orion_runtime;

@@ -53,6 +53,7 @@ public data class SyncReport(
     val playback: String,
     val storage: Storage?,
     val deviceTime: String?,
+    val diagnostics: Diagnostics? = null,
 ) {
     @Serializable
     public data class Active(val publicationId: String, val activatedAt: String)
@@ -71,6 +72,9 @@ public data class SyncReport(
 
     @Serializable
     public data class Storage(val freeBytes: Long, val totalBytes: Long)
+
+    @Serializable
+    public data class Diagnostics(val clock: String, val systemSkewMillis: Long?, val crashCount: Int?)
 }
 
 @Serializable
@@ -123,6 +127,8 @@ public interface DeviceApi {
 
     public fun enrollmentStatus(enrollmentId: String, credential: String): EnrollmentStatus
 
+    public fun rotateCredential(credential: String, credentialHash: String)
+
     public fun confirmErasure(credential: String)
 
     public fun sync(credential: String, report: SyncReport): Timed<SyncAnswer>
@@ -161,6 +167,9 @@ public class HttpDeviceApi(
         @Serializable
         data class Error(val code: String)
     }
+
+    @Serializable
+    internal data class RotationRequest(val credentialHash: String)
 
     @Serializable
     private data class EnrollmentRequest(val credentialHash: String, val report: DeviceReport)
@@ -208,6 +217,12 @@ public class HttpDeviceApi(
         request(url("device-enrollments", enrollmentId, "status"), credential).post(ByteArray(0).toRequestBody()).build(),
         EnrollmentStatus.serializer(),
     )
+
+    override fun rotateCredential(credential: String, credentialHash: String) {
+        val request = request(url("device", "self", "credential"), credential)
+            .post(body(RotationRequest(credentialHash), RotationRequest.serializer())).build()
+        calls.newCall(request).execute().use { response -> if (response.code != 204) throw failure(response) }
+    }
 
     override fun confirmErasure(credential: String) {
         val request = request(url("device", "self", "erasure"), credential).post(ByteArray(0).toRequestBody()).build()

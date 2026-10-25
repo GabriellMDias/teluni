@@ -62,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. */
+        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. With the explicitly enabled local-development optional-MFA mode, login uses ordinary provider assurance and the authenticated session exposes teluni-development effective assurance without persisting it as provider authentication. */
         get: operations["startLogin"];
         put?: never;
         post?: never;
@@ -691,6 +691,23 @@ export interface paths {
         head?: never;
         /** @description Rename an active screen, change its rotation or set its explicit time zone (null follows the branch) with the observed version. Only rotations the screen reported are accepted. */
         patch: operations["updateDevice"];
+        trace?: never;
+    };
+    "/companies/{companyId}/devices/{deviceId}/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lifecycle history of a currently visible screen, newest first by event time and ID. Requires audit access and its assurance. Company administrators see every event; other auditors see only events with known immutable scope entirely within their audit branches, including both sides of a move. Legacy unknown-scope events remain administrator-only. Authorization precedes pagination; cursors bind company, person, device and current audit scope. Returns only action, time and actor ID, never private audit details or credentials. */
+        get: operations["listDeviceAuditEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/companies/{companyId}/devices/{deviceId}/move": {
@@ -11333,6 +11350,227 @@ export interface operations {
                         revokedAt: string | null;
                         erasureRecordedAt: string | null;
                         version: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listDeviceAuditEvents: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                companyId: string;
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            /** Format: date-time */
+                            occurredAt: string;
+                            actorPrincipalId: string | null;
+                            action: string;
+                        }[];
+                        nextCursor: string | null;
                     };
                 };
             };
@@ -29097,6 +29335,11 @@ export interface operations {
                                 bytesTotal: number;
                             } | null;
                             playback: "PLAYING" | "NEUTRAL" | "AUTHORIZATION_EXPIRED" | "CLOCK_UNTRUSTED" | "DEGRADED" | "SETUP";
+                            diagnostics: {
+                                clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+                                systemSkewMillis: number | null;
+                                crashCount: number | null;
+                            } | null;
                             storage: {
                                 freeBytes: number;
                                 totalBytes: number;
@@ -29342,6 +29585,11 @@ export interface operations {
                                     bytesTotal: number;
                                 } | null;
                                 playback: "PLAYING" | "NEUTRAL" | "AUTHORIZATION_EXPIRED" | "CLOCK_UNTRUSTED" | "DEGRADED" | "SETUP";
+                                diagnostics: {
+                                    clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+                                    systemSkewMillis: number | null;
+                                    crashCount: number | null;
+                                } | null;
                                 storage: {
                                     freeBytes: number;
                                     totalBytes: number;
@@ -29572,6 +29820,11 @@ export interface operations {
                         totalBytes: number;
                     } | null;
                     deviceTime: string | null;
+                    diagnostics?: {
+                        clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+                        systemSkewMillis: number | null;
+                        crashCount: number | null;
+                    } | null;
                 };
             };
         };

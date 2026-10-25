@@ -338,7 +338,7 @@ type Screen = Readonly<{
     status: number;
     headers: Record<string, unknown>;
     raw: Buffer;
-    json(): Body;
+    json<T = Body>(): T;
   }>;
 }>;
 
@@ -391,7 +391,7 @@ async function screen(
         status: response.statusCode,
         headers: response.headers,
         raw: response.rawPayload,
-        json: () => response.json<Body>(),
+        json: <T = Body>() => response.json<T>(),
       };
     },
   };
@@ -412,6 +412,11 @@ type Report = {
   playback: string;
   storage: { freeBytes: number; totalBytes: number } | null;
   deviceTime: string | null;
+  diagnostics?: {
+    clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+    systemSkewMillis: number | null;
+    crashCount: number | null;
+  } | null;
 };
 
 const idle: Report = {
@@ -435,10 +440,10 @@ async function sync(device: Screen, report: Partial<Report> = {}) {
 let keySet: ReturnType<typeof createLocalJWKSet>;
 
 /** Verifies a statement as the player does, with the pinned key set. */
-async function verified(statement: unknown) {
+async function verified(statement: unknown, keys = keySet) {
   const { payload, protectedHeader } = await compactVerify(
     statement as string,
-    keySet,
+    keys,
   );
   expect(protectedHeader.typ).toBe("teluni-authorization+jws");
   return JSON.parse(new TextDecoder().decode(payload)) as {
@@ -483,6 +488,138 @@ describe("publications: publishing, synchronization and retention", () => {
     a1Png = await ready(companyA, fixtures.pngAlpha, a1.id);
     base = `/companies/${companyA}/programming`;
   }, 300_000);
+
+  it("stores bounded player diagnostics without trusting them or retaining stale legacy values", async () => {
+    const tv = await screen(companyA, a1.id, "Diagnostics");
+    const path = `/companies/${companyA}/devices/${tv.id}/sync-state`;
+    expect((await sync(tv)).status).toBe(200);
+    expect((await call("aAdmin", "GET", path)).body).toMatchObject({
+      reported: { diagnostics: null },
+    });
+    const diagnostics = {
+      clock: "ANCHORED" as const,
+      systemSkewMillis: -Number.MAX_SAFE_INTEGER,
+      crashCount: 2_147_483_647,
+    };
+    const answer = await sync(tv, { diagnostics });
+    expect(answer.status).toBe(200);
+    const keys = createLocalJWKSet(
+      (await tv.call("GET", "/device/keys")).json<JSONWebKeySet>(),
+    );
+    const statement = await verified(answer.body.authorization, keys);
+    expect(statement.exp - statement.iat).toBe(7 * 86_400);
+    expect((await call("aAdmin", "GET", path)).body).toMatchObject({
+      reported: { diagnostics },
+    });
+    expect(
+      code(
+        await call(
+          "bAdmin",
+          "GET",
+          `/companies/${companyB}/devices/${tv.id}/sync-state`,
+        ),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    await sync(tv, {
+      diagnostics: {
+        clock: "ESTIMATED",
+        systemSkewMillis: null,
+        crashCount: null,
+      },
+    });
+    expect((await call("aAdmin", "GET", path)).body).toMatchObject({
+      reported: {
+        diagnostics: {
+          clock: "ESTIMATED",
+          systemSkewMillis: null,
+          crashCount: null,
+        },
+      },
+    });
+    await sync(tv);
+    expect((await call("aAdmin", "GET", path)).body).toMatchObject({
+      reported: { diagnostics: null },
+    });
+  });
+
+  it("rejects invalid diagnostic values and discards unrecognized private fields", async () => {
+    const tv = await screen(companyA, a1.id, "Validation");
+    for (const diagnostics of [
+      { clock: "ANCHORED", systemSkewMillis: 0, crashCount: -1 },
+      { clock: "ANCHORED", systemSkewMillis: 0, crashCount: 2_147_483_648 },
+      {
+        clock: "ANCHORED",
+        systemSkewMillis: Number.MAX_SAFE_INTEGER + 1,
+        crashCount: 0,
+      },
+      { clock: "ESTIMATED", systemSkewMillis: 1, crashCount: 0 },
+      { clock: "UNTRUSTED", systemSkewMillis: -1, crashCount: null },
+      { clock: "UNKNOWN", systemSkewMillis: null, crashCount: 0 },
+    ]) {
+      const response = await tv.call("POST", "/device/sync", {
+        body: { ...idle, diagnostics },
+      });
+      expect(response.status).toBe(400);
+      expect(JSON.stringify(response.json())).not.toContain("SYNTHETIC_SECRET");
+    }
+    const rows = await sql.query(
+      "SELECT * FROM publication_device_states WHERE company_id = $1 AND device_id = $2",
+      [companyA, tv.id],
+    );
+    expect(rows.rowCount).toBe(0);
+    // Existing request normalization removes unrecognized properties; persist only the allowlist.
+    const extra = await tv.call("POST", "/device/sync", {
+      body: {
+        ...idle,
+        diagnostics: {
+          clock: "ANCHORED",
+          systemSkewMillis: null,
+          crashCount: null,
+          frames: ["SYNTHETIC_SECRET"],
+        },
+      },
+    });
+    expect(extra.status).toBe(200);
+    const visible = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/devices/${tv.id}/sync-state`,
+    );
+    expect(visible.body).toMatchObject({
+      reported: {
+        diagnostics: {
+          clock: "ANCHORED",
+          systemSkewMillis: null,
+          crashCount: null,
+        },
+      },
+    });
+    expect(JSON.stringify(visible.body)).not.toContain("SYNTHETIC_SECRET");
+    const stored = await sql.query(
+      "SELECT row_to_json(s) AS value FROM publication_device_states s WHERE company_id = $1 AND device_id = $2",
+      [companyA, tv.id],
+    );
+    expect(JSON.stringify(stored.rows)).not.toContain("SYNTHETIC_SECRET");
+  });
+
+  it("enforces nullable diagnostic consistency in migrated PostgreSQL", async () => {
+    const tv = await screen(companyA, a1.id, "Constraints");
+    await sync(tv);
+    for (const values of [
+      [null, null, 1],
+      ["INVALID", null, 0],
+      ["UNTRUSTED", 1, 0],
+      ["ANCHORED", "9007199254740992", 0],
+      ["ANCHORED", 0, -1],
+    ]) {
+      await expect(
+        sql.query(
+          "UPDATE publication_device_states SET clock_state = $3, clock_skew_millis = $4, crash_count = $5 WHERE company_id = $1 AND device_id = $2",
+          [companyA, tv.id, ...values],
+        ),
+      ).rejects.toMatchObject({ code: "23514" });
+    }
+  });
 
   async function playlist(
     branchId: string | null,
@@ -926,19 +1063,21 @@ describe("publications: publishing, synchronization and retention", () => {
     expect(createHash("sha256").update(manifest.raw).digest("hex")).toBe(
       (newer.body.desired as { manifestSha256: string }).manifestSha256,
     );
-    const parsed = manifest.json() as unknown as Record<string, unknown> & {
-      layout: { areas: { key: string; view: { pages: unknown } | null }[] };
-      catalogs: {
-        fields: { id: string }[];
-        records: { id: string; values: Record<string, unknown> }[];
-        prices: {
-          recordId: string;
-          overrides: { branchId: string }[];
-          promotions: { branchId: string | null }[];
+    const parsed = manifest.json<
+      Record<string, unknown> & {
+        layout: { areas: { key: string; view: { pages: unknown } | null }[] };
+        catalogs: {
+          fields: { id: string }[];
+          records: { id: string; values: Record<string, unknown> }[];
+          prices: {
+            recordId: string;
+            overrides: { branchId: string }[];
+            promotions: { branchId: string | null }[];
+          }[];
         }[];
-      }[];
-      media: { id: string }[];
-    };
+        media: { id: string }[];
+      }
+    >();
     expect(Object.keys(parsed)).toEqual([
       "format",
       "protocol",
@@ -1514,7 +1653,7 @@ describe("publications: publishing, synchronization and retention", () => {
         await (
           await screen(companyA, a2.id, "Chaves")
         ).call("GET", "/device/keys")
-      ).json() as unknown as JSONWebKeySet,
+      ).json<JSONWebKeySet>(),
     );
     const menu = await playlist(null, "Vitrine", [
       { mediaAssetId: png },

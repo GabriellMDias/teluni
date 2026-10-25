@@ -70,6 +70,7 @@ model Company {
   grants                  MembershipGrant[]
   grantBranches           MembershipGrantBranch[]
   auditEvents             OrganizationAuditEvent[]
+  deviceAuditBranches     DeviceAuditEventBranch[]
   auditEventBranches      OrganizationAuditEventBranch[]
   accessProfiles          AccessProfile[]
   responsibilityTransfers ResponsibilityTransfer[]
@@ -113,6 +114,7 @@ model Branch {
   company              Company                        @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   grantBranches        MembershipGrantBranch[]
   invitationBranches   CompanyInvitationBranch[]
+  deviceAuditBranches  DeviceAuditEventBranch[]
   auditEventBranches   OrganizationAuditEventBranch[]
   devices              Device[]
   mediaAssets          MediaAsset[]

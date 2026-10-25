@@ -294,6 +294,22 @@
           "classification": "INTERNAL",
           "unit": "UTC instant, millisecond precision",
           "nullMeaning": "Not reported."
+        },
+        "clock_state": {
+          "description": "Player-reported time reference: ANCHORED to a server exchange in this boot, ESTIMATED from a plausible system clock after reboot, or UNTRUSTED. Never an authorization input.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The latest report supplied no diagnostics (including legacy players)."
+        },
+        "clock_skew_millis": {
+          "description": "Player-reported system wall time minus anchored business time, signed milliseconds within the JSON safe-integer range. No skew is inferred from estimated or untrusted time.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No anchored reference or the exact difference cannot be represented safely.",
+          "unit": "milliseconds"
+        },
+        "crash_count": {
+          "description": "Player-reported cumulative uncaught crash count since this pairing, saturated at 2147483647. Crash messages and frames are never uploaded.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No diagnostics or the local count is unreadable or unknown."
         }
       },
       "objects": {
@@ -303,7 +319,8 @@
         "publication_device_states_staging": "A staging attempt has a publication, a known state, a failure only when failed, and byte counts.",
         "publication_device_states_failure": "Failure codes come from a closed set.",
         "publication_device_states_playback": "Playback conditions come from a closed set.",
-        "publication_device_states_storage": "Storage is reported as a pair with free space within the total."
+        "publication_device_states_storage": "Storage is reported as a pair with free space within the total.",
+        "publication_device_states_diagnostics": "Diagnostics are absent together for legacy reports, otherwise clock state is known, skew requires an anchor and safe-integer milliseconds, and a known crash count is nonnegative."
       }
     },
     "publication_device_events": {

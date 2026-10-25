@@ -29,6 +29,7 @@ export const realm = "teluni";
 export const audience = "teluni-api";
 
 export type IdentityStack = Readonly<{
+  settings: HumanIdentitySettings;
   apiUrl: string;
   publicOrigin: string;
   admin: KeycloakAdmin;
@@ -63,6 +64,7 @@ async function freePort(): Promise<number> {
  */
 export async function withIdentityStack<T>(
   work: (stack: IdentityStack) => Promise<T>,
+  options: { developmentMfaMode?: "optional" } = {},
 ): Promise<T> {
   return withMigratedDatabase(async (runtimeUrl, migrationUrl) => {
     const port = await freePort();
@@ -81,7 +83,11 @@ export async function withIdentityStack<T>(
       });
       const issuer = `${admin.baseUrl}/realms/${realm}`;
       const settings: HumanIdentitySettings = {
-        environment: "test",
+        environment:
+          options.developmentMfaMode === "optional" ? "development" : "test",
+        ...(options.developmentMfaMode
+          ? { developmentMfaMode: options.developmentMfaMode }
+          : {}),
         issuer,
         publicOrigin,
         clientId: "teluni-web",
@@ -107,7 +113,7 @@ export async function withIdentityStack<T>(
           }),
           humanIdentity: settings,
         },
-        "test",
+        settings.environment,
       );
       const { app, lifecycle } = createApp(
         pino({ level: "silent" }),
@@ -120,6 +126,7 @@ export async function withIdentityStack<T>(
       lifecycle.markReady();
       try {
         return await work({
+          settings,
           apiUrl: publicOrigin,
           publicOrigin,
           admin,

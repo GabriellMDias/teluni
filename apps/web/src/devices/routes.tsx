@@ -1,6 +1,6 @@
 import { createRoute } from "@tanstack/react-router";
 import { rootRoute } from "../shell.js";
-import type { DeviceFilter } from "./api.js";
+import type { DeviceFilter, DeviceHistoryFilter } from "./api.js";
 import { ScreenPage, ScreensPage } from "./pages.js";
 import "./devices.css";
 
@@ -35,13 +35,24 @@ const screensRoute = createRoute({
 const screenRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/screens/$deviceId",
+  validateSearch: (search: Record<string, unknown>): DeviceHistoryFilter => ({
+    ...(search.view === "history" ? { view: "history" } : {}),
+    ...(search.view === "history" &&
+    typeof search.cursor === "string" &&
+    search.cursor.length > 0 &&
+    search.cursor.length <= 1024
+      ? { cursor: search.cursor }
+      : {}),
+  }),
   component: function ScreenRoute() {
     const { companyId, deviceId } = screenRoute.useParams();
+    const filter = screenRoute.useSearch();
     return (
       <ScreenPage
         key={`${companyId}/${deviceId}`}
         companyId={companyId}
         deviceId={deviceId}
+        filter={filter}
       />
     );
   },
