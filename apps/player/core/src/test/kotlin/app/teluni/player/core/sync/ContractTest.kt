@@ -62,6 +62,11 @@ class ContractTest {
     }
 
     @Test
+    fun `credential rotation matches the published hash-only request`() {
+        assertFields(request("/device/self/credential", "post"), HttpDeviceApi.RotationRequest.serializer(), "rotation")
+    }
+
+    @Test
     fun `the sync exchange matches the API`() {
         val body = request("/device/sync", "post")
         assertFields(body, SyncReport.serializer(), "report")
@@ -84,6 +89,7 @@ class ContractTest {
         val used = mapOf(
             "/device-enrollments" to "post",
             "/device-enrollments/{enrollmentId}/status" to "post",
+            "/device/self/credential" to "post",
             "/device/self/erasure" to "post",
             "/device/sync" to "post",
             "/device/keys" to "get",

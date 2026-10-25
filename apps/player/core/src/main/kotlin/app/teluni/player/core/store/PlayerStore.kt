@@ -105,6 +105,8 @@ public class PlayerStore(
     private val files: AtomicFiles = AtomicFiles(),
     /** Free and total bytes of the volume; replaceable in tests. */
     private val space: () -> Space = { File(root.toString()).let { Space(it.usableSpace, it.totalSpace) } },
+    /** File deletion result; replaceable for erasure fault qualification. */
+    private val eraseTree: (Path) -> Boolean = { it.toFile().deleteRecursively() },
 ) {
     public data class Space(val free: Long, val total: Long)
 
@@ -237,7 +239,9 @@ public class PlayerStore(
 
     /** Deletes everything this player keeps, for erasure. */
     public fun eraseAll() {
-        Files.list(root).use { entries -> entries.toList().forEach { it.toFile().deleteRecursively() } }
+        Files.list(root).use { entries -> entries.toList().forEach {
+            if (!eraseTree(it)) throw IOException("PLAYER_ERASURE_FAILED")
+        } }
         AtomicFiles.syncDirectory(root)
         Files.createDirectories(generations)
         Files.createDirectories(media)

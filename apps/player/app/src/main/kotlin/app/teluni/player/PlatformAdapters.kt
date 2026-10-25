@@ -7,9 +7,12 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import app.teluni.player.core.store.AtomicFiles
 import app.teluni.player.core.sync.CredentialVault
+import app.teluni.player.core.sync.Credentials
 import app.teluni.player.core.time.ClockSource
 import java.io.IOException
 import java.net.URI
+import java.nio.ByteBuffer
+import java.time.Instant
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.GeneralSecurityException
@@ -51,43 +54,65 @@ internal class KeystoreVault(
     private val path: Path,
     private val key: () -> SecretKey = ::androidKey,
     private val deleteKey: () -> Unit = ::deleteAndroidKey,
+    private val files: AtomicFiles = AtomicFiles(),
 ) : CredentialVault {
-    private val files = AtomicFiles()
-
     @Synchronized
-    override fun load(): ByteArray? = try {
+    override fun load(): Credentials? = try {
         val bytes = files.read(path)
-        if (bytes == null || bytes.size != 1 + 12 + 32 + 16 || bytes[0] != 1.toByte()) null else {
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes.copyOfRange(1, 13)))
-            cipher.updateAAD(AAD)
-            cipher.doFinal(bytes.copyOfRange(13, bytes.size)).takeIf { it.size == 32 }
+        if (bytes == null || bytes.isEmpty()) null else {
+            val legacy = bytes[0] == 1.toByte()
+            val supported = if (legacy) bytes.size == 61 else bytes[0] == 2.toByte() && bytes.size in setOf(69, 101)
+            if (!supported) null else {
+                val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes.copyOfRange(1, 13)))
+                cipher.updateAAD(if (legacy) AAD else ROTATION_AAD)
+                val plain = cipher.doFinal(bytes.copyOfRange(13, bytes.size))
+                if (legacy) Credentials(plain) else {
+                    val input = ByteBuffer.wrap(plain)
+                    val at = input.long.takeUnless { it == Long.MIN_VALUE }?.let(Instant::ofEpochMilli)
+                    val current = ByteArray(32).also(input::get)
+                    val pending = if (input.hasRemaining()) ByteArray(32).also(input::get) else null
+                    Credentials(current, pending, at)
+                }
+            }
         }
     } catch (_: GeneralSecurityException) {
         null
     } catch (_: IOException) {
         null
+    } catch (_: IllegalArgumentException) {
+        null
     }
 
     @Synchronized
-    override fun save(credential: ByteArray) {
-        require(credential.size == 32) { "INVALID_CREDENTIAL_LENGTH" }
+    override fun save(credentials: Credentials) {
         Files.createDirectories(path.parent)
+        val pending = credentials.pending
+        val plain = ByteBuffer.allocate(8 + 32 + (pending?.size ?: 0))
+            .putLong(credentials.rotatedAt?.toEpochMilli() ?: Long.MIN_VALUE).put(credentials.current)
+            .apply { if (pending != null) put(pending) }.array()
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key())
-        cipher.updateAAD(AAD)
-        files.write(path, byteArrayOf(1) + cipher.iv + cipher.doFinal(credential))
+        cipher.updateAAD(ROTATION_AAD)
+        files.write(path, byteArrayOf(2) + cipher.iv + cipher.doFinal(plain))
     }
 
     @Synchronized
     override fun erase() {
         Files.deleteIfExists(path)
-        if (Files.isDirectory(path.parent)) AtomicFiles.syncDirectory(path.parent)
+        if (Files.isDirectory(path.parent)) {
+            Files.list(path.parent).use { entries ->
+                entries.filter { it.fileName.toString().let { name -> name.startsWith(".${path.fileName}.") && name.endsWith(".tmp") } }
+                    .forEach { Files.deleteIfExists(it) }
+            }
+            AtomicFiles.syncDirectory(path.parent)
+        }
         deleteKey()
     }
 
     companion object {
         private const val ALIAS = "teluni-device-credential-v1"
+        private val ROTATION_AAD = "teluni-device-credential-v2".toByteArray(Charsets.UTF_8)
         private val AAD = "teluni-device-credential-v1".toByteArray(Charsets.UTF_8)
         private fun androidKey(): SecretKey {
             val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }

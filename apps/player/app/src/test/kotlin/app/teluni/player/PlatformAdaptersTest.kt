@@ -1,5 +1,11 @@
 package app.teluni.player
 
+import app.teluni.player.core.sync.Credentials
+import app.teluni.player.core.store.AtomicFiles
+import app.teluni.player.core.store.WriteStep
+import java.io.IOException
+import java.time.Instant
+import javax.crypto.Cipher
 import java.nio.file.Files
 import java.security.GeneralSecurityException
 import javax.crypto.spec.SecretKeySpec
@@ -43,11 +49,11 @@ class PlatformAdaptersTest {
         var erased = false
         val vault = KeystoreVault(path, { key }, { erased = true })
         val credential = ByteArray(32) { it.toByte() }
-        vault.save(credential)
+        vault.save(Credentials(credential))
         val first = Files.readAllBytes(path)
         assertFalse(first.toList().windowed(credential.size).any { it == credential.toList() })
-        assertArrayEquals(credential, vault.load())
-        vault.save(credential)
+        assertArrayEquals(credential, vault.load()?.current)
+        vault.save(Credentials(credential))
         assertFalse(first.contentEquals(Files.readAllBytes(path)))
         vault.erase()
         assertTrue(erased)
@@ -59,15 +65,75 @@ class PlatformAdaptersTest {
         val path = folder.root.toPath().resolve("credential.bin")
         val key = SecretKeySpec(ByteArray(32) { 7 }, "AES")
         val vault = KeystoreVault(path, { key }, {})
-        vault.save(ByteArray(32) { 42 })
+        vault.save(Credentials(ByteArray(32) { 42 }))
         val bytes = Files.readAllBytes(path)
         bytes[bytes.lastIndex] = (bytes.last().toInt() xor 1).toByte()
         Files.write(path, bytes)
         assertNull(vault.load())
         Files.write(path, byteArrayOf(1, 2))
         assertNull(vault.load())
-        vault.save(ByteArray(32))
+        vault.save(Credentials(ByteArray(32)))
         assertNull(KeystoreVault(path, { throw GeneralSecurityException("synthetic") }, {}).load())
-        assertThrows(IllegalArgumentException::class.java) { vault.save(ByteArray(16)) }
+        assertThrows(IllegalArgumentException::class.java) { vault.save(Credentials(ByteArray(16))) }
     }
+    @Test fun `legacy ciphertext upgrades forward with both secrets encrypted and a durable rotation time`() {
+        val path = folder.root.toPath().resolve("credential.bin")
+        val key = SecretKeySpec(ByteArray(32) { 7 }, "AES")
+        val current = ByteArray(32) { 41 }
+        val candidate = ByteArray(32) { 99 }
+        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE, key)
+        cipher.updateAAD("teluni-device-credential-v1".toByteArray())
+        Files.write(path, byteArrayOf(1) + cipher.iv + cipher.doFinal(current))
+        val vault = KeystoreVault(path, { key }, {})
+        assertArrayEquals(current, vault.load()?.current)
+        assertNull(vault.load()?.rotatedAt)
+        assertNull(vault.load()?.pending)
+        val at = Instant.parse("2026-10-24T12:00:00Z")
+        vault.save(Credentials(current, candidate, at))
+        assertEquals(2, Files.readAllBytes(path)[0].toInt())
+        val restored = requireNotNull(KeystoreVault(path, { key }, {}).load())
+        assertArrayEquals(current, restored.current)
+        assertArrayEquals(candidate, restored.pending)
+        assertEquals(at, restored.rotatedAt)
+        val disk = Files.readAllBytes(path).toList()
+        assertFalse(disk.windowed(32).any { it == current.toList() || it == candidate.toList() })
+        assertFalse(restored.toString().contains("99"))
+    }
+
+    @Test fun `interruption at every atomic step preserves a complete recoverable secret bundle`() {
+        val key = SecretKeySpec(ByteArray(32) { 7 }, "AES")
+        val old = ByteArray(32) { 1 }
+        val next = ByteArray(32) { 2 }
+        for (step in WriteStep.entries) for (promoting in listOf(false, true)) {
+            val path = folder.newFolder().toPath().resolve("credential.bin")
+            val stable = KeystoreVault(path, { key }, {})
+            stable.save(Credentials(old, if (promoting) next else null))
+            val interrupted = KeystoreVault(path, { key }, {}, AtomicFiles { _, currentStep ->
+                if (step == currentStep) throw IOException("Synthetic write interruption")
+            })
+            try {
+                interrupted.save(if (promoting) Credentials(next, rotatedAt = Instant.EPOCH) else Credentials(old, next))
+                fail("Expected an interrupted write")
+            } catch (_: IOException) { }
+            val restored = requireNotNull(stable.load())
+            if (promoting) assertTrue(restored.current.contentEquals(next) || restored.pending?.contentEquals(next) == true)
+            else assertArrayEquals(old, restored.current)
+            stable.erase()
+            Files.list(path.parent).use { assertEquals(0L, it.count()) }
+        }
+    }
+
+    @Test fun `credential bundles copy caller arrays and reject identical candidates`() {
+        val current = ByteArray(32) { 1 }
+        val next = ByteArray(32) { 2 }
+        val bundle = Credentials(current, next)
+        current[0] = 3; next[0] = 3
+        bundle.current[0] = 4
+        requireNotNull(bundle.pending)[0] = 4
+        assertEquals(1, bundle.current[0].toInt())
+        assertEquals(2, requireNotNull(bundle.pending)[0].toInt())
+        assertThrows(IllegalArgumentException::class.java) { Credentials(current, current) }
+    }
+
 }

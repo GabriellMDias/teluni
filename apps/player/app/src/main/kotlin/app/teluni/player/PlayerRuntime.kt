@@ -16,6 +16,7 @@ import app.teluni.player.core.sync.EnrollmentStarted
 import app.teluni.player.core.sync.HttpDeviceApi
 import app.teluni.player.core.sync.PlayerEngine
 import app.teluni.player.core.sync.StagingOutcome
+import app.teluni.player.core.sync.SyncFailure
 import app.teluni.player.core.sync.SyncOutcome
 import app.teluni.player.core.sync.SyncReport
 import app.teluni.player.core.sync.Timed
@@ -165,7 +166,11 @@ internal class PlayerRuntime(private val context: Context) {
                             }
                         }
                     }
-                    is SyncOutcome.Failed -> { exchangeStatus = "OFFLINE"; nextExchange = now + result.retry.toMillis() }
+                    is SyncOutcome.Failed -> {
+                        if (result.failure == SyncFailure.CREDENTIAL_ROTATION) Log.w("TeluniPlayer", "CREDENTIAL_ROTATION_RETRY")
+                        exchangeStatus = "OFFLINE"
+                        nextExchange = now + result.retry.toMillis()
+                    }
                     SyncOutcome.Unauthorized -> { exchangeStatus = "UNAUTHORIZED"; nextExchange = now + 120_000 }
                     SyncOutcome.Incompatible -> { exchangeStatus = "INCOMPATIBLE"; nextExchange = now + 120_000 }
                     is SyncOutcome.Cleared, SyncOutcome.NotPaired -> { enrollment = null; nextExchange = 0 }

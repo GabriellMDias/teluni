@@ -1,5 +1,59 @@
 [
   {
+    "id": "repository/docs/runbooks/AGENTS",
+    "title": "Runbook Instructions",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook Instructions",
+    "anchor": "runbook-instructions",
+    "text": "Runbook Instructions\nConsult the [index](README.md), [authoring policy](authoring.md), and [template](template.md).\nDocument real operational conditions only. Do not invent provider commands, organizational roles, or runnable procedures before they exist.\nInclude applicability, required access, verifiable preconditions, bounded actions, postcondition verification, and stop/escalation conditions.\nFollow [production-access policy](../security/production-access.md). A runbook grants no additional authority; verify delegated authorization before privileged or destructive actions.\nPreserve recovery and unknown-outcome semantics. Do not equate command success with recovery or retry an uncertain state-changing operation blindly.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Authoring and Using Runbooks",
+    "anchor": "authoring-and-using-runbooks",
+    "text": "Authoring and Using Runbooks\nUse the [index](README.md) and [template](template.md). Runbooks are current, repeatable operational procedures for authorized operators, not architecture explanations, ADRs, incident histories, or speculative troubleshooting notes.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Applicability, scope, and ownership",
+    "anchor": "applicability-scope-and-ownership",
+    "text": "Applicability, scope, and ownership\nCreate a runbook for a real runtime, dependency, workflow, or recurring incident when response is non-obvious, risky, time-sensitive, or dependent on individual knowledge. Do not create hypothetical systems, commands, organizational roles, or empty index entries.\nHandle one coherent condition or procedure per runbook. Use a descriptive English filename such as `<condition-or-operation>.md`; avoid generic collections of unrelated production problems. Use concrete symptom, service, dependency, error-code, alert, and operation terminology so the procedure is searchable.\nEvery runbook should have an identifiable owner, even across several systems. The owner maintains commands, links, permissions, safety assumptions, and recovery behavior. An active runbook represents an implemented operation in its stated environment. A deprecated one should identify its reason and replacement where relevant. Remove obsolete procedures when they no longer provide value; Git preserves history. Add lifecycle complexity only when needed.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Required procedure information",
+    "anchor": "required-procedure-information",
+    "text": "Required procedure information\nFollow the template with sections that justify their operational value:\nSection\nWhat the operator needs\nPurpose and trigger\nThe specific condition, request, alert, or error that makes the procedure applicable\nSymptoms and non-applicability\nObservable evidence and cases where the procedure should not be used\nImpact\nAffected capabilities, scope, urgency, and data/security risk\nPreconditions and access\nObservable checks, target environment, required capabilities, and safety conditions\nDiagnosis\nOrdered low-risk inspection, expected output, and evidence-based branches\nMitigation/procedure\nBounded actions, consequences, warnings, and temporary measures\nVerification\nEvidence of the intended service, security, or data state\nRollback/recovery\nReversal prerequisites or a real forward-recovery path\nEscalation\nStop conditions and an actual owner or escalation target when one exists\nPreconditions must be verifiable; assumptions describe environmental expectations and should be explicit when their violation changes safety. Check applicability, environment, access, current procedure state, and preconditions before execution. Do not skip safety conditions merely to work faster.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis and command safety",
+    "anchor": "diagnosis-and-command-safety",
+    "text": "Diagnosis and command safety\nPrefer low-risk observability before invasive production access: metrics, alerts, logs, traces, error reports, safe read-only inspection, then privileged diagnostics where appropriate. Avoid premature mutation while the failure is poorly understood unless active harm requires immediate containment.\nCommands must be specific, bounded, copyable, and current when tooling exists. Do not invent provider-specific commands or placeholders and present them as executable procedure. Describe expected output and its meaning; include explicit branches when actions depend on evidence. Keep decision trees simple enough to use under pressure.\nPrefer read-only, timeout-limited, bounded database queries, using known indexes where applicable. Explain production impact. Avoid embedding secrets in commands, shell history, process arguments, or documentation. Use credential references and secret-management procedures. Do not reuse service credentials or shared administrator accounts to bypass access policy.\nMark destructive, irreversible, and high-risk actions before execution with the concrete affected scope and consequences, not a generic warning. Verify authorization, scope, reversibility, and the verification method, and use the appropriate approval mechanism. A runbook is guidance, not unconditional permission or additional delegated capability.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/authoring",
+    "title": "Authoring and Using Runbooks",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation, recovery, and verification",
+    "anchor": "mitigation-recovery-and-verification",
+    "text": "Mitigation, recovery, and verification\nMitigation reduces impact without necessarily correcting the cause. Explain what each important mitigation restores, disables, or puts at risk. Mark temporary measures and their follow-up/removal needs. Recovery restores safe normal operation; verify its prerequisites and restore progressively where risk warrants it.\nEvery state-changing procedure should define outcome verification. Command success or a cleared alert alone is not proof. Use relevant health, error-rate, latency, progress, data-integrity, or credential-revocation evidence. Where needed, prove that the previous unsafe behavior is no longer possible. Specify post-recovery observation signals and justified observation periods rather than arbitrary delays.\nDocument rollback only when real and safe; identify compatibility prerequisites. If rollback is unsafe or impossible, state that and provide the forward-recovery direction. Explicitly identify irreversible actions before execution.\nStop when evidence no longer matches the procedure, preconditions or required access cannot be verified, scope exceeds documented bounds, destructive effects are unknown, recovery fails, or corruption/security compromise is suspected. Preserve useful evidence and escalate rather than improvising outside the known safe scope. Identify actual escalation targets when organizational structure exists.\n"
+  },
+  {
     "id": "repository/docs/runbooks/authoring",
     "title": "Authoring and Using Runbooks",
     "group": "Runbooks",
@@ -916,50 +970,5 @@
     "heading": "Destinations, access, and leakage",
     "anchor": "destinations-access-and-leakage",
     "text": "Destinations, access, and leakage\nExport only to approved destinations. Each additional provider/copy creates independent access, retention, residency, and deletion responsibilities; significant changes may need an ADR and security/privacy review. Do not duplicate telemetry across vendors without concrete value. [Retention](data-retention.md) and [production access](production-access.md) govern storage and readers, including AI agents.\nProvide AI/support tooling with structured, sanitized, task-relevant evidence, never raw environment dumps, credential-bearing logs, or full customer/request objects by default. A future diagnostic bundle must exclude restricted data by construction and be introduced only for real need.\nFor leakage, follow [incident response](incident-response.md): stop further collection, identify data/classification/destinations/exposure, restrict access, remove data where possible, revoke/rotate exposed credentials, review usage, fix instrumentation, and add regression protection. Historical logs, traces, errors, exports, provider retention, and backups may still contain leaked values. Deleting an entry does not restore credential secrecy.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "New telemetry checklist",
-    "anchor": "new-telemetry-checklist",
-    "text": "New telemetry checklist\nBefore adding telemetry, identify the question answered, required fields and classifications, safer representations, untrusted/credential-bearing inputs, size/cardinality bounds, approved destination, retention/access, and redaction tests. Do not ship unexplained collection. Derive structural redaction references from canonical sources where practical; provider deployment, retention durations, session replay, and a cross-application metadata engine remain separate decisions, not implied capabilities.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Development Setup",
-    "anchor": "development-setup",
-    "text": "Development Setup\n[Repository README](../README.md) · [Validation](validation.md) · [API runtime](../apps/api/README.md) · [Web workflow](../apps/web/README.md)\nThis is the canonical local setup and execution path. Tests use disposable PostgreSQL and synthetic identities; no production database, identity provider, telemetry vendor, or deployment account is needed. Commands address workspace packages by path (`pnpm -C apps/api …`), so they work unchanged whatever a project names its packages.\nGoal\nPrerequisites after installing pinned Node.js/pnpm\nStart here\nBrowse the documentation portal\nFrozen dependency install; no container, API, or test browser needed\n[Portal](#living-documentation-portal)\nRun the API and web application locally\nFrozen dependency install, generated Prisma client, and local configuration\n[Configuration](#load-local-configuration)\nUse a local PostgreSQL or access-token issuer\nA database or issuer you control for development\n[Local database and authentication](#local-database-and-authentication)\nRun the complete validation gate\nAll clean-checkout prerequisites, including containers and test browsers\n[Prepare a clean checkout](#prepare-a-clean-checkout), then [validate](#validate-regenerate-and-build)\nStart a new project from Orion or upgrade a project's Orion baseline\nA fresh full clone and frozen dependency install\n[Project derivation](project-derivation.md)\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Prepare a clean checkout",
-    "anchor": "prepare-a-clean-checkout",
-    "text": "Prepare a clean checkout\nUse Node.js 24.13.0 and pnpm 11.25.0, as pinned by `.node-version` and `package.json`. For full validation, start Docker or another Testcontainers-compatible container runtime and verify that its daemon is reachable with `docker info`. From a fresh checkout, run:\npnpm install --frozen-lockfile\npnpm db:generate\npnpm -C apps/web exec playwright install chromium\n\nOn Linux, use `pnpm -C apps/web exec playwright install --with-deps chromium` if the browser's system libraries are absent. Windows browser component tests use the installed Edge channel; Playwright end-to-end tests use Chromium. Media tests and the media module also need FFmpeg and ffprobe 6.1 or later on `PATH` (for example `sudo apt-get install ffmpeg` on Ubuntu 24.04, or `winget install Gyan.FFmpeg` on Windows); see [ADR-0028](adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md). Do not put credentials in tracked files.\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Load local configuration",
-    "anchor": "load-local-configuration",
-    "text": "Load local configuration\nFor a new local configuration, copy the safe, schema-checked [example](../.env.example) into an ignored root `.env.local` file; preserve an existing file's settings. The example activates only `ORION_ENV=development`; uncomment and fill an optional setting only when needed. The API `dev` script uses Node's `--env-file-if-exists` to load this file before `src/main.ts` parses and validates configuration. Existing shell environment variables take precedence over file values. The following works in PowerShell and POSIX shells:\ncp .env.example .env.local\npnpm -C apps/api dev\n\nPowerShell also accepts `Copy-Item .env.example .env.local`. The default listener is `127.0.0.1:3000`; `GET http://127.0.0.1:3000/health/ready` returns `{\"status\":\"ok\"}`. Without database or token settings, the API serves its health routes; [modules](../apps/api/README.md#modules) that require the database or bearer authentication stay unmounted until those settings are configured. `.env.local` and other real environment files are ignored by Git; do not place secrets in `.env.example`.\nStart the web development server in another terminal:\npnpm -C apps/web dev\n\nOpen the URL printed by Vite, normally `http://127.0.0.1:5173`. Vite forwards `/api` to the local API by default and loads its own `apps/web/.env.local` if web-specific `VITE_` values are needed. Do not copy the root API `.env.local` into the web app: server-only values must not enter a browser build. Teluni's entry page sends visitors to sign-in and shows signed-in people their [home page](../apps/web/README.md#entry-and-home-page).\n"
-  },
-  {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Local database and authentication",
-    "anchor": "local-database-and-authentication",
-    "text": "Local database and authentication\n[API configuration](generated/configuration/api.md) names the runtime settings. `ORION_DATABASE_URL` enables PostgreSQL for modules that require it and adds the database to readiness. The three token settings enable bearer authentication together; a trusted issuer must provide the claims described by the [authentication policy](security/authentication.md).\nFor a separate **local** PostgreSQL, create distinct migration and restricted runtime credentials. Supply `ORION_MIGRATION_DATABASE_URL` in the shell only for `pnpm -C apps/api db:migrate:deploy`; the Prisma CLI reads it from that process. Keep `ORION_DATABASE_URL` in the root ignored `.env.local` for the API runtime, alongside the trusted token issuer, audience and JWKS URL. Human sessions use the selected Keycloak realm and the additional identity settings in the [configuration reference](generated/configuration/api.md); [the disposable identity stack](#try-sign-in-locally) is the available local qualification path. No persistent environment is provisioned by this guide. Do not copy Testcontainers' synthetic credentials into a persistent environment, and clear the migration credential from the shell after deployment.\n"
   }
 ]

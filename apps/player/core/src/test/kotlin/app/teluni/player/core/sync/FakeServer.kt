@@ -47,6 +47,7 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
     val companyId = "1a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d"
     var key: ECKey = ECKeyGenerator(Curve.P_256).keyID("k1").generate()
     var status = "active"
+        set(value) { field = value; if (value == "unlinked") nextCredentialHash = null }
     var desired: FakePublication? = null
 
     val branchId = "5c1d2e3f-4a5b-4c6d-8e7f-8091a2b3c4d5"
@@ -68,13 +69,17 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
     var erasures = 0
     var erasureFailures = 0
     private var credentialHash: String? = null
+    private var nextCredentialHash: String? = null
+    var rotations = 0
     private var paired = false
 
     val now: Instant get() = Instant.ofEpochMilli(clock.wall)
 
+    @Synchronized
     private fun authorize(credential: String) {
         val hash = Base64.getUrlEncoder().withoutPadding()
             .encodeToString(MessageDigest.getInstance("SHA-256").digest(Base64.getUrlDecoder().decode(credential)))
+        if (paired && hash == nextCredentialHash) { credentialHash = hash; nextCredentialHash = null }
         if (!paired || hash != credentialHash) throw ApiFailure(401, "DEVICE_UNAUTHORIZED", null)
     }
 
@@ -88,6 +93,13 @@ class FakeServer(private val clock: FakeClock) : DeviceApi {
         paired = true
         authorize(credential)
         return EnrollmentStatus("paired", deviceId, 5)
+    }
+
+    override fun rotateCredential(credential: String, credentialHash: String) {
+        authorize(credential)
+        if (status != "active") throw ApiFailure(401, "DEVICE_UNAUTHORIZED", null)
+        rotations++
+        nextCredentialHash = credentialHash
     }
 
     override fun confirmErasure(credential: String) {

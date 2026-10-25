@@ -20,6 +20,8 @@ The running app re-hashes one referenced media file at a time on a background-pr
 
 Player health reports include the clock reference, signed system skew against an anchor and the number of uncaught crashes recorded during this pairing. Unknown values remain unknown. Crash messages, causes, filenames and foreign frames are excluded; the latest bounded player code frames stay in app-private storage and only the count is sent. Enrollment/erasure delete the evidence. Earlier versions' unrecorded failures are not reconstructed. The panel's screen detail labels these as reported facts and highlights system skew above 60 seconds; playback and signed authorization still use trusted time. Apply the [diagnostic migration and API before updating players](../../docs/project/player-design.md#diagnostics-and-privacy).
 
+Credential rotation uses the existing hash-only API after the first active sync, then every 30 anchored days when staging is idle. The encrypted atomic vault retains both secrets during an ambiguous handover and recovers the candidate before resuming downloads after a restart; playback still follows the signed authorization. Version code 2 (`0.1.1`) reads the earlier vault and writes its forward version 2 format. APK downgrades are unsupported. No new dependency or release signing key is needed for local development; see [rotation and recovery](../../docs/project/player-design.md#credential-rotation).
+
 ## Build and checks
 
 Use JDK 17 and the Android SDK (`ANDROID_HOME`): platform `platforms;android-37.0` and build tools `build-tools;36.0.0`. The runtime floor remains Android 8/API 26; supported pilot hardware has its separate [envelope](../../docs/project/player-design.md#supported-hardware-envelope). From this directory:
@@ -92,7 +94,7 @@ adb shell dpm set-device-owner app.teluni.player/.PlayerAdminReceiver
 adb shell am start -n app.teluni.player/.PlayerActivity
 ```
 
-The app checks actual device ownership before allowlisting itself for lock task and registering its persistent HOME activity. It never tries to grant itself ownership. The boot receiver launches only that owner profile; normal sideloads remain ordinary apps. Do not factory-reset a device merely to try this command. The release key (PH-27), update distribution, credential rotation and physical boot/crash/power-loss qualification (PH-08) remain pending.
+The app checks actual device ownership before allowlisting itself for lock task and registering its persistent HOME activity. It never tries to grant itself ownership. The boot receiver launches only that owner profile; normal sideloads remain ordinary apps. Do not factory-reset a device merely to try this command. The release key (PH-27), update distribution and physical boot/crash/power-loss qualification (PH-08) remain pending.
 
 ## Environment evidence
 

@@ -4,6 +4,7 @@ import app.teluni.player.core.playback.Plan
 import app.teluni.player.core.playback.PlaybackCondition
 import app.teluni.player.core.protocol.StagingFailureCode
 import app.teluni.player.core.protocol.sha256Hex
+import app.teluni.player.core.store.AtomicFiles
 import app.teluni.player.core.store.CrashJournal
 import app.teluni.player.core.store.PlayerState
 import app.teluni.player.core.store.PlayerStore
@@ -11,6 +12,8 @@ import app.teluni.player.core.time.FakeClock
 import app.teluni.player.core.time.TrustedTime
 import com.nimbusds.jose.jwk.Curve
 import com.nimbusds.jose.jwk.gen.ECKeyGenerator
+import java.io.IOException
+import java.util.Base64
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -35,12 +38,15 @@ import kotlin.test.assertTrue
 import org.junit.jupiter.api.io.TempDir
 
 class MemoryVault : CredentialVault {
-    var value: ByteArray? = null
+    var value: Credentials? = null
 
-    override fun load(): ByteArray? = value?.copyOf()
+    override fun load(): Credentials? = value
 
-    override fun save(credential: ByteArray) {
-        value = credential.copyOf()
+    var onSave: (Credentials) -> Unit = {}
+
+    override fun save(credentials: Credentials) {
+        onSave(credentials)
+        value = credentials
     }
 
     override fun erase() {
@@ -62,8 +68,8 @@ class PlayerEngineTest {
     /** Waits the engine asked for; tests never really sleep. */
     private val slept: MutableList<Long> = Collections.synchronizedList(mutableListOf())
 
-    private fun engine(store: PlayerStore = PlayerStore(root, space = { space })) =
-        PlayerEngine(store, server, vault, clock, "1.0.0-test", sleep = { slept += it })
+    private fun engine(store: PlayerStore = PlayerStore(root, space = { space }), api: DeviceApi = server) =
+        PlayerEngine(store, api, vault, clock, "1.0.0-test", sleep = { slept += it })
 
     private fun paired(): PlayerEngine = engine().also { engine ->
         val started = engine.startEnrollment(report)
@@ -103,6 +109,216 @@ class PlayerEngineTest {
         // After 18:00 local the default playlist plays.
         clock.advance(Duration.ofHours(9).toMillis())
         assertEquals("evening", assertIs<Plan.Play>(engine.plan()).playlist.id)
+    }
+
+    private fun encoded(bytes: ByteArray): String = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+
+    @Test fun `rotates once on adoption and every thirty anchored days without changing active content`() {
+        val player = paired()
+        val original = requireNotNull(vault.load()).current
+        server.publish(publication("pub-a"))
+        player.syncAndStage()
+        val state = PlayerStore(root).state()
+        assertEquals(1, server.rotations)
+        assertNull(vault.load()?.pending)
+        assertFalse(original.contentEquals(requireNotNull(vault.load()).current))
+        assertEquals("DEVICE_UNAUTHORIZED", assertFailsWith<ApiFailure> { server.keys(encoded(original)) }.code)
+        player.sync()
+        assertEquals(1, server.rotations)
+        clock.advance(Duration.ofDays(30).minusMillis(1).toMillis())
+        player.sync()
+        assertEquals(1, server.rotations)
+        clock.advance(1)
+        player.sync()
+        assertEquals(2, server.rotations)
+        assertEquals(state, PlayerStore(root).state())
+        assertIs<Plan.Play>(player.plan())
+    }
+
+    @Test fun `an ambiguous renewal preserves cached playback before and after process recovery`() {
+        val player = paired()
+        server.publish(publication("pub-a"))
+        player.syncAndStage()
+        val state = PlayerStore(root).state()
+        val identity = player.identity()
+        clock.advance(Duration.ofDays(30).toMillis())
+        val unreliable = object : DeviceApi by server {
+            override fun rotateCredential(credential: String, credentialHash: String) {
+                server.rotateCredential(credential, credentialHash)
+                throw IOException("Synthetic lost acknowledgement")
+            }
+        }
+        val interrupted = engine(api = unreliable)
+        assertIs<SyncOutcome.Failed>(interrupted.sync())
+        assertIs<Plan.Play>(interrupted.plan())
+        val recovered = engine()
+        assertIs<Plan.Play>(recovered.plan())
+        assertEquals(identity, recovered.identity())
+        assertEquals(state, PlayerStore(root).state())
+        assertIs<SyncOutcome.Synced>(recovered.sync())
+        assertIs<Plan.Play>(recovered.plan())
+        assertEquals(state, PlayerStore(root).state())
+    }
+
+    @Test fun `a lost registration acknowledgement resumes the same durable candidate after restart`() {
+        val player = paired()
+        val original = requireNotNull(vault.load()).current
+        var lose = true
+        val unreliable = object : DeviceApi by server {
+            override fun rotateCredential(credential: String, credentialHash: String) {
+                server.rotateCredential(credential, credentialHash)
+                if (lose) { lose = false; throw IOException("Synthetic lost acknowledgement") }
+            }
+        }
+        assertEquals(SyncFailure.CREDENTIAL_ROTATION, assertIs<SyncOutcome.Failed>(engine(api = unreliable).sync()).failure)
+        val pending = requireNotNull(vault.load()?.pending)
+        assertIs<StagingOutcome.Idle>(player.stage())
+        assertIs<SyncOutcome.Synced>(engine().sync())
+        assertTrue(pending.contentEquals(requireNotNull(vault.load()).current))
+        assertNull(vault.load()?.pending)
+        assertEquals(1, server.rotations)
+        assertFailsWith<ApiFailure> { server.keys(encoded(original)) }
+    }
+
+    @Test fun `a lost candidate proof never falls back to a retired credential after restart`() {
+        paired()
+        val original = encoded(requireNotNull(vault.load()).current)
+        var lose = true
+        val unreliable = object : DeviceApi by server {
+            override fun sync(credential: String, report: SyncReport): Timed<SyncAnswer> {
+                val answer = server.sync(credential, report)
+                if (credential != original && lose) { lose = false; throw IOException("Synthetic lost proof") }
+                return answer
+            }
+        }
+        assertIs<SyncOutcome.Failed>(engine(api = unreliable).sync())
+        val candidate = requireNotNull(vault.load()?.pending)
+        assertFailsWith<ApiFailure> { server.keys(original) }
+        assertIs<SyncOutcome.Synced>(engine().sync())
+        assertTrue(candidate.contentEquals(requireNotNull(vault.load()).current))
+        assertEquals(1, server.rotations)
+    }
+
+    @Test fun `preparation must be durable before any registration request`() {
+        paired()
+        val original = requireNotNull(vault.load()).current
+        vault.onSave = { if (it.pending != null) throw IOException("Synthetic failed preparation") }
+        assertIs<SyncOutcome.Failed>(engine().sync())
+        assertEquals(0, server.rotations)
+        assertNull(vault.load()?.pending)
+        assertTrue(original.contentEquals(requireNotNull(vault.load()).current))
+        vault.onSave = {}
+        assertIs<SyncOutcome.Synced>(engine().sync())
+    }
+
+    @Test fun `an interrupted local promotion remains recoverable with both secrets`() {
+        paired()
+        vault.onSave = { if (it.pending == null && it.rotatedAt != null) throw IOException("Synthetic failed promotion") }
+        assertIs<SyncOutcome.Failed>(engine().sync())
+        val candidate = requireNotNull(vault.load()?.pending)
+        vault.onSave = {}
+        assertIs<SyncOutcome.Synced>(engine().sync())
+        assertTrue(candidate.contentEquals(requireNotNull(vault.load()).current))
+        assertEquals(1, server.rotations)
+    }
+
+    @Test fun `an explicitly rejected candidate is discarded without stranding the pairing`() {
+        paired()
+        var rejected: String? = null
+        val rejecting = object : DeviceApi by server {
+            override fun rotateCredential(credential: String, credentialHash: String) {
+                rejected = credentialHash
+                throw ApiFailure(400, "ENROLLMENT_REJECTED", null)
+            }
+        }
+        assertIs<SyncOutcome.Failed>(engine(api = rejecting).sync())
+        assertNull(vault.load()?.pending)
+        assertIs<SyncOutcome.Synced>(engine().sync())
+        assertNotEquals(rejected, encoded(java.security.MessageDigest.getInstance("SHA-256").digest(requireNotNull(vault.load()).current)))
+    }
+
+    @Test fun `unlink during either ambiguous rotation phase erases and confirms with a recognized credential`() {
+        for (lostProof in listOf(false, true)) {
+            val player = paired()
+            val original = encoded(requireNotNull(vault.load()).current)
+            val unreliable = object : DeviceApi by server {
+                override fun rotateCredential(credential: String, credentialHash: String) {
+                    server.rotateCredential(credential, credentialHash)
+                    if (!lostProof) throw IOException("Synthetic lost registration")
+                }
+                override fun sync(credential: String, report: SyncReport): Timed<SyncAnswer> {
+                    val answer = server.sync(credential, report)
+                    if (lostProof && credential != original) throw IOException("Synthetic lost proof")
+                    return answer
+                }
+            }
+            assertIs<SyncOutcome.Failed>(engine(api = unreliable).sync())
+            server.status = "unlinked"
+            vault.onSave = { throw IOException("Synthetic full disk must not prevent erasure") }
+            val before = server.erasures
+            val noWrites = engine(PlayerStore(root, AtomicFiles { target, _ ->
+                if (target.fileName.toString() == "clock.json") throw IOException("Synthetic full clock volume")
+            }))
+            assertEquals(SyncOutcome.Cleared(true), noWrites.sync())
+            assertEquals(before + 1, server.erasures)
+            assertNull(vault.load())
+            assertNull(player.identity())
+            vault.onSave = {}
+            server.status = "active"
+        }
+    }
+
+    @Test fun `failed private deletion never confirms erasure and a pending credential can retry cleanup`() {
+        val player = paired()
+        server.publish(publication("pub-a"))
+        player.syncAndStage()
+        clock.advance(Duration.ofDays(30).toMillis())
+        val original = encoded(requireNotNull(vault.load()).current)
+        val unreliable = object : DeviceApi by server {
+            override fun sync(credential: String, report: SyncReport): Timed<SyncAnswer> {
+                val answer = server.sync(credential, report)
+                if (credential != original) throw IOException("Synthetic lost proof")
+                return answer
+            }
+        }
+        assertIs<SyncOutcome.Failed>(engine(api = unreliable).sync())
+        var canErase = false
+        val failing = engine(PlayerStore(root, eraseTree = { canErase && it.toFile().deleteRecursively() }))
+        assertIs<Plan.Play>(failing.plan())
+        server.status = "unlinked"
+        assertFailsWith<IOException> { failing.sync() }
+        assertEquals(0, server.erasures)
+        assertNotNull(vault.load()?.pending)
+        assertEquals(Plan.Neutral(PlaybackCondition.SETUP, null), failing.plan())
+        assertEquals(StagingOutcome.Idle, failing.stage())
+        canErase = true
+        assertEquals(SyncOutcome.Cleared(true), failing.sync())
+        assertEquals(1, server.erasures)
+        assertNull(vault.load())
+    }
+
+    @Test fun `rotation defers while staging without delaying normal synchronization or failing old requests`() {
+        val player = paired()
+        server.publish(publication("pub-a"))
+        player.syncAndStage()
+        server.publish(publication("pub-b", seed = 2))
+        player.sync()
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        server.onMedia = { entered.countDown(); check(release.await(10, TimeUnit.SECONDS)) }
+        val worker = Executors.newSingleThreadExecutor()
+        try {
+            val staged = worker.submit(Callable { player.stage() })
+            assertTrue(entered.await(5, TimeUnit.SECONDS))
+            clock.advance(Duration.ofDays(30).toMillis())
+            assertIs<SyncOutcome.Synced>(player.sync())
+            assertEquals(1, server.rotations)
+            release.countDown()
+            assertIs<StagingOutcome.Activated>(staged.get(5, TimeUnit.SECONDS))
+            player.sync()
+            assertEquals(2, server.rotations)
+            assertIs<Plan.Play>(player.plan())
+        } finally { release.countDown(); worker.shutdownNow() }
     }
 
     @Test
