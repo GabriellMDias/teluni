@@ -109,7 +109,7 @@ public class TrustedClock(private val source: ClockSource, record: ClockRecord?)
     @Synchronized
     public fun systemSkew(): Duration? {
         val time = now() as? TrustedTime.Anchored ?: return null
-        return Duration.ofMillis(source.wallMillis() - time.instant.toEpochMilli())
+        return Duration.between(time.instant, Instant.ofEpochMilli(source.wallMillis()))
     }
 
     /** Raises the lower bound to the current trusted time; call every minute and persist the record. */

@@ -69,6 +69,7 @@ class ContractTest {
         assertFields(property(body, "recovery"), SyncReport.Recovery.serializer(), "recovery")
         assertFields(property(body, "staging"), SyncReport.Staging.serializer(), "staging")
         assertFields(property(body, "storage"), SyncReport.Storage.serializer(), "storage")
+        assertFields(property(body, "diagnostics"), SyncReport.Diagnostics.serializer(), "diagnostics")
 
         val answer = response("/device/sync", "post", "200")
         assertFields(answer, SyncAnswer.serializer(), "answer")

@@ -1,5 +1,50 @@
 [
   {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nEvery data access, reference, cache, media path and asynchronous operation must preserve scope.\nIsolation in a shared database requires continuing review; application administrator access and recovery operations remain sensitive.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo tables or migrations are introduced by this decision. Before dependent implementation/release, complete the ownership/constraint design and row-level-security evaluation and verify the selected role matrix with cross-tenant tests under PJ-03/PJ-07. Later changing tenant partitioning may require a deliberate data migration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Teluni conceptual ownership and modules](../project/architecture.md)\n[Authorization](../security/authorization.md)\n[Database principles](../database/principles.md)\n[Application boundaries](../architecture/application-boundaries.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "anchor": "adr-0019-adopt-immutable-publications-and-atomic-player-activation",
+    "text": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nTeluni displays must continue through temporary backend/network outages. Videos must normally play locally. Partial downloads, concurrent publications and power loss must not replace usable programming with an incomplete set. Backend and installed players will evolve independently.\n"
+  },
+  {
     "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
     "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
@@ -1519,59 +1564,5 @@
     "heading": "Rationale",
     "anchor": "rationale",
     "text": "Rationale\nEnding TLS on the host keeps session cookies, credentials and private media away from intermediaries. The relay is replaceable and holds nothing.\nA TLS-terminating free tunnel would solve CGNAT, but its terms restrict serving video outside paid products. Its reported upload cap is below the media limit, and it would see every session.\nObject files are written before the rows that record them and deleted only after those rows, under an advisory lock that the backup holds from before its dumps until it has hard-linked the objects. That makes \"dumps first, then objects\" a consistent set without stopping the service or making anyone wait on the upload. The restore check verifies it.\nClient-side encryption lets a free off-host bucket hold customer data as ciphertext only. Deduplication keeps 6-hourly snapshots within the free allowance at pilot scale.\nA 6-hour recovery point and a 72-hour worst-case recovery time keep screens playing through any recovery under AT-15.\nAssumptions: provider allowances (Oracle Cloud's outbound transfer, Backblaze B2's free storage and downloads) are as reported in October 2026. They can change, so the destination and relay must stay replaceable. Whether the owner's line needs the relay is unknown until PH-10.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A TLS-terminating tunnel (Cloudflare Tunnel or similar)",
-    "anchor": "a-tls-terminating-tunnel-cloudflare-tunnel-or-similar",
-    "text": "A TLS-terminating tunnel (Cloudflare Tunnel or similar)\nFree, and it avoids port forwarding, but it ends TLS at the provider. It conflicts with the CDN terms for video, and its reported 100 MB upload cap rejects valid uploads. Rejected for this service.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Running everything on the free-tier virtual machine",
-    "anchor": "running-everything-on-the-free-tier-virtual-machine",
-    "text": "Running everything on the free-tier virtual machine\nRemoves the residential risks at no cost. It would, however, put customer data under the provider's idle-reclamation and account terms with no paid support. It is kept only as a relay.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Continuous WAL archiving",
-    "anchor": "continuous-wal-archiving",
-    "text": "Continuous WAL archiving\nReduces the recovery point to minutes, at the cost of a second backup and restore mechanism. Deferred until a customer needs a smaller recovery point.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nNo intermediary sees decrypted traffic or backups.\nNo recurring cost at pilot scale, and every external piece (relay, bucket, mail relay) can be replaced without changing the application.\nDeleted data leaves backups within about 35 days, which the data handling policies can state.\n"
   }
 ]

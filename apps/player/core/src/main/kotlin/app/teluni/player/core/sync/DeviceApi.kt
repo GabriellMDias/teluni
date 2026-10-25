@@ -53,6 +53,7 @@ public data class SyncReport(
     val playback: String,
     val storage: Storage?,
     val deviceTime: String?,
+    val diagnostics: Diagnostics? = null,
 ) {
     @Serializable
     public data class Active(val publicationId: String, val activatedAt: String)
@@ -71,6 +72,9 @@ public data class SyncReport(
 
     @Serializable
     public data class Storage(val freeBytes: Long, val totalBytes: Long)
+
+    @Serializable
+    public data class Diagnostics(val clock: String, val systemSkewMillis: Long?, val crashCount: Int?)
 }
 
 @Serializable

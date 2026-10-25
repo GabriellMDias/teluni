@@ -185,6 +185,36 @@
       "Meaning": "The screen's clock reading when it reported.",
       "Null meaning": "Not reported.",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "clock_state",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Player-reported time reference: ANCHORED to a server exchange in this boot, ESTIMATED from a plausible system clock after reboot, or UNTRUSTED. Never an authorization input.",
+      "Null meaning": "The latest report supplied no diagnostics (including legacy players).",
+      "Unit": "—"
+    },
+    {
+      "Column": "clock_skew_millis",
+      "PostgreSQL type": "bigint",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Player-reported system wall time minus anchored business time, signed milliseconds within the JSON safe-integer range. No skew is inferred from estimated or untrusted time.",
+      "Null meaning": "No anchored reference or the exact difference cannot be represented safely.",
+      "Unit": "milliseconds"
+    },
+    {
+      "Column": "crash_count",
+      "PostgreSQL type": "integer",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Player-reported cumulative uncaught crash count since this pairing, saturated at 2147483647. Crash messages and frames are never uploaded.",
+      "Null meaning": "No diagnostics or the local count is unreadable or unknown.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -192,6 +222,11 @@
       "Object": "publication_device_states_company_id_device_id_fkey",
       "Physical definition": "FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
       "Purpose": "The screen belongs to the same company."
+    },
+    {
+      "Object": "publication_device_states_diagnostics",
+      "Physical definition": "CHECK ((((clock_state IS NULL) AND (clock_skew_millis IS NULL) AND (crash_count IS NULL)) OR ((clock_state IS NOT NULL) AND ((clock_state)::text = ANY ((ARRAY['ANCHORED'::character varying, 'ESTIMATED'::character varying, 'UNTRUSTED'::character varying])::text[])) AND ((clock_skew_millis IS NULL) OR (((clock_state)::text = 'ANCHORED'::text) AND ((clock_skew_millis >= '-9007199254740991'::bigint) AND (clock_skew_millis <= '9007199254740991'::bigint)))) AND ((crash_count IS NULL) OR (crash_count >= 0)))))",
+      "Purpose": "Diagnostics are absent together for legacy reports, otherwise clock state is known, skew requires an anchor and safe-integer milliseconds, and a known crash count is nonnegative."
     },
     {
       "Object": "publication_device_states_failure",

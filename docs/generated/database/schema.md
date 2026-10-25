@@ -1702,12 +1702,16 @@ Lifecycle: Inserted at a screen's first synchronization and overwritten by each 
 | `storage_free_bytes` | `bigint` | yes | — | INTERNAL | Free storage the screen reported. | Not reported. | bytes |
 | `storage_total_bytes` | `bigint` | yes | — | INTERNAL | Total storage the screen reported. | Not reported. | bytes |
 | `device_time` | `timestamp(3) with time zone` | yes | — | INTERNAL | The screen's clock reading when it reported. | Not reported. | UTC instant, millisecond precision |
+| `clock_state` | `character varying(16)` | yes | — | CONFIDENTIAL | Player-reported time reference: ANCHORED to a server exchange in this boot, ESTIMATED from a plausible system clock after reboot, or UNTRUSTED. Never an authorization input. | The latest report supplied no diagnostics (including legacy players). | — |
+| `clock_skew_millis` | `bigint` | yes | — | CONFIDENTIAL | Player-reported system wall time minus anchored business time, signed milliseconds within the JSON safe-integer range. No skew is inferred from estimated or untrusted time. | No anchored reference or the exact difference cannot be represented safely. | milliseconds |
+| `crash_count` | `integer` | yes | — | CONFIDENTIAL | Player-reported cumulative uncaught crash count since this pairing, saturated at 2147483647. Crash messages and frames are never uploaded. | No diagnostics or the local count is unreadable or unknown. | — |
 
 ### Constraints and indexes
 
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
 | `publication_device_states_company_id_device_id_fkey` | `FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The screen belongs to the same company. |
+| `publication_device_states_diagnostics` | `CHECK ((((clock_state IS NULL) AND (clock_skew_millis IS NULL) AND (crash_count IS NULL)) OR ((clock_state IS NOT NULL) AND ((clock_state)::text = ANY ((ARRAY['ANCHORED'::character varying, 'ESTIMATED'::character varying, 'UNTRUSTED'::character varying])::text[])) AND ((clock_skew_millis IS NULL) OR (((clock_state)::text = 'ANCHORED'::text) AND ((clock_skew_millis >= '-9007199254740991'::bigint) AND (clock_skew_millis <= '9007199254740991'::bigint)))) AND ((crash_count IS NULL) OR (crash_count >= 0)))))` | Diagnostics are absent together for legacy reports, otherwise clock state is known, skew requires an anchor and safe-integer milliseconds, and a known crash count is nonnegative. |
 | `publication_device_states_failure` | `CHECK (((staging_failure IS NULL) OR ((staging_failure)::text = ANY ((ARRAY['STORAGE_FULL'::character varying, 'DOWNLOAD_FAILED'::character varying, 'INTEGRITY_FAILED'::character varying, 'INVALID_MANIFEST'::character varying, 'INCOMPATIBLE'::character varying])::text[]))))` | Failure codes come from a closed set. |
 | `publication_device_states_pkey` | `PRIMARY KEY (company_id, device_id)` | One state per screen. |
 | `publication_device_states_playback` | `CHECK (((playback)::text = ANY ((ARRAY['PLAYING'::character varying, 'NEUTRAL'::character varying, 'AUTHORIZATION_EXPIRED'::character varying, 'CLOCK_UNTRUSTED'::character varying, 'DEGRADED'::character varying, 'SETUP'::character varying])::text[])))` | Playback conditions come from a closed set. |

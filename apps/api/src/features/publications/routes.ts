@@ -131,6 +131,7 @@ const stateWire = (view: ScreenStateView) => ({
           : null,
         playback: view.reported.playback,
         storage: view.reported.storage,
+        diagnostics: view.reported.diagnostics,
       }
     : null,
 });

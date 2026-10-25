@@ -12,6 +12,27 @@ const byteCount = Type.Integer({
   minimum: 0,
   maximum: Number.MAX_SAFE_INTEGER,
 });
+// A multi-type schema preserves null; an anyOf can coerce an unknown count to zero.
+const diagnostics = Type.Object(
+  {
+    clock: Type.Union([
+      Type.Literal("ANCHORED"),
+      Type.Literal("ESTIMATED"),
+      Type.Literal("UNTRUSTED"),
+    ]),
+    systemSkewMillis: Type.Unsafe<number | null>({
+      type: ["integer", "null"],
+      minimum: -Number.MAX_SAFE_INTEGER,
+      maximum: Number.MAX_SAFE_INTEGER,
+    }),
+    crashCount: Type.Unsafe<number | null>({
+      type: ["integer", "null"],
+      minimum: 0,
+      maximum: 2_147_483_647,
+    }),
+  },
+  { additionalProperties: false },
+);
 const binary = Type.Unsafe<string>({ type: "string", format: "binary" });
 
 const common = {
@@ -232,6 +253,7 @@ export const screenStateSchema = Type.Object(
             Type.Null(),
           ]),
           playback,
+          diagnostics: Type.Union([diagnostics, Type.Null()]),
           storage: Type.Union([
             Type.Object(
               { freeBytes: byteCount, totalBytes: byteCount },
@@ -386,6 +408,7 @@ const reportSchema = Type.Object(
       Type.Null(),
     ]),
     deviceTime: Type.Union([instant, Type.Null()]),
+    diagnostics: Type.Optional(Type.Union([diagnostics, Type.Null()])),
   },
   { additionalProperties: false },
 );

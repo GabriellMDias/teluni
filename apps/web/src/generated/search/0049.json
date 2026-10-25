@@ -1,5 +1,122 @@
 [
   {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Freshness, asynchronous work, and integrity",
+    "anchor": "freshness-asynchronous-work-and-integrity",
+    "text": "Freshness, asynchronous work, and integrity\nDefine acceptable permission freshness before caching decisions or putting roles/permissions in tokens. Revocation, membership removal, and role changes must take effect within the required interval; old claims must not remain trusted indefinitely. Sensitive capabilities may require near-immediate revocation, fresh server lookup, stronger/recent authentication, or an explicit hybrid design. Temporary/delegated permissions must expire and fail closed.\nFor user-triggered jobs, specify whether authorization is checked at creation, execution, or both, and what happens if permission changes before execution. Workers acting as system and workers acting on behalf of users have different authority. Event consumers do not automatically inherit producer permissions; actor metadata is not an authorization bypass.\nAuthorization state is security-sensitive and generally at least `CONFIDENTIAL`. Preserve integrity through explicit update contracts, constraints, and transactions where appropriate. Users must not assign themselves privileges beyond their authority. Generic mass assignment must not expose role, permission, membership, or other privileged fields. Prevent both vertical escalation and access to another actor's equivalent resources.\nRole/permission changes require security review, tests, and documentation. Identify persisted assignments and consumers before renaming/removing permissions or expanding roles. A persisted permission rename is a compatibility/data migration, not cosmetic editing. Transactional changes must avoid unintended intermediate access states and preserve required audit evidence.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Errors and audit",
+    "anchor": "errors-and-audit",
+    "text": "Errors and audit\nFollow the [error contract](../api/error-contract.md) and [error-handling policy](../architecture/error-handling.md). Public denials must not expose protected resource, tenant, or policy details. Safe internal reason categories can differ from public API codes. Record only justified actor/resource identifiers and allowlisted metadata, never entire principal/resource objects.\nAudit sensitive assignment changes, administrative actions, exports, impersonation, and security configuration as required. Do not log every successful check by default. Distinguish normal denials from suspicious enumeration, cross-tenant probes, or repeated privileged access attempts; security monitoring should match real requirements. [Redaction](telemetry-redaction.md) and [retention](data-retention.md) apply to diagnostics and audit records.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Authorization testing",
+    "anchor": "authorization-testing",
+    "text": "Authorization testing\nBoth allow and deny paths must be tested. Include applicable anonymous, wrong-owner, wrong-tenant, insufficient-permission, expired-delegation, changed-permission, insufficient-assurance, and privileged-field cases. Test horizontal/vertical escalation, collection filtering, API enforcement despite modified clients, and relevant asynchronous timing. Add regression tests for authorization security bugs; property-based invariants can help when policy complexity justifies them.\nUse reusable synthetic principal helpers and realistic development identities while testing ordinary and denied access. Do not disable authorization globally. Any test/development bypass must be isolated, explicitly tested, and impossible to enable accidentally in production.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New authorization policy checklist",
+    "anchor": "new-authorization-policy-checklist",
+    "text": "New authorization policy checklist\nFor a new or changed policy, identify:\nProtected operation, owner, actor types, resource, trusted inputs, existing equivalent permissions, and scope.\nOwnership/tenant/state/assurance requirements, role assignment authority, freshness/revocation, delegation, and denied-information exposure.\nConfidential/restricted data impact, required audit evidence, allow/deny tests, and compatibility effects on existing actors and consumers.\nDocument meaning near the policy and derive references from canonical machine-readable definitions where practical. Mechanical enforcement may validate declared protected operations, known permissions, privileged contracts, and tenant scope when tooling supports it; do not claim such coverage before it exists. Repository-wide policy engines, global roles/tenants, registry formats, and AI delegation models remain requirement-driven decisions.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Data Classification",
+    "anchor": "data-classification",
+    "text": "Data Classification\nThis policy owns the repository's sensitivity model and data-handling baseline. [Redaction](telemetry-redaction.md), [retention](data-retention.md), [secrets management](secrets-management.md), and [production access](production-access.md) own their detailed controls. Classification follows data meaning and disclosure risk, not whether a tool can technically access it.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Classification levels",
+    "anchor": "classification-levels",
+    "text": "Classification levels\nLevel\nMeaning and examples\nRequired handling\n`PUBLIC`\nIntentionally approved for unrestricted disclosure: published documentation or product content\nMay be shared/indexed/cached; preserve integrity. Absence of secrets does not make data public.\n`INTERNAL`\nNon-public, lower-risk project/operational information\nAvailable to authorized contributors and approved tooling; review before publication.\n`CONFIDENTIAL`\nDisclosure may cause privacy, security, business, or operational harm: personal/private customer data, private content, incident details\nNeed-to-know access, protected transport, appropriate storage encryption, minimized telemetry/copies, and defined retention.\n`RESTRICTED`\nHighest sensitivity: credentials, password hashes, private keys, payment credentials, highly sensitive personal data\nStrict least privilege and purpose-built protection; no intentional inclusion in source control, telemetry, public errors, generated documentation, screenshots/support artifacts, or real-data test fixtures.\nThese are minimum protections. Use the more restrictive reasonable level when semantics or ownership are unclear, particularly for legacy fields, provider payloads, uploads, and free-form metadata. Encryption does not reduce classification.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Data categories",
+    "anchor": "data-categories",
+    "text": "Data categories\nCategory describes what data represents; classification describes required protection. Classify fields by meaning rather than assigning one level blindly to an entire table.\nCategory\nBaseline and important distinctions\nPersonal data\nNormally at least `CONFIDENTIAL` unless intentionally and lawfully public. Includes linked account/device/IP/location information, not just names and email.\nSensitive personal data\nNormally `RESTRICTED` or equivalent specialized controls. Health, biometrics, government identifiers, and other sensitive characteristics require evaluation against actual jurisdiction/product requirements.\nAuthentication\nPasswords, hashes, bearer/session/refresh tokens, recovery codes, and private API keys are `RESTRICTED`; non-credential metadata can differ. Public keys/client identifiers are classified by capability, not the word “key.”\nAuthorization\nAssignments, memberships, and ownership are generally `CONFIDENTIAL`; policy definitions may be internal or confidential according to risk.\nFinancial/payment\nFinancial records are generally at least `CONFIDENTIAL`; payment and banking credentials are `RESTRICTED`. Prefer specialized providers retaining sensitive payment credentials.\nUser content/files\nNormally `CONFIDENTIAL` unless intentionally public; arbitrary content can contain restricted data. File type does not prove safety. Preview, scanning, indexing, and AI processing inherit the content's constraints.\nBusiness/security/operations\nNon-public business information is generally confidential. Infrastructure topology, unresolved vulnerabilities, investigations, and configuration require content-specific classification.\nTelemetry/derived data\nInherits sensitivity of included information and inferences. A log is not automatically internal, and aggregation can increase sensitivity.\nOpaque actor/resource/tenant IDs may be used in controlled telemetry when necessary but can remain confidential if linked to private data. Generate request/trace/error/job correlation IDs without sensitive information; safe correlation IDs may be shown as support references. Do not treat all identifiers as interchangeable.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Collection, ownership, and copies",
+    "anchor": "collection-ownership-and-copies",
+    "text": "Collection, ownership, and copies\nCollect only data with a concrete product, operational, security, or legal purpose. Identify the owner of semantics, schema changes, access, retention, and incident response. Before adding a field, determine purpose, sensitivity, consumers, storage duration, telemetry eligibility, compliance implications, and whether a less sensitive representation suffices. A new use of existing data needs deliberate review.\nEvery copy retains its handling obligations: database dumps, exports, caches, search indexes, warehouse/analytics records, backups, generated artifacts, screenshots, chat messages, support evidence, and AI prompts. Derived profiles, risk scores, embeddings, or aggregated behavior may remain identifying. Pseudonymization and hashing do not automatically anonymize data; predictable identifiers can be enumerated. Anonymity requires that re-identification is not reasonably possible in context. Partial masking may be useful for permitted non-secret data; remove authentication secrets entirely.\nTemporary storage still needs bounded access and deletion. Do not let downloaded logs, exports, local databases, scratch files, or tool caches become indefinite uncontrolled copies. Soft deletion retains data and is not a substitute for actual removal. [Retention policy](data-retention.md) covers deletion propagation and backup restoration; understand real capability before making external deletion promises.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Access, storage, and transport",
+    "anchor": "access-storage-and-transport",
+    "text": "Access, storage, and transport\nApply least privilege to users, services, support, administrators, CI, and AI agents. Technical availability is not authorization. Routine development must not depend on unrestricted production database access. Encryption supplements access control; confidential/restricted data crossing untrusted networks must use protected transport without silent downgrade.\nChoose storage, backup, device, and any field-level encryption against the threat model. Application-level encryption is justified only by meaningful added protection and must account for key rotation, search limitations, migration, recovery, and operations; significant strategy requires an ADR. Minimize sensitive local client data and use platform-protected storage for credentials as required by [authentication policy](authentication.md).\nAuthorize exports, minimize fields, use secure delivery, avoid unnecessary persistence, and audit where appropriate. Bulk access deserves additional scrutiny. Support access does not imply unrestricted customer/telemetry access. Email is not a safe channel for arbitrary restricted data; minimize transactional email and prefer authenticated flows where appropriate. Notifications can appear on lock screens/shared devices and must not disclose highly sensitive content without an explicit design.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "APIs, providers, and generated artifacts",
+    "anchor": "apis-providers-and-generated-artifacts",
+    "text": "APIs, providers, and generated artifacts\nUse deliberate request/response/event schemas. Do not serialize whole entities, publish complete provider payloads, or forward arbitrary JSON merely for convenience. Known important data should use explicit schemas; generic metadata needs conservative controls before logging, indexing, tracing, or provider transmission. Generated SDKs must contain only supported client contracts, never server-only restricted fields.\nExternal providers create data-processing boundaries. Before transmission, determine required fields and purpose, security, access, retention/deletion, residency, and relevant subprocessors. Send only the needed subset. Apply this to analytics, search, webhooks, error reporting, file processing, and AI providers. A warehouse or cache does not reduce sensitivity or remove authorization requirements.\nSchema comments and documentation describe semantics with fictional examples, not real customer records, credentials, production identifiers, or infrastructure addresses. Generated artifacts inherit source classification; inspect generators for unintended exposure. Configuration templates use placeholders and document the source of a value, not its secret contents. Environment variables are not automatically secure: never dump them into startup logs, build output, diagnostics, or telemetry.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Telemetry and AI access",
+    "anchor": "telemetry-and-ai-access",
+    "text": "Telemetry and AI access\n[Telemetry redaction](telemetry-redaction.md) governs collection: public/internal fields may be captured when useful, confidential fields only with justified minimized controls, and restricted data never intentionally. Review SDK defaults, including locals, breadcrumbs, requests, and context. Metrics should remain aggregate and avoid personal/entity-specific dimensions. Audit records have distinct integrity/access/retention requirements but must still omit credentials and unnecessary payloads.\nAI tooling follows the same classification and authorization boundaries as other consumers. Approved project agents may use authorized internal repository context. Confidential data requires an authorized task and an environment approved for that data; minimize context. Restricted data must not be supplied by default: any exceptional interaction requires an explicitly designed, approved workflow with suitable controls, never incidental exposure through environment dumps or logs.\nPrefer investigation through a safe error ID, sanitized metadata, traces, redacted logs, and relevant source rather than customer records and raw requests. Screenshots, replay, and diagnostic attachments are separate collection capabilities, not automatic debugging entitlements.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Development, testing, and exposure",
+    "anchor": "development-testing-and-exposure",
+    "text": "Development, testing, and exposure\nUse synthetic or purpose-created development, test, seed, demo, and documentation data. Tests must not contain real credentials or customer records; synthetic secrets must be clearly non-production and incapable of granting real access. Production data must not be copied to development/test by default. A justified exception should prefer synthetic reproduction, minimal extraction, redaction, or appropriately anonymized/pseudonymized data before raw copies.\nCI secrets must be scoped to jobs that need them; less-trusted pull requests must not receive privileged credentials. Never commit restricted secrets, including into Git history. If a credential is exposed, deleting the current file or log does not restore secrecy: treat it as potentially compromised and follow [secrets management](secrets-management.md) and [incident response](incident-response.md) for containment, revocation/rotation, usage review, and recurrence prevention. Evaluate confidential-data exposure by scope, subjects, access, duration, and applicable notification obligations.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Classification review and enforcement",
+    "anchor": "classification-review-and-enforcement",
+    "text": "Classification review and enforcement\nReview classification when field meaning, boundaries, providers, telemetry, AI access, or retention changes. New restricted/personal-data collection, bulk exports, credentials, encryption strategies, or production access paths warrant security review. Use clear sensitive-field names and keep classification near canonical schema/configuration metadata where practical; [schema documentation](../database/schema-documentation.md) and [configuration](../architecture/configuration.md) describe current metadata sources.\nMechanical checks can extend protection against unsafe serialization, telemetry, generated output, secret imports, and production fixtures, but metadata is not evidence of end-to-end enforcement. Consult [validation](../validation.md) for available checks. Do not claim a universal classification/redaction engine exists or create speculative registries before their consumers and ownership are clear.\n"
+  },
+  {
     "id": "repository/docs/security/data-retention",
     "title": "Data Retention",
     "group": "Security",
@@ -682,95 +799,5 @@
     "heading": "Infrastructure Instructions",
     "anchor": "infrastructure-instructions",
     "text": "Infrastructure Instructions\nThis directory holds declarative deployment and operational infrastructure only, never business logic ([repository structure](../docs/architecture/repository-structure.md)). Read the [pilot deployment and recovery design](../docs/project/deployment-design.md) and [ADR-0033](../docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md) before changing anything under `pilot/`.\nNever commit secrets, real hostnames' credentials or environment files with values. Secrets reach containers only from the env files in the host's root-only configuration directory; the rehearsal generates disposable ones.\nPin every base image by digest and every tool by exact version. Application images are built from this repository; runtime code never imports anything from here.\nConfiguration keys come from the [configuration reference](../docs/generated/configuration/api.md); do not invent API settings here. A new setting is added to `apps/api/src/config.ts` first.\nTLS ends in the proxy on the owner's host (ADR-0033). Do not add a TLS-terminating tunnel, CDN or a public route to the API's health endpoints or Keycloak's admin console.\nRun `infra/pilot/rehearsal.sh` after changing images, the composition, the proxy or the backup script; CI runs it as the Deployment rehearsal job.\n"
-  },
-  {
-    "id": "repository/infra/pilot/README",
-    "title": "Pilot Deployment",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Pilot Deployment",
-    "anchor": "pilot-deployment",
-    "text": "Pilot Deployment\nThe declarative pilot deployment of the [deployment design](../../docs/project/deployment-design.md) and [ADR-0033](../../docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md): one Debian host running Docker Compose. Nothing here is deployed; installing it on the real host waits for [PH-10](../../docs/project/human-actions.md#ph-10) and its runbooks.\nFile\nPurpose\n[`Dockerfile`](Dockerfile)\nEvery image, built from the repository root: `api` (Ubuntu 24.04 with FFmpeg 6.1, production dependencies, unprivileged user), `release` (migrations, runtime grants, realm), `keycloak` (the login theme, built for PostgreSQL), `proxy` (Caddy with the panel's static build) and `backup` (PostgreSQL 16 client tools with restic)\n[`compose.yaml`](compose.yaml)\nThe composition: `postgres`, the one-off `release`, `keycloak`, `api`, `proxy`, and the on-demand `backup`\n[`Caddyfile`](Caddyfile)\nRouting, TLS and headers for `app`, `auth` and the apex name\n[`postgres/init.sh`](postgres/init.sh)\nThe databases and roles, created once with the volume\n[`backup/teluni-backup.sh`](backup/teluni-backup.sh)\n`snapshot`, `maintain`, `restore`, `verify` and `snapshots`\n[`systemd/`](systemd/teluni-backup.timer)\nTimers for a snapshot every 6 hours and weekly maintenance\n[`rehearsal.sh`](rehearsal.sh)\nBuilds and runs the whole stack locally, backs it up, restores it into a new project and checks both; CI runs it\n"
-  },
-  {
-    "id": "repository/infra/pilot/README",
-    "title": "Pilot Deployment",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Configuration",
-    "anchor": "configuration",
-    "text": "Configuration\nCompose reads per-host values from the environment and secrets from env files in `TELUNI_CONFIG_DIR`, a root-only directory such as `/etc/teluni`. The rehearsal's `write_config` function writes a complete disposable set and is the reference for their contents.\nVariable or file\nHolds\n`TELUNI_CONFIG_DIR`, `TELUNI_APP_HOST`, `TELUNI_AUTH_HOST`, `TELUNI_APEX_HOST`, `TELUNI_ACME_EMAIL`, `TELUNI_RELEASE`\nCompose interpolation, for example in `/etc/teluni/compose.env` for the systemd units\n`postgres.env`\n`POSTGRES_PASSWORD` and the passwords of the `teluni_owner`, `orion_runtime` and `keycloak` roles\n`release.env`\n`ORION_MIGRATION_DATABASE_URL` (the owner role) and the realm step's Keycloak administrator, origin, audience and client secrets, plus the `TELUNI_MAIL_SMTP_*` and `TELUNI_MAIL_FROM` settings that Keycloak's own mail uses (TLS required)\n`keycloak.env`\n`KC_DB_PASSWORD` and the bootstrap administrator, which is disabled after the realm exists\n`api.env`\nThe API settings of the [configuration reference](../../docs/generated/configuration/api.md); the Compose file sets `TELUNI_TRUSTED_PROXIES` to the proxy's fixed address\n`backup.env`\n`PGPASSWORD`, `RESTIC_REPOSITORY`, `RESTIC_PASSWORD` and the bucket's credentials (for Backblaze B2, `B2_ACCOUNT_ID` and `B2_ACCOUNT_KEY`)\n"
-  },
-  {
-    "id": "repository/infra/pilot/README",
-    "title": "Pilot Deployment",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Commands",
-    "anchor": "commands",
-    "text": "Commands\nFrom this directory, with the environment above:\n`docker compose --profile tools build` builds every image.\n`docker compose up --detach --wait` applies migrations and grants (the `release` service), then starts the stack.\n`docker compose run --rm release realm` creates or updates the `teluni` realm; `docker compose run --rm release end-sessions` ends every Keycloak session after a restore.\n`docker compose run --rm backup snapshot`, `maintain`, `restore [ID]`, `verify [--hash]` and `snapshots` manage backups. `restore` refuses databases or a media volume that are not empty, so it runs on a fresh project before the rest of the stack starts.\n`./rehearsal.sh` rehearses all of it on this machine, using loopback ports 80 and 443 and Caddy's local CA.\nOn a network that intercepts TLS, set `TELUNI_BUILD_CA_FILE` to its CA certificate before running the rehearsal, so the build can reach the npm registry. The rehearsal passes it as the Dockerfile's optional `extra-ca` build secret, which is never stored in an image. When the file is outside this directory, Buildx also needs `BUILDX_BAKE_ENTITLEMENTS_FS=0` to read it.\n"
-  },
-  {
-    "id": "repository/infra/pilot/README",
-    "title": "Pilot Deployment",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Not yet here",
-    "anchor": "not-yet-here",
-    "text": "Not yet here\nThe relay listener with PROXY protocol for a line behind CGNAT, alert delivery for failed backups and renewals, and the runbooks for installation, updates and restore arrive with the real host (PH-10).\n"
-  },
-  {
-    "id": "repository/packages/sdk/AGENTS",
-    "title": "SDK-local Instructions",
-    "group": "Agent instructions",
-    "kind": "repository",
-    "heading": "SDK-local Instructions",
-    "anchor": "sdk-local-instructions",
-    "text": "SDK-local Instructions\nUse [the package guide](README.md) for ownership and generation. Global repository instructions still apply.\n`src/index.ts` is the public surface. Keep the SDK a thin generated-contract consumer; never import API implementation, persistence, or backend business authorization.\nGenerate `src/generated/api-types.ts` from committed OpenAPI after changing the API's executable contracts. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); never hand-edit generated types or duplicate wire schemas here.\nThe host supplies bearer tokens and the session CSRF token through `createApiClient`; do not add token storage, provider-specific identity, or authorization rules.\nPreserve structured errors and safe unknown-code fallback. Consider actual consumer compatibility when changing the client surface or generator; this private workspace package has no independent publication promise.\nRun `pnpm -C packages/sdk typecheck` and root `pnpm references:check`, then root `pnpm validate` before substantial-work handoff.\n"
-  },
-  {
-    "id": "repository/packages/sdk/README",
-    "title": "API SDK",
-    "group": "Workspace guides",
-    "kind": "repository",
-    "heading": "API SDK",
-    "anchor": "api-sdk",
-    "text": "API SDK\n[API modules](../../apps/api/README.md#modules) · [Generated OpenAPI](../../docs/generated/api/openapi.json) · [API policy](../../docs/api/principles.md) · [Web consumer](../../apps/web/README.md)\nThis private workspace package (`packages/sdk`) is the client boundary for the API. [`src/index.ts`](src/index.ts) exports `createApiClient(baseUrl, getAccessToken, { getCsrfToken })`, `ApiClient`, and generated `paths` types. The host provides credentials through the callbacks; the SDK adds the bearer header, and the session CSRF token on unsafe methods only, without issuing, refreshing, persisting, or logging them. Session cookies travel as same-origin browser cookies. It contains no business authorization, persistence, or provider-specific identity model.\nThe API owns executable TypeBox schemas and stable operation IDs. Generated OpenAPI feeds `openapi-typescript`, which produces [`src/generated/api-types.ts`](src/generated/api-types.ts); `openapi-fetch` supplies the thin typed runtime. Never edit generated types or import server implementation models. Compile-time typing does not automatically revalidate successful responses at runtime.\nFrom the repository root, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md): regenerate API OpenAPI first, run `pnpm -C packages/sdk generate`, and regenerate affected portal data. `pnpm references:check` verifies API/database/SDK freshness without editing tracked files. Run `pnpm -C packages/sdk typecheck` and the full `pnpm validate` gate for the client and web consumer.\nThis package has no independently published compatibility promise. A real independently released consumer activates [API compatibility policy](../../docs/api/versioning.md) and a human action to identify its supported baseline; SDK package versions and server contract versions are distinct. Current-source drift checks do not validate a historical released consumer.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Teluni",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Teluni",
-    "anchor": "teluni",
-    "text": "Teluni\nTeluni is a planned multi-tenant digital signage SaaS built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. It will let companies centrally manage images, videos, playlists and schedules on displays, with reliable offline playback. Brazil is the initial market, with international use anticipated. The core is intended for multiple business segments, from a single shop to a branch network.\n**Every screen. One place.** · **Todas as suas telas. Um só lugar.**\nStart with the [product documentation](docs/project/README.md) for the vision, initial release policies/acceptance targets, accepted architecture directions, pending detailed design, risks and delivery phases. The name Teluni and principal domain `teluni.app` are approved; [branding](docs/project/branding/README.md) records the defensive `teluni.com.br` option, current exclusion of `teluni.com`, and the approved Connected Tiles identity. Domain registration/control evidence and trademark outcome remain pending. The owner approved [initial commercial policies](docs/project/commercial-policies.md) and validation prices; actual customer acceptance, costs, capacity and billing readiness remain unverified.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Teluni",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Current state",
-    "anchor": "current-state",
-    "text": "Current state\nThis repository was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It contains the foundation's architecture, policies, accepted ADRs, tooling, validation gate, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). The API and web application compose `identity` (Keycloak login, server-managed human sessions and OTP step-up) and the first `organizations` increments (companies, creator memberships, scoped standard-role access, branches, company settings, paginated change history, member administration, role grants, responsibility transfer and email invitations), with a `mail` module that delivers transactional email through a PostgreSQL outbox, and `devices` (screen pairing with temporary codes and device-generated credentials, configuration, moves and unlinking with erasure tracking), `media` (a company media library with uploads, FFmpeg processing into playback renditions, archive and trash) `programming` (playlists, layouts with catalog views and pages, programming groups, programs with a layout's areas as outputs, schedules in local time, screen assignments and timelines), `catalogs` (typed catalogs with exact prices per branch, promotions, an effective-price preview and automatic price publication to the screens that show them) and `publications` (immutable publications of programs, in protocol 2 with layouts and catalog snapshots for programs with a layout, screen synchronization with signed authorization statements and screens' reported state). The [identity/access policies](docs/project/identity-and-access.md) and D-01/D-02 designs are owner-approved. Tests use disposable Keycloak/PostgreSQL; real-environment provisioning and qualification remain pending. The [Android TV player](apps/player/README.md) has its JVM `core` (schedules, protocols 1 and 2 with layouts and catalog prices, statements, trusted time, storage and synchronization); its Android application now builds debug and unsigned release APKs, with local emulator qualification tracked in the [player design](docs/project/player-design.md#implementation-status).\nThe [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\nThe [Orion v3.0.0 upgrade](docs/project/foundation-upgrade-v3.md) integrates the documentation distribution boundary and React component catalog while retaining Teluni's product composition and Connected Tiles identity. Initialization provenance remains unchanged; the manifest records the integrated foundation commit after validation.\nThe initial product brief is documented. Real email sending (the D-13 [invitation and email delivery design](docs/project/invitation-delivery-design.md) is implemented locally with Mailpit; a real sender awaits PH-17), custom profile capabilities beyond the organization module, recovery codes for two-step verification, the Android TV player's remaining qualification and release/update channel, and production deployment remain unfinished. The owner accepted the [product architecture directions](docs/project/architecture.md) in ADR-0018–ADR-0021 and ADR-0023–ADR-0025 on 2026-10-18. The D-01 [tenant data](docs/project/tenant-data-design.md) and D-02 [identity/session](docs/project/identity-session-design.md) designs were approved that day with an explicit request to implement PJ-24/PJ-03. Their implementation status and remaining work are recorded in the designs and plan; other detailed designs and release-readiness checks remain pending. No real-environment deployment is authorized by those approvals. The [pilot deployment](infra/pilot/README.md) of the D-08 [deployment design](docs/project/deployment-design.md) is built and rehearsed locally and in CI; installing it on a real host awaits PH-10.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Teluni",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Start here",
-    "anchor": "start-here",
-    "text": "Start here\nThe portal is an internal development tool. Default production builds exclude its UI and generated assets; developers and agents retain the full repository knowledge and local `/docs` workflow. Product and public documentation use separately approved sources and application-owned UI. See [documentation audiences, build controls, and migration](docs/architecture/living-documentation.md).\nTask\nEntry point\nUnderstand Teluni's product, release policies/targets, proposed modules, risks and roadmap\n[Product documentation](docs/project/README.md)\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nAdd a product capability\n[API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nInspect provenance or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Teluni",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "License",
-    "anchor": "license",
-    "text": "License\nTeluni repository source and documentation are licensed under the [Apache License, Version 2.0](LICENSE) (`Apache-2.0`), including independently developed Teluni material. [ADR-0022](docs/adr/0022-license-teluni-under-apache-2-0.md) records the product owner's decision. Material inherited from Orion retains its Apache-2.0 license and provenance; third-party dependencies and separately licensed material retain their own terms.\n"
   }
 ]

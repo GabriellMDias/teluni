@@ -4,6 +4,15 @@
     "title": "ADR-0002: Select pnpm for Package and Workspace Management",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **pnpm as its package manager** and **pnpm workspaces as its initial workspace-management mechanism**.\nThe repository will maintain a single workspace encompassing the Node.js and TypeScript applications, packages, and engineering tooling that belong to the Orion monorepo.\nA shared pnpm lockfile will represent the resolved dependency graph for the workspace and will be committed to version control.\nThe exact pnpm version will be pinned mechanically by repository configuration rather than by this ADR.\nFirst-party package dependencies within the workspace should use pnpm's `workspace:` protocol when an explicit dependency on another local workspace package is intended.\nThis ensures that a dependency declared as a workspace dependency resolves to the corresponding local package rather than silently falling back to a registry package with the same name.\nDependency catalogs may be used when multiple workspace projects need centrally coordinated dependency version ranges and the centralization provides clear value.\nCatalogs will not be required for every dependency solely for consistency.\nOrion will **not adopt a dedicated monorepo task runner initially**.\nInitial cross-workspace command execution will use pnpm's native workspace, filtering, recursive execution, and package-script capabilities where sufficient.\nTools such as Turborepo, Nx, or another dedicated task orchestrator may be evaluated later if concrete repository requirements justify the additional abstraction.\nExamples of requirements that may justify reconsidering this decision include:\nCI execution time becoming materially affected by unnecessary work;\na sufficiently large application and package graph;\nrepeated expensive deterministic builds or tests that would benefit from caching;\na need for reliable affected-project analysis;\nincreasingly complex dependency-aware task scheduling;\nsignificant benefits from remote caching or distributed task execution.\nIntroducing a dedicated task runner in the future should not require changing pnpm as the package manager unless an independent requirement justifies doing so.\nPackage scripts and repository-level developer commands should remain the stable interface where practical so that internal orchestration can evolve without unnecessarily changing contributor workflows.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
     "text": "Rationale\npnpm provides the package-management and workspace capabilities Orion requires without introducing a separate monorepo platform at the beginning of the project.\nIts native workspace model allows applications and shared packages to coexist within a single dependency graph while retaining independent package manifests and explicit dependencies.\npnpm's dependency model encourages packages to declare the dependencies they actually use. This aligns with Orion's preference for explicit architectural boundaries and reduces accidental reliance on undeclared dependencies that happen to be available elsewhere in the repository.\nThe `workspace:` protocol provides an explicit representation of first-party package relationships. This is valuable for Orion because a dependency on a local contract, configuration, testing, or other shared package should be intentional and mechanically recognizable.\nA shared lockfile provides one resolved dependency state for the workspace. This improves reproducibility between contributors, AI agents, CI, and other automated environments and avoids independent dependency-resolution histories for packages that are intended to evolve within the same repository.\npnpm also provides facilities for coordinating dependency versions across a workspace, including catalogs. These can reduce unnecessary version drift when multiple packages intentionally depend on the same tool or library. However, Orion does not require all dependencies to share versions, so catalogs should be introduced where central coordination represents a genuine repository responsibility rather than as a universal abstraction.\nThe package manager also provides useful supply-chain controls around dependency lifecycle and build scripts. These capabilities complement Orion's security principles but do not replace dependency review, automated vulnerability analysis, lockfile review, or other software-supply-chain controls.\npnpm can execute scripts across workspace projects and filter execution to selected packages. This provides sufficient task execution for Orion's initial repository scale.\nA dedicated monorepo task runner would add capabilities that may become valuable later, including task graphs, computation caching, affected-project calculation, remote caching, and CI distribution.\nThose capabilities have real value in sufficiently large repositories, but they also introduce another configuration model and another layer responsible for understanding repository execution.\nOrion currently has no demonstrated performance or orchestration problem that requires that layer.\nAdopting a dedicated task runner preemptively would therefore violate Orion's preference for introducing complexity only when its responsibility and value are understood.\nDeferring the choice also preserves better information for a future decision. If task orchestration becomes necessary, Orion can evaluate the actual problem at that time rather than selecting Turborepo, Nx, or another tool based on hypothetical future requirements.\nThe decision does not prevent Orion from growing into a large monorepo. It establishes pnpm as the baseline dependency and workspace layer while keeping advanced task orchestration independently replaceable and adoptable.\n"
@@ -961,32 +970,5 @@
     "heading": "Client-side runtime validation",
     "anchor": "client-side-runtime-validation",
     "text": "Client-side runtime validation\nGenerated TypeScript SDKs will provide compile-time typing by default.\nThey will not automatically revalidate every successful server response at runtime.\nRuntime validation on clients may be introduced when a concrete trust boundary or reliability requirement justifies the additional execution and implementation cost.\nThe server remains responsible for validating requests and serializing responses according to its published contract.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Configuration validation",
-    "anchor": "configuration-validation",
-    "text": "Configuration validation\nOrion will use **TypeBox as the default schema system for application bootstrap configuration**.\nExternal configuration sources, including environment variables, must be treated as untrusted input.\nThe intended configuration flow is:\nexternal configuration\n    ↓\nraw values\n    ↓\nexplicit parsing / normalization\n    ↓\nTypeBox validation\n    ↓\nvalidated typed configuration\n    ↓\napplication composition\n\nApplication code must not rely directly on arbitrary `process.env` access throughout the codebase.\nDirect environment access should be restricted to the configuration-loading or bootstrap boundary.\nAfter configuration has been parsed and validated, application components should receive typed configuration values rather than reading environment variables independently.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Configuration parsing",
-    "anchor": "configuration-parsing",
-    "text": "Configuration parsing\nExternal representation and runtime representation are distinct.\nFor example:\nPORT=\"3000\"\n\nmust become:\nport: 3000\n\nthrough explicit parsing and validation.\nBoolean parsing must also be explicit.\nA raw value such as:\n\"false\"\n\nmust not be interpreted through generic JavaScript truthiness.\nParsing rules should be deterministic, narrow, and documented.\nExcessive implicit coercion should be avoided because it can hide configuration errors.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Startup behavior",
-    "anchor": "startup-behavior",
-    "text": "Startup behavior\nRequired application configuration must be validated before the application begins accepting work.\nThe normal startup sequence is:\nprocess starts\n    ↓\nload configuration\n    ↓\nparse\n    ↓\nvalidate\n    ↓\ninvalid?\n  ↙       ↘\nyes       no\n ↓         ↓\nfail      compose application\nfast          ↓\n          begin serving work\n\nMissing or invalid required configuration is therefore a startup failure.\nApplications must not defer discovering invalid foundational configuration until the affected code path is first executed.\n"
   }
 ]

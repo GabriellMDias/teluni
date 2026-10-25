@@ -1,3 +1,4 @@
+import type { PlayerDiagnostics } from "./domain.js";
 import { randomUUID } from "node:crypto";
 import type { Readable } from "node:stream";
 import type { Prisma } from "../../generated/prisma/client.js";
@@ -125,6 +126,7 @@ export type SyncReport = Readonly<{
   playback: string;
   storage: Readonly<{ freeBytes: number; totalBytes: number }> | null;
   deviceTime: string | null;
+  diagnostics?: PlayerDiagnostics | null;
 }>;
 
 export type SyncAnswer = Readonly<{
@@ -1249,6 +1251,12 @@ export class PublicationService {
     report: SyncReport,
   ): Promise<SyncAnswer> {
     const screen = await this.#devices.authenticate(authorization);
+    if (
+      report.diagnostics &&
+      report.diagnostics.clock !== "ANCHORED" &&
+      report.diagnostics.systemSkewMillis !== null
+    )
+      throw new PublicationFailure("VALIDATION_FAILED");
     const protocol = agreedProtocol(report.protocols);
     if (screen.status === "unlinked")
       return {
@@ -1311,6 +1319,7 @@ export class PublicationService {
             ? report.storage
             : null,
         deviceTime: report.deviceTime ? new Date(report.deviceTime) : null,
+        diagnostics: report.diagnostics ?? null,
       };
       await this.#repository.writeState(
         tx,

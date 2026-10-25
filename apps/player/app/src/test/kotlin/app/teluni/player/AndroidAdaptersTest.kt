@@ -17,6 +17,8 @@ import app.teluni.player.core.playback.Plan
 import app.teluni.player.core.playback.AreaPlan
 import app.teluni.player.core.playback.ShownRecord
 import app.teluni.player.core.protocol.AreaKind
+import app.teluni.player.core.store.CrashJournal
+import app.teluni.player.core.store.PlayerStore
 import app.teluni.player.core.protocol.ManifestParser
 import java.io.File
 import kotlinx.serialization.json.Json
@@ -84,6 +86,28 @@ class AndroidAdaptersTest {
             output.show(Plan.Neutral(PlaybackCondition.DEGRADED, null), 0)
             assertTrue(output.hasFailure)
         } finally { output.release() }
+    }
+
+    @Test fun `uncaught crash handling counts a failure without storing its message filename or foreign frames`() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        var delegated = false
+        try {
+            Thread.setDefaultUncaughtExceptionHandler { _, _ -> delegated = true }
+            val application = RuntimeEnvironment.getApplication() as PlayerApplication
+            application.onCreate()
+            val failure = IllegalStateException("SYNTHETIC_SECRET").apply {
+                stackTrace = arrayOf(
+                    StackTraceElement("app.teluni.player.PlayerActivity", "onCreate", "SYNTHETIC_SECRET", 42),
+                    StackTraceElement("other.SYNTHETIC_SECRET", "read", "secret", 1))
+            }
+            requireNotNull(Thread.getDefaultUncaughtExceptionHandler()).uncaughtException(Thread.currentThread(), failure)
+            assertTrue(delegated)
+            val store = PlayerStore(application.filesDir.toPath().resolve("player"))
+            assertEquals(1, CrashJournal(store).count())
+            val raw = requireNotNull(store.record(PlayerStore.Record.DIAGNOSTICS)).decodeToString()
+            assertFalse(raw.contains("SYNTHETIC_SECRET"))
+            assertTrue(raw.contains("PlayerActivity.onCreate:42"))
+        } finally { Thread.setDefaultUncaughtExceptionHandler(previous) }
     }
 
     @Test fun `TV setup focuses connect instead of opening the soft keyboard`() {

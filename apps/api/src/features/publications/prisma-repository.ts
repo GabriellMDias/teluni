@@ -1,3 +1,4 @@
+import type { PlayerDiagnostics } from "./domain.js";
 import { randomUUID } from "node:crypto";
 import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
@@ -90,6 +91,7 @@ export type StateRecord = Readonly<{
   playback: string;
   storage: Readonly<{ freeBytes: number; totalBytes: number }> | null;
   deviceTime: Date | null;
+  diagnostics: PlayerDiagnostics | null;
 }>;
 
 export type DeviceEventKind =
@@ -173,6 +175,9 @@ type StateRow = {
   storage_free_bytes: bigint | null;
   storage_total_bytes: bigint | null;
   device_time: Date | null;
+  clock_state: PlayerDiagnostics["clock"] | null;
+  clock_skew_millis: bigint | null;
+  crash_count: number | null;
 };
 
 const state = (row: StateRow): StateRecord => ({
@@ -203,6 +208,17 @@ const state = (row: StateRow): StateRecord => ({
         }
       : null,
   deviceTime: row.device_time,
+  diagnostics:
+    row.clock_state === null
+      ? null
+      : {
+          clock: row.clock_state,
+          systemSkewMillis:
+            row.clock_skew_millis === null
+              ? null
+              : Number(row.clock_skew_millis),
+          crashCount: row.crash_count,
+        },
 });
 
 const uuidList = (ids: readonly string[]) =>
@@ -579,7 +595,8 @@ export class PrismaPublicationRepository {
         protocol, app_version, desired_publication_id, active_publication_id,
         active_since, recovery_publication_id, staging_publication_id,
         staging_state, staging_failure, staging_bytes_done, staging_bytes_total,
-        playback, storage_free_bytes, storage_total_bytes, device_time)
+        playback, storage_free_bytes, storage_total_bytes, device_time,
+        clock_state, clock_skew_millis, crash_count)
       VALUES (${companyId}::uuid, ${report.deviceId}::uuid, statement_timestamp(),
         ${report.protocol}, ${report.appVersion}, ${report.desiredPublicationId}::uuid,
         ${report.activePublicationId}::uuid, ${report.activeSince},
@@ -587,7 +604,9 @@ export class PrismaPublicationRepository {
         ${staging?.state ?? null}, ${staging?.failure ?? null},
         ${staging?.bytesDone ?? null}::bigint, ${staging?.bytesTotal ?? null}::bigint,
         ${report.playback}, ${report.storage?.freeBytes ?? null}::bigint,
-        ${report.storage?.totalBytes ?? null}::bigint, ${report.deviceTime})
+        ${report.storage?.totalBytes ?? null}::bigint, ${report.deviceTime},
+        ${report.diagnostics?.clock ?? null}, ${report.diagnostics?.systemSkewMillis ?? null}::bigint,
+        ${report.diagnostics?.crashCount ?? null}::integer)
       ON CONFLICT (company_id, device_id) DO UPDATE SET
         received_at = EXCLUDED.received_at,
         protocol = EXCLUDED.protocol,
@@ -604,7 +623,10 @@ export class PrismaPublicationRepository {
         playback = EXCLUDED.playback,
         storage_free_bytes = EXCLUDED.storage_free_bytes,
         storage_total_bytes = EXCLUDED.storage_total_bytes,
-        device_time = EXCLUDED.device_time
+        device_time = EXCLUDED.device_time,
+        clock_state = EXCLUDED.clock_state,
+        clock_skew_millis = EXCLUDED.clock_skew_millis,
+        crash_count = EXCLUDED.crash_count
       RETURNING *`;
     if (events.length > 0)
       await tx.$executeRaw`

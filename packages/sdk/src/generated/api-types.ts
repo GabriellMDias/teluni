@@ -29097,6 +29097,11 @@ export interface operations {
                                 bytesTotal: number;
                             } | null;
                             playback: "PLAYING" | "NEUTRAL" | "AUTHORIZATION_EXPIRED" | "CLOCK_UNTRUSTED" | "DEGRADED" | "SETUP";
+                            diagnostics: {
+                                clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+                                systemSkewMillis: number | null;
+                                crashCount: number | null;
+                            } | null;
                             storage: {
                                 freeBytes: number;
                                 totalBytes: number;
@@ -29342,6 +29347,11 @@ export interface operations {
                                     bytesTotal: number;
                                 } | null;
                                 playback: "PLAYING" | "NEUTRAL" | "AUTHORIZATION_EXPIRED" | "CLOCK_UNTRUSTED" | "DEGRADED" | "SETUP";
+                                diagnostics: {
+                                    clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+                                    systemSkewMillis: number | null;
+                                    crashCount: number | null;
+                                } | null;
                                 storage: {
                                     freeBytes: number;
                                     totalBytes: number;
@@ -29572,6 +29582,11 @@ export interface operations {
                         totalBytes: number;
                     } | null;
                     deviceTime: string | null;
+                    diagnostics?: {
+                        clock: "ANCHORED" | "ESTIMATED" | "UNTRUSTED";
+                        systemSkewMillis: number | null;
+                        crashCount: number | null;
+                    } | null;
                 };
             };
         };

@@ -83,6 +83,18 @@ const ptBR = {
     } as Record<string, string>,
     storageLabel: "Armazenamento livre",
     appLabel: "Versão do player",
+    clockLabel: "Referência de horário (informada pela tela)",
+    clock: {
+      ANCHORED: "Sincronizada com o servidor",
+      ESTIMATED: "Estimada pelo relógio do dispositivo",
+      UNTRUSTED: "Sem referência confiável",
+    },
+    skewLabel: "Desvio do relógio do dispositivo",
+    skewWarning:
+      "O relógio do dispositivo difere mais de 60 segundos do horário de referência. O player usa o horário sincronizado para a programação.",
+    crashLabel: "Falhas registradas neste pareamento",
+    unknownDiagnostic: "Não informado",
+    skewUnavailable: "Sem comparação com um horário sincronizado",
   },
   rotations: {
     0: "Normal (0°)",
@@ -250,6 +262,18 @@ const enUS: Messages = {
     },
     storageLabel: "Free storage",
     appLabel: "Player version",
+    clockLabel: "Time reference (reported by screen)",
+    clock: {
+      ANCHORED: "Synchronized with server",
+      ESTIMATED: "Estimated from device clock",
+      UNTRUSTED: "No trusted reference",
+    },
+    skewLabel: "Device clock difference",
+    skewWarning:
+      "The device clock differs by more than 60 seconds from the time reference. The player uses synchronized time for programming.",
+    crashLabel: "Crashes recorded during this pairing",
+    unknownDiagnostic: "Not reported",
+    skewUnavailable: "No synchronized time comparison",
   },
   rotations: {
     0: "Normal (0°)",

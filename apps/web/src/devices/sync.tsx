@@ -128,11 +128,40 @@ function SyncDetails({
                 </dd>
               </>
             )}
+            <dt>{t.sync.clockLabel}</dt>
+            <dd>
+              {reported.diagnostics
+                ? t.sync.clock[reported.diagnostics.clock]
+                : t.sync.unknownDiagnostic}
+            </dd>
+            <dt>{t.sync.skewLabel}</dt>
+            <dd>
+              {reported.diagnostics?.systemSkewMillis == null
+                ? t.sync.skewUnavailable
+                : new Intl.NumberFormat(locale, {
+                    style: "unit",
+                    unit: "second",
+                    signDisplay: "always",
+                    maximumFractionDigits: 3,
+                  }).format(reported.diagnostics.systemSkewMillis / 1000)}
+            </dd>
+            <dt>{t.sync.crashLabel}</dt>
+            <dd>
+              {reported.diagnostics?.crashCount == null
+                ? t.sync.unknownDiagnostic
+                : `${reported.diagnostics.crashCount === 2_147_483_647 ? "≥ " : ""}${new Intl.NumberFormat(locale).format(reported.diagnostics.crashCount)}`}
+            </dd>
             <dt>{t.sync.appLabel}</dt>
             <dd>{reported.appVersion}</dd>
           </>
         )}
       </dl>
+      {reported?.diagnostics?.systemSkewMillis != null &&
+        Math.abs(reported.diagnostics.systemSkewMillis) > 60_000 && (
+          <p role="status" className="notice">
+            {t.sync.skewWarning}
+          </p>
+        )}
       <p className="hint">{t.sync.note}</p>
     </>
   );

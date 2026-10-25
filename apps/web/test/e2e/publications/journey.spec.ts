@@ -291,6 +291,11 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
       activatedAt: new Date().toISOString(),
     },
     playback: "PLAYING",
+    diagnostics: {
+      clock: "ANCHORED",
+      systemSkewMillis: -120_001,
+      crashCount: 2,
+    },
   });
 
   // The panel shows the screen's own acknowledgement.
@@ -299,6 +304,11 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   await afterNavigation(sync).toContainText("Atualizada");
   await expect(sync).toContainText("Geração 1");
   await expect(sync).toContainText("Exibindo conteúdo");
+  await expect(sync).toContainText("Sincronizada com o servidor");
+  await expect(sync).toContainText("Falhas registradas neste pareamento");
+  await expect(page.getByRole("status")).toContainText(
+    "difere mais de 60 segundos",
+  );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.goto(groupUrl);
   await expect(page.getByText("Conectada · Atualizada")).toBeVisible();

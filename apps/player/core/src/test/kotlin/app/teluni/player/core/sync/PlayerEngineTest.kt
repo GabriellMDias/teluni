@@ -4,6 +4,7 @@ import app.teluni.player.core.playback.Plan
 import app.teluni.player.core.playback.PlaybackCondition
 import app.teluni.player.core.protocol.StagingFailureCode
 import app.teluni.player.core.protocol.sha256Hex
+import app.teluni.player.core.store.CrashJournal
 import app.teluni.player.core.store.PlayerState
 import app.teluni.player.core.store.PlayerStore
 import app.teluni.player.core.time.FakeClock
@@ -102,6 +103,56 @@ class PlayerEngineTest {
         // After 18:00 local the default playlist plays.
         clock.advance(Duration.ofHours(9).toMillis())
         assertEquals("evening", assertIs<Plan.Play>(engine.plan()).playlist.id)
+    }
+
+    @Test
+    fun `diagnostics distinguish untrusted anchored and estimated clocks without changing playback`() {
+        val engine = paired()
+        assertEquals(SyncReport.Diagnostics("UNTRUSTED", null, 0), engine.report().diagnostics)
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val playing = engine.plan()
+        val trusted = engine.clock.now()
+        clock.wall += 120_001
+        assertEquals(SyncReport.Diagnostics("ANCHORED", 120_001, 0), engine.report().diagnostics)
+        assertEquals(trusted, engine.clock.now())
+        assertEquals(playing, engine.plan())
+        clock.wall -= 180_002
+        assertEquals(-60_001, engine.report().diagnostics?.systemSkewMillis)
+        clock.wall += 180_002
+        engine.checkpoint()
+        clock.boot = "next-boot"
+        clock.monotonic = 0
+        assertEquals(SyncReport.Diagnostics("ESTIMATED", null, 0), engine().report().diagnostics)
+        clock.automatic = false
+        assertEquals("UNTRUSTED", engine().report().diagnostics?.clock)
+    }
+
+    @Test
+    fun `unsafe clock differences are unknown and never wrap into plausible skew`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        clock.wall = Long.MIN_VALUE
+        assertNull(engine.report().deviceTime)
+        assertNull(engine.report().diagnostics?.systemSkewMillis)
+        assertIs<Plan.Play>(engine.plan())
+        clock.wall = Long.MAX_VALUE
+        assertNull(engine.report().deviceTime)
+        assertNull(engine.report().diagnostics?.systemSkewMillis)
+    }
+
+    @Test
+    fun `only the crash count is reported and another pairing starts with zero`() {
+        val engine = paired()
+        val store = PlayerStore(root)
+        CrashJournal(store).record(listOf("app.teluni.player.PlayerActivity.onCreate:42"))
+        assertEquals(1, engine.report().diagnostics?.crashCount)
+        val raw = kotlinx.serialization.json.Json.encodeToString(SyncReport.serializer(), engine.report())
+        assertFalse(raw.contains("PlayerActivity"))
+        engine.startEnrollment(report)
+        assertEquals(0, engine.report().diagnostics?.crashCount)
+        assertNull(store.record(PlayerStore.Record.DIAGNOSTICS))
     }
 
     @Test

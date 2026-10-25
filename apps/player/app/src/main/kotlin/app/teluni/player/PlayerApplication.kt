@@ -1,23 +1,24 @@
 package app.teluni.player
 
 import android.app.Application
-import app.teluni.player.core.store.AtomicFiles
-import java.nio.file.Files
+import app.teluni.player.core.store.CrashJournal
+import app.teluni.player.core.store.PlayerStore
 
 class PlayerApplication : Application() {
     internal val runtime: PlayerRuntime by lazy { PlayerRuntime(this) }
 
     override fun onCreate() {
         super.onCreate()
+        // Remove the older uncounted location; pairing-scoped evidence now lives inside the erased store.
+        filesDir.resolve("diagnostics").deleteRecursively()
+        val journal by lazy { CrashJournal(PlayerStore(filesDir.toPath().resolve("player"))) }
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, failure ->
             try {
-                val folder = filesDir.toPath().resolve("diagnostics")
-                Files.createDirectories(folder)
                 // Never persist exception messages, causes, payloads, credentials or content.
                 val frames = failure.stackTrace.filter { it.className.startsWith("app.teluni.player.") }.take(20)
-                    .joinToString("\n") { "${it.className}.${it.methodName}:${it.lineNumber}" }
-                AtomicFiles().write(folder.resolve("last-crash.txt"), "PLAYER_CRASH\n$frames".toByteArray())
+                    .map { "${it.className}.${it.methodName}:${it.lineNumber}" }
+                journal.record(frames)
             } catch (_: Exception) {
                 android.util.Log.e("TeluniPlayer", "CRASH_RECORD_FAILED")
             }

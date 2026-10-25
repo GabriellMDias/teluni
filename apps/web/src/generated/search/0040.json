@@ -5,6 +5,24 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes-1",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalog_fields_company_id_catalog_id_fkey`\n`FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nA field belongs to a catalog of the same company and is deleted with it.\n`catalog_fields_company_id_target_catalog_id_fkey`\n`FOREIGN KEY (company_id, target_catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA reference target is a catalog of the same company that cannot be deleted while targeted.\n`catalog_fields_currency`\n`CHECK ((((type = 'MONEY'::\"CatalogFieldType\") = (currency IS NOT NULL)) AND ((currency IS NULL) OR (currency ~ '^[A-Z]{3}$'::text))))`\nMONEY fields, and only they, carry a three-letter uppercase currency code.\n`catalog_fields_label_trimmed`\n`CHECK ((((label)::text = btrim((label)::text)) AND (char_length((label)::text) >= 1)))`\nLabels are trimmed and not empty.\n`catalog_fields_money_optional`\n`CHECK ((NOT ((type = 'MONEY'::\"CatalogFieldType\") AND required)))`\nMONEY fields are never required, because prices are saved separately.\n`catalog_fields_pkey`\n`PRIMARY KEY (id)`\nUnique field identity.\n`catalog_fields_position_range`\n`CHECK (((\"position\" >= 0) AND (\"position\" <= 59)))`\nA schema has at most 60 positions.\n`catalog_fields_settings_object`\n`CHECK ((jsonb_typeof(settings) = 'object'::text))`\nSettings are a JSON object.\n`catalog_fields_target`\n`CHECK (((type = 'REFERENCE'::\"CatalogFieldType\") = (target_catalog_id IS NOT NULL)))`\nREFERENCE fields, and only they, carry a target catalog.\n`catalog_fields_catalog_position_idx`\n`CREATE INDEX catalog_fields_catalog_position_idx ON public.catalog_fields USING btree (company_id, catalog_id, \"position\")`\nReads a schema in order.\n`catalog_fields_company_id_id_key`\n`CREATE UNIQUE INDEX catalog_fields_company_id_id_key ON public.catalog_fields USING btree (company_id, id)`\nTenant key that prices and record links reference.\n`catalog_fields_target_idx`\n`CREATE INDEX catalog_fields_target_idx ON public.catalog_fields USING btree (company_id, target_catalog_id)`\nFinds the reference fields that target a catalog.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "catalog_records",
+    "anchor": "catalog_records",
+    "text": "catalog_records\nOne entry of a catalog: its values keyed by field identifier, including the base price of each MONEY field, its availability and its position.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Created and updated one at a time with the observed version; value, availability, price and position changes bump it. Deleted at runtime with its overrides, promotions and join rows, only while no other record references it.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable record UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the record (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog the record belongs to; immutable.\n—\n—\n`position`\n`integer`\nno\n—\nINTERNAL\nSort key in the catalog's stored order, spaced so a move usually changes one row; ties order by id.\n—\n—\n`available`\n`boolean`\nno\n`true`\nINTERNAL\nWhether the record is available; views hide unavailable records unless they show them as unavailable.\n—\n—\n`field_values`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nValidated JSON object from field UUID to value: trimmed text, canonical decimal strings, booleans, local dates and times, sorted weekdays, choice identifiers, media and record UUIDs, and base prices as integer minor units (ADR-0032). At most 16 KiB as serialized by the API.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1.\n—\n—\n`created_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that created the record.\n—\n—\n`updated_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that made the last change.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-2",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalog_records_company_id_catalog_id_fkey`\n`FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA record belongs to a catalog of the same company, which cannot be deleted while it has records.\n`catalog_records_company_id_created_by_membership_id_fkey`\n`FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe creator is a membership of the same company.\n`catalog_records_company_id_updated_by_membership_id_fkey`\n`FOREIGN KEY (company_id, updated_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe last updater is a membership of the same company.\n`catalog_records_pkey`\n`PRIMARY KEY (id)`\nUnique record identity.\n`catalog_records_position_range`\n`CHECK ((\"position\" >= 0))`\nPositions are not negative.\n`catalog_records_values_object`\n`CHECK (((jsonb_typeof(field_values) = 'object'::text) AND (octet_length((field_values)::text) <= 32768)))`\nValues are a JSON object with a storage backstop above the API's 16 KiB limit.\n`catalog_records_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`catalog_records_catalog_position_idx`\n`CREATE INDEX catalog_records_catalog_position_idx ON public.catalog_records USING btree (company_id, catalog_id, \"position\", id)`\nLists a catalog's records in stored order with keyset cursors.\n`catalog_records_company_id_id_key`\n`CREATE UNIQUE INDEX catalog_records_company_id_id_key ON public.catalog_records USING btree (company_id, id)`\nTenant key that prices, record links and references target.\n"
   },
@@ -583,41 +601,5 @@
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-34",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`playlist_items_company_id_media_asset_id_fkey`\n`FOREIGN KEY (company_id, media_asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe media item belongs to the same company and cannot be removed while referenced.\n`playlist_items_company_id_playlist_id_fkey`\n`FOREIGN KEY (company_id, playlist_id) REFERENCES playlists(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe playlist belongs to the same company; items are deleted with it.\n`playlist_items_duration_range`\n`CHECK (((duration_ms IS NULL) OR ((duration_ms >= 1000) AND (duration_ms <= 3600000))))`\nImage durations stay within 1 to 3,600 seconds.\n`playlist_items_pkey`\n`PRIMARY KEY (company_id, playlist_id, \"position\")`\nOne item per playlist position.\n`playlist_items_position_range`\n`CHECK (((\"position\" >= 0) AND (\"position\" <= 499)))`\nAt most 500 positions.\n`playlist_items_media_idx`\n`CREATE INDEX playlist_items_media_idx ON public.playlist_items USING btree (company_id, media_asset_id)`\nFinds the playlists that use a media item, for the media reference guard.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "programming_groups",
-    "anchor": "programming_groups",
-    "text": "programming_groups\nA company-owned group of screens that share one program, spanning the whole company or a fixed set of branches.\nOwner: Programming. Classification: CONFIDENTIAL.\nLifecycle: Created with its program; renames and span changes bump the version. Deleted at runtime, with its program and span rows, only when it has no member screens.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable group UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the group; immutable (tenant key).\n—\n—\n`name`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nDisplay name, trimmed, 1 to 80 characters, unique in the company ignoring case.\n—\n—\n`all_branches`\n`boolean`\nno\n—\nINTERNAL\nTrue when the group spans every branch of the company; otherwise programming_group_branches lists its span.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-35",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`programming_groups_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA group belongs to an existing company.\n`programming_groups_name_trimmed`\n`CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))`\nNames are trimmed and not empty.\n`programming_groups_pkey`\n`PRIMARY KEY (id)`\nUnique group identity.\n`programming_groups_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`programming_groups_company_id_id_key`\n`CREATE UNIQUE INDEX programming_groups_company_id_id_key ON public.programming_groups USING btree (company_id, id)`\nTenant key for groups.\n`programming_groups_company_name_unique`\n`CREATE UNIQUE INDEX programming_groups_company_name_unique ON public.programming_groups USING btree (company_id, lower((name)::text))`\nGroup names are unique in a company, ignoring case.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "programming_group_branches",
-    "anchor": "programming_group_branches",
-    "text": "programming_group_branches\nThe explicit branch span of a group that does not cover the whole company.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: Replaced when the group's span changes; deleted with the group (cascade inside the module). While a row names a branch, archiving that branch is refused.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the group (tenant key).\n—\n—\n`group_id`\n`uuid`\nno\n—\nINTERNAL\nGroup whose span this row belongs to.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch inside the group's span.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-36",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`programming_group_branches_company_id_branch_id_fkey`\n`FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe branch belongs to the same company.\n`programming_group_branches_company_id_group_id_fkey`\n`FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe group belongs to the same company; rows are deleted with it.\n`programming_group_branches_pkey`\n`PRIMARY KEY (company_id, group_id, branch_id)`\nEach branch appears once in a group's span.\n`programming_group_branches_branch_idx`\n`CREATE INDEX programming_group_branches_branch_idx ON public.programming_group_branches USING btree (company_id, branch_id)`\nFinds groups whose span names a branch, for the branch archive guard.\n"
   }
 ]

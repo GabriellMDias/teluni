@@ -14,12 +14,14 @@ import app.teluni.player.core.protocol.StatementRejected
 import app.teluni.player.core.protocol.StatementVerifier
 import app.teluni.player.core.protocol.sha256Hex
 import app.teluni.player.core.schedule.ZoneOffsets
+import app.teluni.player.core.store.CrashJournal
 import app.teluni.player.core.store.AtomicFiles
 import app.teluni.player.core.store.PlayerState
 import app.teluni.player.core.store.PlayerStore
 import app.teluni.player.core.store.StoredGeneration
 import app.teluni.player.core.time.ClockRecord
 import app.teluni.player.core.time.ClockSource
+import app.teluni.player.core.time.TrustedTime
 import app.teluni.player.core.time.TrustedClock
 import app.teluni.player.core.time.instantOrNull
 import java.io.IOException
@@ -35,6 +37,7 @@ import java.security.SecureRandom
 import java.time.DateTimeException
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneOffset
 import java.util.Base64
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutionException
@@ -262,8 +265,30 @@ public class PlayerEngine(
                     ?.any { it.sha256 in unavailableMedia } == true) PlaybackCondition.DEGRADED.name else playback.name
             },
             storage = store.space().let { SyncReport.Storage(it.free, it.total) }.takeIf { it.freeBytes <= it.totalBytes },
-            deviceTime = Instant.ofEpochMilli(clockSource.wallMillis()).toString(),
+            deviceTime = deviceTime(),
+            diagnostics = clockDiagnostics(),
         )
+    }
+
+    /** An impossible device date must not prevent synchronization from repairing the time reference. */
+    private fun deviceTime(): String? {
+        val instant = Instant.ofEpochMilli(clockSource.wallMillis())
+        return instant.takeIf { it.atOffset(ZoneOffset.UTC).year in 0..9999 }?.toString()
+    }
+
+    private fun clockDiagnostics(): SyncReport.Diagnostics = synchronized(clock) {
+        val status = when (clock.now()) {
+            is TrustedTime.Anchored -> "ANCHORED"
+            is TrustedTime.Estimated -> "ESTIMATED"
+            TrustedTime.Untrusted -> "UNTRUSTED"
+        }
+        // Keep the exact signed millisecond difference only when JSON can represent it safely.
+        val skew = try {
+            clock.systemSkew()?.toMillis()?.takeIf { it in -9_007_199_254_740_991L..9_007_199_254_740_991L }
+        } catch (_: ArithmeticException) {
+            null
+        }
+        SyncReport.Diagnostics(status, skew, CrashJournal(store).count())
     }
 
     /**

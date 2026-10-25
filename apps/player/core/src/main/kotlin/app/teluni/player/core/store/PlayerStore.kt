@@ -139,6 +139,7 @@ public class PlayerStore(
         STATEMENT("statement.jws"),
         SYNC("sync.json"),
         CLOCK("clock.json"),
+        DIAGNOSTICS("diagnostics.json"),
     }
 
     /**

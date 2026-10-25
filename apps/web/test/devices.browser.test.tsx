@@ -583,3 +583,92 @@ test("shows a screen's synchronization as the screen reported it", async () => {
     )
     .toBeVisible();
 });
+
+test.each([
+  { clock: "ANCHORED", skew: 60_000, crashes: 0, warning: false },
+  { clock: "ANCHORED", skew: 60_001, crashes: 2, warning: true },
+  { clock: "ANCHORED", skew: -60_001, crashes: 1, warning: true },
+  { clock: "ANCHORED", skew: 0, crashes: 2_147_483_647, warning: false },
+  { clock: "UNTRUSTED", skew: null, crashes: 0, warning: false },
+  { clock: "ESTIMATED", skew: null, crashes: null, warning: false },
+  { clock: null, skew: null, crashes: null, warning: false },
+])(
+  "shows player diagnostics without inferring missing values: $clock $skew",
+  async ({ clock, skew, crashes, warning }) => {
+    const state = {
+      deviceId,
+      connection: "online",
+      lastContactAt: null,
+      source: "none",
+      desired: null,
+      publication: "neutral",
+      reported: {
+        receivedAt: "2026-10-24T12:00:00.000Z",
+        appVersion: "1.0.0",
+        protocol: 2,
+        active: null,
+        staging: null,
+        playback: "PLAYING",
+        storage: null,
+        diagnostics: clock
+          ? { clock, systemSkewMillis: skew, crashCount: crashes }
+          : null,
+      },
+    };
+    respond((url) => {
+      if (url.pathname.endsWith("/sync-state")) return { body: state };
+      if (url.pathname.endsWith(`/devices/${deviceId}`))
+        return { body: device() };
+      if (url.pathname.endsWith("/branches")) return { body: branches };
+      return { body: company(["devices.view"]) };
+    });
+    const { screen } = await open(`${screensPath}/${deviceId}`);
+    const sync = screen.getByTestId("screen-sync");
+    await expect.element(sync.getByText(t.sync.clockLabel)).toBeVisible();
+    await expect
+      .element(
+        sync
+          .getByText(
+            clock
+              ? t.sync.clock[clock as keyof typeof t.sync.clock]
+              : t.sync.unknownDiagnostic,
+            { exact: true },
+          )
+          .first(),
+      )
+      .toBeVisible();
+    if (crashes !== null)
+      await expect
+        .element(
+          sync.getByText(
+            `${crashes === 2_147_483_647 ? "≥ " : ""}${new Intl.NumberFormat(locale).format(crashes)}`,
+            { exact: true },
+          ),
+        )
+        .toBeVisible();
+    if (skew === null)
+      await expect
+        .element(sync.getByText(t.sync.skewUnavailable))
+        .toBeVisible();
+    else
+      await expect
+        .element(
+          sync.getByText(
+            new Intl.NumberFormat(locale, {
+              style: "unit",
+              unit: "second",
+              signDisplay: "always",
+              maximumFractionDigits: 3,
+            }).format(skew / 1000),
+            { exact: true },
+          ),
+        )
+        .toBeVisible();
+    if (warning)
+      await expect.element(screen.getByText(t.sync.skewWarning)).toBeVisible();
+    else
+      await expect
+        .element(screen.getByText(t.sync.skewWarning))
+        .not.toBeInTheDocument();
+  },
+);
