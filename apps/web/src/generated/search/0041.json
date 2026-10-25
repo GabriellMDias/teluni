@@ -4,6 +4,24 @@
     "title": "Database Reference",
     "group": "Generated references",
     "kind": "repository",
+    "heading": "programs",
+    "anchor": "programs",
+    "text": "programs\nThe draft programming of one source: exactly one group or one screen.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: A group's program is created with the group and deleted with it (cascade inside the module); a screen's program is created when its layout or first output is saved and kept with the device record. Saving an output or choosing a layout bumps the version, and so does a layout save that removes outputs with content.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable program UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the program; immutable (tenant key).\n—\n—\n`group_id`\n`uuid`\nyes\n—\nINTERNAL\nGroup the program belongs to.\nThe program belongs to a screen.\n—\n`device_id`\n`uuid`\nyes\n—\nINTERNAL\nScreen the program belongs to.\nThe program belongs to a group.\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1; the API reports 0 for a program not yet saved.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n`layout_id`\n`uuid`\nyes\n—\nINTERNAL\nLayout whose areas are the program's outputs.\nThe program has no layout and a single screen output.\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Constraints and indexes",
+    "anchor": "constraints-and-indexes-37",
+    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`programs_company_id_device_id_fkey`\n`FOREIGN KEY (company_id, device_id) REFERENCES devices(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe screen belongs to the same company.\n`programs_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA program belongs to an existing company.\n`programs_company_id_group_id_fkey`\n`FOREIGN KEY (company_id, group_id) REFERENCES programming_groups(company_id, id) ON UPDATE RESTRICT ON DELETE CASCADE`\nThe group belongs to the same company; its program is deleted with it.\n`programs_company_id_layout_id_fkey`\n`FOREIGN KEY (company_id, layout_id) REFERENCES layouts(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe layout belongs to the same company; a layout that programs use cannot be deleted.\n`programs_one_source`\n`CHECK (((group_id IS NULL) <> (device_id IS NULL)))`\nA program belongs to exactly one group or one screen.\n`programs_pkey`\n`PRIMARY KEY (id)`\nUnique program identity.\n`programs_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`programs_company_id_id_key`\n`CREATE UNIQUE INDEX programs_company_id_id_key ON public.programs USING btree (company_id, id)`\nTenant key for programs.\n`programs_device_key`\n`CREATE UNIQUE INDEX programs_device_key ON public.programs USING btree (company_id, device_id)`\nA screen has at most one program.\n`programs_group_key`\n`CREATE UNIQUE INDEX programs_group_key ON public.programs USING btree (company_id, group_id)`\nA group has at most one program.\n`programs_layout_idx`\n`CREATE INDEX programs_layout_idx ON public.programs USING btree (company_id, layout_id)`\nFinds the programs that use a layout, for layout saves and deletion.\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
     "heading": "program_outputs",
     "anchor": "program_outputs",
     "text": "program_outputs\nOne output of a program (the full screen now; layout areas later) with its optional default playlist.\nOwner: Programming. Classification: INTERNAL.\nLifecycle: Created or updated when the output is saved; deleted with the program (cascade inside the module).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the program (tenant key).\n—\n—\n`program_id`\n`uuid`\nno\n—\nINTERNAL\nProgram the output belongs to.\n—\n—\n`output_key`\n`character varying(32)`\nno\n—\nINTERNAL\nOutput key: screen for a program without a layout, otherwise the key of one of its layout's areas.\n—\n—\n`default_playlist_id`\n`uuid`\nyes\n—\nINTERNAL\nPlaylist shown when no schedule applies.\nThe output shows neutral output when no schedule applies.\n—\n"
@@ -547,23 +565,5 @@
     "heading": "Approved name and domain direction",
     "anchor": "approved-name-and-domain-direction",
     "text": "Approved name and domain direction\nThis document owns Teluni's current brand/domain direction and approved Connected Tiles visual identity. The owner approved the name/domain direction and selected Connected Tiles for project integration on 2026-10-17. Domain choice is distinct from registration, DNS control or trademark clearance.\nItem\nRecorded direction\nEvidence / limit\nProduct name\n**Decided:** Teluni\nExplicit owner instruction\nVisual identity\n**Approved:** Connected Tiles\nExplicit owner selection and authorization to integrate it\nPrincipal domain\n**Decided:** `teluni.app`\nApproved product address; registration/control evidence has not been supplied\nBrazil defensive domain\n**Decided option:** `teluni.com.br`\nOwner reports availability; secondary/defensive option, not a completed registration or spending authorization\n`.com` domain\n**Outside current scope:** `teluni.com`\nOwner reports unavailable/premium and unsuitable for the current budget\nTrademark\n**In progress:** preliminary research has advanced\nOwner report; no final clearance/registration evidence is inferred\nNo registrar purchase, DNS change or application endpoint reconfiguration is performed as part of visual identity integration. Orion provenance and technical configuration names remain unchanged.\n"
-  },
-  {
-    "id": "repository/docs/project/branding/README",
-    "title": "Teluni Brand Identity",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Connected Tiles",
-    "anchor": "connected-tiles",
-    "text": "Connected Tiles\nThe three rounded display tiles express multiple screens coordinated together. A larger primary screen and two smaller companion screens provide a compact, recognizable silhouette for a single merchant or a branch network. Clear gaps preserve the cluster in monochrome and at small sizes.\nThe wordmark is titlecase **Teluni**, set in **Plus Jakarta Sans Semibold**. The shell and documentation navigation retain accessible live text beside the decorative symbol; standalone institutional wordmarks are available as outlined SVGs. The interface loads the selected variable font locally, with `font-display: swap`, rather than relying on an external font service.\n"
-  },
-  {
-    "id": "repository/docs/project/branding/README",
-    "title": "Teluni Brand Identity",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Palette and surfaces",
-    "anchor": "palette-and-surfaces",
-    "text": "Palette and surfaces\nRole\nColor\nUsage\nPrimary\n`#2563EB`\nMain screen, links, selected navigation and focus emphasis\nAccent\n`#14B8A6`\nCompanion screen and restrained visual accents\nSecondary / dark-surface emphasis\n`#60A5FA`\nCompanion screen, dark-surface brand variants and suitable blue text on navy\nDark surface / primary ink\n`#0F172A`\nHeader, dark applications, primary text on light surfaces\nLight surface\n`#F8FAFC`\nPage, navigation and touch-icon background\nLight ink\n`#E2E8F0`\nWordmark/text on navy\nSupporting neutrals\n`#334155`, `#64748B`, `#CBD5E1`\nSupporting text, borders and separation as appropriate to contrast\n**Light application:** navy text with blue/teal screen tiles on off-white. **Dark application:** light text with brighter-blue/teal tiles on navy. The product shell now has desktop sidebar navigation and System/Light/Dark appearance selection, with semantic colors for shared controls and surfaces. The developer portal and separate Keycloak pages retain their existing presentation. Theme implementation and remaining screen qualification belong to [PJ-41](../implementation-plan.md#pj-41-interface-alignment); the brand proofs alone are not evidence of complete product coverage.\nUse teal as an accent or a background with dark text, rather than small text on off-white. [Measured contrast and export dimensions](review.json) describe the artwork, not a blanket accessibility certification. Favicon proofs cover 16/32 px and navigation proofs 24/32 px. Android adaptive/store exports still depend on the future player's packaging requirements.\n"
   }
 ]

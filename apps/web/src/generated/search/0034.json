@@ -4,6 +4,33 @@
     "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Runtime configuration",
+    "anchor": "runtime-configuration",
+    "text": "Runtime configuration\nValidated bootstrap configuration should be treated as **immutable during normal application execution**.\nDynamic application state such as:\nfeature flags;\ntenant settings;\nremote configuration;\nuser preferences;\nruntime business settings;\nis a separate concern and must not be conflated with application bootstrap configuration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Configuration defaults",
+    "anchor": "configuration-defaults",
+    "text": "Configuration defaults\nConfiguration defaults are permitted when the default behavior is safe, deterministic, and appropriate across the environments where it applies.\nDefaults must not silently weaken:\nsecurity;\nauthentication;\ndurability;\ndata integrity;\nproduction safety;\nobservability requirements.\nSensitive or production-critical configuration should generally require explicit values when an implicit default would create ambiguity or risk.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Configuration metadata and documentation",
+    "anchor": "configuration-metadata-and-documentation",
+    "text": "Configuration metadata and documentation\nConfiguration schemas may include metadata required to generate configuration reference documentation.\nSuch metadata may describe:\nlogical configuration name;\ntype;\nrequired or optional status;\nsafe default;\ndescription;\nclassification or sensitivity;\napplicable environment constraints.\nThe intended model is:\nconfiguration schema\n    ↓\nruntime validation\n    +\nTypeScript types\n    +\ngenerated configuration reference\n\nGenerated configuration documentation must never contain actual secret values.\nA schema may document that a secret or restricted configuration entry exists, but secret values must not be emitted into:\ndocumentation;\nlogs;\ntraces;\nmetrics;\nerror reports;\nfixtures;\ngenerated examples containing real credentials.\nExisting Orion data-classification and secrets-management policies remain authoritative.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
     "text": "Rationale\nHTTP with JSON and OpenAPI provides the strongest general-purpose boundary for Orion's expected application portfolio.\nIt is language-independent, broadly supported by infrastructure and tooling, understandable by both humans and machines, and suitable for first-party clients, third-party integrations, mobile applications, automation, and AI tooling.\nThis is particularly important because Orion is intended as a reusable engineering foundation rather than a single TypeScript full-stack application.\nA TypeScript-only RPC model could provide superior local developer ergonomics for some applications but would reduce the independence of the external contract.\nOpenAPI preserves the ability to evolve backend implementation choices without requiring consumers to share Orion's internal programming language or framework.\nOrion does not require strict REST semantics because business applications contain meaningful operations that do not always map naturally to generic CRUD updates.\nAllowing both resource-oriented and explicit operation-oriented endpoints keeps API contracts aligned with application behavior rather than forcing artificial resource modeling.\nTypeBox is selected because Orion's contract architecture treats JSON Schema compatibility as a first-class requirement.\nTypeBox creates runtime JSON Schema representations while also providing static TypeScript inference.\nThis directly supports Orion's preferred model:\none executable schema\n    ↓\nmultiple derived representations\n\nrather than maintaining separate:\nTypeScript DTO\nvalidation schema\nJSON Schema\nOpenAPI schema\nclient type\n\nfor the same wire contract.\nTypeBox also aligns directly with Fastify's JSON Schema validation and serialization model.\nThis reduces translation layers between the authored contract and the infrastructure that enforces it.\nThe selection does not imply that TypeBox should replace normal TypeScript types inside domain and application code.\nIts value is greatest at boundaries requiring runtime validation and machine-readable schema representation.\nOpenAPI is generated rather than authored independently because Orion prefers derived representations whenever they can be reliably produced from canonical machine-readable sources.\nMaintaining handwritten OpenAPI beside separately maintained runtime schemas would create two sources of truth that could drift.\nOpenAPI also provides a stable language-independent layer for generated clients.\nThis allows Orion's server and first-party TypeScript applications to remain contractually separated even when they live in the same repository.\n`openapi-typescript` and `openapi-fetch` are selected for the initial TypeScript client path because they preserve this separation with relatively little generated or runtime code.\nThe approach avoids prematurely coupling the SDK layer to frontend state-management libraries or framework-specific code generators.\nRicher SDK generators may become useful later, but their additional code generation should solve a demonstrated need.\nThe same schema system is used for bootstrap configuration because configuration is another runtime trust boundary.\nIntroducing a second schema library only for environment parsing would increase repository complexity without a clear architectural benefit.\nRestricting `process.env` access to the configuration boundary also improves discoverability and predictability.\nInstead of every component independently interpreting external strings, configuration is parsed once into an explicit typed object before the application is composed.\nFail-fast startup behavior ensures configuration problems are detected before the application begins processing traffic or background work.\n"
@@ -1051,32 +1078,5 @@
     "heading": "Fixed Production Trace Sampling Rate",
     "anchor": "fixed-production-trace-sampling-rate",
     "text": "Fixed Production Trace Sampling Rate\nOrion could establish one default production value such as 10% trace sampling.\nThis would simplify configuration.\nIt was not selected because appropriate sampling depends heavily on traffic volume, telemetry cost, backend capabilities, and incident-response requirements.\nSampling therefore remains deployment-configurable.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Log Bodies and Complete Request Data for Maximum Diagnostics",
-    "anchor": "log-bodies-and-complete-request-data-for-maximum-diagnostics",
-    "text": "Log Bodies and Complete Request Data for Maximum Diagnostics\nOrion could log complete requests, responses, headers, and payloads to maximize debugging information.\nIt was not selected because doing so would create substantial security and privacy risk and could significantly increase storage and processing cost.\nStructured observability should record intentional diagnostic context rather than indiscriminately duplicate application data.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Global Sentry or Equivalent Error Reporting Provider",
-    "anchor": "global-sentry-or-equivalent-error-reporting-provider",
-    "text": "Global Sentry or Equivalent Error Reporting Provider\nOrion could select a dedicated error-reporting service as part of the foundation.\nThis would provide a ready-made error monitoring experience.\nIt was not selected because provider requirements differ by application and deployment.\nStructured logging and tracing provide the provider-neutral foundation, while a dedicated error-reporting service may be added when required.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Logs as Business Audit History",
-    "anchor": "logs-as-business-audit-history",
-    "text": "Logs as Business Audit History\nOrion could use structured application logs to answer business audit questions.\nThis appears simple because many relevant operations already produce logs.\nIt was not selected because operational logs generally do not provide the persistence, integrity, authorization, retention, or domain guarantees required for authoritative audit history.\nAudit history remains a separate application responsibility.\n"
   }
 ]

@@ -4,6 +4,33 @@
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Log Bodies and Complete Request Data for Maximum Diagnostics",
+    "anchor": "log-bodies-and-complete-request-data-for-maximum-diagnostics",
+    "text": "Log Bodies and Complete Request Data for Maximum Diagnostics\nOrion could log complete requests, responses, headers, and payloads to maximize debugging information.\nIt was not selected because doing so would create substantial security and privacy risk and could significantly increase storage and processing cost.\nStructured observability should record intentional diagnostic context rather than indiscriminately duplicate application data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Global Sentry or Equivalent Error Reporting Provider",
+    "anchor": "global-sentry-or-equivalent-error-reporting-provider",
+    "text": "Global Sentry or Equivalent Error Reporting Provider\nOrion could select a dedicated error-reporting service as part of the foundation.\nThis would provide a ready-made error monitoring experience.\nIt was not selected because provider requirements differ by application and deployment.\nStructured logging and tracing provide the provider-neutral foundation, while a dedicated error-reporting service may be added when required.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Logs as Business Audit History",
+    "anchor": "logs-as-business-audit-history",
+    "text": "Logs as Business Audit History\nOrion could use structured application logs to answer business audit questions.\nThis appears simple because many relevant operations already produce logs.\nIt was not selected because operational logs generally do not provide the persistence, integrity, authorization, retention, or domain guarantees required for authoritative audit history.\nAudit history remains a separate application responsibility.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Browser OpenTelemetry Instrumentation as a Baseline",
     "anchor": "browser-opentelemetry-instrumentation-as-a-baseline",
     "text": "Browser OpenTelemetry Instrumentation as a Baseline\nOrion could instrument React applications with OpenTelemetry from the beginning to create end-to-end traces from browser interactions to database queries.\nThis could provide useful distributed diagnostics.\nIt was not selected as part of the initial baseline because browser observability has different operational, privacy, performance, and maturity considerations from server-side instrumentation.\nFrontend observability will be introduced when real application requirements justify it.\n"
@@ -1357,50 +1384,5 @@
     "heading": "Context",
     "anchor": "context",
     "text": "Context\nTeluni displays must continue through temporary backend/network outages. Videos must normally play locally. Partial downloads, concurrent publications and power loss must not replace usable programming with an incomplete set. Backend and installed players will evolve independently.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt immutable publication snapshots with versioned manifests that bind programming rules to verified asset versions. The player durably stages missing assets and switches its active generation only after the complete supported snapshot is ready, retaining a valid recovery generation. Separate desired, staged and reported-active versions and reconcile duplicate or lost acknowledgements.\nDefine protocol compatibility, integrity metadata, capacity/retention, scheduling expiry and offline authorization policy before implementation. No transport, storage library, cryptographic mechanism or manifest serialization format is selected by this record.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe owner's requirement is consistent offline playback, not normal continuous server streaming. A generation boundary makes interruption and recovery behavior testable and avoids exposing partially updated programming. Architectural acceptance is not evidence of crash-safe storage or hardware compatibility.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Continuous server streaming:** makes ordinary playback depend on connectivity and repeated transfer; does not satisfy the central offline requirement.\n**Overwrite active files/programming as downloads arrive:** reduces temporary storage but can mix incompatible versions and leave no valid program after interruption. It does not satisfy the required activation boundary.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
-    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nEnables local replay through outages and explicit recovery/failure acceptance tests.\nSeparates publication intent from device observations without assuming exactly-once delivery.\n"
   }
 ]

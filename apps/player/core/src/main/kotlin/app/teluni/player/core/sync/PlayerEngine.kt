@@ -14,6 +14,7 @@ import app.teluni.player.core.protocol.StatementRejected
 import app.teluni.player.core.protocol.StatementVerifier
 import app.teluni.player.core.protocol.sha256Hex
 import app.teluni.player.core.schedule.ZoneOffsets
+import app.teluni.player.core.store.AtomicFiles
 import app.teluni.player.core.store.PlayerState
 import app.teluni.player.core.store.PlayerStore
 import app.teluni.player.core.store.StoredGeneration
@@ -130,6 +131,9 @@ public class PlayerEngine(
     private val staging = Any()
     private var statement: Statement? = null
     private var publications = mutableMapOf<String, Publication>()
+    private val unavailableMedia = mutableSetOf<String>()
+    private val mediaVersions = mutableMapOf<String, Long>()
+    private var lastScrubbed: String? = null
 
     @Volatile
     private var progress: SyncReport.Staging? = null
@@ -196,6 +200,9 @@ public class PlayerEngine(
             vault.erase()
             statement = null
             publications.clear()
+            unavailableMedia.clear()
+            mediaVersions.clear()
+            lastScrubbed = null
             progress = null
         }
     }
@@ -219,6 +226,9 @@ public class PlayerEngine(
             store.eraseAll()
             statement = null
             publications.clear()
+            unavailableMedia.clear()
+            mediaVersions.clear()
+            lastScrubbed = null
             progress = null
         }
         val credential = ByteArray(32).also(random::nextBytes)
@@ -247,7 +257,10 @@ public class PlayerEngine(
             active = state.active?.let { SyncReport.Active(it.publicationId, requireNotNull(it.activatedAt)) },
             recovery = state.recovery?.let { SyncReport.Recovery(it.publicationId) },
             staging = progress,
-            playback = playback.name,
+            playback = synchronized(lock) {
+                if (playback == PlaybackCondition.PLAYING && store.state().active?.let(::parsed)?.media?.values
+                    ?.any { it.sha256 in unavailableMedia } == true) PlaybackCondition.DEGRADED.name else playback.name
+            },
             storage = store.space().let { SyncReport.Storage(it.free, it.total) }.takeIf { it.freeBytes <= it.totalBytes },
             deviceTime = Instant.ofEpochMilli(clockSource.wallMillis()).toString(),
         )
@@ -292,11 +305,13 @@ public class PlayerEngine(
             SyncRecord(answer.status, answer.timeZone, answer.zoneOffsets, answer.rotation, answer.desired, answer.branchId),
         )
         answer.authorization?.let { accept(it, identity, credential) }
-        val state = store.state()
         val desired = answer.desired?.publicationId
-        // A leftover attempt for anything else is cleared by the next stage.
-        val stagingNeeded = (desired != null && desired != state.active?.publicationId) ||
-            (state.staging != null && state.staging.publicationId != desired)
+        // Also repair missing active media, even when the desired generation has not changed.
+        val stagingNeeded = synchronized(lock) {
+            val state = store.state()
+            (desired != null && (desired != state.active?.publicationId || load(state.active) == null)) ||
+                (state.staging != null && state.staging.publicationId != desired)
+        }
         return SyncOutcome.Synced(Duration.ofSeconds(answer.nextSyncSeconds.toLong().coerceIn(5, 3600)), stagingNeeded)
     }
 
@@ -372,7 +387,8 @@ public class PlayerEngine(
         val identity = identity() ?: return StagingOutcome.Idle
         val credential = credential() ?: return StagingOutcome.Idle
         val desired = syncRecord()?.desired
-        if (desired == null || store.state().active?.publicationId == desired.publicationId) {
+        val complete = synchronized(lock) { store.state().active?.let { it.publicationId == desired?.publicationId && load(it) != null } == true }
+        if (desired == null || complete) {
             dropStaging()
             return StagingOutcome.Idle
         }
@@ -383,7 +399,9 @@ public class PlayerEngine(
             val publication = fetchManifest(desired, identity, credential)
             // A superseded attempt's files are no longer protected: free their space first.
             synchronized(lock) { collect(store.state()) }
-            val needed = publication.media.values.filter { !store.hasMedia(it.sha256, it.size) }.distinctBy { it.sha256 }
+            val needed = synchronized(lock) {
+                publication.media.values.filter { it.sha256 in unavailableMedia || !store.hasMedia(it.sha256, it.size) }.distinctBy { it.sha256 }
+            }
             val total = needed.sumOf { it.size }
             preflight(needed.sumOf { it.size - partialSize(it.sha256, it.size) })
             download(publication, needed, total, credential, desired.publicationId)
@@ -644,8 +662,13 @@ public class PlayerEngine(
         }
         val state = store.state()
         val activated = StoredGeneration(publicationId, publication.sha256, instant.toString())
-        val next = PlayerState(active = activated, recovery = state.active, staging = null)
+        // Repairing the active generation preserves its activation time and the previous recovery generation.
+        val next = if (state.active?.publicationId == publicationId) state.copy(staging = null)
+        else PlayerState(active = activated, recovery = state.active, staging = null)
         store.saveState(next)
+        val hashes = publication.media.values.map { it.sha256 }.toSet()
+        for (hash in hashes.intersect(unavailableMedia)) mediaVersions[hash] = (mediaVersions[hash] ?: 0) + 1
+        unavailableMedia.removeAll(hashes)
         progress = null
         collect(next)
         StagingOutcome.Activated(publicationId)
@@ -684,7 +707,7 @@ public class PlayerEngine(
 
     /** A stored generation with its manifest and every media file, or null when anything is missing. */
     private fun load(generation: StoredGeneration): Publication? =
-        parsed(generation)?.takeIf { publication -> publication.media.values.all { store.hasMedia(it.sha256, it.size) } }
+        parsed(generation)?.takeIf { publication -> publication.media.values.all { it.sha256 !in unavailableMedia && store.hasMedia(it.sha256, it.size) } }
 
     /**
      * Deletes what no kept generation needs (AT-19): the active and recovery
@@ -698,17 +721,71 @@ public class PlayerEngine(
         val stagingMedia = state.staging?.let(::parsed)?.media?.values?.map { it.sha256 }?.toSet()
         store.collect(keepPublications, keepMedia, if (state.staging == null) emptySet() else stagingMedia)
         publications = publications.filterKeys { it in keepPublications }.toMutableMap()
+        unavailableMedia.retainAll(keepMedia)
+        mediaVersions.keys.retainAll(keepMedia)
     }
+
+    private data class PlaybackSnapshot(
+        val active: Publication?,
+        val statement: Statement?,
+        val unavailable: Set<String>,
+        val versions: Map<String, Long>,
+    )
 
     /** What to show now, from the active generation, the latest statement and trusted time. */
     public fun plan(): Plan {
-        // Activation and startup reconciliation already established that the active generation is complete.
-        val (active, statement) = synchronized(lock) {
-            store.state().active?.let(::parsed) to latestStatement()
+        val snapshot = synchronized(lock) {
+            PlaybackSnapshot(store.state().active?.let(::parsed), latestStatement(), unavailableMedia.toSet(), mediaVersions.toMap())
         }
         val record = syncRecord()
         val zone = record?.zoneOffsets?.let(::zoneOffsets)
-        return PlaybackPlanner.plan(active, statement, clock.now(), zone, record?.branchId)
+        return PlaybackPlanner.plan(snapshot.active, snapshot.statement, clock.now(), zone, record?.branchId,
+            snapshot.unavailable, snapshot.versions)
+    }
+
+    /**
+     * Re-hashes one referenced file per call, or the file a decoder rejected.
+     * The app runs this off the UI thread at low priority. Sharing the staging
+     * lock prevents a failed check from deleting a replacement just committed
+     * by a download. Hashing never holds the playback/state lock.
+     * Returns true only when a missing, unreadable or mismatched file was removed
+     * from usable output; decoder failures with intact bytes need no download.
+     */
+    public fun scrubMedia(failedSha256: String? = null): Boolean = synchronized(staging) {
+        if (erasing) return false
+        val candidate = synchronized(lock) {
+            val state = store.state()
+            val referenced = listOfNotNull(state.active, state.recovery, state.staging)
+                .mapNotNull(::parsed).flatMap { it.media.values }.distinctBy { it.sha256 }.sortedBy { it.sha256 }
+            if (failedSha256 != null) referenced.firstOrNull { it.sha256 == failedSha256 }
+            else (referenced.firstOrNull { it.sha256 > (lastScrubbed ?: "") } ?: referenced.firstOrNull())
+                ?.also { lastScrubbed = it.sha256 }
+        } ?: return false
+        val digest = MessageDigest.getInstance("SHA-256")
+        val valid = try {
+            store.hasMedia(candidate.sha256, candidate.size) && Files.newInputStream(store.mediaFile(candidate.sha256)).use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    if (erasing || Thread.currentThread().isInterrupted) return false
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    digest.update(buffer, 0, read)
+                }
+                hex(digest) == candidate.sha256
+            }
+        } catch (_: IOException) {
+            false
+        }
+        if (valid) return false
+        synchronized(lock) {
+            // Enrollment/credential loss can clear the store while a hash is read.
+            if (erasing || listOfNotNull(store.state().active, store.state().recovery, store.state().staging)
+                .mapNotNull(::parsed).none { publication -> publication.media.values.any { it.sha256 == candidate.sha256 } }) return false
+            unavailableMedia += candidate.sha256
+            Files.deleteIfExists(store.mediaFile(candidate.sha256))
+            AtomicFiles.syncDirectory(store.mediaFile(candidate.sha256).parent)
+        }
+        true
     }
 
     private fun zoneOffsets(answer: ZoneOffsetsAnswer): ZoneOffsets? = try {
@@ -739,6 +816,9 @@ public class PlayerEngine(
                         vault.erase()
                         statement = null
                         publications.clear()
+                        unavailableMedia.clear()
+                        mediaVersions.clear()
+                        lastScrubbed = null
                         progress = null
                     }
                     if (credential == null) return false

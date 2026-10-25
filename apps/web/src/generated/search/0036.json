@@ -4,6 +4,51 @@
     "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt immutable publication snapshots with versioned manifests that bind programming rules to verified asset versions. The player durably stages missing assets and switches its active generation only after the complete supported snapshot is ready, retaining a valid recovery generation. Separate desired, staged and reported-active versions and reconcile duplicate or lost acknowledgements.\nDefine protocol compatibility, integrity metadata, capacity/retention, scheduling expiry and offline authorization policy before implementation. No transport, storage library, cryptographic mechanism or manifest serialization format is selected by this record.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThe owner's requirement is consistent offline playback, not normal continuous server streaming. A generation boundary makes interruption and recovery behavior testable and avoids exposing partially updated programming. Architectural acceptance is not evidence of crash-safe storage or hardware compatibility.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Continuous server streaming:** makes ordinary playback depend on connectivity and repeated transfer; does not satisfy the central offline requirement.\n**Overwrite active files/programming as downloads arrive:** reduces temporary storage but can mix incompatible versions and leave no valid program after interruption. It does not satisfy the required activation boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nEnables local replay through outages and explicit recovery/failure acceptance tests.\nSeparates publication intent from device observations without assuming exactly-once delivery.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-propose-immutable-publications-and-atomic-player-activation",
+    "title": "ADR-0019: Adopt Immutable Publications and Atomic Player Activation",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nStaging plus recovery versions consume additional storage and need safe garbage collection.\nCached content cannot be immediately recalled from unreachable devices; expiry/revocation rules need explicit review.\n"
@@ -1528,41 +1573,5 @@
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nNo intermediary sees decrypted traffic or backups.\nNo recurring cost at pilot scale, and every external piece (relay, bucket, mail relay) can be replaced without changing the application.\nDeleted data leaves backups within about 35 days, which the data handling policies can state.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nThe owner operates certificates, the relay and backup monitoring. A failed backup is only noticed through the alerts the deployment design requires.\nLosing the offline restic password loses every backup. Losing the secret key rings after a restore invalidates sessions and sealed mail credentials.\nFree tiers can change their terms. The design names fallbacks, but switching still takes work.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nPJ-13 builds the Compose bundle, the backup, restore and verification scripts, and a rehearsal that CI runs. The real-host rehearsal and runbooks wait for PH-10. Moving to a paid VPS later keeps the same composition, with the relay removed.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\n[Deployment design](../project/deployment-design.md)\n[Deployment and migration planning](../project/operations.md)\n[Data retention](../security/data-retention.md)\n[Media library design](../project/media-library-design.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/AGENTS",
-    "title": "ADR Instructions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR Instructions",
-    "anchor": "adr-instructions",
-    "text": "ADR Instructions\nConsult the [decision index](README.md) and [authoring policy](authoring.md) before creating or changing an ADR.\nStart new proposals with the [template](template.md) and `proposed` status. Acceptance is distinct from implementation completion.\nPreserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.\nRetain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.\nUpdate current policy and reciprocal supersession references when an accepted architectural change requires them.\n"
   }
 ]

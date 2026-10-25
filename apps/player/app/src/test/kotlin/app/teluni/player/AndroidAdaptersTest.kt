@@ -12,6 +12,8 @@ import android.widget.TextView
 import androidx.media3.common.util.UnstableApi
 import app.teluni.player.core.catalog.EffectivePrice
 import app.teluni.player.core.catalog.PriceSource
+import app.teluni.player.core.playback.PlaybackCondition
+import app.teluni.player.core.playback.Plan
 import app.teluni.player.core.playback.AreaPlan
 import app.teluni.player.core.playback.ShownRecord
 import app.teluni.player.core.protocol.AreaKind
@@ -54,6 +56,34 @@ class AndroidAdaptersTest {
             View.MeasureSpec.makeMeasureSpec(area.height, View.MeasureSpec.EXACTLY))
         output.layout(0, 0, area.width, area.height)
         assertTrue(descendants(output).filterIsInstance<TextView>().any { it.text.toString().contains("17,90") })
+    }
+
+    @Test fun `catalog output reflects degradation and recovers without changing generations`() {
+        val fixture = Json.parseToJsonElement(File(requireNotNull(System.getProperty("teluni.conformance"))).readText())
+            .jsonObject.getValue("layoutManifest").jsonObject
+        val publication = ManifestParser.parse(fixture.getValue("bytes").jsonPrimitive.content.toByteArray(),
+            fixture.getValue("sha256").jsonPrimitive.content)
+        val area = requireNotNull(publication.layout).areas.first { it.kind == AreaKind.CATALOG }
+        val view = requireNotNull(area.view)
+        val context = RuntimeEnvironment.getApplication() as Context
+        val output = PlaybackView(context, PlayerRuntime(context))
+        val catalog = requireNotNull(publication.layout).catalogs.getValue(view.catalogId)
+        val records = view.pages.first().map { ShownRecord(catalog.records.getValue(it.recordId), it.group, emptyMap()) }
+        val intact = Plan.Compose(publication, listOf(AreaPlan.Catalog(area, view, records)), null)
+        try {
+            output.show(intact, 0)
+            val labels = descendants(output).filterIsInstance<TextView>().toList()
+            assertTrue(labels.any { it.text.isNotEmpty() })
+            output.show(intact.copy(publication = publication.copy(media = emptyMap()), degraded = true), 0)
+            assertTrue(output.hasFailure)
+            output.show(intact.copy(mediaVersions = publication.media.values.associate { it.sha256 to 1L }), 0)
+            assertFalse(output.hasFailure)
+            val after = descendants(output).filterIsInstance<TextView>().toList()
+            assertEquals(labels.size, after.size)
+            labels.zip(after).forEach { (before, next) -> assertSame(before, next) }
+            output.show(Plan.Neutral(PlaybackCondition.DEGRADED, null), 0)
+            assertTrue(output.hasFailure)
+        } finally { output.release() }
     }
 
     @Test fun `TV setup focuses connect instead of opening the soft keyboard`() {

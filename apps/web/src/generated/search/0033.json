@@ -4,6 +4,24 @@
     "title": "ADR-0002: Select pnpm for Package and Workspace Management",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\npnpm provides the package-management and workspace capabilities Orion requires without introducing a separate monorepo platform at the beginning of the project.\nIts native workspace model allows applications and shared packages to coexist within a single dependency graph while retaining independent package manifests and explicit dependencies.\npnpm's dependency model encourages packages to declare the dependencies they actually use. This aligns with Orion's preference for explicit architectural boundaries and reduces accidental reliance on undeclared dependencies that happen to be available elsewhere in the repository.\nThe `workspace:` protocol provides an explicit representation of first-party package relationships. This is valuable for Orion because a dependency on a local contract, configuration, testing, or other shared package should be intentional and mechanically recognizable.\nA shared lockfile provides one resolved dependency state for the workspace. This improves reproducibility between contributors, AI agents, CI, and other automated environments and avoids independent dependency-resolution histories for packages that are intended to evolve within the same repository.\npnpm also provides facilities for coordinating dependency versions across a workspace, including catalogs. These can reduce unnecessary version drift when multiple packages intentionally depend on the same tool or library. However, Orion does not require all dependencies to share versions, so catalogs should be introduced where central coordination represents a genuine repository responsibility rather than as a universal abstraction.\nThe package manager also provides useful supply-chain controls around dependency lifecycle and build scripts. These capabilities complement Orion's security principles but do not replace dependency review, automated vulnerability analysis, lockfile review, or other software-supply-chain controls.\npnpm can execute scripts across workspace projects and filter execution to selected packages. This provides sufficient task execution for Orion's initial repository scale.\nA dedicated monorepo task runner would add capabilities that may become valuable later, including task graphs, computation caching, affected-project calculation, remote caching, and CI distribution.\nThose capabilities have real value in sufficiently large repositories, but they also introduce another configuration model and another layer responsible for understanding repository execution.\nOrion currently has no demonstrated performance or orchestration problem that requires that layer.\nAdopting a dedicated task runner preemptively would therefore violate Orion's preference for introducing complexity only when its responsibility and value are understood.\nDeferring the choice also preserves better information for a future decision. If task orchestration becomes necessary, Orion can evaluate the actual problem at that time rather than selecting Turborepo, Nx, or another tool based on hypothetical future requirements.\nThe decision does not prevent Orion from growing into a large monorepo. It establishes pnpm as the baseline dependency and workspace layer while keeping advanced task orchestration independently replaceable and adoptable.\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "npm Workspaces",
     "anchor": "npm-workspaces",
     "text": "npm Workspaces\nnpm provides native workspace support and is distributed with Node.js, which reduces the amount of additional tooling required to begin development.\nIt would be capable of supporting a basic Orion workspace.\nIt was not selected because pnpm provides a stronger combination of workspace-oriented capabilities, explicit local package relationships, dependency isolation, dependency-version coordination, and installation efficiency for the type of monorepo Orion intends to become.\nUsing npm primarily because it is bundled with Node.js would reduce one installation concern but would not provide enough architectural benefit to outweigh pnpm's monorepo-oriented capabilities.\n"
@@ -970,32 +988,5 @@
     "heading": "Startup behavior",
     "anchor": "startup-behavior",
     "text": "Startup behavior\nRequired application configuration must be validated before the application begins accepting work.\nThe normal startup sequence is:\nprocess starts\n    ↓\nload configuration\n    ↓\nparse\n    ↓\nvalidate\n    ↓\ninvalid?\n  ↙       ↘\nyes       no\n ↓         ↓\nfail      compose application\nfast          ↓\n          begin serving work\n\nMissing or invalid required configuration is therefore a startup failure.\nApplications must not defer discovering invalid foundational configuration until the affected code path is first executed.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Runtime configuration",
-    "anchor": "runtime-configuration",
-    "text": "Runtime configuration\nValidated bootstrap configuration should be treated as **immutable during normal application execution**.\nDynamic application state such as:\nfeature flags;\ntenant settings;\nremote configuration;\nuser preferences;\nruntime business settings;\nis a separate concern and must not be conflated with application bootstrap configuration.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Configuration defaults",
-    "anchor": "configuration-defaults",
-    "text": "Configuration defaults\nConfiguration defaults are permitted when the default behavior is safe, deterministic, and appropriate across the environments where it applies.\nDefaults must not silently weaken:\nsecurity;\nauthentication;\ndurability;\ndata integrity;\nproduction safety;\nobservability requirements.\nSensitive or production-critical configuration should generally require explicit values when an implicit default would create ambiguity or risk.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Configuration metadata and documentation",
-    "anchor": "configuration-metadata-and-documentation",
-    "text": "Configuration metadata and documentation\nConfiguration schemas may include metadata required to generate configuration reference documentation.\nSuch metadata may describe:\nlogical configuration name;\ntype;\nrequired or optional status;\nsafe default;\ndescription;\nclassification or sensitivity;\napplicable environment constraints.\nThe intended model is:\nconfiguration schema\n    ↓\nruntime validation\n    +\nTypeScript types\n    +\ngenerated configuration reference\n\nGenerated configuration documentation must never contain actual secret values.\nA schema may document that a secret or restricted configuration entry exists, but secret values must not be emitted into:\ndocumentation;\nlogs;\ntraces;\nmetrics;\nerror reports;\nfixtures;\ngenerated examples containing real credentials.\nExisting Orion data-classification and secrets-management policies remain authoritative.\n"
   }
 ]

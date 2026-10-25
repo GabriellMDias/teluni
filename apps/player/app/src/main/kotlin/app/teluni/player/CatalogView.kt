@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import app.teluni.player.core.playback.AreaPlan
 import app.teluni.player.core.playback.ShownRecord
+import app.teluni.player.core.protocol.Manifest
 import app.teluni.player.core.protocol.LayoutManifest
 import app.teluni.player.core.protocol.Publication
 import kotlinx.serialization.json.JsonArray
@@ -20,8 +21,18 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /** Draws the already-paginated snapshot; branch prices and page selection come from core. */
 @SuppressLint("ViewConstructor") // Programmatic-only output built from a core-authorized publication and page.
-internal class CatalogView(context: Context, runtime: PlayerRuntime, publication: Publication, plan: AreaPlan.Catalog) :
+internal class CatalogView(context: Context, private val runtime: PlayerRuntime, publication: Publication, plan: AreaPlan.Catalog, versions: Map<String, Long> = emptyMap()) :
     LinearLayout(context) {
+    private data class ImageBinding(
+        val id: String,
+        val view: ImageView,
+        val size: Int,
+        var source: Manifest.Media? = null,
+        var version: Long? = null,
+        var failed: Boolean = false,
+    )
+    private val images = mutableListOf<ImageBinding>()
+    val hasFailure: Boolean get() = images.any { it.failed }
     init {
         orientation = VERTICAL
         val size = plan.view.textSize
@@ -41,19 +52,9 @@ internal class CatalogView(context: Context, runtime: PlayerRuntime, publication
             val row = LinearLayout(context).apply { orientation = HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
             val imageField = plan.view.fields.firstOrNull { it.role == "image" }
             val imageId = imageField?.let { (shown.record.values[it.fieldId] as? JsonPrimitive)?.content }
-            publication.media[imageId]?.let { source ->
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                val path = runtime.mediaPath(source.sha256)
-                BitmapFactory.decodeFile(path, options)
-                options.inSampleSize = 1
-                while (options.outWidth / options.inSampleSize > size * 2 || options.outHeight / options.inSampleSize > size * 2) {
-                    options.inSampleSize *= 2
-                }
-                options.inJustDecodeBounds = false
-                val image = ImageView(context).apply {
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                    setImageBitmap(BitmapFactory.decodeFile(path, options))
-                }
+            if (imageId != null) {
+                val image = ImageView(context).apply { scaleType = ImageView.ScaleType.FIT_CENTER }
+                images += ImageBinding(imageId, image, size)
                 row.addView(image, LayoutParams((size * 1.25f).toInt(), (size * 1.25f).toInt()).apply { rightMargin = padding })
             }
             val bindings = plan.view.fields.filter { it.role != "group" && it.role != "image" }
@@ -98,6 +99,35 @@ internal class CatalogView(context: Context, runtime: PlayerRuntime, publication
             }
             // The server's fit calculation budgets line heights, with no extra gap between rows.
             addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        }
+        refreshMedia(publication, versions)
+    }
+
+    /** Replaces affected bitmaps without rebuilding intact catalog text or its layout. */
+    fun refreshMedia(publication: Publication, versions: Map<String, Long>) {
+        for (binding in images) {
+            val source = publication.media[binding.id]
+            val version = source?.let { versions[it.sha256] }
+            if (source == binding.source && version == binding.version) continue
+            binding.source = source
+            binding.version = version
+            if (source == null) {
+                binding.failed = true
+                binding.view.setImageBitmap(null)
+                continue
+            }
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            val path = runtime.mediaPath(source.sha256)
+            BitmapFactory.decodeFile(path, options)
+            options.inSampleSize = 1
+            while (options.outWidth / options.inSampleSize > binding.size * 2 || options.outHeight / options.inSampleSize > binding.size * 2) {
+                options.inSampleSize *= 2
+            }
+            options.inJustDecodeBounds = false
+            val bitmap = BitmapFactory.decodeFile(path, options)
+            binding.failed = bitmap == null
+            if (bitmap == null) runtime.reportMediaFailure(source.sha256)
+            binding.view.setImageBitmap(bitmap)
         }
     }
 

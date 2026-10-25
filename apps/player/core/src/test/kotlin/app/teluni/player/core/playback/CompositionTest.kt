@@ -16,6 +16,7 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertIs
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.int
@@ -94,7 +95,7 @@ class CompositionTest {
     )
     private val centro = "3e402d85-8bd7-4d68-8c26-9f4abbccdd4f"
 
-    private fun planAt(local: String, branchId: String? = centro): Plan.Compose {
+    private fun planAt(local: String, branchId: String? = centro, unavailable: Set<String> = emptySet()): Plan.Compose {
         val now = Instant.parse("${local}Z").plusSeconds(10_800)
         val statement = Statement(
             "jws",
@@ -105,7 +106,7 @@ class CompositionTest {
             listOf(AuthorizedPublication(publication.header.publicationId, publication.sha256)),
         )
         return assertIs<Plan.Compose>(
-            PlaybackPlanner.plan(publication, statement, TrustedTime.Anchored(now, Duration.ZERO), zone, branchId),
+            PlaybackPlanner.plan(publication, statement, TrustedTime.Anchored(now, Duration.ZERO), zone, branchId, unavailable),
         )
     }
 
@@ -137,6 +138,32 @@ class CompositionTest {
         assertIs<AreaPlan.Catalog>(lunch.area("menu"))
         // On Saturday the rule does not apply and the pages return.
         assertIs<AreaPlan.Still>(planAt("2026-10-24T12:30:05").area("video"))
+    }
+
+    @Test
+    fun `a damaged page media leaves the catalog and schedule boundaries intact`() {
+        val intact = planAt("2026-10-20T09:00:20")
+        val damaged = assertIs<AreaPlan.Still>(intact.area("video")).media
+        val plan = planAt("2026-10-20T09:00:20", unavailable = setOf(damaged.sha256))
+        assertEquals(intact.area("menu"), plan.area("menu"))
+        assertEquals(intact.until, plan.until)
+        assertIs<AreaPlan.Empty>(plan.area("video"))
+        assertTrue(plan.degraded)
+        assertEquals(publication.sha256, plan.publication.sha256)
+        assertTrue(damaged.id in publication.media)
+    }
+
+    @Test
+    fun `a damaged regional playlist skips only the affected items`() {
+        val intact = planAt("2026-10-20T12:30:05")
+        val playlist = assertIs<AreaPlan.Play>(intact.area("video")).playlist
+        val damaged = publication.media.getValue(playlist.items.first().mediaId)
+        val plan = planAt("2026-10-20T12:30:05", unavailable = setOf(damaged.sha256))
+        val expected = playlist.items.filter { publication.media.getValue(it.mediaId).sha256 != damaged.sha256 }
+        if (expected.isEmpty()) assertIs<AreaPlan.Empty>(plan.area("video"))
+        else assertEquals(expected, assertIs<AreaPlan.Play>(plan.area("video")).playlist.items)
+        assertEquals(intact.area("menu"), plan.area("menu"))
+        assertTrue(plan.degraded)
     }
 
     @Test

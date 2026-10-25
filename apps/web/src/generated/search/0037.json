@@ -1,5 +1,41 @@
 [
   {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe owner operates certificates, the relay and backup monitoring. A failed backup is only noticed through the alerts the deployment design requires.\nLosing the offline restic password loses every backup. Losing the secret key rings after a restore invalidates sessions and sealed mail credentials.\nFree tiers can change their terms. The design names fallbacks, but switching still takes work.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nPJ-13 builds the Compose bundle, the backup, restore and verification scripts, and a rehearsal that CI runs. The real-host rehearsal and runbooks wait for PH-10. Moving to a paid VPS later keeps the same composition, with the relay removed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\n[Deployment design](../project/deployment-design.md)\n[Deployment and migration planning](../project/operations.md)\n[Data retention](../security/data-retention.md)\n[Media library design](../project/media-library-design.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/AGENTS",
+    "title": "ADR Instructions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR Instructions",
+    "anchor": "adr-instructions",
+    "text": "ADR Instructions\nConsult the [decision index](README.md) and [authoring policy](authoring.md) before creating or changing an ADR.\nStart new proposals with the [template](template.md) and `proposed` status. Acceptance is distinct from implementation completion.\nPreserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.\nRetain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.\nUpdate current policy and reciprocal supersession references when an accepted architectural change requires them.\n"
+  },
+  {
     "id": "repository/docs/adr/authoring",
     "title": "Authoring Architecture Decision Records",
     "group": "Decisions",
@@ -979,59 +1015,5 @@
     "heading": "Unknown Outcome",
     "anchor": "unknown-outcome",
     "text": "Unknown Outcome\nA timeout or connection loss after sending a mutation can mean failure or success with a lost response. Preserve an unknown outcome when it affects retry safety. Resolve it through idempotency, status lookup, or reconciliation rather than treating it as a known failure.\nClassify effects as read-only, idempotent writes, non-idempotent writes, or external effects when that clarifies behavior; a formal type system is not required. A transient transport error alone does not make the business operation safe to repeat.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Application Retry Boundary",
-    "anchor": "application-retry-boundary",
-    "text": "Application Retry Boundary\nRetrying a broad application operation must not repeat payments, notifications, or other external mutations unless protected by appropriate idempotency.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Retry Ownership",
-    "anchor": "retry-ownership",
-    "text": "Retry Ownership\nNormally one layer owns retries for a given failure. Inspect driver, repository, service, SDK, proxy, and client retry behavior so nested attempts do not multiply unnoticed. Define the transient category, safe repeat conditions, bounded attempt/time budget, telemetry, and final-failure behavior.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "New Retry Checklist",
-    "anchor": "new-retry-checklist",
-    "text": "New Retry Checklist\nBefore adding retries, establish: why the failure is transient; whether the prior attempt could have succeeded; repeat safety/idempotency; existing retry owners; attempt limit; diagnostic context; and what happens after exhaustion. Retrying must not amplify an outage.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Distributed Workflows and Recovery",
-    "anchor": "distributed-workflows-and-recovery",
-    "text": "Distributed Workflows and Recovery\nA multi-system workflow must name the authority for each fact, atomic and non-atomic changes, partial failures, duplicate/retry handling, discoverable incomplete state, crash behavior, and operational recovery. Reconciliation detects and repairs divergence according to those authorities; it is a safety net, not an excuse for avoidable inconsistency.\nA saga may coordinate independently committed steps through orchestration or event choreography; neither is the default. Persist long-running workflow state when needed so incomplete work is discoverable. Compensation is a new business action, not a database rollback, and may fail. Define its trigger, idempotency, retries, failure state, and manual recovery.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Failure Windows",
-    "anchor": "failure-windows",
-    "text": "Failure Windows\nFor important workflows, inspect crashes after a durable write, before acknowledgement, and after an external effect but before local confirmation. Cover each unacceptable loss/duplication window deliberately. Database-commit/publication and external-mutation/local-write gaps are ordinary design cases.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Verification",
-    "anchor": "verification",
-    "text": "Verification\n"
   }
 ]

@@ -33,9 +33,12 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
     private var canvasWidth = 1920
     private var canvasHeight = 1080
     private var outputRotation = 0
-    private var degraded = false
+    private val failedPlayers = mutableSetOf<ExoPlayer>()
+    private val degraded: Boolean get() = failedPlayers.isNotEmpty() ||
+        areaViews.values.any { (it.view.getChildAt(0) as? CatalogView)?.hasFailure == true }
     private var failedGeneration: String? = null
-    val hasFailure: Boolean get() = degraded || failedGeneration != null
+    val hasFailure: Boolean get() = degraded || previous?.degraded == true ||
+        (previous as? Plan.Neutral)?.condition == PlaybackCondition.DEGRADED || failedGeneration != null
     private val areaViews = mutableMapOf<String, AreaOutput>()
     private data class AreaOutput(val plan: AreaPlan, val view: FrameLayout, val players: List<ExoPlayer>)
 
@@ -51,8 +54,10 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
         try {
             render(plan, rotation)
             failedGeneration = null
-            if (plan !is Plan.Neutral && !degraded && media.isEmpty()) {
-                runtime.reportPlayback(PlaybackCondition.PLAYING)
+            if (plan !is Plan.Neutral) {
+                if (degraded || plan.degraded) runtime.reportPlayback(PlaybackCondition.DEGRADED)
+                else if (media.isEmpty() || media.any { it.playbackState == Player.STATE_READY })
+                    runtime.reportPlayback(PlaybackCondition.PLAYING)
             }
         } catch (_: Exception) {
             clearOutput()
@@ -86,7 +91,8 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
             is Plan.Play -> {
                 // A schedule horizon or refreshed statement must not restart the playlist.
                 if (old !is Plan.Play || old.publication.header.publicationId != plan.publication.header.publicationId ||
-                    old.playlist != plan.playlist) {
+                    old.playlist != plan.playlist || mediaChanged(old, plan, plan.publication,
+                        plan.playlist.items.map { it.mediaId })) {
                     clearOutput()
                     canvasWidth = 1920; canvasHeight = 1080
                     addPlaylist(canvas, plan.publication, plan.playlist.items, false, "contain", 0f)
@@ -101,9 +107,19 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
                 for (areaPlan in plan.areas) {
                     val key = areaPlan.area.key
                     val kept = areaViews[key]
-                    if (kept?.plan == areaPlan) continue
+                    val ids = when (areaPlan) {
+                        is AreaPlan.Play -> areaPlan.playlist.items.map { it.mediaId }
+                        is AreaPlan.Still -> listOf(areaPlan.media.id)
+                        is AreaPlan.Catalog, is AreaPlan.Empty -> emptyList()
+                    }
+                    if (kept?.plan == areaPlan && !mediaChanged(old, plan, plan.publication, ids)) {
+                        if (areaPlan is AreaPlan.Catalog) {
+                            (kept.view.getChildAt(0) as CatalogView).refreshMedia(plan.publication, plan.mediaVersions)
+                        }
+                        continue
+                    }
                     if (kept != null) {
-                        kept.players.forEach { it.release(); media.remove(it) }
+                        kept.players.forEach { it.release(); media.remove(it); failedPlayers.remove(it) }
                         canvas.removeView(kept.view)
                     }
                     val area = areaPlan.area
@@ -119,7 +135,7 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
                         is AreaPlan.Still -> addPlaylist(container, plan.publication,
                             listOf(Manifest.Item(areaPlan.media.id, null)), true, area.fit,
                             if (area.muted) 0f else area.volume / 100f)
-                        is AreaPlan.Catalog -> container.addView(CatalogView(context, runtime, plan.publication, areaPlan),
+                        is AreaPlan.Catalog -> container.addView(CatalogView(context, runtime, plan.publication, areaPlan, plan.mediaVersions),
                             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
                         is AreaPlan.Empty -> Unit
                     }
@@ -129,6 +145,9 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
         }
         positionCanvas()
     }
+
+    private fun mediaChanged(old: Plan?, next: Plan, publication: Publication, ids: List<String>): Boolean =
+        ids.any { id -> publication.media[id]?.sha256?.let { old?.mediaVersions?.get(it) != next.mediaVersions[it] } == true }
 
     private fun addPlaylist(parent: FrameLayout, publication: Publication, items: List<Manifest.Item>,
         hold: Boolean, fit: String, volume: Float) {
@@ -143,12 +162,15 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
         val failed = mutableSetOf<Int>()
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_READY && !degraded) runtime.reportPlayback(PlaybackCondition.PLAYING)
+                if (playbackState == Player.STATE_READY) runtime.reportPlayback(
+                    if (degraded || previous?.degraded == true) PlaybackCondition.DEGRADED else PlaybackCondition.PLAYING)
             }
             override fun onPlayerError(error: PlaybackException) {
                 // Decoder exception messages can carry content paths; report only a bounded condition.
-                degraded = true
+                failedPlayers += player
                 runtime.reportPlayback(PlaybackCondition.DEGRADED)
+                items.getOrNull(player.currentMediaItemIndex)?.let { publication.media[it.mediaId] }
+                    ?.let { runtime.reportMediaFailure(it.sha256) }
                 failed += player.currentMediaItemIndex
                 if (failed.size >= items.size) { player.stop(); surface.visibility = INVISIBLE; return }
                 var next = (player.currentMediaItemIndex + 1) % items.size
@@ -173,7 +195,7 @@ internal class PlaybackView(context: Context, private val runtime: PlayerRuntime
         media.clear()
         areaViews.clear()
         canvas.removeAllViews()
-        degraded = false
+        failedPlayers.clear()
     }
 
     fun release() { clearOutput(); previous = null; failedGeneration = null }

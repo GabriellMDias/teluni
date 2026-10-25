@@ -15,13 +15,19 @@ import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.util.Collections
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -461,6 +467,172 @@ class PlayerEngineTest {
         for (bytes in server.publications.getValue("pub-b").media.values) {
             assertTrue(!Files.exists(store.partialFile(sha256Hex(bytes))) && !Files.exists(store.mediaFile(sha256Hex(bytes))))
         }
+    }
+
+    private fun corrupt(bytes: ByteArray): String {
+        val hash = sha256Hex(bytes)
+        val file = PlayerStore(root).mediaFile(hash).toFile()
+        assertTrue(file.setWritable(true))
+        file.writeBytes(bytes.copyOf().also { it[0] = (it[0] + 1).toByte() })
+        assertTrue(file.setReadOnly())
+        return hash
+    }
+
+    @Test
+    fun `scrubs one stored file per call and detects corruption with unchanged size`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val files = server.publications.getValue("pub-a").media.values.sortedBy(::sha256Hex)
+        val hash = corrupt(files.last())
+        assertTrue(PlayerStore(root).hasMedia(hash, files.last().size.toLong()))
+        assertFalse(engine.scrubMedia())
+        assertTrue(Files.exists(PlayerStore(root).mediaFile(hash)))
+        assertTrue(engine.scrubMedia())
+        assertFalse(Files.exists(PlayerStore(root).mediaFile(hash)))
+        val plan = assertIs<Plan.Play>(engine.plan())
+        assertTrue(plan.degraded)
+        assertEquals(1, plan.playlist.items.size)
+        assertFalse(plan.publication.media.values.any { it.sha256 == hash })
+        // A renderer cannot accidentally replace the integrity diagnostic with PLAYING.
+        engine.playback = PlaybackCondition.PLAYING
+        assertEquals("DEGRADED", engine.report().playback)
+    }
+
+    @Test
+    fun `repairs the desired active generation without losing its recovery or activation time`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        server.publish(publication("pub-b", seed = 2))
+        engine.syncAndStage()
+        val before = PlayerStore(root).state()
+        val damaged = server.publications.getValue("pub-b").media.entries.first()
+        assertTrue(engine.scrubMedia(corrupt(damaged.value)))
+        server.mediaRequests.clear()
+        clock.advance(60_000)
+        assertEquals(StagingOutcome.Activated("pub-b"), engine.syncAndStage())
+        assertEquals(before, PlayerStore(root).state())
+        assertEquals(listOf(damaged.key to 0L), server.mediaRequests.toList())
+        assertFalse(assertIs<Plan.Play>(engine.plan()).degraded)
+        assertEquals(sha256Hex(damaged.value), sha256Hex(Files.readAllBytes(PlayerStore(root).mediaFile(sha256Hex(damaged.value)))))
+    }
+
+    @Test
+    fun `a fast repair changes the media revision even when the renderer missed the damaged plan`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val before = assertIs<Plan.Play>(engine.plan())
+        val hash = corrupt(server.publications.getValue("pub-a").media.values.first())
+        assertTrue(engine.scrubMedia(hash))
+        // No plan request while damaged: the repair finishes before the next rendering tick.
+        assertEquals(StagingOutcome.Activated("pub-a"), engine.syncAndStage())
+        val after = assertIs<Plan.Play>(engine.plan())
+        assertEquals(before.publication, after.publication)
+        assertEquals(before.playlist, after.playlist)
+        assertEquals(before.until, after.until)
+        assertFalse(after.degraded)
+        assertNotEquals(before, after)
+        assertEquals(mapOf(hash to 1L), after.mediaVersions)
+    }
+
+    @Test
+    fun `keeps intact items while offline and does not repair a superseded publication`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val hash = corrupt(server.publications.getValue("pub-a").media.values.first())
+        // A newer desired generation authorizes the active one until it can finish staging.
+        server.publish(publication("pub-b", seed = 2))
+        engine.sync()
+        assertTrue(engine.scrubMedia(hash))
+        assertTrue(assertIs<Plan.Play>(engine.plan()).degraded)
+        server.mediaRequests.clear()
+        assertEquals(StagingOutcome.Activated("pub-b"), engine.stage())
+        assertTrue(server.mediaRequests.all { it.first.startsWith("m2-") })
+        assertFalse(Files.exists(PlayerStore(root).mediaFile(hash)))
+        assertFalse(assertIs<Plan.Play>(engine.plan()).degraded)
+    }
+
+    @Test
+    fun `all damaged items become neutral and never outlive authorization`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        for (bytes in server.publications.getValue("pub-a").media.values) assertTrue(engine.scrubMedia(corrupt(bytes)))
+        assertEquals(PlaybackCondition.DEGRADED, assertIs<Plan.Neutral>(engine.plan()).condition)
+        clock.advance(Duration.ofDays(8).toMillis())
+        assertEquals(PlaybackCondition.AUTHORIZATION_EXPIRED, assertIs<Plan.Neutral>(engine.plan()).condition)
+    }
+
+    @Test
+    fun `decoder rejection of intact bytes neither deletes nor downloads them`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val bytes = server.publications.getValue("pub-a").media.values.first()
+        assertFalse(engine.scrubMedia(sha256Hex(bytes)))
+        assertTrue(PlayerStore(root).hasMedia(sha256Hex(bytes), bytes.size.toLong()))
+        assertFalse(assertIs<SyncOutcome.Synced>(engine.sync()).stagingNeeded)
+        assertFalse(engine.scrubMedia("../unreferenced-input"))
+    }
+
+    @Test
+    fun `a missing file is removed from output and repaired on the next exchange`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val bytes = server.publications.getValue("pub-a").media.values.first()
+        val hash = sha256Hex(bytes)
+        Files.delete(PlayerStore(root).mediaFile(hash))
+        assertTrue(engine.scrubMedia(hash))
+        assertTrue(assertIs<Plan.Play>(engine.plan()).degraded)
+        assertEquals(StagingOutcome.Activated("pub-a"), engine.syncAndStage())
+    }
+
+    @Test
+    fun `a scrub cannot delete a repaired file while staging is committing it`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val bytes = server.publications.getValue("pub-a").media.values.first()
+        val hash = corrupt(bytes)
+        engine.scrubMedia(hash)
+        engine.sync()
+        val requested = CountDownLatch(1)
+        val resume = CountDownLatch(1)
+        server.onMedia = { requested.countDown(); assertTrue(resume.await(10, TimeUnit.SECONDS)) }
+        val pool = Executors.newFixedThreadPool(2)
+        try {
+            val repair = pool.submit(Callable { engine.stage() })
+            assertTrue(requested.await(10, TimeUnit.SECONDS))
+            val checked = pool.submit(Callable { engine.scrubMedia(hash) })
+            assertFailsWith<TimeoutException> { checked.get(100, TimeUnit.MILLISECONDS) }
+            resume.countDown()
+            assertEquals(StagingOutcome.Activated("pub-a"), repair.get(10, TimeUnit.SECONDS))
+            assertFalse(checked.get(10, TimeUnit.SECONDS))
+            assertEquals(hash, sha256Hex(Files.readAllBytes(PlayerStore(root).mediaFile(hash))))
+        } finally {
+            resume.countDown()
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `scrubbing after unlink cannot recreate erased state`() {
+        val engine = paired()
+        server.publish(publication("pub-a"))
+        engine.syncAndStage()
+        val hash = corrupt(server.publications.getValue("pub-a").media.values.first())
+        assertTrue(engine.scrubMedia(hash))
+        server.status = "unlinked"
+        assertEquals(SyncOutcome.Cleared(true), engine.sync())
+        assertFalse(engine.scrubMedia(hash))
+        assertFalse(engine.scrubMedia())
+        assertEquals(PlayerState(), PlayerStore(root).state())
+        assertNull(engine.identity())
+        assertNull(vault.load())
     }
 
     @Test

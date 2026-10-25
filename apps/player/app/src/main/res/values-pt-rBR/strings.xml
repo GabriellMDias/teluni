@@ -25,6 +25,7 @@
     <string name="staging_failed">Falha ao preparar conteúdo — nova tentativa automática</string>
     <string name="unlinked">Tela desvinculada</string>
     <string name="player_error">Falha no player — nova tentativa automática</string>
+    <string name="media_degraded">Algumas mídias estão indisponíveis — recuperação automática</string>
     <string name="render_failed">Não foi possível exibir esta programação</string>
     <string name="unavailable">Indisponível</string>
     <string name="value_yes">Sim</string>

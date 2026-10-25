@@ -13,8 +13,10 @@ The screen application of the [player design](../../docs/project/player-design.m
 | `catalog/` | Effective prices of protocol 2 catalogs, ported from the API |
 | `time/` | Trusted time: a monotonic anchor from each sync, a persisted lower bound, and the system clock after a reboot only when it is plausible |
 | `store/` | App-private storage: atomically replaced records, exact manifests and write-once media named by SHA-256 |
-| `sync/` | The device API over OkHttp, and the engine for enrollment, synchronization, staging with resumable verified downloads, activation, recovery and erasure |
+| `sync/` | The device API over OkHttp, and the engine for enrollment, synchronization, staging with resumable verified downloads, activation, recovery, stored-media integrity checks and erasure |
 | `playback/` | What plays now and until when, or which neutral output and why; for a layout, what each area shows, with the coordinated page cycle, catalog view pages and prices for the screen's branch |
+
+The running app re-hashes one referenced media file at a time on a background-priority worker, starting after 10 seconds and then every 60 seconds. Decoder/image failures request a check of the affected file on that worker. A missing, unreadable or mismatched file is excluded from output and deleted; intact playlist items, layout areas and catalog text remain available with `DEGRADED` status. If that generation is still desired, the next synchronization repairs only the missing media, retaining its original activation time and recovery generation. Intact bytes rejected by a decoder are not downloaded repeatedly. Per-file repair revisions reopen affected media even when the repair finishes between rendering ticks; intact catalog text keeps its views while changed bitmaps refresh in place. Checks serialize with staging and stop for erasure; startup keeps its existing presence/size checks for fast cached output. Device qualification remains PH-08.
 
 ## Build and checks
 

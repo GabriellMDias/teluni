@@ -136,7 +136,7 @@ class PlayerActivity : Activity() {
             setPadding(24, 12, 24, 12)
         }.also { status = it; root.addView(it, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.END)) }
         label.text = getString(R.string.status_card, statusLabel(last.status),
-            getString(if (playback.hasFailure) R.string.render_failed else when ((last.plan as? Plan.Neutral)?.condition) {
+            getString(if (last.plan.degraded) R.string.media_degraded else if (playback.hasFailure) R.string.render_failed else when ((last.plan as? Plan.Neutral)?.condition) {
                 PlaybackCondition.CLOCK_UNTRUSTED -> R.string.clock_untrusted
                 PlaybackCondition.AUTHORIZATION_EXPIRED -> R.string.authorization_expired
                 null -> R.string.playing_publication

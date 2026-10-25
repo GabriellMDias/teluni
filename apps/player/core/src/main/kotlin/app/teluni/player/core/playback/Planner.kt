@@ -35,11 +35,19 @@ public sealed interface Plan {
     /** The instant at which the plan must be made again, by trusted time; null when nothing scheduled changes it. */
     public val until: Instant?
 
+    /** Some stored media are unavailable; intact output may continue with a degraded report. */
+    public val degraded: Boolean get() = false
+
+    /** Process-local revisions of repaired files, so renderers reopen them even after a quick repair. */
+    public val mediaVersions: Map<String, Long> get() = emptyMap()
+
     /** Plays a playlist; the renderer restarts it only when the playlist changes. */
     public data class Play(
         val publication: Publication,
         val playlist: Manifest.Playlist,
         override val until: Instant?,
+        override val degraded: Boolean = false,
+        override val mediaVersions: Map<String, Long> = emptyMap(),
     ) : Plan
 
     /** Composes a protocol 2 layout: what each area shows, in stacking order from the back. */
@@ -47,6 +55,8 @@ public sealed interface Plan {
         val publication: Publication,
         val areas: List<AreaPlan>,
         override val until: Instant?,
+        override val degraded: Boolean = false,
+        override val mediaVersions: Map<String, Long> = emptyMap(),
     ) : Plan
 
     public data class Neutral(val condition: PlaybackCondition, override val until: Instant?) : Plan
@@ -97,6 +107,8 @@ public object PlaybackPlanner {
         time: TrustedTime,
         zone: ZoneOffsets?,
         branchId: String? = null,
+        unavailableMedia: Set<String> = emptySet(),
+        mediaVersions: Map<String, Long> = emptyMap(),
     ): Plan {
         val now = time.instantOrNull ?: return Plan.Neutral(PlaybackCondition.CLOCK_UNTRUSTED, null)
         if (statement == null || now >= statement.expiresAt) {
@@ -109,9 +121,41 @@ public object PlaybackPlanner {
         val horizon = minOf(now.plus(lookahead), statement.expiresAt, zone.until.minusMillis(1))
         if (horizon <= now) return Plan.Neutral(PlaybackCondition.CLOCK_UNTRUSTED, null)
         val layout = active.layout
-            ?: return single(active, zone, now, horizon)
-        return compose(active, layout, zone, now, horizon, branchId)
-            ?: Plan.Neutral(PlaybackCondition.CLOCK_UNTRUSTED, null)
+        val plan = if (layout == null) single(active, zone, now, horizon) else
+            compose(active, layout, zone, now, horizon, branchId)
+                ?: Plan.Neutral(PlaybackCondition.CLOCK_UNTRUSTED, null)
+        val versions = mediaVersions.filterKeys { hash -> active.media.values.any { it.sha256 == hash } }
+        val versioned = when (plan) {
+            is Plan.Play -> plan.copy(mediaVersions = versions)
+            is Plan.Compose -> plan.copy(mediaVersions = versions)
+            is Plan.Neutral -> plan
+        }
+        return withoutUnavailable(versioned, active, unavailableMedia)
+    }
+
+    /** Filters output only after authorization; the stored manifest and its digest never change. */
+    private fun withoutUnavailable(plan: Plan, active: Publication, unavailable: Set<String>): Plan {
+        if (active.media.values.none { it.sha256 in unavailable }) return plan
+        val available = active.copy(media = active.media.filterValues { it.sha256 !in unavailable })
+        fun playlist(value: Manifest.Playlist): Manifest.Playlist =
+            value.copy(items = value.items.filter { it.mediaId in available.media })
+        return when (plan) {
+            is Plan.Play -> {
+                val playable = playlist(plan.playlist)
+                if (playable.items.isEmpty()) Plan.Neutral(PlaybackCondition.DEGRADED, plan.until)
+                else plan.copy(publication = available, playlist = playable, degraded = true)
+            }
+            is Plan.Compose -> plan.copy(publication = available, degraded = true, areas = plan.areas.map { area ->
+                when (area) {
+                    is AreaPlan.Play -> playlist(area.playlist).let {
+                        if (it.items.isEmpty()) AreaPlan.Empty(area.area) else area.copy(playlist = it)
+                    }
+                    is AreaPlan.Still -> if (area.media.sha256 in unavailable) AreaPlan.Empty(area.area) else area
+                    is AreaPlan.Catalog, is AreaPlan.Empty -> area
+                }
+            })
+            is Plan.Neutral -> plan
+        }
     }
 
     private fun single(active: Publication, zone: ZoneOffsets, now: Instant, horizon: Instant): Plan {

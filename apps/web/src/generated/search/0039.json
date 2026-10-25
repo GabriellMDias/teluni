@@ -4,6 +4,24 @@
     "title": "Versioning and Compatibility",
     "group": "Architecture",
     "kind": "repository",
+    "heading": "Deprecation and Removal",
+    "anchor": "deprecation-and-removal",
+    "text": "Deprecation and Removal\nDeprecation needs a replacement, migration path, support/removal condition, and owner. Remove compatibility complexity once the real consumer is gone, not just because current source no longer uses it. Check installed clients, external users, queued/persisted historical shapes, and rollback; source search alone may be insufficient.\nUse safe runtime usage evidence when available. Telemetry can correlate release, operation, bounded contract/error category, migration, and configuration changes; it must not create unbounded labels for arbitrary consumer/payload identities. Alerts should reflect impact from unsupported clients or deployment ordering failures. Document supported versions only where support exists; metadata such as introduced/deprecated/replacement belongs in canonical contracts only when useful, never a parallel manually duplicated manifest.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Compatibility Testing",
+    "anchor": "compatibility-testing",
+    "text": "Compatibility Testing\nTest actual supported combinations at their boundary: old request/new server, new application/transitional schema, old reader/new message, new worker/retained old job, active/deprecated configuration, or rollback application/current schema. Do not maintain arbitrary historical combinations. Use the real release baseline for migrations; fresh-install checks alone do not prove upgrade safety.\nReleased fixtures/baselines are immutable evidence, not snapshots to silently rewrite when tests fail. Add distinct historical shapes when necessary. Structural API comparisons, canonical event/schema checks, and property-based serializer tests can help where justified; semantic review remains required.\n`pnpm release:check` and its tests protect recorded migration/release history. Current API/SDK/reference freshness checks detect drift from current sources, not released-consumer compatibility. Dedicated historical API diffing, event versioning, and package-publication compatibility tooling are not selected merely by this policy.\nFail before unsafe work when a dependency/schema is unsupported and expose stable safe diagnostics. Prefer capability detection when the real dependency is a capability; numeric comparisons are appropriate only with precise version semantics. Accept supported old forms during transition, then reject removed forms explicitly rather than failing later with unrelated SQL/property errors.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
     "heading": "Breaking Change Checklist",
     "anchor": "breaking-change-checklist",
     "text": "Breaking Change Checklist\nBefore completing a compatibility-sensitive change, establish:\nConsumers, release evidence, independence, persistence/replay lifetime, and required direction/window.\nStructural, semantic, behavioral, operational, and security impact; whether atomic or additive evolution is possible.\nOrdered application, schema, configuration, infrastructure, credential, and message states, including new-writer/old-reader safety.\nRollback or forward-recovery expectations and any urgent security override.\nCanonical transition state, tests for supported combinations, safe usage evidence, and completion criteria.\nOwnership and removal conditions for every temporary compatibility path.\nDo not introduce `v2`, a package major, or a payload schema version merely to avoid this analysis. Compatibility exists to protect real consumers while keeping the foundation maintainable.\n"
@@ -736,23 +754,5 @@
     "heading": "catalog_records",
     "anchor": "catalog_records",
     "text": "catalog_records\nOne entry of a catalog: its values keyed by field identifier, including the base price of each MONEY field, its availability and its position.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Created and updated one at a time with the observed version; value, availability, price and position changes bump it. Deleted at runtime with its overrides, promotions and join rows, only while no other record references it.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable record UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the record (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog the record belongs to; immutable.\n—\n—\n`position`\n`integer`\nno\n—\nINTERNAL\nSort key in the catalog's stored order, spaced so a move usually changes one row; ties order by id.\n—\n—\n`available`\n`boolean`\nno\n`true`\nINTERNAL\nWhether the record is available; views hide unavailable records unless they show them as unavailable.\n—\n—\n`field_values`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nValidated JSON object from field UUID to value: trimmed text, canonical decimal strings, booleans, local dates and times, sorted weekdays, choice identifiers, media and record UUIDs, and base prices as integer minor units (ADR-0032). At most 16 KiB as serialized by the API.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency version, starting at 1.\n—\n—\n`created_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that created the record.\n—\n—\n`updated_by_membership_id`\n`uuid`\nno\n—\nINTERNAL\nMembership that made the last change.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of creation.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-2",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`catalog_records_company_id_catalog_id_fkey`\n`FOREIGN KEY (company_id, catalog_id) REFERENCES catalogs(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA record belongs to a catalog of the same company, which cannot be deleted while it has records.\n`catalog_records_company_id_created_by_membership_id_fkey`\n`FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe creator is a membership of the same company.\n`catalog_records_company_id_updated_by_membership_id_fkey`\n`FOREIGN KEY (company_id, updated_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe last updater is a membership of the same company.\n`catalog_records_pkey`\n`PRIMARY KEY (id)`\nUnique record identity.\n`catalog_records_position_range`\n`CHECK ((\"position\" >= 0))`\nPositions are not negative.\n`catalog_records_values_object`\n`CHECK (((jsonb_typeof(field_values) = 'object'::text) AND (octet_length((field_values)::text) <= 32768)))`\nValues are a JSON object with a storage backstop above the API's 16 KiB limit.\n`catalog_records_version_positive`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`catalog_records_catalog_position_idx`\n`CREATE INDEX catalog_records_catalog_position_idx ON public.catalog_records USING btree (company_id, catalog_id, \"position\", id)`\nLists a catalog's records in stored order with keyset cursors.\n`catalog_records_company_id_id_key`\n`CREATE UNIQUE INDEX catalog_records_company_id_id_key ON public.catalog_records USING btree (company_id, id)`\nTenant key that prices, record links and references target.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "catalog_price_overrides",
-    "anchor": "catalog_price_overrides",
-    "text": "catalog_price_overrides\nThe price of one record's MONEY field for one branch of a company catalog, replacing the base price there.\nOwner: Catalogs. Classification: CONFIDENTIAL.\nLifecycle: Set, changed or removed one branch at a time with the record's observed version, which each change bumps; deleted with the record.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany that owns the catalog (tenant key).\n—\n—\n`catalog_id`\n`uuid`\nno\n—\nINTERNAL\nCatalog of the record, kept for per-catalog and per-field lookups; the module keeps it equal to the record's catalog.\n—\n—\n`record_id`\n`uuid`\nno\n—\nINTERNAL\nRecord whose price is overridden.\n—\n—\n`field_id`\n`uuid`\nno\n—\nINTERNAL\nMONEY field whose price is overridden.\n—\n—\n`branch_id`\n`uuid`\nno\n—\nINTERNAL\nBranch where the override applies.\n—\n—\n`amount`\n`bigint`\nno\n—\nCONFIDENTIAL\nPrice in the field currency's minor units, 0 to 10^12.\n—\nminor units of the field's ISO 4217 currency\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the last change.\n—\nUTC instant, millisecond precision\n"
   }
 ]

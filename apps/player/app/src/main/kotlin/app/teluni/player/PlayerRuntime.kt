@@ -24,6 +24,7 @@ import app.teluni.player.core.time.instantOrNull
 import java.io.IOException
 import java.nio.file.Files
 import java.time.Duration
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -46,6 +47,13 @@ internal class PlayerRuntime(private val context: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val workers = Executors.newScheduledThreadPool(3)
     private val downloads = Executors.newSingleThreadExecutor()
+    private val integrity = Executors.newSingleThreadScheduledExecutor { task ->
+        Thread({
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND)
+            task.run()
+        }, "teluni-media-integrity")
+    }
+    private val pendingChecks = ConcurrentHashMap.newKeySet<String>()
     private val staging = AtomicBoolean(false)
     private val running = AtomicBoolean(false)
     private val listeners = CopyOnWriteArraySet<(PlayerSnapshot) -> Unit>()
@@ -98,6 +106,7 @@ internal class PlayerRuntime(private val context: Context) {
                     KeystoreVault(context.filesDir.toPath().resolve("vault/credential.bin")), clock, BuildConfig.VERSION_NAME)
                 workers.scheduleWithFixedDelay(::exchange, 0, 1, TimeUnit.SECONDS)
                 workers.scheduleWithFixedDelay({ safely("CHECKPOINT_FAILED") { engine?.checkpoint() } }, 60, 60, TimeUnit.SECONDS)
+                integrity.scheduleWithFixedDelay({ checkMedia() }, 10, 60, TimeUnit.SECONDS)
                 workers.execute(::renderTick)
             } catch (_: Exception) {
                 Log.e("TeluniPlayer", "PLAYER_START_FAILED")
@@ -188,6 +197,21 @@ internal class PlayerRuntime(private val context: Context) {
             if (now != null && plan.until != null) delay = Duration.between(now, plan.until).toMillis().coerceIn(1, 1000)
         }
         workers.schedule(::renderTick, delay, TimeUnit.MILLISECONDS)
+    }
+
+    private fun checkMedia(sha256: String? = null) {
+        try {
+            if (engine?.scrubMedia(sha256) == true) nextExchange = 0
+        } catch (_: Exception) {
+            Log.e("TeluniPlayer", "MEDIA_CHECK_FAILED")
+        }
+    }
+
+    fun reportMediaFailure(sha256: String) {
+        if (!pendingChecks.add(sha256)) return
+        integrity.execute {
+            try { checkMedia(sha256) } finally { pendingChecks.remove(sha256) }
+        }
     }
 
     fun reportPlayback(condition: PlaybackCondition) { engine?.playback = condition }

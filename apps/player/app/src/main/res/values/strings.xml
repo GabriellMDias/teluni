@@ -28,6 +28,7 @@
     <string name="staging_failed">Could not prepare content — retrying automatically</string>
     <string name="unlinked">Screen unlinked</string>
     <string name="player_error">Player failure — retrying automatically</string>
+    <string name="media_degraded">Some media are unavailable — automatic recovery</string>
     <string name="render_failed">Could not display this programming</string>
     <string name="unavailable">Unavailable</string>
     <string name="value_yes">Yes</string>
