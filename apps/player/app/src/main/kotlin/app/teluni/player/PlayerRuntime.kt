@@ -12,7 +12,6 @@ import app.teluni.player.core.store.PlayerStore
 import app.teluni.player.core.sync.ApiFailure
 import app.teluni.player.core.sync.DeviceApi
 import app.teluni.player.core.sync.DeviceReport
-import app.teluni.player.core.sync.EnrollmentStarted
 import app.teluni.player.core.sync.HttpDeviceApi
 import app.teluni.player.core.sync.PlayerEngine
 import app.teluni.player.core.sync.StagingOutcome
@@ -60,9 +59,7 @@ internal class PlayerRuntime(private val context: Context) {
     private val listeners = CopyOnWriteArraySet<(PlayerSnapshot) -> Unit>()
     private val configFile = context.filesDir.toPath().resolve("endpoint.txt")
     private val clock = AndroidClock(context)
-    @Volatile private var enrollment: EnrollmentStarted? = null
     @Volatile private var nextExchange = 0L
-    private var enrollmentStarted = 0L
     private var failureCount = 0
     @Volatile private var engine: PlayerEngine? = null
     @Volatile private var blocked = false
@@ -130,22 +127,9 @@ internal class PlayerRuntime(private val context: Context) {
             player.retryErasureConfirmation()
             if (player.identity() == null) {
                 blocked = false
-                var pending = enrollment
-                if (pending == null || now - enrollmentStarted >= TimeUnit.MINUTES.toMillis(10)) {
-                    pending = player.startEnrollment(deviceReport())
-                    enrollment = pending
-                    enrollmentStarted = now
-                    exchangeStatus = "PAIRING"
-                    nextExchange = now + pending.pollIntervalSeconds.coerceIn(5, 60) * 1000L
-                } else {
-                    val result = player.pollEnrollment(pending.enrollmentId)
-                    nextExchange = now + result.pollIntervalSeconds.coerceIn(5, 60) * 1000L
-                    when (result.status) {
-                        "paired" -> { enrollment = null; exchangeStatus = "CONNECTING"; nextExchange = 0 }
-                        "expired" -> { enrollment = null; nextExchange = 0 }
-                        else -> exchangeStatus = "PAIRING"
-                    }
-                }
+                val result = player.advanceEnrollment(deviceReport())
+                exchangeStatus = if (result.paired) "CONNECTING" else "PAIRING"
+                nextExchange = now + result.next.toMillis()
             } else {
                 when (val result = player.sync()) {
                     is SyncOutcome.Synced -> {
@@ -173,14 +157,13 @@ internal class PlayerRuntime(private val context: Context) {
                     }
                     SyncOutcome.Unauthorized -> { exchangeStatus = "UNAUTHORIZED"; nextExchange = now + 120_000 }
                     SyncOutcome.Incompatible -> { exchangeStatus = "INCOMPATIBLE"; nextExchange = now + 120_000 }
-                    is SyncOutcome.Cleared, SyncOutcome.NotPaired -> { enrollment = null; nextExchange = 0 }
+                    is SyncOutcome.Cleared, SyncOutcome.NotPaired -> nextExchange = 0
                 }
             }
             failureCount = 0
         } catch (failure: IOException) {
             failureCount++
             exchangeStatus = "OFFLINE"
-            if (failure is ApiFailure && failure.status in setOf(404, 410)) enrollment = null
             val retry = maxOf((5L shl minOf(failureCount, 4)) * 1000, (failure as? ApiFailure)?.retryAfter?.toMillis() ?: 0)
             nextExchange = now + retry.coerceAtMost(TimeUnit.HOURS.toMillis(1))
         } catch (_: Exception) {
@@ -197,7 +180,7 @@ internal class PlayerRuntime(private val context: Context) {
             val paired = player.identity() != null
             val plan = if (paired && !blocked) player.plan() else Plan.Neutral(PlaybackCondition.SETUP, null)
             if (plan is Plan.Neutral) player.playback = plan.condition
-            publish(PlayerSnapshot(true, paired, enrollment?.userCode, exchangeStatus, plan, player.syncRecord()?.rotation ?: 0))
+            publish(PlayerSnapshot(true, paired, player.pendingEnrollment?.userCode, exchangeStatus, plan, player.syncRecord()?.rotation ?: 0))
             val now = player.clock.now().instantOrNull
             if (now != null && plan.until != null) delay = Duration.between(now, plan.until).toMillis().coerceIn(1, 1000)
         }

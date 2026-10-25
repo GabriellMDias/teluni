@@ -69,6 +69,12 @@ public data class SyncRecord(
 
 public enum class SyncFailure { EXCHANGE, CREDENTIAL_ROTATION }
 
+/** Pairing data is for display only; neither codes nor credentials belong in diagnostics. */
+public class EnrollmentProgress(public val enrollment: EnrollmentStarted?, public val next: Duration) {
+    public val paired: Boolean get() = enrollment == null
+    override fun toString(): String = "EnrollmentProgress(paired=$paired)"
+}
+
 public sealed interface SyncOutcome {
     /** Synchronized; staging is needed when the desired publication is not active or an old attempt remains. */
     public data class Synced(val next: Duration, val stagingNeeded: Boolean) : SyncOutcome
@@ -145,6 +151,10 @@ public class PlayerEngine(
     @Volatile
     private var clearingCredential: String? = null
 
+    @Volatile
+    public var pendingEnrollment: EnrollmentStarted? = null
+        private set
+
     /** Set while an erasure waits for staging to stop. */
     @Volatile
     private var erasing = false
@@ -200,6 +210,7 @@ public class PlayerEngine(
             store.eraseAll()
             vault.erase()
             clearingCredential = null
+            pendingEnrollment = null
             statement = null
             publications.clear()
             unavailableMedia.clear()
@@ -228,6 +239,7 @@ public class PlayerEngine(
             synchronized(lock) {
                 store.eraseAll()
                 clearingCredential = null
+                pendingEnrollment = null
                 statement = null
                 publications.clear()
                 unavailableMedia.clear()
@@ -239,6 +251,7 @@ public class PlayerEngine(
             vault.save(Credentials(credential))
             val hash = MessageDigest.getInstance("SHA-256").digest(credential)
             api.startEnrollment(Base64.getUrlEncoder().withoutPadding().encodeToString(hash), report)
+                .also { pendingEnrollment = it }
         }
     }
 
@@ -248,8 +261,28 @@ public class PlayerEngine(
         val status = api.enrollmentStatus(enrollmentId, credential)
         if (status.status == "paired") {
             saveRecord(PlayerStore.Record.IDENTITY, Identity.serializer(), Identity(requireNotNull(status.deviceId)))
+            pendingEnrollment = null
+        } else if (status.status == "expired") {
+            pendingEnrollment = null
         }
         return status
+    }
+
+    /** The server's poll result, never elapsed client time, decides whether an attempt is replaced. */
+    public fun advanceEnrollment(report: DeviceReport): EnrollmentProgress = staging.withLock {
+        synchronized(syncing) {
+            if (identity() != null) return EnrollmentProgress(null, Duration.ZERO)
+            val pending = pendingEnrollment?.takeIf { vault.load() != null }
+            if (pending != null) {
+                val result = pollEnrollment(pending.enrollmentId)
+                if (result.status == "paired") return EnrollmentProgress(null, Duration.ZERO)
+                if (result.status != "expired") {
+                    return EnrollmentProgress(pending, Duration.ofSeconds(result.pollIntervalSeconds.coerceIn(5, 60).toLong()))
+                }
+            }
+            val started = startEnrollment(report)
+            EnrollmentProgress(started, Duration.ofSeconds(started.pollIntervalSeconds.coerceIn(5, 60).toLong()))
+        }
     }
 
     // Synchronization
@@ -665,7 +698,7 @@ public class PlayerEngine(
         if (offset > 0) Files.newInputStream(partial).use { input -> digestAll(input, digest) }
         if (offset == media.size) {
             if (hex(digest) == media.sha256) {
-                store.commitMedia(media.sha256)
+                commitMedia(media.sha256)
                 return
             }
             Files.delete(partial)
@@ -703,7 +736,15 @@ public class PlayerEngine(
             Files.deleteIfExists(partial)
             throw StagingFailure(StagingFailureCode.INTEGRITY_FAILED, "Media does not match its SHA-256")
         }
-        store.commitMedia(media.sha256)
+        commitMedia(media.sha256)
+    }
+
+    /** A repaired active file must reopen even if no integrity scan observed its damaged bytes. */
+    private fun commitMedia(hash: String) = synchronized(lock) {
+        store.commitMedia(hash)
+        if (store.state().active?.let(::parsed)?.media?.values?.any { it.sha256 == hash } == true) {
+            mediaVersions[hash] = (mediaVersions[hash] ?: 0) + 1
+        }
     }
 
     /**
@@ -783,7 +824,6 @@ public class PlayerEngine(
         else PlayerState(active = activated, recovery = state.active, staging = null)
         store.saveState(next)
         val hashes = publication.media.values.map { it.sha256 }.toSet()
-        for (hash in hashes.intersect(unavailableMedia)) mediaVersions[hash] = (mediaVersions[hash] ?: 0) + 1
         unavailableMedia.removeAll(hashes)
         progress = null
         collect(next)
@@ -932,6 +972,7 @@ public class PlayerEngine(
                         store.eraseAll()
                         vault.erase()
                         clearingCredential = null
+                        pendingEnrollment = null
                         statement = null
                         publications.clear()
                         unavailableMedia.clear()

@@ -83,6 +83,99 @@ class PlayerEngineTest {
         return if (synced.stagingNeeded) stage() else StagingOutcome.Idle
     }
 
+    @Test fun `a claimed enrollment is polled after its deadline without replacing its credential`() {
+        var starts = 0
+        val api = object : DeviceApi by server {
+            override fun startEnrollment(credentialHash: String, report: DeviceReport): EnrollmentStarted {
+                starts++
+                return server.startEnrollment(credentialHash, report)
+            }
+        }
+        val player = engine(api = api)
+        val started = player.advanceEnrollment(report)
+        assertFalse(started.paired)
+        val original = requireNotNull(vault.load()).current
+        clock.advance(Duration.ofMinutes(11).toMillis())
+        // A claim made before the server deadline remains paired when the next poll is late.
+        assertTrue(player.advanceEnrollment(report).paired)
+        assertEquals(1, starts)
+        assertEquals(server.deviceId, player.identity()?.deviceId)
+        assertTrue(original.contentEquals(requireNotNull(vault.load()).current))
+        assertNull(player.pendingEnrollment)
+    }
+
+    @Test fun `failed enrollment polls retain the attempt and credential across a long outage`() {
+        var starts = 0
+        val failures = ArrayDeque<IOException>(listOf(IOException("Synthetic outage"), ApiFailure(429, "RATE_LIMITED", Duration.ofSeconds(30))))
+        val api = object : DeviceApi by server {
+            override fun startEnrollment(credentialHash: String, report: DeviceReport): EnrollmentStarted {
+                starts++
+                return server.startEnrollment(credentialHash, report)
+            }
+            override fun enrollmentStatus(enrollmentId: String, credential: String): EnrollmentStatus {
+                if (failures.isNotEmpty()) throw failures.removeFirst()
+                return server.enrollmentStatus(enrollmentId, credential)
+            }
+        }
+        val player = engine(api = api)
+        val pending = player.advanceEnrollment(report).enrollment
+        val original = requireNotNull(vault.load()).current
+        repeat(2) {
+            clock.advance(Duration.ofHours(1).toMillis())
+            assertFailsWith<IOException> { player.advanceEnrollment(report) }
+            assertEquals(pending, player.pendingEnrollment)
+            assertTrue(original.contentEquals(requireNotNull(vault.load()).current))
+        }
+        assertTrue(player.advanceEnrollment(report).paired)
+        assertEquals(1, starts)
+    }
+
+    @Test fun `only a server expired result replaces an unclaimed enrollment with a fresh credential`() {
+        var starts = 0
+        var polls = 0
+        val api = object : DeviceApi by server {
+            override fun startEnrollment(credentialHash: String, report: DeviceReport): EnrollmentStarted {
+                starts++
+                return server.startEnrollment(credentialHash, report)
+            }
+            override fun enrollmentStatus(enrollmentId: String, credential: String): EnrollmentStatus =
+                EnrollmentStatus(if (polls++ == 0) "pending" else "expired", null, 11)
+        }
+        val player = engine(api = api)
+        val pending = player.advanceEnrollment(report).enrollment
+        val original = requireNotNull(vault.load()).current
+        clock.advance(Duration.ofMinutes(11).toMillis())
+        assertEquals(Duration.ofSeconds(11), player.advanceEnrollment(report).next)
+        assertEquals(1, starts)
+        assertEquals(pending, player.pendingEnrollment)
+        val renewed = player.advanceEnrollment(report)
+        assertFalse(renewed.paired)
+        assertEquals(2, starts)
+        assertEquals(Duration.ofSeconds(5), renewed.next)
+        assertFalse(original.contentEquals(requireNotNull(vault.load()).current))
+        assertNull(player.identity())
+    }
+
+    @Test fun `an unreadable credential during enrollment follows the erase and reenroll policy`() {
+        var starts = 0
+        val api = object : DeviceApi by server {
+            override fun startEnrollment(credentialHash: String, report: DeviceReport): EnrollmentStarted {
+                starts++
+                return server.startEnrollment(credentialHash, report)
+            }
+        }
+        val player = engine(api = api)
+        player.advanceEnrollment(report)
+        val original = requireNotNull(vault.load()).current
+        Files.write(root.resolve("stale-private-file"), byteArrayOf(1))
+        vault.erase()
+        assertFalse(player.advanceEnrollment(report).paired)
+        assertEquals(2, starts)
+        assertFalse(original.contentEquals(requireNotNull(vault.load()).current))
+        assertFalse(Files.exists(root.resolve("stale-private-file")))
+        assertNotNull(player.pendingEnrollment)
+    }
+
     @Test
     fun `pairs, synchronizes, stages, activates and plays by schedule`() {
         val engine = paired()
@@ -802,6 +895,70 @@ class PlayerEngineTest {
         assertFalse(after.degraded)
         assertNotEquals(before, after)
         assertEquals(mapOf(hash to 1L), after.mediaVersions)
+    }
+
+    @Test
+    fun `sync repairs missing or truncated active files before a queued decoder check and advances their revisions`() {
+        for (missing in listOf(true, false)) {
+            val player = paired()
+            server.publish(publication("pub-a"))
+            player.syncAndStage()
+            val before = assertIs<Plan.Play>(player.plan())
+            val state = PlayerStore(root).state()
+            val bytes = server.publications.getValue("pub-a").media.values.first()
+            val hash = sha256Hex(bytes)
+            val path = PlayerStore(root).mediaFile(hash)
+            if (missing) Files.delete(path) else {
+                assertTrue(path.toFile().setWritable(true))
+                Files.write(path, bytes.copyOf(bytes.size / 2))
+                assertTrue(path.toFile().setReadOnly())
+            }
+            assertTrue(assertIs<SyncOutcome.Synced>(player.sync()).stagingNeeded)
+            val requested = CountDownLatch(1)
+            val resume = CountDownLatch(1)
+            server.onMedia = { requested.countDown(); assertTrue(resume.await(10, TimeUnit.SECONDS)) }
+            val pool = Executors.newFixedThreadPool(2)
+            try {
+                val repair = pool.submit(Callable { player.stage() })
+                assertTrue(requested.await(10, TimeUnit.SECONDS))
+                val checked = pool.submit(Callable { player.scrubMedia(hash) })
+                assertFailsWith<TimeoutException> { checked.get(100, TimeUnit.MILLISECONDS) }
+                resume.countDown()
+                assertEquals(StagingOutcome.Activated("pub-a"), repair.get(10, TimeUnit.SECONDS))
+                assertFalse(checked.get(10, TimeUnit.SECONDS))
+                val after = assertIs<Plan.Play>(player.plan())
+                assertEquals(before.playlist, after.playlist)
+                assertEquals(mapOf(hash to 1L), after.mediaVersions)
+                assertNotEquals(before, after)
+                assertEquals(state, PlayerStore(root).state())
+                assertEquals(hash, sha256Hex(Files.readAllBytes(path)))
+            } finally {
+                resume.countDown()
+                pool.shutdownNow()
+                server.onMedia = {}
+            }
+        }
+    }
+
+    @Test
+    fun `repair from an already verified partial file advances the active media revision without a request`() {
+        val player = paired()
+        server.publish(publication("pub-a"))
+        player.syncAndStage()
+        val before = assertIs<Plan.Play>(player.plan())
+        val bytes = server.publications.getValue("pub-a").media.values.first()
+        val hash = sha256Hex(bytes)
+        val store = PlayerStore(root)
+        Files.delete(store.mediaFile(hash))
+        Files.write(store.partialFile(hash), bytes)
+        server.mediaRequests.clear()
+        assertEquals(StagingOutcome.Activated("pub-a"), player.syncAndStage())
+        assertTrue(server.mediaRequests.isEmpty())
+        assertFalse(player.scrubMedia(hash))
+        val after = assertIs<Plan.Play>(player.plan())
+        assertEquals(before.playlist, after.playlist)
+        assertEquals(mapOf(hash to 1L), after.mediaVersions)
+        assertNotEquals(before, after)
     }
 
     @Test
