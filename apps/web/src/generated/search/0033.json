@@ -1,5 +1,167 @@
 [
   {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Companies and branches",
+    "anchor": "companies-and-branches",
+    "text": "Companies and branches\nThe [`organizations` module](src/organizations/routes.tsx) provides `/companies` and `/companies/$companyId`, composed with identity in `src/modules.tsx`. A signed-in person can page through their companies and create a company with its initial responsible-administrator membership. Company administration offers two-step verification when required by the API. Strongly authenticated administrators can create, rename and archive branches, edit the company's name/default language/time zone, and read its change history; other members see only the branches their current grants allow. Company and branch pages, the selected company view (`view=settings` or `view=history`) and history pages live in route search parameters, so reload and browser history preserve them. Changing views clears the previous collection's cursor. API queries remain in TanStack Query and all product calls use the generated SDK with the session cookie and in-memory CSRF token.\nCompany creation retains its idempotency key across a retry. Branch renames and company-settings drafts retain the version observed when editing started even if their queries refetch; stale-version recovery reloads current data for review. A lost settings response blocks another save until current data is loaded. Successful settings changes invalidate the company detail, company lists and history. Authorization denials stay visible, including direct settings/history URLs without the required capability. Copy is localized through `src/organizations/messages.ts` using the shared browser-locale selection in `src/locale.ts`. Administrators with the `members.manage` capability also get a `view=members` page listing memberships with presentation names/emails from each person's last verified sign-in. Suspending, reactivating or removing a member asks for confirmation that keeps the version observed when the action was requested; a conflict or lost response requires reloading before another change, and restoring an administrator offers recent two-step re-authentication. The responsible administrator shows no lifecycle actions. Each member lists their effective grants with branches and expiry; an administrator can add a grant (role, whole company or selected active branches, optional expiry, with the administration role offered only to the responsible administrator) and revoke one after confirmation. The responsible administrator can propose transferring responsibility from an active administrator's row; the company page shows the pending transfer only to its two parties, with accept or decline for the successor and cancel for the proposer, and offers recent two-step re-authentication when the API requires it. Members with the `invitations.manage` capability get a `view=invitations` page: administrators invite by email with a role, scope, branches and optional expiry (administration only by the responsible administrator), branch managers invite operators to the branches they manage, and the list shows each invitation's state and email delivery with resend and confirmed revoke. The public `/invitations/accept` route moves the credential from the link fragment into the tab's session storage, asks the person to sign in, previews the invitation for the matching verified address and accepts it on explicit confirmation. The [organizations browser journeys](test/e2e/organizations/companies.spec.ts) use the disposable [local identity stack](../../docs/setup.md#try-sign-in-locally), which can also be used manually to open `/companies`.\nThe [`devices` module](src/devices/routes.tsx) provides `/companies/$companyId/screens` and `/companies/$companyId/screens/$deviceId` (\"Telas\"), linked from the company sidebar for members with `devices.view`. The list filters by branch and status in route search parameters and shows each screen's branch, state, erasure and last check-in. Members with `devices.manage` pair a screen by entering the code it shows, which travels only in the request body, with a name, branch and rotation. The screen page shows the reported model and resolution as the device's own statement, the latest offline deadline the screen could hold, and lets managers rename it, change rotation among the reported values, move it to another branch and unlink it after explicit confirmation; an unlinked screen with pending erasure offers a reset record. Changes keep the version observed when the page loaded, and conflicts or lost responses require a reload. The [screens journey](test/e2e/devices/screens.spec.ts) simulates the player over HTTP against the local identity stack.\nThe [`media` module](src/media/routes.tsx) provides `/companies/$companyId/media` and `/companies/$companyId/media/$assetId` (\"Mídia\"), linked from the company sidebar for members with `media.view`. The library shows thumbnails with kind, dimensions or duration, scope and state in Library, Archived and (with `media.delete`) Trash views, filtered by kind, scope and name in route search parameters, and refreshes itself while items upload or are prepared. Members with `media.upload` choose files (or drop them) and a scope; each file is created and then streamed with per-file progress through `XMLHttpRequest`, which sends the session cookie and CSRF token. The item page previews the display rendition, explains rejections, and offers rename and tags, archive and restore, move to the trash after explicit confirmation, restore from the trash, discard of unusable uploads and download of the original. Changes keep the observed version; conflicts or lost responses require a reload. The [media journey](test/e2e/media/library.spec.ts) processes generated media with real FFmpeg against the local identity stack.\nThe [`programming` module](src/programming/routes.tsx) provides `/companies/$companyId/programming` with Playlists, Layouts and Grupos views, `/companies/$companyId/programming/playlists/$playlistId`, `/companies/$companyId/programming/layouts/$layoutId`, `/companies/$companyId/programming/groups/$groupId` and `/companies/$companyId/programming/screens/$deviceId` (\"Programação\"), linked from the company sidebar for members with `programming.view` and from an active screen's page. Members with `programming.edit` create company or branch playlists, order items picked from ready media that fits the playlist's scope with seconds for images, choose a cut or fade, create groups over the whole company or chosen branches, and edit a group's or screen's schedules and default playlist; a schedule set is checked by the API before saving and each schedule shows its own conflicts. Group and screen pages preview the next seven days as computed by the API, in a branch zone chosen for a group and in the screen's own zone. Members with `programming.assign` choose a screen's group or individual programming; when the destination has no publication they first confirm that the screen shows the neutral screen until it is published, and otherwise the page names the generation the screen will show. Without strong authentication they get the two-step prompt. Playlists and groups are deleted after explicit confirmation. Changes keep the observed version; conflicts or lost responses require a reload. Screens also gain an optional time zone that overrides their branch's. The Layouts view ([`layouts.tsx`](src/programming/layouts.tsx)) creates layouts in either orientation, imports exported `teluni.layout` files and edits them on a scaled canvas: areas move and resize by dragging, arrow keys or numeric fields; catalog areas bind catalog fields by role with a presentation and text size; pages choose a media item, a view page or a group for each page-controlled area; two audible areas need a confirmed mix. The API's issues are named by area and page, and the fit report lists records that do not fit; layouts export as JSON. Group and screen pages choose the program's layout, confirming before schedules or defaults are dropped, then edit and preview each area's schedules; a catalog area's default is its view. The [programming journey](test/e2e/programming/journey.spec.ts) builds a playlist, schedules a group and assigns a simulated screen against the local identity stack.\nGroup pages and the programming of a screen with individual programming add a Publicação section ([`publications.tsx`](src/programming/publications.tsx)): the current generation, a review that shows the counts, the screens that follow the program and every problem that blocks publication (catalog problems of a program with a layout name their area), publishing with the reviewed content digest (a draft changed after the review is refused and must be reviewed again), and the published generations with restore after confirmation for members with `publications.publish`. Group pages also show each member screen's connection and publication state. The screen page in Telas shows the screen's synchronization ([`sync.tsx`](src/devices/sync.tsx)), refreshed every five seconds: connection from the last sync (AT-24), the desired generation, what the screen reports showing and preparing, its playback condition and free storage, each labeled as reported by the screen; the screen list shows connection and publication state per screen. The [publication journey](test/e2e/publications/journey.spec.ts) publishes a group in the panel, lets a simulated player synchronize and verify its statement, manifest and media, and sees the screen reported up to date.\nThe [`catalogs` module](src/catalogs/routes.tsx) provides `/companies/$companyId/catalogs`, `/companies/$companyId/catalogs/$catalogId` with Itens and Campos views, and `/companies/$companyId/catalogs/$catalogId/items/$recordId` (\"Catálogos\"), linked from the company sidebar for members with `catalogs.view`. Creation offers three starting points (products with a price in reais, a weekly agenda, or empty) that create ordinary fields. The field editor saves the whole ordered list and shows each field's problems, with how many items cause them, beside the field. Items have an editor per field type and an availability toggle. Each price field of an item has its base price, a price per branch for company catalogs and its promotions; amounts are typed and shown in the person's locale with the field's currency and become integer minor units without floating point ([`money.ts`](src/catalogs/money.ts)). The effective-price preview shows the price in effect at a chosen local time. Publicação nas telas lists what each price change did per program (queued, published as a generation, skipped, blocked or failed, with the reason), refreshed while some are queued, and lets members who publish authorize a blocked or failed one again. The [catalog journey](test/e2e/catalogs/journey.spec.ts) builds a product catalog with a branch price and a promotion, reads the effective prices, publishes a layout program and sees a price change published as its next generation.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Living Documentation Portal",
+    "anchor": "living-documentation-portal",
+    "text": "Living Documentation Portal\nFor component selection, ownership, categories, source metadata and styling/theme practices, follow [component architecture](../../docs/architecture/web-components.md). Inspect existing components before implementing equivalent UI. The public shared entry point stays small; feature components keep their own scope and optional local metadata.\nThe internal engineering `/docs` hub is available in local development and excluded from production builds by default, together with its catalog, pages, search assets, styles and reference downloads. It provides API, data dictionary, component, and repository-documentation collections, nested local pages, breadcrumbs, page outlines, and full-text search. Reading and synthetic previews need no token, API process, or database. The API explorer sends only explicit requests to the configured same-origin API, keeps tokens in memory, and asks for acknowledgement before writes. See [portal setup](../../docs/setup.md#living-documentation-portal) and [explicit internal builds and access requirements](../../docs/architecture/living-documentation.md#build-and-deployment-boundary).\nThe portal owns its layout and scoped styles; application UI remains independently replaceable in `shell.tsx`, `home.tsx`, and the project-owned `modules.tsx` and brand assets. Product help and public API documentation use separately approved sources and application-owned presentation under [the audience policy](../../docs/architecture/living-documentation.md#documentation-audiences-and-publication). They never inherit the internal catalog automatically.\nShared component examples/descriptions belong in [`components.docs.json`](src/components.docs.json) beside the real exports in `components.tsx`. `pnpm docs:references:write` produces [component Markdown](../../docs/generated/components/web.md) and a lightweight catalog, separately loaded pages, and search shards. All `docs/` Markdown and repository README/instruction files are rendered locally; normal documentation links stay in the portal. Regenerate after authored documentation edits too. API/database/error references come from their respective canonical generators. The portal is a presentation of those facts, not another authoring source.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Web Application",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "Validate changes",
+    "anchor": "validate-changes",
+    "text": "Validate changes\nRun commands from the repository root. `pnpm -C apps/web typecheck`, `build`, `bundle:check`, `test:unit`, `test:browser`, and `test:e2e` are individual package scripts; use `pnpm validate` for the complete gate. After intentional contract changes, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md) to regenerate API, SDK, and portal data in order. `pnpm references:check` and `pnpm docs:references:check` detect drift without repairing tracked output.\nBrowser component tests use Vitest Browser Mode with Playwright: installed Edge on Windows, bundled Chromium on Linux CI. Playwright end-to-end tests use matching Chromium against the emitted API and the Vite web app; module journeys add fresh Testcontainers PostgreSQL, committed migrations, a restricted runtime role, and synthetic identities. Install missing Chromium with `pnpm -C apps/web exec playwright install chromium`; [setup](../../docs/setup.md#prepare-a-clean-checkout) covers system prerequisites.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "anchor": "adr-0001-select-typescript-and-nodejs-as-the-primary-language-and-runtime",
+    "text": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime\n**Status:** accepted\n**Date:** 2026-09-12\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a primary programming language and runtime before repository tooling, backend infrastructure, shared contracts, validation workflows, and application foundations can be implemented consistently.\nThe choice affects more than the backend. Orion is intended to be a reusable engineering foundation for future projects and may contain backend applications, web applications, shared packages, contracts, engineering tooling, and eventually other application types.\nProjects built on Orion may vary substantially in size, lifetime, and operational requirements. The foundation must remain appropriate for small and simple applications while also providing sufficient architectural headroom for large, long-lived business systems with significant codebases, data volumes, integration surfaces, concurrent usage, and operational complexity.\nThe selected primary language and runtime should therefore support both low initial complexity and incremental growth. A project should not be forced to replace its primary technology solely because its codebase, workload, or user base grows. At the same time, Orion should not introduce distributed-system complexity or specialized technologies before concrete requirements justify them.\nThe primary language and runtime should support the following priorities:\nstrong static analysis and type safety;\nexplicit and machine-readable contracts;\neffective tooling and automation;\nmaintainable monorepo workflows;\nmature production use;\nbroad testing and observability support;\npredictable dependency management;\ngood interoperability with web technologies;\nhorizontal scalability for common application workloads;\nsupport for long-lived and evolving codebases;\nlow unnecessary context switching between repository areas;\neffective use by both human contributors and AI agents;\nreasonable reversibility when specialized requirements justify another technology.\nUsing a common language across multiple repository areas can reduce the number of independent toolchains and conventions contributors must understand. However, a common language must not erase architectural boundaries or cause persistence models, domain models, API contracts, and UI models to become interchangeable.\nOrion also requires runtime validation at trust boundaries. TypeScript's static types are erased at runtime and therefore cannot, by themselves, validate external input, configuration, API payloads, persisted data, or responses from external systems.\nThe primary language is not required to be the only language used by Orion. Specialized components may use another language or runtime when their requirements justify the additional operational and architectural cost.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **TypeScript as its primary programming language** and **Node.js as its primary server-side and engineering-tooling runtime**.\nNew first-party TypeScript code will use **ECMAScript Modules (ESM)** as the default module system.\nThe repository will use a supported **Node.js LTS release line** for production applications, CI, local development, and engineering tooling unless a narrower context explicitly requires otherwise.\nAt the time of this decision, the initial baseline is:\nTypeScript 6.x\nNode.js 24 LTS\nECMAScript Modules\n\nExact patch versions and compatible toolchain versions will be pinned mechanically by repository tooling rather than by this ADR.\nTypeScript will be used with strict static checking as a repository default. Exceptions must be explicit and justified by a concrete compatibility or implementation requirement.\nTypeScript types alone will not be treated as sufficient validation for untrusted or external data. Runtime validation mechanisms will be selected separately for trust boundaries such as APIs, configuration, external integrations, and other inputs.\nUsing TypeScript across repository areas does not authorize arbitrary sharing of implementation models.\nIn particular:\npersistence records\n    !=\ndomain entities\n    !=\nAPI contracts\n    !=\nUI models\n\nShared packages must continue to represent genuine shared responsibilities and must obey Orion's dependency and application-boundary rules.\nApplications built on Orion should favor architectures that can scale incrementally without requiring premature distribution. Node.js applications may scale horizontally where appropriate, while specialized workloads may be separated when their technical or operational characteristics justify doing so.\nOther languages and runtimes may be introduced when a concrete requirement materially justifies them. Such adoption must not occur solely for preference or novelty and may require a separate ADR when it has architectural consequences.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nTypeScript and Node.js provide the strongest overall fit for Orion's expected combination of backend applications, web applications, shared contracts, engineering tooling, and monorepo infrastructure.\nA TypeScript-centered repository allows substantial parts of the system to use a common type system, compiler toolchain, package ecosystem, testing ecosystem, and dependency model. This reduces the number of unrelated conventions that contributors and AI agents must understand while moving through the repository.\nThis is particularly valuable for Orion because the repository itself is intended to provide a unified engineering context. The benefit becomes more significant as projects grow: explicit and consistent conventions reduce the amount of repository-specific knowledge that humans and AI agents must reconstruct before making safe changes.\nTypeScript also supports Orion's preference for explicit contracts and mechanical validation. Static types can represent internal compile-time expectations, while complementary runtime schemas can represent external boundaries and potentially drive generated artifacts such as JSON Schema, OpenAPI descriptions, and client SDKs.\nNode.js provides a mature production runtime with an established LTS lifecycle, broad infrastructure support, strong observability and testing ecosystems, and direct compatibility with the JavaScript and TypeScript package ecosystem.\nThe combination is suitable for a broad range of application sizes. Small applications can begin with relatively little runtime and tooling complexity, while larger applications can evolve through modularization, horizontal scaling, background processing, caching, queues, database scaling strategies, and, when justified, independently deployable components.\nThe selected technology therefore does not require Orion to adopt a more operationally complex baseline stack merely in anticipation of future scale.\nThe ability to scale a system is not determined solely by its programming language or runtime. Large systems also depend on application boundaries, data architecture, concurrency strategies, infrastructure, observability, deployment topology, and operational practices. Orion's architecture must allow these capabilities to evolve independently as requirements become concrete.\nNode.js is particularly well suited to common I/O-oriented application workloads such as HTTP APIs, database access, external integrations, asynchronous workflows, and network services. Horizontal scaling can increase application capacity without requiring the application to abandon its primary runtime solely because usage grows.\nSelecting an LTS release line rather than the newest Current release prioritizes production stability and predictable maintenance over early access to runtime features.\nESM is selected as the default module system because it is the standard JavaScript module model and is the forward-looking default for new TypeScript and Node.js code. Standardizing new first-party code on one module system also avoids maintaining unnecessary parallel CommonJS and ESM conventions inside Orion.\nThe selection is not without costs.\nTypeScript's type system does not provide runtime data validation and does not eliminate JavaScript runtime semantics. Orion must therefore explicitly validate data at trust boundaries and cannot rely on compile-time types as a security or data-integrity mechanism.\nThe JavaScript package ecosystem is also large and highly granular. This provides substantial capability but increases dependency and software-supply-chain exposure. Orion will need disciplined dependency selection, version management, security validation, and controls around third-party package behavior.\nUsing one language across applications can also make inappropriate coupling deceptively easy. A backend type being technically importable by a web application does not mean that it represents an appropriate shared contract. Orion's package boundaries, dependency rules, and architecture validation must prevent language homogeneity from weakening responsibility boundaries.\nNode.js is not optimal for every possible workload. Components dominated by CPU-intensive processing, specialized systems programming, platform-native development, machine learning, or other requirements may be better implemented using another language or runtime.\nLarge systems may therefore eventually become polyglot where the benefits materially outweigh the additional complexity. Such evolution should occur at explicit architectural boundaries rather than by introducing multiple primary technologies preemptively.\nThe decision therefore establishes TypeScript and Node.js as Orion's **primary** technology, not its exclusive technology.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "C# and .NET",
+    "anchor": "c-and-net",
+    "text": "C# and .NET\nC# and .NET provide excellent static typing, mature tooling, strong runtime performance, a comprehensive standard ecosystem, long-term support releases, and a highly capable backend and application platform.\nThey would be strong candidates if Orion were primarily a backend or enterprise server platform and would remain technically capable of supporting large business systems.\nThey were not selected as the primary Orion technology because much of the expected repository will also operate in the JavaScript ecosystem, particularly web applications, frontend tooling, generated clients, and repository automation.\nUsing C# for the primary backend while TypeScript remains necessary for significant frontend and tooling responsibilities would introduce an additional primary language, build system, package ecosystem, and set of repository conventions.\nThat separation may be worthwhile for a specific product or specialized workload, but it does not currently provide enough benefit to justify the additional baseline complexity for Orion.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Go",
+    "anchor": "go",
+    "text": "Go\nGo provides a simple language and toolchain, strong compilation and deployment characteristics, good runtime efficiency, fast builds, straightforward concurrency primitives, and a strong fit for network services and infrastructure software.\nIt would be a strong candidate for independently deployable services, infrastructure components, or workloads where its runtime and deployment characteristics provide material benefits.\nIt was not selected as Orion's primary language because it provides less unification across the expected backend, web, contract, and repository-tooling responsibilities.\nAdopting Go as the primary backend technology would still require a substantial TypeScript ecosystem for web applications and related tooling, creating two primary development environments before a concrete requirement justifies that separation.\nGo may still be introduced later for specialized components when its benefits outweigh the additional platform boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Kotlin and the JVM",
+    "anchor": "kotlin-and-the-jvm",
+    "text": "Kotlin and the JVM\nKotlin and the JVM provide a strong type system, a mature runtime ecosystem, excellent backend capabilities, broad Java interoperability, and mature production tooling.\nThey would be appropriate for large systems where JVM ecosystem integration, organizational requirements, or specific Kotlin and JVM capabilities provide material value.\nThey were not selected as Orion's primary technology because they would introduce a separate primary runtime, build ecosystem, and dependency model while TypeScript would remain necessary for major web-oriented repository responsibilities.\nThe additional platform boundary is not currently justified by a requirement that outweighs the benefits of a more unified initial toolchain.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nBackend applications, web applications, engineering tooling, contracts, and many shared packages can use a common primary language.\nContributors and AI agents have fewer unrelated language and tooling conventions to understand across the repository.\nStatic typing can be applied consistently across large portions of the monorepo.\nTypeScript integrates naturally with web technologies and the broader JavaScript ecosystem.\nShared contract tooling can use the same language as many producers and consumers while preserving explicit architectural boundaries.\nNode.js provides a mature production runtime with an LTS lifecycle and broad platform support.\nA single primary runtime simplifies initial local development, CI, testing, and repository automation.\nESM establishes one forward-looking module convention for new first-party code.\nThe same primary language and runtime can support projects across a wide range of sizes without requiring a more complex baseline technology merely in anticipation of future scale.\nCommon application workloads can scale horizontally without requiring a change of primary runtime solely because usage increases.\nLarge applications can evolve incrementally through modularization and explicit architectural boundaries rather than requiring premature distribution.\nThe decision remains reversible for specialized components because TypeScript and Node.js are primary rather than mandatory technologies for every future workload.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nTypeScript types do not exist at runtime, so external and untrusted data requires separate runtime validation.\nTypeScript does not provide the same degree of compile-time enforcement or runtime guarantees as some alternatives.\nJavaScript runtime semantics remain relevant even when code is written in TypeScript.\nThe breadth and granularity of the JavaScript dependency ecosystem create meaningful software-supply-chain and dependency-management risks.\nDependency selection and upgrades require active maintenance and security controls.\nESM interoperability with legacy CommonJS packages may occasionally require compatibility handling.\nA shared language makes accidental architectural coupling easier unless package and dependency boundaries are mechanically enforced.\nNode.js may be unsuitable for some CPU-intensive, systems-level, platform-native, machine-learning, or otherwise specialized workloads.\nVery large systems may eventually require multiple runtimes, increasing operational complexity when those requirements become justified.\nMaintaining a supported Node.js LTS line requires periodic runtime upgrades.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently contain an established application runtime that must be migrated, so this decision does not require an application or data migration.\nRepository implementation must establish a mechanically pinned and reproducible TypeScript and Node.js toolchain for local development and CI.\nProduction applications must use a supported Node.js LTS line unless a specific application has an explicitly documented reason to use another supported runtime policy.\nApplications that require additional capacity should normally be able to scale Node.js application instances horizontally before introducing a different primary runtime solely for capacity reasons.\nSpecialized workloads may adopt a different language or runtime when profiling, operational requirements, platform constraints, or other concrete evidence demonstrates a material benefit.\nRoutine patch and supported-LTS upgrades do not require a new ADR when they preserve the architectural decision described here.\nA future change away from TypeScript and Node.js as Orion's primary language and runtime would be an architectural change and should supersede this ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+    "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [repository structure](../architecture/repository-structure.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "anchor": "adr-0002-select-pnpm-for-package-and-workspace-management",
+    "text": "ADR-0002: Select pnpm for Package and Workspace Management\n**Status:** accepted\n**Date:** 2026-09-12\n"
+  },
+  {
+    "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+    "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a package and workspace management strategy before repository tooling, applications, shared packages, dependency rules, validation workflows, and CI can be implemented consistently.\nThe repository is intended to use a monorepo containing multiple applications and packages that may depend on each other. The selected tooling must therefore support both external dependencies and explicit relationships between first-party workspace packages.\nOrion is also intended to serve projects with substantially different sizes. Small repositories should not require unnecessary orchestration infrastructure, while larger repositories must retain a viable path toward more advanced task scheduling, caching, affected-project detection, and CI optimization when those capabilities provide material value.\nThe package and workspace strategy should support the following priorities:\ndeterministic dependency installation;\nexplicit dependency declarations;\npredictable first-party package resolution;\na shared dependency graph across the monorepo;\nreproducible local development and CI;\nefficient dependency storage and installation;\npractical dependency-version coordination;\nsoftware-supply-chain controls;\nexecution of commands across selected workspace projects;\ncompatibility with the TypeScript and Node.js ecosystem;\nlow initial repository complexity;\nincremental adoption of more advanced monorepo capabilities when justified.\nPackage management, workspace management, and task orchestration are related but distinct responsibilities.\nA workspace manager defines which projects belong to the repository and how their package dependencies relate.\nA dedicated monorepo task runner adds capabilities such as task-graph orchestration, computation caching, affected-project analysis, remote caching, or distributed execution.\nOrion does not currently have enough applications, packages, or CI workload to demonstrate a need for a dedicated task orchestration layer.\n"
+  },
+  {
     "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
     "title": "ADR-0002: Select pnpm for Package and Workspace Management",
     "group": "Decisions",
@@ -682,293 +844,5 @@
     "heading": "Canonical database representations",
     "anchor": "canonical-database-representations",
     "text": "Canonical database representations\nOrion will distinguish between three related database representations.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Authored persistence model",
-    "anchor": "authored-persistence-model",
-    "text": "Authored persistence model\nPrisma schema\n    → primary authored representation\n      for database structures Prisma can represent\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Released database evolution",
-    "anchor": "released-database-evolution",
-    "text": "Released database evolution\nversioned SQL migrations\n    → authoritative history of transitions\n      between released database states\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Complete current physical schema",
-    "anchor": "complete-current-physical-schema",
-    "text": "Complete current physical schema\nfully migrated PostgreSQL database\n    → authoritative complete physical schema\n\nThe complete migrated PostgreSQL schema is authoritative for physical database structures because it may contain features not completely represented by Prisma Schema Language.\nThese may include PostgreSQL extensions, specialized constraints, indexes, views, triggers, custom types, or other database-native behavior.\nGenerated database reference documentation should therefore ultimately be derived from or validated against an actually migrated PostgreSQL schema rather than relying exclusively on the Prisma schema.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Database access",
-    "anchor": "database-access",
-    "text": "Database access\nPrisma Client will be the default database-access mechanism for persistence operations that it represents clearly and efficiently.\nTypical examples include:\nordinary creates, reads, updates, and deletes;\nrelational queries;\nfiltering;\nordering;\npagination;\nprojections;\ncommon transactional persistence operations.\nPrisma Client should not be forced onto queries for which explicit SQL provides a materially clearer, safer, or more efficient implementation.\nFor specialized or complex database operations, Orion may use **TypedSQL or explicit parameterized SQL**.\nExamples may include:\ncomplex reporting queries;\ncommon table expressions;\nadvanced aggregations;\nwindow functions;\nspecialized PostgreSQL functionality;\nperformance-sensitive queries;\nvector similarity operations;\noperations unsupported or poorly represented by Prisma Client.\nThe choice between Prisma Client and explicit SQL should be based on clarity, correctness, maintainability, type safety where practical, and demonstrated database behavior rather than a requirement that every query use the ORM abstraction.\nExplicit SQL must remain parameterized where external values are involved and must follow Orion's security and database policies.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Migration tooling",
-    "anchor": "migration-tooling",
-    "text": "Migration tooling\nOrion will use **Prisma Migrate** as its primary migration-generation and deployment tooling.\nDatabase evolution will be represented through version-controlled SQL migration files.\nThe normal development flow is:\nchange persistence schema\n    ↓\ngenerate migration\n    ↓\ninspect generated SQL\n    ↓\nadjust SQL when necessary\n    ↓\nvalidate migration\n    ↓\ncommit schema and migration\n\nGenerated migrations must be reviewed before they become part of released migration history.\nGenerated SQL is not assumed to be operationally safe merely because it was produced by Prisma.\nMigrations involving large tables, backfills, constraint changes, destructive operations, compatibility periods, or zero-downtime requirements may require manually edited or multi-step SQL migrations.\nOrion's existing migration policy remains authoritative:\nreleased migration history\n    → immutable\n\nunreleased development migration history\n    → refinable\n\nBefore release, migrations may be regenerated, consolidated, reordered, or removed when doing so produces a smaller coherent migration history and no durable environment depends on the previous history.\nAfter a migration reaches an environment whose migration history is considered durable, changes must be represented by new migrations.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "db push",
-    "anchor": "db-push",
-    "text": "`db push`\n`prisma db push` will **not be part of Orion's canonical database-evolution workflow** for durable application development.\nThe normal Orion development path will use versioned migrations from the beginning.\n`db push` may be used only in explicitly disposable experimentation or tooling contexts where migration history is intentionally irrelevant.\nIt must not be used to evolve production, staging, shared durable development environments, or other databases whose migration history must remain reproducible.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "PostgreSQL-specific features",
-    "anchor": "postgresql-specific-features",
-    "text": "PostgreSQL-specific features\nOrion will not restrict PostgreSQL usage to the subset of features representable by Prisma.\nWhen a required PostgreSQL feature is unsupported or incompletely represented by Prisma Schema Language, the feature may be implemented through a reviewed custom SQL migration.\nExamples may include:\nPostgreSQL extensions;\nspecialized constraints;\nspecialized indexes;\ntriggers;\nviews;\ndatabase functions;\ncustom database types;\nother PostgreSQL-native capabilities.\nSuch SQL becomes part of the versioned migration history and therefore part of the canonical database evolution.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "pgvector",
-    "anchor": "pgvector",
-    "text": "pgvector\nThe optional pgvector capability established by ADR-0005 will be supported through this persistence strategy.\nWhen an application requires pgvector and the selected Prisma version does not completely represent the required vector functionality, Orion may use:\ncustom SQL migrations\n    +\nPrisma unsupported database representations where appropriate\n    +\nTypedSQL or explicit parameterized SQL\n\nfor vector storage and similarity queries.\nThe inability of the ORM to represent a specialized PostgreSQL capability is not sufficient reason to avoid a database feature that otherwise provides clear architectural value.\nVector-specific persistence operations should remain isolated within appropriate persistence or retrieval adapters.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Transactions",
-    "anchor": "transactions",
-    "text": "Transactions\nPrisma transaction mechanisms may be used where they provide the transactional behavior required by the application.\nTransaction boundaries are an application and database-correctness concern, not an ORM convenience concern.\nBusiness operations requiring atomic persistence must define appropriate transaction boundaries according to Orion's transaction and concurrency policy.\nIf a required PostgreSQL transaction behavior cannot be expressed adequately through the selected Prisma API, a more explicit database-access mechanism may be used within the persistence boundary.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Schema documentation",
-    "anchor": "schema-documentation",
-    "text": "Schema documentation\nGenerated database documentation must represent the database that applications actually depend on.\nThe intended flow is:\nPrisma schema\n    +\nversioned SQL migrations\n    ↓\nmigrated PostgreSQL database\n    ↓\nschema introspection\n    ↓\ngenerated database reference\n\nThis prevents generated documentation from silently omitting database behavior introduced through custom SQL migrations.\nThe generated reference remains derived documentation and must not become an independently edited source of truth.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nPrisma ORM provides a strong combination of TypeScript integration, schema readability, migration tooling, generated type-safe database access, introspection, and development tooling.\nThis combination aligns particularly well with Orion's AI-first goal.\nA Prisma schema provides a compact and structured representation of persistence relationships that can be efficiently inspected by both human contributors and AI agents.\nImportant persistence properties such as relations, identifiers, nullability, uniqueness, and database types can be discovered without reverse-engineering database access code.\nPrisma Client also provides a highly readable database API for common persistence operations.\nFor ordinary relational workloads this reduces repetitive database-access code while preserving strong TypeScript inference.\nThe integrated relationship between schema definition, generated database client, migrations, and introspection also reduces the number of independent tools that Orion needs to standardize.\nThis is valuable for a reusable engineering foundation intended to support many future projects.\nPrisma is not selected because Orion intends to hide SQL.\nOrion treats SQL and PostgreSQL behavior as important engineering concerns.\nThe persistence strategy therefore deliberately preserves explicit SQL as a first-class escape path.\nThis becomes increasingly important in large systems where reporting, performance-sensitive operations, PostgreSQL-specific features, or specialized persistence workloads may exceed the useful abstraction boundary of an ORM.\nThe intended model is:\ncommon persistence operations\n    → Prisma Client\n\nspecialized database operations\n    → TypedSQL or explicit SQL\n\nrather than:\nevery database operation\n    → ORM regardless of suitability\n\nThis prevents the ORM from becoming an architectural constraint.\nThe decision also preserves PostgreSQL as the authoritative persistence platform.\nPrisma is tooling around PostgreSQL, not a replacement for understanding PostgreSQL.\nThis distinction is important for transaction behavior, indexing, query planning, locking, migrations, constraints, performance, and production investigation.\nPrisma Migrate aligns with Orion's migration philosophy because it produces version-controlled SQL migrations that can be inspected and customized.\nThis allows Orion to retain both the productivity of declarative schema evolution and the operational control required for safe production changes.\nThe Prisma schema alone cannot necessarily represent every physical PostgreSQL capability an Orion application may require.\nTreating an actually migrated PostgreSQL database as the authority for the complete physical schema resolves this limitation without abandoning Prisma's useful authored schema model.\nThe resulting model is:\nPrisma schema\n    → convenient authored persistence model\n\nSQL migrations\n    → explicit released evolution\n\nmigrated PostgreSQL\n    → complete physical truth\n\nThis also provides a stronger foundation for generated database documentation.\nPrisma ORM 7 is selected as the initial baseline because Orion should begin from a stable production-oriented release rather than making a foundational dependency on an in-transition major release.\nA future Prisma major release may provide significant improvements and can be adopted once its production behavior and compatibility are sufficiently established.\nThe project owner also has existing Prisma experience.\nFor a reusable foundation maintained and repeatedly applied across future projects, existing operational and development familiarity provides real value.\nIt reduces learning cost, improves the ability to review generated migrations and persistence behavior, and lowers the risk associated with creating repository conventions around an unfamiliar persistence tool.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Drizzle ORM",
-    "anchor": "drizzle-orm",
-    "text": "Drizzle ORM\nDrizzle provides a strongly typed TypeScript-oriented persistence model with close alignment to SQL and PostgreSQL.\nIts schema model, migration tooling, SQL visibility, and support for PostgreSQL-specific capabilities make it a strong candidate for Orion.\nIt also provides particularly direct ergonomics for some PostgreSQL extensions and specialized data types.\nDrizzle was not selected because Prisma provides a stronger overall fit for Orion's current priorities around integrated tooling, concise schema readability, generated client ergonomics, introspection, migration workflow, and existing maintainer experience.\nThe difference is not based on Drizzle being unsuitable for large systems.\nDrizzle would be a technically valid persistence strategy.\nPrisma was selected because its complete development workflow currently provides greater value for Orion while explicit SQL remains available for cases where Prisma's abstraction is insufficient.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Kysely",
-    "anchor": "kysely",
-    "text": "Kysely\nKysely provides a type-safe SQL query builder with a design that remains close to SQL.\nIt gives applications substantial control over queries and is particularly attractive for systems that prefer SQL-centric persistence with minimal ORM abstraction.\nIt was not selected because Orion would need to assemble more of the surrounding schema-definition, migration, introspection, and developer-tooling workflow independently.\nKysely's lower abstraction level is valuable for SQL-heavy systems but does not provide enough additional value to outweigh Prisma's more integrated persistence workflow as Orion's default.\nKysely-like SQL-oriented access patterns remain conceptually available through TypedSQL or explicit SQL when specialized queries require them.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "SQL-Only Database Access",
-    "anchor": "sql-only-database-access",
-    "text": "SQL-Only Database Access\nOrion could use PostgreSQL directly through a low-level driver and maintain all schema and query behavior in SQL.\nThis would maximize visibility into database behavior and minimize ORM abstraction.\nIt was not selected because it would require substantially more manual TypeScript typing, persistence plumbing, migration conventions, and tooling for common application operations.\nFor applications that span a wide range of sizes, the additional implementation burden is not justified when Prisma can cover common persistence operations while preserving explicit SQL for specialized cases.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Prisma Schema as the Complete Database Source of Truth",
-    "anchor": "prisma-schema-as-the-complete-database-source-of-truth",
-    "text": "Prisma Schema as the Complete Database Source of Truth\nOrion could treat `schema.prisma` as the complete canonical definition of the database.\nThis would provide a particularly simple source-of-truth model.\nIt was not selected because Orion explicitly permits PostgreSQL capabilities that may not be completely representable by the selected Prisma version.\nTreating the Prisma schema as complete physical truth could cause extensions, specialized constraints, indexes, views, triggers, custom types, or other migration-defined structures to disappear from database documentation or architectural understanding.\nOrion therefore distinguishes between the authored Prisma model and the complete migrated PostgreSQL schema.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "db push as the Normal Development Workflow",
-    "anchor": "db-push-as-the-normal-development-workflow",
-    "text": "`db push` as the Normal Development Workflow\nPrisma can synchronize schema changes directly to a database without maintaining normal migration history.\nThis can make early prototyping fast.\nIt was not selected as Orion's canonical workflow because Orion requires database transitions to become explicit, reviewable, reproducible migration artifacts.\nUsing versioned migrations from ordinary development onward also reduces differences between development and durable deployment workflows.\n`db push` remains available only for intentionally disposable contexts.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion receives a strongly typed persistence API aligned with TypeScript.\nPrisma Schema Language provides a concise, machine-readable representation of ordinary persistence structures.\nHumans and AI agents can inspect models and relationships without reconstructing them from database-access code.\nPrisma Client reduces repetitive persistence code for common relational operations.\nPrisma Migrate provides an integrated schema-evolution workflow.\nSQL migration files remain visible, version-controlled, reviewable, and customizable.\nOrion's released-versus-unreleased migration policy remains fully applicable.\nPostgreSQL-native capabilities are not prohibited merely because Prisma cannot represent them completely.\nTypedSQL and explicit SQL provide an escape path for advanced and performance-sensitive queries.\npgvector can coexist with Prisma through custom migrations and specialized queries.\nPersistence models remain separated from domain, application, API, and UI models.\nThe complete migrated PostgreSQL schema can drive accurate generated database documentation.\nExisting Prisma familiarity reduces implementation and operational learning cost.\nThe architecture remains appropriate for both simple CRUD applications and large SQL-intensive business systems.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nPrisma introduces an additional abstraction over PostgreSQL whose behavior must be understood.\nGenerated Prisma types can create accidental architectural coupling if imported outside persistence boundaries.\nSome PostgreSQL capabilities may require manually customized SQL migrations.\nSpecialized queries may require TypedSQL or explicit SQL in addition to Prisma Client.\nThe Prisma schema may not describe the complete physical database by itself.\nDatabase documentation requires introspection of a migrated PostgreSQL instance to represent custom migration behavior completely.\nORM-generated queries still require performance monitoring and query-plan analysis in large systems.\nMajor Prisma upgrades may require significant compatibility evaluation.\nApplications using unsupported PostgreSQL types may lose some Prisma Client ergonomics for those fields.\nMaintaining both Prisma abstractions and explicit SQL requires contributors to understand when each approach is appropriate.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nOrion does not currently have an established persistence implementation that must be migrated.\nThe initial PostgreSQL persistence layer will therefore be implemented directly using Prisma ORM.\nRepository tooling must pin compatible Prisma ORM 7 packages explicitly rather than relying on unversioned CLI resolution.\nPersistence implementation must remain within the infrastructure boundary established by Orion's dependency rules.\nThe repository must introduce Prisma schema files and version-controlled migration artifacts only when actual database content exists.\nMigration deployment to durable environments must use committed migration history.\n`prisma db push` must not be used as a substitute for versioned migration deployment in durable environments.\nCustom PostgreSQL features must be included in version-controlled migrations rather than applied manually to production databases.\nApplications using pgvector must include the extension and associated database structures in their migration history.\nDevelopment and integration-test databases should be created from the same migration history used to create production-compatible schemas.\nDatabase reference generation should inspect a fully migrated PostgreSQL schema so that custom SQL features are included.\nRoutine compatible Prisma upgrades do not require a new ADR when they preserve this persistence architecture.\nUpgrading to Prisma ORM 8 or another future major release requires an explicit compatibility review but does not require a new ADR unless the upgrade materially changes the responsibilities or architecture established here.\nReplacing Prisma as Orion's primary database-access and migration strategy would be an architectural change and should supersede this ADR.\n"
-  },
-  {
-    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
-    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [principles](../database/principles.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [schema documentation](../database/schema-documentation.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nExternal reference: Prisma ORM release-status documentation.\nExternal reference: Prisma Migrate documentation.\nExternal reference: Prisma PostgreSQL extensions documentation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "anchor": "adr-0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "text": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion requires a consistent strategy for defining API contracts, validating external data at runtime, describing HTTP APIs, generating client integrations, and validating application configuration.\nThese concerns are closely related because they depend on explicit machine-readable schemas at trust boundaries.\nThe selected strategy must support projects ranging from small internal applications to large systems with multiple first-party clients, external integrations, mobile or desktop applications, and potentially consumers implemented in languages other than TypeScript.\nThe API strategy should therefore support:\nexplicit and versionable contracts;\nlanguage-independent interoperability;\nruntime request validation;\ncontrolled response serialization;\nstrong TypeScript inference;\ngenerated API descriptions;\ngenerated client types and SDKs;\nhuman-readable API reference generation;\nAI-agent discoverability;\ncompatibility with Fastify;\npredictable evolution as systems grow;\nsupport for external consumers;\nmechanical validation of generated artifacts;\nminimal duplication between authored contracts and derived representations.\nOrion has already selected TypeScript as its primary language and Fastify as its primary HTTP framework.\nHowever, the API contract must not depend on consumers sharing the same TypeScript implementation environment.\nA future Orion application may expose APIs to:\nweb applications;\nmobile applications;\ndesktop applications;\nthird-party systems;\nautomation;\nAI agents;\nservices written in other languages.\nThe contract strategy must therefore preserve an interoperable boundary independently of the implementation language.\nOrion also requires runtime validation because TypeScript types do not exist at runtime.\nTransport data and configuration are both trust boundaries and must be validated before being treated as valid application data.\nConfiguration introduces an additional concern: operating-system environment variables and other external configuration sources commonly represent values as strings even when the application expects numbers, booleans, enumerations, URLs, or other structured types.\nConfiguration loading must therefore distinguish raw external representation from validated runtime configuration.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nOrion will use **HTTP with JSON payloads as its primary application API style**.\nAPI contracts will be resource-oriented where resource semantics naturally fit and operation-oriented where explicit business operations better represent application behavior.\nOrion will not require strict REST purity.\nFor example, an explicit business operation such as:\nPOST /orders/{orderId}/cancel\n\nis acceptable when cancellation represents meaningful application behavior with its own authorization, invariants, side effects, or failure semantics.\nThe primary externally interoperable API description will be **OpenAPI**.\nOpenAPI descriptions will be **generated from canonical executable contract schemas and route metadata**, not maintained manually as an independent source of truth.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Canonical contract schemas",
-    "anchor": "canonical-contract-schemas",
-    "text": "Canonical contract schemas\nOrion will use **TypeBox 1.x as its default runtime schema system for canonical API contracts and shared trust-boundary schemas**.\nCanonical transport contracts must remain representable as standard JSON-compatible schema data.\nThe intended relationship is:\nTypeBox contract\n    ↓\nTypeScript static type\n    +\nJSON Schema\n    +\nruntime validation\n    +\nresponse serialization metadata\n    ↓\nOpenAPI\n\nTypeBox schemas used for external contracts must describe the **wire representation** of data rather than JavaScript-specific runtime objects.\nFor example:\nwire timestamp\n    → string with date-time semantics\n\nrather than:\nJavaScript Date object\n\nThe architectural distinction remains:\nwire representation\n    !=\napplication representation\n    !=\ndomain representation\n    !=\npersistence representation\n\nTypeBox will not become the universal type system for Orion.\nOrdinary internal TypeScript types may continue to represent domain and application concepts that do not require runtime schema validation.\nTypeBox is primarily intended for boundaries where executable schemas provide concrete value, including:\nHTTP API contracts;\napplication configuration;\nexternal integration payloads;\nmessages or events when such infrastructure is introduced;\nother untrusted or externally supplied data.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Fastify integration",
-    "anchor": "fastify-integration",
-    "text": "Fastify integration\nFastify will consume the contract schemas through its schema-based validation and serialization pipeline.\nThe preferred integration will use Fastify's TypeBox type-provider support.\nRequest schemas will provide runtime validation at the HTTP boundary.\nResponse schemas will define the transport representation that Fastify is allowed to serialize.\nTransport handlers remain responsible for translating between API contracts and application operations.\nTypeBox schemas do not become application or domain models merely because Fastify can infer their TypeScript types.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "API description",
-    "anchor": "api-description",
-    "text": "API description\nOrion will generate **OpenAPI 3.x descriptions**, with **OpenAPI 3.1.x as the initial baseline**.\nThe exact patch release will be determined by toolchain compatibility rather than permanently fixed by this ADR.\nA future OpenAPI minor-version upgrade does not require a new ADR when it preserves the API-description strategy established here.\nThe generated OpenAPI description must remain reproducible from canonical repository sources.\nIt must never become an independently edited source of truth.\nEach externally exposed API operation must define a **stable and unique `operationId`**.\nFor example:\ncreateCustomer\ngetCustomer\ncancelOrder\n\nStable operation identifiers support:\ndocumentation;\ngenerated clients;\ncontract analysis;\nAI discoverability;\nfuture tool generation;\ncompatibility analysis;\nconsistent identification independent of route implementation structure.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "TypeScript SDK generation",
-    "anchor": "typescript-sdk-generation",
-    "text": "TypeScript SDK generation\nWhen an Orion application has a TypeScript consumer that benefits from a shared SDK, the default SDK generation strategy will use:\nOpenAPI\n    ↓\nopenapi-typescript\n    ↓\ngenerated TypeScript API types\n    ↓\nopenapi-fetch\n    ↓\nthin typed HTTP client\n\n`openapi-typescript` will generate TypeScript representations from the generated OpenAPI contract.\n`openapi-fetch` will provide the default thin typed HTTP client for TypeScript consumers.\nThe initial strategy intentionally favors generated types and a small generic HTTP runtime rather than generating a large application-specific client implementation.\nThe generated TypeScript client contract must depend on OpenAPI rather than importing server implementation types directly.\nTherefore, first-party web applications should not bypass the API boundary by importing server-side contract implementations merely because both applications reside in the same monorepo.\nThe intended dependency flow is:\nauthored contracts\n    ↓\nOpenAPI\n    ↓\ngenerated client types\n    ↓\ntyped HTTP client\n    ↓\nconsumer application\n\nThis keeps the API boundary continuously testable as a real interoperable contract.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Other-language SDKs",
-    "anchor": "other-language-sdks",
-    "text": "Other-language SDKs\nOrion will not select a universal SDK generator for every programming language before concrete consumers exist.\nOpenAPI will remain the language-independent SDK input.\nIf a future application requires a Kotlin, Swift, C#, Python, Go, or other client, an appropriate generator may be selected for that consumer.\nThe choice of language-specific generator is not itself an architectural change as long as OpenAPI remains the canonical interoperable API description.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Generated artifacts",
-    "anchor": "generated-artifacts",
-    "text": "Generated artifacts\nGenerated OpenAPI documents, SDK types, and other derived contract artifacts must be:\ndeterministic;\nreproducible;\ngenerated from canonical sources;\nnever manually edited.\nRepository validation should verify generated-artifact consistency once the corresponding artifacts exist.\nConceptually:\ncanonical contracts\n    ↓\ngenerate OpenAPI\n    ↓\ngenerate client artifacts\n    ↓\npnpm validate\n    ↓\nverify generated output is current\n\nWhether a particular generated artifact is committed to version control or generated during build or publication is an implementation decision and may depend on how that artifact is consumed.\nRegardless of storage strategy, generated artifacts must never become independent sources of truth.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Client-side runtime validation",
-    "anchor": "client-side-runtime-validation",
-    "text": "Client-side runtime validation\nGenerated TypeScript SDKs will provide compile-time typing by default.\nThey will not automatically revalidate every successful server response at runtime.\nRuntime validation on clients may be introduced when a concrete trust boundary or reliability requirement justifies the additional execution and implementation cost.\nThe server remains responsible for validating requests and serializing responses according to its published contract.\n"
   }
 ]

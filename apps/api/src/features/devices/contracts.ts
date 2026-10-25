@@ -318,6 +318,45 @@ export const deviceOperations = [
     expectedErrors: [...scoped],
   },
   {
+    method: "GET",
+    url: "/companies/:companyId/devices/:deviceId/audit-events",
+    operationId: "listDeviceAuditEvents",
+    access: "session",
+    description:
+      "Lifecycle history of a currently visible screen, newest first by event time and ID. Requires audit access and its assurance. Company administrators see every event; other auditors see only events with known immutable scope entirely within their audit branches, including both sides of a move. Legacy unknown-scope events remain administrator-only. Authorization precedes pagination; cursors bind company, person, device and current audit scope. Returns only action, time and actor ID, never private audit details or credentials.",
+    schema: {
+      params: deviceParams,
+      querystring: Type.Object(
+        {
+          limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+          cursor: Type.Optional(Type.String({ minLength: 1, maxLength: 1024 })),
+        },
+        { additionalProperties: false },
+      ),
+      response: {
+        200: Type.Object(
+          {
+            items: Type.Array(
+              Type.Object(
+                {
+                  id: uuid,
+                  occurredAt: instant,
+                  actorPrincipalId: Type.Union([uuid, Type.Null()]),
+                  action: Type.String({ maxLength: 64 }),
+                },
+                { additionalProperties: false },
+              ),
+            ),
+            nextCursor: Type.Union([Type.String(), Type.Null()]),
+          },
+          { additionalProperties: false },
+        ),
+        ...common,
+      },
+    },
+    expectedErrors: [...scoped],
+  },
+  {
     method: "POST",
     url: "/companies/:companyId/devices",
     operationId: "pairDevice",

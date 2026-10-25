@@ -1,5 +1,437 @@
 [
   {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nZone data comes from the Node.js runtime's ICU; updating Node.js updates zone rules, and preview results for future dates can change after a zone-database update, as on the device.\nReplacing the polyfill with native Temporal removes the dependency and its import; the fixtures must still pass.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Programming design](../project/programming-design.md)\n[Release policies: time and scheduling](../project/release-policies.md#time-and-scheduling)\n[Playback and synchronization](../project/playback-and-sync.md#time-and-regional-scheduling)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "anchor": "adr-0030-synchronize-screens-by-polling-with-signed-authorization-statements",
+    "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance establishes the direction for local and CI implementation of PJ-11, not the player's conformance (PJ-12), hardware qualification (PH-08) or the provisioning of signing keys in a real environment (PJ-13).\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The policies require that a screen detect a new desired publication within 30 seconds (AT-11), report its state every 30 seconds (AT-24), never be rolled back by stale or reordered messages, keep playing valid content offline for at most seven days after its last renewal (AT-15) and suspend time-dependent output when its clock cannot be trusted (AT-16). Screens authenticate with a device-generated bearer credential under ADR-0027, and the device enrollment design left a tamper-evident form of the offline deadline to this decision. The pilot runs one API process on one host (ADR-0021).\nThis record decides how screens learn their desired publication, how they obtain and verify its manifest and media, and how the server states, verifiably, what a screen may play and until when. The details are in the [publication and synchronization design](../project/publication-sync-design.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nScreens **poll**. Every 30 seconds a screen calls `POST /device/sync` with its state report and receives its status, time zone, desired publication and a new authorization statement. The server computes the desired publication from current rows at each call; it keeps no push channel and no per-screen delivery queue.\nA publication's **manifest** is UTF-8 JSON produced in a fixed key order, stored as exact bytes and identified by their SHA-256. Media are delivered as display renditions identified by SHA-256. Manifests and media are downloadable only for the screen's current desired publication; superseded work coalesces by synchronizing again.\nEach sync response carries an **authorization statement**: a compact JWS signed with ECDSA P-256 and SHA-256 (`ES256`) by the first key of a configured key ring. It names the screen and company, the server time of issue, an expiry seven days later and the publications (ID and manifest SHA-256) the screen may activate or keep active until then. The key set's public halves are served to screens, which pin them after pairing.\nManifests and exchanges carry a **protocol** number; the server answers with the highest protocol both sides support and serializes publications in the current and previous protocol for at least 90 days after a new one (AT-26).\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nPolling at 30 seconds meets AT-11 and doubles as the AT-24 heartbeat with one request per screen, uses only the HTTPS path the device credential already protects, and survives proxies, restarts and the single-host deployment without connection state. Deriving desired state from authoritative rows makes ordering a property of the database rather than of message delivery, so no acknowledgement or crash can roll a screen back or lose an assignment. Exact stored bytes give the manifest an identity that a statement can sign; a structure regenerated or normalized on each request could not. A per-screen statement binds entitlement, expiry and a signed server time in one object the player can check offline and store next to its active generation, which makes the seven-day deadline and the choice of content tamper-evident on the device and gives the trusted clock a server reference. ECDSA P-256 is implemented by Node.js and by Android's standard security providers, so neither side needs a new cryptographic dependency.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Push through WebSocket, server-sent events or a broker",
+    "anchor": "push-through-websocket-server-sent-events-or-a-broker",
+    "text": "Push through WebSocket, server-sent events or a broker\nDetection within seconds, but AT-11 allows 30, and a persistent channel adds connection management, proxy configuration and reconnection on the pilot host. A push hint can be added later without changing the state model.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fan-out of desired state into per-screen rows",
+    "anchor": "fan-out-of-desired-state-into-per-screen-rows",
+    "text": "Fan-out of desired state into per-screen rows\nSimple reads, but a crash between a publication and its fan-out needs a durable queue, and fan-out races with concurrent assignments. Computing from authoritative rows is always consistent and costs one indexed query per poll.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "TLS only, without signed statements",
+    "anchor": "tls-only-without-signed-statements",
+    "text": "TLS only, without signed statements\nTLS authenticates the server during transfer but leaves the stored deadline and content choice as plain local files. It also gives the player no signed time reference.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Signing manifests at publication",
+    "anchor": "signing-manifests-at-publication",
+    "text": "Signing manifests at publication\nAuthenticates content once, but not which screen may play it or until when; a statement per screen covers both.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Ed25519 or a shared HMAC key",
+    "anchor": "ed25519-or-a-shared-hmac-key",
+    "text": "Ed25519 or a shared HMAC key\nEd25519 is compact but not provided by older Android versions without an added library; an HMAC would require a secret on every screen, so any one screen could forge statements.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nScreens converge on the latest authorized publication within one polling interval, with no message ordering assumptions.\nThe player can verify offline which content it may show and until when, and anchor its clock to a signed server time.\nNo new infrastructure or cryptographic dependency on either side.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nEvery screen makes a request every 30 seconds whether or not anything changed; the reference load of 100 screens is about 3.3 requests per second.\nThe signing key ring is a new production secret with rotation duties.\nDetection is bounded by the polling interval, not immediate.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\n`TELUNI_SYNC_SIGNING_KEYS` must be provisioned and backed up with the other secrets (PJ-13). Rotation adds a key at the front and keeps the previous one for at least seven days.\nRestoring a database backup restores publications and desired state together; screens reconcile at their next poll. Pointing screens at a different host needs the same signing keys or a published key transition.\nA future protocol needs dual serialization for the support window.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
+    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Publication and synchronization design](../project/publication-sync-design.md)\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "anchor": "adr-0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "text": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together with the decisions of the [player design](../project/player-design.md); merging the pull request that adds it is the repository review. Acceptance establishes the direction for implementing PJ-12 in local and CI environments. It does not qualify any device (PH-08), select production update operations (PJ-13) or provide the release signing key (PH-27).\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0020 chose a native Kotlin and Media3 Android TV player with durable local state. It left the persistence library, startup and unattended behavior, packaging and updates open, and ADR-0019 requires atomic activation that survives power loss. The protocol of ADR-0030 gives screens exact manifests, SHA-256-identified media and signed statements with a server time, but says nothing about how the player stores them or how it gets reliable local time.\nThe pilot hardware is unknown (PH-08) and likely to include inexpensive Android TV boxes. Such boxes often run old Android versions with stale time zone data, have no battery-backed clock and offer limited launcher control. The repository's tooling is TypeScript, while the shared schedule fixtures must also run against the player. The cloud development environment cannot currently reach Google's Maven repository (PH-26).\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nThe player is one Gradle build in `apps/player`. A pure-JVM `core` module holds every rule: protocol models, statement verification, the schedule evaluator, trusted time, the local store, synchronization and playback decisions. An Android `app` module holds the activity, Media3 rendering, the Keystore vault and device integration. `core` tests run the repository's shared fixtures, and a dedicated CI job checks the build as part of the required gate.\nLocal state is plain files in app-private storage, without a database:\nwrite-once media named by their SHA-256;\nexact manifest bytes per generation;\none small state record replaced atomically (temporary file, `fsync`, rename, directory `fsync`).\nActivation is a single replacement of that record, and startup reconciles deterministically from any interruption.\nBusiness time never depends on the device's time zone data. Each sync response carries the screen zone's UTC offsets for the next 35 days, computed by the API with the same Temporal implementation as the preview. Trusted time comes from a monotonic anchor set at each sync, with a persisted lower bound across reboots.\nThe supported unattended profile makes the player the device owner on a reset device: the HOME activity in lock task mode. Updates are APKs that the API distributes, verified by SHA-256 and signing certificate and installed by the device owner inside a local window. The player never downgrades; a rollback is a roll-forward release.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nKeeping rules in a JVM module lets the evaluator, protocol parsing, cryptographic checks and store faults be tested quickly and exhaustively in CI without emulators. The same code runs on the device. It also lets that work proceed while Android tooling is unavailable in some environments.\nThe persistent state is a handful of pointers plus immutable files. Atomic file replacement has a simple failure model that can be fault-injected at every step. A database would add schema migrations that interact badly with the no-downgrade rule. Its own durability under power loss would still need the same testing.\nServer-supplied offsets remove a real failure mode: a pilot box with pre-2019 time zone data would shift `America/Sao_Paulo` schedules by an hour for months. They also make the player agree with the server's preview by construction. The cost is a small additive field in the sync response and evaluation that stops outside the covered range, which the seven-day authorization already bounds.\nOn Android 10 and later, a background `BOOT_COMPLETED` start is unreliable, and an ordinary app cannot update itself without a prompt. Device-owner mode makes boot, crash recovery and scheduled updates work without a person at the screen. In exchange, an installer must provision each device with `adb` after a reset, which is acceptable for a pilot of a few screens.\nThese are reasoned choices, not measurements. Startup, recovery, clock behavior and power-loss safety still need PH-08 hardware evidence.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Room or another embedded database",
+    "anchor": "room-or-another-embedded-database",
+    "text": "Room or another embedded database\nOffers queries and transactional updates, but adds migrations, a larger failure surface and the same need for power-cut evidence. Nothing in the state needs relational queries.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Device or bundled time zone data",
+    "anchor": "device-or-bundled-time-zone-data",
+    "text": "Device or bundled time zone data\nDevice data can be years out of date on unmanaged boxes. A bundled library (ThreeTenBP or Joda-Time) is updated only with player releases and can still disagree with the server preview.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Basic installation with Google Play updates",
+    "anchor": "basic-installation-with-google-play-updates",
+    "text": "Basic installation with Google Play updates\nStore distribution needs accounts, review and Play on every device. It does not install updates unattended inside a business window, and many commercial boxes lack Play. A basic sideloaded profile stays possible where PH-08 shows that it boots and recovers reliably.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A single Android module",
+    "anchor": "a-single-android-module",
+    "text": "A single Android module\nSimpler build files, but every rule test would need Robolectric or an emulator, and no part could be built without the Android SDK.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nRules, protocol conformance and crash recovery are tested on every pull request with the shared fixtures and the API's conformance fixtures.\nSchedules agree with the preview regardless of the device's time zone data.\nManaged devices boot into content, recover from crashes and update unattended.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe repository gains a second build system and a JVM toolchain, with its own dependency verification and Renovate coverage.\nManaged installation requires `adb` provisioning on a factory-reset device and excludes devices that cannot be made device owner from the supported profile.\nWithout a server answer after a reboot, the player depends on the system clock being at least the persisted bound and set by network time; a wrong clock without a reference cannot always be detected.\nThe API must keep serving zone offsets and conformance fixtures as part of the device contract.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nRelease signing needs a human-held key (PH-27), and production releases need an approval and update-window process (PJ-13).\nChanging the local state format requires a forward migration or a re-synchronization that keeps the credential. Rollbacks are new releases.\nBuilding the Android module in the current cloud environment requires allowing Google's Maven host (PH-26).\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Player design](../project/player-design.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md), [ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md), [ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\n[Offline playback and synchronization](../project/playback-and-sync.md), [acceptance targets](../project/release-targets.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "anchor": "adr-0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "text": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together with the [catalog and composition design](../project/catalog-composition-design.md); merging the pull request that adds it is the repository review. It settles the monetary representation that D-10 left open for catalogs, prices, publications and the player. It does not select a currency conversion service, because the policies forbid conversion.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nCatalogs need monetary fields for prices, with company base values, branch overrides and promotions (FR-11, P06, P07). Several runtimes must agree exactly on those amounts:\nthe TypeScript API, which validates, stores and snapshots them;\nthe web panel, which edits and previews them in the person's locale;\nthe Kotlin player, which shows them offline.\nThe policies require explicit currency, exact representation, no automatic conversion, and locale-independent meaning. D-10 left the representation open. PostgreSQL `numeric`, JavaScript numbers and JSON numbers all differ in precision or parsing, and currencies differ in minor units: BRL has 2, JPY 0, KWD 3.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAn amount is an integer count of the currency's minor units: `1990` BRL is R$ 19,90, and `1990` JPY is ¥1,990. It is stored as PostgreSQL `bigint` and transported in JSON as an integer within ±(2^53 − 1) and in practice far below. The API refuses values outside 0 to 10^12 minor units.\nThe currency is an ISO 4217 alphabetic code fixed on the money field when the field is created. Every value, override and promotion of that field uses it. A field's currency never changes; changing currency means adding a field.\nThe number of minor units comes from a table in the API, checked against `Intl.NumberFormat` in tests and copied to the player. The input `\"19,9\"` in `pt-BR` or `\"19.90\"` in `en-US` is parsed by the panel into minor units, rejecting more decimals than the currency has.\nFormatting for people uses the locale, through `Intl.NumberFormat` in the web panel and `java.text.NumberFormat`/`Currency` on the player, with the field's currency. Locale never changes the amount or the currency. Amounts are never converted between currencies.\nNon-monetary decimals (`number` fields) are canonical decimal strings with a fixed number of places, never floats.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nInteger minor units are exact, compare and sort trivially, and mean the same in SQL, JSON, TypeScript and Kotlin without a decimal library.\nA currency per field rules out mixing currencies inside one price list by construction. That is the common case for a business operating in one country, and the policies forbid conversion anyway.\nThe cost is that a business pricing the same product in two currencies needs two fields, which is honest about the meaning.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "PostgreSQL numeric and decimal strings everywhere",
+    "anchor": "postgresql-numeric-and-decimal-strings-everywhere",
+    "text": "PostgreSQL numeric and decimal strings everywhere\nExact, but every runtime then needs a decimal implementation and a rule for scale. A value like `19.9` versus `19.90` invites accidental inequality. Minor units carry the scale in the currency.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A currency on each value",
+    "anchor": "a-currency-on-each-value",
+    "text": "A currency on each value\nMore flexible, but it allows a price list in mixed currencies that cannot be compared or validated, and nothing in the product needs it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Floating-point numbers",
+    "anchor": "floating-point-numbers",
+    "text": "Floating-point numbers\nCannot represent most decimal amounts exactly, so totals and comparisons drift. Rejected.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nPrices are exact and identical in the API, the panel preview, the publication snapshot and the player.\nValidation and promotion comparisons are integer operations.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe currency table must stay aligned across the API and the player; a test checks the API table against `Intl`, and the player's copy is checked by the protocol fixtures.\nChanging a field's currency requires a new field and copying values.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo existing data. The first catalog migration creates `bigint` amount columns and a currency column on money fields.\n"
+  },
+  {
+    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
+    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Catalog and composition design](../project/catalog-composition-design.md)\n[Configurable catalogs policy](../project/release-policies.md#configurable-catalogs)\n[Security and internationalization](../project/security-and-i18n.md)\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "anchor": "adr-0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "text": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n**Status:** accepted\n**Date:** 2026-10-22\n**Acceptance scope:** On 2026-10-22 the owner asked the agent to take every pending decision that is only a decision, which extends the delegation recorded with PH-25. The agent accepted this decision under that delegation together with the decisions of the [deployment design](../project/deployment-design.md); merging the pull request that adds it is the repository review. Acceptance establishes the direction for building and rehearsing the deployment in PJ-13. It does not verify the owner's host or network (PH-10), create any account, or authorize exposing a host.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0021 chose a single residential Debian host with Docker Compose, a reverse proxy with HTTPS and durable local media. It deliberately selected no tunnel, proxy, object store or provider, and it made real-customer use conditional on off-host recovery and owner-approved recovery targets. Residential lines in Brazil are often behind CGNAT or block inbound ports, and the owner has no recurring cloud budget.\nScreens download video renditions, and people upload videos of up to 1 GiB in a single request. Sessions are server-managed cookies, and media are private to their company. Screens play for up to seven days without the server (AT-15), which bounds how long a recovery can take.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nTLS ends on the owner's host, in a Caddy reverse proxy that obtains Let's Encrypt certificates. The host is reached directly when the line has a usable public address. Otherwise it is reached through a TCP relay on a free-tier virtual machine that forwards encrypted traffic through a WireGuard tunnel opened by the host. No TLS-terminating tunnel, CDN or proxy service sits in front of Teluni.\nBackups are restic snapshots, encrypted on the host, of the PostgreSQL dumps followed by hard links of the content-addressed media objects, taken under a lock that keeps object files from being deleted in between. They are written every 6 hours to an S3-compatible bucket at a separate provider, initially Backblaze B2, and kept for at most about 35 days. Secrets are excluded from snapshots and kept offline by the owner.\n"
+  },
+  {
+    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
+    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nEnding TLS on the host keeps session cookies, credentials and private media away from intermediaries. The relay is replaceable and holds nothing.\nA TLS-terminating free tunnel would solve CGNAT, but its terms restrict serving video outside paid products. Its reported upload cap is below the media limit, and it would see every session.\nObject files are written before the rows that record them and deleted only after those rows, under an advisory lock that the backup holds from before its dumps until it has hard-linked the objects. That makes \"dumps first, then objects\" a consistent set without stopping the service or making anyone wait on the upload. The restore check verifies it.\nClient-side encryption lets a free off-host bucket hold customer data as ciphertext only. Deduplication keeps 6-hourly snapshots within the free allowance at pilot scale.\nA 6-hour recovery point and a 72-hour worst-case recovery time keep screens playing through any recovery under AT-15.\nAssumptions: provider allowances (Oracle Cloud's outbound transfer, Backblaze B2's free storage and downloads) are as reported in October 2026. They can change, so the destination and relay must stay replaceable. Whether the owner's line needs the relay is unknown until PH-10.\n"
+  },
+  {
     "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
     "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
     "group": "Decisions",
@@ -781,239 +1213,5 @@
     "heading": "Shared Contracts",
     "anchor": "shared-contracts",
     "text": "Shared Contracts\nThe [internal documentation portal](living-documentation.md#build-and-deployment-boundary) reuses the web toolchain behind a compile-time distribution boundary. Its UI is an engineering tool and imposes no layout, navigation, or identity on a product. Product help and public API documentation have separately approved sources and application-owned presentation; sharing a repository does not grant publication authority.\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Composition and Ownership",
-    "anchor": "composition-and-ownership",
-    "text": "Composition and Ownership\nExecutable applications select and wire concrete adapters at bootstrap. Dependencies should be visible through explicit composition; a dependency-injection framework is not required. Minimize mutable globals and service locators. Process-scoped connection pools and telemetry providers are reasonable when lifecycle and access are intentional.\nBusiness capabilities have one identifiable home regardless of how many applications expose them. Delivery-specific feature directories do not authorize cross-application imports or independent reimplementation of core rules. Workers and administrative CLIs must preserve the same invariants as equivalent API operations.\nThe default data path is client → trusted backend → owned persistence → database. Multiple trusted runtimes may share controlled persistence when they belong to an explicitly shared logical ownership model. Modifying another service's owned tables is architectural coupling, not a shortcut. See [database ownership](../database/principles.md).\nExternal providers should be isolated enough to contain meaningful provider-specific risk and ownership. Do not spread a provider SDK throughout business behavior, but do not wrap every third-party library without benefit. A Backend for Frontend requires a concrete client orchestration, latency, identity, aggregation, or independent-evolution need; multiple clients alone do not justify it.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Additional Runtime Boundaries",
-    "anchor": "additional-runtime-boundaries",
-    "text": "Additional Runtime Boundaries\nThese are conditional rules, not implemented applications:\nRuntime\nLocal responsibility and additional obligations\nMobile\nDevice capabilities, native UI/navigation, secure local storage, offline behavior, notifications, permissions, and lifecycle. It remains an untrusted client; installed old versions may require a documented longer API support window.\nDesktop\nOS/filesystem integration, local caching, credential storage, updates, UI, and lifecycle. Possession of a binary does not confer backend trust.\nWorker\nQueue/schedule/event processing or long-running work. Define retries, idempotency, duplicate delivery, ordering, dead letters, poison messages, concurrency, timeouts, telemetry, and graceful shutdown; never assume exactly-once execution without evidence.\nCLI\nCommand parsing, terminal interaction/output, command lifecycle, and identity integration. Administrative convenience cannot bypass domain or access controls.\nEvents must describe meaningful facts or integration signals with owned schemas, delivery guarantees, ordering, and compatibility. Follow [delivery and side effects](delivery-and-side-effects.md) for reliable processing. Remote calls need deliberate bounded timeout/retry behavior; evaluate whether an error is transient, effects can repeat safely, and retry load will worsen the failure.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Creating a New Application Boundary",
-    "anchor": "creating-a-new-application-boundary",
-    "text": "Creating a New Application Boundary\nBefore creating or splitting an application, identify:\nThe runtime/product responsibility and why an existing application cannot own it.\nNeeded scaling, deployment/distribution independence, security, failure isolation, or operational ownership.\nExposed/consumed contracts, shared packages, persistent-data ownership, and trust boundaries.\nConfiguration, lifecycle, telemetry, compatibility, and new failure modes.\nWhether the value justifies its operational complexity and requires an ADR.\nEstablish a logical modular boundary before extracting another process. Size alone does not justify splitting; merging is appropriate when separate applications add no meaningful independence. Microservices are not a default goal, and serverless deployment units do not determine domain boundaries. Prefer modular ownership within one backend until separation has a concrete benefit.\nLocal [README and agent instructions](repository-structure.md#local-agent-instructions) make each application independently understandable without repeating repository policy. When placement is unclear, distinguish runtime-specific behavior, genuinely shared domain meaning, shared wire contracts, development tooling, and operational infrastructure before creating a new owner.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Boundary Enforcement",
-    "anchor": "boundary-enforcement",
-    "text": "Boundary Enforcement\nThe existing [dependency checks](dependency-rules.md#mechanical-enforcement) reject cross-application imports and other forbidden edges. They do not prove runtime trust, data ownership, or contract compatibility. When a boundary obstructs a legitimate requirement, identify the correct owner, try its existing public contract, then deliberately extend or revise the boundary and its tests/enforcement. Document significant changes through the ADR process; do not bypass constraints silently.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend Execution and Generated Artifacts",
-    "anchor": "backend-execution-and-generated-artifacts",
-    "text": "Backend Execution and Generated Artifacts\n[Documentation index](../README.md) · [Validation availability](../validation.md) · [Local setup](../setup.md)\nThis page owns API execution and generated-artifact storage conventions. The implemented pipeline follows [TypeScript/Node.js](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md), [pnpm](../adr/0002-select-pnpm-for-package-and-workspace-management.md), [API generation](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md), [Prisma/PostgreSQL](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [validation](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) decisions. [Setup](../setup.md#validate-regenerate-and-build) owns the regeneration sequence; [validation](../validation.md) lists current commands and prerequisites.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "API development and build",
-    "anchor": "api-development-and-build",
-    "text": "API development and build\nKeep the API as an ESM TypeScript workspace application under `apps/api`. Use pnpm package scripts as the stable interface and native workspace filtering for orchestration; no dedicated monorepo task runner or backend bundler is needed initially.\nThe `apps/api` scripts expose `dev` (Node's optional root `.env.local` loading and watch mode with pinned `tsx`), `typecheck` (`tsc --noEmit`), `build` (`tsc` emitting Node-compatible ESM JavaScript to an ignored `dist/` directory), and `start` (`node dist/main.js`). The [setup guide](../setup.md) owns local environment-file instructions. Source imports and compiler settings resolve in the emitted Node.js ESM output. `tsx` is an execution convenience, never a substitute for TypeScript checking or a production runtime dependency.\nInstall dependencies from the shared frozen lockfile. Generate tool-managed Prisma client code before typecheck/build when required; keep its cache/output out of hand-edited source and commit history. Build and start must work without a development transpiler at runtime. The existing process and feature smokes exercise the emitted application.\nRoot `pnpm validate` and CI include application typechecks, tests, builds, smokes, and generated-output freshness. Integrate new capabilities into that same gate. Keep validation non-mutating with respect to tracked source; generation is a separate explicit write command. Update [validation availability](../validation.md) when scripts change.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Artifact ownership and storage",
-    "anchor": "artifact-ownership-and-storage",
-    "text": "Artifact ownership and storage\nDerived artifact\nCanonical input\nOutput and handling\nOpenAPI 3.1 description\nExecutable TypeBox wire schemas and stable route `operationId` metadata owned by the API\nCommitted `docs/generated/api/openapi.json` is regenerated and checked; clients and documentation consume that file, with no independently authored copy.\nTypeScript API client types\nCommitted generated OpenAPI\nCommitted `packages/sdk/src/generated/api-types.ts` comes from `openapi-typescript`; a thin `openapi-fetch` client lives outside the generated file. `pnpm -C packages/sdk generate` writes it and `references:check` verifies it without editing tracked files. The web app does not import API implementation types.\nAPI configuration reference\nAPI-owned TypeBox bootstrap configuration schema and metadata\nCommitted `docs/generated/configuration/api.md` is regenerated and checked from the API source. It contains safe types/defaults, never secrets or a real `.env`.\nAPI error registry reference\nAPI-owned registry and envelope schema\nCommitted `docs/generated/api/errors.md` is regenerated and checked from the API source. Feature errors join the same registry when their routes exist.\nDatabase reference\nMigrated PostgreSQL plus canonical schema-adjacent semantic metadata; Prisma schema and reviewed migrations are inputs\nCommitted `docs/generated/database/schema.md` is generated and checked from a fresh Testcontainers PostgreSQL, including custom SQL constraints and indexes; it is not authored independently. With no application tables it states that explicitly.\nPortal catalog, pages, search, and component reference\nRepository Markdown, current generated API/database/error references, and web-owned component source/examples/metadata\nCommitted `apps/web/src/generated/manifest.json`, page/search assets, and `docs/generated/components/web.md` are written/checked by `pnpm docs:references:write` / `pnpm docs:references:check`. [Living documentation](living-documentation.md) owns portal behavior and limitations.\nPrisma Client and emitted JavaScript\nPrisma schema and TypeScript source\nGenerate into ignored, tool-managed outputs for each build; do not commit platform/tool-generated client code or `dist/`. Reviewed SQL migrations are authored release history, not disposable generated output.\nMark generated files clearly and never edit them to repair a source defect. A generation command may update tracked derived artifacts intentionally; a separate check must regenerate in a temporary location or compare deterministically without changing tracked files. The current gate fails on generated drift. Rebuildability does not waive public API or SDK compatibility responsibilities under [versioning](versioning-and-compatibility.md), nor the independent [migration-history rules](../database/migrations.md).\nDo not create planned files or directories as placeholders. Each artifact belongs with its canonical source, generator, validation check, and actual consumer. Each module's implementation conventions describe its data and contract metadata.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration",
-    "anchor": "configuration",
-    "text": "Configuration\n[Documentation index](../README.md) · [Local setup](../setup.md) · [Secrets management](../security/secrets-management.md)\nConfiguration is an explicit application dependency: validate it before use, expose only safe projections, and keep its meaning discoverable without access to secret values. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects TypeBox for bootstrap schemas. This page owns configuration policy; application sources own their settings and the setup guide owns loading commands.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Canonical Configuration Schema",
-    "anchor": "canonical-configuration-schema",
-    "text": "Canonical Configuration Schema\nWeb engineering-tool inclusion is controlled separately by the non-secret process environment selection in [the documentation build policy](living-documentation.md#build-and-deployment-boundary). It is evaluated by Vite configuration, is excluded from the API `.env.example` schema, and grants neither browser credentials nor hosting access.\nEach application owns a canonical schema with derived types where practical. Define each setting's name, type, purpose, required/optional state, default, validation constraints, classification, secret status, client visibility, and operational consequences. Document the owner, permitted changes, environment scope, and whether a restart is required. Descriptions explain semantics rather than repeat the name.\nCurrent sources are:\nApplication\nCanonical input and representation\nAPI\n[`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty.\nWeb\n[`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md).\nPlayer\n[`PlayerEndpoint`](../../apps/player/app/src/main/kotlin/app/teluni/player/PlatformAdapters.kt) validates the operator-entered API address at setup/startup. Client-visible, non-secret, app-private and atomically stored; no release default. See [player configuration](../../apps/player/README.md#configuration-and-security) for HTTPS and debug loopback constraints.\nThe API metadata records type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.\nAvoid independent definitions in code, READMEs, examples, and deployment files when they can derive from the schema. Generated references must never contain actual secrets. Changes to the API source require regeneration through [artifact tooling](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage); new applications need their own schema and explicit example/check.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration Validation",
-    "anchor": "configuration-validation",
-    "text": "Configuration Validation\nParse raw strings into meaningful booleans, numbers, durations, URLs, enums, lists, or objects at the boundary. A nonempty `\"false\"` must not become true. Names/types must make units explicit, use clear positive boolean semantics, and group related settings coherently. Prefer one validated mode over conflicting enable/disable booleans.\nValidate required values, cross-field invariants, conditional requirements, ranges, protocols, and mutually exclusive modes before use. Missing or invalid required configuration normally prevents startup. Diagnostics should name the key and expected requirement where practical without echoing restricted values. After successful parsing, components can rely on the declared schema.\nDefaults must be safe, predictable, documented, and unambiguous. Require explicit configuration when no safe default exists; never silently disable expected authentication or select an unintended production database. Isolate development-only conveniences. The current API explicitly permits health-only operation in development/test, requires the database and token settings together to enable the feature, and requires that feature configuration in production.\nUnknown keys can indicate typos or obsolete deployment settings; detect them where practical, with warnings/errors appropriate to the source. The current API selects known environment keys into a validated object; it does not reject every unrelated variable in the process environment.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration Precedence",
-    "anchor": "configuration-precedence",
-    "text": "Configuration Precedence\nSources and precedence must be deterministic and documented. Use the smallest set of mechanisms that satisfies real needs; do not add overlapping files, CLI overrides, or remote systems speculatively.\nThe API development command optionally loads the root ignored `.env.local`; existing shell environment values win. The production start command receives process environment and does not implicitly load that file. Vite owns the web application's environment loading and embeds its public build-time values. Disposable end-to-end and module stacks supply their own temporary configuration. [Setup](../setup.md#load-local-configuration) is the canonical procedure; no global remote configuration hierarchy or deployment platform is selected.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Centralized Ingestion",
-    "anchor": "centralized-ingestion",
-    "text": "Centralized Ingestion\nResolve raw configuration near bootstrap/composition, then pass narrow validated inputs to components. Do not scatter direct environment reads, pass every setting to every service, or let shared packages discover application environment implicitly. A library should accept simple parameters unless environment ingestion is its explicit responsibility. Keep provider-specific settings near that integration.\nStable domain invariants should not become deployment switches. Configuration controls intentional operational variability; business records, per-user preferences, and frequently edited business settings often belong in application data. Choose ownership according to meaning, who changes it, and frequency. Share schemas/settings across applications only when their semantics match, and distinguish sharing a schema from sharing an actual value.\nEnvironment identity is not a generic feature flag. Use a small explicit environment model and name actual capabilities/modes when controlling behavior. Necessary production differences, such as diagnostic limits or real provider integration, must be intentional and testable. Avoid platform-specific settings when a useful application concept exists, without inventing portability abstractions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration and Secrets",
-    "anchor": "configuration-and-secrets",
-    "text": "Configuration and Secrets\nThe schema may describe a secret requirement; secret delivery, storage, rotation, and revocation follow [secret policy](../security/secrets-management.md). Secret references may be useful where infrastructure supports them, but resolved values remain restricted in memory. Agents must understand requirements from schemas, safe placeholders, and descriptions without needing real credentials.\nBuild-time values can remain embedded in browser/mobile/desktop artifacts or image layers and are accessible to recipients. Never embed server-only secrets. Client-visible settings must be explicitly safe; environment-variable delivery alone does not make them public. Keep server credentials, private tokens/keys, and privileged internal endpoints out of client artifacts and shared public configuration.\nDo not serialize or log entire configuration objects in startup logs, errors, health endpoints, debug output, or support bundles. Use explicit safe projections, such as whether a dependency is configured. Even nonsecret fields obey [data classification](../security/data-classification.md) and [telemetry redaction](../security/telemetry-redaction.md). Safe configuration summaries/fingerprints may help diagnose drift only when useful and excluding secrets.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Evolution and Operational Changes",
-    "anchor": "evolution-and-operational-changes",
-    "text": "Evolution and Operational Changes\nConfiguration changes can break deployment or rollback even without code changes. For a rename/removal, identify old/new applications, supported rolling/rollback combinations, CI, local examples, deployment scripts, secret stores, and documentation. Introduce replacements, support both temporarily if required, migrate consumers, then remove old usage/configuration/secrets. Do not remove keys while a supported old version still requires them or retain unused keys indefinitely. Follow [compatibility policy](versioning-and-compatibility.md), including coordinated database/configuration transitions.\nA separate configuration schema version is justified only if independently managed configuration needs it; application releases and Git may suffice. Deployment definitions, when introduced, should expose requirements and reject invalid mandatory configuration before activation. Validate secret presence/references without exposing values.\nPrefer static startup configuration initially. Dynamic/remote configuration creates availability, authentication, caching, fallback, consistency, concurrency, rollback, auditability, and test obligations. If introduced, distinguish startup-only, reloadable, and process-immutable values. High-impact changes need risk-appropriate safe audit context (key, actor/system, time), not secret old/new values. Feature flags need explicit rollout/removal criteria unless they are permanent product settings; they are not automatically ordinary environment variables.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Verification and Enforcement",
-    "anchor": "verification-and-enforcement",
-    "text": "Verification and Enforcement\nTests construct explicit configuration and synthetic credentials instead of relying on machine state. Unit tests inject the minimum values; parser tests exercise missing/invalid input, defaults, secret-safe errors, conditional modes, and cross-field behavior. Integration tests exercise the actual ingestion boundary with isolated resources. CI jobs receive only the settings/credentials they require, never unrelated production access.\nClient builds must reject attempts to import or embed server-only/restricted configuration. Implemented checks include API parser tests, generated-reference freshness, `pnpm env:example:check`, and the web [bundle marker check](../../apps/web/scripts/check-bundle.mjs). The example check compares safe placeholders/defaults with API metadata; it does not validate deployed environments. The bundle check detects known server-only markers, not every possible leak. Direct environment access outside approved modules and full secret/classification metadata coverage remain review responsibilities; no dedicated lint rule or deployed-configuration validator currently proves them. These limits do not relax the policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "New Configuration Checklist",
-    "anchor": "new-configuration-checklist",
-    "text": "New Configuration Checklist\nBefore adding a setting, establish its concrete variability requirement, owning application, consumers, type/units, required/default behavior, classification/secret/client visibility, environment scope, change/restart behavior, validation, tests, documentation, and compatibility impact. Consider whether the value belongs in application data or can remain fixed. Every option expands the behavior space; keep only justified configuration and update its canonical source and derived representations together.\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Continuous Integration",
-    "anchor": "continuous-integration",
-    "text": "Continuous Integration\nThis page owns the map from repository CI configuration to the accepted policy in [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md). See [validation availability](../validation.md) for local commands. Effective remote settings and completed-run evidence have a separate owner in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Current implementation and activation",
-    "anchor": "current-implementation-and-activation",
-    "text": "Current implementation and activation\nThe [repository workflow](../../.github/workflows/ci.yml) validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It uses repository-pinned Node.js/pnpm and frozen installation, installs Playwright Chromium/system libraries and the distribution FFmpeg used by media tests, and runs `pnpm validate` on GitHub-hosted Ubuntu. It fetches Git history and supplies the base commit for release-history validation. A separate **Player** job sets up JDK 17 and the Android SDK platform/build tools, validates the Gradle wrapper and runs `./gradlew check :app:assembleDebug :app:assembleRelease` in [`apps/player`](../../apps/player/README.md), whose dependencies are locked and checksum-verified. A **Deployment rehearsal** job runs [`infra/pilot/rehearsal.sh`](../../infra/pilot/README.md): it builds the pilot images, starts the composition with disposable secrets and Caddy's local CA, checks routing, TLS and realm discovery through the proxy, takes a backup, restores it into a fresh project and checks it again. The stable branch-protection check name is **Orion required gate**; it fails if validation, the player job or the deployment rehearsal fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded. Future uploads need bounded retention and must exclude secrets/sensitive data.\nThe validation job replaces the runner's slow Azure Ubuntu archive URL in direct sources and `/etc/apt/apt-mirrors.txt` with the Ubuntu archive over HTTPS, retains APT signature verification, and bounds package-network retries/timeouts. Playwright refreshes the package index for its system dependencies; the following FFmpeg installation reuses that index. The 35-minute job budget is unchanged. The job also sets `SSHD_CONTAINER_IMAGE` to the host-port helper version selected by the pinned Testcontainers dependency and pulls it before parallel fixtures start. Update that job-level pin when the dependency selects another helper; a failed prerequisite download fails the job instead of skipping its tests. Ubuntu's [package-management guide](https://ubuntu.com/server/docs/how-to/software/package-management/) describes the runner's repository-file format.\nThe workflow passes the PR base SHA, merge-group base SHA, or `github.event.before` unchanged to the release-history validator. That shared validator handles GitHub's first-push zero-SHA sentinel under the [release-history rules](../database/release-evolution.md#record-the-first-durable-migration-boundary), so local and CI checks enforce the same missing-base and append-only protections. Manual dispatches without an explicit base use the validator's local Git-base discovery.\nThe dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=true` and blocks newly introduced high/critical vulnerabilities. The aggregate gate treats an enabled review that fails or skips as a failure. The repository's human actions record dated evidence and how to reverify the variable, security settings, and actual review execution.\nThe [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. The repository's human actions own app activation/Dashboard and effective branch-protection evidence.\nCommitted workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#content-ownership). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Read for this change",
-    "anchor": "read-for-this-change",
-    "text": "Read for this change\nChange\nGoverning decision section\nLocal/CI command parity and incremental capabilities\n[Canonical validation contract](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#canonical-validation-contract)\nRequired PR gate, primary-branch checks, manual runs\n[Pull-request validation](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#pull-request-validation) and [required gate](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#required-ci-gate)\nRunner, versions, lockfile, caching, concurrency\n[Execution environment](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#ci-execution-environment) through [pull-request concurrency](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#pull-request-concurrency)\nIntegration/browser tests and artifacts\n[Integration infrastructure](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#integration-test-infrastructure) and [testing strategy](testing-strategy.md)\nPermissions, action pins, untrusted PRs, secrets, OIDC\n[Actions security](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#github-actions-security)\nRenovate cadence, grouping, majors, automerge, lockfiles\n[Dependency automation](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#dependency-automation)\nDependency review, scanning, feature availability, licenses\n[Dependency security alerts](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#dependency-security-alerts) and subsequent security sections\nValidation mutations, reusable workflows, CI versus CD\n[CI-generated modifications](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#ci-generated-modifications) and [continuous delivery](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#continuous-delivery)\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Policy boundaries",
-    "anchor": "policy-boundaries",
-    "text": "Policy boundaries\nGitHub Actions uses the same repository validation capabilities as local development. GitHub-hosted Linux is the initial runner, with repository-pinned versions and frozen lockfile installation. The primary branch must require the stable aggregate gate; effective activation is verified separately as described above. Validation must not silently fix tracked sources.\nRenovate owns version-update automation, with routine weekly grouping and automerge disabled initially. Dependabot vulnerability alerts are a separate capability, not a second version-update system. GitHub security features retain the availability and entitlement qualifications in the ADR; paid security features are not a mandatory architectural dependency.\nDeploying to a real host, release approvals, rollback environments, and CD remain deferred until the pilot host exists (PH-10); the deployment rehearsal deploys nothing. Use [secrets management](../security/secrets-management.md), [production access](../security/production-access.md), and [retention](../security/data-retention.md) for those cross-cutting policies. Local validation commands are listed in [validation](../validation.md); remote run results and effective settings must be verified separately.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Delivery and Side Effects",
-    "anchor": "delivery-and-side-effects",
-    "text": "Delivery and Side Effects\n[Documentation index](../README.md) · [Transactions and concurrency](../database/transactions-and-concurrency.md) · [Compatibility](versioning-and-compatibility.md)\nThis page owns cross-system delivery, idempotency, retry, and crash recovery. Database atomicity, isolation, constraints, locking, and transaction retries belong to [transaction policy](../database/transactions-and-concurrency.md); HTTP representation belongs to [API principles](../api/principles.md). These requirements do not select a broker or require inboxes, outboxes, sagas, or distributed locks without a concrete need.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Idempotency",
-    "anchor": "idempotency",
-    "text": "Idempotency\nIdempotency means repeated application has no additional unintended effect, not merely an identical HTTP response. Setting a state may be naturally idempotent; incrementing a balance usually is not. Client/proxy/SDK retries and user double submission can repeat requests even when the UI disables a button. The server must protect non-repeatable operations.\nWhen using an idempotency key, define its generator, logical operation, scope (such as actor/tenant/operation), durable storage/uniqueness, concurrent-first-attempt behavior, payload mismatch handling, replay result, and tests. In-memory deduplication cannot survive multiple instances or restarts. A uniqueness constraint is stronger than an unprotected check-then-insert. Reusing a key for a materially different intention should normally fail; a canonical request fingerprint can detect this.\nA replay may return the original result or current resource state according to the operation contract. Define retention from retry windows, business risk, semantics, and storage cost under [retention policy](../security/data-retention.md). Critical idempotency guarantees must not silently expire before supported retries.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Delivery Guarantees",
-    "anchor": "delivery-guarantees",
-    "text": "Delivery Guarantees\nAt-least-once delivery permits duplicates; consumers must tolerate them. At-most-once delivery permits loss and is appropriate only if the domain accepts it. Exactly-once behavior is an end-to-end claim across delivery, durable writes, and external effects, not merely a broker setting. Claim it only with evidence for the complete workflow.\nAn inbox/processed-message record can deduplicate by atomically recording an event identity with its protected business effect. Producers and consumers need explicit event ownership, canonical schema, ordering, delivery, and compatibility. Webhooks may repeat, arrive concurrently, or arrive out of order.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Outbox Pattern",
-    "anchor": "outbox-pattern",
-    "text": "Outbox Pattern\nWhen a committed change requires eventual publication, record the state change and publication intent in the same transaction/ownership boundary, then publish that durable intent. The producing capability owns event meaning; the outbox mechanism is infrastructure. Define claiming, bounded retries, ordering, failure recovery, retention, and observability; an outbox must not grow forever without policy.\nAn outbox can publish twice after a lost acknowledgement, so consumers may still need deduplication. Introduce inbox/outbox infrastructure only when reliability requirements justify its complexity.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Transactions and Domain Events",
-    "anchor": "transactions-and-domain-events",
-    "text": "Transactions and Domain Events\nPublishing before commit can expose a fact whose transaction later fails. Publishing only after commit can lose the event if the process crashes in between. Required durable events need a mechanism that covers this gap, such as transactional recording.\n"
-  },
-  {
-    "id": "repository/docs/architecture/delivery-and-side-effects",
-    "title": "Delivery and Side Effects",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "After-Commit Work",
-    "anchor": "after-commit-work",
-    "text": "After-Commit Work\nAn `afterCommit` callback is best effort in the current process; it does not guarantee an external effect survives a crash. Persist intent when the effect is required durably.\n"
   }
 ]

@@ -16,6 +16,8 @@ import { formatInstant } from "../organizations/members.js";
 import {
   configureDevice,
   deviceKey,
+  deviceAuditKey,
+  listDeviceAuditEvents,
   devicesKey,
   getDevice,
   latestAuthorization,
@@ -30,6 +32,7 @@ import {
   unlinkDevice,
   type Device,
   type DeviceFilter,
+  type DeviceHistoryFilter,
   type Rotation,
 } from "./api.js";
 import { deviceMessages } from "./messages.js";
@@ -767,14 +770,99 @@ function ResetForm({
   );
 }
 
+function ScreenHistory({
+  companyId,
+  deviceId,
+  cursor,
+  accessScope,
+}: {
+  companyId: string;
+  deviceId: string;
+  cursor?: string;
+  accessScope: string;
+}) {
+  const { locale, t } = useDeviceMessages();
+  const session = useQuery(sessionQuery);
+  const events = useQuery({
+    queryKey: [
+      ...deviceAuditKey(companyId, deviceId),
+      accessScope,
+      cursor ?? null,
+    ],
+    queryFn: () => listDeviceAuditEvents(companyId, deviceId, cursor),
+    gcTime: 0,
+    staleTime: 0,
+  });
+  return (
+    <section
+      aria-labelledby="screen-history-title"
+      data-testid="screen-history"
+    >
+      <h2 id="screen-history-title">{t.historyTitle}</h2>
+      <p>{t.historyLead}</p>
+      {events.isPending || events.isFetching ? (
+        <p>{t.loading}</p>
+      ) : events.isError ? (
+        <Failure
+          error={events.error}
+          operation="read"
+          onReload={() => void events.refetch()}
+        />
+      ) : events.data.items.length === 0 ? (
+        <p className="empty-state">{t.historyEmpty}</p>
+      ) : (
+        <ol className="audit-list">
+          {events.data.items.map((event) => (
+            <li key={event.id}>
+              <strong>
+                {typeof t.historyActions[event.action] === "string"
+                  ? t.historyActions[event.action]
+                  : t.historyUnknown}
+              </strong>
+              <span className="hint">
+                <time dateTime={event.occurredAt}>
+                  {formatInstant(locale, event.occurredAt)}
+                </time>
+                {` · ${event.actorPrincipalId === null ? t.historyDevice : event.actorPrincipalId === session.data?.principalId ? t.historyYou : t.historyMember}`}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <nav className="pagination" aria-label={t.historyTitle}>
+        {cursor && (
+          <Link
+            to="/companies/$companyId/screens/$deviceId"
+            params={{ companyId, deviceId }}
+            search={{ view: "history" }}
+          >
+            {t.firstPage}
+          </Link>
+        )}
+        {!events.isFetching && !events.isError && events.data?.nextCursor && (
+          <Link
+            to="/companies/$companyId/screens/$deviceId"
+            params={{ companyId, deviceId }}
+            search={{ view: "history", cursor: events.data.nextCursor }}
+          >
+            {t.nextPage}
+          </Link>
+        )}
+      </nav>
+    </section>
+  );
+}
+
 function ScreenDetail({
   companyId,
   deviceId,
   company,
+  filter,
 }: {
   companyId: string;
   deviceId: string;
   company: CompanyWithAccess;
+  filter: DeviceHistoryFilter;
 }) {
   const { locale, t } = useDeviceMessages();
   const queryClient = useQueryClient();
@@ -793,6 +881,9 @@ function ScreenDetail({
         queryKey: deviceKey(companyId, deviceId),
       }),
       queryClient.invalidateQueries({ queryKey: devicesKey(companyId) }),
+      queryClient.invalidateQueries({
+        queryKey: deviceAuditKey(companyId, deviceId),
+      }),
     ]);
   };
   if (device.isPending) return <p>{t.loading}</p>;
@@ -822,100 +913,150 @@ function ScreenDetail({
       <p className="hint">
         {screen.branch.name} · {deviceState(screen, t)}
       </p>
-      {notice && <p role="status">{notice}</p>}
-      <section aria-labelledby="details-title">
-        <h2 id="details-title">{t.detailsTitle}</h2>
-        <dl className="company-settings">
-          <dt>{t.rotationLabel}</dt>
-          <dd>{t.rotations[screen.rotation]}</dd>
-          <dt>{t.timeZoneLabel}</dt>
-          <dd>{screen.timeZone ?? t.branchTimeZone(screen.branch.timeZone)}</dd>
-          <dt>{t.lastSeen}</dt>
-          <dd>
-            {screen.lastSeenAt
-              ? formatInstant(locale, screen.lastSeenAt)
-              : t.neverSeen}
-          </dd>
-          {deadline && (
+      <nav className="pagination" aria-label={t.screenViews}>
+        <Link
+          to="/companies/$companyId/screens/$deviceId"
+          params={{ companyId, deviceId }}
+          search={{}}
+          activeOptions={{ exact: true }}
+          aria-current={!filter.view ? "page" : false}
+        >
+          {t.detailsTitle}
+        </Link>
+        {(company.access.capabilities.includes("audit.view") ||
+          company.access.capabilitiesAfterStrongAuthentication.includes(
+            "audit.view",
+          )) && (
+          <Link
+            to="/companies/$companyId/screens/$deviceId"
+            params={{ companyId, deviceId }}
+            search={{ view: "history" }}
+            activeOptions={{ exact: true }}
+            aria-current={filter.view === "history" ? "page" : false}
+          >
+            {t.historyTitle}
+          </Link>
+        )}
+      </nav>
+      {filter.view === "history" ? (
+        company.access.capabilities.includes("audit.view") ? (
+          <ScreenHistory
+            companyId={companyId}
+            deviceId={deviceId}
+            cursor={filter.cursor}
+            accessScope={JSON.stringify([company.access, screen.branch.id])}
+          />
+        ) : company.access.capabilitiesAfterStrongAuthentication.includes(
+            "audit.view",
+          ) ? (
+          <StepUpPrompt
+            returnTo={`/companies/${companyId}/screens/${deviceId}?view=history`}
+          />
+        ) : (
+          <p role="alert" className="notice notice-error">
+            {t.errors.PERMISSION_DENIED}
+          </p>
+        )
+      ) : (
+        <>
+          {notice && <p role="status">{notice}</p>}
+          <section aria-labelledby="details-title">
+            <h2 id="details-title">{t.detailsTitle}</h2>
+            <dl className="company-settings">
+              <dt>{t.rotationLabel}</dt>
+              <dd>{t.rotations[screen.rotation]}</dd>
+              <dt>{t.timeZoneLabel}</dt>
+              <dd>
+                {screen.timeZone ?? t.branchTimeZone(screen.branch.timeZone)}
+              </dd>
+              <dt>{t.lastSeen}</dt>
+              <dd>
+                {screen.lastSeenAt
+                  ? formatInstant(locale, screen.lastSeenAt)
+                  : t.neverSeen}
+              </dd>
+              {deadline && (
+                <>
+                  <dt>{t.authorizedUntil}</dt>
+                  <dd>{formatInstant(locale, deadline.toISOString())}</dd>
+                </>
+              )}
+              <dt>{t.reportedModel}</dt>
+              <dd>
+                {screen.report.manufacturer} {screen.report.model} (Android{" "}
+                {screen.report.osVersion})
+              </dd>
+              <dt>{t.reportedDisplay}</dt>
+              <dd>
+                {screen.report.display.width}×{screen.report.display.height}
+              </dd>
+              <dt>{t.reportedApp}</dt>
+              <dd>{screen.report.appVersion}</dd>
+              <dt>{t.pairedAt}</dt>
+              <dd>{formatInstant(locale, screen.pairedAt)}</dd>
+              {screen.revokedAt && (
+                <>
+                  <dt>{t.revokedAt}</dt>
+                  <dd>{formatInstant(locale, screen.revokedAt)}</dd>
+                </>
+              )}
+            </dl>
+            <p className="hint">{t.reportNote}</p>
+            {screen.status === "ACTIVE" &&
+              company.access.capabilities.includes("programming.view") && (
+                <p>
+                  <Link
+                    to="/companies/$companyId/programming/screens/$deviceId"
+                    params={{ companyId, deviceId }}
+                  >
+                    {t.programmingLink}
+                  </Link>
+                </p>
+              )}
+          </section>
+          {screen.status === "ACTIVE" && (
+            <ScreenSync companyId={companyId} deviceId={deviceId} />
+          )}
+          {manage && screen.status === "ACTIVE" && (
             <>
-              <dt>{t.authorizedUntil}</dt>
-              <dd>{formatInstant(locale, deadline.toISOString())}</dd>
+              <ConfigureForm
+                key={`configure-${screen.version}`}
+                companyId={companyId}
+                device={screen}
+                onChanged={onChanged}
+              />
+              <MoveForm
+                key={`move-${screen.version}`}
+                companyId={companyId}
+                device={screen}
+                onChanged={onChanged}
+              />
+              <UnlinkForm
+                key={`unlink-${screen.version}`}
+                companyId={companyId}
+                device={screen}
+                onChanged={onChanged}
+              />
             </>
           )}
-          <dt>{t.reportedModel}</dt>
-          <dd>
-            {screen.report.manufacturer} {screen.report.model} (Android{" "}
-            {screen.report.osVersion})
-          </dd>
-          <dt>{t.reportedDisplay}</dt>
-          <dd>
-            {screen.report.display.width}×{screen.report.display.height}
-          </dd>
-          <dt>{t.reportedApp}</dt>
-          <dd>{screen.report.appVersion}</dd>
-          <dt>{t.pairedAt}</dt>
-          <dd>{formatInstant(locale, screen.pairedAt)}</dd>
-          {screen.revokedAt && (
-            <>
-              <dt>{t.revokedAt}</dt>
-              <dd>{formatInstant(locale, screen.revokedAt)}</dd>
-            </>
-          )}
-        </dl>
-        <p className="hint">{t.reportNote}</p>
-        {screen.status === "ACTIVE" &&
-          company.access.capabilities.includes("programming.view") && (
-            <p>
-              <Link
-                to="/companies/$companyId/programming/screens/$deviceId"
-                params={{ companyId, deviceId }}
-              >
-                {t.programmingLink}
-              </Link>
+          {manage &&
+            screen.status === "REVOKED" &&
+            screen.erasure === "PENDING" && (
+              <ResetForm
+                key={`reset-${screen.version}`}
+                companyId={companyId}
+                device={screen}
+                onChanged={onChanged}
+              />
+            )}
+          {screen.status === "REVOKED" && (
+            <p role="status" className="hint">
+              {screen.erasure === "PENDING"
+                ? t.unlinked
+                : t.erasure[screen.erasure]}
             </p>
           )}
-      </section>
-      {screen.status === "ACTIVE" && (
-        <ScreenSync companyId={companyId} deviceId={deviceId} />
-      )}
-      {manage && screen.status === "ACTIVE" && (
-        <>
-          <ConfigureForm
-            key={`configure-${screen.version}`}
-            companyId={companyId}
-            device={screen}
-            onChanged={onChanged}
-          />
-          <MoveForm
-            key={`move-${screen.version}`}
-            companyId={companyId}
-            device={screen}
-            onChanged={onChanged}
-          />
-          <UnlinkForm
-            key={`unlink-${screen.version}`}
-            companyId={companyId}
-            device={screen}
-            onChanged={onChanged}
-          />
         </>
-      )}
-      {manage &&
-        screen.status === "REVOKED" &&
-        screen.erasure === "PENDING" && (
-          <ResetForm
-            key={`reset-${screen.version}`}
-            companyId={companyId}
-            device={screen}
-            onChanged={onChanged}
-          />
-        )}
-      {screen.status === "REVOKED" && (
-        <p role="status" className="hint">
-          {screen.erasure === "PENDING"
-            ? t.unlinked
-            : t.erasure[screen.erasure]}
-        </p>
       )}
     </>
   );
@@ -924,20 +1065,28 @@ function ScreenDetail({
 export function ScreenPage({
   companyId,
   deviceId,
+  filter,
 }: {
   companyId: string;
   deviceId: string;
+  filter: DeviceHistoryFilter;
 }) {
+  const search = new URLSearchParams(
+    Object.entries(filter).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
   return (
     <CompanyGate
       companyId={companyId}
-      returnTo={`/companies/${companyId}/screens/${deviceId}`}
+      returnTo={`/companies/${companyId}/screens/${deviceId}${search.size ? `?${search}` : ""}`}
     >
       {(company) => (
         <ScreenDetail
           companyId={companyId}
           deviceId={deviceId}
           company={company}
+          filter={filter}
         />
       )}
     </CompanyGate>

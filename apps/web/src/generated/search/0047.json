@@ -1,5 +1,230 @@
 [
   {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Playlists",
+    "anchor": "playlists",
+    "text": "Playlists\nA playlist has a name (1 to 120 characters), an owning scope (company or one branch), a transition and 0 to 500 items.\nEach item references one media asset that is `READY`, not archived, and visible to the playlist's scope: a company playlist may use company media only; a branch playlist may use company media and that branch's media. An image item has a duration from 1 to 3,600 whole seconds, 10 by default; a video item has no duration and plays its whole display rendition. Items play in order and the playlist loops while its schedule window lasts; a boundary interrupts the current item. The same asset may appear more than once.\nThe transition is `CUT` (default) or `FADE` with a duration from 250 to 2,000 ms. A fade is stored and previewed, but publication (PJ-11) accepts it only for screens whose profile is qualified for fades and otherwise rejects it with an actionable reason instead of dropping it; at a schedule boundary that ends commercial content the player cuts.\nSaving items replaces the whole ordered list with an expected version, so reordering is one atomic change. An archived asset already in a playlist stays and keeps playing; it cannot be added again. The panel shows the playlist's total duration and its video count.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Programming groups and sources",
+    "anchor": "programming-groups-and-sources",
+    "text": "Programming groups and sources\nA group has a name (1 to 80 characters, unique within the company, ignoring case) and its branch span. Only screens of branches in that span may join. Narrowing the span is refused while member screens of the removed branches remain, and changing it is refused when the group's rules would use a branch playlist outside the new span. Deleting a group is refused while it has members.\nJoining or leaving a group and selecting or clearing individual programming are **assignments**. An assignment never edits a program. Its request carries the screen's current settings version and, while the destination has no published programming, `confirmUnpublished: true`, which the panel asks for with a sentence explaining that the screen will show neutral output until the destination is published. Until PJ-11 exists no destination is published, so every assignment needs that confirmation; PJ-11 replaces the check with the real publication fact and requests the destination's latest publication.\nA screen that leaves its group keeps its own program, which is empty unless it was edited before. Selecting individual programming never copies the group's rules: the screen's own program is used as it is, so the person sees and edits it explicitly.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Schedule rules",
+    "anchor": "schedule-rules",
+    "text": "Schedule rules\nA rule assigns one playlist to one output of a program for a recurring local window:\nField\nMeaning\n`playlistId`\nA playlist the program may use (see permissions)\n`weekdays`\nOne to seven ISO weekdays (Monday 1 to Sunday 7) on which a window starts\n`allDay`\nWhen true, each window covers the whole local day; `startTime` and `endTime` are absent\n`startTime`, `endTime`\nLocal wall-clock times `HH:MM` with minute precision. `endTime` earlier than `startTime` makes an overnight window that ends on the next local day; equal times are rejected (`SCHEDULE_TIMES_EQUAL`); `endTime` `00:00` means the following midnight\n`startsOn`\nThe first local date on which a window may start\n`endsOn`\nOptional final local date, inclusive; every window clips at the local midnight that ends it\nRules store local values only. The time zone is applied per screen when evaluating, so one group program means the same local hours in every branch of a cross-branch group. A window anchored on Friday 22:00–02:00 ends Saturday 02:00; when Friday is the final date it ends Saturday 00:00. A window cannot start before `startsOn`; an overnight window anchored on the day before `startsOn` does not exist.\nA program has at most 200 rules per output. Rules are saved as the whole set of an output with an expected program version, so validation sees the complete result and concurrent editors get `RESOURCE_VERSION_CONFLICT`.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Conflict validation",
+    "anchor": "conflict-validation",
+    "text": "Conflict validation\nTwo rules of the same output conflict when any of their windows overlap. Validation compares windows in local wall-clock time, independently of any time zone, so it holds for every screen of a cross-branch group and never depends on the server's time zone:\nEach window becomes an interval of local minutes from its anchored start to its end, including the overnight day and the final-date clip.\nFor a pair of rules, only dates in the intersection of their validity extended by one day on each side can overlap. When that span is 21 days or shorter every date is checked; otherwise the first 10 and last 10 days are, which contain every weekday combination of the repeating middle; an open-ended span checks its first 10 days.\nTouching windows (one ends at 18:00, the next starts at 18:00) do not overlap. An overlap rejects the whole set with `SCHEDULE_CONFLICT`. Because the error envelope carries no details, a read-only check operation takes a rule set and returns each conflicting pair with its first overlapping local date, so the panel can point at both rules before saving.\nWall-clock validation is stricter than validating each zone's resolved instants, except inside a repeated hour, which decision 5 handles.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Time zones and DST",
+    "anchor": "time-zones-and-dst",
+    "text": "Time zones and DST\nA screen's zone is its explicit time zone when set, otherwise its branch's zone. Both are IANA names validated against the runtime's zone database, with the same rule that branches use. The explicit device time zone is a device setting edited with `devices.manage` and returned by `GET /device/self`; changing a branch's zone changes the evaluation of every screen that does not override it. The server's own zone is never read: evaluation uses explicit zone names only.\nResolving a local date and time in a zone:\n**Unique**: the only instant.\n**Gap** (the time does not exist): the first valid instant, which is the transition instant. In `America/New_York` on 2027-03-14, 02:30 resolves to 03:00 EDT.\n**Repeated hour**: the earlier occurrence for a start, the later for an end.\n**Handoff refinement (decision 5)**: on an output, a window's end never extends past the start of the next window. Without it, a window ending at 01:15 (later occurrence) would overlap one starting at 01:45 (earlier occurrence) during a repeated 01:00–02:00, although the rules pass wall-clock validation. The evaluator therefore clips such an end to the following start, so adjacent and close windows never overlap and no window is played twice because the clock repeats.\nAll-day windows run from the local midnight that starts the day to the one that ends it, each resolved as above. The resolved instants of a window, and any resolution other than unique, are part of the preview, so a person can see that 02:30 became 03:00.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Evaluation and the timeline",
+    "anchor": "evaluation-and-the-timeline",
+    "text": "Evaluation and the timeline\nThe evaluator is a pure function of a program's output (rules and default), a zone and an instant range. It returns ordered, non-overlapping **segments** that cover the range: each has a start instant, an end instant, the local start and end with their offsets, and what plays: a rule with its playlist, the default playlist, or nothing (neutral output). It also lists each resolution note (gap or repeated hour) that affected a boundary.\nCollect every window whose anchor date lies between one day before and one day after the range's local dates, within `startsOn`/`endsOn`.\nResolve each start and end as above, apply the final-date clip, sort by start and apply the handoff clip.\nFill the space between windows with the default playlist when the output has one, otherwise with neutral output.\nThe evaluator never reads a clock; \"now\" is an input. The same function serves validation, preview and, through the fixtures, the player's own implementation.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Shared fixtures",
+    "anchor": "shared-fixtures",
+    "text": "Shared fixtures\nThe canonical fixtures are a JSON file owned by the API's programming module. Each case has an identifier, a description, a zone, the output's rules and default, a range, and the expected segments with instants in UTC and their local representation. The API's tests run every case through the evaluator, and validation-only cases list the expected rejection codes. The player (PJ-12) runs the same file against its implementation; how it obtains the file is part of PJ-12's build. Cases cover at least: inclusive start and exclusive end; overnight windows and their anchoring; a final date clipping an overnight window; all-day windows; equal times rejected; touching and overlapping windows; a cross-branch group evaluated in two zones; a DST gap at a start and at an end; a repeated hour at a start, at an end and between two close windows (the handoff); a zone without DST (`America/Sao_Paulo` after 2019); empty windows with and without a default; and a range starting inside an overnight window.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Preview",
+    "anchor": "preview",
+    "text": "Preview\n`GET /companies/{companyId}/programming/devices/{deviceId}/timeline?from=&to=` evaluates the screen's current draft source in its zone. `GET /companies/{companyId}/programming/groups/{groupId}/timeline?timeZone=&from=&to=` evaluates a group program for a zone the caller chooses (the panel offers its branches' and members' zones), so a group can be previewed before it has screens. A range covers at most 31 days and returns at most 2,000 segments; the panel shows the next seven days by default, in local time, with the resolution notes. The response names the source (group or individual) and, for each segment, the playlist's name, total duration and item count as the caller may see them.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Lifecycle and references",
+    "anchor": "lifecycle-and-references",
+    "text": "Lifecycle and references\nMedia: the programming module registers a media reference guard. An asset used by a playlist item cannot be deleted; the refusal names the playlists the caller may see and counts the others. Archived assets remain in playlists.\nPlaylists: a playlist used by a rule or a default cannot be deleted (`PLAYLIST_IN_USE`); otherwise deletion removes it and its items after a confirmation naming it. A playlist cannot change its owning scope.\nGroups: deletable when they have no members; their program is deleted with them.\nDevices: an unlinked screen's settings and individual program are kept with the device record for audit and are no longer evaluated or editable. A screen moved to another branch outside its group's span leaves the group in the same transaction as the move, which the devices module calls through a hook the programming module registers; the screen's programming then shows its own program.\nBranches: archiving a branch is refused while a group's span names it explicitly. Branch playlists of an archived branch stay, like its media.\nMoved screens: rules of a moved screen's own program that use the previous branch's playlists stay as drafts; saving that output again, or publishing it (PJ-11), is refused until they are replaced.\nPublication (PJ-11) adds protection for references from published, staged and retained generations.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Permissions",
+    "anchor": "permissions",
+    "text": "Permissions\nCapability\nCompany administrator\nBranch manager\nOperator\nDelegable\n`programming.view`: see playlists, groups, programs, assignments and timelines\nCompany\nBranches\nBranches\nYes\n`programming.edit`: create, edit and delete playlists, groups (name and span) and programs (drafts)\nCompany\nBranches\nBranches\nYes\n`programming.assign`: change group membership and individual programming\nCompany\nBranches\nNo\nYes\nScope rules:\nA playlist is visible and editable under the capability on its owning scope; a company playlist is visible to anyone with `programming.view` anywhere in the company and editable with company-wide `programming.edit`.\nA group, its program and its branch span need the capability on every branch of the span; a whole-company group needs company scope. A group that a person can see only partly does not exist for them (`RESOURCE_NOT_FOUND`).\nA screen's own program and settings need the capability on the screen's branch. Joining a group needs `programming.assign` on the screen's branch and on every branch of the group's span.\nA screen's views never reveal what the caller cannot see. A screen in a group the caller sees only partly reports a group source with no group, and its timeline still shows what the screen plays; leaving that group needs only `programming.assign` on the screen's branch. A playlist outside the caller's scope, such as one of a moved screen's previous branch, keeps its ID without a summary.\nA rule or default may use a playlist only when every branch the program can reach is inside the playlist's scope: company playlists always, a branch playlist only for that branch's screens or for a group whose span is exactly that branch.\nThe capabilities follow the existing assurance rule for standard roles; profiles set it per capability.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Abuse limits",
+    "anchor": "abuse-limits",
+    "text": "Abuse limits\nPer company: 1,000 playlists, 100 groups, 2,000 programs. Per playlist 500 items; per output 200 rules. A timeline request covers at most 31 days and 2,000 segments. Exceeding a count limit returns `PROGRAMMING_LIMIT_REACHED`, whose message names the limits; a transaction-scoped lock per company serializes each count with its insert, so concurrent creations cannot pass a limit; list and rule-set sizes beyond their maximum fail request validation.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Audit",
+    "anchor": "audit",
+    "text": "Audit\nEvery creation, edit, deletion and assignment writes a programming audit event with the actor's membership, the subject (playlist, group, program or screen), the branches it concerns and a bounded summary (names, counts and versions, never media content), in the same transaction as the change. Viewing follows the organization audit rules: administrators see all, managers see events of their branches.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Data",
+    "anchor": "data",
+    "text": "Data\nTable\nPurpose\n`playlists`\nCompany, optional owning branch, name, transition, fade duration, version, creator and timestamps\n`playlist_items`\nComposite key (company, playlist, position); media asset reference with a composite tenant foreign key; image duration in milliseconds or empty for video\n`programming_groups`\nCompany, name with a case-insensitive unique index, `all_branches`, version\n`programming_group_branches`\nExplicit branch span rows for groups that do not cover the whole company\n`programs`\nCompany, exactly one of group or device (each unique), version\n`program_outputs`\nProgram and output key (`screen` now), optional default playlist\n`schedule_rules`\nProgram, output key, playlist, weekday bitmask, all-day flag, start and end minute of day, `starts_on`, optional `ends_on`, position for display\n`programming_device_settings`\nDevice (composite key), optional group, `individual` flag, version\n`programming_audit_events`\nAppend-only audit rows with the branches they concern\nEvery table carries `company_id` and composite tenant references as the [tenant data design](tenant-data-design.md) requires. The explicit time zone is a nullable `time_zone` column on `devices`, owned by the devices module. Checks enforce weekday masks from 1 to 127, minutes from 0 to 1,439, time pairs only when not all-day, `ends_on` not before `starts_on`, image durations from 1,000 to 3,600,000 ms and fade durations from 250 to 2,000 ms.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contracts",
+    "anchor": "contracts",
+    "text": "Contracts\nVersioned JSON operations under `/companies/{companyId}/programming/...` for playlists (list with scope and name filters and cursors, create, get, rename, replace items, change transition, delete), groups (list, create, get, rename, change span, delete), group and device programs (get, replace one output's rules and default), device settings (get, assign), the rule check and the two timelines; plus the time-zone field on device detail and update. Errors use the existing envelope with the codes named in this design. The SDK and OpenAPI document are regenerated.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Panel",
+    "anchor": "panel",
+    "text": "Panel\nA **Programação** area per company (en-US \"Programming\"), shown with `programming.view`:\n**Playlists**: list with scope and search; the editor adds ready media from the library through a picker filtered by the playlist's scope, reorders items with buttons and keyboard, edits image durations, shows total duration and saves the whole list.\n**Grupos**: list, creation with the branch span, member screens with join and leave, and the group's schedules.\n**Screen programming** on each Telas detail page: source (group or individual) with the unpublished-destination confirmation, time zone (explicit or branch), schedules of the effective source and the preview.\n**Schedules editor**: one row per rule (playlist, weekdays, all-day or times, dates), the default playlist, conflict errors next to both rules, and a seven-day local timeline with resolution notes.\nCopy is in `pt-BR` and `en-US`, times use the person's locale with the screen's zone named, and every control is reachable by keyboard.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nDomain unit tests: rule validation for each field, the wall-clock conflict check (touching, overlapping, overnight, final-date clip, long and open-ended spans), zone resolution for gaps and repeated hours, the handoff clip, segment filling with and without defaults and range limits.\nThe shared fixture suite run through the evaluator.\nIntegration tests against PostgreSQL with two companies and differently scoped members: playlist scope and media visibility, group span and partial visibility, assignment confirmation and versions, permission denials for each capability and role, reference guards on media, playlists, groups and branches, limits, ID substitution across companies, and audit rows.\nBrowser component tests for the playlist editor, the schedules editor with conflicts and the assignment confirmation, and one end-to-end journey: upload media, build a playlist, create a group, add a paired screen, schedule it and read its timeline.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Delivery increments",
+    "anchor": "delivery-increments",
+    "text": "Delivery increments\nAPI module, schema and migration, playlists and items, groups, settings and assignments, programs and rules with validation, the evaluator and fixtures, timelines, guards, device time zone, audit, contracts and SDK.\nPanel pages for playlists, groups, screen programming, schedules and the timeline, with browser and end-to-end tests.\nHardening with PJ-11 (published destinations and published references) and PJ-20 (layout areas as outputs).\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Implementation status",
+    "anchor": "implementation-status",
+    "text": "Implementation status\nImplemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-24](human-actions.md#ph-24):\nThe [`programming` API module](../../apps/api/src/features/programming/AGENTS.md), its reviewed migration (which also adds the devices' `time_zone` column and lets profiles delegate the programming capabilities), runtime grants, schema metadata and the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK.\n`programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities; `programming.assign` requires strong authentication.\nThe pure evaluator and conflict validation in [`schedule.ts`](../../apps/api/src/features/programming/schedule.ts) on `temporal-polyfill`, with the [canonical fixtures](../../apps/api/test/programming/schedule-fixtures.json) run by [the evaluator tests](../../apps/api/test/programming/schedule.test.ts).\nThe media reference guard, the branch archive guard for explicit spans and the devices move hook; the explicit device time zone in device detail, update and `GET /device/self`.\nThe [two-company integration suite](../../apps/api/test/programming/integration.test.ts) against PostgreSQL as the runtime role with the organizations, devices and media modules.\nIncrement 2, the same day:\nThe panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation and step-up, and confirmed deletion; the screen page's time zone setting and programming link.\n[Browser component tests](../../apps/web/test/programming.browser.test.tsx) and the [programming journey](../../apps/web/test/e2e/programming/journey.spec.ts).\nPending: increment 3 with PJ-11 and PJ-20.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Decisions for review",
+    "anchor": "decisions-for-review",
+    "text": "Decisions for review\n**Program model.** Reusable playlists owned like media (company or one branch); one program per group and per screen; a screen without a group, or with individual programming selected, uses its own program; one full-screen output now, with layout areas as further outputs in PJ-20.\n**Group span.** A group covers the whole company or a fixed set of branches; only screens of those branches join; authority over a group requires authority over every branch of its span.\n**Rule representation.** ISO weekdays, local start and end at minute precision, an explicit all-day flag, a first date and an optional inclusive final date; no zone stored on rules; the zone comes from the screen, otherwise its branch.\n**Conflict validation.** Reject overlapping windows on the same output by comparing them in local wall-clock time, independent of zones, over the complete rule set saved atomically; touching windows are allowed.\n**DST handoff refinement.** Gaps resolve to the first valid instant and repeated hours to the earlier occurrence for starts and the later for ends, as selected; additionally, an end never extends past the next window's start on the same output. This refines P14 so that two close windows can never overlap in a repeated hour, which wall-clock validation cannot see, instead of rejecting otherwise valid schedules in zones with DST.\n**Evaluator and library (ADR-0029).** A pure TypeScript evaluator in the API on the Temporal API through the `temporal-polyfill` package until Node.js ships Temporal; canonical JSON fixtures owned by the API and run by the player in PJ-12; preview computed only by the API.\n**Items and transitions.** Images 1 to 3,600 s (10 s default), videos at full duration, playlists loop, boundaries interrupt; transitions `CUT` or `FADE` of 250 to 2,000 ms, with fades accepted at publication only on qualified profiles.\n**Permissions.** `programming.view`, `programming.edit` and `programming.assign` as in the table, all delegable; operators author drafts but do not assign; assigning needs strong authentication like managing screens.\n**Assignment confirmation.** Assignments are separate from program edits, use the screen's settings version and require an explicit confirmation while the destination is unpublished, which is every destination until PJ-11.\n**Lifecycle.** Playlists and groups are deleted only when unused, with a confirmation; media used by playlists cannot be deleted; archived media stays in playlists but cannot be added.\n**Limits.** 1,000 playlists, 100 groups and 2,000 programs per company; 500 items per playlist; 200 rules per output; timelines of 31 days and 2,000 segments.\nApproval authorizes implementation of PJ-10 in local and CI environments. It does not publish anything to screens (PJ-11), qualify fades or schedule timing on hardware (PH-08, PJ-12) or design layout areas (PJ-20).\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Alternatives considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives considered\n**Store each rule's time zone, or a group zone.** It would let a group run on one zone's clock, but the selected policy interprets local hours per screen, and a stored zone would diverge from branch changes.\n**Store expanded occurrences.** Simple queries, but unbounded for open-ended rules and wrong after a zone database update; evaluating from rules keeps one source of truth.\n**iCalendar RRULE strings.** A standard, but far more expressive than the selected rules (monthly, by-set positions, exceptions), harder to validate for conflicts and to explain in the panel; the weekday model covers FR-06 and can export to RRULE later.\n**Validate conflicts on resolved instants per zone.** Exact, but depends on every zone a group can reach and on future zone-database changes, and still needs the repeated-hour rule; wall-clock validation plus the handoff clip is zone-independent and deterministic.\n**Luxon or date-fns-tz.** Mature, but each has its own model of gaps and repeated hours; Temporal's model matches `java.time`, which the Android player is expected to use, so both implementations reason in the same terms.\n**Hand-written arithmetic over `Intl.DateTimeFormat`.** No dependency, but transition search and disambiguation are where subtle bugs live; a spec-conformant implementation tested against the shared fixtures is safer.\n**Implicit priority between overlapping rules.** Rejected by the policies.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Teluni Publication and Synchronization Design",
+    "anchor": "teluni-publication-and-synchronization-design",
+    "text": "Teluni Publication and Synchronization Design\n[Offline playback and synchronization](playback-and-sync.md) · [Assignment and publication](release-policies.md#assignment-and-publication) · [Acceptance targets](release-targets.md#reliability-and-synchronization-targets) · [Identity and access policies](identity-and-access.md#permission-model-and-default-matrix) · [Tenant data design](tenant-data-design.md) · [Device enrollment design](device-enrollment-design.md) · [Media library design](media-library-design.md) · [Programming design](programming-design.md) · [ADR-0019](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md) · [ADR-0030](../adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md) · [PH-25](human-actions.md#ph-25)\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Status and scope",
+    "anchor": "status-and-scope",
+    "text": "Status and scope\n**Approved detailed design for D-04 (server side) and the basic monitoring of FR-09, 2026-10-20.** The owner approved all ten [decisions for review](#decisions-for-review) as proposed under [PH-25](human-actions.md#ph-25), including ADR-0030, after the API and panel had been built on the recommended options so the review could see working behavior. Approval authorizes PJ-11 in local and CI environments with a simulated player.\nIn scope: publishing a program into an immutable generation, the manifest format, the desired publication of each screen, the device synchronization exchange, delivery of manifests and media to screens, the signed authorization statement, acknowledgements and state reports, the screen's synchronization state in the panel, published-reference protection, publication history, restore and retention, permissions, limits, audit, data, contracts and verification (FR-07, FR-09).\nOut of scope, with their owners: the player's storage, staging, activation and power-loss recovery, which this design states only as obligations of the protocol (D-07, PJ-12); trusted-time estimation on the device (D-07, AT-16), which receives a signed server time here; layout areas and catalog snapshots (D-11, PJ-20/PJ-21), which extend the manifest; automatic price publication (PJ-21); optional publication approvals (IA-12, PJ-24); commercial expiry capping and transfer accounting (PJ-27); alerts, diagnostic records and support tools (D-09); push notifications, which this design does not need; qualification on hardware (PH-08).\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Policy inputs",
+    "anchor": "policy-inputs",
+    "text": "Policy inputs\nThe design applies these selected policies without changing them:\nEdits are drafts until deliberately published. A publication is an immutable, complete snapshot; activation needs its whole supported resource set, and failure preserves the last valid generation. Distinguish saved, published, downloaded and active states; server intent is never activation evidence ([assignment and publication](release-policies.md#assignment-and-publication), [publication lifecycle](playback-and-sync.md#publication-lifecycle)).\nConfirming an assignment requests the destination's latest publication without another publish action. An intentionally unpublished destination is allowed after a clear indication and then shows neutral output; a failed or unseen synchronization preserves valid state.\nOrder desired state by authoritative server state, never by device clocks; old acknowledgements cannot roll a screen back; superseded delivery work may coalesce to the latest authorized compatible snapshot ([consistency](playback-and-sync.md#consistency-and-concurrency)).\nDetect a desired publication within 30 seconds (AT-11); report state every 30 seconds, stale after 90 seconds and offline after 120 seconds, always with the last observed time (AT-24); show an observed acknowledgement within 10 seconds of receiving it (AT-14).\nOffline authorization ends no later than seven days after the last renewal (AT-15); trusted-time uncertainty of at most 60 seconds (AT-16); the player keeps the active and previous valid generations and a valid staging attempt (AT-19) within the reserve of AT-05.\nInactive publication history stays recoverable for at least 90 days (AT-18); detailed operational reports are kept 30 days by default (AT-20); the current and previous protocol generations are supported for at least 90 days after a transition (AT-26).\nPublishing or restoring a published version is allowed to administrators company-wide and branch managers in their branches; operators need an additional grant ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)). Anyone granted publication needs strong authentication, and ordinary publication uses the normal compliant session without a new prompt.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Concepts",
+    "anchor": "concepts",
+    "text": "Concepts\nA **destination** is a program of the programming module: a group's program or a screen's own program.\nA **publication** is one immutable generation of a destination. Generations count 1, 2, 3 per program. A publication holds the manifest's exact bytes, their SHA-256, a digest of its content, the media it needs, its publisher and time.\nA screen's **desired publication** is the latest publication of its current programming source; a screen whose source has none desires nothing and shows neutral output.\nA screen's **reported state** is what it says it received, staged and activated. Reports are facts about the screen, never instructions to the server.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Publishing",
+    "anchor": "publishing",
+    "text": "Publishing\nPublishing takes the current draft of a program and makes it the destination's next generation:\n`POST .../publications/check` builds the snapshot without saving it and returns either the problems that block publication or a summary (rules, playlists, items, media count and bytes, screens that follow the destination) with a **content digest** and whether the content equals the latest publication.\n`POST .../publications` with that content digest publishes. The server builds the snapshot again in one transaction, after the organization locks and share locks on the program, its playlists and their media, so concurrent edits wait. A different digest answers `RESOURCE_VERSION_CONFLICT`, so a person publishes exactly what they reviewed, including playlist edits by others. Content equal to the latest publication returns that publication without a new generation, which makes retries safe.\nThe snapshot contains every output's rules and default, a copy of each referenced playlist (transition and items) and a descriptor of each display rendition. Publication refuses with `PUBLICATION_INVALID`, and the check lists why, when:\na rule or default uses a playlist outside the scope of every branch the program reaches (for example the old playlists of a moved screen);\nan item's media is no longer `READY` or `ARCHIVED` (archived media keeps playing, as the media design requires; deleted media cannot be published);\na playlist uses `FADE`, until a screen profile is qualified for fades (PH-08); the reason names the playlist instead of silently cutting;\nthe rule set fails validation (it was validated on save; publication checks again);\nthe snapshot exceeds 2,000 items or 1,000 distinct media.\nAn empty program (no rules and no default) is publishable: it deliberately shows neutral output. Publishing never changes drafts, assignments or other destinations.\n"
+  },
+  {
     "id": "repository/docs/project/publication-sync-design",
     "title": "Teluni Publication and Synchronization Design",
     "group": "Project guides",
@@ -430,149 +655,5 @@
     "heading": "Teluni Tenant Data Ownership and Access Design",
     "anchor": "teluni-tenant-data-ownership-and-access-design",
     "text": "Teluni Tenant Data Ownership and Access Design\n[Product architecture](architecture.md#pending-decisions) · [ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md) · [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) · [Identity and session design](identity-session-design.md) · [PH-20](human-actions.md#ph-20)\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Status and scope",
-    "anchor": "status-and-scope",
-    "text": "Status and scope\n**Approved detailed design for D-01, 2026-10-18.** The owner approved it as proposed under [PH-20](human-actions.md#ph-20). It applies accepted ADR-0018 (shared database and schema, company as tenant, relational tenant constraints) and ADR-0025 (application-owned memberships and scoped grants) to concrete persistence and data-access rules, and records the row-level-security evaluation that ADR-0018 requires before the first product migration. The first organizations increment applies these rules; [implementation status](#implementation-status) distinguishes it from the remaining scope. Approval authorizes PJ-03 and the dependent modules to apply these rules; the human session mechanism is [D-02](identity-session-design.md).\nThe inherited [database principles](../database/principles.md), [authorization policy](../security/authorization.md), [transactions policy](../database/transactions-and-concurrency.md) and the selected [permission matrix](identity-and-access.md#permission-model-and-default-matrix) still govern. Each module's implementation conventions will record its concrete tables, contracts and errors when the module is built; this document owns the rules every tenant-owned module shares.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Table categories",
-    "anchor": "table-categories",
-    "text": "Table categories\nCategory\nFirst-slice examples\nRule\nGlobal identity\nPrincipals and human sessions, owned by the identity capability\nNo `company_id`. Never read through a tenant query except by joining an authorized membership. A company administrator cannot list a principal's other memberships\nTenant root\nCompanies\n`id` is the tenant identifier. Lifecycle is a state (active, suspended), not deletion; hard deletion waits for PH-13 retention rules\nTenant-owned\nBranches, memberships, access profiles, grants and organization audit events; later devices, media, programming, catalogs and publications\nImmutable `company_id uuid NOT NULL` and a tenant key `UNIQUE (company_id, id)`\nBranch-scoped tenant-owned\nGrant branch scopes; later devices and branch overrides\nTenant-owned plus `branch_id` referencing the branch through the tenant key\nPlatform operational\nNone in the first slice\nSeparate platform capability and accounts (P11); lifecycle metadata only, never implicit tenant-content reads\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Keys and relational constraints",
-    "anchor": "keys-and-relational-constraints",
-    "text": "Keys and relational constraints\n**Identifiers.** The backend generates an immutable random UUID for each row; it is the primary key and the public resource identifier, never authority. Clients cannot choose it.\n**Tenant key.** Every tenant-owned table with its own `id` declares `UNIQUE (company_id, id)`. This is the only target that other tenant-owned rows may reference. Join tables and one-to-one extensions without an `id` (such as a grant's branch scope or a company's responsible administrator) cannot be referenced and need no tenant key, but their own references follow rule 3.\n**Composite references.** Every reference from one tenant-owned row to another uses `FOREIGN KEY (company_id, <target>_id) REFERENCES <target> (company_id, id)`. A single-column foreign key into a tenant-owned table is prohibited. A mixed-company reference is therefore unrepresentable, independent of application predicates. An optional reference keeps the default `MATCH SIMPLE` semantics: a null target column means no reference, while `company_id` stays non-null.\n**Immutable tenant.** The runtime role receives column-level `UPDATE` grants that exclude `company_id`, so no runtime statement can move a row between companies. Moving a device to another company is unlink plus new pairing (FR-02), never an ownership update.\n**Tenant-scoped uniqueness.** Business keys such as branch names are unique within a company (for example `UNIQUE (company_id, lower(name))`, partial over non-archived rows where archival exists), never globally.\n**Explicit referential actions.** Declare `ON DELETE RESTRICT` and `ON UPDATE RESTRICT` (Prisma `Restrict`) on every composite tenant reference. Prisma's implicit `SetNull` for optional relations would try to null the shared `company_id` and is never used on these relations. `CASCADE` is reserved for children inside one module whose lifecycle is genuinely owned by the parent, documented in that module's metadata.\n**Cross-module references.** A downstream module may reference an upstream module's tenant key (for example future devices referencing `branches (company_id, id)`), following the module dependency direction. An upstream table never references a downstream one. Prisma requires a back-relation field on the referenced model; it is structural only, confers no read or write authority, and adapters never traverse it across a module boundary.\nA structural test on the migrated database (catalog query, run with the integration suite) asserts rules 2, 3 and 4 for every table that has a `company_id` column. It fails when a new tenant table or foreign key omits the pattern, so the rule does not depend on review alone.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Request scope resolution",
-    "anchor": "request-scope-resolution",
-    "text": "Request scope resolution\nCompany-scoped operations carry the requested company in the path, for example `/companies/{companyId}/branches`. The path value is a request for a context, not proof of membership.\nThe session boundary ([D-02](identity-session-design.md)) supplies the verified principal and assurance.\nThe organizations capability resolves access with one current query joining the principal's active membership, the company's state and all unexpired grants in that company. It returns an opaque `CompanyAccess` value: company ID, membership ID, and each granted capability with its scope (whole company or an explicit branch set). Only the organizations capability can construct it.\nNo membership or a suspended membership returns `RESOURCE_NOT_FOUND` for the company path, without revealing that the company exists. Members of a suspended company receive an explicit company-state denial (code defined in PJ-03), kept distinct from limited commercial access under the [commercial policies](commercial-policies.md#payment-expiry-cancellation-and-retention). An in-scope actor missing a capability receives `PERMISSION_DENIED`. A resource outside the actor's scope is indistinguishable from an absent one (`RESOURCE_NOT_FOUND`).\nAccess is resolved on every request from PostgreSQL without caching, so membership removal, suspension, grant reduction and expiry deny the next operation, within the 30-second bound selected in [P20](identity-and-access.md#ph-11-decision-record). Introducing a cache later requires a lifetime below that bound plus explicit invalidation, recorded here first.\nSensitive authority changes (membership status, administrator promotion or restoration, grant and profile edits, responsibility transfer) lock the company row first and then the involved membership rows in ID order (`SELECT … FOR UPDATE`), and recheck the actor's current membership and administrator grant inside that transaction. Concurrent authority changes in one company therefore serialize instead of racing, and the fixed lock order avoids deadlocks. Every authority-changing writer must follow the same order.\nDownstream modules receive `CompanyAccess`, ask it whether a capability applies to a branch, and obtain a branch filter (all branches or an explicit set) to put into SQL. They never accept a company, branch or role from the request body as authority.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Persistence adapter rules",
-    "anchor": "persistence-adapter-rules",
-    "text": "Persistence adapter rules\nEvery adapter operation on tenant-owned data takes the company scope from `CompanyAccess` as a mandatory parameter and uses it in every `WHERE`, `INSERT` and conditional `UPDATE`. Single-row lookups use the tenant key (`companyId_id` in Prisma), never a bare `id` lookup.\nBranch filters and other authorization predicates are part of the query before pagination, counting and ordering. Nothing is loaded broadly and filtered afterwards.\nA bulk request resolves its complete identifier set with the scope predicate in one query. If any element is absent or out of scope, the whole request fails as not found, with no partial effect.\nCaller-supplied references (for example the branches of a grant) are validated by the composite foreign keys as the final guarantee. A tenant foreign-key violation maps to the module's not-found or validation error and never discloses whether the identifier exists in another company.\nCursors are bound to company, principal and list scope, and current predicates still apply on every page.\nDeferred work and durable intents record company ID and the attributable actor; the executor resolves access again before any effect (IA-13). Workers that act as the system have their own explicitly reviewed capability.\nDerived keys (caches, search entries, media object locations, manifests) include the company ID. A storage location never authorizes access; media access is checked against the owning row.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Row-level security evaluation",
-    "anchor": "row-level-security-evaluation",
-    "text": "Row-level security evaluation\nADR-0018 requires evaluating PostgreSQL row-level security (RLS) before relying on it or rejecting it. The evaluated mechanism was: enable RLS on each tenant-owned table with a policy such as `USING (company_id = current_setting('teluni.company_id', true)::uuid)`, keep the runtime role a non-owner (already true, because migrations own the tables), and set the tenant per transaction with `set_config('teluni.company_id', $1, true)`.\nConcern\nFinding\nMixed-tenant references\nPostgreSQL performs foreign-key checks without applying RLS policies, so RLS alone does not prevent a row from referencing another company's identifier. Composite tenant keys are required either way\nConnection pooling\nThe tenant setting is safe with the pooled Prisma/`pg` adapter only when transaction-local, so every tenant request must run inside an interactive transaction: extra `BEGIN`/`set_config`/`COMMIT` round trips and a pooled connection held for the whole callback\nPrincipal-centric flows\nListing a principal's companies, accepting an invitation before a membership exists and public signup creating a company need extra policy keys or `SECURITY DEFINER` functions, enlarging the reviewed surface\nRoles and migrations\nThe runtime role is not the owner, so policies apply without `FORCE`; the migration owner bypasses them for migrations/backfills. Integration tests already run as the runtime role, so policies would be exercised\nFailure mode\nA missing setting yields no rows, which fails closed\n**Approved outcome: do not adopt RLS for the first slice.** The compensating controls are the composite tenant keys, immutable `company_id` grants, the mandatory scope parameter, per-request access resolution, the structural catalog test and the two-company adversarial suite below. **Reevaluate before PJ-14 admits real customer data or public signup**, when a second database consumer (worker, report or raw SQL path) appears, or immediately after any cross-tenant defect. Adapters already receive the scope, so adopting RLS later needs a new ADR, policy migrations and a transaction-local context in adapters, not contract changes.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Platform and administrative scope",
-    "anchor": "platform-and-administrative-scope",
-    "text": "Platform and administrative scope\nPlatform administration is a separate capability held by individually provisioned platform accounts (P11), not a company membership and not a bypass of tenant predicates. The first slice exposes no platform routes. When added, platform operations may manage company lifecycle and commercial metadata; customer content requires an explicit, expiring, company-authorized support grant (P33/P34, IA-14) stored as tenant-owned data. Database, migration and backup access are operational access under [production access](../security/production-access.md), never product authorization.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Organization audit in the first slice",
-    "anchor": "organization-audit-in-the-first-slice",
-    "text": "Organization audit in the first slice\nThe organizations capability owns an append-only, tenant-owned audit table. Each membership, invitation, grant, profile, responsibility and company-setting change writes its event in the same transaction as the change, so a failed change leaves no event and a committed change exactly one. The runtime role receives only `INSERT` and `SELECT` on it, which makes rows immutable through the application. Events record actor principal and membership, action, target type and ID, outcome and allowlisted details, never secrets or full payloads. Branch events include the branch name at the time of the event, so later renames or name reuse do not relabel past changes; older events without that detail remain readable. Each event also records the branches it concerns (a branch change names its branch; a branch-scoped grant or invitation names its branches) in an append-only join table; an event without branches is a company-level operation. Company administrators read company scope; branch managers read only events that concern at least one branch and only branches they manage, so company-level events and operations that also reach other branches stay hidden. Retention, IP metadata and cross-module audit integrity remain [D-09](architecture.md#pending-decisions) and [PH-13](human-actions.md#ph-13); no deletion job is introduced.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Required verification",
-    "anchor": "required-verification",
-    "text": "Required verification\nEvery tenant-owned module reuses one synthetic two-company fixture: company A with branches A1 and A2, company B with branch B1, and principals for A's administrator, an A1 manager, an A1 operator, B's administrator, a principal holding memberships in both companies with different scopes, and an outsider. The first slice must show, against real migrated PostgreSQL:\nSubstituting another company's or branch's identifier in path, query or body returns not found, and lists, counts and cursors never include out-of-scope rows.\nA direct runtime-role `INSERT` of a mixed-company reference fails with a foreign-key violation, and a runtime `UPDATE` of `company_id` is denied by privileges.\nMembership removal or suspension and grant expiry deny the next request; no cached access survives.\nA branch-restricted manager cannot act on another branch, and a bulk request containing one out-of-scope identifier is rejected entirely.\nThe multi-company principal sees only the requested company's data, and switching company relies only on the path plus current membership.\nThe structural catalog test passes for every tenant table and foreign key.\nA failed authority change leaves no audit event; a committed one leaves exactly one, readable only within scope.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Implementation status",
-    "anchor": "implementation-status",
-    "text": "Implementation status\nThe [`organizations` API module](../../apps/api/src/features/organizations/module.ts) owns companies, branches, memberships, standard-role grants and branch scopes, creator responsibility and append-only audit. Its [Prisma schema](../../apps/api/prisma/schema/organizations.prisma), [reviewed migration](../../apps/api/prisma/migrations/20261018010000_organizations/migration.sql), semantic metadata and runtime grants implement composite tenant references and immutable tenant columns. Company creation atomically creates the creator's membership, responsibility and administrator grant with one audit event; it confers no commercial entitlement. Creation retries compare an immutable fingerprint of the original normalized inputs, so later company-setting edits do not change the idempotency decision. Company and branch updates use expected versions; stale-write classification stays on the transaction connection. Access resolves current membership, company state and effective grants on every request; administrator/manager grants require strong authentication.\nThe [two-company integration suite](../../apps/api/test/organizations/integration.test.ts) exercises tenant/branch isolation, additive scopes, current revocation/expiry/suspension, idempotency, stale versions, name uniqueness, atomic audit, grant and transfer rules, runtime privileges and migrated schema structure. Branch and audit cursors are validated and bound to company, principal and collection; branch cursors also bind the effective branch scope. The [web module](../../apps/web/src/organizations/routes.tsx) uses the generated SDK for company creation/listing, step-up recovery and branch creation/rename/archive with pt-BR/en-US copy. [Browser journeys](../../apps/web/test/e2e/organizations/companies.spec.ts) exercise real login and OTP enrollment.\nCompany lists use keyset pagination by immutable creation time and ID, newest first, with 50 entries by default and at most 100 per page. Cursors bind the principal and collection; active-membership and effective-role predicates run again before each page. Renaming a company does not move its page boundary. Lists are live rather than snapshots: new companies appear on a restarted first page, and removed/suspended memberships disappear immediately. The web panel preserves company cursors in the URL and provides capability-gated settings and change-history views. Settings capture the edited version and require review after a conflict or unknown write outcome; the history translates allowlisted actions/field names and distinguishes the current actor from another member without exposing raw payloads. Member administration lists memberships with presentation names and emails taken from each person's last verified sign-in (identity's presentation port, called only with principal IDs from the authorized page), never as authority or account-linking evidence.\nStrongly authenticated company administrators can page through the company's memberships and suspend, reactivate or remove (terminally, in this company only) a membership with its observed version, each with one audit event. The responsible administrator cannot be suspended or removed, the last active administrator is protected, and reactivating an administrator requires the responsible administrator with strong authentication no older than five minutes (P10/P14). An unchanged status is a no-op. The panel confirms each change with the version observed when it was requested, reloads after a conflict or unknown outcome before another change, and offers recent re-authentication when restoring an administrator.\nStrongly authenticated company administrators also grant and revoke standard roles (the [roles and responsibility transfer migration](../../apps/api/prisma/migrations/20261018030000_roles_and_responsibility_transfer/migration.sql) adds the transfer table and the runtime grants these writes need). A grant names a role and either the whole company or one to 100 explicit active branches of that company; company administration is always company-wide. Unknown, archived and other companies' branches are rejected alike as invalid input, and a new branch never joins an existing branch grant. An optional expiry must be at least a minute in the future and is never renewed (P30); an identical effective grant is returned instead of duplicated. Roles change by adding and revoking grants; revocation is terminal for that grant, a revoked or expired grant is a no-op, and grants are never edited in place. Only the responsible administrator, with strong authentication no older than five minutes, grants company administration: that action is the P10 approval, and no request-and-approve queue exists for proposals from other administrators. Revoking keeps the responsible administrator's and the last active administrator's company administration. Each grant change writes one audit event with its role, scope and branch count.\nResponsibility moves only through a transfer that the responsible administrator proposes to another active company administrator, with strong authentication no older than five minutes, and that the successor accepts, also with five-minute strong authentication, while still an active administrator and while the proposer is still responsible. A company has at most one pending transfer (a partial unique index); a proposal can be accepted for seven days, an engineering choice that mirrors invitation validity. The proposer can cancel and the successor can decline it; an expired proposal stays closed and is marked expired when the next one is made. Only the two parties see a pending transfer, in the company detail with the counterpart's presentation name; every other member, including other administrators, receives not found for it. Proposal, acceptance, cancellation and decline each write one audit event, and acceptance updates the company's responsibility row under the company lock. The former responsible administrator stays an ordinary administrator, which the new responsible administrator can then suspend or remove. The panel lists each member's effective grants with their branches and expiry, adds a grant through a role, scope, branch and optional expiry form (the administration choice appears only to the responsible administrator), confirms each revocation, proposes a transfer from an active administrator's row, and shows the pending transfer to its two parties with accept, decline or cancel and recent re-authentication when the API asks for it.\nBranch-scoped audit reads follow the [branch audit scope migration](../../apps/api/prisma/migrations/20261019020000_branch_audit_scope/migration.sql), which adds `organization_audit_event_branches` with composite references to the event and the branch, grants the runtime role only `INSERT` and `SELECT`, and backfills existing events from immutable sources (branch event targets and the branch scopes of grants and invitations). The branch predicate is part of the audit query before ordering and the limit, and audit cursors bind the caller's branch scope. Strongly authenticated branch managers open the panel's change history, which then describes it as the history of the branches they manage; operators still have no audit access.\nCompany-customized access profiles follow the [access profiles migration](../../apps/api/prisma/migrations/20261019030000_access_profiles/migration.sql), which adds the tenant-owned `access_profiles` table and lets a grant carry exactly one of a standard role or a composite reference to a profile of the same company (a `CHECK` enforces it). A profile is a company-unique active name plus one to five delegable capabilities: viewing branches, managing invitations, viewing the audit history, viewing screens and pairing/managing screens (the matrix's \"additional grant\" for operators). Company administration, settings, branch and member management are never delegable, so a profile can neither bypass the responsible administrator's P10 approval nor confer authority its grantor lacks. Every profile also includes basic company visibility. Assurance follows each capability rather than the label: managing invitations, reading audit and managing screens require strong authentication of every holder, while viewing branches and screens works in a standard session, so renaming or recombining a profile never lowers an assurance requirement. Profile grants use the same scopes, expiry, identity rule and revocation as role grants, and branch-scoped invitation and audit reach work exactly as for branch managers. Access resolves the profile's current capabilities on every request and ignores archived profiles, so an edit reaches every holder on the next request. Strongly authenticated administrators list, create, rename, recombine and archive profiles with expected versions under the company lock; a company keeps at most 50 active profiles, and a profile with effective grants cannot be archived. The profile detail lists current holders with their scopes and branches (up to 500) before an edit, and each create, edit and archive writes one audit event; edits record added and removed capabilities and the number of affected grants. The panel's Access profiles view lists profiles with their usage, creates and edits them, shows the holders and asks for confirmation before a capability change that reaches members, and the member grant form offers active profiles beside the standard roles. Invitations still offer only standard roles, and profiles will gain capabilities only as the modules that own them are built.\nCompany invitations, including branch managers inviting operators to their own branches, follow the approved D-13 [invitation and email delivery design](invitation-delivery-design.md#implementation-status); a removed membership now stays as history, and one current membership per principal and company is a partial unique index. Support access and bulk operations are not implemented. Their rules above remain requirements; fixture SQL used to test alternate memberships is not a product administration flow. RLS reevaluation remains due before real customer data under PJ-14. Validation evidence and incomplete work remain in [PJ-03/PJ-24](implementation-plan.md#current-work).\nThese cases implement the tenant portion of [IA-03](identity-and-access.md#required-verification-cases), IA-08 and IA-10 and the NF-01 boundary. They do not replace the identity, session and assurance cases owned by D-02 and PJ-24.\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Documentation Task Index",
-    "anchor": "documentation-task-index",
-    "text": "Documentation Task Index\nChoose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries. The repository has an API runtime with composable modules and PostgreSQL support, a generated SDK, and a web application shell with this portal; the README's [Current state](../README.md#current-state) says which modules this repository composes. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Find the smallest useful context",
-    "anchor": "find-the-smallest-useful-context",
-    "text": "Find the smallest useful context\nRead the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.\nFollow the owner to its canonical source and relevant tests. For a complete implemented example, see [Orion's reference implementation](project-derivation.md#orions-reference-implementation). For commands, use [setup](setup.md) and [validation](validation.md).\nConsult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.\nIf implementation and policy disagree, record the discrepancy and resolve it within the task's scope. Do not infer that a requirement is implemented or weaken it to match a gap.\n[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The implementation plan owns execution status and the human-action checklist owns actual owner/access prerequisites; the README's [Current state](../README.md#current-state) links this repository's copies. Neither activates conditional deployment work.\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Architecture and implementation",
-    "anchor": "architecture-and-implementation",
-    "text": "Architecture and implementation\nTask\nAuthoritative policy\nUnderstand Teluni's vision, MVP, proposed architecture, offline behavior and delivery phases\n[Teluni product documentation](project/README.md)\nExecute or track implementation work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nStart a new project from Orion, check its provenance, or upgrade its Orion baseline\n[Start and upgrade a project from Orion](project-derivation.md)\nName a stable Orion foundation release or assess derived-project compatibility\n[Foundation versioning](versioning.md)\nChange agent instruction files or tool compatibility adapters\n[Agent instructions](architecture/agent-instructions.md)\nReproduce development setup, local execution, and the validation gate\n[Development setup](setup.md)\nRun the living API/data/component portal and understand its architecture\n[Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md)\nResolve owner decisions, external access, or other human prerequisites\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nAdd an API module or web workflow\n[API runtime](../apps/api/README.md#modules), [web workflow](../apps/web/README.md#modules)\nStudy a complete implemented example across database, API, SDK, and UI\n[Orion's reference implementation](project-derivation.md#orions-reference-implementation)\nEvaluate architectural tradeoffs or exceptions\n[Principles](architecture/principles.md)\nFind selected technology decisions\n[Technology decisions](architecture/technology-decisions.md)\nPlace code or create an application/package\n[Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md)\nAdd imports or shared dependencies\n[Dependency rules](architecture/dependency-rules.md)\nReuse or create React components, extend their catalog, or define product styling/themes\n[Component architecture and design practices](architecture/web-components.md)\nModel failures and translate boundaries\n[Error handling](architecture/error-handling.md)\nAdd configuration\n[Configuration](architecture/configuration.md)\nChoose test coverage and execution layers\n[Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md)\nChange independently deployed or persisted contracts\n[Versioning and compatibility](architecture/versioning-and-compatibility.md)\nHandle delivery, retries, and external side effects\n[Delivery and side effects](architecture/delivery-and-side-effects.md)\nImplement CI or dependency automation\n[Continuous integration](architecture/continuous-integration.md)\nChange backend execution or regenerate derived references\n[Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md)\nRun or extend the current API feature\n[API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json)\nRun or extend the web workflow or generated SDK\n[Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts)\nChange the SDK public surface or generated types\n[SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md)\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "APIs and data",
-    "anchor": "apis-and-data",
-    "text": "APIs and data\nTask\nAuthoritative policy\nDesign an operation or generate a client\n[API principles](api/principles.md)\nExpose an error\n[API error contract](api/error-contract.md)\nEvolve, deprecate, or retire an API contract\n[API versioning](api/versioning.md)\nModel persistent data and ownership\n[Database principles](database/principles.md)\nChange durable schema or migration history\n[Migrations](database/migrations.md)\nEstablish release status, test upgrades, or plan application/database recovery\n[Release and evolution workflow](database/release-evolution.md)\nDocument or generate database reference\n[Schema documentation](database/schema-documentation.md)\nInspect the migrated database schema\n[Generated database reference](generated/database/schema.md)\nFind the current machine-readable API contract and public errors\n[OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md)\nInspect API configuration names, types, defaults, and visibility\n[Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md)\nFind the generated frontend component reference\n[Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json)\nProtect atomicity or concurrent writes\n[Transactions and concurrency](database/transactions-and-concurrency.md)\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Reliability",
-    "anchor": "reliability",
-    "text": "Reliability\nTask\nAuthoritative policy\nSelect or integrate diagnostic signals\n[Observability](reliability/observability.md)\nAdd structured events\n[Logging](reliability/logging.md)\nInstrument causal execution and propagation\n[Tracing](reliability/tracing.md)\nAdd measurements and bounded dimensions\n[Metrics](reliability/metrics.md)\nCapture and group unexpected failures\n[Error reporting](reliability/error-reporting.md)\nChange startup, liveness, readiness, or shutdown\n[Health checks](reliability/health-checks.md)\nCreate actionable alerts\n[Alerting](reliability/alerting.md)\n"
-  },
-  {
-    "id": "repository/docs/README",
-    "title": "Documentation Task Index",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Security and operations",
-    "anchor": "security-and-operations",
-    "text": "Security and operations\nTask\nAuthoritative policy\nClassify, expose, copy, or export data\n[Data classification](security/data-classification.md)\nCapture telemetry fields or payloads\n[Telemetry redaction](security/telemetry-redaction.md)\nIntroduce, deliver, rotate, or revoke credentials\n[Secrets management](security/secrets-management.md)\nVerify identity or manage authentication state\n[Authentication](security/authentication.md)\nEnforce capabilities and tenant/resource isolation\n[Authorization](security/authorization.md)\nAccess production or perform privileged actions\n[Production access](security/production-access.md)\nRetain, delete, restore, or propagate deletion\n[Data retention](security/data-retention.md)\nContain an incident and verify recovery\n[Incident response](security/incident-response.md)\nFollow or author an operational procedure\n[Runbook index](runbooks/README.md), [authoring](runbooks/authoring.md), [template](runbooks/template.md)\n"
   }
 ]

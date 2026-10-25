@@ -136,6 +136,19 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
   await expect(
     page.getByText("Pode exibir sem conexão até, no máximo"),
   ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Histórico da tela", exact: true })
+    .click();
+  const history = page.getByTestId("screen-history");
+  await afterNavigation(history).toContainText("Tela pareada");
+  await expect(history).toContainText("Você");
+  for (const theme of ["dark", "light"]) {
+    await page
+      .getByRole("combobox", { name: "Tema", exact: true })
+      .selectOption(theme);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  }
+  await page.getByRole("link", { name: "Detalhes", exact: true }).click();
   const unlink = page.getByRole("button", { name: "Desvincular tela" });
   await expect(unlink).toBeDisabled();
   await page
@@ -172,4 +185,11 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
   await afterNavigation(
     page.getByText("Limpeza confirmada pela tela", { exact: false }).first(),
   ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Histórico da tela", exact: true })
+    .click();
+  await afterNavigation(history).toContainText("Tela desvinculada");
+  await expect(history).toContainText("Limpeza confirmada pela tela");
+  await expect(history).toContainText("A própria tela");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

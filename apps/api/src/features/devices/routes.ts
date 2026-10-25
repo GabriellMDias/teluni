@@ -303,6 +303,30 @@ export function registerDeviceRoutes(
                   nextCursor: page.nextCursor,
                 });
               }
+              case "listDeviceAuditEvents": {
+                const query = request.query as {
+                  limit?: number;
+                  cursor?: string;
+                };
+                const page = await service.listAuditEvents(
+                  context,
+                  companyId,
+                  deviceId,
+                  {
+                    limit: query.limit ?? 50,
+                    ...(query.cursor ? { cursor: query.cursor } : {}),
+                  },
+                );
+                return reply.send({
+                  items: page.items.map((event) => ({
+                    id: event.id,
+                    action: event.action,
+                    actorPrincipalId: event.actorPrincipalId,
+                    occurredAt: event.occurredAt.toISOString(),
+                  })),
+                  nextCursor: page.nextCursor,
+                });
+              }
               case "getDevice":
                 return reply.send(
                   deviceWire(await service.get(context, companyId, deviceId)),

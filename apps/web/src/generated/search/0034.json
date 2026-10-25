@@ -1,5 +1,293 @@
 [
   {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Authored persistence model",
+    "anchor": "authored-persistence-model",
+    "text": "Authored persistence model\nPrisma schema\n    → primary authored representation\n      for database structures Prisma can represent\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Released database evolution",
+    "anchor": "released-database-evolution",
+    "text": "Released database evolution\nversioned SQL migrations\n    → authoritative history of transitions\n      between released database states\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Complete current physical schema",
+    "anchor": "complete-current-physical-schema",
+    "text": "Complete current physical schema\nfully migrated PostgreSQL database\n    → authoritative complete physical schema\n\nThe complete migrated PostgreSQL schema is authoritative for physical database structures because it may contain features not completely represented by Prisma Schema Language.\nThese may include PostgreSQL extensions, specialized constraints, indexes, views, triggers, custom types, or other database-native behavior.\nGenerated database reference documentation should therefore ultimately be derived from or validated against an actually migrated PostgreSQL schema rather than relying exclusively on the Prisma schema.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Database access",
+    "anchor": "database-access",
+    "text": "Database access\nPrisma Client will be the default database-access mechanism for persistence operations that it represents clearly and efficiently.\nTypical examples include:\nordinary creates, reads, updates, and deletes;\nrelational queries;\nfiltering;\nordering;\npagination;\nprojections;\ncommon transactional persistence operations.\nPrisma Client should not be forced onto queries for which explicit SQL provides a materially clearer, safer, or more efficient implementation.\nFor specialized or complex database operations, Orion may use **TypedSQL or explicit parameterized SQL**.\nExamples may include:\ncomplex reporting queries;\ncommon table expressions;\nadvanced aggregations;\nwindow functions;\nspecialized PostgreSQL functionality;\nperformance-sensitive queries;\nvector similarity operations;\noperations unsupported or poorly represented by Prisma Client.\nThe choice between Prisma Client and explicit SQL should be based on clarity, correctness, maintainability, type safety where practical, and demonstrated database behavior rather than a requirement that every query use the ORM abstraction.\nExplicit SQL must remain parameterized where external values are involved and must follow Orion's security and database policies.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Migration tooling",
+    "anchor": "migration-tooling",
+    "text": "Migration tooling\nOrion will use **Prisma Migrate** as its primary migration-generation and deployment tooling.\nDatabase evolution will be represented through version-controlled SQL migration files.\nThe normal development flow is:\nchange persistence schema\n    ↓\ngenerate migration\n    ↓\ninspect generated SQL\n    ↓\nadjust SQL when necessary\n    ↓\nvalidate migration\n    ↓\ncommit schema and migration\n\nGenerated migrations must be reviewed before they become part of released migration history.\nGenerated SQL is not assumed to be operationally safe merely because it was produced by Prisma.\nMigrations involving large tables, backfills, constraint changes, destructive operations, compatibility periods, or zero-downtime requirements may require manually edited or multi-step SQL migrations.\nOrion's existing migration policy remains authoritative:\nreleased migration history\n    → immutable\n\nunreleased development migration history\n    → refinable\n\nBefore release, migrations may be regenerated, consolidated, reordered, or removed when doing so produces a smaller coherent migration history and no durable environment depends on the previous history.\nAfter a migration reaches an environment whose migration history is considered durable, changes must be represented by new migrations.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "db push",
+    "anchor": "db-push",
+    "text": "`db push`\n`prisma db push` will **not be part of Orion's canonical database-evolution workflow** for durable application development.\nThe normal Orion development path will use versioned migrations from the beginning.\n`db push` may be used only in explicitly disposable experimentation or tooling contexts where migration history is intentionally irrelevant.\nIt must not be used to evolve production, staging, shared durable development environments, or other databases whose migration history must remain reproducible.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "PostgreSQL-specific features",
+    "anchor": "postgresql-specific-features",
+    "text": "PostgreSQL-specific features\nOrion will not restrict PostgreSQL usage to the subset of features representable by Prisma.\nWhen a required PostgreSQL feature is unsupported or incompletely represented by Prisma Schema Language, the feature may be implemented through a reviewed custom SQL migration.\nExamples may include:\nPostgreSQL extensions;\nspecialized constraints;\nspecialized indexes;\ntriggers;\nviews;\ndatabase functions;\ncustom database types;\nother PostgreSQL-native capabilities.\nSuch SQL becomes part of the versioned migration history and therefore part of the canonical database evolution.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "pgvector",
+    "anchor": "pgvector",
+    "text": "pgvector\nThe optional pgvector capability established by ADR-0005 will be supported through this persistence strategy.\nWhen an application requires pgvector and the selected Prisma version does not completely represent the required vector functionality, Orion may use:\ncustom SQL migrations\n    +\nPrisma unsupported database representations where appropriate\n    +\nTypedSQL or explicit parameterized SQL\n\nfor vector storage and similarity queries.\nThe inability of the ORM to represent a specialized PostgreSQL capability is not sufficient reason to avoid a database feature that otherwise provides clear architectural value.\nVector-specific persistence operations should remain isolated within appropriate persistence or retrieval adapters.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Transactions",
+    "anchor": "transactions",
+    "text": "Transactions\nPrisma transaction mechanisms may be used where they provide the transactional behavior required by the application.\nTransaction boundaries are an application and database-correctness concern, not an ORM convenience concern.\nBusiness operations requiring atomic persistence must define appropriate transaction boundaries according to Orion's transaction and concurrency policy.\nIf a required PostgreSQL transaction behavior cannot be expressed adequately through the selected Prisma API, a more explicit database-access mechanism may be used within the persistence boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Schema documentation",
+    "anchor": "schema-documentation",
+    "text": "Schema documentation\nGenerated database documentation must represent the database that applications actually depend on.\nThe intended flow is:\nPrisma schema\n    +\nversioned SQL migrations\n    ↓\nmigrated PostgreSQL database\n    ↓\nschema introspection\n    ↓\ngenerated database reference\n\nThis prevents generated documentation from silently omitting database behavior introduced through custom SQL migrations.\nThe generated reference remains derived documentation and must not become an independently edited source of truth.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nPrisma ORM provides a strong combination of TypeScript integration, schema readability, migration tooling, generated type-safe database access, introspection, and development tooling.\nThis combination aligns particularly well with Orion's AI-first goal.\nA Prisma schema provides a compact and structured representation of persistence relationships that can be efficiently inspected by both human contributors and AI agents.\nImportant persistence properties such as relations, identifiers, nullability, uniqueness, and database types can be discovered without reverse-engineering database access code.\nPrisma Client also provides a highly readable database API for common persistence operations.\nFor ordinary relational workloads this reduces repetitive database-access code while preserving strong TypeScript inference.\nThe integrated relationship between schema definition, generated database client, migrations, and introspection also reduces the number of independent tools that Orion needs to standardize.\nThis is valuable for a reusable engineering foundation intended to support many future projects.\nPrisma is not selected because Orion intends to hide SQL.\nOrion treats SQL and PostgreSQL behavior as important engineering concerns.\nThe persistence strategy therefore deliberately preserves explicit SQL as a first-class escape path.\nThis becomes increasingly important in large systems where reporting, performance-sensitive operations, PostgreSQL-specific features, or specialized persistence workloads may exceed the useful abstraction boundary of an ORM.\nThe intended model is:\ncommon persistence operations\n    → Prisma Client\n\nspecialized database operations\n    → TypedSQL or explicit SQL\n\nrather than:\nevery database operation\n    → ORM regardless of suitability\n\nThis prevents the ORM from becoming an architectural constraint.\nThe decision also preserves PostgreSQL as the authoritative persistence platform.\nPrisma is tooling around PostgreSQL, not a replacement for understanding PostgreSQL.\nThis distinction is important for transaction behavior, indexing, query planning, locking, migrations, constraints, performance, and production investigation.\nPrisma Migrate aligns with Orion's migration philosophy because it produces version-controlled SQL migrations that can be inspected and customized.\nThis allows Orion to retain both the productivity of declarative schema evolution and the operational control required for safe production changes.\nThe Prisma schema alone cannot necessarily represent every physical PostgreSQL capability an Orion application may require.\nTreating an actually migrated PostgreSQL database as the authority for the complete physical schema resolves this limitation without abandoning Prisma's useful authored schema model.\nThe resulting model is:\nPrisma schema\n    → convenient authored persistence model\n\nSQL migrations\n    → explicit released evolution\n\nmigrated PostgreSQL\n    → complete physical truth\n\nThis also provides a stronger foundation for generated database documentation.\nPrisma ORM 7 is selected as the initial baseline because Orion should begin from a stable production-oriented release rather than making a foundational dependency on an in-transition major release.\nA future Prisma major release may provide significant improvements and can be adopted once its production behavior and compatibility are sufficiently established.\nThe project owner also has existing Prisma experience.\nFor a reusable foundation maintained and repeatedly applied across future projects, existing operational and development familiarity provides real value.\nIt reduces learning cost, improves the ability to review generated migrations and persistence behavior, and lowers the risk associated with creating repository conventions around an unfamiliar persistence tool.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Drizzle ORM",
+    "anchor": "drizzle-orm",
+    "text": "Drizzle ORM\nDrizzle provides a strongly typed TypeScript-oriented persistence model with close alignment to SQL and PostgreSQL.\nIts schema model, migration tooling, SQL visibility, and support for PostgreSQL-specific capabilities make it a strong candidate for Orion.\nIt also provides particularly direct ergonomics for some PostgreSQL extensions and specialized data types.\nDrizzle was not selected because Prisma provides a stronger overall fit for Orion's current priorities around integrated tooling, concise schema readability, generated client ergonomics, introspection, migration workflow, and existing maintainer experience.\nThe difference is not based on Drizzle being unsuitable for large systems.\nDrizzle would be a technically valid persistence strategy.\nPrisma was selected because its complete development workflow currently provides greater value for Orion while explicit SQL remains available for cases where Prisma's abstraction is insufficient.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Kysely",
+    "anchor": "kysely",
+    "text": "Kysely\nKysely provides a type-safe SQL query builder with a design that remains close to SQL.\nIt gives applications substantial control over queries and is particularly attractive for systems that prefer SQL-centric persistence with minimal ORM abstraction.\nIt was not selected because Orion would need to assemble more of the surrounding schema-definition, migration, introspection, and developer-tooling workflow independently.\nKysely's lower abstraction level is valuable for SQL-heavy systems but does not provide enough additional value to outweigh Prisma's more integrated persistence workflow as Orion's default.\nKysely-like SQL-oriented access patterns remain conceptually available through TypedSQL or explicit SQL when specialized queries require them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "SQL-Only Database Access",
+    "anchor": "sql-only-database-access",
+    "text": "SQL-Only Database Access\nOrion could use PostgreSQL directly through a low-level driver and maintain all schema and query behavior in SQL.\nThis would maximize visibility into database behavior and minimize ORM abstraction.\nIt was not selected because it would require substantially more manual TypeScript typing, persistence plumbing, migration conventions, and tooling for common application operations.\nFor applications that span a wide range of sizes, the additional implementation burden is not justified when Prisma can cover common persistence operations while preserving explicit SQL for specialized cases.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Prisma Schema as the Complete Database Source of Truth",
+    "anchor": "prisma-schema-as-the-complete-database-source-of-truth",
+    "text": "Prisma Schema as the Complete Database Source of Truth\nOrion could treat `schema.prisma` as the complete canonical definition of the database.\nThis would provide a particularly simple source-of-truth model.\nIt was not selected because Orion explicitly permits PostgreSQL capabilities that may not be completely representable by the selected Prisma version.\nTreating the Prisma schema as complete physical truth could cause extensions, specialized constraints, indexes, views, triggers, custom types, or other migration-defined structures to disappear from database documentation or architectural understanding.\nOrion therefore distinguishes between the authored Prisma model and the complete migrated PostgreSQL schema.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "db push as the Normal Development Workflow",
+    "anchor": "db-push-as-the-normal-development-workflow",
+    "text": "`db push` as the Normal Development Workflow\nPrisma can synchronize schema changes directly to a database without maintaining normal migration history.\nThis can make early prototyping fast.\nIt was not selected as Orion's canonical workflow because Orion requires database transitions to become explicit, reviewable, reproducible migration artifacts.\nUsing versioned migrations from ordinary development onward also reduces differences between development and durable deployment workflows.\n`db push` remains available only for intentionally disposable contexts.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion receives a strongly typed persistence API aligned with TypeScript.\nPrisma Schema Language provides a concise, machine-readable representation of ordinary persistence structures.\nHumans and AI agents can inspect models and relationships without reconstructing them from database-access code.\nPrisma Client reduces repetitive persistence code for common relational operations.\nPrisma Migrate provides an integrated schema-evolution workflow.\nSQL migration files remain visible, version-controlled, reviewable, and customizable.\nOrion's released-versus-unreleased migration policy remains fully applicable.\nPostgreSQL-native capabilities are not prohibited merely because Prisma cannot represent them completely.\nTypedSQL and explicit SQL provide an escape path for advanced and performance-sensitive queries.\npgvector can coexist with Prisma through custom migrations and specialized queries.\nPersistence models remain separated from domain, application, API, and UI models.\nThe complete migrated PostgreSQL schema can drive accurate generated database documentation.\nExisting Prisma familiarity reduces implementation and operational learning cost.\nThe architecture remains appropriate for both simple CRUD applications and large SQL-intensive business systems.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nPrisma introduces an additional abstraction over PostgreSQL whose behavior must be understood.\nGenerated Prisma types can create accidental architectural coupling if imported outside persistence boundaries.\nSome PostgreSQL capabilities may require manually customized SQL migrations.\nSpecialized queries may require TypedSQL or explicit SQL in addition to Prisma Client.\nThe Prisma schema may not describe the complete physical database by itself.\nDatabase documentation requires introspection of a migrated PostgreSQL instance to represent custom migration behavior completely.\nORM-generated queries still require performance monitoring and query-plan analysis in large systems.\nMajor Prisma upgrades may require significant compatibility evaluation.\nApplications using unsupported PostgreSQL types may lose some Prisma Client ergonomics for those fields.\nMaintaining both Prisma abstractions and explicit SQL requires contributors to understand when each approach is appropriate.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established persistence implementation that must be migrated.\nThe initial PostgreSQL persistence layer will therefore be implemented directly using Prisma ORM.\nRepository tooling must pin compatible Prisma ORM 7 packages explicitly rather than relying on unversioned CLI resolution.\nPersistence implementation must remain within the infrastructure boundary established by Orion's dependency rules.\nThe repository must introduce Prisma schema files and version-controlled migration artifacts only when actual database content exists.\nMigration deployment to durable environments must use committed migration history.\n`prisma db push` must not be used as a substitute for versioned migration deployment in durable environments.\nCustom PostgreSQL features must be included in version-controlled migrations rather than applied manually to production databases.\nApplications using pgvector must include the extension and associated database structures in their migration history.\nDevelopment and integration-test databases should be created from the same migration history used to create production-compatible schemas.\nDatabase reference generation should inspect a fully migrated PostgreSQL schema so that custom SQL features are included.\nRoutine compatible Prisma upgrades do not require a new ADR when they preserve this persistence architecture.\nUpgrading to Prisma ORM 8 or another future major release requires an explicit compatibility review but does not require a new ADR unless the upgrade materially changes the responsibilities or architecture established here.\nReplacing Prisma as Orion's primary database-access and migration strategy would be an architectural change and should supersede this ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [principles](../database/principles.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [schema documentation](../database/schema-documentation.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nExternal reference: Prisma ORM release-status documentation.\nExternal reference: Prisma Migrate documentation.\nExternal reference: Prisma PostgreSQL extensions documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "anchor": "adr-0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "text": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a consistent strategy for defining API contracts, validating external data at runtime, describing HTTP APIs, generating client integrations, and validating application configuration.\nThese concerns are closely related because they depend on explicit machine-readable schemas at trust boundaries.\nThe selected strategy must support projects ranging from small internal applications to large systems with multiple first-party clients, external integrations, mobile or desktop applications, and potentially consumers implemented in languages other than TypeScript.\nThe API strategy should therefore support:\nexplicit and versionable contracts;\nlanguage-independent interoperability;\nruntime request validation;\ncontrolled response serialization;\nstrong TypeScript inference;\ngenerated API descriptions;\ngenerated client types and SDKs;\nhuman-readable API reference generation;\nAI-agent discoverability;\ncompatibility with Fastify;\npredictable evolution as systems grow;\nsupport for external consumers;\nmechanical validation of generated artifacts;\nminimal duplication between authored contracts and derived representations.\nOrion has already selected TypeScript as its primary language and Fastify as its primary HTTP framework.\nHowever, the API contract must not depend on consumers sharing the same TypeScript implementation environment.\nA future Orion application may expose APIs to:\nweb applications;\nmobile applications;\ndesktop applications;\nthird-party systems;\nautomation;\nAI agents;\nservices written in other languages.\nThe contract strategy must therefore preserve an interoperable boundary independently of the implementation language.\nOrion also requires runtime validation because TypeScript types do not exist at runtime.\nTransport data and configuration are both trust boundaries and must be validated before being treated as valid application data.\nConfiguration introduces an additional concern: operating-system environment variables and other external configuration sources commonly represent values as strings even when the application expects numbers, booleans, enumerations, URLs, or other structured types.\nConfiguration loading must therefore distinguish raw external representation from validated runtime configuration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **HTTP with JSON payloads as its primary application API style**.\nAPI contracts will be resource-oriented where resource semantics naturally fit and operation-oriented where explicit business operations better represent application behavior.\nOrion will not require strict REST purity.\nFor example, an explicit business operation such as:\nPOST /orders/{orderId}/cancel\n\nis acceptable when cancellation represents meaningful application behavior with its own authorization, invariants, side effects, or failure semantics.\nThe primary externally interoperable API description will be **OpenAPI**.\nOpenAPI descriptions will be **generated from canonical executable contract schemas and route metadata**, not maintained manually as an independent source of truth.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Canonical contract schemas",
+    "anchor": "canonical-contract-schemas",
+    "text": "Canonical contract schemas\nOrion will use **TypeBox 1.x as its default runtime schema system for canonical API contracts and shared trust-boundary schemas**.\nCanonical transport contracts must remain representable as standard JSON-compatible schema data.\nThe intended relationship is:\nTypeBox contract\n    ↓\nTypeScript static type\n    +\nJSON Schema\n    +\nruntime validation\n    +\nresponse serialization metadata\n    ↓\nOpenAPI\n\nTypeBox schemas used for external contracts must describe the **wire representation** of data rather than JavaScript-specific runtime objects.\nFor example:\nwire timestamp\n    → string with date-time semantics\n\nrather than:\nJavaScript Date object\n\nThe architectural distinction remains:\nwire representation\n    !=\napplication representation\n    !=\ndomain representation\n    !=\npersistence representation\n\nTypeBox will not become the universal type system for Orion.\nOrdinary internal TypeScript types may continue to represent domain and application concepts that do not require runtime schema validation.\nTypeBox is primarily intended for boundaries where executable schemas provide concrete value, including:\nHTTP API contracts;\napplication configuration;\nexternal integration payloads;\nmessages or events when such infrastructure is introduced;\nother untrusted or externally supplied data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fastify integration",
+    "anchor": "fastify-integration",
+    "text": "Fastify integration\nFastify will consume the contract schemas through its schema-based validation and serialization pipeline.\nThe preferred integration will use Fastify's TypeBox type-provider support.\nRequest schemas will provide runtime validation at the HTTP boundary.\nResponse schemas will define the transport representation that Fastify is allowed to serialize.\nTransport handlers remain responsible for translating between API contracts and application operations.\nTypeBox schemas do not become application or domain models merely because Fastify can infer their TypeScript types.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "API description",
+    "anchor": "api-description",
+    "text": "API description\nOrion will generate **OpenAPI 3.x descriptions**, with **OpenAPI 3.1.x as the initial baseline**.\nThe exact patch release will be determined by toolchain compatibility rather than permanently fixed by this ADR.\nA future OpenAPI minor-version upgrade does not require a new ADR when it preserves the API-description strategy established here.\nThe generated OpenAPI description must remain reproducible from canonical repository sources.\nIt must never become an independently edited source of truth.\nEach externally exposed API operation must define a **stable and unique `operationId`**.\nFor example:\ncreateCustomer\ngetCustomer\ncancelOrder\n\nStable operation identifiers support:\ndocumentation;\ngenerated clients;\ncontract analysis;\nAI discoverability;\nfuture tool generation;\ncompatibility analysis;\nconsistent identification independent of route implementation structure.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "TypeScript SDK generation",
+    "anchor": "typescript-sdk-generation",
+    "text": "TypeScript SDK generation\nWhen an Orion application has a TypeScript consumer that benefits from a shared SDK, the default SDK generation strategy will use:\nOpenAPI\n    ↓\nopenapi-typescript\n    ↓\ngenerated TypeScript API types\n    ↓\nopenapi-fetch\n    ↓\nthin typed HTTP client\n\n`openapi-typescript` will generate TypeScript representations from the generated OpenAPI contract.\n`openapi-fetch` will provide the default thin typed HTTP client for TypeScript consumers.\nThe initial strategy intentionally favors generated types and a small generic HTTP runtime rather than generating a large application-specific client implementation.\nThe generated TypeScript client contract must depend on OpenAPI rather than importing server implementation types directly.\nTherefore, first-party web applications should not bypass the API boundary by importing server-side contract implementations merely because both applications reside in the same monorepo.\nThe intended dependency flow is:\nauthored contracts\n    ↓\nOpenAPI\n    ↓\ngenerated client types\n    ↓\ntyped HTTP client\n    ↓\nconsumer application\n\nThis keeps the API boundary continuously testable as a real interoperable contract.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Other-language SDKs",
+    "anchor": "other-language-sdks",
+    "text": "Other-language SDKs\nOrion will not select a universal SDK generator for every programming language before concrete consumers exist.\nOpenAPI will remain the language-independent SDK input.\nIf a future application requires a Kotlin, Swift, C#, Python, Go, or other client, an appropriate generator may be selected for that consumer.\nThe choice of language-specific generator is not itself an architectural change as long as OpenAPI remains the canonical interoperable API description.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Generated artifacts",
+    "anchor": "generated-artifacts",
+    "text": "Generated artifacts\nGenerated OpenAPI documents, SDK types, and other derived contract artifacts must be:\ndeterministic;\nreproducible;\ngenerated from canonical sources;\nnever manually edited.\nRepository validation should verify generated-artifact consistency once the corresponding artifacts exist.\nConceptually:\ncanonical contracts\n    ↓\ngenerate OpenAPI\n    ↓\ngenerate client artifacts\n    ↓\npnpm validate\n    ↓\nverify generated output is current\n\nWhether a particular generated artifact is committed to version control or generated during build or publication is an implementation decision and may depend on how that artifact is consumed.\nRegardless of storage strategy, generated artifacts must never become independent sources of truth.\n"
+  },
+  {
+    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Client-side runtime validation",
+    "anchor": "client-side-runtime-validation",
+    "text": "Client-side runtime validation\nGenerated TypeScript SDKs will provide compile-time typing by default.\nThey will not automatically revalidate every successful server response at runtime.\nRuntime validation on clients may be introduced when a concrete trust boundary or reliability requirement justifies the additional execution and implementation cost.\nThe server remains responsible for validating requests and serializing responses according to its published contract.\n"
+  },
+  {
     "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
     "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
     "group": "Decisions",
@@ -754,320 +1042,5 @@
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nOrion introduces multiple test execution modes that contributors must understand.\nTestcontainers requires a compatible container runtime in environments executing infrastructure tests.\nReal PostgreSQL integration tests are slower than database mocks or in-memory substitutes.\nMigration-based test database initialization adds execution cost.\nSharing infrastructure for performance requires careful state isolation.\nBrowser Mode tests are slower and more resource-intensive than Node-only tests.\nPlaywright requires browser binaries and corresponding CI resources.\nMaintaining separate component-browser and E2E test levels requires contributors to choose the appropriate level.\nTest isolation may require additional infrastructure code and test factories.\nNot using broad internal mocks means some integration tests will require more setup than heavily mocked alternatives.\nAbsence of a global coverage threshold provides less immediately visible numerical enforcement and requires engineering judgment.\nMulti-browser execution, when introduced, can materially increase CI cost.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nOrion does not currently have an established testing implementation that must be migrated.\nThe initial repository testing foundation will therefore be introduced directly using:\nVitest\nTestcontainers\nVitest Browser Mode\nPlaywright\nPlaywright Test\n\nTest dependencies should only be added when the corresponding test capability exists.\nUnit and integration test scripts must be integrated with repository validation as soon as meaningful test suites exist.\nPostgreSQL integration-test infrastructure must use a PostgreSQL version compatible with the production baseline established by Orion's database tooling.\nTest databases must be initialized from committed migration history.\nContainer lifecycle and database-isolation strategies should initially favor correctness and simplicity, then be optimized using measurement when test execution time becomes material.\nFastify integration tests should use request injection by default unless real network behavior is part of the requirement.\nBrowser-dependent React tests should use Vitest Browser Mode when real browser semantics matter.\nPlaywright Test should be introduced for critical end-to-end workflows once the initial web application can be exercised through a complete running stack.\nChromium will be the initial routine E2E browser.\nAdditional browser projects should be added according to real product browser-support requirements.\nV8 coverage should be configured when coverage reporting becomes useful, without imposing an arbitrary foundation-level percentage threshold.\nCI execution strategy, including parallel jobs, container caching, browser installation, test sharding, and artifact retention, will be defined by ADR-0011.\nRoutine compatible upgrades of Vitest, Testcontainers, or Playwright do not require a new ADR when they preserve the responsibilities established here.\nReplacing the primary test runner, database integration strategy, or browser E2E framework would constitute a material testing-architecture change and should supersede this ADR.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated ADR: [ADR-0008: Select React, Vite, and TanStack for Web Applications](0008-select-react-vite-and-tanstack-for-web-applications.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nExternal reference: Vitest documentation.\nExternal reference: Vitest Browser Mode documentation.\nExternal reference: Testcontainers for Node.js documentation.\nExternal reference: Fastify testing documentation.\nExternal reference: Playwright documentation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "anchor": "adr-0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "text": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion requires a concrete observability strategy before production-oriented backend implementation proceeds further.\nThe strategy must support applications ranging from small deployments to large distributed systems while preserving the ability to choose different observability backends according to product, hosting, regulatory, operational, and cost requirements.\nObservability must provide enough information to understand:\nwhether a system is healthy;\nwhat failed;\nwhere a failure occurred;\nhow requests move through the system;\nwhich dependencies contributed to latency;\nhow infrastructure and application behavior change over time;\nwhether important operational thresholds are being approached;\nhow logs from different components relate to the same request or distributed operation.\nOrion has already selected Pino as the structured logging implementation for the Fastify runtime.\nThat decision establishes the technical logger but does not define:\nlog structure;\ncorrelation semantics;\nredaction;\ntracing;\nmetrics;\ntelemetry propagation;\nsampling;\nexporting;\nerror reporting;\nobservability backend selection.\nOrion must also avoid coupling application code to a specific monitoring vendor.\nA project may eventually use systems such as Grafana, Datadog, Honeycomb, New Relic, Azure Monitor, cloud-provider-native tooling, or another compatible platform.\nThe application architecture should not need to change merely because the telemetry destination changes.\nObservability must also remain distinct from business audit history.\nOperational logs and traces are optimized for diagnostics, reliability, and performance investigation.\nAudit history may require different guarantees around persistence, retention, authorization, immutability, and business semantics.\nThese responsibilities must not be conflated.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nOrion will use **OpenTelemetry as its primary observability standard for distributed tracing and metrics**.\nOrion will continue to use **Pino as its structured application logging implementation**.\nThe default observability model is:\ntraces\n    → OpenTelemetry\n\nmetrics\n    → OpenTelemetry\n\napplication logs\n    → Pino\n\ntelemetry transport\n    → OTLP\n\nproduction telemetry routing\n    → OpenTelemetry Collector preferred\n\nobservability backend\n    → deployment-specific\n\nNo observability backend or SaaS vendor will be selected globally by the Orion foundation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Observability responsibilities",
-    "anchor": "observability-responsibilities",
-    "text": "Observability responsibilities\nThe responsibilities are intentionally separated:\nOpenTelemetry\n├── tracing\n├── metrics\n├── context propagation\n├── instrumentation\n└── telemetry export\n\nPino\n├── structured application logs\n├── operational events\n├── request logs\n└── structured error logs\n\ndeployment infrastructure\n├── log collection\n├── telemetry routing\n├── storage\n├── querying\n├── dashboards\n└── alerting\n\nAn observability provider must not become a dependency of Orion domain or application architecture merely because it stores or visualizes telemetry.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Distributed tracing",
-    "anchor": "distributed-tracing",
-    "text": "Distributed tracing\nOpenTelemetry will provide Orion's distributed tracing model.\nTracing should cover important execution boundaries including, where applicable:\ninbound HTTP requests;\nFastify request processing;\noutbound HTTP requests;\nPrisma/database operations;\nexternal integrations;\nbackground work;\ndistributed service calls;\noperationally significant application operations.\nThe intended trace structure is conceptually:\nincoming HTTP request\n    ↓\nHTTP server span\n    ↓\nFastify processing\n    ↓\napplication operation\n    ↓\ndatabase / external integration\n\nTracing is intended to represent causally related units of work rather than duplicate every function call in the application.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Fastify instrumentation",
-    "anchor": "fastify-instrumentation",
-    "text": "Fastify instrumentation\nFastify tracing will use **`@fastify/otel`** as the preferred Fastify-specific OpenTelemetry integration.\nThe instrumentation must be initialized early enough to observe relevant Fastify lifecycle behavior.\nUnderlying HTTP instrumentation must also be configured where required for inbound and outbound trace propagation.\nFastify instrumentation remains a transport/infrastructure concern.\nDomain and application code must not depend on Fastify-specific OpenTelemetry APIs.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Prisma instrumentation",
-    "anchor": "prisma-instrumentation",
-    "text": "Prisma instrumentation\nPrisma operations will use the official Prisma OpenTelemetry instrumentation where tracing is enabled.\nThe intended relationship is:\napplication operation\n    ↓\nPrisma operation\n    ↓\ndatabase query\n\nallowing database activity to appear as part of the surrounding distributed trace.\nObservability initialization must occur before dependencies whose instrumentation depends on load-time registration are initialized.\nThe expected application bootstrap sequence is therefore approximately:\nprocess start\n    ↓\nload and validate configuration\n    ↓\ninitialize observability\n    ↓\ninitialize instrumented infrastructure\n    ↓\ncompose application\n    ↓\nstart accepting work\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Automatic versus manual tracing",
-    "anchor": "automatic-versus-manual-tracing",
-    "text": "Automatic versus manual tracing\nOrion will prefer automatic instrumentation for technical infrastructure boundaries when mature instrumentation is available.\nExamples include:\nHTTP;\nFastify;\nPrisma;\nsupported outbound clients;\nother infrastructure integrations.\nManual spans should be added only when they represent operationally meaningful units of work.\nAppropriate examples may include:\nimportant application workflows;\nexpensive operations;\nlong-running processing;\nsignificant external integration boundaries;\noperations whose duration or outcome is valuable during incident investigation.\nManual tracing must not mechanically mirror internal function structure.\nThe guiding rule is:\nA span should represent an operationally meaningful unit of work, not merely a function invocation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Trace context propagation",
-    "anchor": "trace-context-propagation",
-    "text": "Trace context propagation\nOrion will use **W3C Trace Context** as the default distributed trace propagation model.\nDistributed calls should propagate trace context automatically through supported instrumentation wherever possible.\nTrace propagation enables requests crossing multiple processes or services to remain part of the same causal trace.\nCustom propagation mechanisms must not be introduced when standard trace propagation is sufficient.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Baggage",
-    "anchor": "baggage",
-    "text": "Baggage\nOpenTelemetry baggage will not be part of Orion's normal golden path.\nBaggage may be introduced only for an explicit distributed-context requirement.\nAny baggage keys must be deliberately allowlisted.\nBaggage must not contain:\nauthentication credentials;\ntokens;\nsecrets;\npasswords;\nprivate keys;\nunnecessary personal information;\nsensitive business data.\nTrace context should be preferred when causal correlation alone is sufficient.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Trace sampling",
-    "anchor": "trace-sampling",
-    "text": "Trace sampling\nTrace sampling must be configurable by deployment.\nOrion will not define one universal production sampling percentage.\nAppropriate sampling depends on factors including:\ntraffic volume;\nobservability cost;\nbackend capabilities;\nincident-response requirements;\nregulatory constraints;\nperformance overhead.\nDevelopment environments may normally retain all traces when useful.\nProduction environments may reduce trace volume through appropriate sampling strategies.\nSampling should preserve upstream trace decisions where required for coherent distributed tracing.\nMore advanced strategies, including collector-side or tail-based sampling, may be introduced by deployment infrastructure without forcing business code to change.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Metrics",
-    "anchor": "metrics",
-    "text": "Metrics\nOpenTelemetry will provide Orion's metrics API and SDK model.\nMetrics may describe technical or operational behavior including:\nrequest counts;\nrequest duration;\nactive operations;\nerror counts;\nqueue depth when applicable;\nprocessing duration;\ndependency latency;\nruntime behavior;\nresource usage where appropriately instrumented;\napplication-specific operational signals.\nCustom metrics must have deliberate semantics.\nMetric definitions should include, where applicable:\nstable name;\ndescription;\nunit;\ninstrument type;\nbounded attributes.\nMetric names must not be created casually for short-term debugging when logs or traces are a better fit.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Metric cardinality",
-    "anchor": "metric-cardinality",
-    "text": "Metric cardinality\nMetric attributes must remain **bounded and low-cardinality**.\nHigh-cardinality identifiers must not normally be used as metric attributes.\nExamples of inappropriate metric dimensions include:\nuser_id\ncustomer_id\norder_id\ninvoice_id\nemail\ntrace_id\nrequest_id\narbitrary raw URL\n\nAppropriate HTTP dimensions may include bounded values such as:\nHTTP method\nnormalized route\nstatus code or status class\nservice identity\ndeployment environment\n\nHigh-cardinality operational detail belongs in traces or structured logs when its collection is appropriate and permitted.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Business metrics versus business state",
-    "anchor": "business-metrics-versus-business-state",
-    "text": "Business metrics versus business state\nObservability metrics are not authoritative business records.\nFor example, an `orders.created` metric may be useful operationally, but it must not become the authoritative record of how many orders the business created.\nMetrics may be:\nsampled;\naggregated;\ntemporarily unavailable;\nretained for limited periods;\ntransformed by telemetry infrastructure.\nAuthoritative business state remains in the application's persistent data model.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Structured logging",
-    "anchor": "structured-logging",
-    "text": "Structured logging\nPino will remain Orion's default structured application logger.\nProduction-oriented logs must use structured JSON.\nHuman-readable pretty output may be enabled for local development where useful.\nApplication logs should prefer structured fields over encoding all machine-relevant context exclusively inside message strings.\nFor example, a record may contain:\nevent\nrequest_id\ntrace_id\nspan_id\nentity identifiers when permitted\nerror metadata\nstructured operation attributes\nmessage\n\nThe textual message is intended primarily for human readability.\nStructured fields provide machine-queryable context.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Log correlation",
-    "anchor": "log-correlation",
-    "text": "Log correlation\nPino logs emitted while an OpenTelemetry span is active should include trace correlation metadata.\nThe standard correlation fields will be:\ntrace_id\nspan_id\n\nand, when useful:\ntrace_flags\n\nThis allows an operator to navigate conceptually from:\nlog\n    ↓\ntrace_id\n    ↓\ndistributed trace\n    ↓\nrequest\n    ↓\napplication operation\n    ↓\ndatabase / integration\n\nTrace correlation should be provided through instrumentation or centralized logging configuration rather than manually added at every call site.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Request correlation",
-    "anchor": "request-correlation",
-    "text": "Request correlation\nOrion will retain an independent **`request_id`** for HTTP request correlation.\n`request_id`, `trace_id`, and `span_id` serve different purposes:\nrequest_id\n    → identifies one HTTP request\n\ntrace_id\n    → identifies one distributed trace\n\nspan_id\n    → identifies one specific traced operation\n\nOrion will not require `request_id` and `trace_id` to contain the same value.\nRequest IDs remain useful even when tracing is unavailable, disabled, sampled differently, or incomplete across an external boundary.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Log export",
-    "anchor": "log-export",
-    "text": "Log export\nPino logs will be emitted through the application's normal process output by default.\nProduction deployments should normally emit structured logs through:\nstdout / stderr\n    ↓\ndeployment log collection\n    ↓\nconfigured log backend\n\nApplication code must not require direct integration with a specific logging vendor merely to emit ordinary logs.\nThis preserves compatibility with containers, process supervisors, cloud platforms, orchestration systems, and local execution.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "OpenTelemetry Logs",
-    "anchor": "opentelemetry-logs",
-    "text": "OpenTelemetry Logs\nThe OpenTelemetry Logs SDK will **not be part of Orion's initial default logging path**.\nPino remains authoritative for application logging.\nOpenTelemetry instrumentation may be used to enrich Pino records with active tracing context.\nA future OpenTelemetry Logs integration may be introduced when its JavaScript implementation, deployment requirements, and operational value justify doing so.\nSuch an addition does not require replacing Pino unless the fundamental logging responsibilities established here change.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Redaction",
-    "anchor": "redaction",
-    "text": "Redaction\nSensitive-data redaction is mandatory.\nLogging configuration must provide centralized protection against common sensitive values.\nLogs must not capture secrets or credentials simply because those values are available in application objects.\nExamples that must normally be excluded or redacted include:\n`Authorization` headers;\ncookies;\n`Set-Cookie`;\naccess tokens;\nrefresh tokens;\npasswords;\nAPI keys;\nprivate keys;\ndatabase credentials;\nsecret configuration values.\nRaw request and response bodies must **not be logged by default**.\nBodies, query parameters, and headers can contain:\npersonal data;\nfinancial information;\ncredentials;\nconfidential business information;\nprotected customer data.\nWhen a particular value is operationally necessary, it must be logged intentionally and consistently with Orion's data-classification and security policies.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Logging errors",
-    "anchor": "logging-errors",
-    "text": "Logging errors\nUnexpected errors should be recorded as structured errors rather than converted only to interpolated text.\nError logging should preserve useful technical context such as:\nerror type;\nmessage;\nstack trace when appropriate;\ncause chain where available;\nrequest correlation;\nactive trace correlation;\nrelevant operation context that is safe to record.\nSensitive application input must not be attached indiscriminately to error records.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Expected versus unexpected failures",
-    "anchor": "expected-versus-unexpected-failures",
-    "text": "Expected versus unexpected failures\nOrion will distinguish expected application outcomes from unexpected operational failures.\nExamples of expected outcomes may include:\nvalidation failure;\nnot-found result;\nauthorization rejection;\nbusiness-rule rejection;\nconcurrency conflict that is explicitly modeled.\nSuch results must not automatically be treated as production incidents merely because they map to non-success HTTP responses.\nUnexpected failures may include:\nunhandled programming errors;\nunavailable required dependencies;\nunexpected database failures;\ninvariant violations;\nunanticipated integration failures.\nThis distinction should influence:\nlog level;\ntracing error status;\nexternal error reporting;\nalerting.\nThe existing Orion error-handling policy remains authoritative for application-level error semantics.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Error reporting",
-    "anchor": "error-reporting",
-    "text": "Error reporting\nOrion will not select a global external error-reporting vendor.\nUnexpected errors should first participate in the standard observability model through:\ncentral error handling\n    ↓\nstructured Pino log\n    +\nactive OpenTelemetry trace/span context\n\nAn application or deployment may additionally integrate an error-reporting provider when operational requirements justify it.\nExamples could include dedicated error-monitoring or APM platforms.\nSuch integration should occur at appropriate technical boundaries rather than introducing vendor APIs throughout domain and application code.\nOrion will not create generic abstraction layers solely to hide a provider when no application responsibility requires such an abstraction.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Fatal process failures",
-    "anchor": "fatal-process-failures",
-    "text": "Fatal process failures\nFatal startup or process-level failures should be recorded where possible before process termination.\nExamples include:\nfailure to initialize required configuration;\nunrecoverable application initialization failure;\nuncaught exceptions that make process state unsafe.\nWhere practical, the process should perform best-effort telemetry flushing before termination.\nThe runtime or deployment platform should be responsible for restarting failed processes when restart behavior is appropriate.\nA process must not continue accepting work when its state can no longer be considered reliable.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "OpenTelemetry resources",
-    "anchor": "opentelemetry-resources",
-    "text": "OpenTelemetry resources\nTelemetry-producing processes must identify themselves using stable OpenTelemetry resource attributes.\nAt minimum, deployments should provide meaningful values for concepts such as:\nservice.name\nservice.version\ndeployment.environment.name\n\nA namespace or equivalent organizational identifier may also be provided when useful.\nServices must not intentionally rely on generic unidentified defaults when the deployment knows the actual service identity.\nExamples of separate service identities may include:\napi\nworker\nscheduler\n\nif those processes are introduced.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Telemetry transport",
-    "anchor": "telemetry-transport",
-    "text": "Telemetry transport\n**OTLP will be Orion's preferred telemetry transport protocol for OpenTelemetry signals.**\nApplications should export OpenTelemetry telemetry through OTLP-compatible infrastructure rather than depend directly on a vendor-specific telemetry protocol when practical.\nThe intended model is:\nOrion process\n    ↓\nOpenTelemetry SDK\n    ↓\nOTLP\n    ↓\ntelemetry infrastructure\n\nThis helps preserve backend portability.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "OpenTelemetry Collector",
-    "anchor": "opentelemetry-collector",
-    "text": "OpenTelemetry Collector\nThe **OpenTelemetry Collector is the preferred production telemetry routing and processing layer** when deployment complexity justifies it.\nThe conceptual architecture is:\napplication\n    ↓\nOTLP\n    ↓\nOpenTelemetry Collector\n    ↓\nbackend(s)\n\nThe Collector may provide capabilities such as:\nbatching;\nrouting;\nfiltering;\ntransformation;\nsampling;\ncredential isolation;\nexporting to multiple destinations.\nOrion does not require every small deployment to operate a Collector.\nDirect OTLP export to a compatible backend is acceptable when it provides the simpler and appropriate deployment model.\nApplications must not depend on whether telemetry reaches its final backend directly or through a Collector.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Observability backend",
-    "anchor": "observability-backend",
-    "text": "Observability backend\nNo global observability backend will be selected.\nDeployment-specific systems may provide:\ntrace storage;\nmetric storage;\nlog storage;\ndashboards;\nalerting;\nquerying;\nerror reporting.\nBackend selection depends on operational context and is not part of Orion's foundation-level architecture.\nChanging the observability backend should normally be a deployment change rather than an application architecture change.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Browser observability",
-    "anchor": "browser-observability",
-    "text": "Browser observability\nOpenTelemetry browser instrumentation will not be part of Orion's initial web foundation.\nThe first observability baseline applies primarily to server-side Node.js processes.\nFrontend observability concerns such as:\nreal-user monitoring;\nbrowser errors;\nCore Web Vitals;\nfrontend performance;\nbrowser tracing;\nsession diagnostics;\nwill be evaluated when a concrete web product requires them.\nBrowser observability does not need to use exactly the same implementation strategy as server observability as long as resulting integration preserves appropriate correlation and security boundaries.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Audit logging",
-    "anchor": "audit-logging",
-    "text": "Audit logging\nOperational observability is explicitly separate from business audit history.\nThe following are not automatically an audit trail:\nPino logs\nOpenTelemetry traces\nOpenTelemetry metrics\n\nA business audit requirement such as:\nwho changed an invoice\nwhat changed\nwhen it changed\nwhy it changed\n\nmay require dedicated persistent application data with its own rules for:\nintegrity;\nretention;\nauthorization;\nimmutability;\ndomain semantics;\nregulatory compliance.\nAn application must not rely on ordinary application logs as its only source of authoritative audit history.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nOpenTelemetry provides a vendor-neutral observability model that can represent traces, metrics, propagation, instrumentation, and telemetry export without forcing Orion applications to depend on a particular monitoring backend.\nThis fits Orion's goal of preserving infrastructure portability while still providing a strong production observability baseline.\nDistributed tracing is particularly valuable because large systems frequently spend significant time across multiple boundaries:\nHTTP\napplication behavior\ndatabase access\nexternal APIs\nbackground processing\nother services\n\nA trace allows those operations to be investigated as one causal workflow rather than as independent log records.\nMetrics complement traces by providing aggregate time-series information appropriate for:\ndashboards;\ncapacity monitoring;\nlatency distributions;\nrequest rates;\nfailure rates;\nalert conditions.\nPino remains the default logging implementation because it is already integrated naturally with Fastify and provides efficient structured logging.\nKeeping logging and tracing as separate but correlated responsibilities avoids making the application's log pipeline dependent on the maturity or deployment model of a specific OpenTelemetry log implementation.\nThe correlation model:\nPino log\n    +\ntrace_id\n    +\nspan_id\n\nprovides the practical operational benefit needed from the integration without requiring application logs and traces to use the same internal API.\nAn independent request identifier is retained because request-level operational correlation remains useful even when distributed tracing is unavailable or incomplete.\nOTLP is selected as the preferred telemetry transport because it preserves OpenTelemetry's vendor-neutral architecture between application processes and observability infrastructure.\nThe Collector is preferred for production systems that require centralized telemetry processing because it can move routing, transformation, batching, and backend-specific exporting out of application processes.\nHowever, making the Collector mandatory for every application would introduce infrastructure complexity that does not always provide sufficient value.\nTherefore direct OTLP export remains valid for simpler deployments.\nExplicit rules around redaction and cardinality are necessary because observability systems can themselves become security, privacy, reliability, or cost risks.\nUncontrolled logging may expose sensitive information.\nUnbounded metric attributes may create excessive time-series cardinality.\nExcessive tracing can generate unnecessary overhead and telemetry cost.\nThe strategy therefore treats observability as engineered production behavior rather than unconditional collection of all available information.\nNo error-reporting vendor is selected because the appropriate provider depends on deployment requirements.\nOrion preserves provider independence while allowing dedicated error-reporting tools to be added at technical boundaries when they provide concrete value.\nFinally, keeping operational telemetry separate from audit history prevents infrastructure logs from becoming an accidental and unreliable business record.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Vendor-Specific Observability SDK as the Foundation Standard",
-    "anchor": "vendor-specific-observability-sdk-as-the-foundation-standard",
-    "text": "Vendor-Specific Observability SDK as the Foundation Standard\nOrion could select a platform such as Datadog, New Relic, Honeycomb, or another APM provider and use its proprietary application SDK directly.\nThis could provide a highly integrated initial experience.\nIt was not selected because Orion is intended for many future applications and deployment environments.\nA globally selected vendor would create unnecessary infrastructure coupling and could complicate self-hosting, regulated deployments, cost optimization, or future vendor migration.\nOpenTelemetry provides a more portable instrumentation boundary.\n"
   }
 ]

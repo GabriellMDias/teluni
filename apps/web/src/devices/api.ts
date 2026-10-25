@@ -22,6 +22,31 @@ export type DeviceFilter = Readonly<{
   status?: DeviceStatus;
 }>;
 
+export type DeviceHistoryFilter = Readonly<{
+  view?: "history";
+  cursor?: string;
+}>;
+export const deviceAuditKey = (companyId: string, deviceId: string) =>
+  ["devices", "audit", companyId, deviceId] as const;
+export async function listDeviceAuditEvents(
+  companyId: string,
+  deviceId: string,
+  cursor?: string,
+) {
+  return unwrap(
+    await client().GET(
+      "/companies/{companyId}/devices/{deviceId}/audit-events",
+      {
+        params: {
+          path: { companyId, deviceId },
+          query: { ...(cursor ? { cursor } : {}) },
+        },
+      },
+    ),
+    deviceErrorCodes,
+  );
+}
+
 export const rotations: readonly Rotation[] = [0, 90, 180, 270];
 
 /** Matches the server's offline authorization window (AT-15). */

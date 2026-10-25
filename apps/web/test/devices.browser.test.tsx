@@ -672,3 +672,158 @@ test.each([
         .not.toBeInTheDocument();
   },
 );
+
+test("pages screen history through URL search and safely labels actors and unknown actions", async () => {
+  const requests: string[] = [];
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      const cursor = url.searchParams.get("cursor");
+      requests.push(cursor ?? "first");
+      return {
+        body: {
+          items: cursor
+            ? [
+                {
+                  id: "old",
+                  action: "device.paired",
+                  actorPrincipalId: "other",
+                  occurredAt: "2026-10-20T12:00:00.000Z",
+                },
+              ]
+            : [
+                {
+                  id: "new",
+                  action: "device.erasure_confirmed",
+                  actorPrincipalId: null,
+                  occurredAt: "2026-10-24T12:00:00.000Z",
+                },
+                {
+                  id: "reset",
+                  action: "device.reset_recorded",
+                  actorPrincipalId: "synthetic",
+                  occurredAt: "2026-10-23T12:00:00.000Z",
+                },
+                {
+                  id: "unknown",
+                  action: "constructor",
+                  actorPrincipalId: "other",
+                  occurredAt: "2026-10-22T12:00:00.000Z",
+                  details: { secret: "SYNTHETIC_SECRET" },
+                },
+              ],
+          nextCursor: cursor ? null : "older",
+        },
+      };
+    }
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    return { body: company(["devices.view", "audit.view"]) };
+  });
+  const { screen, router } = await open(
+    `${screensPath}/${deviceId}?view=history`,
+  );
+  const history = screen.getByTestId("screen-history");
+  await expect
+    .element(screen.getByRole("link", { name: t.detailsTitle, exact: true }))
+    .toHaveAttribute("aria-current", "false");
+  await expect
+    .element(screen.getByRole("link", { name: t.historyTitle, exact: true }))
+    .toHaveAttribute("aria-current", "page");
+  await expect
+    .element(history.getByText(t.historyDevice, { exact: false }))
+    .toBeVisible();
+  await expect
+    .element(
+      history.getByRole("listitem").getByText(t.historyYou, { exact: false }),
+    )
+    .toBeVisible();
+  await expect
+    .element(history.getByText(t.historyActions["device.reset_recorded"]))
+    .toBeVisible();
+  await expect.element(history.getByText(t.historyUnknown)).toBeVisible();
+  await expect
+    .element(screen.getByText("SYNTHETIC_SECRET"))
+    .not.toBeInTheDocument();
+  await history.getByRole("link", { name: t.nextPage }).click();
+  await expect
+    .element(history.getByText(t.historyActions["device.paired"]))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({
+    view: "history",
+    cursor: "older",
+  });
+  await history.getByRole("link", { name: t.firstPage }).click();
+  await expect
+    .element(history.getByText(t.historyActions["device.erasure_confirmed"]))
+    .toBeVisible();
+  expect(router.state.location.search).toEqual({ view: "history" });
+  expect(requests).toEqual(["first", "older", "first"]);
+});
+
+test.each([false, true])(
+  "does not fetch screen audit without current permission (step-up: %s)",
+  async (stepUp) => {
+    let reads = 0;
+    respond((url) => {
+      if (url.pathname.endsWith("/audit-events")) {
+        reads++;
+        return { body: { items: [], nextCursor: null } };
+      }
+      if (url.pathname.endsWith(`/devices/${deviceId}`))
+        return { body: device() };
+      return { body: company(["devices.view"], stepUp ? ["audit.view"] : []) };
+    });
+    const { screen } = await open(`${screensPath}/${deviceId}?view=history`);
+    await expect
+      .element(screen.getByRole(stepUp ? "status" : "alert"))
+      .toBeVisible();
+    expect(reads).toBe(0);
+    if (stepUp) {
+      const link = screen.getByRole("link", { name: t.stepUpButton });
+      await expect
+        .element(link)
+        .toHaveAttribute("href", expect.stringContaining("view%3Dhistory"));
+    } else
+      await expect
+        .element(screen.getByRole("link", { name: t.historyTitle }))
+        .not.toBeInTheDocument();
+  },
+);
+
+test("reloads a failed history read without showing private errors and supports a deep page link", async () => {
+  let fail = true;
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      expect(url.searchParams.get("cursor")).toBe("older");
+      return fail
+        ? {
+            status: 403,
+            body: {
+              error: {
+                code: "PERMISSION_DENIED",
+                message: "SYNTHETIC_SECRET",
+                requestId: "synthetic",
+              },
+            },
+          }
+        : { body: { items: [], nextCursor: null } };
+    }
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    return { body: company(["devices.view", "audit.view"]) };
+  });
+  const { screen } = await open(
+    `${screensPath}/${deviceId}?view=history&cursor=older`,
+  );
+  const history = screen.getByTestId("screen-history");
+  await expect.element(history.getByRole("alert")).toBeVisible();
+  await expect
+    .element(screen.getByText("SYNTHETIC_SECRET"))
+    .not.toBeInTheDocument();
+  fail = false;
+  await history.getByRole("button", { name: t.reload }).click();
+  await expect.element(history.getByText(t.historyEmpty)).toBeVisible();
+  await expect
+    .element(history.getByRole("link", { name: t.firstPage }))
+    .toBeVisible();
+});

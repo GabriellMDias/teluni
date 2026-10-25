@@ -444,6 +444,30 @@ Lifecycle: Inserted in the transaction of the change it records; never updated o
 | `device_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX device_audit_events_company_id_id_key ON public.device_audit_events USING btree (company_id, id)` | Tenant key of device audit events. |
 | `device_audit_events_device_time_idx` | `CREATE INDEX device_audit_events_device_time_idx ON public.device_audit_events USING btree (company_id, device_id, occurred_at DESC, id DESC)` | Lists a device's events newest first. |
 
+## device_audit_event_branches
+
+Immutable event-time branch scope of a device lifecycle event. A move concerns both branches; unknown legacy scope has no rows and is visible only to company administrators.
+
+Owner: Devices. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted with its event in the same transaction; append-only. Backfill uses only branch IDs explicitly recorded in immutable pairing, move or unlink details.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company shared by the event and the branch. | — | — |
+| `event_id` | `uuid` | no | — | INTERNAL | Audit event that concerns the branch. | — | — |
+| `branch_id` | `uuid` | no | — | INTERNAL | Branch the event concerns. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `device_audit_event_branches_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The branch belongs to the same company; mixed-company audit scopes are unrepresentable. |
+| `device_audit_event_branches_company_id_event_id_fkey` | `FOREIGN KEY (company_id, event_id) REFERENCES device_audit_events(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The event belongs to the same company. |
+| `device_audit_event_branches_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The row belongs to an existing company. |
+| `device_audit_event_branches_pkey` | `PRIMARY KEY (event_id, branch_id)` | A branch appears at most once per event. |
+| `device_audit_event_branches_branch_idx` | `CREATE INDEX device_audit_event_branches_branch_idx ON public.device_audit_event_branches USING btree (company_id, branch_id)` | Supports finding the events that concern a branch. |
+
 ## principals
 
 Provider-independent application principal for one human identity at one issuer; its UUID is the stable identity referenced by memberships, ownership and audit.

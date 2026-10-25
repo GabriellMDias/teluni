@@ -1,5 +1,509 @@
 [
   {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nA project is derived from a clean, full clone of Orion by the repository's `pnpm orion:init-project` command. After verifying preconditions, the command commits the project's initial identity on top of Orion's history, renames the canonical remote to `orion-upstream`, disables pushing to it and fetching its tags, removes local branch tracking of it, and adds the project's repository as `origin`. It creates no remote repository and pushes nothing.\n`.orion/project.json` is the versioned, schema-checked identity and provenance record. In Orion it describes the foundation. In a derived project it records the project identity, the canonical Orion repository, the immutable commit the project was initialized from, the Orion baseline currently integrated, and the disposition of the Approval Request reference implementation. The immutable Git commit is the foundation version; no separate release or version scheme is introduced.\nFoundation-owned and project-owned state are separated by file. Orion's plan, human actions, and acceptance report remain inherited foundation history in projects; initialization creates project-owned `docs/project/implementation-plan.md` and `docs/project/human-actions.md` with pending actions for the project's own repository settings. Root instructions route implementation work to the project-owned files when the manifest describes a project. The foundation namespace (`@orion/*`, `ORION_*`, `orion_*` claims, and the CI check name) is not renamed.\nThe Approval Request slice is retained in derived projects as a recorded `reference` implementation, not a product requirement. The project owner later records `adopted` or `removed`; validation keeps the disposition coherent with the source tree and refuses a durable release while it is still `reference`.\nOrion upgrades are ordinary branches that merge a chosen commit from `orion-upstream/main` with its history, resolve conflicts under review, regenerate derived artifacts, and pass validation. The recorded baseline is updated only after that commit is integrated, and validation requires it to be an ancestor of `HEAD`.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nPreserving ancestry lets Git compute the upstream changes after a baseline and perform three-way merges, which is the property that makes future upgrades practical. A GitHub template repository or a squashed snapshot would discard that ancestry and force every upgrade to become a manual diff-and-copy exercise. Keeping the canonical repository as a fetch-only remote retains that ancestry without letting ordinary `git push` or `git pull` cross the boundary.\nA small manifest makes provenance machine-checkable in local validation and CI without inventing a release system. Commit ancestry is verifiable wherever full history is available, and the recorded baseline cannot claim unintegrated upstream work.\nSeparate project-owned files avoid conflicts that would otherwise recur on every upgrade while keeping Orion's evidence intact rather than rewriting it. Retaining the reference implementation avoids a brittle, multi-artifact deletion step during initialization; the release guard ensures it cannot silently become product behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "GitHub template repository",
+    "anchor": "github-template-repository",
+    "text": "GitHub template repository\nTemplates create an unrelated history. They make project creation easy but lose the shared ancestry that three-way upgrade merges need, and they record no provenance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fork or shared-history repository with Orion as origin",
+    "anchor": "fork-or-shared-history-repository-with-orion-as-origin",
+    "text": "Fork or shared-history repository with Orion as `origin`\nWorking directly from a fork or clone that still pushes to Orion risks product work reaching the canonical repository, couples project pull requests and settings to Orion, and blurs project and foundation history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Automatic updater that overwrites or patches foundation files",
+    "anchor": "automatic-updater-that-overwrites-or-patches-foundation-files",
+    "text": "Automatic updater that overwrites or patches foundation files\nAn updater could replace foundation files mechanically, but it would silently overwrite product changes or resolve semantic conflicts without review. Upgrades are engineering changes and remain reviewable merges.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Deleting the reference implementation during initialization",
+    "anchor": "deleting-the-reference-implementation-during-initialization",
+    "text": "Deleting the reference implementation during initialization\nA scripted removal would have to change application code, tests, migrations, generated OpenAPI/SDK/database references, documentation, and portal data together, and would conflict with every later Orion change to those files. Retaining it with a recorded, validated disposition is smaller and safer.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nEach project is independent while retaining a verifiable relationship to Orion.\nAccidental pushes to the canonical repository fail locally, and upstream changes enter projects only through reviewed merges.\nProvenance, inherited-state boundaries, and the reference implementation's status are explicit and checked.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nProject history includes Orion's history, and upgrades can still conflict where projects change foundation files.\nRemote protection is local Git configuration; each clone must run `pnpm orion:upstream`, and repository-level protections still require the project's own settings.\nSquash or rebase merges of upgrades break the baseline check and must be avoided.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion itself changes only by adding its foundation manifest, validation, and documentation; its history and completed evidence are preserved.\nA future change to the manifest schema requires a new schema version and an upgrade path for existing projects.\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[Implementation plan](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/implementation-plan.md) and [human actions](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/human-actions.md)\n[Migration policy](../database/migrations.md) and [release evolution](../database/release-evolution.md)\n[ADR-0011: continuous integration and supply-chain security](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "anchor": "adr-0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "text": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags\n**Status:** accepted\n**Date:** 2026-09-29\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only its statement that no release or version scheme exists\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) established immutable commit SHAs and ancestry as derived-project provenance and deliberately introduced no release scheme. Before the first real GitHub-backed derivation exercise, people need recognizable stable foundation points and compatibility signals without weakening that technical identity or making every merge a release.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nStable Orion foundation releases use immutable annotated Git tags named `vMAJOR.MINOR.PATCH`. The tag is a human-readable alias for one commit. MAJOR denotes an intentionally incompatible foundation contract or supported upgrade model; MINOR denotes backward-compatible capability; PATCH denotes compatible correction or hardening. Classification follows contract impact, not diff size or incidental merge conflicts. A GitHub Release may describe a tag but has no provenance role. Pre-release naming is deferred until needed.\nProject manifests continue to record commit SHAs. Derivation, baseline recording, and upgrades continue to rely on commit identity and Git ancestry. This decision changes only ADR-0014's no-release-scheme statement; its provenance and upgrade mechanics remain accepted.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nCommit SHAs provide exact, verifiable identity while stable tags let humans communicate known foundation points. Semantic labels signal expected compatibility for projects that inherit and extend the foundation. Tags avoid a second mutable version store and do not require release automation or changes to project manifests. A stable-only model matches the current need for one first release; pre-release process would add obligations without an acceptance use case.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Continue with commit SHAs alone",
+    "anchor": "continue-with-commit-shas-alone",
+    "text": "Continue with commit SHAs alone\nThis preserves exact identity but makes stable foundation points and compatibility intent difficult to communicate during the first real derivation and later upgrade exercise.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Store a semantic version in project provenance",
+    "anchor": "store-a-semantic-version-in-project-provenance",
+    "text": "Store a semantic version in project provenance\nThis duplicates the tag and could be mistaken for proof that the corresponding commit was integrated. The existing SHA and ancestry checks already supply that proof.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nStable foundation points become easy to name without changing derivation mechanics.\nThe tag is a single human-readable release identifier; commit identity stays authoritative for provenance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nMaintainers must classify contract impact deliberately and protect published tags from movement.\nVersion labels cannot predict merge conflicts caused by project-specific edits to shared files.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo manifest migration or release tooling is required. The first tag follows review, merge, and CI verification of this policy. Later tags are assigned only at deliberate release points.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Orion foundation versioning](../versioning.md)\n[Project derivation](../project-derivation.md)\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "anchor": "adr-0016-license-the-orion-foundation-under-apache-20",
+    "text": "ADR-0016: License the Orion Foundation under Apache-2.0\n**Status:** accepted\n**Date:** 2026-09-30\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion is a public reusable development foundation intended for independent projects, including commercial and proprietary products. Its source had no explicit repository license through the `v1.0.0` foundation snapshot. The owner has now selected a distribution license for Orion source before the real GitHub-backed project derivation exercise. This is a durable repository-wide permission decision; it does not select a derived project's overall license or change third-party dependency rights.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nDistribute Orion's repository source under the unmodified Apache License, Version 2.0. The root `LICENSE` file contains the canonical terms, and the root README links to it. Do not retroactively change the existing `v1.0.0` tag. Orion's independently developed future revisions inherit this repository license unless a separately authorized decision changes it. Derived projects must make their own decisions for independently created product code and comply with licenses applicable to inherited and third-party material.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThe owner explicitly selected Apache-2.0 for broad reuse, modification, and distribution of the foundation, including use in independent commercial projects. A standard license file makes those permissions and obligations discoverable without custom terms, package publication metadata, or changes to derivation provenance. The existing `v1.0.0` tag remains an immutable record of the pre-license snapshot.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Leave the repository without an explicit license",
+    "anchor": "leave-the-repository-without-an-explicit-license",
+    "text": "Leave the repository without an explicit license\nThis was the previous state. It leaves reuse and distribution permissions unclear for the intended audience, so it does not meet the owner's distribution objective.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion source has a clear, standard distribution license.\nDerived projects can identify the terms of inherited Orion material without changing SHA-based provenance or upgrade mechanics.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nRedistributors must satisfy applicable Apache-2.0 conditions for Orion material; choosing a different license for their own code does not remove those obligations.\nThe root license does not settle separate rights or obligations for package dependencies or independently created project code.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo manifest, package publication, application, or deployment change is required. The licensing change is a compatible PATCH candidate after PR review, merge, and CI verification. No `NOTICE` or copyright holder statement is added without supporting repository evidence.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[Foundation versioning](../versioning.md) and [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\n[Project derivation](../project-derivation.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "anchor": "adr-0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "text": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline\n**Status:** accepted\n**Date:** 2026-09-30\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the foundation workspace package scope; its Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0014 derived projects through Git ancestry and kept everything Orion contained. A project therefore started with Orion's own implementation plan, human actions, and acceptance report as \"inherited history\", with the Approval Request slice as a retained reference implementation awaiting a product decision, and with `@orion/*` workspace packages. The first real derivation showed the cost: a new product repository read as Orion itself, carried documentation describing how Orion was built, and shipped an unrelated feature through its API, database, SDK, web application, and portal.\nThe owner directed that a new project start as a clean base for developing a product: it keeps Orion's architecture, principles, tooling, validation, CI, Living Documentation Portal, provenance, and future upgrades, but contains neither the reference implementation nor documentation of the foundation's development, and it carries the project's own name on its important surfaces.\nTwo structural facts made removal brittle under ADR-0014: shared runtime code imported the reference feature directly, and shared documentation linked to foundation-only files. A deletion step would have had to rewrite shared files and would conflict on every upgrade.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion separates its content into three categories, recorded in the machine-readable derivation contract `.orion/derivation.json`:\n**Shared foundation**: architecture, policies, ADRs, tooling, CI, the API runtime and module contract, the web shell and portal, and generated-reference machinery. Shared code and documentation must work without foundation-only content: they do not import, link to, name, or describe it. Validation in Orion enforces this isolation.\n**Foundation-only**: Orion's Approval Request reference implementation (feature code, schema, migration, metadata, grants, smoke, tests, browser journeys, and domain documentation) and Orion's own implementation plan, human actions, and acceptance history.\n**Project-owned**: files every repository owns from its first commit, rendered from templates at initialization: the README, the API and web composition files (`apps/api/src/modules.ts`, `apps/web/src/modules.tsx`), the brand assets, and `docs/project/implementation-plan.md` and `docs/project/human-actions.md`. Orion's own copies compose the reference implementation and describe Orion.\n`pnpm orion:init-project` removes the foundation-only paths, renders the project-owned files from the project identity, renames the workspace package scope (package manifests, the lockfile, and source; not authored prose) to the project's scope, names the root package after it, regenerates every derived artifact from the changed sources, and records manifest schema version 2 with the project name and package scope. It then commits on top of Orion's history and protects the upstream remote exactly as ADR-0014 decided. Living Documentation titles, the HTML title, the OpenAPI title, and the telemetry service name derive from the manifest name and package names.\nUpgrades remain reviewed merges with ancestry. Because the project deleted foundation-only paths, an upgrade that changes them conflicts or reintroduces them; `pnpm orion:prune` reapplies the contract by removing those paths and renaming foundation scope references, and project validation fails while either remains. Project-owned files keep the project's version during upgrades.\nThe `ORION_*` configuration names, `orion_*` token claims and database role names, and the `Orion required gate` check name remain the foundation's technical namespace. Renaming them would touch shared files throughout the repository and conflict on every upgrade, and the check name is bound to branch protection.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nIsolating shared content from foundation-only content turns removal into deleting a known list of paths rather than editing shared files, so a derived project shares every shared file byte for byte with Orion and upgrades merge cleanly there. Composition files give each repository a single owned seam for its modules; keeping Orion's reference behind that seam keeps it executable and validated in Orion, where it remains the example a project can study upstream.\nA project that starts with Orion's history documents and a foreign feature must first remove or disclaim them, and its agents read another repository's plan as context. Starting clean makes the project's own plan and human actions the only current work and its README describe its actual state.\nRenaming the package scope affects only package manifests, the lockfile, and a few imports, so it costs little at upgrade time and removes the most visible remaining Orion identity; `pnpm orion:prune` reapplies it mechanically. The configuration and claim namespaces appear in far more shared files and external configuration and are documented as foundation names instead.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Keep the reference implementation with a recorded disposition",
+    "anchor": "keep-the-reference-implementation-with-a-recorded-disposition",
+    "text": "Keep the reference implementation with a recorded disposition\nADR-0014's model. It keeps initialization simple but makes every new product carry and validate an unrelated feature until someone performs a multi-artifact removal, which is exactly the brittle step this decision eliminates.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Delete the reference implementation by editing shared files during initialization",
+    "anchor": "delete-the-reference-implementation-by-editing-shared-files-during-initialization",
+    "text": "Delete the reference implementation by editing shared files during initialization\nA script could rewrite shared code and documentation, but every edited shared file would then differ from Orion and conflict on later upgrades. Isolation moves those differences into project-owned composition files instead.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Move the reference implementation to a separate repository or a non-default branch",
+    "anchor": "move-the-reference-implementation-to-a-separate-repository-or-a-non-default-branch",
+    "text": "Move the reference implementation to a separate repository or a non-default branch\nThis would keep Orion's main branch clean but lose the executable example in the foundation's own validation gate, and projects could no longer see in Orion how a complete module fits the architecture.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rename every Orion namespace",
+    "anchor": "rename-every-orion-namespace",
+    "text": "Rename every Orion namespace\nRenaming configuration variables, token claims, database roles, and the CI check would maximize branding but touch most of the repository and external settings, making every upgrade conflict.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nA new project contains only shared foundation content and its own files; its README, plan, human actions, package names, portal, and API contract describe it.\nOrion keeps a complete, validated reference implementation and its development history.\nIsolation, project cleanliness, and remaining foundation scope references are checked mechanically.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nUpgrades that change foundation-only paths conflict in projects, and every upgrade must run `pnpm orion:prune` before validation.\nInitialization regenerates references, so it requires dependencies installed and a Testcontainers-compatible container runtime.\nShared documentation cannot refer to the reference implementation except through the derivation guide.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nThis changes the derivation contract and the manifest schema incompatibly, which [foundation versioning](../versioning.md#compatibility-meaning) classifies as a MAJOR foundation change.\nProjects derived under ADR-0014 have a schema version 1 manifest; `pnpm orion:check` refuses it with directions to the migration steps in the [derivation guide](../project-derivation.md#migrate-a-project-from-schema-version-1).\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[ADR-0014: derive projects through Git ancestry](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n[Foundation versioning](../versioning.md)\n[API modules](../../apps/api/README.md#modules) and [web modules](../../apps/web/README.md#modules)\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "anchor": "adr-0018-adopt-tenant-owned-data-in-the-modular-backend",
+    "text": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nTeluni requires independent customer companies with branches, memberships, media and devices. The derived repository has PostgreSQL infrastructure and composable API modules but no product tables or tenant enforcement. Tenant isolation must exist in the first product slice, within Orion's modular backend boundaries.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAdopt one customer company as the tenant ownership boundary in a shared PostgreSQL database and schema. Model explicit tenant-scoped ownership and references, server-derived membership/branch authorization, and database constraints that prevent cross-tenant associations. Keep capabilities in the existing modular backend, with explicit application interfaces and owned tables; no microservice split is proposed.\nRow-level security is an additional option to evaluate, not assumed protection. Review its connection-pooling, runtime-role and migration implications before selecting it. Platform administration remains a separate scoped capability, not an implicit bypass for tenant data access.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nA shared deployment fits the initial cost and operational constraints. Explicit ownership allows branch scoping and future company scale without treating a branch as another tenant. It also places substantial responsibility on query/reference design, constraints and adversarial authorization tests; the accepted architecture has not yet been proven by a schema or implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n**Database or schema per company:** provides a different isolation boundary, but adds migration, connection, backup and recovery coordination for every tenant. Revisit if contractual isolation or measured scale justifies it.\n**Application filters without relational tenant constraints:** simpler initially, but insufficient to protect mixed-tenant references or accidental omitted scope checks. Not a sufficient candidate for the product requirement.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
+    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nPreserves one operational backend while giving each module clear ownership and tenant semantics.\nEnables negative integration tests against real PostgreSQL from the first vertical slice.\n"
+  },
+  {
     "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
     "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
     "group": "Decisions",
@@ -1132,437 +1636,5 @@
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nA runtime dependency in the API until Node.js ships Temporal, which must be kept current with the zone database it relies on (the polyfill uses the runtime's `Intl` zone data).\nTwo implementations of the evaluator, kept equal only by the fixtures.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nZone data comes from the Node.js runtime's ICU; updating Node.js updates zone rules, and preview results for future dates can change after a zone-database update, as on the device.\nReplacing the polyfill with native Temporal removes the dependency and its import; the fixtures must still pass.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Programming design](../project/programming-design.md)\n[Release policies: time and scheduling](../project/release-policies.md#time-and-scheduling)\n[Playback and synchronization](../project/playback-and-sync.md#time-and-regional-scheduling)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "anchor": "adr-0030-synchronize-screens-by-polling-with-signed-authorization-statements",
-    "text": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner explicitly approved this decision and the ten decisions of the publication and synchronization design on 2026-10-20 under PH-25. Acceptance establishes the direction for local and CI implementation of PJ-11, not the player's conformance (PJ-12), hardware qualification (PH-08) or the provisioning of signing keys in a real environment (PJ-13).\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nADR-0019 adopted immutable publications and atomic player activation but selected no transport, manifest serialization, integrity metadata or cryptographic mechanism. The policies require that a screen detect a new desired publication within 30 seconds (AT-11), report its state every 30 seconds (AT-24), never be rolled back by stale or reordered messages, keep playing valid content offline for at most seven days after its last renewal (AT-15) and suspend time-dependent output when its clock cannot be trusted (AT-16). Screens authenticate with a device-generated bearer credential under ADR-0027, and the device enrollment design left a tamper-evident form of the offline deadline to this decision. The pilot runs one API process on one host (ADR-0021).\nThis record decides how screens learn their desired publication, how they obtain and verify its manifest and media, and how the server states, verifiably, what a screen may play and until when. The details are in the [publication and synchronization design](../project/publication-sync-design.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nScreens **poll**. Every 30 seconds a screen calls `POST /device/sync` with its state report and receives its status, time zone, desired publication and a new authorization statement. The server computes the desired publication from current rows at each call; it keeps no push channel and no per-screen delivery queue.\nA publication's **manifest** is UTF-8 JSON produced in a fixed key order, stored as exact bytes and identified by their SHA-256. Media are delivered as display renditions identified by SHA-256. Manifests and media are downloadable only for the screen's current desired publication; superseded work coalesces by synchronizing again.\nEach sync response carries an **authorization statement**: a compact JWS signed with ECDSA P-256 and SHA-256 (`ES256`) by the first key of a configured key ring. It names the screen and company, the server time of issue, an expiry seven days later and the publications (ID and manifest SHA-256) the screen may activate or keep active until then. The key set's public halves are served to screens, which pin them after pairing.\nManifests and exchanges carry a **protocol** number; the server answers with the highest protocol both sides support and serializes publications in the current and previous protocol for at least 90 days after a new one (AT-26).\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nPolling at 30 seconds meets AT-11 and doubles as the AT-24 heartbeat with one request per screen, uses only the HTTPS path the device credential already protects, and survives proxies, restarts and the single-host deployment without connection state. Deriving desired state from authoritative rows makes ordering a property of the database rather than of message delivery, so no acknowledgement or crash can roll a screen back or lose an assignment. Exact stored bytes give the manifest an identity that a statement can sign; a structure regenerated or normalized on each request could not. A per-screen statement binds entitlement, expiry and a signed server time in one object the player can check offline and store next to its active generation, which makes the seven-day deadline and the choice of content tamper-evident on the device and gives the trusted clock a server reference. ECDSA P-256 is implemented by Node.js and by Android's standard security providers, so neither side needs a new cryptographic dependency.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Push through WebSocket, server-sent events or a broker",
-    "anchor": "push-through-websocket-server-sent-events-or-a-broker",
-    "text": "Push through WebSocket, server-sent events or a broker\nDetection within seconds, but AT-11 allows 30, and a persistent channel adds connection management, proxy configuration and reconnection on the pilot host. A push hint can be added later without changing the state model.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Fan-out of desired state into per-screen rows",
-    "anchor": "fan-out-of-desired-state-into-per-screen-rows",
-    "text": "Fan-out of desired state into per-screen rows\nSimple reads, but a crash between a publication and its fan-out needs a durable queue, and fan-out races with concurrent assignments. Computing from authoritative rows is always consistent and costs one indexed query per poll.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "TLS only, without signed statements",
-    "anchor": "tls-only-without-signed-statements",
-    "text": "TLS only, without signed statements\nTLS authenticates the server during transfer but leaves the stored deadline and content choice as plain local files. It also gives the player no signed time reference.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Signing manifests at publication",
-    "anchor": "signing-manifests-at-publication",
-    "text": "Signing manifests at publication\nAuthenticates content once, but not which screen may play it or until when; a statement per screen covers both.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Ed25519 or a shared HMAC key",
-    "anchor": "ed25519-or-a-shared-hmac-key",
-    "text": "Ed25519 or a shared HMAC key\nEd25519 is compact but not provided by older Android versions without an added library; an HMAC would require a secret on every screen, so any one screen could forge statements.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nScreens converge on the latest authorized publication within one polling interval, with no message ordering assumptions.\nThe player can verify offline which content it may show and until when, and anchor its clock to a signed server time.\nNo new infrastructure or cryptographic dependency on either side.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nEvery screen makes a request every 30 seconds whether or not anything changed; the reference load of 100 screens is about 3.3 requests per second.\nThe signing key ring is a new production secret with rotation duties.\nDetection is bounded by the polling interval, not immediate.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\n`TELUNI_SYNC_SIGNING_KEYS` must be provisioned and backed up with the other secrets (PJ-13). Rotation adds a key at the front and keeps the previous one for at least seven days.\nRestoring a database backup restores publications and desired state together; screens reconcile at their next poll. Pointing screens at a different host needs the same signing keys or a published key transition.\nA future protocol needs dual serialization for the support window.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements",
-    "title": "ADR-0030: Synchronize Screens by Polling with Signed Authorization Statements",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Publication and synchronization design](../project/publication-sync-design.md)\n[Offline playback and synchronization](../project/playback-and-sync.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "anchor": "adr-0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "text": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together with the decisions of the [player design](../project/player-design.md); merging the pull request that adds it is the repository review. Acceptance establishes the direction for implementing PJ-12 in local and CI environments. It does not qualify any device (PH-08), select production update operations (PJ-13) or provide the release signing key (PH-27).\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nADR-0020 chose a native Kotlin and Media3 Android TV player with durable local state. It left the persistence library, startup and unattended behavior, packaging and updates open, and ADR-0019 requires atomic activation that survives power loss. The protocol of ADR-0030 gives screens exact manifests, SHA-256-identified media and signed statements with a server time, but says nothing about how the player stores them or how it gets reliable local time.\nThe pilot hardware is unknown (PH-08) and likely to include inexpensive Android TV boxes. Such boxes often run old Android versions with stale time zone data, have no battery-backed clock and offer limited launcher control. The repository's tooling is TypeScript, while the shared schedule fixtures must also run against the player. The cloud development environment cannot currently reach Google's Maven repository (PH-26).\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nThe player is one Gradle build in `apps/player`. A pure-JVM `core` module holds every rule: protocol models, statement verification, the schedule evaluator, trusted time, the local store, synchronization and playback decisions. An Android `app` module holds the activity, Media3 rendering, the Keystore vault and device integration. `core` tests run the repository's shared fixtures, and a dedicated CI job checks the build as part of the required gate.\nLocal state is plain files in app-private storage, without a database:\nwrite-once media named by their SHA-256;\nexact manifest bytes per generation;\none small state record replaced atomically (temporary file, `fsync`, rename, directory `fsync`).\nActivation is a single replacement of that record, and startup reconciles deterministically from any interruption.\nBusiness time never depends on the device's time zone data. Each sync response carries the screen zone's UTC offsets for the next 35 days, computed by the API with the same Temporal implementation as the preview. Trusted time comes from a monotonic anchor set at each sync, with a persisted lower bound across reboots.\nThe supported unattended profile makes the player the device owner on a reset device: the HOME activity in lock task mode. Updates are APKs that the API distributes, verified by SHA-256 and signing certificate and installed by the device owner inside a local window. The player never downgrades; a rollback is a roll-forward release.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nKeeping rules in a JVM module lets the evaluator, protocol parsing, cryptographic checks and store faults be tested quickly and exhaustively in CI without emulators. The same code runs on the device. It also lets that work proceed while Android tooling is unavailable in some environments.\nThe persistent state is a handful of pointers plus immutable files. Atomic file replacement has a simple failure model that can be fault-injected at every step. A database would add schema migrations that interact badly with the no-downgrade rule. Its own durability under power loss would still need the same testing.\nServer-supplied offsets remove a real failure mode: a pilot box with pre-2019 time zone data would shift `America/Sao_Paulo` schedules by an hour for months. They also make the player agree with the server's preview by construction. The cost is a small additive field in the sync response and evaluation that stops outside the covered range, which the seven-day authorization already bounds.\nOn Android 10 and later, a background `BOOT_COMPLETED` start is unreliable, and an ordinary app cannot update itself without a prompt. Device-owner mode makes boot, crash recovery and scheduled updates work without a person at the screen. In exchange, an installer must provision each device with `adb` after a reset, which is acceptable for a pilot of a few screens.\nThese are reasoned choices, not measurements. Startup, recovery, clock behavior and power-loss safety still need PH-08 hardware evidence.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Room or another embedded database",
-    "anchor": "room-or-another-embedded-database",
-    "text": "Room or another embedded database\nOffers queries and transactional updates, but adds migrations, a larger failure surface and the same need for power-cut evidence. Nothing in the state needs relational queries.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Device or bundled time zone data",
-    "anchor": "device-or-bundled-time-zone-data",
-    "text": "Device or bundled time zone data\nDevice data can be years out of date on unmanaged boxes. A bundled library (ThreeTenBP or Joda-Time) is updated only with player releases and can still disagree with the server preview.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Basic installation with Google Play updates",
-    "anchor": "basic-installation-with-google-play-updates",
-    "text": "Basic installation with Google Play updates\nStore distribution needs accounts, review and Play on every device. It does not install updates unattended inside a business window, and many commercial boxes lack Play. A basic sideloaded profile stays possible where PH-08 shows that it boots and recovers reliably.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A single Android module",
-    "anchor": "a-single-android-module",
-    "text": "A single Android module\nSimpler build files, but every rule test would need Robolectric or an emulator, and no part could be built without the Android SDK.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nRules, protocol conformance and crash recovery are tested on every pull request with the shared fixtures and the API's conformance fixtures.\nSchedules agree with the preview regardless of the device's time zone data.\nManaged devices boot into content, recover from crashes and update unattended.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nThe repository gains a second build system and a JVM toolchain, with its own dependency verification and Renovate coverage.\nManaged installation requires `adb` provisioning on a factory-reset device and excludes devices that cannot be made device owner from the supported profile.\nWithout a server answer after a reboot, the player depends on the system clock being at least the persisted bound and set by network time; a wrong clock without a reference cannot always be detected.\nThe API must keep serving zone offsets and conformance fixtures as part of the device contract.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nRelease signing needs a human-held key (PH-27), and production releases need an approval and update-window process (PJ-13).\nChanging the local state format requires a forward migration or a re-synchronization that keeps the credential. Rollbacks are new releases.\nBuilding the Android module in the current cloud environment requires allowing Google's Maven host (PH-26).\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Player design](../project/player-design.md)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0020](0020-propose-a-native-android-tv-player.md), [ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md), [ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md), [ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\n[Offline playback and synchronization](../project/playback-and-sync.md), [acceptance targets](../project/release-targets.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "anchor": "adr-0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "text": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field\n**Status:** accepted\n**Date:** 2026-10-20\n**Acceptance scope:** The owner delegated every pending decision to the agent on 2026-10-20 (recorded with PH-25). The agent accepted this decision under that delegation together with the [catalog and composition design](../project/catalog-composition-design.md); merging the pull request that adds it is the repository review. It settles the monetary representation that D-10 left open for catalogs, prices, publications and the player. It does not select a currency conversion service, because the policies forbid conversion.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nCatalogs need monetary fields for prices, with company base values, branch overrides and promotions (FR-11, P06, P07). Several runtimes must agree exactly on those amounts:\nthe TypeScript API, which validates, stores and snapshots them;\nthe web panel, which edits and previews them in the person's locale;\nthe Kotlin player, which shows them offline.\nThe policies require explicit currency, exact representation, no automatic conversion, and locale-independent meaning. D-10 left the representation open. PostgreSQL `numeric`, JavaScript numbers and JSON numbers all differ in precision or parsing, and currencies differ in minor units: BRL has 2, JPY 0, KWD 3.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAn amount is an integer count of the currency's minor units: `1990` BRL is R$ 19,90, and `1990` JPY is ¥1,990. It is stored as PostgreSQL `bigint` and transported in JSON as an integer within ±(2^53 − 1) and in practice far below. The API refuses values outside 0 to 10^12 minor units.\nThe currency is an ISO 4217 alphabetic code fixed on the money field when the field is created. Every value, override and promotion of that field uses it. A field's currency never changes; changing currency means adding a field.\nThe number of minor units comes from a table in the API, checked against `Intl.NumberFormat` in tests and copied to the player. The input `\"19,9\"` in `pt-BR` or `\"19.90\"` in `en-US` is parsed by the panel into minor units, rejecting more decimals than the currency has.\nFormatting for people uses the locale, through `Intl.NumberFormat` in the web panel and `java.text.NumberFormat`/`Currency` on the player, with the field's currency. Locale never changes the amount or the currency. Amounts are never converted between currencies.\nNon-monetary decimals (`number` fields) are canonical decimal strings with a fixed number of places, never floats.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nInteger minor units are exact, compare and sort trivially, and mean the same in SQL, JSON, TypeScript and Kotlin without a decimal library.\nA currency per field rules out mixing currencies inside one price list by construction. That is the common case for a business operating in one country, and the policies forbid conversion anyway.\nThe cost is that a business pricing the same product in two currencies needs two fields, which is honest about the meaning.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "PostgreSQL numeric and decimal strings everywhere",
-    "anchor": "postgresql-numeric-and-decimal-strings-everywhere",
-    "text": "PostgreSQL numeric and decimal strings everywhere\nExact, but every runtime then needs a decimal implementation and a rule for scale. A value like `19.9` versus `19.90` invites accidental inequality. Minor units carry the scale in the currency.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A currency on each value",
-    "anchor": "a-currency-on-each-value",
-    "text": "A currency on each value\nMore flexible, but it allows a price list in mixed currencies that cannot be compared or validated, and nothing in the product needs it.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Floating-point numbers",
-    "anchor": "floating-point-numbers",
-    "text": "Floating-point numbers\nCannot represent most decimal amounts exactly, so totals and comparisons drift. Rejected.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nPrices are exact and identical in the API, the panel preview, the publication snapshot and the player.\nValidation and promotion comparisons are integer operations.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nThe currency table must stay aligned across the API and the player; a test checks the API table against `Intl`, and the player's copy is checked by the protocol fixtures.\nChanging a field's currency requires a new field and copying values.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo existing data. The first catalog migration creates `bigint` amount columns and a currency column on money fields.\n"
-  },
-  {
-    "id": "repository/docs/adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field",
-    "title": "ADR-0032: Represent Money as Integer Minor Units with a Currency per Field",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Catalog and composition design](../project/catalog-composition-design.md)\n[Configurable catalogs policy](../project/release-policies.md#configurable-catalogs)\n[Security and internationalization](../project/security-and-i18n.md)\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "anchor": "adr-0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "text": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n**Status:** accepted\n**Date:** 2026-10-22\n**Acceptance scope:** On 2026-10-22 the owner asked the agent to take every pending decision that is only a decision, which extends the delegation recorded with PH-25. The agent accepted this decision under that delegation together with the decisions of the [deployment design](../project/deployment-design.md); merging the pull request that adds it is the repository review. Acceptance establishes the direction for building and rehearsing the deployment in PJ-13. It does not verify the owner's host or network (PH-10), create any account, or authorize exposing a host.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nADR-0021 chose a single residential Debian host with Docker Compose, a reverse proxy with HTTPS and durable local media. It deliberately selected no tunnel, proxy, object store or provider, and it made real-customer use conditional on off-host recovery and owner-approved recovery targets. Residential lines in Brazil are often behind CGNAT or block inbound ports, and the owner has no recurring cloud budget.\nScreens download video renditions, and people upload videos of up to 1 GiB in a single request. Sessions are server-managed cookies, and media are private to their company. Screens play for up to seven days without the server (AT-15), which bounds how long a recovery can take.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nTLS ends on the owner's host, in a Caddy reverse proxy that obtains Let's Encrypt certificates. The host is reached directly when the line has a usable public address. Otherwise it is reached through a TCP relay on a free-tier virtual machine that forwards encrypted traffic through a WireGuard tunnel opened by the host. No TLS-terminating tunnel, CDN or proxy service sits in front of Teluni.\nBackups are restic snapshots, encrypted on the host, of the PostgreSQL dumps followed by hard links of the content-addressed media objects, taken under a lock that keeps object files from being deleted in between. They are written every 6 hours to an S3-compatible bucket at a separate provider, initially Backblaze B2, and kept for at most about 35 days. Secrets are excluded from snapshots and kept offline by the owner.\n"
-  },
-  {
-    "id": "repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots",
-    "title": "ADR-0033: Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nEnding TLS on the host keeps session cookies, credentials and private media away from intermediaries. The relay is replaceable and holds nothing.\nA TLS-terminating free tunnel would solve CGNAT, but its terms restrict serving video outside paid products. Its reported upload cap is below the media limit, and it would see every session.\nObject files are written before the rows that record them and deleted only after those rows, under an advisory lock that the backup holds from before its dumps until it has hard-linked the objects. That makes \"dumps first, then objects\" a consistent set without stopping the service or making anyone wait on the upload. The restore check verifies it.\nClient-side encryption lets a free off-host bucket hold customer data as ciphertext only. Deduplication keeps 6-hourly snapshots within the free allowance at pilot scale.\nA 6-hour recovery point and a 72-hour worst-case recovery time keep screens playing through any recovery under AT-15.\nAssumptions: provider allowances (Oracle Cloud's outbound transfer, Backblaze B2's free storage and downloads) are as reported in October 2026. They can change, so the destination and relay must stay replaceable. Whether the owner's line needs the relay is unknown until PH-10.\n"
   }
 ]

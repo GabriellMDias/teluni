@@ -1,6 +1,9 @@
+import { createHash } from "node:crypto";
 import type { Prisma } from "../../generated/prisma/client.js";
 import type { HumanContext } from "../identity/public.js";
 import {
+  auditVisibility,
+  reachableWithStrongAuthentication,
   branchReach,
   decide,
   isTimeZone,
@@ -26,6 +29,7 @@ import {
   type Rotation,
 } from "./domain.js";
 import type {
+  DeviceAuditRecord,
   DeviceIdentity,
   DeviceRecord,
   PrismaDeviceRepository,
@@ -272,6 +276,60 @@ export class DeviceService {
     if (!device || decide(access, "devices.view", device.branchId) !== "allow")
       throw new DeviceFailure("RESOURCE_NOT_FOUND");
     return (await this.#views(companyId, [device]))[0];
+  }
+
+  async listAuditEvents(
+    context: HumanContext,
+    companyId: string,
+    deviceId: string,
+    options: { limit: number; cursor?: string },
+  ): Promise<{ items: DeviceAuditRecord[]; nextCursor: string | null }> {
+    const access = await this.#companies.resolve(context, companyId);
+    if (access.companyStatus === "SUSPENDED")
+      throw new OrganizationFailure("COMPANY_SUSPENDED");
+    const device = await this.#repository.find(companyId, deviceId);
+    if (!device || decide(access, "devices.view", device.branchId) !== "allow")
+      throw new DeviceFailure("RESOURCE_NOT_FOUND");
+    const visibility = auditVisibility(access);
+    if (!visibility)
+      throw new OrganizationFailure(
+        !access.strong &&
+          reachableWithStrongAuthentication(access, "audit.view")
+          ? "STRONG_AUTHENTICATION_REQUIRED"
+          : "PERMISSION_DENIED",
+      );
+    const scope = `audit|${deviceId}|${createHash("sha256").update(JSON.stringify(visibility)).digest("base64url")}`;
+    const cursor = decodeCursor(options.cursor, {
+      company: companyId,
+      principal: context.principalId,
+      scope,
+    });
+    const rows = await this.#repository.listAuditEvents(
+      companyId,
+      deviceId,
+      visibility,
+      {
+        limit: options.limit + 1,
+        ...(cursor
+          ? { before: { occurredAt: new Date(cursor.t), id: cursor.i } }
+          : {}),
+      },
+    );
+    const page = rows.slice(0, options.limit);
+    const last = page.at(-1);
+    return {
+      items: page,
+      nextCursor:
+        rows.length > options.limit && last
+          ? encodeCursor({
+              c: companyId,
+              p: context.principalId,
+              r: scope,
+              t: last.occurredAt.toISOString(),
+              i: last.id,
+            })
+          : null,
+    };
   }
 
   /** Registers work that runs in every move's transaction. */

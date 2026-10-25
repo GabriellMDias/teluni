@@ -274,6 +274,33 @@
         "device_audit_events_details_object": "Details are a JSON object.",
         "device_audit_events_actor_pair": "A person and their membership are recorded together or not at all."
       }
+    },
+    "device_audit_event_branches": {
+      "owner": "Devices",
+      "classification": "CONFIDENTIAL",
+      "description": "Immutable event-time branch scope of a device lifecycle event. A move concerns both branches; unknown legacy scope has no rows and is visible only to company administrators.",
+      "lifecycle": "Inserted with its event in the same transaction; append-only. Backfill uses only branch IDs explicitly recorded in immutable pairing, move or unlink details.",
+      "columns": {
+        "company_id": {
+          "description": "Company shared by the event and the branch.",
+          "classification": "INTERNAL"
+        },
+        "event_id": {
+          "description": "Audit event that concerns the branch.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Branch the event concerns.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "device_audit_event_branches_pkey": "A branch appears at most once per event.",
+        "device_audit_event_branches_company_id_fkey": "The row belongs to an existing company.",
+        "device_audit_event_branches_company_id_event_id_fkey": "The event belongs to the same company.",
+        "device_audit_event_branches_company_id_branch_id_fkey": "The branch belongs to the same company; mixed-company audit scopes are unrepresentable.",
+        "device_audit_event_branches_branch_idx": "Supports finding the events that concern a branch."
+      }
     }
   },
   "enums": {

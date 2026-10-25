@@ -1,5 +1,320 @@
 [
   {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established testing implementation that must be migrated.\nThe initial repository testing foundation will therefore be introduced directly using:\nVitest\nTestcontainers\nVitest Browser Mode\nPlaywright\nPlaywright Test\n\nTest dependencies should only be added when the corresponding test capability exists.\nUnit and integration test scripts must be integrated with repository validation as soon as meaningful test suites exist.\nPostgreSQL integration-test infrastructure must use a PostgreSQL version compatible with the production baseline established by Orion's database tooling.\nTest databases must be initialized from committed migration history.\nContainer lifecycle and database-isolation strategies should initially favor correctness and simplicity, then be optimized using measurement when test execution time becomes material.\nFastify integration tests should use request injection by default unless real network behavior is part of the requirement.\nBrowser-dependent React tests should use Vitest Browser Mode when real browser semantics matter.\nPlaywright Test should be introduced for critical end-to-end workflows once the initial web application can be exercised through a complete running stack.\nChromium will be the initial routine E2E browser.\nAdditional browser projects should be added according to real product browser-support requirements.\nV8 coverage should be configured when coverage reporting becomes useful, without imposing an arbitrary foundation-level percentage threshold.\nCI execution strategy, including parallel jobs, container caching, browser installation, test sharding, and artifact retention, will be defined by ADR-0011.\nRoutine compatible upgrades of Vitest, Testcontainers, or Playwright do not require a new ADR when they preserve the responsibilities established here.\nReplacing the primary test runner, database integration strategy, or browser E2E framework would constitute a material testing-architecture change and should supersede this ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated ADR: [ADR-0008: Select React, Vite, and TanStack for Web Applications](0008-select-react-vite-and-tanstack-for-web-applications.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nExternal reference: Vitest documentation.\nExternal reference: Vitest Browser Mode documentation.\nExternal reference: Testcontainers for Node.js documentation.\nExternal reference: Fastify testing documentation.\nExternal reference: Playwright documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "anchor": "adr-0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "text": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a concrete observability strategy before production-oriented backend implementation proceeds further.\nThe strategy must support applications ranging from small deployments to large distributed systems while preserving the ability to choose different observability backends according to product, hosting, regulatory, operational, and cost requirements.\nObservability must provide enough information to understand:\nwhether a system is healthy;\nwhat failed;\nwhere a failure occurred;\nhow requests move through the system;\nwhich dependencies contributed to latency;\nhow infrastructure and application behavior change over time;\nwhether important operational thresholds are being approached;\nhow logs from different components relate to the same request or distributed operation.\nOrion has already selected Pino as the structured logging implementation for the Fastify runtime.\nThat decision establishes the technical logger but does not define:\nlog structure;\ncorrelation semantics;\nredaction;\ntracing;\nmetrics;\ntelemetry propagation;\nsampling;\nexporting;\nerror reporting;\nobservability backend selection.\nOrion must also avoid coupling application code to a specific monitoring vendor.\nA project may eventually use systems such as Grafana, Datadog, Honeycomb, New Relic, Azure Monitor, cloud-provider-native tooling, or another compatible platform.\nThe application architecture should not need to change merely because the telemetry destination changes.\nObservability must also remain distinct from business audit history.\nOperational logs and traces are optimized for diagnostics, reliability, and performance investigation.\nAudit history may require different guarantees around persistence, retention, authorization, immutability, and business semantics.\nThese responsibilities must not be conflated.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **OpenTelemetry as its primary observability standard for distributed tracing and metrics**.\nOrion will continue to use **Pino as its structured application logging implementation**.\nThe default observability model is:\ntraces\n    → OpenTelemetry\n\nmetrics\n    → OpenTelemetry\n\napplication logs\n    → Pino\n\ntelemetry transport\n    → OTLP\n\nproduction telemetry routing\n    → OpenTelemetry Collector preferred\n\nobservability backend\n    → deployment-specific\n\nNo observability backend or SaaS vendor will be selected globally by the Orion foundation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Observability responsibilities",
+    "anchor": "observability-responsibilities",
+    "text": "Observability responsibilities\nThe responsibilities are intentionally separated:\nOpenTelemetry\n├── tracing\n├── metrics\n├── context propagation\n├── instrumentation\n└── telemetry export\n\nPino\n├── structured application logs\n├── operational events\n├── request logs\n└── structured error logs\n\ndeployment infrastructure\n├── log collection\n├── telemetry routing\n├── storage\n├── querying\n├── dashboards\n└── alerting\n\nAn observability provider must not become a dependency of Orion domain or application architecture merely because it stores or visualizes telemetry.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Distributed tracing",
+    "anchor": "distributed-tracing",
+    "text": "Distributed tracing\nOpenTelemetry will provide Orion's distributed tracing model.\nTracing should cover important execution boundaries including, where applicable:\ninbound HTTP requests;\nFastify request processing;\noutbound HTTP requests;\nPrisma/database operations;\nexternal integrations;\nbackground work;\ndistributed service calls;\noperationally significant application operations.\nThe intended trace structure is conceptually:\nincoming HTTP request\n    ↓\nHTTP server span\n    ↓\nFastify processing\n    ↓\napplication operation\n    ↓\ndatabase / external integration\n\nTracing is intended to represent causally related units of work rather than duplicate every function call in the application.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fastify instrumentation",
+    "anchor": "fastify-instrumentation",
+    "text": "Fastify instrumentation\nFastify tracing will use **`@fastify/otel`** as the preferred Fastify-specific OpenTelemetry integration.\nThe instrumentation must be initialized early enough to observe relevant Fastify lifecycle behavior.\nUnderlying HTTP instrumentation must also be configured where required for inbound and outbound trace propagation.\nFastify instrumentation remains a transport/infrastructure concern.\nDomain and application code must not depend on Fastify-specific OpenTelemetry APIs.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Prisma instrumentation",
+    "anchor": "prisma-instrumentation",
+    "text": "Prisma instrumentation\nPrisma operations will use the official Prisma OpenTelemetry instrumentation where tracing is enabled.\nThe intended relationship is:\napplication operation\n    ↓\nPrisma operation\n    ↓\ndatabase query\n\nallowing database activity to appear as part of the surrounding distributed trace.\nObservability initialization must occur before dependencies whose instrumentation depends on load-time registration are initialized.\nThe expected application bootstrap sequence is therefore approximately:\nprocess start\n    ↓\nload and validate configuration\n    ↓\ninitialize observability\n    ↓\ninitialize instrumented infrastructure\n    ↓\ncompose application\n    ↓\nstart accepting work\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Automatic versus manual tracing",
+    "anchor": "automatic-versus-manual-tracing",
+    "text": "Automatic versus manual tracing\nOrion will prefer automatic instrumentation for technical infrastructure boundaries when mature instrumentation is available.\nExamples include:\nHTTP;\nFastify;\nPrisma;\nsupported outbound clients;\nother infrastructure integrations.\nManual spans should be added only when they represent operationally meaningful units of work.\nAppropriate examples may include:\nimportant application workflows;\nexpensive operations;\nlong-running processing;\nsignificant external integration boundaries;\noperations whose duration or outcome is valuable during incident investigation.\nManual tracing must not mechanically mirror internal function structure.\nThe guiding rule is:\nA span should represent an operationally meaningful unit of work, not merely a function invocation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Trace context propagation",
+    "anchor": "trace-context-propagation",
+    "text": "Trace context propagation\nOrion will use **W3C Trace Context** as the default distributed trace propagation model.\nDistributed calls should propagate trace context automatically through supported instrumentation wherever possible.\nTrace propagation enables requests crossing multiple processes or services to remain part of the same causal trace.\nCustom propagation mechanisms must not be introduced when standard trace propagation is sufficient.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Baggage",
+    "anchor": "baggage",
+    "text": "Baggage\nOpenTelemetry baggage will not be part of Orion's normal golden path.\nBaggage may be introduced only for an explicit distributed-context requirement.\nAny baggage keys must be deliberately allowlisted.\nBaggage must not contain:\nauthentication credentials;\ntokens;\nsecrets;\npasswords;\nprivate keys;\nunnecessary personal information;\nsensitive business data.\nTrace context should be preferred when causal correlation alone is sufficient.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Trace sampling",
+    "anchor": "trace-sampling",
+    "text": "Trace sampling\nTrace sampling must be configurable by deployment.\nOrion will not define one universal production sampling percentage.\nAppropriate sampling depends on factors including:\ntraffic volume;\nobservability cost;\nbackend capabilities;\nincident-response requirements;\nregulatory constraints;\nperformance overhead.\nDevelopment environments may normally retain all traces when useful.\nProduction environments may reduce trace volume through appropriate sampling strategies.\nSampling should preserve upstream trace decisions where required for coherent distributed tracing.\nMore advanced strategies, including collector-side or tail-based sampling, may be introduced by deployment infrastructure without forcing business code to change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Metrics",
+    "anchor": "metrics",
+    "text": "Metrics\nOpenTelemetry will provide Orion's metrics API and SDK model.\nMetrics may describe technical or operational behavior including:\nrequest counts;\nrequest duration;\nactive operations;\nerror counts;\nqueue depth when applicable;\nprocessing duration;\ndependency latency;\nruntime behavior;\nresource usage where appropriately instrumented;\napplication-specific operational signals.\nCustom metrics must have deliberate semantics.\nMetric definitions should include, where applicable:\nstable name;\ndescription;\nunit;\ninstrument type;\nbounded attributes.\nMetric names must not be created casually for short-term debugging when logs or traces are a better fit.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Metric cardinality",
+    "anchor": "metric-cardinality",
+    "text": "Metric cardinality\nMetric attributes must remain **bounded and low-cardinality**.\nHigh-cardinality identifiers must not normally be used as metric attributes.\nExamples of inappropriate metric dimensions include:\nuser_id\ncustomer_id\norder_id\ninvoice_id\nemail\ntrace_id\nrequest_id\narbitrary raw URL\n\nAppropriate HTTP dimensions may include bounded values such as:\nHTTP method\nnormalized route\nstatus code or status class\nservice identity\ndeployment environment\n\nHigh-cardinality operational detail belongs in traces or structured logs when its collection is appropriate and permitted.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Business metrics versus business state",
+    "anchor": "business-metrics-versus-business-state",
+    "text": "Business metrics versus business state\nObservability metrics are not authoritative business records.\nFor example, an `orders.created` metric may be useful operationally, but it must not become the authoritative record of how many orders the business created.\nMetrics may be:\nsampled;\naggregated;\ntemporarily unavailable;\nretained for limited periods;\ntransformed by telemetry infrastructure.\nAuthoritative business state remains in the application's persistent data model.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Structured logging",
+    "anchor": "structured-logging",
+    "text": "Structured logging\nPino will remain Orion's default structured application logger.\nProduction-oriented logs must use structured JSON.\nHuman-readable pretty output may be enabled for local development where useful.\nApplication logs should prefer structured fields over encoding all machine-relevant context exclusively inside message strings.\nFor example, a record may contain:\nevent\nrequest_id\ntrace_id\nspan_id\nentity identifiers when permitted\nerror metadata\nstructured operation attributes\nmessage\n\nThe textual message is intended primarily for human readability.\nStructured fields provide machine-queryable context.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Log correlation",
+    "anchor": "log-correlation",
+    "text": "Log correlation\nPino logs emitted while an OpenTelemetry span is active should include trace correlation metadata.\nThe standard correlation fields will be:\ntrace_id\nspan_id\n\nand, when useful:\ntrace_flags\n\nThis allows an operator to navigate conceptually from:\nlog\n    ↓\ntrace_id\n    ↓\ndistributed trace\n    ↓\nrequest\n    ↓\napplication operation\n    ↓\ndatabase / integration\n\nTrace correlation should be provided through instrumentation or centralized logging configuration rather than manually added at every call site.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Request correlation",
+    "anchor": "request-correlation",
+    "text": "Request correlation\nOrion will retain an independent **`request_id`** for HTTP request correlation.\n`request_id`, `trace_id`, and `span_id` serve different purposes:\nrequest_id\n    → identifies one HTTP request\n\ntrace_id\n    → identifies one distributed trace\n\nspan_id\n    → identifies one specific traced operation\n\nOrion will not require `request_id` and `trace_id` to contain the same value.\nRequest IDs remain useful even when tracing is unavailable, disabled, sampled differently, or incomplete across an external boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Log export",
+    "anchor": "log-export",
+    "text": "Log export\nPino logs will be emitted through the application's normal process output by default.\nProduction deployments should normally emit structured logs through:\nstdout / stderr\n    ↓\ndeployment log collection\n    ↓\nconfigured log backend\n\nApplication code must not require direct integration with a specific logging vendor merely to emit ordinary logs.\nThis preserves compatibility with containers, process supervisors, cloud platforms, orchestration systems, and local execution.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OpenTelemetry Logs",
+    "anchor": "opentelemetry-logs",
+    "text": "OpenTelemetry Logs\nThe OpenTelemetry Logs SDK will **not be part of Orion's initial default logging path**.\nPino remains authoritative for application logging.\nOpenTelemetry instrumentation may be used to enrich Pino records with active tracing context.\nA future OpenTelemetry Logs integration may be introduced when its JavaScript implementation, deployment requirements, and operational value justify doing so.\nSuch an addition does not require replacing Pino unless the fundamental logging responsibilities established here change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Redaction",
+    "anchor": "redaction",
+    "text": "Redaction\nSensitive-data redaction is mandatory.\nLogging configuration must provide centralized protection against common sensitive values.\nLogs must not capture secrets or credentials simply because those values are available in application objects.\nExamples that must normally be excluded or redacted include:\n`Authorization` headers;\ncookies;\n`Set-Cookie`;\naccess tokens;\nrefresh tokens;\npasswords;\nAPI keys;\nprivate keys;\ndatabase credentials;\nsecret configuration values.\nRaw request and response bodies must **not be logged by default**.\nBodies, query parameters, and headers can contain:\npersonal data;\nfinancial information;\ncredentials;\nconfidential business information;\nprotected customer data.\nWhen a particular value is operationally necessary, it must be logged intentionally and consistently with Orion's data-classification and security policies.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Logging errors",
+    "anchor": "logging-errors",
+    "text": "Logging errors\nUnexpected errors should be recorded as structured errors rather than converted only to interpolated text.\nError logging should preserve useful technical context such as:\nerror type;\nmessage;\nstack trace when appropriate;\ncause chain where available;\nrequest correlation;\nactive trace correlation;\nrelevant operation context that is safe to record.\nSensitive application input must not be attached indiscriminately to error records.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Expected versus unexpected failures",
+    "anchor": "expected-versus-unexpected-failures",
+    "text": "Expected versus unexpected failures\nOrion will distinguish expected application outcomes from unexpected operational failures.\nExamples of expected outcomes may include:\nvalidation failure;\nnot-found result;\nauthorization rejection;\nbusiness-rule rejection;\nconcurrency conflict that is explicitly modeled.\nSuch results must not automatically be treated as production incidents merely because they map to non-success HTTP responses.\nUnexpected failures may include:\nunhandled programming errors;\nunavailable required dependencies;\nunexpected database failures;\ninvariant violations;\nunanticipated integration failures.\nThis distinction should influence:\nlog level;\ntracing error status;\nexternal error reporting;\nalerting.\nThe existing Orion error-handling policy remains authoritative for application-level error semantics.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Error reporting",
+    "anchor": "error-reporting",
+    "text": "Error reporting\nOrion will not select a global external error-reporting vendor.\nUnexpected errors should first participate in the standard observability model through:\ncentral error handling\n    ↓\nstructured Pino log\n    +\nactive OpenTelemetry trace/span context\n\nAn application or deployment may additionally integrate an error-reporting provider when operational requirements justify it.\nExamples could include dedicated error-monitoring or APM platforms.\nSuch integration should occur at appropriate technical boundaries rather than introducing vendor APIs throughout domain and application code.\nOrion will not create generic abstraction layers solely to hide a provider when no application responsibility requires such an abstraction.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Fatal process failures",
+    "anchor": "fatal-process-failures",
+    "text": "Fatal process failures\nFatal startup or process-level failures should be recorded where possible before process termination.\nExamples include:\nfailure to initialize required configuration;\nunrecoverable application initialization failure;\nuncaught exceptions that make process state unsafe.\nWhere practical, the process should perform best-effort telemetry flushing before termination.\nThe runtime or deployment platform should be responsible for restarting failed processes when restart behavior is appropriate.\nA process must not continue accepting work when its state can no longer be considered reliable.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OpenTelemetry resources",
+    "anchor": "opentelemetry-resources",
+    "text": "OpenTelemetry resources\nTelemetry-producing processes must identify themselves using stable OpenTelemetry resource attributes.\nAt minimum, deployments should provide meaningful values for concepts such as:\nservice.name\nservice.version\ndeployment.environment.name\n\nA namespace or equivalent organizational identifier may also be provided when useful.\nServices must not intentionally rely on generic unidentified defaults when the deployment knows the actual service identity.\nExamples of separate service identities may include:\napi\nworker\nscheduler\n\nif those processes are introduced.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Telemetry transport",
+    "anchor": "telemetry-transport",
+    "text": "Telemetry transport\n**OTLP will be Orion's preferred telemetry transport protocol for OpenTelemetry signals.**\nApplications should export OpenTelemetry telemetry through OTLP-compatible infrastructure rather than depend directly on a vendor-specific telemetry protocol when practical.\nThe intended model is:\nOrion process\n    ↓\nOpenTelemetry SDK\n    ↓\nOTLP\n    ↓\ntelemetry infrastructure\n\nThis helps preserve backend portability.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OpenTelemetry Collector",
+    "anchor": "opentelemetry-collector",
+    "text": "OpenTelemetry Collector\nThe **OpenTelemetry Collector is the preferred production telemetry routing and processing layer** when deployment complexity justifies it.\nThe conceptual architecture is:\napplication\n    ↓\nOTLP\n    ↓\nOpenTelemetry Collector\n    ↓\nbackend(s)\n\nThe Collector may provide capabilities such as:\nbatching;\nrouting;\nfiltering;\ntransformation;\nsampling;\ncredential isolation;\nexporting to multiple destinations.\nOrion does not require every small deployment to operate a Collector.\nDirect OTLP export to a compatible backend is acceptable when it provides the simpler and appropriate deployment model.\nApplications must not depend on whether telemetry reaches its final backend directly or through a Collector.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Observability backend",
+    "anchor": "observability-backend",
+    "text": "Observability backend\nNo global observability backend will be selected.\nDeployment-specific systems may provide:\ntrace storage;\nmetric storage;\nlog storage;\ndashboards;\nalerting;\nquerying;\nerror reporting.\nBackend selection depends on operational context and is not part of Orion's foundation-level architecture.\nChanging the observability backend should normally be a deployment change rather than an application architecture change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Browser observability",
+    "anchor": "browser-observability",
+    "text": "Browser observability\nOpenTelemetry browser instrumentation will not be part of Orion's initial web foundation.\nThe first observability baseline applies primarily to server-side Node.js processes.\nFrontend observability concerns such as:\nreal-user monitoring;\nbrowser errors;\nCore Web Vitals;\nfrontend performance;\nbrowser tracing;\nsession diagnostics;\nwill be evaluated when a concrete web product requires them.\nBrowser observability does not need to use exactly the same implementation strategy as server observability as long as resulting integration preserves appropriate correlation and security boundaries.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Audit logging",
+    "anchor": "audit-logging",
+    "text": "Audit logging\nOperational observability is explicitly separate from business audit history.\nThe following are not automatically an audit trail:\nPino logs\nOpenTelemetry traces\nOpenTelemetry metrics\n\nA business audit requirement such as:\nwho changed an invoice\nwhat changed\nwhen it changed\nwhy it changed\n\nmay require dedicated persistent application data with its own rules for:\nintegrity;\nretention;\nauthorization;\nimmutability;\ndomain semantics;\nregulatory compliance.\nAn application must not rely on ordinary application logs as its only source of authoritative audit history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nOpenTelemetry provides a vendor-neutral observability model that can represent traces, metrics, propagation, instrumentation, and telemetry export without forcing Orion applications to depend on a particular monitoring backend.\nThis fits Orion's goal of preserving infrastructure portability while still providing a strong production observability baseline.\nDistributed tracing is particularly valuable because large systems frequently spend significant time across multiple boundaries:\nHTTP\napplication behavior\ndatabase access\nexternal APIs\nbackground processing\nother services\n\nA trace allows those operations to be investigated as one causal workflow rather than as independent log records.\nMetrics complement traces by providing aggregate time-series information appropriate for:\ndashboards;\ncapacity monitoring;\nlatency distributions;\nrequest rates;\nfailure rates;\nalert conditions.\nPino remains the default logging implementation because it is already integrated naturally with Fastify and provides efficient structured logging.\nKeeping logging and tracing as separate but correlated responsibilities avoids making the application's log pipeline dependent on the maturity or deployment model of a specific OpenTelemetry log implementation.\nThe correlation model:\nPino log\n    +\ntrace_id\n    +\nspan_id\n\nprovides the practical operational benefit needed from the integration without requiring application logs and traces to use the same internal API.\nAn independent request identifier is retained because request-level operational correlation remains useful even when distributed tracing is unavailable or incomplete.\nOTLP is selected as the preferred telemetry transport because it preserves OpenTelemetry's vendor-neutral architecture between application processes and observability infrastructure.\nThe Collector is preferred for production systems that require centralized telemetry processing because it can move routing, transformation, batching, and backend-specific exporting out of application processes.\nHowever, making the Collector mandatory for every application would introduce infrastructure complexity that does not always provide sufficient value.\nTherefore direct OTLP export remains valid for simpler deployments.\nExplicit rules around redaction and cardinality are necessary because observability systems can themselves become security, privacy, reliability, or cost risks.\nUncontrolled logging may expose sensitive information.\nUnbounded metric attributes may create excessive time-series cardinality.\nExcessive tracing can generate unnecessary overhead and telemetry cost.\nThe strategy therefore treats observability as engineered production behavior rather than unconditional collection of all available information.\nNo error-reporting vendor is selected because the appropriate provider depends on deployment requirements.\nOrion preserves provider independence while allowing dedicated error-reporting tools to be added at technical boundaries when they provide concrete value.\nFinally, keeping operational telemetry separate from audit history prevents infrastructure logs from becoming an accidental and unreliable business record.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Vendor-Specific Observability SDK as the Foundation Standard",
+    "anchor": "vendor-specific-observability-sdk-as-the-foundation-standard",
+    "text": "Vendor-Specific Observability SDK as the Foundation Standard\nOrion could select a platform such as Datadog, New Relic, Honeycomb, or another APM provider and use its proprietary application SDK directly.\nThis could provide a highly integrated initial experience.\nIt was not selected because Orion is intended for many future applications and deployment environments.\nA globally selected vendor would create unnecessary infrastructure coupling and could complicate self-hosting, regulated deployments, cost optimization, or future vendor migration.\nOpenTelemetry provides a more portable instrumentation boundary.\n"
+  },
+  {
     "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
@@ -871,509 +1186,5 @@
     "heading": "Context",
     "anchor": "context",
     "text": "Context\nOrion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own `origin`, pull requests, CI history, human actions, product decisions, and releases, while the canonical `GabriellMDias/Orion` repository continues evolving as the upstream foundation. Projects need to know which Orion revision they contain and to adopt later Orion improvements without losing product changes.\nThe repository also contains state that cannot be inherited as true for a new repository: Orion's implementation plan and acceptance evidence describe how Orion itself was built, several completed human actions verified GitHub settings for the Orion repository only, and the Approval Request feature is an executable reference rather than a product requirement. The owner directed a workflow that preserves Git ancestry, protects the canonical repository from accidental product pushes, records machine-readable provenance, and keeps upgrades as reviewable changes.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nA project is derived from a clean, full clone of Orion by the repository's `pnpm orion:init-project` command. After verifying preconditions, the command commits the project's initial identity on top of Orion's history, renames the canonical remote to `orion-upstream`, disables pushing to it and fetching its tags, removes local branch tracking of it, and adds the project's repository as `origin`. It creates no remote repository and pushes nothing.\n`.orion/project.json` is the versioned, schema-checked identity and provenance record. In Orion it describes the foundation. In a derived project it records the project identity, the canonical Orion repository, the immutable commit the project was initialized from, the Orion baseline currently integrated, and the disposition of the Approval Request reference implementation. The immutable Git commit is the foundation version; no separate release or version scheme is introduced.\nFoundation-owned and project-owned state are separated by file. Orion's plan, human actions, and acceptance report remain inherited foundation history in projects; initialization creates project-owned `docs/project/implementation-plan.md` and `docs/project/human-actions.md` with pending actions for the project's own repository settings. Root instructions route implementation work to the project-owned files when the manifest describes a project. The foundation namespace (`@orion/*`, `ORION_*`, `orion_*` claims, and the CI check name) is not renamed.\nThe Approval Request slice is retained in derived projects as a recorded `reference` implementation, not a product requirement. The project owner later records `adopted` or `removed`; validation keeps the disposition coherent with the source tree and refuses a durable release while it is still `reference`.\nOrion upgrades are ordinary branches that merge a chosen commit from `orion-upstream/main` with its history, resolve conflicts under review, regenerate derived artifacts, and pass validation. The recorded baseline is updated only after that commit is integrated, and validation requires it to be an ancestor of `HEAD`.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nPreserving ancestry lets Git compute the upstream changes after a baseline and perform three-way merges, which is the property that makes future upgrades practical. A GitHub template repository or a squashed snapshot would discard that ancestry and force every upgrade to become a manual diff-and-copy exercise. Keeping the canonical repository as a fetch-only remote retains that ancestry without letting ordinary `git push` or `git pull` cross the boundary.\nA small manifest makes provenance machine-checkable in local validation and CI without inventing a release system. Commit ancestry is verifiable wherever full history is available, and the recorded baseline cannot claim unintegrated upstream work.\nSeparate project-owned files avoid conflicts that would otherwise recur on every upgrade while keeping Orion's evidence intact rather than rewriting it. Retaining the reference implementation avoids a brittle, multi-artifact deletion step during initialization; the release guard ensures it cannot silently become product behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "GitHub template repository",
-    "anchor": "github-template-repository",
-    "text": "GitHub template repository\nTemplates create an unrelated history. They make project creation easy but lose the shared ancestry that three-way upgrade merges need, and they record no provenance.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Fork or shared-history repository with Orion as origin",
-    "anchor": "fork-or-shared-history-repository-with-orion-as-origin",
-    "text": "Fork or shared-history repository with Orion as `origin`\nWorking directly from a fork or clone that still pushes to Orion risks product work reaching the canonical repository, couples project pull requests and settings to Orion, and blurs project and foundation history.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Automatic updater that overwrites or patches foundation files",
-    "anchor": "automatic-updater-that-overwrites-or-patches-foundation-files",
-    "text": "Automatic updater that overwrites or patches foundation files\nAn updater could replace foundation files mechanically, but it would silently overwrite product changes or resolve semantic conflicts without review. Upgrades are engineering changes and remain reviewable merges.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Deleting the reference implementation during initialization",
-    "anchor": "deleting-the-reference-implementation-during-initialization",
-    "text": "Deleting the reference implementation during initialization\nA scripted removal would have to change application code, tests, migrations, generated OpenAPI/SDK/database references, documentation, and portal data together, and would conflict with every later Orion change to those files. Retaining it with a recorded, validated disposition is smaller and safer.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nEach project is independent while retaining a verifiable relationship to Orion.\nAccidental pushes to the canonical repository fail locally, and upstream changes enter projects only through reviewed merges.\nProvenance, inherited-state boundaries, and the reference implementation's status are explicit and checked.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nProject history includes Orion's history, and upgrades can still conflict where projects change foundation files.\nRemote protection is local Git configuration; each clone must run `pnpm orion:upstream`, and repository-level protections still require the project's own settings.\nSquash or rebase merges of upgrades break the baseline check and must be avoided.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nOrion itself changes only by adding its foundation manifest, validation, and documentation; its history and completed evidence are preserved.\nA future change to the manifest schema requires a new schema version and an upgrade path for existing projects.\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[Implementation plan](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/implementation-plan.md) and [human actions](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/human-actions.md)\n[Migration policy](../database/migrations.md) and [release evolution](../database/release-evolution.md)\n[ADR-0011: continuous integration and supply-chain security](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "anchor": "adr-0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "text": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags\n**Status:** accepted\n**Date:** 2026-09-29\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only its statement that no release or version scheme exists\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) established immutable commit SHAs and ancestry as derived-project provenance and deliberately introduced no release scheme. Before the first real GitHub-backed derivation exercise, people need recognizable stable foundation points and compatibility signals without weakening that technical identity or making every merge a release.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nStable Orion foundation releases use immutable annotated Git tags named `vMAJOR.MINOR.PATCH`. The tag is a human-readable alias for one commit. MAJOR denotes an intentionally incompatible foundation contract or supported upgrade model; MINOR denotes backward-compatible capability; PATCH denotes compatible correction or hardening. Classification follows contract impact, not diff size or incidental merge conflicts. A GitHub Release may describe a tag but has no provenance role. Pre-release naming is deferred until needed.\nProject manifests continue to record commit SHAs. Derivation, baseline recording, and upgrades continue to rely on commit identity and Git ancestry. This decision changes only ADR-0014's no-release-scheme statement; its provenance and upgrade mechanics remain accepted.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nCommit SHAs provide exact, verifiable identity while stable tags let humans communicate known foundation points. Semantic labels signal expected compatibility for projects that inherit and extend the foundation. Tags avoid a second mutable version store and do not require release automation or changes to project manifests. A stable-only model matches the current need for one first release; pre-release process would add obligations without an acceptance use case.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Continue with commit SHAs alone",
-    "anchor": "continue-with-commit-shas-alone",
-    "text": "Continue with commit SHAs alone\nThis preserves exact identity but makes stable foundation points and compatibility intent difficult to communicate during the first real derivation and later upgrade exercise.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Store a semantic version in project provenance",
-    "anchor": "store-a-semantic-version-in-project-provenance",
-    "text": "Store a semantic version in project provenance\nThis duplicates the tag and could be mistaken for proof that the corresponding commit was integrated. The existing SHA and ancestry checks already supply that proof.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nStable foundation points become easy to name without changing derivation mechanics.\nThe tag is a single human-readable release identifier; commit identity stays authoritative for provenance.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nMaintainers must classify contract impact deliberately and protect published tags from movement.\nVersion labels cannot predict merge conflicts caused by project-specific edits to shared files.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo manifest migration or release tooling is required. The first tag follows review, merge, and CI verification of this policy. Later tags are assigned only at deliberate release points.\n"
-  },
-  {
-    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
-    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Orion foundation versioning](../versioning.md)\n[Project derivation](../project-derivation.md)\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "anchor": "adr-0016-license-the-orion-foundation-under-apache-20",
-    "text": "ADR-0016: License the Orion Foundation under Apache-2.0\n**Status:** accepted\n**Date:** 2026-09-30\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion is a public reusable development foundation intended for independent projects, including commercial and proprietary products. Its source had no explicit repository license through the `v1.0.0` foundation snapshot. The owner has now selected a distribution license for Orion source before the real GitHub-backed project derivation exercise. This is a durable repository-wide permission decision; it does not select a derived project's overall license or change third-party dependency rights.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nDistribute Orion's repository source under the unmodified Apache License, Version 2.0. The root `LICENSE` file contains the canonical terms, and the root README links to it. Do not retroactively change the existing `v1.0.0` tag. Orion's independently developed future revisions inherit this repository license unless a separately authorized decision changes it. Derived projects must make their own decisions for independently created product code and comply with licenses applicable to inherited and third-party material.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe owner explicitly selected Apache-2.0 for broad reuse, modification, and distribution of the foundation, including use in independent commercial projects. A standard license file makes those permissions and obligations discoverable without custom terms, package publication metadata, or changes to derivation provenance. The existing `v1.0.0` tag remains an immutable record of the pre-license snapshot.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Leave the repository without an explicit license",
-    "anchor": "leave-the-repository-without-an-explicit-license",
-    "text": "Leave the repository without an explicit license\nThis was the previous state. It leaves reuse and distribution permissions unclear for the intended audience, so it does not meet the owner's distribution objective.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion source has a clear, standard distribution license.\nDerived projects can identify the terms of inherited Orion material without changing SHA-based provenance or upgrade mechanics.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nRedistributors must satisfy applicable Apache-2.0 conditions for Orion material; choosing a different license for their own code does not remove those obligations.\nThe root license does not settle separate rights or obligations for package dependencies or independently created project code.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo manifest, package publication, application, or deployment change is required. The licensing change is a compatible PATCH candidate after PR review, merge, and CI verification. No `NOTICE` or copyright holder statement is added without supporting repository evidence.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[Foundation versioning](../versioning.md) and [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\n[Project derivation](../project-derivation.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "anchor": "adr-0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "text": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline\n**Status:** accepted\n**Date:** 2026-09-30\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the foundation workspace package scope; its Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nADR-0014 derived projects through Git ancestry and kept everything Orion contained. A project therefore started with Orion's own implementation plan, human actions, and acceptance report as \"inherited history\", with the Approval Request slice as a retained reference implementation awaiting a product decision, and with `@orion/*` workspace packages. The first real derivation showed the cost: a new product repository read as Orion itself, carried documentation describing how Orion was built, and shipped an unrelated feature through its API, database, SDK, web application, and portal.\nThe owner directed that a new project start as a clean base for developing a product: it keeps Orion's architecture, principles, tooling, validation, CI, Living Documentation Portal, provenance, and future upgrades, but contains neither the reference implementation nor documentation of the foundation's development, and it carries the project's own name on its important surfaces.\nTwo structural facts made removal brittle under ADR-0014: shared runtime code imported the reference feature directly, and shared documentation linked to foundation-only files. A deletion step would have had to rewrite shared files and would conflict on every upgrade.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nOrion separates its content into three categories, recorded in the machine-readable derivation contract `.orion/derivation.json`:\n**Shared foundation**: architecture, policies, ADRs, tooling, CI, the API runtime and module contract, the web shell and portal, and generated-reference machinery. Shared code and documentation must work without foundation-only content: they do not import, link to, name, or describe it. Validation in Orion enforces this isolation.\n**Foundation-only**: Orion's Approval Request reference implementation (feature code, schema, migration, metadata, grants, smoke, tests, browser journeys, and domain documentation) and Orion's own implementation plan, human actions, and acceptance history.\n**Project-owned**: files every repository owns from its first commit, rendered from templates at initialization: the README, the API and web composition files (`apps/api/src/modules.ts`, `apps/web/src/modules.tsx`), the brand assets, and `docs/project/implementation-plan.md` and `docs/project/human-actions.md`. Orion's own copies compose the reference implementation and describe Orion.\n`pnpm orion:init-project` removes the foundation-only paths, renders the project-owned files from the project identity, renames the workspace package scope (package manifests, the lockfile, and source; not authored prose) to the project's scope, names the root package after it, regenerates every derived artifact from the changed sources, and records manifest schema version 2 with the project name and package scope. It then commits on top of Orion's history and protects the upstream remote exactly as ADR-0014 decided. Living Documentation titles, the HTML title, the OpenAPI title, and the telemetry service name derive from the manifest name and package names.\nUpgrades remain reviewed merges with ancestry. Because the project deleted foundation-only paths, an upgrade that changes them conflicts or reintroduces them; `pnpm orion:prune` reapplies the contract by removing those paths and renaming foundation scope references, and project validation fails while either remains. Project-owned files keep the project's version during upgrades.\nThe `ORION_*` configuration names, `orion_*` token claims and database role names, and the `Orion required gate` check name remain the foundation's technical namespace. Renaming them would touch shared files throughout the repository and conflict on every upgrade, and the check name is bound to branch protection.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nIsolating shared content from foundation-only content turns removal into deleting a known list of paths rather than editing shared files, so a derived project shares every shared file byte for byte with Orion and upgrades merge cleanly there. Composition files give each repository a single owned seam for its modules; keeping Orion's reference behind that seam keeps it executable and validated in Orion, where it remains the example a project can study upstream.\nA project that starts with Orion's history documents and a foreign feature must first remove or disclaim them, and its agents read another repository's plan as context. Starting clean makes the project's own plan and human actions the only current work and its README describe its actual state.\nRenaming the package scope affects only package manifests, the lockfile, and a few imports, so it costs little at upgrade time and removes the most visible remaining Orion identity; `pnpm orion:prune` reapplies it mechanically. The configuration and claim namespaces appear in far more shared files and external configuration and are documented as foundation names instead.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Keep the reference implementation with a recorded disposition",
-    "anchor": "keep-the-reference-implementation-with-a-recorded-disposition",
-    "text": "Keep the reference implementation with a recorded disposition\nADR-0014's model. It keeps initialization simple but makes every new product carry and validate an unrelated feature until someone performs a multi-artifact removal, which is exactly the brittle step this decision eliminates.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Delete the reference implementation by editing shared files during initialization",
-    "anchor": "delete-the-reference-implementation-by-editing-shared-files-during-initialization",
-    "text": "Delete the reference implementation by editing shared files during initialization\nA script could rewrite shared code and documentation, but every edited shared file would then differ from Orion and conflict on later upgrades. Isolation moves those differences into project-owned composition files instead.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Move the reference implementation to a separate repository or a non-default branch",
-    "anchor": "move-the-reference-implementation-to-a-separate-repository-or-a-non-default-branch",
-    "text": "Move the reference implementation to a separate repository or a non-default branch\nThis would keep Orion's main branch clean but lose the executable example in the foundation's own validation gate, and projects could no longer see in Orion how a complete module fits the architecture.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rename every Orion namespace",
-    "anchor": "rename-every-orion-namespace",
-    "text": "Rename every Orion namespace\nRenaming configuration variables, token claims, database roles, and the CI check would maximize branding but touch most of the repository and external settings, making every upgrade conflict.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nA new project contains only shared foundation content and its own files; its README, plan, human actions, package names, portal, and API contract describe it.\nOrion keeps a complete, validated reference implementation and its development history.\nIsolation, project cleanliness, and remaining foundation scope references are checked mechanically.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nUpgrades that change foundation-only paths conflict in projects, and every upgrade must run `pnpm orion:prune` before validation.\nInitialization regenerates references, so it requires dependencies installed and a Testcontainers-compatible container runtime.\nShared documentation cannot refer to the reference implementation except through the derivation guide.\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nThis changes the derivation contract and the manifest schema incompatibly, which [foundation versioning](../versioning.md#compatibility-meaning) classifies as a MAJOR foundation change.\nProjects derived under ADR-0014 have a schema version 1 manifest; `pnpm orion:check` refuses it with directions to the migration steps in the [derivation guide](../project-derivation.md#migrate-a-project-from-schema-version-1).\n"
-  },
-  {
-    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
-    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[ADR-0014: derive projects through Git ancestry](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n[Foundation versioning](../versioning.md)\n[API modules](../../apps/api/README.md#modules) and [web modules](../../apps/web/README.md#modules)\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "anchor": "adr-0018-adopt-tenant-owned-data-in-the-modular-backend",
-    "text": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni requires independent customer companies with branches, memberships, media and devices. The derived repository has PostgreSQL infrastructure and composable API modules but no product tables or tenant enforcement. Tenant isolation must exist in the first product slice, within Orion's modular backend boundaries.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt one customer company as the tenant ownership boundary in a shared PostgreSQL database and schema. Model explicit tenant-scoped ownership and references, server-derived membership/branch authorization, and database constraints that prevent cross-tenant associations. Keep capabilities in the existing modular backend, with explicit application interfaces and owned tables; no microservice split is proposed.\nRow-level security is an additional option to evaluate, not assumed protection. Review its connection-pooling, runtime-role and migration implications before selecting it. Platform administration remains a separate scoped capability, not an implicit bypass for tenant data access.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nA shared deployment fits the initial cost and operational constraints. Explicit ownership allows branch scoping and future company scale without treating a branch as another tenant. It also places substantial responsibility on query/reference design, constraints and adversarial authorization tests; the accepted architecture has not yet been proven by a schema or implementation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Database or schema per company:** provides a different isolation boundary, but adds migration, connection, backup and recovery coordination for every tenant. Revisit if contractual isolation or measured scale justifies it.\n**Application filters without relational tenant constraints:** simpler initially, but insufficient to protect mixed-tenant references or accidental omitted scope checks. Not a sufficient candidate for the product requirement.\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0018-propose-tenant-owned-data-in-the-modular-backend",
-    "title": "ADR-0018: Adopt Tenant-Owned Data in the Modular Backend",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nPreserves one operational backend while giving each module clear ownership and tenant semantics.\nEnables negative integration tests against real PostgreSQL from the first vertical slice.\n"
   }
 ]
