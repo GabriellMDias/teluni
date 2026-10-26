@@ -27,6 +27,14 @@ const transport = createSmtpTransport({
   },
 });
 try {
+  const realm = await admin.request("GET", "/realms/teluni");
+  assert.equal(realm.status, 200);
+  assert.equal(
+    ((await realm.json()) as { registrationAllowed: boolean })
+      .registrationAllowed,
+    false,
+    "The synthetic installation must not accept public signup",
+  );
   const id = randomUUID();
   assert.deepEqual(
     await transport.send({

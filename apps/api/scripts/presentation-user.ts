@@ -29,11 +29,12 @@ if (!found.ok) throw new Error("Synthetic operator lookup failed");
 const users = (await found.json()) as {
   id: string;
 }[];
+let operatorId: string;
 if (users.length) {
   if (users.length !== 1 || !expectedId || users[0].id !== expectedId)
     throw new Error("Refusing to replace an existing identity");
   // Preserve this installation's identity, chosen password and OTP enrollment.
-  console.log(JSON.stringify({ operatorId: users[0].id }));
+  operatorId = users[0].id;
 } else {
   if (expectedId)
     throw new Error("Refusing to replace a missing installation identity");
@@ -48,6 +49,14 @@ if (users.length) {
   });
   if (created.status !== 201)
     throw new Error("Synthetic operator creation failed");
-  const operatorId = created.headers.get("location")!.split("/").pop()!;
-  console.log(JSON.stringify({ operatorId }));
+  operatorId = created.headers.get("location")!.split("/").pop()!;
 }
+
+// This installation only has fictitious identities and a private mail sink.
+// Keep the product realm's public-signup policy unchanged in every other profile.
+const configured = await admin.request("PUT", "/realms/teluni", {
+  registrationAllowed: false,
+});
+if (configured.status !== 204)
+  throw new Error("Synthetic realm configuration failed");
+console.log(JSON.stringify({ operatorId }));

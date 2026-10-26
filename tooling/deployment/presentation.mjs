@@ -343,7 +343,7 @@ Run from this checkout, using a private configuration directory outside it:
   node tooling/deployment/presentation.mjs tunnel /etc/teluni-presentation
   node tooling/deployment/presentation.mjs status /etc/teluni-presentation
   node tooling/deployment/presentation.mjs down /etc/teluni-presentation
-Use a root-owned configuration directory on the server. Init refuses to overwrite it. Up applies reviewed migrations and provisions the realm and a fictitious account. Credentials remain in operator.env; MFA is enrolled through the normal panel flow. The private inbox never sends external mail. Down preserves all volumes.
+Use a root-owned configuration directory on the server. Init refuses to overwrite it. Up applies reviewed migrations and provisions the realm and a fictitious account, with public signup disabled. Credentials remain in operator.env; MFA is enrolled through the normal panel flow. The private inbox never sends external mail. Down preserves all volumes.
 Tunnel prints one origin route to add to the EXISTING connector. Keep certificate verification enabled, make caPool readable by that connector, bypass edge cache for /api/* and /identity/*, and leave player routes free of browser-only challenges/Access login. The player endpoint is the public origin plus /api.
 Use images and catalogs for this restricted presentation: public Tunnel upload/video limits still apply. Real-customer operation follows infra/pilot and its independent readiness gates.
 `);
