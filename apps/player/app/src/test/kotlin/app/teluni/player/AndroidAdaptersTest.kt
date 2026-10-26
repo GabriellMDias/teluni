@@ -113,6 +113,9 @@ class AndroidAdaptersTest {
     @Test fun `TV setup focuses connect instead of opening the soft keyboard`() {
         Robolectric.buildActivity(PlayerActivity::class.java).setup().use { controller ->
             val activity = controller.get()
+            PlayerActivity::class.java.getDeclaredMethod("render", PlayerSnapshot::class.java).apply {
+                isAccessible = true
+            }.invoke(activity, PlayerSnapshot())
             val connect = descendants(activity.findViewById(android.R.id.content)).filterIsInstance<Button>().single()
             assertTrue(connect.hasFocus())
         }
