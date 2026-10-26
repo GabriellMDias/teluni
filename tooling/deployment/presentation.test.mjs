@@ -220,6 +220,14 @@ test("the imported composition publishes only a loopback TLS origin and preserve
       services.keycloak.environment.KC_HTTP_RELATIVE_PATH,
       "/identity",
     );
+    assert.equal(
+      services.keycloak.build.args.KEYCLOAK_HTTP_RELATIVE_PATH,
+      "/identity",
+    );
+    assert.equal(
+      services.keycloak.image,
+      "teluni/keycloak:presentation-presentation",
+    );
     assert.equal(configuration.networks.back.internal, true);
     assert.equal(services.proxy.depends_on, undefined);
     assert.equal(services.api.build.context, repository);

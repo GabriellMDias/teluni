@@ -19,6 +19,11 @@ services:
 
   keycloak:
     extends: { file: ../pilot/compose.yaml, service: keycloak }
+    # Keycloak compiles its context path. Do not overwrite the pilot image.
+    image: teluni/keycloak:${TELUNI_RELEASE:-presentation}-presentation
+    build:
+      args:
+        KEYCLOAK_HTTP_RELATIVE_PATH: /identity
     ports: !reset []
     environment:
       KC_HOSTNAME: https://${TELUNI_APP_HOST}/identity
