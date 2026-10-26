@@ -93,8 +93,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Set up pinned Node.js and pnpm; install from frozen lockfile
+        uses: pnpm/setup@e0ed22ae4d909f13ed5d2688513f73e1875e46db # v3.0.0
+        with:
+          cache: true
+          require-lockfile: true
       - name: Build, run, back up and restore the pilot deployment
         run: infra/pilot/rehearsal.sh
+      - name: Qualify the isolated presentation bootstrap and verified ingress
+        run: infra/presentation/rehearsal.sh
 
   dependency-review:
     name: Dependency review

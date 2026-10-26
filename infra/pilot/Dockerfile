@@ -72,7 +72,11 @@ COPY --chown=1000:0 apps/api/keycloak/themes/teluni/login/messages/messages_en.p
 COPY --chown=1000:0 apps/web/src/assets/brand-mark.svg /opt/keycloak/themes/teluni/login/resources/img/brand-mark.svg
 COPY --chown=1000:0 apps/web/public/fonts/plus-jakarta-sans.ttf /opt/keycloak/themes/teluni/login/resources/fonts/plus-jakarta-sans.ttf
 COPY --chown=1000:0 apps/web/public/fonts/OFL.txt /opt/keycloak/themes/teluni/login/resources/fonts/OFL.txt
-ENV KC_DB=postgres \
+# The path is compiled into Keycloak's optimized server. The pilot keeps /;
+# the isolated presentation composition builds the same version at /identity.
+ARG KEYCLOAK_HTTP_RELATIVE_PATH=/
+ENV KC_HTTP_RELATIVE_PATH=${KEYCLOAK_HTTP_RELATIVE_PATH} \
+    KC_DB=postgres \
     KC_HEALTH_ENABLED=true
 RUN /opt/keycloak/bin/kc.sh build
 

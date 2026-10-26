@@ -1,0 +1,50 @@
+# The existing host connector reaches this TLS origin over loopback only.
+# It must verify this CA and set SNI/Host to TELUNI_APP_HOST.
+{
+	auto_https disable_redirects
+	servers {
+		# Only host connections through the loopback-published Docker port
+		# may carry the edge's client address. Internal peers cannot spoof it.
+		trusted_proxies static 172.30.20.1
+		trusted_proxies_strict
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
+{$TELUNI_APP_HOST} {
+	tls internal
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	route {
+		@private path /api/health /api/health/* /identity /identity/*
+		@identity path /identity/realms/teluni/* /identity/resources/*
+		handle @identity {
+			reverse_proxy keycloak:8080 {
+				header_up X-Forwarded-For {client_ip}
+			}
+		}
+		handle @private {
+			respond 404
+		}
+		handle_path /api/* {
+			reverse_proxy api:3000 {
+				header_up X-Forwarded-For {client_ip}
+				flush_interval -1
+			}
+		}
+		handle {
+			root * /srv/panel
+			@assets path /assets/*
+			header @assets Cache-Control "public, max-age=31536000, immutable"
+			try_files {path} /index.html
+			file_server
+		}
+	}
+}

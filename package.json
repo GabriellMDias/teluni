@@ -39,8 +39,9 @@
     "orion:check": "node tooling/project/cli.ts check",
     "orion:test": "node --test tooling/project/derivation.test.ts",
     "docs:isolation:test": "pnpm -C apps/web test:documentation",
-    "validate": "pnpm db:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm architecture && pnpm architecture:test && pnpm docs:check && pnpm agents:check && pnpm agents:test && pnpm env:example:check && pnpm release:check && pnpm release:test && pnpm orion:check && pnpm orion:test && pnpm references:check && pnpm docs:references:check && pnpm docs:references:test && pnpm docs:isolation:test && pnpm test && pnpm build && pnpm smoke && pnpm test:e2e",
-    "docs:references:test": "node --test tooling/documentation/generate.test.mjs"
+    "validate": "pnpm db:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm architecture && pnpm architecture:test && pnpm docs:check && pnpm agents:check && pnpm agents:test && pnpm env:example:check && pnpm deployment:test && pnpm release:check && pnpm release:test && pnpm orion:check && pnpm orion:test && pnpm references:check && pnpm docs:references:check && pnpm docs:references:test && pnpm docs:isolation:test && pnpm test && pnpm build && pnpm smoke && pnpm test:e2e",
+    "docs:references:test": "node --test tooling/documentation/generate.test.mjs",
+    "deployment:test": "node --test tooling/deployment/presentation.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
