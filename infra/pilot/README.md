@@ -10,11 +10,11 @@ The declarative pilot deployment of the [deployment design](../../docs/project/d
 | [`postgres/init.sh`](postgres/init.sh) | The databases and roles, created once with the volume |
 | [`backup/teluni-backup.sh`](backup/teluni-backup.sh) | `snapshot`, `maintain`, `restore`, `verify` and `snapshots` |
 | [`systemd/`](systemd/teluni-backup.timer) | Timers for a snapshot every 6 hours and weekly maintenance |
-| [`rehearsal.sh`](rehearsal.sh) | Builds and runs the whole stack locally, backs it up, restores it into a new project and checks both; CI runs it |
+| [`rehearsal.sh`](rehearsal.sh) | Builds and runs the whole stack locally, backs it up, restores it into a new project and checks both, including first-login provisioning and provider session termination through public TLS; CI runs it |
 
 ## Configuration
 
-Compose reads per-host values from the environment and secrets from env files in `TELUNI_CONFIG_DIR`, a root-only directory such as `/etc/teluni`. The rehearsal's `write_config` function writes a complete disposable set and is the reference for their contents.
+Compose reads per-host values from the environment and secrets from env files in `TELUNI_CONFIG_DIR`, a root-only directory such as `/etc/teluni`. The rehearsal's `write_config` function writes a complete disposable set and is the reference for their contents. The API service sets `TELUNI_KEYCLOAK_ADMIN_URL` to the private Keycloak container, so principal provisioning and administrative logout do not use the blocked public admin routes; public discovery and token verification retain the HTTPS issuer.
 
 | Variable or file | Holds |
 | --- | --- |

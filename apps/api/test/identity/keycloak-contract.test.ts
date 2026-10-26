@@ -1,8 +1,13 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { createServer, request as httpRequest } from "node:http";
 import { decodeProtectedHeader, decodeJwt } from "jose";
 import * as oidc from "openid-client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createAccessTokenVerifier } from "../../src/authentication.js";
+import {
+  createKeycloakProvider,
+  ProviderUnavailableError,
+} from "../../src/features/identity/provider.js";
 import {
   principalAttribute,
   provisionerClientId,
@@ -113,6 +118,77 @@ async function provisionerToken(): Promise<string> {
 }
 
 describe("pinned Keycloak realm contract", () => {
+  it("uses the private administrative base and realm for provisioning and logout without following redirects", async () => {
+    const calls: string[] = [];
+    let redirect = false;
+    const proxy = createServer((request, reply) => {
+      calls.push(`${request.method} ${request.url}`);
+      if (redirect) {
+        reply.writeHead(307, { location: "/unexpected-redirect" }).end();
+        return;
+      }
+      const upstream = httpRequest(
+        `${admin.baseUrl}${request.url!.replace(/^\/private/, "")}`,
+        {
+          method: request.method,
+          headers: { ...request.headers, host: new URL(admin.baseUrl).host },
+        },
+        (response) => {
+          reply.writeHead(response.statusCode ?? 502, response.headers);
+          response.pipe(reply);
+        },
+      );
+      upstream.on("error", () => reply.writeHead(502).end());
+      request.pipe(upstream);
+    });
+    await new Promise<void>((resolve) => proxy.listen(0, "127.0.0.1", resolve));
+    try {
+      const address = proxy.address();
+      if (!address || typeof address === "string")
+        throw new Error("Missing private listener");
+      const privateBase = `http://127.0.0.1:${address.port}/private`;
+      const provider = createKeycloakProvider({
+        environment: "test",
+        issuer,
+        publicOrigin,
+        clientId: webClientId,
+        clientSecret: webSecret,
+        provisionerClientId,
+        provisionerClientSecret: provisionerSecret,
+        sessionKeys: [{ id: "k1", key: randomBytes(32) }],
+        keycloakAdminUrl: privateBase,
+      });
+      const email = `private-admin-${randomUUID()}@example.test`;
+      const userId = await createSyntheticUser(admin, realm, {
+        email,
+        password,
+      });
+      const first = await browserLogin(email);
+      const principalId = randomUUID();
+      const path = `/private/admin/realms/${realm}/users/${userId}`;
+      await provider.ensurePrincipalAttribute(userId, principalId);
+      expect(calls).toEqual([`GET ${path}`, `PUT ${path}`]);
+      const refreshed = await provider.refresh(first.refresh_token!);
+      expect(decodeJwt(refreshed.accessToken)).toMatchObject({
+        iss: issuer,
+        orion_principal_id: principalId,
+      });
+      await provider.endAllSessions(userId);
+      expect(calls.at(-1)).toBe(`POST ${path}/logout`);
+      expect(await provider.isActive(refreshed.accessToken)).toBe(false);
+      redirect = true;
+      const prior = calls.length;
+      await expect(
+        provider.ensurePrincipalAttribute(userId, principalId),
+      ).rejects.toBeInstanceOf(ProviderUnavailableError);
+      expect(calls.slice(prior)).toEqual([`GET ${path}`]);
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        proxy.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  }, 120_000);
+
   it("issues at+jwt access tokens that pass the unchanged verifier only after trusted principal provisioning", async () => {
     const email = `owner-${randomUUID()}@example.test`;
     const userId = await createSyntheticUser(admin, realm, { email, password });

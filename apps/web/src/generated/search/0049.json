@@ -4,6 +4,33 @@
     "title": "Tracing",
     "group": "Reliability",
     "kind": "repository",
+    "heading": "Asynchronous causality and trace links",
+    "anchor": "asynchronous-causality-and-trace-links",
+    "text": "Asynchronous causality and trace links\nUse parent-child relationships for actual nested work and links where multiple parents, delayed execution, fan-in, fan-out, or independent stages make a tree misleading. Queue telemetry should separate waiting delay from execution time where supported and identify safe message type, consumer, and attempt. Scheduled work without a causal parent starts a new trace.\nImmediate retries may remain child spans; delayed attempts may use new linked traces with stable job/event/workflow IDs. Make retry attempts/reasons distinguishable. Duplicate deliveries are independent executions and need not share one trace. Long workflows lasting hours/days should use stages, links, and workflow IDs rather than an unbounded trace. Large batches/fan-out should use counts and selective significant/failed item spans rather than thousands of IDs or descendants.\nThe current exporter removes links; implementing these semantics requires explicit export-boundary changes and tests, not merely adding link calls.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Outcomes and cross-signal correlation",
+    "anchor": "outcomes-and-cross-signal-correlation",
+    "text": "Outcomes and cross-signal correlation\nSpan status follows operational semantics. Expected domain rejection or inbound `4xx` is not automatically an infrastructure error; an unexpected outbound `401` may be a credential/configuration failure. Record a bounded result/error code when useful. Associate unexpected failures with the responsible operation; do not repeat exception events on every ancestor unless distinct operations failed.\nA failed attempt can remain an error child of a successful parent after retry. Preserve meaningful partial failures, timeout distinctions, cancellation, fallback, and circuit-breaker states where applicable. Do not hide degradation simply because eventual completion succeeded.\nLogs and error reports should inherit active trace/span correlation centrally where practical. Span events explain one execution; independent searchable semantic events may belong in logs. Do not duplicate both automatically. Metrics answer frequency/distribution questions, not the cause of one trace. Sampled tracing is never the sole required audit/security record.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Sampling and volume",
+    "anchor": "sampling-and-volume",
+    "text": "Sampling and volume\nSampling must preserve useful coverage while bounding CPU, memory, network, storage, and cost. Head sampling is cheaper/early but cannot know the final outcome; tail sampling can prioritize errors/slow traces but needs more infrastructure. Propagate sampling decisions as required by the standard. Keep strategy transparent: an ID in a log may have no exported trace due to sampling, not necessarily broken instrumentation.\nPrioritize unexpected errors, important slow executions, and rare high-value operations where supported. Thresholds/rates depend on actual service expectations and traffic; do not invent a universal production percentage. Dynamic/incident changes must be bounded and understandable, not a global unsampling switch for one local issue. Development/tests may sample more while keeping the same redaction rules and isolated exporters.\nBound attributes, lengths, events, links, and spans per trace. Do not emit one event per row/item/loop iteration in large workloads; use safe summaries or justified child spans. Truncation is not privacy protection. Routine health probes, metric scrapes, and low-value static/polling routes should generally be excluded or heavily sampled without hiding critical behavior. Startup/shutdown and migrations normally need logs/metrics first; trace only meaningful diagnostic work. Low-level DNS/filesystem/cache spans need demonstrable value rather than automatic maximum detail.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
     "heading": "Export reliability and clients",
     "anchor": "export-reliability-and-clients",
     "text": "Export reliability and clients\nExporter/collector outages must normally degrade safely without failing business operations. Use bounded buffering, timeouts, dropping behavior, and safe rate-limited diagnostics for export failures, dropped spans, or saturation. Avoid recursive telemetry storms. [Retention](../security/data-retention.md) and [production access](../security/production-access.md) apply to traces and third-party processors.\nBrowser/mobile/desktop tracing is requirement-driven, with privacy and cross-origin safety; mobile also requires battery/network/offline consideration. Local paths, usernames, machine identifiers, and sensitive input are not default trace data. Do not introduce client tracing just to match the server implementation.\n"
@@ -943,32 +970,5 @@
     "heading": "HTTP request telemetry",
     "anchor": "http-request-telemetry",
     "text": "HTTP request telemetry\nUseful safe metadata includes method, normalized route template, status, duration, service, environment, release, and request/trace IDs. Full URLs, query strings, headers, and bodies are not default telemetry. Allowlist justified parameters/headers individually and remove credential-bearing `Authorization`, `Proxy-Authorization`, `Cookie`, and `Set-Cookie` values. File content, binary buffers, document text, image metadata, and archive contents must never be captured automatically; filenames can also disclose sensitive data.\nApply the same rule to other transports. Prefer event/job type, safe ID, consumer, attempt, result, and duration over payloads. Normalize routes rather than embedding resource IDs. Public support references must be opaque and contain no personal information, secret state, or key material; preserve safe correlation during redaction.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Database and provider instrumentation",
-    "anchor": "database-and-provider-instrumentation",
-    "text": "Database and provider instrumentation\nDatabase telemetry may describe operation, logical entity, system, duration, and result. Raw SQL can contain literals; use normalized/parameterized representations when query telemetry is required. Do not automatically capture bind values, rows, connection strings, or raw ORM objects. Any exceptional parameter diagnostics still require explicit classification/access controls and cannot capture restricted data.\nReview driver/ORM error metadata before export: errors may contain SQL, values, hostnames, and connection information. Never expose raw database/provider exceptions to users. Review SDK requests, responses, headers, breadcrumbs, and debug modes independently. Prefer safe provider result codes and references; payment and authentication credentials remain prohibited. Provider-specific codes need sensitivity and cardinality review and do not replace the API's public error contract.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Errors, traces, metrics, and audit",
-    "anchor": "errors-traces-metrics-and-audit",
-    "text": "Errors, traces, metrics, and audit\nError SDK automatic capture must be reviewed before use: requests, queries, cookies, locals, environment, console output, user context, and breadcrumbs can leak data. Local-variable capture is disabled by default unless an explicitly acceptable environment and controls justify it. `captureException(error)` is not automatically safe. Internal stacks can help diagnosis but may expose implementation paths and must not reach untrusted users or intentionally contain secrets.\nUse safe minimal user context, preferring a justified internal identifier to profile data, and clear it on logout. Review navigation, console, database, HTTP, and interaction breadcrumbs. Trace attributes/events must use safe selected metadata, not objects or payloads.\nMetric labels must never contain secrets and should avoid personal/entity-specific values, arbitrary error messages, full URLs, and request/trace IDs. Any exceptional dimension requires explicit privacy and cardinality justification; prefer bounded error/result categories. Audit/security records may justify confidential actor/resource identifiers that routine diagnostics omit, but still exclude credentials and unnecessary payloads.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Clients, infrastructure, and special diagnostics",
-    "anchor": "clients-infrastructure-and-special-diagnostics",
-    "text": "Clients, infrastructure, and special diagnostics\nDo not automatically collect form values, clipboard, local storage, navigation state, screen contents, or user content. Session replay, screenshots, crash attachments, and full memory dumps are separate high-risk collection capabilities requiring explicit review; replay must mask/exclude sensitive areas. Memory dumps can contain arbitrary credentials and require justified collection and restricted access. Do not enable features merely because a vendor offers them.\nCollect IP, user-agent, device identifiers, file paths, and geolocation only for justified needs with suitable retention; normalized platform/version/device-class data is often sufficient. Precise location is not default telemetry. Feature-flag diagnostics should contain bounded state, not full targeting contexts.\nInspect reverse proxies, load balancers, database server logs, container stdout/stderr, CI, and SDK debug logging independently. Application redaction cannot stop another layer from recording URLs, failed SQL, or credentials. CI output must not echo secrets; use platform masking where available. Development follows the same secret rules. Tests should use isolated/disabled exporters and never send synthetic test telemetry into production systems.\nTemporary/emergency diagnostics must be explicit, minimized, reviewed, time-bounded, and removed afterward. They still cannot intentionally collect restricted data. Do not globally expand collection merely to investigate one issue.\n"
   }
 ]

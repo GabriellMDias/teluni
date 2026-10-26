@@ -72,6 +72,7 @@ services:
       ORION_RELEASE_ID: ${TELUNI_RELEASE:-local}
       # Only the proxy may set the client address that request limits count.
       TELUNI_TRUSTED_PROXIES: 172.30.10.2
+      TELUNI_KEYCLOAK_ADMIN_URL: http://keycloak:8080
     volumes:
       - media:/var/lib/teluni/media
     read_only: true
