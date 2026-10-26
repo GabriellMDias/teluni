@@ -1,0 +1,100 @@
+# Temporary synthetic-data installation, explicitly requested by the owner.
+# Import the qualified images and services; never use this profile for customers.
+name: ${TELUNI_PRESENTATION_PROJECT:?initialize the installation first}
+
+services:
+  postgres:
+    extends: { file: ../pilot/compose.yaml, service: postgres }
+
+  release:
+    extends: { file: ../pilot/compose.yaml, service: release }
+    networks: [back, front]
+    env_file: !override
+      - ${TELUNI_CONFIG_DIR}/release.env
+      - ${TELUNI_CONFIG_DIR}/operator.env
+    environment:
+      NODE_EXTRA_CA_CERTS: /certificates/ca-bundle.pem
+    volumes:
+      - ${TELUNI_CONFIG_DIR}/certificates:/certificates:ro
+
+  keycloak:
+    extends: { file: ../pilot/compose.yaml, service: keycloak }
+    ports: !reset []
+    environment:
+      KC_HOSTNAME: https://${TELUNI_APP_HOST}/identity
+      KC_HOSTNAME_ADMIN: https://${TELUNI_APP_HOST}/identity
+      KC_HTTP_RELATIVE_PATH: /identity
+      KC_PROXY_TRUSTED_ADDRESSES: 172.30.20.2
+      KC_TRUSTSTORE_PATHS: /certificates
+    volumes:
+      - ${TELUNI_CONFIG_DIR}/certificates:/certificates:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /identity/realms/master HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200 '",
+        ]
+
+  api:
+    extends: { file: ../pilot/compose.yaml, service: api }
+    environment:
+      TELUNI_TRUSTED_PROXIES: 172.30.20.2
+      TELUNI_KEYCLOAK_ADMIN_URL: http://keycloak:8080/identity
+      NODE_EXTRA_CA_CERTS: /certificates/ca-bundle.pem
+    volumes:
+      - ${TELUNI_CONFIG_DIR}/certificates:/certificates:ro
+    depends_on:
+      mailpit: { condition: service_healthy }
+
+  proxy:
+    extends: { file: ../pilot/compose.yaml, service: proxy }
+    ports: !override
+      - "127.0.0.1:${TELUNI_PRESENTATION_PORT:?set local origin port}:443"
+    environment:
+      TELUNI_ACME_EMAIL: ""
+      TELUNI_CADDY_OPTIONS: ""
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      front:
+        ipv4_address: 172.30.20.2
+        aliases: !override ["${TELUNI_APP_HOST}"]
+    # Start the TLS origin before Keycloak/API so their trust stores exist.
+    depends_on: !reset {}
+
+  mailpit:
+    image: axllent/mailpit:v1.31.3@sha256:ed9b00c609e77e99c79b93f1178255ebc271868920f2c69a8d166bd5634ed10d
+    env_file: ${TELUNI_CONFIG_DIR}/mailpit.env
+    environment:
+      MP_SMTP_TLS_CERT: /certificates/mailpit.crt
+      MP_SMTP_TLS_KEY: /run/mailpit.key
+      MP_SMTP_REQUIRE_STARTTLS: "true"
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: "200"
+    volumes:
+      - ${TELUNI_CONFIG_DIR}/certificates:/certificates:ro
+      - ${TELUNI_CONFIG_DIR}/mailpit.key:/run/mailpit.key:ro
+      - mailpit:/data
+    networks: [back]
+    # The test inbox has no public route or published port.
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+networks:
+  front:
+    ipam:
+      config:
+        - subnet: 172.30.20.0/24
+          ip_range: 172.30.20.128/25
+  back: { internal: true }
+
+volumes:
+  postgres: {}
+  media: {}
+  caddy-data: {}
+  caddy-config: {}
+  mailpit: {}

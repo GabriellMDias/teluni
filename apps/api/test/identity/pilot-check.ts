@@ -22,9 +22,34 @@ const admin = keycloakAdmin(required("TELUNI_KEYCLOAK_ADMIN_URL"), {
   password: required("TELUNI_KEYCLOAK_ADMIN_PASSWORD"),
 });
 const realm = "teluni";
-const email = `rehearsal-${randomBytes(8).toString("hex")}@example.test`;
-const password = `Synthetic-${randomBytes(24).toString("base64url")}`;
-const userId = await createSyntheticUser(admin, realm, { email, password });
+const expectedOperatorId = process.argv
+  .find((argument) => argument.startsWith("--operator="))
+  ?.slice("--operator=".length);
+const operator = expectedOperatorId !== undefined;
+const email = operator
+  ? required("TELUNI_PRESENTATION_USERNAME")
+  : `rehearsal-${randomBytes(8).toString("hex")}@example.test`;
+const password = operator
+  ? required("TELUNI_PRESENTATION_PASSWORD")
+  : `Synthetic-${randomBytes(24).toString("base64url")}`;
+async function operatorId() {
+  assert.equal(email, "presenter@example.test");
+  const response = await admin.request(
+    "GET",
+    `/realms/${realm}/users?email=${encodeURIComponent(email)}&exact=true`,
+  );
+  assert.equal(response.status, 200);
+  const users = (await response.json()) as {
+    id: string;
+    attributes?: Record<string, string[]>;
+  }[];
+  assert.equal(users.length, 1);
+  assert.equal(users[0].id, expectedOperatorId);
+  return users[0].id;
+}
+const userId = operator
+  ? await operatorId()
+  : await createSyntheticUser(admin, realm, { email, password });
 const jar = new CookieJar();
 
 async function request(path: string, init: RequestInit = {}) {
@@ -43,9 +68,11 @@ try {
   const start = await request("/auth/login?returnTo=%2Fcompanies");
   assert.equal(start.status, 303, "Login must start through the public proxy");
   const authorization = start.headers.get("location")!;
-  const authOrigin = new URL(authorization).origin;
+  const authUrl = new URL(authorization);
+  const authOrigin = authUrl.origin;
+  const context = authUrl.pathname.split("/realms/")[0];
   const blocked = await fetch(
-    `${authOrigin}/admin/realms/${realm}/users/${userId}`,
+    `${authOrigin}${context}/admin/realms/${realm}/users/${userId}`,
     { redirect: "manual" },
   );
   assert.equal(
@@ -99,6 +126,7 @@ try {
     ((await before.json()) as unknown[]).length > 0,
     "Provider login must have an active session",
   );
+  const previousCookie = jar.header();
   const ended = await request("/auth/sessions/terminate-all", {
     method: "POST",
     headers: { origin, "x-csrf-token": session.csrfToken },
@@ -109,6 +137,16 @@ try {
     "Administrative session termination must use the private path",
   );
   assert.equal((await request("/auth/session")).status, 401);
+  assert.equal(
+    (
+      await fetch(`${origin}/api/auth/session`, {
+        headers: { cookie: previousCookie },
+        redirect: "manual",
+      })
+    ).status,
+    401,
+    "A retained session credential must also be revoked",
+  );
   const after = await providerSessions();
   assert.equal(after.status, 200);
   assert.deepEqual(
@@ -118,13 +156,15 @@ try {
   );
   console.log("rehearsal_identity_passed");
 } finally {
-  const removed = await admin.request(
-    "DELETE",
-    `/realms/${realm}/users/${userId}`,
-  );
-  assert.equal(
-    removed.status,
-    204,
-    "Synthetic provider identity cleanup must succeed",
-  );
+  if (!operator) {
+    const removed = await admin.request(
+      "DELETE",
+      `/realms/${realm}/users/${userId}`,
+    );
+    assert.equal(
+      removed.status,
+      204,
+      "Synthetic provider identity cleanup must succeed",
+    );
+  }
 }
