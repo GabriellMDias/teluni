@@ -228,6 +228,10 @@ test("the imported composition publishes only a loopback TLS origin and preserve
       services.keycloak.image,
       "teluni/keycloak:presentation-presentation",
     );
+    assert.equal(
+      configuration.networks.front.ipam.config[0].gateway,
+      "172.30.20.1",
+    );
     assert.equal(configuration.networks.back.internal, true);
     assert.equal(services.proxy.depends_on, undefined);
     assert.equal(services.api.build.context, repository);

@@ -94,6 +94,7 @@ networks:
     ipam:
       config:
         - subnet: 172.30.20.0/24
+          gateway: 172.30.20.1
           ip_range: 172.30.20.128/25
   back: { internal: true }
 
