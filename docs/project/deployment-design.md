@@ -31,7 +31,7 @@ The product domain is `teluni.app` ([branding](branding/README.md#approved-name-
 
 - `TELUNI_PUBLIC_ORIGIN` is `https://app.teluni.app`, and `ORION_TOKEN_ISSUER` is `https://auth.teluni.app/realms/teluni`.
 - The proxy strips the `/api` prefix exactly as the development server does, so the API keeps one path layout everywhere. Screens are configured with `https://app.teluni.app/api`.
-- Keycloak's admin console and master realm are never routed publicly. Administrators reach them only over the host's administration tunnel.
+- Keycloak's admin console and master realm are never routed publicly. Administrators reach them only over the host's administration tunnel. The API uses the private container address for principal provisioning and administrative session termination, through `TELUNI_KEYCLOAK_ADMIN_URL` in the Compose service. Public OIDC discovery and token verification continue to use the HTTPS issuer; administrative requests never follow redirects.
 - One origin for the panel and API keeps cookies host-only and CSRF origin checks simple. It also avoids CORS.
 - **Client addresses.** Rate limits count per client address, so the API must see the real one. Caddy sets `X-Forwarded-For`, and the API trusts that header only from the proxy's address, named in `TELUNI_TRUSTED_PROXIES`; without it every request would share the proxy's address. On the relay path, the relay sends PROXY protocol v2, and Caddy accepts it only from the tunnel's address.
 

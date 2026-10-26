@@ -41,6 +41,7 @@ export const serverConfigSchema = Type.Object(
       Type.String({ pattern: "^[A-Za-z0-9._-]{1,255}$" }),
     ),
     provisionerClientSecret: Type.Optional(Type.String({ minLength: 16 })),
+    keycloakAdminUrl: Type.Optional(Type.String({ minLength: 1 })),
     sessionKeys: Type.Optional(Type.String({ minLength: 1 })),
     developmentMfaMode: Type.Union([
       Type.Literal("required"),
@@ -307,6 +308,18 @@ export const configReference = Object.freeze([
     classification: "RESTRICTED",
     secret: true,
     purpose: "Credential of the principal provisioner service account.",
+  },
+  {
+    key: "keycloakAdminUrl",
+    name: "TELUNI_KEYCLOAK_ADMIN_URL",
+    type: "HTTP(S) base URL, optional context path, no trailing slash",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Optional private Keycloak base URL for principal provisioning and administrative session termination; defaults to the public issuer's base. HTTP is only for a trusted private host/container network. Does not change OIDC discovery, token issuer or TLS verification. Requires complete human identity settings and an API restart.",
   },
   {
     key: "sessionKeys",
@@ -619,6 +632,9 @@ export function parseServerConfig(
     ...(env.TELUNI_SESSION_KEYS === undefined
       ? {}
       : { sessionKeys: env.TELUNI_SESSION_KEYS }),
+    ...(env.TELUNI_KEYCLOAK_ADMIN_URL === undefined
+      ? {}
+      : { keycloakAdminUrl: env.TELUNI_KEYCLOAK_ADMIN_URL }),
     developmentMfaMode: env.TELUNI_DEV_MFA_MODE ?? "required",
     ...(env.TELUNI_MAIL_SMTP_HOST === undefined
       ? {}
@@ -730,7 +746,10 @@ export function parseServerConfig(
     candidate.sessionKeys,
   ];
   // Human sessions are all-or-none and reuse the access-token issuer.
-  if (identityValues.some(Boolean)) {
+  if (
+    identityValues.some(Boolean) ||
+    candidate.keycloakAdminUrl !== undefined
+  ) {
     if (identityValues.some((value) => !value) || !candidate.tokenIssuer)
       throw new Error(
         "Invalid API configuration: incomplete human identity settings",
@@ -753,6 +772,26 @@ export function parseServerConfig(
     )
       throw new Error("Invalid API configuration: public origin");
     parseSessionKeys(candidate.sessionKeys!);
+  }
+  if (candidate.keycloakAdminUrl !== undefined) {
+    let base: URL;
+    try {
+      base = new URL(candidate.keycloakAdminUrl);
+    } catch {
+      throw new Error("Invalid API configuration: Keycloak admin URL");
+    }
+    if (
+      !["http:", "https:"].includes(base.protocol) ||
+      !base.hostname ||
+      base.username ||
+      base.password ||
+      base.href.includes("?") ||
+      base.href.includes("#") ||
+      base.port === "0" ||
+      base.href.replace(/\/$/, "") !== candidate.keycloakAdminUrl ||
+      !/\/realms\/[^/]+$/.test(new URL(candidate.tokenIssuer!).pathname)
+    )
+      throw new Error("Invalid API configuration: Keycloak admin URL");
   }
   if (candidate.developmentMfaMode === "optional") {
     const loopback = (value: string | undefined) =>

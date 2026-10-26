@@ -68,6 +68,8 @@ export type HumanIdentitySettings = Readonly<{
   clientSecret: string;
   provisionerClientId: string;
   provisionerClientSecret: string;
+  /** Private Keycloak base for administrative calls; public issuer is unchanged. */
+  keycloakAdminUrl?: string;
   sessionKeys: readonly Readonly<{ id: string; key: Buffer }>[];
   developmentMfaMode?: "required" | "optional";
 }>;

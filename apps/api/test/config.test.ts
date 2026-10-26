@@ -188,6 +188,61 @@ describe("human identity configuration", () => {
     ).toBe("required");
   });
 
+  it.each(["http://keycloak:8080", "https://identity.internal/auth"])(
+    "keeps the public issuer when administration uses %s",
+    (adminUrl) => {
+      const config = parseServerConfig({
+        ...complete,
+        ORION_ENV: "production",
+        ORION_TOKEN_ISSUER: "https://auth.example.test/realms/teluni",
+        ORION_TOKEN_JWKS_URL:
+          "https://auth.example.test/realms/teluni/protocol/openid-connect/certs",
+        TELUNI_PUBLIC_ORIGIN: "https://app.example.test",
+        TELUNI_KEYCLOAK_ADMIN_URL: adminUrl,
+      });
+      expect(config.keycloakAdminUrl).toBe(adminUrl);
+      expect(config.tokenIssuer).toBe(
+        "https://auth.example.test/realms/teluni",
+      );
+      expect(clientConfigFrom(config)).toEqual({});
+    },
+  );
+
+  it.each([
+    "",
+    "not a URL",
+    "ftp://keycloak:8080",
+    "http://user:secret@keycloak:8080",
+    "http://keycloak:8080/",
+    "http://keycloak:0",
+    "http://keycloak:8080?",
+    "http://keycloak:8080#",
+    "http://keycloak:8080?secret=value",
+    "http://keycloak:8080#fragment",
+    "http://keycloak:8080/auth/../admin",
+  ])("rejects an unsafe private Keycloak base URL %#", (adminUrl) => {
+    expect(() =>
+      parseServerConfig({ ...complete, TELUNI_KEYCLOAK_ADMIN_URL: adminUrl }),
+    ).toThrow("Invalid API configuration");
+  });
+
+  it("requires full identity configuration and a realm issuer for private administration", () => {
+    expect(() =>
+      parseServerConfig({
+        ORION_ENV: "test",
+        TELUNI_KEYCLOAK_ADMIN_URL: "http://keycloak:8080",
+      }),
+    ).toThrow("incomplete human identity settings");
+    expect(() =>
+      parseServerConfig({
+        ...complete,
+        ORION_TOKEN_ISSUER: "https://auth.example.test",
+        TELUNI_KEYCLOAK_ADMIN_URL: "http://keycloak:8080",
+      }),
+    ).toThrow("Keycloak admin URL");
+    expect(parseServerConfig(complete).keycloakAdminUrl).toBeUndefined();
+  });
+
   it.each([
     { ORION_ENV: "test" },
     {

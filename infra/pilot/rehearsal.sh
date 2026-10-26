@@ -135,9 +135,17 @@ services:
   backup:$build
     volumes:
       - $work/repository:/repository
+  release:$build
+    # The qualification process reaches the public TLS endpoints and trusts
+    # this rehearsal's CA; these are not production release requirements.
+    networks: [back, front]
+    environment:
+      NODE_EXTRA_CA_CERTS: /rehearsal-ca/root.crt
+    volumes:
+      - $work/ca:/rehearsal-ca:ro
 YAML
     if [ -n "$build" ]; then
-      for service in release keycloak proxy; do
+      for service in keycloak proxy; do
         printf '  %s:%s\n' "$service" "$build"
       done
       printf 'secrets:\n  extra-ca:\n    file: %s\n' "$TELUNI_BUILD_CA_FILE"
@@ -205,6 +213,11 @@ check_routing() {
   esac
 }
 
+check_identity() {
+  compose "$1" run --rm --no-deps --entrypoint node release \
+    --import tsx test/identity/pilot-check.ts
+}
+
 company=00000000-0000-4000-8000-0000000000c1
 seed_data() {
   local project="$1" file="$work/object.bin" sha size
@@ -242,6 +255,7 @@ start_stack "$source_project"
 
 log "checking routing, TLS and discovery through the proxy"
 check_routing
+check_identity "$source_project"
 
 log "writing data and taking a snapshot"
 seed_data "$source_project"
@@ -260,4 +274,5 @@ compose "$restored_project" run --rm release end-sessions >/dev/null
 log "checking the restored stack"
 [ "$(counts "$restored_project")" = "$expected" ] || fail "restored counts differ from $expected"
 check_routing
+check_identity "$restored_project"
 log "rehearsal passed"

@@ -60,6 +60,9 @@ try {
         clientSecret: config.oidcClientSecret!,
         provisionerClientId: config.provisionerClientId!,
         provisionerClientSecret: config.provisionerClientSecret!,
+        ...(config.keycloakAdminUrl === undefined
+          ? {}
+          : { keycloakAdminUrl: config.keycloakAdminUrl }),
         sessionKeys: parseSessionKeys(config.sessionKeys),
         developmentMfaMode: config.developmentMfaMode,
       }

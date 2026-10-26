@@ -139,14 +139,21 @@ function classify(error: unknown): never {
 
 /**
  * Keycloak adapter for the accepted provider. The issuer is
- * `<base>/realms/<realm>`; administrative calls use the same realm.
+ * `<base>/realms/<realm>`; administrative calls use the same realm through
+ * the optional private base, without changing public discovery or verification.
  */
 export function createKeycloakProvider(
   settings: HumanIdentitySettings,
 ): IdentityProvider {
   const issuer = new URL(settings.issuer);
   const insecure = issuer.protocol === "http:";
-  const adminBase = settings.issuer.replace("/realms/", "/admin/realms/");
+  const realm = /\/realms\/([^/]+)$/.exec(issuer.pathname)?.[1];
+  if (settings.keycloakAdminUrl !== undefined && !realm)
+    throw new Error("Invalid Keycloak issuer realm path");
+  const adminBase =
+    settings.keycloakAdminUrl === undefined
+      ? settings.issuer.replace("/realms/", "/admin/realms/")
+      : `${settings.keycloakAdminUrl}/admin/realms/${realm}`;
   const redirectUri = `${settings.publicOrigin}${callbackPath}`;
   let web: Promise<oidc.Configuration> | undefined;
   let provisioner: Promise<oidc.Configuration> | undefined;
@@ -208,6 +215,7 @@ export function createKeycloakProvider(
     try {
       return await fetch(`${adminBase}${path}`, {
         method,
+        redirect: "error",
         headers: {
           authorization: `Bearer ${await adminToken()}`,
           ...(body === undefined ? {} : { "content-type": "application/json" }),
