@@ -1,5 +1,18 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.android.application)
+}
+
+// Client-visible installation address, selected by the artifact builder.
+val playerApiEndpoint = providers.gradleProperty("teluniPlayerApiEndpoint").orElse("").get()
+if (playerApiEndpoint.isNotEmpty()) {
+    val endpoint = URI(playerApiEndpoint)
+    require(endpoint.scheme == "https" && endpoint.host != null && endpoint.rawUserInfo == null &&
+        endpoint.rawQuery == null && endpoint.rawFragment == null && endpoint.normalize() == endpoint &&
+        (endpoint.port == -1 || endpoint.port in 1..65535)) {
+        "teluniPlayerApiEndpoint must be an HTTPS API address without credentials, query, fragment or traversal"
+    }
 }
 
 android {
@@ -11,6 +24,7 @@ android {
         targetSdk = 37
         versionCode = 2
         versionName = "0.1.1"
+        buildConfigField("String", "API_ENDPOINT", "\"${URI(playerApiEndpoint).toASCIIString()}\"")
     }
     buildFeatures { buildConfig = true }
     compileOptions {

@@ -58,6 +58,15 @@
     "title": "Teluni Implementation Plan",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Player endpoint preset",
+    "anchor": "player-endpoint-preset",
+    "text": "Player endpoint preset\nPJ-12 follow-up on 2026-10-26: the optional HTTPS build property `teluniPlayerApiEndpoint` preconfigures a fresh Android installation and opens pairing directly. Existing stored endpoints and credentials are preserved across APK updates. The Android UI test covers preset and manual builds; Gradle checks, APK signature verification and repository validation are recorded in the pull request. No release signing key or physical-device qualification is implied.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Deployment bootstrap tooling",
     "anchor": "deployment-bootstrap-tooling",
     "text": "Deployment bootstrap tooling\nPJ-13/PJ-24 follow-up implemented on 2026-10-25: `tooling/deployment/presentation.mjs` generates protected per-installation configuration outside the build context and orchestrates initialization, qualification, durable shutdown and verified origin-route export. The isolated synthetic profile reuses the pilot images, keeps management and the mail sink private, disables public signup in this synthetic installation, requires TLS for SMTP and retains normal MFA enforcement. Five focused tests cover configuration validity, secret separation, refusal to overwrite or follow symlinks, Compose isolation and safe CLI failures. CI runs the executable ingress, identity, SMTP, client-address and restart rehearsal after the independent pilot restore rehearsal; current-head gate results belong to the pull request. The accepted product deployment and release policies remain unchanged; actual host/connector and TV execution remain environment qualification, with no new external account or human-controlled credential required to implement the tooling.\n"
@@ -349,14 +358,5 @@
     "heading": "Upload",
     "anchor": "upload",
     "text": "Upload\nUpload is two requests, so the server can admit the file before receiving any bytes and the bytes stream to disk without buffering:\n`POST /companies/{companyId}/media` with the name, scope, declared content type and declared size creates the asset in `UPLOADING`. The server requires `media.upload` on the scope, an active company and branch, a declared type from the allowlist below and a declared size within the kind's limit, and checks the abuse limits and the storage reserve.\n`PUT /companies/{companyId}/media/{assetId}/content` with `Content-Type: application/octet-stream` and a `Content-Length` equal to the declared size streams the bytes to a temporary file on the media volume while computing their SHA-256. More bytes than declared, fewer bytes, a closed connection or a size mismatch delete the temporary file and leave the asset in `UPLOADING`, so the person can retry the same `PUT`. A complete upload moves the asset to `PROCESSING` and wakes the processor.\nAn asset still in `UPLOADING` one hour after creation is discarded by maintenance. Resumable chunked upload (for example the tus protocol) is not part of this design; it is the preferred extension if pilot measurements show that whole-file retries of large videos are a problem.\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Inspection and validation",
-    "anchor": "inspection-and-validation",
-    "text": "Inspection and validation\nEvery check runs on the server; the declared values only admit the upload.\n**Signature.** The first bytes must carry the signature of an allowed format, and that format must match the declared type: JPEG (`FF D8 FF`), PNG (the 8-byte PNG signature), WebP (`RIFF....WEBP`), the ISO base media family (`ftyp` box: MP4, MOV, M4V) or Matroska/WebM (EBML header). Anything else, including a mismatch with the declared type, is rejected as `MEDIA_TYPE_MISMATCH` or `MEDIA_TYPE_UNSUPPORTED`.\n**Probe.** `ffprobe` reads the file with its demuxer forced to the format the signature identified, input limited to the local file protocol, and JSON output bounded to 1 MiB. A probe that fails, times out or reports no usable stream rejects the asset as `MEDIA_UNREADABLE`.\n**Images.** Exactly one still picture coded as JPEG, PNG or WebP; animated PNG or WebP is rejected. Each axis at most 8,192 px and at most 32,000,000 pixels, after applying the EXIF orientation.\n**Videos.** At least one video stream whose codec is H.264, HEVC, VP8, VP9, AV1 or MPEG-4 Part 2; audio, when present, AAC, MP3, Opus, Vorbis, FLAC or AC-3. Each axis at most 8,192 px, frame rate at most 120 fps, duration more than 0 and at most 3,600 seconds (AT-03). Further streams (subtitles, data, attachments) are ignored and never copied.\n**Decode.** Producing the renditions decodes the whole file. A decoding error rejects the asset as `MEDIA_UNREADABLE`; the original is never offered for use in that case.\nA rejection is final for that asset: it moves to `REJECTED` with the reason code, its temporary and derived files are deleted, and the panel explains the reason in the person's language. The person may discard it.\n"
   }
 ]

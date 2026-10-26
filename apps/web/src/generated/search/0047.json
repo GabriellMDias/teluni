@@ -4,6 +4,24 @@
     "title": "Teluni Product Vision",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Origin and pilot",
+    "anchor": "origin-and-pilot",
+    "text": "Origin and pilot\nThe initial opportunity is a snack bar considering televisions for products, images, videos, and promotions. It is a candidate pilot, not a confirmed customer or an exclusive definition of the product.\nThe owner's experience with PDT Display provides conceptual learning only. Teluni must have independent architecture, identity, and implementation. Do not copy PDT Display code, assets, credentials, customer data, private designs, or proprietary information without authorization. Authorized Orion material remains governed by the repository's provenance and license. The owner selected Apache-2.0 for Teluni source and documentation; [ADR-0022](../adr/0022-license-teluni-under-apache-2-0.md) records that decision and [PH-06](human-actions.md#ph-06) records its verification. SaaS pricing and customer terms remain separate commercial decisions.\n"
+  },
+  {
+    "id": "repository/docs/project/product",
+    "title": "Teluni Product Vision",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Audience and use cases",
+    "anchor": "audience-and-use-cases",
+    "text": "Audience and use cases\nSegment\nRepresentative use case\nRestaurants, snack bars, pizzerias, cafes\nMenus, featured products, opening-period promotions\nSupermarkets and retail\nOffers, prices, announcements, local campaigns\nGyms and sports centers\nClass schedules, instructions, promotions\nClinics, practices, hospitals\nGeneral service information and approved public announcements\nHotels and hospitality\nGuest information, services, events\nOffices and corporate environments\nInternal communications and visual announcements\nChains and franchises\nCentral publication with authorized branch-level operation\nThese are target use cases, not implemented integrations or an invitation to process sensitive patient or employee records. Sector-specific needs belong in specialized features without making the signage core restaurant-specific. One company with one branch must remain simple to operate; many branches and large device fleets must fit the conceptual ownership model, with supported capacity established through measurement.\n"
+  },
+  {
+    "id": "repository/docs/project/product",
+    "title": "Teluni Product Vision",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Actors and core journeys",
     "anchor": "actors-and-core-journeys",
     "text": "Actors and core journeys\nThe [security model](security-and-i18n.md#actors-and-authorization) routes to the selected human access policies and their pending technical enforcement. The product journeys are:\nA verified eligible registrant creates a new company through public automatic activation and becomes its responsible administrator, subject to commercial/privacy/abuse readiness. The platform retains a controlled assisted-enrollment path without claiming existing companies by name or domain.\nA company administrator creates branches and delegates permitted operations to members.\nAn authorized operator pairs a display using a temporary code shown by the player and assigns it to the correct branch.\nAn authorized publisher uploads media, configures typed catalogs/fields/records (for example products or a weekly agenda), composes regional content/schedules, previews and publishes.\nAuthorized price saves automatically publish affected already-published data bindings, without releasing unrelated drafts or recreating artwork. Other draft edits retain explicit publication.\nThe player stages complete consistent versions and continues local media/catalog rendering through the selected offline/clock envelope, with independent areas or optional coordinated pages.\nA scoped operator sees last contact, synchronization progress and actionable failures without unrestricted remote access. Actual player observation is distinct from server intent.\nAcceptance of these journeys is specified in [release requirements](mvp.md). The owner selected [human identity/access policies](identity-and-access.md), including public signup with automatic company activation, Google-only external login, multi-company memberships, a responsible administrator and customizable scoped profiles. The owner accepted the architecture ADRs and completed PH-11 decision selection; actual Keycloak/session qualification and external readiness remain pending; no signup/session flow is implemented.\n"
@@ -655,14 +673,5 @@
     "heading": "Teluni Security and Internationalization Requirements",
     "anchor": "teluni-security-and-internationalization-requirements",
     "text": "Teluni Security and Internationalization Requirements\n[Project documentation](README.md) · [MVP acceptance](mvp.md) · [Pending architecture decisions](architecture.md#pending-decisions)\n"
-  },
-  {
-    "id": "repository/docs/project/security-and-i18n",
-    "title": "Teluni Security and Internationalization Requirements",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Governing controls and implementation boundary",
-    "anchor": "governing-controls-and-implementation-boundary",
-    "text": "Governing controls and implementation boundary\n**Decided requirements:** HTTPS, secure established authentication, server-side authorization and tenant isolation, separate device identities with revocable credentials, relevant audit, validated private media, recoverable backups, structured redacted telemetry and controlled updates. These are acceptance obligations; the foundation runtime alone does not implement tenant/device security.\nApply the inherited [authentication](../security/authentication.md), [authorization](../security/authorization.md), [data classification](../security/data-classification.md), [retention](../security/data-retention.md), [redaction](../security/telemetry-redaction.md), [secrets](../security/secrets-management.md), [production access](../security/production-access.md), and [error handling](../architecture/error-handling.md) policies. Do not invent cryptography, token schemes or password implementations. Accepted [ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) remains authoritative for human API access-token verification; Keycloak, server-managed sessions and scoped access are accepted under ADR-0024/ADR-0025 and the [identity/access policies](identity-and-access.md). PH-11 decision selection is complete; actual provider/session qualification remains PJ-24, and device-authentication design remains separate.\n"
   }
 ]

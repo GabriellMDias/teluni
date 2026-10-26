@@ -4,6 +4,15 @@
     "title": "Tracing",
     "group": "Reliability",
     "kind": "repository",
+    "heading": "Context propagation and trust",
+    "anchor": "context-propagation-and-trust",
+    "text": "Context propagation and trust\nPropagation belongs in transport middleware, HTTP/RPC clients, queue adapters, workers, and integration infrastructure, not manual trace-ID parameters throughout business code. Continue valid supported upstream context only where the trust model permits it; otherwise start a new trace. Parse external headers defensively. Malformed context should not fail an application request unless its protocol specifically requires that behavior.\nTrace IDs/context are operational metadata, never proof of identity, authorization, tenant, or privileged routing. Accept only supported protocol fields; untrusted context must not inject arbitrary attributes or sensitive values. Actual principal propagation uses trusted application mechanisms.\nOutbound propagation should follow standards and provider support, not automatically send internal context to every third party. Browser cross-origin propagation needs explicit origin/header and privacy review. Trace boundaries and trust boundaries differ: crossing one does not authorize sharing all attributes.\nBaggage is not part of the default path. Introduce it only for an explicit distributed-context requirement, with deliberately allowlisted keys; values must be small, bounded, non-sensitive, and necessary across processes. It is not general context storage; do not put email, roles/permissions, tokens, user content, or full tenant metadata there. Most context should remain local. Restore/clear async context after execution; it must never leak across concurrent requests, jobs, threads, or tenants.\n"
+  },
+  {
+    "id": "repository/docs/reliability/tracing",
+    "title": "Tracing",
+    "group": "Reliability",
+    "kind": "repository",
     "heading": "Asynchronous causality and trace links",
     "anchor": "asynchronous-causality-and-trace-links",
     "text": "Asynchronous causality and trace links\nUse parent-child relationships for actual nested work and links where multiple parents, delayed execution, fan-in, fan-out, or independent stages make a tree misleading. Queue telemetry should separate waiting delay from execution time where supported and identify safe message type, consumer, and attempt. Scheduled work without a causal parent starts a new trace.\nImmediate retries may remain child spans; delayed attempts may use new linked traces with stable job/event/workflow IDs. Make retry attempts/reasons distinguishable. Duplicate deliveries are independent executions and need not share one trace. Long workflows lasting hours/days should use stages, links, and workflow IDs rather than an unbounded trace. Large batches/fan-out should use counts and selective significant/failed item spans rather than thousands of IDs or descendants.\nThe current exporter removes links; implementing these semantics requires explicit export-boundary changes and tests, not merely adding link calls.\n"
@@ -961,14 +970,5 @@
     "heading": "Redaction strategies",
     "anchor": "redaction-strategies",
     "text": "Redaction strategies\nUse source allowlists first, centralized application filtering as defense in depth, and collector/provider scrubbing as additional layers. Restricted data must be removed or replaced with a constant marker before export. Partial masking requires a justified safe remainder; it is not adequate for authentication secrets. Pseudonymization or hashing may permit correlation but does not establish anonymity, especially for predictable values.\nRecognize common secret-bearing field names and locations, including authorization, cookies, query/form fields, provider metadata, exceptions, and environment variables. Name-based blocklists are a safety net, not the primary policy: schemas evolve. Use clear field names, safe structured projections, and canonical classification metadata where practical. Local rules may be stricter but must not conflict with shared policy.\nIf safe sanitization cannot be completed, drop unsafe telemetry and emit only a bounded safe failure signal. Never include the rejected payload in that signal or recurse through the failing serializer. Review getters, `toJSON`, custom serializers, recursion, arrays, and nesting; deterministic telemetry-specific serialization must not expose extra fields. Bound string length, depth, array size, breadcrumb count, and exception metadata. Truncation is not redaction and must not misrepresent meaning.\n"
-  },
-  {
-    "id": "repository/docs/security/telemetry-redaction",
-    "title": "Telemetry Redaction",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "HTTP request telemetry",
-    "anchor": "http-request-telemetry",
-    "text": "HTTP request telemetry\nUseful safe metadata includes method, normalized route template, status, duration, service, environment, release, and request/trace IDs. Full URLs, query strings, headers, and bodies are not default telemetry. Allowlist justified parameters/headers individually and remove credential-bearing `Authorization`, `Proxy-Authorization`, `Cookie`, and `Set-Cookie` values. File content, binary buffers, document text, image metadata, and archive contents must never be captured automatically; filenames can also disclose sensitive data.\nApply the same rule to other transports. Prefer event/job type, safe ID, consumer, attempt, result, and duration over payloads. Normalize routes rather than embedding resource IDs. Public support references must be opaque and contain no personal information, secret state, or key material; preserve safe correlation during redaction.\n"
   }
 ]

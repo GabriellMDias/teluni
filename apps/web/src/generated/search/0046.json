@@ -4,6 +4,15 @@
     "title": "Teluni Media Library Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Inspection and validation",
+    "anchor": "inspection-and-validation",
+    "text": "Inspection and validation\nEvery check runs on the server; the declared values only admit the upload.\n**Signature.** The first bytes must carry the signature of an allowed format, and that format must match the declared type: JPEG (`FF D8 FF`), PNG (the 8-byte PNG signature), WebP (`RIFF....WEBP`), the ISO base media family (`ftyp` box: MP4, MOV, M4V) or Matroska/WebM (EBML header). Anything else, including a mismatch with the declared type, is rejected as `MEDIA_TYPE_MISMATCH` or `MEDIA_TYPE_UNSUPPORTED`.\n**Probe.** `ffprobe` reads the file with its demuxer forced to the format the signature identified, input limited to the local file protocol, and JSON output bounded to 1 MiB. A probe that fails, times out or reports no usable stream rejects the asset as `MEDIA_UNREADABLE`.\n**Images.** Exactly one still picture coded as JPEG, PNG or WebP; animated PNG or WebP is rejected. Each axis at most 8,192 px and at most 32,000,000 pixels, after applying the EXIF orientation.\n**Videos.** At least one video stream whose codec is H.264, HEVC, VP8, VP9, AV1 or MPEG-4 Part 2; audio, when present, AAC, MP3, Opus, Vorbis, FLAC or AC-3. Each axis at most 8,192 px, frame rate at most 120 fps, duration more than 0 and at most 3,600 seconds (AT-03). Further streams (subtitles, data, attachments) are ignored and never copied.\n**Decode.** Producing the renditions decodes the whole file. A decoding error rejects the asset as `MEDIA_UNREADABLE`; the original is never offered for use in that case.\nA rejection is final for that asset: it moves to `REJECTED` with the reason code, its temporary and derived files are deleted, and the panel explains the reason in the person's language. The person may discard it.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Renditions and the playback profile",
     "anchor": "renditions-and-the-playback-profile",
     "text": "Renditions and the playback profile\nThe original is kept unchanged and is never sent to a screen. Each asset gets a **display** rendition, which is what playlists and publications use, and a **thumbnail** for the panel:\nKind\nDisplay rendition\nThumbnail\nImage\nJPEG (or PNG when the image has transparency), EXIF orientation applied, all metadata removed (including location), scaled down without enlargement to fit 3840×2160 for landscape or 2160×3840 for portrait\nJPEG fitting 320×320\nVideo\nMP4 with the index at the start, H.264 High profile level 4.1, 8-bit 4:2:0, at most 1920×1080 for landscape or 1080×1920 for portrait, at most 30 fps, rotation applied, metadata removed; audio AAC-LC stereo 48 kHz at 128 kbit/s when the original has audio\nJPEG fitting 320×320 from the frame at one second (or the middle of shorter videos)\nA video that already matches the profile (H.264 High, Main or Baseline at or below level 4.1, 8-bit 4:2:0, within the size and frame-rate bounds, AAC or no audio, no rotation) is remuxed without re-encoding, so it keeps its quality. Everything else is transcoded with `libx264` (preset `veryfast`, constant quality 21). The result is probed again and must match the profile before the asset becomes `READY`.\nThis profile is the conservative reference that Android TV hardware decoders commonly support and matches the AT-04 reference qualification (1080p output, two simultaneous 1080p/30 fps videos). It is not a support claim: PH-08 and PJ-12 qualify real devices, and a later profile (for example 4K HEVC) is an additional rendition with its own evidence, never a silent replacement. Output larger than 2 GiB, a transcode slower than the processing timeout or a profile violation after conversion rejects the asset as `MEDIA_CONVERSION_FAILED` with the advice to export a smaller or shorter file.\n"
@@ -547,23 +556,5 @@
     "heading": "Purpose and positioning",
     "anchor": "purpose-and-positioning",
     "text": "Purpose and positioning\n**Decided:** Teluni is a multi-tenant digital signage SaaS for centralized management of visual content on televisions, monitors, and other display devices. It should combine simple operation, reliable local playback, freeform simultaneous presentation and configurable data-driven content. Brazil is the initial market, with international commercialization anticipated. The owner selected initial capabilities for product quality rather than limiting them solely by the MVP label.\nLocale\nIntended slogan\n`pt-BR`\nTodas as suas telas. Um só lugar.\n`en-US`\nEvery screen. One place.\n**Decided:** the owner approved Teluni as the product name and `teluni.app` as the principal domain. `teluni.com.br` is the secondary/defensive Brazil option (availability reported by the owner); unavailable/premium `teluni.com` is outside the current budget and scope. [Branding](branding/README.md) owns these decisions and the approved Connected Tiles identity. Preliminary trademark research has advanced, but registration/control and final clearance are not inferred. Connected Tiles is integrated into the web shell, portal and favicon, with the selected locally served font and derived touch icon. [PH-07](human-actions.md#ph-07) remains in progress for domain registration/control and trademark evidence.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Origin and pilot",
-    "anchor": "origin-and-pilot",
-    "text": "Origin and pilot\nThe initial opportunity is a snack bar considering televisions for products, images, videos, and promotions. It is a candidate pilot, not a confirmed customer or an exclusive definition of the product.\nThe owner's experience with PDT Display provides conceptual learning only. Teluni must have independent architecture, identity, and implementation. Do not copy PDT Display code, assets, credentials, customer data, private designs, or proprietary information without authorization. Authorized Orion material remains governed by the repository's provenance and license. The owner selected Apache-2.0 for Teluni source and documentation; [ADR-0022](../adr/0022-license-teluni-under-apache-2-0.md) records that decision and [PH-06](human-actions.md#ph-06) records its verification. SaaS pricing and customer terms remain separate commercial decisions.\n"
-  },
-  {
-    "id": "repository/docs/project/product",
-    "title": "Teluni Product Vision",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Audience and use cases",
-    "anchor": "audience-and-use-cases",
-    "text": "Audience and use cases\nSegment\nRepresentative use case\nRestaurants, snack bars, pizzerias, cafes\nMenus, featured products, opening-period promotions\nSupermarkets and retail\nOffers, prices, announcements, local campaigns\nGyms and sports centers\nClass schedules, instructions, promotions\nClinics, practices, hospitals\nGeneral service information and approved public announcements\nHotels and hospitality\nGuest information, services, events\nOffices and corporate environments\nInternal communications and visual announcements\nChains and franchises\nCentral publication with authorized branch-level operation\nThese are target use cases, not implemented integrations or an invitation to process sensitive patient or employee records. Sector-specific needs belong in specialized features without making the signage core restaurant-specific. One company with one branch must remain simple to operate; many branches and large device fleets must fit the conceptual ownership model, with supported capacity established through measurement.\n"
   }
 ]
