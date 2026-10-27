@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   useIsFetching,
   useMutation,
@@ -7,6 +7,8 @@ import {
 } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
+import { DataSet } from "../components.js";
+import type { DataSetMode } from "../dataset.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale, type Locale } from "../locale.js";
 import {
@@ -26,6 +28,7 @@ import {
   updateCompany,
   type Branch,
   type Company,
+  type CompanyWithAccess,
 } from "./api.js";
 import { organizationMessages, timeZoneChoices } from "./messages.js";
 import { CompanyMembers, formatInstant } from "./members.js";
@@ -94,67 +97,62 @@ function zoneChoices(): string[] {
     : [own, ...timeZoneChoices];
 }
 
-function CreateCompanyForm() {
-  const { locale, t } = useOrganizationMessages();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const zones = useMemo(zoneChoices, []);
-  const [displayName, setDisplayName] = useState("");
-  const [timeZone, setTimeZone] = useState(zones[0]);
-  const [defaultLocale, setDefaultLocale] = useState<Locale>(locale);
-  // Kept until success so a retry after an unknown outcome replays safely.
-  const [key, setKey] = useState(() => crypto.randomUUID());
-  const create = useMutation({
-    mutationFn: () =>
-      createCompany({ displayName, defaultLocale, timeZone }, key),
-    onSuccess: async ({ company }) => {
-      setKey(crypto.randomUUID());
-      await queryClient.invalidateQueries({ queryKey: companiesKey });
-      await navigate({
-        to: "/companies/$companyId",
-        params: { companyId: company.id },
-      });
-    },
-  });
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    create.mutate();
-  }
-  const unknown =
-    create.error &&
-    (!(create.error instanceof ApiFailure) || create.error.status >= 500);
+type CompanyValues = Pick<
+  Company,
+  "displayName" | "defaultLocale" | "timeZone"
+>;
+
+/** The company settings fields shared by creation and administration forms. */
+function CompanyFields({
+  idPrefix,
+  values,
+  zones,
+  disabled = false,
+  onChange,
+}: {
+  idPrefix: string;
+  values: CompanyValues;
+  zones: readonly string[];
+  disabled?: boolean;
+  onChange: (values: CompanyValues) => void;
+}) {
+  const { t } = useOrganizationMessages();
   return (
-    <form
-      className="form-stack"
-      onSubmit={submit}
-      aria-labelledby="create-company-title"
-    >
-      <h2 id="create-company-title">{t.createTitle}</h2>
-      <label htmlFor="company-name">{t.fieldCompanyName}</label>
+    <>
+      <label htmlFor={`${idPrefix}-name`}>{t.fieldCompanyName}</label>
       <input
-        id="company-name"
+        id={`${idPrefix}-name`}
         required
         maxLength={120}
-        value={displayName}
-        onChange={(event) => setDisplayName(event.target.value)}
+        value={values.displayName}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange({ ...values, displayName: event.target.value })
+        }
       />
-      <label htmlFor="company-time-zone">{t.fieldTimeZone}</label>
+      <label htmlFor={`${idPrefix}-time-zone`}>{t.fieldTimeZone}</label>
       <select
-        id="company-time-zone"
-        value={timeZone}
-        onChange={(event) => setTimeZone(event.target.value)}
+        id={`${idPrefix}-time-zone`}
+        value={values.timeZone}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange({ ...values, timeZone: event.target.value })
+        }
       >
-        {zones.map((zone) => (
+        {[...new Set([values.timeZone, ...zones])].map((zone) => (
           <option key={zone} value={zone}>
             {zone}
           </option>
         ))}
       </select>
-      <label htmlFor="company-locale">{t.fieldLocale}</label>
+      <label htmlFor={`${idPrefix}-locale`}>{t.fieldLocale}</label>
       <select
-        id="company-locale"
-        value={defaultLocale}
-        onChange={(event) => setDefaultLocale(event.target.value as Locale)}
+        id={`${idPrefix}-locale`}
+        value={values.defaultLocale}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange({ ...values, defaultLocale: event.target.value as Locale })
+        }
       >
         {(["pt-BR", "en-US"] as const).map((value) => (
           <option key={value} value={value}>
@@ -162,6 +160,58 @@ function CreateCompanyForm() {
           </option>
         ))}
       </select>
+    </>
+  );
+}
+
+function CreateCompanyForm({
+  initial,
+  onDirtyChange,
+}: {
+  initial: CompanyValues;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
+  const { t } = useOrganizationMessages();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const zones = useMemo(zoneChoices, []);
+  const [values, setValues] = useState(initial);
+  // Kept until success so a retry after an unknown outcome replays safely.
+  const [key, setKey] = useState(() => crypto.randomUUID());
+  const dirty = values.displayName !== initial.displayName;
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  const create = useMutation({
+    mutationFn: () => createCompany(values, key),
+    onSuccess: async ({ company }) => {
+      setKey(crypto.randomUUID());
+      onDirtyChange(false);
+      await queryClient.invalidateQueries({ queryKey: companiesKey });
+      await navigate({
+        to: "/companies/$companyId",
+        params: { companyId: company.id },
+      });
+    },
+  });
+  const unknown =
+    create.error &&
+    (!(create.error instanceof ApiFailure) || create.error.status >= 500);
+  return (
+    <form
+      className="form-stack"
+      onSubmit={(event) => {
+        event.preventDefault();
+        create.mutate();
+      }}
+      aria-labelledby="company-record-title"
+    >
+      <h2 id="company-record-title">{t.createTitle}</h2>
+      <CompanyFields
+        idPrefix="company"
+        values={values}
+        zones={zones}
+        disabled={create.isPending}
+        onChange={setValues}
+      />
       {create.error &&
         (unknown ? (
           <div role="alert" className="notice notice-error">
@@ -181,14 +231,201 @@ function CreateCompanyForm() {
   );
 }
 
-export function CompaniesPage({ cursor }: { cursor?: string }) {
+/** Loads a company before rendering its form, for editing or duplication. */
+function CompanyRecord({
+  companyId,
+  returnTo,
+  children,
+}: {
+  companyId: string;
+  returnTo: string;
+  children: (company: CompanyWithAccess) => ReactNode;
+}) {
+  const { t } = useOrganizationMessages();
+  const company = useQuery({
+    queryKey: companyKey(companyId),
+    queryFn: () => getCompany(companyId),
+  });
+  if (company.isPending) return <p>{t.loading}</p>;
+  if (company.isError)
+    return company.error instanceof ApiFailure &&
+      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
+      <StepUpPrompt returnTo={returnTo} />
+    ) : (
+      <Failure
+        error={company.error}
+        operation="read"
+        onReload={() => void company.refetch()}
+      />
+    );
+  return children(company.data);
+}
+
+function EditCompanyForm({
+  record,
+  returnTo,
+  onDirtyChange,
+}: {
+  record: CompanyWithAccess;
+  returnTo: string;
+  onDirtyChange: (dirty: boolean) => void;
+}) {
+  const { t } = useOrganizationMessages();
+  const queryClient = useQueryClient();
+  const { company, access } = record;
+  const zones = useMemo(zoneChoices, []);
+  type Draft = CompanyValues & { expectedVersion: number };
+  // Capture the version with the draft; background refetches cannot rebase it.
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => onDirtyChange(draft !== null), [draft, onDirtyChange]);
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: companyKey(company.id) }),
+      queryClient.invalidateQueries({ queryKey: companiesKey }),
+      queryClient.invalidateQueries({ queryKey: auditKey(company.id) }),
+    ]);
+  const save = useMutation({
+    mutationFn: (input: Draft) => updateCompany(company.id, input),
+    onSuccess: async () => {
+      setDraft(null);
+      setSaved(true);
+      await refresh();
+    },
+  });
+  const canManage = access.capabilities.includes("company.settings.manage");
+  const needsStepUp = access.capabilitiesAfterStrongAuthentication.includes(
+    "company.settings.manage",
+  );
+  const mustReload =
+    Boolean(save.error) &&
+    (!(save.error instanceof ApiFailure) ||
+      save.error.status >= 500 ||
+      save.error.code === "RESOURCE_VERSION_CONFLICT");
+  const values = draft ?? company;
+  return (
+    <form
+      className="form-stack"
+      aria-labelledby="company-record-title"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (draft && !mustReload) save.mutate(draft);
+      }}
+    >
+      <h2 id="company-record-title">{company.displayName}</h2>
+      <p className="hint">
+        <Link to="/companies/$companyId" params={{ companyId: company.id }}>
+          {t.openCompany}
+        </Link>
+      </p>
+      {saved && <p role="status">{t.settingsSaved}</p>}
+      {needsStepUp ? (
+        <StepUpPrompt returnTo={returnTo} />
+      ) : (
+        !canManage && <p className="hint">{t.settingsReadOnly}</p>
+      )}
+      <CompanyFields
+        idPrefix="company"
+        values={{
+          displayName: values.displayName,
+          timeZone: values.timeZone,
+          defaultLocale: values.defaultLocale,
+        }}
+        zones={zones}
+        disabled={!canManage || save.isPending}
+        onChange={(next) => {
+          setSaved(false);
+          setDraft({
+            ...next,
+            expectedVersion: draft?.expectedVersion ?? company.version,
+          });
+        }}
+      />
+      {save.error && (
+        <Failure
+          error={save.error}
+          operation="write"
+          onReload={() => {
+            setDraft(null);
+            save.reset();
+            void refresh();
+          }}
+        />
+      )}
+      {canManage && (
+        <div className="action-group">
+          <button
+            type="submit"
+            className="button-primary"
+            disabled={!draft || save.isPending || mustReload}
+          >
+            {save.isPending ? t.saving : t.save}
+          </button>
+          <button
+            type="button"
+            disabled={!draft || save.isPending}
+            onClick={() => {
+              setDraft(null);
+              save.reset();
+              if (mustReload) void refresh();
+            }}
+          >
+            {t.cancel}
+          </button>
+        </div>
+      )}
+    </form>
+  );
+}
+
+export type CompaniesSearch = {
+  cursor?: string;
+  mode?: DataSetMode;
+  record?: string;
+  copy?: string;
+};
+
+export function CompaniesPage({ search }: { search: CompaniesSearch }) {
+  const { cursor } = search;
   const { locale, t } = useOrganizationMessages();
+  const navigate = useNavigate({ from: "/companies" });
+  const queryClient = useQueryClient();
   const session = useQuery(sessionQuery);
   const companies = useQuery({
     queryKey: [...companiesKey, cursor ?? null],
     queryFn: () => listCompanies(cursor),
     enabled: Boolean(session.data),
   });
+  const refreshing = useIsFetching({ queryKey: companiesKey }) > 0;
+  const [dirty, setDirty] = useState(false);
+  const rows = companies.data?.items ?? [];
+  // With no company yet, the dataset opens directly on a new record.
+  const firstCompany = !cursor && companies.isSuccess && rows.length === 0;
+  const mode: DataSetMode = search.mode ?? (firstCompany ? "form" : "grid");
+  const index = rows.findIndex((row) => row.id === search.record);
+  const record =
+    search.record === "new"
+      ? "new"
+      : index >= 0
+        ? rows[index].id
+        : mode === "form"
+          ? (rows[0]?.id ?? "new")
+          : undefined;
+  const position = rows.findIndex((row) => row.id === record);
+  const returnTo = `/companies?${new URLSearchParams(
+    Object.entries(search).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  )}`.replace(/\?$/, "");
+  const go = (next: Omit<CompaniesSearch, "cursor">, replace = false) => {
+    setDirty(false);
+    void navigate({
+      search: { ...(cursor ? { cursor } : {}), ...next },
+      replace,
+    });
+  };
+  const idle = !dirty;
+  const select = (id: string) => go({ mode: search.mode, record: id }, true);
   return (
     <section
       className="panel organization-panel"
@@ -206,57 +443,159 @@ export function CompaniesPage({ cursor }: { cursor?: string }) {
           onReload={() => void session.refetch()}
         />
       ) : !session.data ? (
-        <SignInPrompt
-          returnTo={`/companies${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`}
-        />
+        <SignInPrompt returnTo={returnTo} />
       ) : (
         <>
-          <p>{t.companiesLead}</p>
-          {companies.isPending ? (
-            <p>{t.loading}</p>
-          ) : companies.isError ? (
+          <p>{firstCompany ? t.companiesEmpty : t.companiesLead}</p>
+          {companies.isError && (
             <Failure
               error={companies.error}
               operation="read"
               onReload={() => void companies.refetch()}
             />
-          ) : companies.data.items.length === 0 ? (
-            <p className="empty-state">
-              {cursor ? t.pageEmpty : t.companiesEmpty}
-            </p>
-          ) : (
-            <ul className="organization-list">
-              {companies.data.items.map((company) => (
-                <li key={company.id}>
-                  <Link
-                    to="/companies/$companyId"
-                    params={{ companyId: company.id }}
-                  >
-                    {company.displayName}
-                  </Link>
-                  <span className="hint">
-                    {company.roles.map((role) => t.roles[role]).join(", ")}
-                  </span>
-                </li>
-              ))}
-            </ul>
           )}
-          <nav className="pagination" aria-label={t.companiesTitle}>
-            {cursor && (
-              <Link to="/companies" search={{}}>
-                {t.firstPage}
-              </Link>
-            )}
-            {companies.data?.nextCursor && (
-              <Link
-                to="/companies"
-                search={{ cursor: companies.data.nextCursor }}
-              >
-                {t.nextPage}
-              </Link>
-            )}
-          </nav>
-          <CreateCompanyForm />
+          {dirty && <p className="hint">{t.unsavedChanges}</p>}
+          {companies.isPending ? (
+            <p>{t.loading}</p>
+          ) : (
+            <DataSet
+              label={t.companiesRecords}
+              locale={locale}
+              mode={mode}
+              rows={rows}
+              rowId={(row) => row.id}
+              rowName={(row) => row.displayName}
+              columns={[
+                {
+                  key: "name",
+                  header: t.fieldCompanyName,
+                  render: (row) => (
+                    <Link
+                      to="/companies/$companyId"
+                      params={{ companyId: row.id }}
+                    >
+                      {row.displayName}
+                    </Link>
+                  ),
+                },
+                {
+                  key: "roles",
+                  header: t.yourAccess,
+                  render: (row) =>
+                    row.roles.map((role) => t.roles[role]).join(", "),
+                },
+              ]}
+              selectedId={record}
+              onSelect={idle ? select : undefined}
+              onModeChange={
+                idle
+                  ? (next) =>
+                      go({
+                        mode: next,
+                        ...(record ? { record } : {}),
+                      })
+                  : undefined
+              }
+              onAdd={
+                idle ? () => go({ mode: "form", record: "new" }) : undefined
+              }
+              onPrevious={
+                idle && position > 0
+                  ? () => select(rows[position - 1].id)
+                  : undefined
+              }
+              onNext={
+                idle && record !== "new" && position < rows.length - 1
+                  ? () => select(rows[position + 1].id)
+                  : undefined
+              }
+              onDuplicate={
+                idle && record && record !== "new"
+                  ? () => go({ mode: "form", record: "new", copy: record })
+                  : undefined
+              }
+              onRefresh={
+                idle
+                  ? () =>
+                      void queryClient.invalidateQueries({
+                        queryKey: ["organizations"],
+                      })
+                  : undefined
+              }
+              refreshing={refreshing}
+              empty={
+                <p className="empty-state">
+                  {cursor ? t.pageEmpty : t.companiesEmpty}
+                </p>
+              }
+            >
+              {record === "new" ? (
+                search.copy ? (
+                  <CompanyRecord
+                    key={`copy-${search.copy}`}
+                    companyId={search.copy}
+                    returnTo={returnTo}
+                  >
+                    {({ company }) => (
+                      <CreateCompanyForm
+                        initial={{
+                          displayName: t
+                            .copyName(company.displayName)
+                            .slice(0, 120),
+                          timeZone: company.timeZone,
+                          defaultLocale: company.defaultLocale,
+                        }}
+                        onDirtyChange={setDirty}
+                      />
+                    )}
+                  </CompanyRecord>
+                ) : (
+                  <CreateCompanyForm
+                    key="new"
+                    initial={{
+                      displayName: "",
+                      timeZone: zoneChoices()[0],
+                      defaultLocale: locale,
+                    }}
+                    onDirtyChange={setDirty}
+                  />
+                )
+              ) : (
+                record && (
+                  <CompanyRecord
+                    key={record}
+                    companyId={record}
+                    returnTo={returnTo}
+                  >
+                    {(data) => (
+                      <EditCompanyForm
+                        record={data}
+                        returnTo={returnTo}
+                        onDirtyChange={setDirty}
+                      />
+                    )}
+                  </CompanyRecord>
+                )
+              )}
+            </DataSet>
+          )}
+          {mode === "grid" && (
+            <nav className="pagination" aria-label={t.companiesTitle}>
+              {cursor && (
+                <Link to="/companies" search={{}}>
+                  {t.firstPage}
+                </Link>
+              )}
+              {companies.data?.nextCursor && (
+                <Link
+                  to="/companies"
+                  search={{ cursor: companies.data.nextCursor }}
+                >
+                  {t.nextPage}
+                </Link>
+              )}
+            </nav>
+          )}
         </>
       )}
     </section>
@@ -488,13 +827,10 @@ function CompanySettings({ company }: { company: Company }) {
   const { t } = useOrganizationMessages();
   const queryClient = useQueryClient();
   const refreshing = useIsFetching({ queryKey: companyKey(company.id) }) > 0;
-  type Draft = Pick<Company, "displayName" | "defaultLocale" | "timeZone"> & {
-    expectedVersion: number;
-  };
+  type Draft = CompanyValues & { expectedVersion: number };
   // Capture the version with the draft; background refetches cannot rebase it.
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saved, setSaved] = useState(false);
-  const zones = [...new Set([company.timeZone, ...zoneChoices()])];
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: companyKey(company.id) }),
@@ -526,50 +862,13 @@ function CompanySettings({ company }: { company: Company }) {
             if (!mustReload) save.mutate(draft);
           }}
         >
-          <label htmlFor="settings-name">{t.fieldCompanyName}</label>
-          <input
-            id="settings-name"
-            required
-            maxLength={120}
-            value={draft.displayName}
+          <CompanyFields
+            idPrefix="settings"
+            values={draft}
+            zones={zoneChoices()}
             disabled={save.isPending}
-            onChange={(event) =>
-              setDraft({ ...draft, displayName: event.target.value })
-            }
+            onChange={(values) => setDraft({ ...draft, ...values })}
           />
-          <label htmlFor="settings-time-zone">{t.fieldTimeZone}</label>
-          <select
-            id="settings-time-zone"
-            value={draft.timeZone}
-            disabled={save.isPending}
-            onChange={(event) =>
-              setDraft({ ...draft, timeZone: event.target.value })
-            }
-          >
-            {zones.map((zone) => (
-              <option key={zone} value={zone}>
-                {zone}
-              </option>
-            ))}
-          </select>
-          <label htmlFor="settings-locale">{t.fieldLocale}</label>
-          <select
-            id="settings-locale"
-            value={draft.defaultLocale}
-            disabled={save.isPending}
-            onChange={(event) =>
-              setDraft({
-                ...draft,
-                defaultLocale: event.target.value as Locale,
-              })
-            }
-          >
-            {(["pt-BR", "en-US"] as const).map((value) => (
-              <option key={value} value={value}>
-                {t.localeNames[value]}
-              </option>
-            ))}
-          </select>
           {save.error && (
             <Failure
               error={save.error}

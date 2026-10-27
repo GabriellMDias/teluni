@@ -13,10 +13,16 @@ const ptBR = {
   switchCompany: "Trocar empresa",
   companiesLead: "Empresas às quais você tem acesso.",
   companiesEmpty:
-    "Você ainda não participa de nenhuma empresa. Crie a primeira abaixo.",
+    "Você ainda não participa de nenhuma empresa. Crie a primeira no formulário.",
   signInRequired: "Entre para ver suas empresas.",
   signIn: "Entrar",
   createTitle: "Criar empresa",
+  companiesRecords: "Registros de empresas",
+  copyName: (name: string) => `${name} (cópia)`,
+  unsavedChanges:
+    "Salve ou cancele as alterações do formulário para trocar de registro.",
+  settingsReadOnly:
+    "Você pode ver esta empresa, mas não alterar as configurações dela.",
   fieldCompanyName: "Nome da empresa",
   fieldTimeZone: "Fuso horário",
   fieldLocale: "Idioma padrão",
@@ -336,10 +342,14 @@ const enUS: OrganizationMessages = {
   switchCompany: "Switch company",
   companiesLead: "Companies you have access to.",
   companiesEmpty:
-    "You are not part of any company yet. Create the first one below.",
+    "You are not part of any company yet. Create the first one in the form.",
   signInRequired: "Sign in to see your companies.",
   signIn: "Sign in",
   createTitle: "Create a company",
+  companiesRecords: "Company records",
+  copyName: (name: string) => `${name} (copy)`,
+  unsavedChanges: "Save or cancel the form changes to switch records.",
+  settingsReadOnly: "You can view this company but not change its settings.",
   fieldCompanyName: "Company name",
   fieldTimeZone: "Time zone",
   fieldLocale: "Default language",

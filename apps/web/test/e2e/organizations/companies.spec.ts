@@ -483,16 +483,48 @@ test("creates a company, verifies in two steps and manages branches, settings, m
   }
 
   await page.getByRole("link", { name: "Suas empresas" }).click();
+  const rows = page.locator(".ui-dataset-grid tbody tr");
   await expect(
-    page
-      .locator(".organization-list > li")
-      .filter({ hasText: "Lanchonete Central Renovada" }),
+    rows.filter({ hasText: "Lanchonete Central Renovada" }),
   ).toContainText("Administrador");
+  await expect(rows.filter({ hasText: "Empresa independente" })).toContainText(
+    "Administrador",
+  );
+
+  // The dataset switches between the grid and the selected record's form.
+  const toolbar = page.getByRole("toolbar", { name: "Ações do registro" });
+  await page
+    .getByRole("radio", { name: "Selecionar Lanchonete Central Renovada" })
+    .check();
+  await toolbar.getByRole("button", { name: "Modo formulário" }).click();
+  await expect(page.getByLabel("Nome da empresa")).toHaveValue(
+    "Lanchonete Central Renovada",
+  );
+  await expect(page.getByLabel("Fuso horário")).toHaveValue("America/Manaus");
+  await page.getByLabel("Nome da empresa").fill("Rascunho descartado");
   await expect(
-    page
-      .locator(".organization-list > li")
-      .filter({ hasText: "Empresa independente" }),
-  ).toContainText("Administrador");
+    toolbar.getByRole("button", { name: "Duplicar" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await expect(page.getByLabel("Nome da empresa")).toHaveValue(
+    "Lanchonete Central Renovada",
+  );
+  await toolbar.getByRole("button", { name: "Duplicar" }).click();
+  await expect(page.getByLabel("Nome da empresa")).toHaveValue(
+    "Lanchonete Central Renovada (cópia)",
+  );
+  await expect(page.getByLabel("Fuso horário")).toHaveValue("America/Manaus");
+  await expect(
+    page.getByRole("button", { name: "Criar empresa" }),
+  ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await toolbar.getByRole("button", { name: "Modo grade" }).click();
+  await expect(rows).toHaveCount(2);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });
 
 test("does not reveal a company the person does not belong to", async ({
@@ -527,7 +559,9 @@ test("shows the company workflow in English", async ({ browser }) => {
     await afterNavigation(
       page.getByRole("link", { name: "Lanchonete Central Renovada" }),
     ).toBeVisible();
-    await expect(page.getByLabel("Company name")).toBeVisible();
+    await expect(
+      page.getByRole("toolbar", { name: "Record actions" }),
+    ).toBeVisible();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   } finally {
     await context.close();

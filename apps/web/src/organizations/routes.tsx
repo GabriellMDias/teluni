@@ -7,23 +7,36 @@ import { AcceptInvitationPage } from "./invitations.js";
 import {
   CompaniesPage,
   CompanyPage,
+  type CompaniesSearch,
   useOrganizationMessages,
 } from "./pages.js";
 import "./organizations.css";
 
+const isUuid = (value: unknown): value is string =>
+  typeof value === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
 const companiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies",
-  validateSearch: (search: Record<string, unknown>): { cursor?: string } => ({
+  validateSearch: (search: Record<string, unknown>): CompaniesSearch => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
     search.cursor.length <= 1024
       ? { cursor: search.cursor }
       : {}),
+    ...(search.mode === "grid" || search.mode === "form"
+      ? { mode: search.mode }
+      : {}),
+    ...(search.record === "new" || isUuid(search.record)
+      ? { record: search.record }
+      : {}),
+    ...(search.record === "new" && isUuid(search.copy)
+      ? { copy: search.copy }
+      : {}),
   }),
   component: function CompaniesRoute() {
-    const { cursor } = companiesRoute.useSearch();
-    return <CompaniesPage cursor={cursor} />;
+    return <CompaniesPage search={companiesRoute.useSearch()} />;
   },
 });
 

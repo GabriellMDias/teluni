@@ -1,0 +1,93 @@
+{
+  "name": "DataSet",
+  "category": "Data Display",
+  "scope": "composed",
+  "owner": "Web UI",
+  "summary": "Record-oriented CRUD presentation: a toolbar, a selectable grid and a caller-rendered form.",
+  "props": [
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Accessible name of the dataset region."
+    },
+    {
+      "name": "locale",
+      "type": "pt-BR | en-US",
+      "meaning": "Language of the toolbar and selection labels."
+    },
+    {
+      "name": "mode",
+      "type": "grid | form",
+      "meaning": "Caller-owned view; keep it in the URL when it identifies the page state."
+    },
+    {
+      "name": "rows",
+      "type": "readonly Row[]",
+      "meaning": "Records of the current page, already authorized by the API."
+    },
+    {
+      "name": "columns",
+      "type": "DataSetColumn<Row>[]",
+      "meaning": "Grid columns with a stable key, header and cell renderer."
+    },
+    {
+      "name": "rowId / rowName",
+      "type": "(row) => string",
+      "meaning": "Stable record identity and the name used in the selection label."
+    },
+    {
+      "name": "selectedId / onSelect",
+      "type": "string / (id) => void",
+      "meaning": "Caller-owned selection; double-clicking a row selects it and requests form mode."
+    },
+    {
+      "name": "onModeChange, onAdd, onPrevious, onNext, onDuplicate, onRefresh",
+      "type": "() => void (optional)",
+      "meaning": "Toolbar actions; an omitted handler disables its button, for example at the first record or while a draft is unsaved."
+    },
+    {
+      "name": "onDelete",
+      "type": "(() => void) | null (optional)",
+      "meaning": "Omit when the records cannot be deleted; null shows the action disabled."
+    },
+    {
+      "name": "refreshing",
+      "type": "boolean",
+      "meaning": "Marks the refresh action busy while the caller reloads data. Defaults to false."
+    },
+    {
+      "name": "empty",
+      "type": "ReactNode",
+      "meaning": "Grid content when there are no rows."
+    },
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "The current record's form, rendered only in form mode."
+    }
+  ],
+  "states": [
+    "Grid with selection",
+    "Empty grid",
+    "Form mode",
+    "Actions disabled",
+    "Refreshing"
+  ],
+  "accessibility": "The toolbar uses role=toolbar with labeled icon buttons and tooltips. Rows are selected through labeled native radio buttons, so keyboard selection works without pointer gestures; links and buttons inside cells keep their own behavior.",
+  "usage": "Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold navigation handlers while a form has unsaved changes.",
+  "examples": [
+    {
+      "id": "dataset-modes",
+      "label": "Grid and form modes",
+      "description": "Synthetic local records; selection and mode are held by the example and no request is made.",
+      "live": true
+    }
+  ],
+  "id": "DataSet",
+  "exportName": "DataSet",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

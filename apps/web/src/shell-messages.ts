@@ -10,6 +10,8 @@ const ptBR = {
   light: "Claro",
   dark: "Escuro",
   tagline: "Todas as suas telas. Um só lugar.",
+  collapseSidebar: "Recolher menu",
+  expandSidebar: "Expandir menu",
 };
 
 export const shellMessages: Readonly<Record<Locale, typeof ptBR>> = {
@@ -24,5 +26,7 @@ export const shellMessages: Readonly<Record<Locale, typeof ptBR>> = {
     light: "Light",
     dark: "Dark",
     tagline: "Every screen. One place.",
+    collapseSidebar: "Collapse menu",
+    expandSidebar: "Expand menu",
   },
 };

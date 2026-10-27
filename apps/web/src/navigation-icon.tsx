@@ -15,6 +15,8 @@ const paths = {
   profiles: "M12 2 3 6v6c0 6 9 10 9 10s9-4 9-10V6l-9-4ZM8 12l3 3 5-6",
   invitations: "M3 5h18v14H3zM3 5l9 7 9-7",
   history: "M3 12a9 9 0 1 0 3-7M3 3v5h5M12 7v5l3 2",
+  documentation:
+    "M5 4h11a3 3 0 0 1 3 3v14H8a3 3 0 0 1-3-3V4ZM5 18a3 3 0 0 1 3-3h11",
 } as const;
 
 /** Decorative icons; each navigation action retains its visible text label. */
