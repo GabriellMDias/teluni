@@ -113,6 +113,9 @@ class AndroidAdaptersTest {
     @Test fun `TV setup focuses connect instead of opening the soft keyboard`() {
         Robolectric.buildActivity(PlayerActivity::class.java).setup().use { controller ->
             val activity = controller.get()
+            PlayerActivity::class.java.getDeclaredMethod("render", PlayerSnapshot::class.java).apply {
+                isAccessible = true
+            }.invoke(activity, PlayerSnapshot())
             val connect = descendants(activity.findViewById(android.R.id.content)).filterIsInstance<Button>().single()
             assertTrue(connect.hasFocus())
         }
@@ -121,11 +124,30 @@ class AndroidAdaptersTest {
     @Test fun `setup rejects credential-bearing endpoints without writing configuration`() {
         Robolectric.buildActivity(PlayerActivity::class.java).setup().use { controller ->
             val activity = controller.get()
+            // Exercise manual input even when this test build has a preset.
+            PlayerActivity::class.java.getDeclaredMethod("render", PlayerSnapshot::class.java).apply {
+                isAccessible = true
+            }.invoke(activity, PlayerSnapshot())
             val views = descendants(activity.findViewById(android.R.id.content)).toList()
             views.filterIsInstance<EditText>().single().setText("https://user:synthetic-secret@example.test")
             views.filterIsInstance<Button>().single().performClick()
             assertTrue(views.filterIsInstance<TextView>().any { it.text.toString() == activity.getString(R.string.invalid_endpoint) })
             assertFalse(activity.filesDir.resolve("endpoint.txt").exists())
+        }
+    }
+
+    @Test fun `preset builds open pairing without asking for an API address`() {
+        Robolectric.buildActivity(PlayerActivity::class.java).setup().use { controller ->
+            val activity = controller.get()
+            val views = descendants(activity.findViewById(android.R.id.content)).toList()
+            if (BuildConfig.API_ENDPOINT.isNotEmpty()) {
+                assertTrue(views.filterIsInstance<EditText>().isEmpty())
+                assertTrue(views.filterIsInstance<TextView>().any {
+                    it.contentDescription == activity.getString(R.string.pairing_description)
+                })
+            } else {
+                assertEquals(1, views.filterIsInstance<EditText>().size)
+            }
         }
     }
 

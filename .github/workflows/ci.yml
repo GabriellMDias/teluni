@@ -83,6 +83,9 @@ jobs:
       - name: Check the player
         working-directory: apps/player
         run: ./gradlew --no-daemon check :app:assembleDebug :app:assembleRelease
+      - name: Check preconfigured first-install pairing
+        working-directory: apps/player
+        run: ./gradlew --no-daemon :app:check :app:assembleDebug -PteluniPlayerApiEndpoint=https://player.example.test/api
 
   deployment:
     name: Deployment rehearsal

@@ -63,7 +63,10 @@ internal class PlayerRuntime(private val context: Context) {
     private var failureCount = 0
     @Volatile private var engine: PlayerEngine? = null
     @Volatile private var blocked = false
-    @Volatile private var state = PlayerSnapshot()
+    @Volatile private var state = PlayerSnapshot(
+        configured = Files.exists(configFile) || BuildConfig.API_ENDPOINT.isNotEmpty(),
+        status = if (Files.exists(configFile) || BuildConfig.API_ENDPOINT.isNotEmpty()) "CONNECTING" else "SETUP",
+    )
     @Volatile private var exchangeStatus = "CONNECTING"
     private val store by lazy { PlayerStore(context.filesDir.toPath().resolve("player")) }
 
@@ -83,6 +86,9 @@ internal class PlayerRuntime(private val context: Context) {
         if (!running.compareAndSet(false, true)) return
         workers.execute {
             try {
+                if (!Files.exists(configFile) && BuildConfig.API_ENDPOINT.isNotEmpty()) {
+                    configure(BuildConfig.API_ENDPOINT)
+                }
                 if (!Files.exists(configFile)) {
                     publish(PlayerSnapshot())
                     running.set(false)
