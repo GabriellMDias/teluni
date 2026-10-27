@@ -11,8 +11,11 @@
   --ui-color-danger-surface: var(--color-danger-bg);
   --ui-color-danger-border: var(--color-danger-border);
   --ui-radius: var(--radius-control);
+  --ui-color-surface-muted: var(--color-surface-muted);
+  --ui-color-selected: var(--color-selected);
+  --sidebar-width: 236px;
   display: grid;
-  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   grid-template-rows: auto 1fr;
   min-height: 100dvh;
   color: var(--color-ink);
@@ -112,6 +115,76 @@
   font-size: 0.75rem;
   line-height: 1.7;
 }
+.product-collapse {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  color: var(--color-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.product-collapse:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-muted);
+}
+.product-collapse svg {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (min-width: 761px) {
+  .product-shell[data-sidebar="collapsed"] {
+    --sidebar-width: 76px;
+  }
+  .product-shell[data-sidebar="collapsed"] .product-sidebar {
+    padding-inline: 0.75rem;
+    overflow-x: hidden;
+  }
+  .product-shell[data-sidebar="collapsed"] .product-brand {
+    justify-content: center;
+    margin-inline: 0;
+  }
+  /* Labels stay in the accessibility tree; only their rendering collapses. */
+  .product-shell[data-sidebar="collapsed"] .product-brand-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .product-shell[data-sidebar="collapsed"] .product-navigation a,
+  .product-shell[data-sidebar="collapsed"] .product-navigation .button-text {
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0;
+    font-size: 0;
+  }
+  .product-shell[data-sidebar="collapsed"] .company-navigation-context,
+  .product-shell[data-sidebar="collapsed"] .company-navigation-switch,
+  .product-shell[data-sidebar="collapsed"] .product-tagline {
+    display: none;
+  }
+  .product-shell[data-sidebar="collapsed"] .product-collapse {
+    align-self: center;
+    margin-top: auto;
+  }
+  .product-shell[data-sidebar="collapsed"] .product-collapse svg {
+    transform: scaleX(-1);
+  }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  .product-shell {
+    transition: grid-template-columns 160ms ease;
+  }
+}
 .product-workspace {
   grid-column: 2;
   grid-row: 2;
@@ -193,7 +266,8 @@
   .product-brand {
     margin: 0 0.85rem 1rem;
   }
-  .product-tagline {
+  .product-tagline,
+  .product-collapse {
     display: none;
   }
   .product-workspace {

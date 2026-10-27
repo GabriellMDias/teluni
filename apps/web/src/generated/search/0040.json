@@ -171,6 +171,42 @@
     "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n"
   },
   {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "DataSet",
+    "anchor": "dataset",
+    "text": "DataSet\nRecord-oriented CRUD presentation: a toolbar, a selectable grid and a caller-rendered form.\nCategory: Data Display. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `DataSet`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-3",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`string`\nAccessible name of the dataset region.\nSee type\n—\n`locale`\n`pt-BR | en-US`\nLanguage of the toolbar and selection labels.\nSee type\n—\n`mode`\n`grid | form`\nCaller-owned view; keep it in the URL when it identifies the page state.\nSee type\n—\n`rows`\n`readonly Row[]`\nRecords of the current page, already authorized by the API.\nSee type\n—\n`columns`\n`DataSetColumn<Row>[]`\nGrid columns with a stable key, header and cell renderer.\nSee type\n—\n`rowId / rowName`\n`(row) => string`\nStable record identity and the name used in the selection label.\nSee type\n—\n`selectedId / onSelect`\n`string / (id) => void`\nCaller-owned selection; double-clicking a row selects it and requests form mode.\nSee type\n—\n`onModeChange, onAdd, onPrevious, onNext, onDuplicate, onRefresh`\n`() => void (optional)`\nToolbar actions; an omitted handler disables its button, for example at the first record or while a draft is unsaved.\nSee type\n—\n`onDelete`\n`(() => void) | null (optional)`\nOmit when the records cannot be deleted; null shows the action disabled.\nSee type\n—\n`refreshing`\n`boolean`\nMarks the refresh action busy while the caller reloads data. Defaults to false.\nSee type\n—\n`empty`\n`ReactNode`\nGrid content when there are no rows.\nSee type\n—\n`children`\n`ReactNode`\nThe current record's form, rendered only in form mode.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-3",
+    "text": "States\nGrid with selection\nEmpty grid\nForm mode\nActions disabled\nRefreshing\nAccessibility: The toolbar uses role=toolbar with labeled icon buttons and tooltips. Rows are selected through labeled native radio buttons, so keyboard selection works without pointer gestures; links and buttons inside cells keep their own behavior.\nUsage: Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold navigation handlers while a form has unsaved changes.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-3",
+    "text": "Examples\n**Grid and form modes** (`dataset-modes`): Synthetic local records; selection and mode are held by the example and no request is made.\n"
+  },
+  {
     "id": "repository/docs/generated/configuration/api",
     "title": "API Configuration Reference",
     "group": "Generated references",
@@ -610,32 +646,5 @@
     "heading": "branches",
     "anchor": "branches",
     "text": "branches\nBranch of a company: a location with its own business time zone, assigned members and, later, devices.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; archived rather than deleted so references remain valid.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable branch UUID; public resource ID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nOwning company; immutable (tenant key).\n—\n—\n`name`\n`character varying(120)`\nno\n—\nCONFIDENTIAL\nBranch name, unique among the company's active branches regardless of case.\n—\n—\n`time_zone`\n`character varying(64)`\nno\n—\nINTERNAL\nIANA time zone for the branch's local business time.\n—\n—\n`status`\n`\"BranchStatus\"`\nno\n`'ACTIVE'::\"BranchStatus\"`\nINTERNAL\nACTIVE branches are usable; ARCHIVED branches are retained for references.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token incremented once per successful change.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change; not audit history.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-23",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`branches_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA branch belongs to an existing company.\n`branches_name_nonblank`\n`CHECK (((name)::text ~ '[^[:space:]]'::text))`\nBranch name cannot be blank.\n`branches_pkey`\n`PRIMARY KEY (id)`\nUnique branch identity.\n`branches_time_zone_nonblank`\n`CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))`\nTime zone has the IANA identifier shape.\n`branches_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`branches_company_active_name_unique`\n`CREATE UNIQUE INDEX branches_company_active_name_unique ON public.branches USING btree (company_id, lower((name)::text)) WHERE (status = 'ACTIVE'::\"BranchStatus\")`\nActive branch names are unique within a company, ignoring case, including racing creations.\n`branches_company_id_id_key`\n`CREATE UNIQUE INDEX branches_company_id_id_key ON public.branches USING btree (company_id, id)`\nTenant key that tenant references target.\n`branches_company_status_name_idx`\n`CREATE INDEX branches_company_status_name_idx ON public.branches USING btree (company_id, status, name)`\nSupports listing a company's branches by state and name.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "memberships",
-    "anchor": "memberships",
-    "text": "memberships\nA principal's membership in one company; access comes only from its unexpired grants.\nOwner: Organizations. Classification: CONFIDENTIAL.\nLifecycle: Created ACTIVE; company administrators may suspend, reactivate or terminally remove membership with an observed version. Responsibility and the last active administrator are protected. Historical attribution is retained; no runtime deletion.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated membership UUID.\n—\n—\n`company_id`\n`uuid`\nno\n—\nINTERNAL\nCompany of the membership; immutable (tenant key).\n—\n—\n`principal_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nMember principal; a principal may hold memberships in several companies that never see each other.\n—\n—\n`status`\n`\"MembershipStatus\"`\nno\n`'ACTIVE'::\"MembershipStatus\"`\nINTERNAL\nOnly ACTIVE memberships grant access.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token for membership changes.\n—\nsuccessful writes\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock creation instant.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant of the latest change.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-24",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`memberships_company_id_fkey`\n`FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nA membership belongs to an existing company.\n`memberships_pkey`\n`PRIMARY KEY (id)`\nUnique membership identity.\n`memberships_principal_id_fkey`\n`FOREIGN KEY (principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT`\nThe member is an existing principal.\n`memberships_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`memberships_company_id_id_key`\n`CREATE UNIQUE INDEX memberships_company_id_id_key ON public.memberships USING btree (company_id, id)`\nTenant key that tenant references target.\n`memberships_company_principal_current_key`\n`CREATE UNIQUE INDEX memberships_company_principal_current_key ON public.memberships USING btree (company_id, principal_id) WHERE (status <> 'REMOVED'::\"MembershipStatus\")`\nAt most one current (not REMOVED) membership per principal and company; a removed membership stays as history and the person can return through a new membership.\n`memberships_principal_status_idx`\n`CREATE INDEX memberships_principal_status_idx ON public.memberships USING btree (principal_id, status)`\nSupports listing a principal's companies.\n"
   }
 ]

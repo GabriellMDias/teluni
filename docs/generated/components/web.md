@@ -116,3 +116,44 @@ Usage: Pass the original error to preserve stable-code mapping. Offer reload onl
 ### Examples
 
 - **Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.
+
+## DataSet
+
+Record-oriented CRUD presentation: a toolbar, a selectable grid and a caller-rendered form.
+
+Category: Data Display. Scope: composed. Owner: Web UI.
+
+Source: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `DataSet`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `label` | `string` | Accessible name of the dataset region. | See type | — |
+| `locale` | `pt-BR \| en-US` | Language of the toolbar and selection labels. | See type | — |
+| `mode` | `grid \| form` | Caller-owned view; keep it in the URL when it identifies the page state. | See type | — |
+| `rows` | `readonly Row[]` | Records of the current page, already authorized by the API. | See type | — |
+| `columns` | `DataSetColumn<Row>[]` | Grid columns with a stable key, header and cell renderer. | See type | — |
+| `rowId / rowName` | `(row) => string` | Stable record identity and the name used in the selection label. | See type | — |
+| `selectedId / onSelect` | `string / (id) => void` | Caller-owned selection; double-clicking a row selects it and requests form mode. | See type | — |
+| `onModeChange, onAdd, onPrevious, onNext, onDuplicate, onRefresh` | `() => void (optional)` | Toolbar actions; an omitted handler disables its button, for example at the first record or while a draft is unsaved. | See type | — |
+| `onDelete` | `(() => void) \| null (optional)` | Omit when the records cannot be deleted; null shows the action disabled. | See type | — |
+| `refreshing` | `boolean` | Marks the refresh action busy while the caller reloads data. Defaults to false. | See type | — |
+| `empty` | `ReactNode` | Grid content when there are no rows. | See type | — |
+| `children` | `ReactNode` | The current record's form, rendered only in form mode. | See type | — |
+
+### States
+
+- Grid with selection
+- Empty grid
+- Form mode
+- Actions disabled
+- Refreshing
+
+Accessibility: The toolbar uses role=toolbar with labeled icon buttons and tooltips. Rows are selected through labeled native radio buttons, so keyboard selection works without pointer gestures; links and buttons inside cells keep their own behavior.
+
+Usage: Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold navigation handlers while a form has unsaved changes.
+
+### Examples
+
+- **Grid and form modes** (`dataset-modes`): Synthetic local records; selection and mode are held by the example and no request is made.

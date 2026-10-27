@@ -2,7 +2,7 @@ import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { userEvent } from "vitest/browser";
 import { createRef, type CSSProperties, type FormEvent } from "react";
-import { Button, ErrorNotice, TextField } from "../src/components.js";
+import { Button, DataSet, ErrorNotice, TextField } from "../src/components.js";
 import { ApiFailure } from "../src/api-client.js";
 
 test("a failure exposes an accessible reload action", async () => {
@@ -124,4 +124,93 @@ test("an unknown write outcome is never presented as a known failure", async () 
     .element(screen.getByText(/Update outcome is unknown/))
     .toBeVisible();
   await expect.element(screen.getByRole("button")).not.toBeInTheDocument();
+});
+
+const datasetRows = [
+  { id: "a", name: "First record" },
+  { id: "b", name: "Second record" },
+];
+
+test("a dataset selects grid rows, switches modes and disables omitted actions", async () => {
+  const select = vi.fn();
+  const changeMode = vi.fn();
+  const add = vi.fn();
+  const props = {
+    label: "Example records",
+    locale: "en-US",
+    rows: datasetRows,
+    columns: [
+      {
+        key: "name",
+        header: "Name",
+        render: (row: (typeof datasetRows)[number]) => row.name,
+      },
+    ],
+    rowId: (row: (typeof datasetRows)[number]) => row.id,
+    rowName: (row: (typeof datasetRows)[number]) => row.name,
+    selectedId: "a",
+    onSelect: select,
+    onModeChange: changeMode,
+    onAdd: add,
+  } as const;
+  const screen = await render(
+    <DataSet {...props} mode="grid">
+      <p>Form content</p>
+    </DataSet>,
+  );
+  const toolbar = screen.getByRole("toolbar", { name: "Record actions" });
+  await expect
+    .element(screen.getByRole("radio", { name: "Select First record" }))
+    .toBeChecked();
+  await screen.getByRole("cell", { name: "Second record" }).click();
+  expect(select).toHaveBeenLastCalledWith("b");
+  await screen.getByRole("cell", { name: "Second record" }).dblClick();
+  expect(changeMode).toHaveBeenLastCalledWith("form");
+  await toolbar.getByRole("button", { name: "Add" }).click();
+  expect(add).toHaveBeenCalledOnce();
+  for (const name of ["Previous record", "Next record", "Duplicate", "Refresh"])
+    await expect.element(toolbar.getByRole("button", { name })).toBeDisabled();
+  await expect
+    .element(toolbar.getByRole("button", { name: "Delete" }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(screen.getByText("Form content"))
+    .not.toBeInTheDocument();
+
+  await screen.rerender(
+    <DataSet {...props} mode="form" onDelete={null}>
+      <p>Form content</p>
+    </DataSet>,
+  );
+  await expect.element(screen.getByText("Form content")).toBeVisible();
+  await expect.element(screen.getByRole("table")).not.toBeInTheDocument();
+  await expect
+    .element(toolbar.getByRole("button", { name: "Delete" }))
+    .toBeDisabled();
+  await toolbar.getByRole("button", { name: "Grid mode" }).click();
+  expect(changeMode).toHaveBeenLastCalledWith("grid");
+});
+
+test("a dataset shows the caller's empty state and pending refresh", async () => {
+  const screen = await render(
+    <DataSet
+      label="Empty records"
+      locale="pt-BR"
+      mode="grid"
+      rows={[]}
+      columns={[]}
+      rowId={() => ""}
+      rowName={() => ""}
+      onRefresh={() => undefined}
+      refreshing
+      empty={<p>Nothing yet.</p>}
+    />,
+  );
+  await expect.element(screen.getByText("Nothing yet.")).toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: "Atualizar" }))
+    .toHaveAttribute("aria-busy", "true");
+  await expect
+    .element(screen.getByRole("button", { name: "Atualizar" }))
+    .toBeDisabled();
 });

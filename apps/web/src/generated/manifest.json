@@ -2810,6 +2810,20 @@
       "file": "pages/components/Button.json"
     },
     {
+      "id": "components/DataSet",
+      "kind": "component",
+      "title": "DataSet",
+      "group": "Data Display",
+      "category": "Data Display",
+      "scope": "composed",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "Record-oriented CRUD presentation: a toolbar, a selectable grid and a caller-rendered form.",
+      "headings": [],
+      "file": "pages/components/DataSet.json"
+    },
+    {
       "id": "components/ErrorNotice",
       "kind": "component",
       "title": "ErrorNotice",
@@ -4274,7 +4288,7 @@
       { "file": "search/0031.json", "count": 26, "kinds": ["database"] },
       {
         "file": "search/0032.json",
-        "count": 50,
+        "count": 51,
         "kinds": ["component", "database", "repository"]
       },
       { "file": "search/0033.json", "count": 94, "kinds": ["repository"] },
@@ -4284,18 +4298,18 @@
       { "file": "search/0037.json", "count": 135, "kinds": ["repository"] },
       { "file": "search/0038.json", "count": 130, "kinds": ["repository"] },
       { "file": "search/0039.json", "count": 81, "kinds": ["repository"] },
-      { "file": "search/0040.json", "count": 71, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 72, "kinds": ["repository"] },
       { "file": "search/0042.json", "count": 51, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 73, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 54, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 40, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 62, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 79, "kinds": ["repository"] },
-      { "file": "search/0049.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0050.json", "count": 38, "kinds": ["repository"] }
+      { "file": "search/0043.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 52, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 41, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 63, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 77, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0049.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0050.json", "count": 46, "kinds": ["repository"] }
     ],
-    "count": 2024
+    "count": 2031
   }
 }

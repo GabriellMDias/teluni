@@ -1,4 +1,5 @@
 import { createRoute, lazyRouteComponent, Link } from "@tanstack/react-router";
+import { NavigationIcon } from "./navigation-icon.js";
 import { rootRoute } from "./shell.js";
 
 // The Living Documentation portal's routes and header entry. Composition in
@@ -37,5 +38,10 @@ export const documentationRoutes = [
 
 /** Header entry to the portal. */
 export function DocumentationNavigation() {
-  return <Link to="/docs">Documentation</Link>;
+  return (
+    <Link to="/docs">
+      <NavigationIcon name="documentation" />
+      Documentation
+    </Link>
+  );
 }

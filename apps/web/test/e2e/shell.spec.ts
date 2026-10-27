@@ -59,7 +59,9 @@ test("applies accessible light/dark surfaces and preserves the selected theme ac
     .getByRole("link", { name: "Empresas", exact: true })
     .click();
   await expect(page).toHaveURL(`${webUrl()}/companies`);
-  await expect(page.getByLabel("Nome da empresa")).toBeVisible();
+  await expect(
+    page.getByRole("toolbar", { name: "Ações do registro" }),
+  ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.reload();
   await expect(theme).toHaveValue("dark");
@@ -184,7 +186,9 @@ test("mobile navigation closes with Escape and route selection, with no overflow
   await expect(navigation).not.toBeVisible();
   await menu.click();
   await navigation.getByRole("link", { name: "Empresas", exact: true }).click();
-  await expect(page.getByLabel("Nome da empresa")).toBeVisible();
+  await expect(
+    page.getByRole("toolbar", { name: "Ações do registro" }),
+  ).toBeVisible();
   await expect(menu).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByRole("main")).toBeFocused();
   for (const width of [320, 760, 800, 1280]) {
@@ -202,6 +206,67 @@ test("mobile navigation closes with Escape and route selection, with no overflow
   }
   await page.setViewportSize({ width: 390, height: 844 });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("collapses the desktop sidebar to accessible icons and keeps the choice across reloads", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await signedInHome(page);
+  const sidebar = page.locator(".product-sidebar");
+  const navigation = page.getByRole("navigation", {
+    name: "Navegação principal",
+  });
+  const expandedWidth = (await sidebar.boundingBox())!.width;
+  await page
+    .getByRole("button", { name: "Recolher menu", exact: true })
+    .click();
+  const expand = page.getByRole("button", {
+    name: "Expandir menu",
+    exact: true,
+  });
+  await expect(expand).toBeVisible();
+  await expect
+    .poll(async () => (await sidebar.boundingBox())!.width)
+    .toBeLessThan(expandedWidth / 2);
+  await expect(
+    page.getByText("Todas as suas telas. Um só lugar."),
+  ).toBeHidden();
+  const companies = navigation.getByRole("link", {
+    name: "Empresas",
+    exact: true,
+  });
+  await expect(companies).toBeVisible();
+  expect(await page.evaluate(() => Object.entries(localStorage))).toEqual([
+    ["teluni.sidebar", "collapsed"],
+  ]);
+  for (const value of ["light", "dark"]) {
+    await page
+      .getByRole("combobox", { name: "Tema", exact: true })
+      .selectOption(value);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  }
+  await page.reload();
+  await expect(expand).toBeVisible();
+  await companies.click();
+  await expect(
+    page.getByRole("toolbar", { name: "Ações do registro" }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(expand).toBeHidden();
+  // The stored desktop layout never hides labels in the mobile menu.
+  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  await expect(
+    navigation.getByRole("link", { name: "Início", exact: true }),
+  ).not.toHaveCSS("font-size", "0px");
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await expand.click();
+  await expect(
+    page.getByRole("button", { name: "Recolher menu", exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => Object.entries(localStorage))).toEqual([
+    ["teluni.theme", "dark"],
+  ]);
 });
 
 test("keeps denied company access explicit in the dark shell", async ({

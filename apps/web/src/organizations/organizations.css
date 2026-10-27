@@ -145,3 +145,9 @@
 .grant-form .choice input {
   width: auto;
 }
+.ui-dataset-form .form-stack {
+  max-width: 36rem;
+}
+.ui-dataset-form .form-stack h2 {
+  margin-top: 0;
+}

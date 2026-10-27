@@ -1,10 +1,61 @@
 import { useState } from "react";
-import { Button, ErrorNotice, TextField } from "../components.js";
+import { Button, DataSet, ErrorNotice, TextField } from "../components.js";
+import type { DataSetMode } from "../dataset.js";
 import { ApiFailure } from "../api-client.js";
+
+const exampleRecords = [
+  { id: "north", name: "North store", city: "Recife" },
+  { id: "south", name: "South store", city: "Porto Alegre" },
+  { id: "west", name: "West store", city: "Cuiabá" },
+];
+
+function DataSetExample() {
+  const [mode, setMode] = useState<DataSetMode>("grid");
+  const [selected, setSelected] = useState("north");
+  const index = exampleRecords.findIndex((record) => record.id === selected);
+  const record = exampleRecords[index];
+  return (
+    <div className="docs-preview">
+      <DataSet
+        label="Example stores"
+        locale="en-US"
+        mode={mode}
+        rows={exampleRecords}
+        columns={[
+          { key: "name", header: "Name", render: (row) => row.name },
+          { key: "city", header: "City", render: (row) => row.city },
+        ]}
+        rowId={(row) => row.id}
+        rowName={(row) => row.name}
+        selectedId={selected}
+        onSelect={setSelected}
+        onModeChange={setMode}
+        onPrevious={
+          index > 0
+            ? () => setSelected(exampleRecords[index - 1].id)
+            : undefined
+        }
+        onNext={
+          index < exampleRecords.length - 1
+            ? () => setSelected(exampleRecords[index + 1].id)
+            : undefined
+        }
+      >
+        <TextField
+          key={record.id}
+          label="Store name"
+          defaultValue={record.name}
+        />
+      </DataSet>
+    </div>
+  );
+}
 
 export function Example({ id }: { id: string }) {
   const [message, setMessage] = useState("");
   switch (id) {
+    case "dataset-modes":
+      return <DataSetExample />;
     case "button-states":
       return (
         <div className="docs-preview">

@@ -1,5 +1,50 @@
 [
   {
+    "id": "repository/docs/project/identity-session-design",
+    "title": "Teluni Human Identity and Session Integration Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Local development assurance exception",
+    "anchor": "local-development-assurance-exception",
+    "text": "Local development assurance exception\nOn 2026-10-24 the owner requested optional two-step verification for local development. `TELUNI_DEV_MFA_MODE` defaults to `required`; `optional` is accepted only with `ORION_ENV=development`, a loopback API listener, and loopback public origin and issuer. The identity module repeats the environment/origin/issuer guard for direct composition. This is a testing exception to the production P12/P14 requirements, not a new authentication method or a product company policy. [Setup](../setup.md#optional-two-step-verification-during-local-development) owns activation and restart instructions.\nIn optional mode, login does not request AAL2 or recent authentication from Keycloak. After all ordinary session, signature, principal, CSRF, expiry and provider-revalidation checks succeed, the identity boundary projects effective strong/recent assurance for local business workflows only. It reports `assuranceLevel=teluni-development`, and the session page labels the waiver instead of claiming two-step verification. The stored provider ACR and strong-authentication timestamp are unchanged. Disabling the setting therefore restores the actual stored assurance on the next request, including for existing cookies. Other authorization and transaction checks remain active; no account credentials, authenticator enrollment or provider flow are rewritten.\nThe [local-mode integration test](../../apps/api/test/identity/development-mfa.test.ts) uses real Keycloak and migrated PostgreSQL to verify password-only step-up, the absence of OTP enrollment/fabricated stored assurance, enforcement after recomposition with `required`, CSRF and missing-session rejection, and logout. Configuration tests reject nondevelopment/nonloopback and invalid values; the [session-page test](../../apps/web/test/identity.browser.test.tsx) checks the explicit development label. Real environment provisioning and required-mode assurance qualification remain unchanged.\n"
+  },
+  {
+    "id": "repository/docs/project/identity-session-design",
+    "title": "Teluni Human Identity and Session Integration Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Alternatives considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives considered\nAlternative\nDisposition\nRefresh every 30 seconds instead of introspection\nAlso meets the bound but rotates refresh tokens far more often and multiplies rotation races; introspection is read-only\nUse the Keycloak subject as the application principal\nRejected by the provider evaluation: it ties stored ownership to one provider\nKeycloak Organizations for memberships\nContradicts ADR-0025's application-owned memberships and scoped grants\nAccept bearer-only human requests\nCannot enforce session termination within 30 seconds; kept only for the existing verifier tests and non-product routes\nSeparate authentication service\nADR-0024 keeps sessions in the modular backend; no measured need\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Teluni Implementation Plan",
+    "anchor": "teluni-implementation-plan",
+    "text": "Teluni Implementation Plan\n[Project human actions](human-actions.md) · [Project derivation](../project-derivation.md) · [Validation](../validation.md) · [Documentation index](../README.md)\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Purpose and baseline",
+    "anchor": "purpose-and-baseline",
+    "text": "Purpose and baseline\nThis is Teluni's living execution plan and the current plan for this repository. It tracks product and repository work; the [README](../../README.md), current policies, and [accepted ADRs](../adr/README.md) govern implementation.\nTeluni was initialized on 2026-10-17 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea` of https://github.com/GabriellMDias/Orion. The [project manifest](../../.orion/project.json) records that immutable initialization commit and the Orion baseline currently integrated. At initialization, the repository contained the foundation's architecture, policies, ADRs, tooling, validation gate, CI, generated references and Living Documentation Portal, with no product modules. Results recorded for the Orion repository are not results for this repository until they pass in this checkout and in this repository's CI.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Maintaining this plan",
+    "anchor": "maintaining-this-plan",
+    "text": "Maintaining this plan\nEvery contributor or coding agent performing implementation work must maintain this plan and the [project human actions](human-actions.md) within the user's authorized scope.\nBefore implementation, inspect actual repository state, the relevant task, its prerequisites, governing policy, and linked human actions. Do not treat a planned capability or unchecked action as available.\nMark a task `in progress` when work actually starts. Update statuses when evidence, scope, dependencies, or blockers change, and before each handoff or completion report.\nAllocate stable task IDs as `PJ-NN`; never reuse or renumber them. Add finer tasks when needed; do not hide unfinished subtasks inside a completed row.\nRecord concise evidence in the task row: implementation paths, validation commands and results, review references, or a linked decision. Record evidence produced for this repository—local validation, this repository's CI runs, and this repository's external settings. Do not store secret values or sensitive output.\nA task becomes `completed` only when its deliverables and acceptance criteria are satisfied with evidence. A partial implementation or an unavailable required check is not completion.\nWhen human intervention is necessary, add or update a project human action, link it from the affected task, mark that task `blocked`, and tell the user what is needed. Continue independent authorized work where possible.\nA future prerequisite is `pending`, not automatically `blocked`.\nWhen scope or sequencing changes, use `changed`, explain why and what replaces the work, and link supporting decisions. Do not delete unresolved obligations to make the plan look complete.\nUpdate command availability, current documentation, generated artifacts, and the human actions in the same coherent change where applicable. Do not change ADR status merely to record implementation progress.\nStatus\nMeaning\n`pending`\nNot started; includes conditional work whose trigger has not occurred.\n`in progress`\nWork has started and is incomplete.\n`completed`\nApplicable deliverables and acceptance criteria are satisfied with evidence.\n`blocked`\nThe identified work cannot proceed without a recorded dependency, decision, access, or correction.\n`changed`\nScope, applicability, or sequencing was explicitly revised; reason and replacement or disposition are recorded.\n"
+  },
+  {
     "id": "repository/docs/project/implementation-plan",
     "title": "Teluni Implementation Plan",
     "group": "Project guides",
@@ -133,6 +178,24 @@
     "heading": "Local development MFA option",
     "anchor": "local-development-mfa-option",
     "text": "Local development MFA option\nOn 2026-10-24 the owner requested optional two-step verification for development while testing the local panel. This PJ-24 increment adds the server-only `TELUNI_DEV_MFA_MODE` setting, default `required`, with a guarded `optional` mode for development on loopback only. The [identity design](identity-session-design.md#local-development-assurance-exception) owns the exception's semantics; [setup](../setup.md#optional-two-step-verification-during-local-development) owns activation and reversal. The session boundary still authenticates and checks CSRF, expiry and revocation, then projects local effective assurance without persisting a false MFA event. The panel labels the exception explicitly. No schema, provider flow, production permission, real-environment gate or procurement changes. Configuration, real-Keycloak/PostgreSQL and browser tests cover the exception and restoration of required enforcement. Frozen install and full local `VITEST_MAX_WORKERS=1 pnpm validate` passed on 2026-10-24: 334 API tests, 73 web unit tests, 98 browser component tests and 49 E2E journeys. The first default-worker gate timed out at five seconds in the unchanged price-publication integration test; all nine publication tests passed in isolation, and the complete gate passed sequentially without changing test limits or assertions. Password-only login and existing company access were also verified in the running local environment. No remote CI result is claimed.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Collapsible sidebar increment",
+    "anchor": "collapsible-sidebar-increment",
+    "text": "Collapsible sidebar increment\nOn 2026-10-26 the owner requested visual refinements, starting with a collapsible left sidebar. On desktop widths, a localized “Recolher menu”/“Expandir menu” control at the foot of the sidebar narrows it to a brand mark and navigation icons. Link and button labels remain in the accessibility tree, the company context label and switch link are hidden while collapsed, and every product and portal entry now carries an icon. Only `teluni.sidebar=collapsed` is stored, with the same tab synchronization and storage-denial fallback as the theme; expanding removes the key. The mobile menu ignores the stored layout. No route, permission or API behavior changes. A shell E2E journey covers collapse, reload persistence, navigation, both themes with axe scans, and the mobile fallback.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Companies dataset increment",
+    "anchor": "companies-dataset-increment",
+    "text": "Companies dataset increment\nOn 2026-10-26 the owner asked for a reusable record component similar to Sankhya's `sk-dataset` and for its use on the companies page. The shared, presentation-only `DataSet` in `apps/web/src/dataset.tsx` (exported through `components.tsx`, with catalog metadata and a synthetic example) provides a toolbar to switch between grid and form modes, add, move to the previous or next record, duplicate and refresh, a grid with labeled radio selection (double-click opens the form), and an optional delete action. Features keep records, selection, mode, API calls, permissions and drafts; an omitted handler disables its action.\nThe companies page keeps its mode, selected record and duplication source in validated URL search parameters next to the existing cursor. The form edits settings through the existing versioned `PATCH /companies/{companyId}` with step-up and read-only states, creates companies with the existing idempotent request and still opens the new company's workspace afterwards, and duplication pre-fills a new company from the selected one's name, time zone and language. A person with no company lands directly on the new-company form. Moving between records, switching mode and refreshing are disabled while the form has unsaved changes. The company workspace's settings view reuses the same fields. **Delete is not offered:** the API has no company deletion, and adding it needs its own design for retention, members, devices, media and audit before any endpoint exists. Navigation moves within the current page; the existing cursor links still change pages. Browser component tests cover the component and the URL-owned companies dataset; the companies E2E journey covers selection, form mode, draft cancellation, duplication, axe scans and narrow-width overflow.\n"
   },
   {
     "id": "repository/docs/project/implementation-plan",
@@ -304,59 +367,5 @@
     "heading": "Decisions for review",
     "anchor": "decisions-for-review",
     "text": "Decisions for review\nThe owner approved each item as proposed on 2026-10-18 under [PH-21](human-actions.md#ph-21):\n**Delivery architecture (ADR-0026).** Application-owned transactional email through a PostgreSQL outbox written in the producer's transaction, an in-process dispatcher in the API, and a provider-neutral authenticated SMTP relay through `nodemailer`; no message broker, separate worker service, provider HTTP API or webhook in this version.\n**Delivery guarantees.** At least once, with possible duplicates after a crash; up to eight attempts over about 22 hours, immediate failure on permanent rejection, and failures shown to the inviter, who can resend.\n**Invitation credential.** 256-bit random credential, stored only as a hash; an encrypted copy for delivery under a dedicated key ring, erased at the message's final state; link credential in the URL fragment, removed from the address bar and kept in the tab's session storage during sign-in.\n**Acceptance identity.** The session principal's verified email must equal the recipient address case-insensitively, with explicit confirmation; principals are never looked up by email at invitation time; until D-02 signup exists, only people with an existing verified account can accept.\n**Membership cases.** An active member gains the invited grant; a suspended member is refused; a removed person returns as a new membership, which changes membership uniqueness to exclude removed memberships.\n**Revalidation at acceptance.** The inviter must still be able to grant the invited role and scope, the company and every branch must be active; otherwise the invitation becomes invalid rather than narrowed. A responsibility transfer therefore invalidates the former responsible administrator's pending administrator invitations.\n**Who invites.** Administrators invite operators and branch managers; only the responsible administrator, with five-minute strong authentication, invites administrators; branch managers invite operators within their own branches; invitations can carry a grant expiry; one pending invitation per company and address, and resend replaces it.\n**Abuse limits and content.** 50 invitations per company per 24 hours, 100 pending per company, 3 invitation emails per address per 24 hours across Teluni; no free-text message; fixed `pt-BR`/`en-US` templates in the company's default locale.\n**Retention (provisional until PH-13).** Encrypted credential erased at final state; outbound message rows deleted 30 days after their final state; invitation recipient addresses replaced by a tombstone 90 days after the invitation becomes final; audit events never store the address.\n**Keycloak mail.** Keycloak keeps sending its own verification and recovery mail synchronously through the same relay, outside the outbox.\nApproving these items authorizes implementation in local and CI environments with synthetic addresses and Mailpit. It does not choose the real mail provider or sender domain (PH-17), set legal retention (PH-13) or authorize sending to real people.\n"
-  },
-  {
-    "id": "repository/docs/project/invitation-delivery-design",
-    "title": "Teluni Company Invitation and Durable Email Delivery Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Alternatives considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives considered\nAlternative\nReason not proposed\nSending email directly in the request, after commit\nA crash or relay outage after commit loses the email silently; the delivery policy requires recorded intent for required side effects\nAn existing PostgreSQL job library (for example pg-boss)\nIt owns its schema and migrations, which would need adapting to the reviewed-migration, metadata and least-privilege grant rules, for a need a small owned table covers\nA broker or Redis-backed queue\nNew stateful infrastructure on the single residential host for low volume; PostgreSQL already provides transactional claiming\nA provider HTTP API with webhooks\nCouples the code to one provider before PH-17 selects one and contradicts the no-recurring-procurement constraint; SMTP keeps providers interchangeable\nKeycloak sending invitations\nKeycloak sends only its own account flows; invitations, grants and memberships are application-owned (ADR-0025), and Keycloak Organizations was rejected\nA credential derived from the invitation ID with a server key\nAvoids storing the encrypted copy, but keeps every pending link recomputable from the database plus one key for the whole validity; the erased encrypted copy limits that window to the delivery period\nNarrowing an invitation when a branch is archived\nSilent narrowing grants something different from what the inviter chose; failing and re-inviting keeps the grant explicit\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Teluni Media Library Design",
-    "anchor": "teluni-media-library-design",
-    "text": "Teluni Media Library Design\n[Release policies](release-policies.md#media-and-deletion-lifecycle) · [Acceptance targets](release-targets.md#media-and-rendering-targets) · [Security requirements](security-and-i18n.md#media-and-audit-protections) · [Identity and access policies](identity-and-access.md#permission-model-and-default-matrix) · [Tenant data design](tenant-data-design.md) · [Operations](operations.md#persistent-state-and-storage-portability) · [ADR-0028](../adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md) · [PH-23](human-actions.md#ph-23)\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Status and scope",
-    "anchor": "status-and-scope",
-    "text": "Status and scope\n**Approved detailed design for D-05, 2026-10-19.** The owner approved all nine [decisions for review](#decisions-for-review) as proposed under [PH-23](human-actions.md#ph-23), including ADR-0028, after asking for development to continue autonomously. Approval authorizes implementation of PJ-09 in local and CI environments with generated fixtures.\nIn scope: tenant-owned media assets and their branch scope, upload, trustworthy inspection and validation against AT-02/AT-03, the playback rendition profile and conversion (FR-04), processing isolation, private storage and delivery to the panel, archive, trash and reference-safe purge (AT-17), permissions, abuse limits, audit, data, contracts, panel workflow and verification.\nOut of scope, with their owners: delivery of renditions to devices inside publications (D-04, PJ-11); playlists and other references to media (PJ-10, PJ-20, PJ-21), which register through the reference port defined here; commercial original-media quotas and the 80%/100% warnings (PJ-27); qualifying any device decoder, memory or storage profile (PH-08, PJ-12); malware scanning and content moderation (pending risk decision, PH-13); the production container image that ships FFmpeg (PJ-13).\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Policy inputs",
-    "anchor": "policy-inputs",
-    "text": "Policy inputs\nThe design applies these selected policies without changing them:\nValidate declared and inspected type, size, decoded dimensions, duration, compatibility and scoped references; enforce all bounds, not only compressed size: images at most 20 MiB, each decoded axis at most 8,192 px and at most 32,000,000 pixels (AT-02); videos at most 1 GiB and 60 minutes (AT-03). Ingestion bounds are configurable engineering defaults, not plan quotas.\nPreserve originals and create compatible renditions when validated processing is supported; show preparation, progress and preview; reject with an actionable reason when safe conversion is unavailable; never silently distort content ([media lifecycle](release-policies.md#media-and-deletion-lifecycle)).\nArchiving removes media from new selections without breaking references. Physical deletion is blocked while drafts, active, staged or recovery generations or protected publications reference the media, disclosing only references the caller may see; a recoverable archive or trash lasts at least 30 days before purge (AT-17).\nUploading media is allowed to administrators company-wide and to branch managers and operators in their branches; archive and restore to administrators and branch managers; permanent deletion only to administrators ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)). Share media explicitly with branches or the whole company and enforce scope on lists, previews and downloads, not only on buttons.\nCustomer media is `CONFIDENTIAL`, private, never public because it appears on a screen, and never addressed by a public filesystem path or a permanent bearer URL ([operations](operations.md#persistent-state-and-storage-portability)). Uploads are not executable content; parsers run isolated ([security requirements](security-and-i18n.md#media-and-audit-protections)).\nMedia storage is a media-owned capability with replaceable filesystem I/O so that an S3-compatible store can be added later (ADR-0021).\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Assets, scope and visibility",
-    "anchor": "assets-scope-and-visibility",
-    "text": "Assets, scope and visibility\nAn **asset** is one uploaded file and what Teluni derived from it. It belongs to one company and has an owning scope:\n**Company** (`branch_id` empty): created by people with company-wide upload authority. Every member with `media.view` anywhere in the company can see and use it; this is the \"shared with the whole company\" case.\n**Branch**: created for one branch. Members with `media.view` on that branch see and use it; others do not learn it exists (`RESOURCE_NOT_FOUND`).\nExplicit sharing of a branch asset with further selected branches is a later increment of this design (a `media_asset_shares` table with read/use authority only); until then a company-scoped asset is the way to share. Editing authority always follows the owning scope.\nEach asset has a name (1 to 120 characters, the uploaded file name by default, never used as a path), a kind (`IMAGE` or `VIDEO`), an optional set of up to 10 tags (each 1 to 40 characters) for organization and search, and the inspected facts: content type, size, width, height, duration and whether it has audio.\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Upload",
-    "anchor": "upload",
-    "text": "Upload\nUpload is two requests, so the server can admit the file before receiving any bytes and the bytes stream to disk without buffering:\n`POST /companies/{companyId}/media` with the name, scope, declared content type and declared size creates the asset in `UPLOADING`. The server requires `media.upload` on the scope, an active company and branch, a declared type from the allowlist below and a declared size within the kind's limit, and checks the abuse limits and the storage reserve.\n`PUT /companies/{companyId}/media/{assetId}/content` with `Content-Type: application/octet-stream` and a `Content-Length` equal to the declared size streams the bytes to a temporary file on the media volume while computing their SHA-256. More bytes than declared, fewer bytes, a closed connection or a size mismatch delete the temporary file and leave the asset in `UPLOADING`, so the person can retry the same `PUT`. A complete upload moves the asset to `PROCESSING` and wakes the processor.\nAn asset still in `UPLOADING` one hour after creation is discarded by maintenance. Resumable chunked upload (for example the tus protocol) is not part of this design; it is the preferred extension if pilot measurements show that whole-file retries of large videos are a problem.\n"
   }
 ]

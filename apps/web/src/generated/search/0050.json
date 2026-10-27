@@ -1,5 +1,77 @@
 [
   {
+    "id": "repository/docs/security/secrets-management",
+    "title": "Secrets Management",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Use, diagnostics, and backups",
+    "anchor": "use-diagnostics-and-backups",
+    "text": "Use, diagnostics, and backups\nDo not serialize secret-bearing objects into logs, traces, metrics, errors, breadcrumbs, audit, profiling, caches, or responses. Review provider exceptions and automatic SDK capture of headers, locals, environment, configuration, and requests. Dedicated secret wrappers may help when practical, but their default string/serialization representation must not reveal values. [Redaction policy](telemetry-redaction.md) remains authoritative.\nProduction debugger access is privileged. Full memory dumps are restricted artifacts needing exceptional justified collection and tightly controlled access. Support tools must not expose secrets or inherit infrastructure credentials. Administrative UIs should show configured state or rotation metadata; generated credentials may use one-time display when necessary instead of repeated retrieval.\nSecret-store backups require equivalent or stronger controls. Application backups must not accidentally include secret files; database backups containing hashes, sessions, or provider tokens retain their classification. [Retention](data-retention.md) governs their lifecycle.\n"
+  },
+  {
+    "id": "repository/docs/security/secrets-management",
+    "title": "Secrets Management",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Accidental source-control exposure",
+    "anchor": "accidental-source-control-exposure",
+    "text": "Accidental source-control exposure\nTreat a committed or otherwise disclosed credential as potentially compromised, even in a private repository. Identify it without redisplaying it, revoke/rotate, stop future exposure, assess copies/history/destinations and access, investigate use as needed, and add prevention. History rewriting or deleting a file/log can reduce continued exposure but never restores secrecy.\nFor telemetry exposure, stop collection, identify affected logs/traces/errors/exports/backups/providers, remove stored copies where possible, review access, and add regression coverage. Follow [incident response](incident-response.md); do not wait for natural retention expiry. Ordinary chats, issues, pull requests, reviews, AI prompts, and support tickets are not secret-delivery channels; any exception requires an explicitly approved secure workflow.\nAI repository access does not imply raw credential access. Prefer names, schemas, safe errors, and sanitized evidence. When authorized operational actions require credentials, prefer delegated secure tools that keep values outside agent context. Human operators likewise should receive authorized capabilities under their own identity without routinely retrieving long-lived production secrets.\n"
+  },
+  {
+    "id": "repository/docs/security/secrets-management",
+    "title": "Secrets Management",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Removal, audit, and enforcement",
+    "anchor": "removal-audit-and-enforcement",
+    "text": "Removal, audit, and enforcement\nWhen a secret is retired, remove usage and deployment references, verify active consumers, revoke, delete from the store, and update access permissions and documentation. Investigate orphaned credentials rather than retaining unknown capabilities indefinitely. Audit creation, access, permission changes, rotation, revocation, and deletion where supported without recording values.\nUse available secret scanning and consider historical scans because working-tree checks cannot see all exposure. Keep false-positive exceptions narrow and documented; do not disable scanning broadly. Configuration metadata, client/server boundaries, redaction tests, unsafe-default checks, and artifact inspection complement scanning. Credential-handling SDKs and cryptographic dependencies warrant extra scrutiny. Choose any future secret provider through an ADR considering security, availability, audit/access, rotation, platform integration, developer experience, cost, and migration.\n"
+  },
+  {
+    "id": "repository/docs/security/secrets-management",
+    "title": "Secrets Management",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New secret checklist",
+    "anchor": "new-secret-checklist",
+    "text": "New secret checklist\nBefore introduction, identify the capability, why a secret is needed instead of workload identity, owner, source, consumers/environment, least privilege, storage/delivery, rotation/revocation, exposure detection, possible telemetry/build/client paths, and eventual removal. Record metadata through canonical configuration sources where practical. A credential without an owner and workable lifecycle is an incomplete design.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Telemetry Redaction",
+    "anchor": "telemetry-redaction",
+    "text": "Telemetry Redaction\nThis policy owns safe data selection and sanitization for logs, traces, metrics, errors, breadcrumbs, audit/security records, profiling, diagnostics, and support artifacts across applications, tooling, SDKs, and infrastructure. [Data classification](data-classification.md) determines sensitivity. When diagnostic usefulness conflicts with data protection, protection takes priority.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Current implementation and ownership",
+    "anchor": "current-implementation-and-ownership",
+    "text": "Current implementation and ownership\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) governs the selected foundation. The API has [Pino field redaction](../../apps/api/src/logging.ts), [allowlisted trace/metric export](../../apps/api/src/telemetry.ts), and [safe HTTP/error diagnostics](../../apps/api/src/app.ts). These local controls do not establish a universal schema-driven redaction engine or prove that every future SDK/platform default is safe. The API runtime documentation and [validation inventory](../validation.md) identify current implementation and checks.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Default deny for payload capture",
+    "anchor": "default-deny-for-payload-capture",
+    "text": "Default deny for payload capture\nCapture only fields needed to answer an operational question. Prefer explicit safe projections over capturing whole objects and attempting cleanup afterward. Request/response bodies, event/job/RPC/WebSocket payloads, ORM/domain entities, free-form metadata, environment dumps, and complete configuration must not be captured by default.\n`RESTRICTED` data must never be intentionally captured, including passwords/hashes, access/session/refresh tokens, API/private/signing keys, database/payment credentials, recovery codes, and credential-bearing headers/cookies. Encryption, restricted provider access, development mode, incidents, and provider-side filtering do not exempt this rule.\nConfidential fields require concrete diagnostic need, minimized representation, and controlled access/retention. Prefer justified opaque identifiers to names, email, phone, or complete records. Public/internal data may be captured when operationally useful; the destination never lowers classification. User-generated strings and arbitrary exceptions remain untrusted and potentially sensitive.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Redaction strategies",
+    "anchor": "redaction-strategies",
+    "text": "Redaction strategies\nUse source allowlists first, centralized application filtering as defense in depth, and collector/provider scrubbing as additional layers. Restricted data must be removed or replaced with a constant marker before export. Partial masking requires a justified safe remainder; it is not adequate for authentication secrets. Pseudonymization or hashing may permit correlation but does not establish anonymity, especially for predictable values.\nRecognize common secret-bearing field names and locations, including authorization, cookies, query/form fields, provider metadata, exceptions, and environment variables. Name-based blocklists are a safety net, not the primary policy: schemas evolve. Use clear field names, safe structured projections, and canonical classification metadata where practical. Local rules may be stricter but must not conflict with shared policy.\nIf safe sanitization cannot be completed, drop unsafe telemetry and emit only a bounded safe failure signal. Never include the rejected payload in that signal or recurse through the failing serializer. Review getters, `toJSON`, custom serializers, recursion, arrays, and nesting; deterministic telemetry-specific serialization must not expose extra fields. Bound string length, depth, array size, breadcrumb count, and exception metadata. Truncation is not redaction and must not misrepresent meaning.\n"
+  },
+  {
     "id": "repository/docs/security/telemetry-redaction",
     "title": "Telemetry Redaction",
     "group": "Security",

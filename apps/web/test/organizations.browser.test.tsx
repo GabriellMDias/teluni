@@ -270,6 +270,100 @@ test("preserves company pagination in the URL and browser history", async () => 
   expect(router.state.location.search).toEqual({});
 });
 
+const datasetCompany = "00000000-0000-4000-8000-000000000002";
+
+function respondWithCompanies(
+  items: readonly { id: string; displayName: string }[],
+) {
+  respond((url) => {
+    if (url.pathname.endsWith("/companies"))
+      return {
+        body: {
+          items: items.map((item) => ({ ...item, roles: ["OPERATOR"] })),
+          nextCursor: null,
+        },
+      };
+    const item = items.find(({ id }) => url.pathname.endsWith(id))!;
+    return {
+      body: {
+        company: {
+          ...item,
+          version: 1,
+          timeZone: "UTC",
+          defaultLocale: "pt-BR",
+        },
+        access: {
+          roles: ["OPERATOR"],
+          profiles: [],
+          responsible: false,
+          capabilities: ["company.view"],
+          capabilitiesAfterStrongAuthentication: [],
+        },
+      },
+    };
+  });
+}
+
+test("opens the first company form directly when the person has no company", async () => {
+  respondWithCompanies([]);
+  const { screen } = await open("/companies");
+  await expect
+    .element(screen.getByRole("button", { name: t.createCompany }))
+    .toBeVisible();
+  await expect.element(screen.getByText(t.companiesEmpty)).toBeVisible();
+});
+
+test("keeps dataset selection, mode and duplication in the URL", async () => {
+  const other = datasetCompany;
+  respondWithCompanies([
+    { id: companyId, displayName: "Alpha" },
+    { id: other, displayName: "Beta" },
+  ]);
+  const { screen, router } = await open("/companies");
+  await screen.getByRole("cell", { name: "Beta" }).click();
+  expect(router.state.location.search).toEqual({ record: other });
+  await screen
+    .getByRole("toolbar")
+    .getByRole("button", { name: /formulário|form mode/i })
+    .click();
+  expect(router.state.location.search).toEqual({
+    mode: "form",
+    record: other,
+  });
+  // Operators can read the record but the settings stay read-only.
+  await expect
+    .element(screen.getByLabelText(t.fieldCompanyName))
+    .toHaveValue("Beta");
+  await expect
+    .element(screen.getByLabelText(t.fieldCompanyName))
+    .toBeDisabled();
+  await expect.element(screen.getByText(t.settingsReadOnly)).toBeVisible();
+  await screen
+    .getByRole("toolbar")
+    .getByRole("button", { name: /anterior|previous/i })
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.fieldCompanyName))
+    .toHaveValue("Alpha");
+  expect(router.state.location.search).toEqual({
+    mode: "form",
+    record: companyId,
+  });
+  await screen
+    .getByRole("toolbar")
+    .getByRole("button", { name: /duplicar|duplicate/i })
+    .click();
+  await expect
+    .element(screen.getByLabelText(t.fieldCompanyName))
+    .toHaveValue(t.copyName("Alpha"));
+  await expect.element(screen.getByLabelText(t.fieldCompanyName)).toBeEnabled();
+  expect(router.state.location.search).toEqual({
+    mode: "form",
+    record: "new",
+    copy: companyId,
+  });
+});
+
 const administratorAccess = {
   roles: ["COMPANY_ADMINISTRATOR"],
   profiles: [],
