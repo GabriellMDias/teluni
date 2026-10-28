@@ -77,16 +77,6 @@
       "Unit": "UTC instant, millisecond precision"
     },
     {
-      "Column": "strong_authenticated_at",
-      "PostgreSQL type": "timestamp(3) with time zone",
-      "Nullable": "yes",
-      "Default": "—",
-      "Classification": "INTERNAL",
-      "Meaning": "Retired: instant of a teluni-aal2 step-up under the former mandatory two-step policy. Since two-step verification became optional for each person, the API neither writes nor reads it; recent-authentication checks use authenticated_at. Kept until a reviewed contract migration removes it.",
-      "Null meaning": "Every session created since two-step verification became optional, and earlier sessions without a step-up.",
-      "Unit": "UTC instant, millisecond precision"
-    },
-    {
       "Column": "idle_timeout_seconds",
       "PostgreSQL type": "integer",
       "Nullable": "no",

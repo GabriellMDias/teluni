@@ -57,16 +57,6 @@
       "Unit": "—"
     },
     {
-      "Column": "requested_assurance",
-      "PostgreSQL type": "character varying(64)",
-      "Nullable": "yes",
-      "Default": "—",
-      "Classification": "INTERNAL",
-      "Meaning": "Retired: authentication context class (acr) a login requested under the former mandatory two-step policy. The API no longer writes or reads it. Kept until a reviewed contract migration removes it.",
-      "Null meaning": "Every login attempt created since two-step verification became optional, and earlier standard logins.",
-      "Unit": "—"
-    },
-    {
       "Column": "max_age_seconds",
       "PostgreSQL type": "integer",
       "Nullable": "yes",
