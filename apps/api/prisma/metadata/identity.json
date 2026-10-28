@@ -90,12 +90,6 @@
           "classification": "INTERNAL",
           "unit": "UTC instant, millisecond precision"
         },
-        "strong_authenticated_at": {
-          "description": "Retired: instant of a teluni-aal2 step-up under the former mandatory two-step policy. Since two-step verification became optional for each person, the API neither writes nor reads it; recent-authentication checks use authenticated_at. Kept until a reviewed contract migration removes it.",
-          "classification": "INTERNAL",
-          "nullMeaning": "Every session created since two-step verification became optional, and earlier sessions without a step-up.",
-          "unit": "UTC instant, millisecond precision"
-        },
         "idle_timeout_seconds": {
           "description": "Inactivity bound applied to this session: 1800 for administrative contexts or principals without memberships, 7200 for operator-only access.",
           "classification": "INTERNAL",
@@ -186,11 +180,6 @@
         "return_to": {
           "description": "Validated same-origin relative path to open after a successful login.",
           "classification": "INTERNAL"
-        },
-        "requested_assurance": {
-          "description": "Retired: authentication context class (acr) a login requested under the former mandatory two-step policy. The API no longer writes or reads it. Kept until a reviewed contract migration removes it.",
-          "classification": "INTERNAL",
-          "nullMeaning": "Every login attempt created since two-step verification became optional, and earlier standard logins."
         },
         "max_age_seconds": {
           "description": "Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.",
