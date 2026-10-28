@@ -1,0 +1,78 @@
+{
+  "name": "Popover",
+  "category": "Overlays",
+  "scope": "shared",
+  "owner": "Web UI",
+  "summary": "A non-modal surface in the browser's top layer, placed next to an anchor element.",
+  "usage": "Use for small panels tied to a control, such as filters or details, that should not be clipped by scrolling containers. The caller owns open and closes it from onClose. Content renders only while open, so its local state starts fresh each time. Use a page or form for long workflows.",
+  "accessibility": "Uses the native popover attribute with role=dialog (or menu) and an aria-label. Opening focuses the element marked data-autofocus, or the popover itself. Escape, an outside click or another popover closes it; focus that would otherwise be lost returns to returnFocus or the anchor.",
+  "props": [
+    {
+      "name": "anchor",
+      "type": "HTMLElement | null",
+      "meaning": "Element the popover is placed below, or above when only that fits.",
+      "required": true
+    },
+    {
+      "name": "open / onClose",
+      "type": "boolean / () => void",
+      "meaning": "Caller-owned visibility; onClose reports Escape, outside clicks and other popovers.",
+      "required": true
+    },
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Accessible name of the popover.",
+      "required": true
+    },
+    {
+      "name": "returnFocus",
+      "type": "HTMLElement | null",
+      "meaning": "Receives focus when the popover closes with focus inside it.",
+      "required": false,
+      "default": "anchor"
+    },
+    {
+      "name": "role",
+      "type": "dialog | menu",
+      "meaning": "Semantic role of the surface.",
+      "required": false,
+      "default": "dialog"
+    },
+    {
+      "name": "align",
+      "type": "start | end",
+      "meaning": "Aligns the popover with the anchor's start or end edge.",
+      "required": false,
+      "default": "start"
+    },
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "Content rendered while open.",
+      "required": true
+    }
+  ],
+  "states": [
+    "Closed",
+    "Open below the anchor",
+    "Open above when only that fits",
+    "Dismissed by Escape or an outside click"
+  ],
+  "examples": [
+    {
+      "id": "popover-anchored",
+      "label": "Anchored details",
+      "description": "A button toggles synthetic details; no request is made.",
+      "code": "<Button ref={setAnchor} onClick={() => setOpen(!open)}>Details</Button>\n<Popover anchor={anchor} open={open} onClose={() => setOpen(false)} label=\"Details\">…</Popover>",
+      "live": true
+    }
+  ],
+  "id": "Popover",
+  "exportName": "Popover",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

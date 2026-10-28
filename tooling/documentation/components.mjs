@@ -414,5 +414,7 @@ export function componentMarkdown(components) {
       ]),
       "",
     ]),
-  ].join("\n");
+  ]
+    .join("\n")
+    .replace(/\n+$/, "\n");
 }

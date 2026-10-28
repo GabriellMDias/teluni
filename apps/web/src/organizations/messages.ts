@@ -18,6 +18,7 @@ const ptBR = {
   signIn: "Entrar",
   createTitle: "Criar empresa",
   companiesRecords: "Registros de empresas",
+  companiesExport: "Empresas",
   copyName: (name: string) => `${name} (cópia)`,
   unsavedChanges:
     "Salve ou cancele as alterações do formulário para trocar de registro.",
@@ -347,6 +348,7 @@ const enUS: OrganizationMessages = {
   signIn: "Sign in",
   createTitle: "Create a company",
   companiesRecords: "Company records",
+  companiesExport: "Companies",
   copyName: (name: string) => `${name} (copy)`,
   unsavedChanges: "Save or cancel the form changes to switch records.",
   settingsReadOnly: "You can view this company but not change its settings.",

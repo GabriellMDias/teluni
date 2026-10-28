@@ -1,5 +1,203 @@
 [
   {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nContent addressing makes objects immutable, integrity checkable and deduplicated, which publications (ADR-0019) need for manifests and the player's shared-file accounting (AT-05). Publishing by rename under the object lock gives a simple crash rule: a file may exist without a reference and is swept, but a reference never exists without its file. Per-company naming keeps tenants independent at the cost of storing a file twice when two companies upload it.\nFFmpeg is the established tool for both inspection and conversion of every format the release needs, including EXIF orientation and metadata removal for images, so one external tool covers both kinds instead of FFmpeg plus an in-process image library. Running it as a separate executable keeps memory-safety defects in parsers out of the API process and lets timeouts and limits kill a hostile file. It also keeps Teluni's Apache-2.0 code separate from FFmpeg's GPL build. The trade-off is CPU-heavy work on the API host and a binary dependency that every environment must provide.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "S3-compatible object storage now",
+    "anchor": "s3-compatible-object-storage-now",
+    "text": "S3-compatible object storage now\nA MinIO or cloud bucket would separate storage from the API host and scale later, but it adds a service to run on the single-host pilot or a paid dependency. The object interface keeps this as a later implementation without changing object identity.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Media in PostgreSQL",
+    "anchor": "media-in-postgresql",
+    "text": "Media in PostgreSQL\nLarge objects or `bytea` would make storage transactional, but they inflate database backups and I/O with gigabytes of video and complicate streaming and range reads.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "libvips (sharp) for images and FFmpeg for video",
+    "anchor": "libvips-sharp-for-images-and-ffmpeg-for-video",
+    "text": "libvips (`sharp`) for images and FFmpeg for video\nFaster image handling, but it parses untrusted images inside the API process and adds a second native toolchain to qualify and isolate.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A separate processing service with a broker",
+    "anchor": "a-separate-processing-service-with-a-broker",
+    "text": "A separate processing service with a broker\nStronger isolation and independent scaling, but it adds deployment and failure modes that the pilot does not yet need. A separate, network-less processing container running the same commands is the deployment-level hardening step, without changing this decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nImmutable, verifiable objects that publications and players can reference by hash.\nCrash-safe publication and reference-safe purge with a single lock order.\nHostile files cannot run code in, or exhaust, the API process.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nConversion competes with the API for CPU on the pilot host; concurrency is limited to one job by default and long videos take minutes.\nEvery environment (development, CI, production image) must provide a compatible FFmpeg build, and its security updates become an operational duty.\nStorage is tied to one host until another object store implementation exists; backups must cover the media volume together with PostgreSQL.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nBackups and restore must copy the media volume and the database consistently; restored objects are verified against their hashes, and a sweep removes files without rows.\nMoving to another object store copies objects by hash and switches the implementation; asset and object identities stay the same.\nThe production image must ship FFmpeg with its license notices (PJ-13).\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
+    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Media library design](../project/media-library-design.md)\n[Release policies: media and deletion lifecycle](../project/release-policies.md#media-and-deletion-lifecycle)\n[Acceptance targets](../project/release-targets.md#media-and-rendering-targets)\n[Operations: persistent state and storage portability](../project/operations.md#persistent-state-and-storage-portability)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "anchor": "adr-0029-evaluate-schedules-with-the-temporal-api-and-shared-fixtures",
+    "text": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures\n**Status:** accepted\n**Date:** 2026-10-19\n**Acceptance scope:** The owner explicitly approved this decision and the eleven decisions of the programming design on 2026-10-19 under PH-24. Acceptance establishes the direction for local and CI implementation of PJ-10, not the player's evaluator (PJ-12) or device qualification (PH-08).\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nTeluni schedules playlists by local business time per screen: weekdays, local hours, overnight windows, inclusive final dates and all-day windows, interpreted in the screen's time zone or its branch's, never the server's (FR-06). The [release policies](../project/release-policies.md#time-and-scheduling) fix how DST gaps and repeated hours resolve and require the backend preview and the Android player to share fixtures. Node.js 24, the API runtime, does not ship the ECMAScript Temporal API, and the standard `Date` and `Intl` objects give offsets for an instant but no way to resolve a local time that falls in a gap or a repeated hour. D-10 has not selected a time-zone library.\nThis record decides how the API represents and resolves local time for schedules and how the API and the player agree on the results. The rules themselves are in the [programming design](../project/programming-design.md).\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nTeluni will evaluate schedules with a pure evaluator over the Temporal API and verify every implementation against one fixture file:\nThe API's programming module owns a pure TypeScript evaluator that takes rules, a default, an IANA zone name and an instant range and returns resolved segments. It never reads a clock or the process time zone.\nLocal dates and times are Temporal `PlainDate` and `PlainTime` values, instants are Temporal `Instant` values, and zone resolution uses `ZonedDateTime` with explicit disambiguation plus transition lookup for gaps. Until Node.js provides Temporal natively, the API uses the `temporal-polyfill` package, pinned to an exact version, imported only by the programming module.\nCanonical fixtures in JSON (rules, zone, range and expected segments in UTC and local form, and expected validation codes) are owned by the API module and run by its tests. The player runs the same file against its implementation in PJ-12; neither implementation is the reference for the other.\nPreview is computed only by the API; the panel displays its segments.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nTemporal models exactly the concepts the policies use (plain local dates and times, instants, zones and explicit disambiguation), and its model matches `java.time`, which an Android player is expected to use, so both implementations reason in the same terms and the fixtures express the same cases. A spec-conformant polyfill keeps the code on the standard API, so removing it when Node.js ships Temporal is an import change rather than a rewrite. Fixtures, not shared code, are the contract between two runtimes in different languages. Keeping the evaluator pure makes validation, preview and tests deterministic and independent of the host.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Luxon or date-fns-tz",
+    "anchor": "luxon-or-date-fns-tz",
+    "text": "Luxon or date-fns-tz\nMature libraries, but each has its own model of gaps and repeated hours that differs from `java.time` and from the standard on the way to Node.js, so the fixtures would encode library behavior rather than the policy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Hand-written resolution over Intl.DateTimeFormat",
+    "anchor": "hand-written-resolution-over-intldatetimeformat",
+    "text": "Hand-written resolution over `Intl.DateTimeFormat`\nAvoids a dependency, but searching transitions and disambiguating local times is where subtle errors appear, and the code would duplicate a standard that is about to ship.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A shared evaluator package compiled for both runtimes",
+    "anchor": "a-shared-evaluator-package-compiled-for-both-runtimes",
+    "text": "A shared evaluator package compiled for both runtimes\nOne implementation for the API and the player would remove the second implementation, but the player is a native Android application; embedding a JavaScript engine to run schedules adds a runtime and its own failure modes on the device.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nDeterministic, host-independent schedule results with the selected DST rules.\nOne fixture file that both the API and the player must pass.\nA direct path to native Temporal.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
+    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nA runtime dependency in the API until Node.js ships Temporal, which must be kept current with the zone database it relies on (the polyfill uses the runtime's `Intl` zone data).\nTwo implementations of the evaluator, kept equal only by the fixtures.\n"
+  },
+  {
     "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
     "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
     "group": "Decisions",
@@ -513,6 +711,231 @@
     "text": "References\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\n[Deployment design](../project/deployment-design.md)\n[Deployment and migration planning](../project/operations.md)\n[Data retention](../security/data-retention.md)\n[Media library design](../project/media-library-design.md)\n"
   },
   {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "anchor": "adr-0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "text": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual\n**Status:** accepted\n**Date:** 2026-10-27\n**Acceptance scope:** On 2026-10-27 the owner asked for sorting, column filters, column resizing and configurable multiple selection in the shared `DataSet`, designed for very many rows, and asked the agent to use the best available technology. The agent accepted this decision under that request and the delegation recorded with [PH-25](../project/human-actions.md#ph-25); merging the pull request that adds it is the repository review. It selects the web panel's grid libraries. It does not add server-side sorting or filtering to any API.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md) chose React, Vite and TanStack Router and Query, and deferred data grids and virtualization until their requirements were understood. The companies page's `DataSet` now needs a grid that:\nsorts by clicking a header or from a header menu, and filters a column by choosing among its values with search and select-all;\nresizes columns and supports single or multiple selection;\nstays responsive with tens of thousands of rows in the body and in a column's value list.\nRendering every row as DOM does not scale to that size, and sorting, value faceting and resizing have subtle edge cases (blank values, filters that interact, live resizing). The product owns its markup, styles, accessibility and theme through `--ui-*` tokens, so a grid must not impose its own look. The React Compiler is enabled.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nThe web panel builds grids on two headless libraries, pinned exactly in `apps/web`:\n**TanStack Table v9** (`@tanstack/react-table`) owns the grid model: sorting, column filtering, value faceting and column sizing/resizing, with only those features registered.\n**TanStack Virtual v3** (`@tanstack/react-virtual`) renders only the rows, and filter options, in view.\nTeluni renders all markup itself in the shared `DataGrid`, which `DataSet` composes, and the shared `MultiSelectList`. Row selection remains caller-owned rather than table state, so features keep selection next to their URL and API state. Sorting and filtering run in the browser over the rows the caller supplies; a list that cannot load all its rows needs server-side sorting and filtering added to its API first.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nBoth libraries are headless, so the product keeps its semantic markup, ARIA grid roles, keyboard model and token-based styling.\nThey belong to the TanStack family already selected by ADR-0008, are MIT-licensed and widely used, and add only the registered features to the bundle.\nTanStack Table's faceting gives each column's distinct values while applying the other columns' filters, which is the behavior a value filter needs. Its row models are memoized and recompute only when data or state change.\nVirtualization keeps the DOM to a few dozen rows regardless of size. In a development build, 10,000 rows sorted in about 75 ms and a filter with 10,000 distinct values opened in about 80 ms rendering 14 options.\nTanStack Table v9's React adapter returns a new table reference when its state changes, so components compiled by the React Compiler update. The virtualizer keeps one instance whose output changes while scrolling, so the components that read it opt out with the `\"use no memo\"` directive.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A complete data grid component (for example AG Grid or MUI X Data Grid)",
+    "anchor": "a-complete-data-grid-component-for-example-ag-grid-or-mui-x-data-grid",
+    "text": "A complete data grid component (for example AG Grid or MUI X Data Grid)\nThese provide sorting, filtering and virtualization, but bring their own markup, styling system and theming, are much larger, and reserve some features for commercial licenses. Adapting them to the product's tokens and accessibility choices would fight the library.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Own implementation without libraries",
+    "anchor": "own-implementation-without-libraries",
+    "text": "Own implementation without libraries\nSorting and selection are small, but virtualization with scrolling to a row, faceting under interacting filters and live column resizing would be new code with its own defects and tests, duplicating mature libraries.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Virtualization only, with an own grid model",
+    "anchor": "virtualization-only-with-an-own-grid-model",
+    "text": "Virtualization only, with an own grid model\nTanStack Virtual alone solves rendering size, but leaves the faceting and resizing edge cases above to the product.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOne grid serves small lists like companies and large in-browser lists, with consistent sorting, filtering, resizing and selection.\nThe headless model keeps the existing styling, theme and accessibility responsibilities in the product.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nTwo runtime dependencies to keep current; TanStack Table v9 is recent, so upgrades need the browser tests that cover the grid.\nSorting and filtering apply only to loaded rows; paginated lists filter the loaded page until their APIs support server-side processing.\nText sorts with `Intl.Collator` for the person's locale without numeric collation, which was about 2.7 times slower in measurement; \"Loja 10\" therefore sorts before \"Loja 9\". Numeric values sort as numbers.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo API, database or deployment change. Replacing either library would affect only `apps/web/src/data-grid.tsx` and `apps/web/src/multi-select-list.tsx`.\n"
+  },
+  {
+    "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+    "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\n[Component architecture and design practices](../architecture/web-components.md)\n[Web application guide](../../apps/web/README.md#companies-and-branches)\n[Implementation plan](../project/implementation-plan.md#companies-dataset-grid-increment)\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "anchor": "adr-0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "text": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF\n**Status:** accepted\n**Date:** 2026-10-27\n**Acceptance scope:** On 2026-10-27 the owner asked for exports of the data the shared `DataSet` shows, at least to Excel and PDF, and left further formats and the technology to the agent. The agent accepted this decision under that request and the delegation recorded with [PH-25](../project/human-actions.md#ph-25); merging the pull request that adds it is the repository review. It covers exports of rows the browser already shows. It adds no export endpoint or server-side report.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\n[ADR-0034](0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md) gives the web panel a grid that sorts and filters the rows it holds. People need to take that view elsewhere: analyze it in a spreadsheet, load it into another system, or print and share it. The rows are already authorized for the person and present in the browser, and the grid can hold tens of thousands of them. Teluni's audience works mostly in Portuguese spreadsheets, which expect `;` separators and decimal commas in CSV. Export code must not slow the first page load.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nGrids offer three formats, opt-in per screen through `exportName`:\n**Excel (.xlsx)** through `write-excel-file`, keeping numbers numeric, the header bold and frozen, and the column widths shown;\n**CSV** generated by the product: UTF-8 with a byte order mark, CRLF lines, the locale's separator and decimal mark (`;` and `,` in Portuguese), and text that a spreadsheet would run as a formula prefixed with `'`;\n**PDF** through `jsPDF` with `jspdf-autotable`: A4, landscape for wide grids, a title, the generation time and record count, and page numbers.\nAn export contains the rows the grid shows, in their order and with its filters, and the columns that have a value. It runs entirely in the browser.\nThe libraries are pinned exactly and loaded with dynamic `import()` only when someone exports.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nXLSX keeps types and opens directly in Excel, LibreOffice and Google Sheets; CSV is what other systems import; PDF is what people print, attach and sign off. A JSON export would serve developers rather than the panel's users and is left out.\n`write-excel-file` is MIT-licensed, maintained, browser-first and depends only on `fflate`. The SheetJS package on the public registry stopped at 0.18.5 in 2022 with known advisories, and ExcelJS has not been released since 2023 and pulls Node-oriented dependencies.\n`jsPDF` with `jspdf-autotable` is the established MIT pair for tables in the browser, paginates repeated headers and handles Portuguese accents with its built-in Helvetica (WinAnsi encoding).\nGenerating CSV needs no library; doing it in the product keeps the locale and formula-injection rules explicit and tested.\nIn a development build, 10,000 rows exported in about 0.1 s to CSV, 0.6 s to XLSX and 3 s to a 7 MB PDF.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Print the page to PDF",
+    "anchor": "print-the-page-to-pdf",
+    "text": "Print the page to PDF\nThe browser's print dialog would need no library, but virtualization renders only the rows in view, and saving a PDF would depend on the person choosing a printer destination.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Server-side exports",
+    "anchor": "server-side-exports",
+    "text": "Server-side exports\nAn API export could cover more rows than the browser holds, but it needs endpoints, authorization and limits for each list. It remains possible for lists that add server-side sorting and filtering.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nEvery screen with a grid can offer the same three exports by passing one prop; the first page load does not include the export libraries.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThree runtime dependencies to keep current. jsPDF installs optional packages (html2canvas, DOMPurify, canvg, core-js) that the build emits as unused lazy chunks; core-js's install script stays disabled.\nThe PDF uses a standard font, so characters outside WinAnsi, such as emoji, do not print. Very large PDFs take seconds and many pages.\n`fflate` compresses XLSX in a worker created from a `blob:` URL; a future Content Security Policy must allow `worker-src blob:`.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nExports are files the person saves on their device; the product does not log or store them. A screen that must not let records leave the panel simply omits `exportName`.\n"
+  },
+  {
+    "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+    "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0034](0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md)\n[Component architecture and design practices](../architecture/web-components.md)\n[Implementation plan](../project/implementation-plan.md#companies-dataset-grid-increment)\n[OWASP CSV injection](https://owasp.org/www-community/attacks/CSV_Injection)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -726,7 +1149,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nTeluni's decision identifiers remain stable. The [imported Orion decision index](orion/README.md) preserves later foundation records whose identifiers overlap Teluni's independent history.\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n[ADR-0033](0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nExpose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n"
+    "text": "Decision index\nTeluni's decision identifiers remain stable. The [imported Orion decision index](orion/README.md) preserves later foundation records whose identifiers overlap Teluni's independent history.\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-propose-tenant-owned-data-in-the-modular-backend.md)\nAdopt Tenant-Owned Data in the Modular Backend\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md)\nAdopt Immutable Publications and Atomic Player Activation\n[ADR-0020](0020-propose-a-native-android-tv-player.md)\nAdopt a Native Android TV Player\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nAdopt a Single-Host Pilot with Portable Persistent Storage\n[ADR-0022](0022-license-teluni-under-apache-2-0.md)\nLicense Teluni under Apache-2.0\n[ADR-0023](0023-propose-versioned-catalog-and-composition-publications.md)\nAdopt Versioned Catalog and Composition Publications\n[ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\nAdopt Keycloak and Server-Managed Human Sessions\n[ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\nAdopt Application-Owned Scoped Access Profiles\n[ADR-0026](0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nDeliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n[ADR-0027](0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nAdopt Device-Generated Credentials and Code-Based Enrollment\n[ADR-0028](0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nAdopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n[ADR-0029](0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nEvaluate Schedules with the Temporal API and Shared Fixtures\n[ADR-0030](0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nSynchronize Screens by Polling with Signed Authorization Statements\n[ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nBuild the Player on a Portable Core with File-Based Atomic State and Managed Installation\n[ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nRepresent Money as Integer Minor Units with a Currency per Field\n[ADR-0033](0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nExpose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots\n[ADR-0034](0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md)\nBuild Data Grids on TanStack Table and TanStack Virtual\n[ADR-0035](0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md)\nExport Grid Data in the Browser to XLSX, CSV and PDF\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -997,221 +1420,5 @@
     "heading": "Authentication",
     "anchor": "authentication",
     "text": "Authentication\nProtected operations derive identity and capabilities from the [trusted authentication boundary](../security/authentication.md) and enforce [authorization](../security/authorization.md) on the server. Caller-supplied roles, owner IDs, permissions, tenant IDs, feature flags, or UI visibility cannot grant access. A tenant path alone does not establish membership. Public operations must be explicitly public; administrative/debug capabilities require deliberate privilege, output, and environment controls.\nMake operation security requirements discoverable. Apply stronger controls where credentials, personal data, finances, or administration require them. Hidden resources may deliberately share not-found semantics with absent resources; preserve and test the disclosure policy. Keep bearer credentials out of URLs except for an explicitly designed protocol requiring a short-lived capability. Gateway authentication never replaces application authorization.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Pagination",
-    "anchor": "pagination",
-    "text": "Pagination\nPotentially growing collections must be bounded. Define default/maximum page sizes, deterministic ordering with a tie-breaker, empty results, supported filters, sorting, and search semantics. Apply authorization before pagination; counts, filters, and related-resource expansion must not reveal inaccessible data.\nChoose offset or cursor pagination according to dataset size, change frequency, query cost, and consumer needs. Cursors are opaque inputs, not authorization evidence; validate their scope and contents and protect sensitive state or integrity where needed. Document membership changes between pages instead of implying a snapshot guarantee.\nAllowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. Each module's implementation conventions own its concrete cursor and page-size choices.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Idempotency",
-    "anchor": "idempotency",
-    "text": "Idempotency\nFor state-changing operations, consider duplicate submission, concurrent execution, timeout ambiguity, and response loss. HTTP method names alone do not prove idempotency. Where supported, specify key location, scope, intent matching, reuse/different-payload behavior, retention, and replay result. Distinguish a replay from a conflicting new action.\nUpdates that must protect a previously observed state need a deliberate concurrency protocol, such as a version precondition. Stale writes should produce a stable conflict rather than silently overwrite newer state. For example, a module may require `Idempotency-Key` for creation and `expectedVersion` for edits/transitions, recording that protocol in its implementation conventions. Durable implementation requirements belong to [transactions](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md).\nErrors use the [public error contract](error-contract.md). Consumers branch on stable codes, never message text, and must not blindly retry timeouts or all `5xx` responses. Retry safety depends on operation semantics and whether the outcome is known.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Resource protection and operational behavior",
-    "anchor": "resource-protection-and-operational-behavior",
-    "text": "Resource protection and operational behavior\nBound request payloads, handler/dependency execution, and costly queries according to exposure. Technical rate limits protect resources; product quotas express entitlements and require separate semantics. Where clients need retry guidance, expose safe bounded metadata while keeping anti-abuse internals private. The [API runtime guide](../../apps/api/README.md#request-protection) describes the implemented process-local limiter and its deployment limits.\nCache policy must consider authentication, authorization, tenant scope, freshness, and privacy; protected results must not become public cache entries. Conditional requests and ETags are optional mechanisms, not foundation requirements. Health and metrics endpoints are operational contracts with appropriate exposure and safe output; they must not reveal secrets, raw configuration, or stack traces.\n[Observability](../reliability/observability.md) and [redaction](../security/telemetry-redaction.md) own telemetry rules. Use stable operation identities, route templates, method/status/duration, safe correlation, and bounded error categories. Do not log full requests/responses, raw URLs, credentials, or arbitrary exceptions. Propagate tracing through supported outbound and asynchronous boundaries without introducing high-cardinality labels.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Additional delivery modes",
-    "anchor": "additional-delivery-modes",
-    "text": "Additional delivery modes\nThese requirements apply **if the capability is introduced**; they do not imply implementations exist.\nCapability\nRequired design\nLong-running or asynchronous operation\nDistinguish accepted from completed; define status/result/failure retrieval and cancellation. Do not hold a request open indefinitely. Transport cancellation does not prove durable rollback.\nUpload/download\nDefine size/media limits, ownership, processing state, required scanning, and authorization. Delegated or pre-signed URLs need bounded scope/lifetime and must not be logged as harmless text. File content is excluded from telemetry.\nWebhook\nDefine schema, authentication, acknowledgement, retry/delivery behavior, and compatibility. Validate inbound signatures/input and handle replay, duplicates, and out-of-order delivery. Decouple long work where provider acknowledgement requires it.\nEvents\nAn event states that something happened; it is not interchangeable with an API command. Do not reuse response schemas automatically across independently evolving event contracts.\nWebSocket/streaming\nDefine authentication/reauthorization, message contracts, lifecycle, ordering, reconnection, backpressure, cancellation, and partial failure.\nGateway/BFF/GraphQL/RPC\nIntroduce only for demonstrated requirements. Preserve owned contracts and security; account for GraphQL complexity/N+1 and resolver authorization. A BFF must serve a distinct composition need. REST terminology is not a reason for unnecessary design constraints.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Compatibility and documentation",
-    "anchor": "compatibility-and-documentation",
-    "text": "Compatibility and documentation\nIdentify actual consumers and how independently they deploy. Follow [API versioning](versioning.md) for structural, semantic, authorization, error, ordering, retry, and side-effect changes. Prefer compatible evolution over new versions, and keep deprecated behavior functional until its removal conditions are satisfied. Internal consumers can have real compatibility commitments; mobile/desktop consumers can lag.\nGenerate reference facts from canonical contracts and maintain authored explanations for intent the schema cannot express. Use synthetic examples that conform to current contracts. The [Living Documentation Portal](../architecture/living-documentation.md) presents generated facts without becoming another source. A contributor should navigate operation → contract → application owner → authorization → implementation → tests without reverse engineering framework code.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "New API Operation Checklist",
-    "anchor": "new-api-operation-checklist",
-    "text": "New API Operation Checklist\nBefore adding or changing an operation:\nIdentify the capability, owner, actual consumers, and compatibility commitments; reuse existing patterns and semantic errors.\nDefine input/output field meaning, bounds, classification, omission/null behavior, stable operation identity, authentication, authorization, and expected failures.\nSpecify duplicate/concurrent/retry behavior, synchronous versus asynchronous completion, external effects, and pagination/query cost where applicable.\nImplement explicit mapping at the boundary and test validation, serialization, statuses/headers, authentication, denials, hidden resources, and relevant domain behavior through the real HTTP boundary. A policy unit test alone does not prove endpoint enforcement.\nTest security risks proportionally, including mass assignment, oversized inputs, restricted fields, and cross-tenant access where applicable. Preserve actual consumer compatibility commitments.\nRegenerate OpenAPI, SDK, and affected references; run [validation](../validation.md). Current drift checks prove alignment with current sources, not historical consumer compatibility. Review the semantic change as well as the generated diff.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Versioning",
-    "anchor": "api-versioning",
-    "text": "API Versioning\n[Task index](../README.md) · [Cross-system compatibility](../architecture/versioning-and-compatibility.md) · [Release workflow](../database/release-evolution.md) · [Error contract](error-contract.md)\nThis policy owns consumer-facing API evolution. Prefer compatible evolution; create a new API version only when a meaningful incompatibility cannot reasonably be handled within the existing contract. Versions create parallel contracts, SDKs, documentation, tests, support, and security-maintenance obligations.\n[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable contracts and generated OpenAPI/SDK tooling. The current API, SDK, and web consumer evolve together in this repository. No independently released consumer baseline, public support window, or API version-routing scheme is recorded. Current-source freshness checks exist; historical breaking-change detection is conditional on a real released baseline, recorded as a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Released Contract",
-    "anchor": "released-contract",
-    "text": "Released Contract\nA contract is a compatibility commitment once supported consumers depend on it, even when its URL has no numeric version or it is called internal. Before a change, identify consumers, deployment coordination, support promises, and actual usage. Web clients deployed together may permit tighter coordination; mobile, desktop, partner, worker, service, CLI, and other independently deployed consumers may lag. Auto-update does not prove atomic migration.\nUnreleased shapes with no consumer commitment may be refined instead of retaining development experiments. Update canonical source, tests, generated SDK, and consumers coherently. Git preserves development history; API versions preserve meaningful consumer boundaries. Unlike immutable released SQL migrations, released APIs can evolve compatibly in place.\nDo not invent support periods before actual obligations exist. Minimum supported client versions or forced upgrades require a product decision that accounts for availability and user impact; they are not shortcuts around compatibility design. Explicitly identify experimental/beta guarantees if such a lifecycle is needed, rather than relabeling an unstable production contract to evade commitments.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Breaking Change",
-    "anchor": "breaking-change",
-    "text": "Breaking Change\nA change is breaking if a previously valid consumer can fail, behave incorrectly, or misinterpret data. Review more than a structural schema diff:\nSurface\nCompatibility risks\nOperations\nRemoved/renamed operation or path; changed method, operation ID, request or response shape\nRequest fields\nNew required field, tighter limits/validation, changed omission/null/default behavior; relaxed validation may still affect downstream assumptions or security\nResponse fields\nRemoval/rename, required becoming optional, new nullability, types/ranges/formats exceeding client representations; even additive fields fail strict readers\nEnums and unions\nNew values/variants break exhaustive consumers; changed discriminator or meaning is breaking even if the type stays the same\nIdentifiers\nFormat changes affect routing, storage, parsing, and integrations; consumers must not infer structure from opaque IDs\nCollections\nScope, ordering, page-size defaults/limits, cursor or offset semantics, search/filter meaning\nErrors\nCode meaning/removal/rename, status, details, retry semantics; new error codes need client fallback\nBehavior\nIdempotency, visibility/consistency delay, side effects, accepted inputs, cancellation, timeout/unknown-outcome handling\nSecurity and operations\nAuthentication or authorization changes, materially reduced usable rate limits, timeout changes, or dependency assumptions\nAdding an operation or optional field is often compatible, not automatically safe. Evaluate actual generated clients, runtime readers, numeric precision, and unknown-field handling. Distinguish closed values from intentionally extensible enums/unions; extensible responses need safe unknown-value fallback. Do not make all enums extensible by default, or permit arbitrary request fields without a security and semantic design.\nSecurity and data-integrity fixes take precedence over preserving vulnerable or corrupting behavior. Identify and communicate the breaking impact; apply current security/data-protection rules to every supported version. Safe bug-for-bug compatibility is exceptional and requires evidence of serious consumer dependence.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Compatible evolution",
-    "anchor": "compatible-evolution",
-    "text": "Compatible evolution\nFirst consider an additive path: introduce a new capability, support old and new forms, migrate consumers, then deprecate and remove when safe. Define the canonical meaning during coexistence. Compatibility adapters should translate old requests/results at the boundary and reuse application/domain behavior where semantics match. Do not fork the entire domain because a transport version differs.\nCompatibility code, fallback reads, aliases, and dual representations need an owner, tests, dependent-consumer inventory, migration path, support window, and observable removal condition. Preserve legacy semantics intentionally when necessary; if their cost becomes disproportionate, plan retirement explicitly. Avoid indefinite legacy support by accident.\nConsider rolling backend coexistence as well as external clients: supported old/new applications may temporarily share databases, calls, or events. Backward and forward compatibility are separate questions. No universal bidirectional guarantee should be assumed.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Deprecation",
-    "anchor": "deprecation",
-    "text": "Deprecation\nDeprecation means an element remains functional but should no longer be adopted. Record the element, replacement, reason, affected consumers, migration instructions, support commitment, and removal condition or date. Mark canonical metadata and generated docs/SDK annotations where the tooling supports it. A changelog communicates relevant released changes but does not replace current contract documentation.\nRetirement requires evidence that supported consumers have migrated or that the agreed support condition has expired. Observe usage where practical with safe bounded operation/version/client-class dimensions; do not log payloads solely to discover deprecated fields. A contract with no remaining consumers need not endure a ceremonial delay. Security/correctness can require urgent retirement, with its impact recorded explicitly.\nKeep tests for deprecated behavior until retirement. Update SDKs, examples, recommended-version guidance, and migration documentation together. Retain retired consumer documentation when support or investigation obligations require it, clearly separated from current guidance.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "New versions and routing",
-    "anchor": "new-versions-and-routing",
-    "text": "New versions and routing\nBefore creating a version, establish:\nThe incompatible meaning and why additive evolution or in-place deprecation is insufficient.\nThe actual consumers requiring the old contract and the smallest understandable version boundary.\nDeterministic selection/routing, explicit unsupported-version behavior, and any cache implications.\nShared application logic versus justified semantic differences in boundary adapters.\nA support/retirement commitment, migration guide, documentation and SDK strategy, usage visibility, security maintenance, and test matrix.\nPath, header, media-type, date-based, whole-API, and per-capability schemes are alternatives, not selected defaults. Avoid per-endpoint version combinations without a real benefit. Explicit version selection is preferable when an implicit default could change consumer meaning. A mutable `latest` alias is not a stable long-term contract; retired/unsupported versions must fail predictably instead of silently receiving an incompatible newer version.\nAPI contract versions are independent of application releases, SDK package versions, and database migration identifiers. A new backend or SDK release does not automatically require a new API version. Conversely, a breaking SDK public API may require its own package compatibility change even when the server contract stays stable.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Mechanical Enforcement",
-    "anchor": "mechanical-enforcement",
-    "text": "Mechanical Enforcement\n`pnpm references:check` verifies generated OpenAPI and SDK alignment with current executable sources; it does **not** prove compatibility with historical consumers. Current server/browser tests protect the implemented contract. Follow [release and evolution](../database/release-evolution.md#review-api-and-temporary-compatibility) when a real external or independently deployed consumer activates historical obligations.\nRetain the actual released contract as a comparison baseline when needed. Structural comparison should detect removed operations, required fields, types, enum/union changes, and response changes. It complements semantic review of defaults, permissions, errors, ordering, side effects, and retry behavior. A historical snapshot is evidence, not a replacement authoring source.\nProtect real promises with contract/consumer tests; test old requests, deprecated responses/errors, version routing, unknown-value fallback, and generated-client behavior as applicable. Do not invent unsupported release combinations or update a historical fixture merely to hide a failure. Consumer-driven tests, deprecation telemetry, baseline format, and routing tooling should be added when actual topology benefits from them.\n"
-  },
-  {
-    "id": "repository/docs/api/versioning",
-    "title": "API Versioning",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Change checklist",
-    "anchor": "change-checklist",
-    "text": "Change checklist\nBefore handing off a compatibility-sensitive change, verify the actual consumer inventory, assess every applicable surface in the breaking-change table, prefer compatible alternatives, define any migration/removal conditions, preserve security across supported versions, and update canonical contracts, generated references, consumers, and tests. Document unavailable historical checks without implying that current-source validation proves them.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Agent Instructions and Tool Compatibility",
-    "anchor": "agent-instructions-and-tool-compatibility",
-    "text": "Agent Instructions and Tool Compatibility\n[Documentation index](../README.md) · [Repository structure](repository-structure.md#local-agent-instructions) · [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nThis page owns how repository instructions reach human contributors and AI coding agents. [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) records the decision. The repository is not coupled to a particular model, agent harness, or vendor.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Canonical instruction source",
-    "anchor": "canonical-instruction-source",
-    "text": "Canonical instruction source\nThe root [AGENTS.md](../../AGENTS.md) and its nested `AGENTS.md` files are the only repository instruction source. They apply equally to every contributor, whether human or agent, and whatever tool is used. Nested files add local obligations for their directory and never remove global invariants; [repository structure](repository-structure.md#local-agent-instructions) owns their scope.\nInstructions route to canonical policy rather than restating it. Machine-enforced architecture, schemas, tests, generated artifacts, and `pnpm validate` are more authoritative than any prompt: an instruction cannot make a failing check acceptable, and a behavior that matters should be enforced mechanically where practical.\nObligations belong to the responsibility, not to a product. Write \"an agent\", \"a contributor\", or \"an authorized coding agent\" in normative text. Name a specific tool only when describing that tool's actual behavior, as below.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Tool-specific compatibility",
-    "anchor": "tool-specific-compatibility",
-    "text": "Tool-specific compatibility\nTool-specific files are thin discovery adapters. They may tell a tool to read `AGENTS.md`; they must not contain, summarize, or override repository instructions, and they are never an architectural authority. Add one only when a tool used with this repository cannot discover `AGENTS.md` otherwise, and verify the tool's current documented behavior first.\nTool\nVerified behavior (2026-09-29)\nRepository adapter\nOpenAI Codex\nReads `AGENTS.md` natively. It combines one file per directory from the project root down to the current working directory and stops at a 32 KiB default combined limit (`project_doc_max_bytes`); nested files below the working directory are not loaded automatically. `AGENTS.override.md` replaces a directory's `AGENTS.md`.\nNone\nClaude Code\nReads `AGENTS.md` natively since v2.1.277 (all session types since v2.1.281): the root and ancestor files at start, and a subdirectory's file when it reads files there. A `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` on the path replaces `AGENTS.md` by default. Verified with Claude Code 2.1.284, whose sessions in this repository load root and nested files without any `CLAUDE.md`.\nNone\nGemini CLI\nLoads `GEMINI.md` by default. Setting `context.fileName` to `AGENTS.md` makes it load the root/ancestor `AGENTS.md` files and, just in time, those of subdirectories it accesses. Project settings apply only in a trusted workspace. Verified by executing Gemini CLI 0.61.0's own discovery functions against a disposable repository.\n[`.gemini/settings.json`](../../.gemini/settings.json) sets only `context.fileName`\nTool behavior changes over time. Reverify it against current official documentation or the installed tool before changing adapters; do not copy instructions to work around an unverified limitation.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Portable instruction rules",
-    "anchor": "portable-instruction-rules",
-    "text": "Portable instruction rules\nKeep each root-to-directory chain of `AGENTS.md` files under 32 KiB so Codex loads it completely. The root file stays concise and links to policy.\nBecause some agents load only the files between the repository root and their working directory, the root file requires reading every applicable nested `AGENTS.md` before editing a directory. Nested files must not assume they were loaded automatically.\nDo not commit `CLAUDE.md`, `GEMINI.md`, `AGENTS.override.md`, `.claude/rules/`, `.github/copilot-instructions.md`, `.cursor/rules/`, or similar instruction copies. Personal, uncommitted variants also change what a tool reads: a local `CLAUDE.local.md` stops Claude Code from reading `AGENTS.md` unless its **Project instructions** setting is `claude-md-and-agents-md`, and a local `AGENTS.override.md` replaces Codex's view of that directory.\nA tool that reads `AGENTS.md` can still be misconfigured by user or organization settings outside the repository. Report such limits instead of adding repository copies.\n"
-  },
-  {
-    "id": "repository/docs/architecture/agent-instructions",
-    "title": "Agent Instructions and Tool Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Enforcement",
-    "anchor": "enforcement",
-    "text": "Enforcement\n`pnpm agents:check`, part of `pnpm validate`, rejects competing instruction files, requires the Gemini adapter to set exactly `context.fileName: [\"AGENTS.md\"]`, and fails when a root-to-directory instruction chain exceeds 32 KiB. `pnpm agents:test` exercises those rules against disposable Git repositories. The check cannot prove that a tool follows the instructions; review and the repository's executable validation remain the controls.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Application Boundaries",
-    "anchor": "application-boundaries",
-    "text": "Application Boundaries\n[Documentation index](../README.md) · [Repository placement](repository-structure.md) · [Dependency rules](dependency-rules.md)\nApplications are executable boundaries with explicit ownership; sharing a monorepo does not merge their runtime, trust, or persistence responsibilities. This page owns runtime separation and composition. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) governs the API adapter and [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) the web stack.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Types of Boundaries",
-    "anchor": "types-of-boundaries",
-    "text": "Types of Boundaries\nBoundary\nRequired reasoning\nRuntime/process\nSeparate processes are distributed participants even when deployed together. Use explicit protocols and account for network failure, timeouts, partial results, retries, and duplicate requests. Remote operations are not local function calls.\nDeployment/distribution\nVersions may coexist. Define supported old/new combinations and migration requirements under [compatibility policy](versioning-and-compatibility.md).\nTrust\nValidate data crossing security contexts, including external-provider responses. Client applications remain untrusted regardless of repository proximity.\nPersistence\nAccess follows explicit application/domain ownership. A shared database client does not authorize every module to access every table.\nApplications must not import another application's internal implementation. Share genuinely common capabilities through public package APIs and communicate through deliberate runtime contracts. A package must not become an indirect way to bypass another application's boundary.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend API Application",
-    "anchor": "backend-api-application",
-    "text": "Backend API Application\nThe implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validation, authentication integration, authorization enforcement, correlation, transport error mapping, application orchestration, dependency composition, telemetry, and health endpoints. Plugins organize runtime integration; they do not define business domains.\nKeep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.\nThe API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Web Application",
-    "anchor": "web-application",
-    "text": "Web Application\nThe implemented `apps/web` is a React/Vite client-first SPA. TanStack Router owns URLs/navigation, TanStack Query owns server state through the generated SDK, and React state/context owns local UI state. The accepted direction includes React Compiler when compatible. No general global-state library or full-stack web framework is selected by default; server rendering requires product justification. Fastify retains authoritative backend responsibilities.\nThe web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.\nThe browser can be inspected, modified, bypassed, replayed, or automated. Client validation and hidden/disabled controls improve experience; trusted backend boundaries still enforce validation, identity, permissions, and business invariants. Clients receive neither database credentials nor privileged server secrets. See [authentication](../security/authentication.md) and [authorization](../security/authorization.md).\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Shared Contracts",
-    "anchor": "shared-contracts",
-    "text": "Shared Contracts\nThe [internal documentation portal](living-documentation.md#build-and-deployment-boundary) reuses the web toolchain behind a compile-time distribution boundary. Its UI is an engineering tool and imposes no layout, navigation, or identity on a product. Product help and public API documentation have separately approved sources and application-owned presentation; sharing a repository does not grant publication authority.\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
   }
 ]

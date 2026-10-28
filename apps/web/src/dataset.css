@@ -38,23 +38,21 @@
 .ui-dataset-action + .ui-dataset-action {
   margin-left: -1px;
 }
-.ui-dataset-action:first-child {
+.ui-dataset-action:first-of-type {
   border-start-start-radius: var(--ui-radius, 0.4375rem);
   border-end-start-radius: var(--ui-radius, 0.4375rem);
 }
-.ui-dataset-action:last-child {
+.ui-dataset-action:last-of-type {
   border-start-end-radius: var(--ui-radius, 0.4375rem);
   border-end-end-radius: var(--ui-radius, 0.4375rem);
 }
-.ui-dataset-action svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+/* A menu trigger in the toolbar looks like the other actions. */
+.ui-dataset-action.ui-menu-trigger {
+  width: auto;
+  height: auto;
+  color: var(--ui-color-text, #182638);
+  background: var(--ui-color-surface, #fff);
+  border: 1px solid var(--ui-color-border, #b5c4d2);
 }
 .ui-dataset-action:hover:not(:disabled) {
   background: var(--ui-color-surface-muted, #f3f6f9);
@@ -75,8 +73,7 @@
   cursor: default;
   opacity: 0.45;
 }
-.ui-dataset-action:focus-visible,
-.ui-dataset-select input:focus-visible {
+.ui-dataset-action:focus-visible {
   position: relative;
   z-index: 1;
   outline: 3px solid var(--ui-color-focus, #256ec3);
@@ -86,46 +83,8 @@
 .ui-dataset-empty {
   padding: 1.25rem;
 }
-.ui-dataset-grid {
-  overflow-x: auto;
-}
-.ui-dataset-grid table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-.ui-dataset-grid th,
-.ui-dataset-grid td {
-  padding: 0.7rem 0.9rem;
-  text-align: start;
-  border-bottom: 1px solid var(--ui-color-border, #b5c4d2);
-}
-.ui-dataset-grid th {
-  color: var(--ui-color-muted, #536677);
-  font-size: 0.75rem;
-  font-weight: var(--ui-font-weight-semibold, 650);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.ui-dataset-grid [data-align="end"] {
-  text-align: end;
-}
-.ui-dataset-grid tbody tr {
-  cursor: pointer;
-}
-.ui-dataset-grid tbody tr:last-child td {
-  border-bottom: 0;
-}
-.ui-dataset-grid tbody tr:hover {
-  background: var(--ui-color-surface-muted, #f3f6f9);
-}
-.ui-dataset-grid tbody tr[aria-selected="true"] {
-  background: var(--ui-color-selected, #e4eefa);
-}
-.ui-dataset-select {
-  width: 1px;
-}
-.ui-dataset-select input {
-  margin: 0;
-  accent-color: var(--ui-color-action, #185f9b);
+/* The grid sits inside the dataset's frame. */
+.ui-dataset .ui-datagrid {
+  border: 0;
+  border-radius: 0;
 }

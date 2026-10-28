@@ -1,0 +1,46 @@
+{
+  "name": "Checkbox",
+  "category": "Inputs",
+  "scope": "shared",
+  "owner": "Web UI",
+  "summary": "A native checkbox with a persistent label and an optional mixed state.",
+  "usage": "Use for independent on/off choices and for select-all controls whose options are partly chosen. The checked value stays caller-owned. Native input props and refs are forwarded.",
+  "accessibility": "The native input stays focusable and announced while a drawn box shows checked, mixed, focus and disabled states; the whole label toggles it. indeterminate sets the native mixed state that assistive technology reports.",
+  "props": [
+    {
+      "name": "label",
+      "type": "ReactNode",
+      "meaning": "Visible label that names the checkbox.",
+      "required": true
+    },
+    {
+      "name": "indeterminate",
+      "type": "boolean",
+      "meaning": "Shows the mixed state, for example when only some options are chosen.",
+      "required": false,
+      "default": "false"
+    },
+    {
+      "name": "…inputProps",
+      "type": "ComponentPropsWithRef<\"input\">",
+      "meaning": "Native props such as checked, onChange, disabled, name and ref are forwarded."
+    }
+  ],
+  "states": ["Unchecked", "Checked", "Mixed", "Keyboard focus", "Disabled"],
+  "examples": [
+    {
+      "id": "checkbox-states",
+      "label": "Checkbox states",
+      "description": "Checked, mixed and disabled examples held locally.",
+      "code": "<Checkbox label=\"Select all\" checked={all} indeterminate={some} onChange={toggleAll} />",
+      "live": true
+    }
+  ],
+  "id": "Checkbox",
+  "exportName": "Checkbox",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

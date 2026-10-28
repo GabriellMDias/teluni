@@ -4,6 +4,141 @@
     "title": "ADR-0009: Establish Testing Strategy and Tooling",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Test execution and repository validation",
+    "anchor": "test-execution-and-repository-validation",
+    "text": "Test execution and repository validation\nTest capabilities will participate in Orion's canonical validation workflow as they become applicable.\nThe repository should expose independently runnable commands with responsibilities similar to:\npnpm test:unit\npnpm test:integration\npnpm test:browser\npnpm test:e2e\n\nExact script names and composition may be refined during implementation.\nThe canonical:\npnpm validate\n\nmust remain the stable repository-level validation contract established by ADR-0003.\nNot every repository or package must execute test classes that do not yet exist.\nFor example, browser and E2E validation should be introduced when the web application and corresponding test scenarios exist.\nHow the validation work is partitioned, cached, parallelized, or sharded in CI will be determined by ADR-0011.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nVitest is selected because it fits naturally into Orion's TypeScript, ESM, React, and Vite ecosystem while providing a fast and capable general-purpose test runner.\nUsing one primary runner for ordinary TypeScript tests reduces the number of test conventions contributors must understand.\nVitest does not replace TypeScript validation.\nMaintaining `tsc` as the source of truth for type correctness keeps the responsibilities established by ADR-0003 intact.\nReal infrastructure is selected for integration testing whenever correctness materially depends on that infrastructure.\nThis is particularly important for PostgreSQL.\nOrion explicitly permits PostgreSQL-specific capabilities, custom migrations, constraints, explicit SQL, extensions, and transaction behavior.\nReplacing PostgreSQL with SQLite or database mocks during integration testing would create a substantial semantic gap between the test system and production system.\nTestcontainers provides a practical way to reduce that gap without requiring permanently shared development infrastructure.\nIt allows tests to construct disposable service environments that can be reproduced locally and in CI.\nThe decision to construct test databases from the committed production migration history provides additional confidence that Orion's canonical schema-evolution path remains executable.\nFastify request injection provides an efficient middle layer between unit testing and full network E2E testing.\nIt allows validation, serialization, routing, application logic, and persistence to be tested together without unnecessarily starting external listeners.\nVitest Browser Mode is selected for browser-dependent component and feature behavior because actual browser execution provides higher fidelity than simulated DOM environments.\nThis avoids making jsdom semantics an implicit substitute for browser semantics when the behavior genuinely depends on the browser.\nPlaywright serves two related but distinct roles:\nbrowser provider for Vitest Browser Mode;\nstandalone E2E test framework for complete user journeys.\nThis gives Orion a consistent browser automation foundation without requiring all browser tests to become expensive E2E scenarios.\nPlaywright Test is selected for E2E because it provides strong isolation, modern browser automation, automatic waiting, parallel execution, tracing, and multi-browser capabilities suitable for growing test suites.\nThe strategy deliberately avoids requiring every browser or every system layer for every test.\nOrion instead optimizes for the cheapest environment that can prove a behavior reliably.\nThis produces a testing spectrum:\nfast feedback                                      high fidelity\n←────────────────────────────────────────────────────────────→\n\nVitest         Vitest             Vitest Browser       Playwright\nNode           integration        Mode                  E2E\n │                 │                   │                   │\npure logic     real services       real browser        full system\n\nThis approach allows the test suite to grow without making complete-system tests the primary source of development feedback.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Jest",
+    "anchor": "jest",
+    "text": "Jest\nJest provides a mature and widely used JavaScript testing ecosystem.\nIt has extensive documentation, broad library support, and substantial production adoption.\nIt was not selected because Vitest aligns more directly with Orion's ESM, TypeScript, Vite, and modern frontend tooling while providing the capabilities required by the foundation.\nUsing Vitest also reduces divergence between web tooling and test transformation behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Node.js Built-in Test Runner",
+    "anchor": "nodejs-built-in-test-runner",
+    "text": "Node.js Built-in Test Runner\nNode.js provides a native test runner without requiring a third-party testing framework.\nUsing the built-in runner would reduce external dependencies.\nIt was not selected because Vitest provides a more integrated TypeScript/frontend experience, richer repository-level tooling, browser testing integration, coverage support, and consistency with the selected Vite ecosystem.\nThe native runner remains technically suitable for specialized isolated use, but it is not Orion's default.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "SQLite for Database Tests",
+    "anchor": "sqlite-for-database-tests",
+    "text": "SQLite for Database Tests\nSQLite can provide extremely fast and simple relational tests.\nIt is useful for applications whose production behavior is sufficiently database-agnostic.\nIt was not selected as Orion's PostgreSQL integration substitute because Orion intentionally depends on PostgreSQL capabilities and semantics.\nSQLite cannot reliably prove behavior involving PostgreSQL-specific:\ntypes;\nconstraints;\nindexes;\nextensions;\ntransaction semantics;\ncustom SQL;\nPrisma/PostgreSQL integration.\nThe difference would reduce the value of persistence integration tests.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mocked Prisma or Repository Implementations for Persistence Integration",
+    "anchor": "mocked-prisma-or-repository-implementations-for-persistence-integration",
+    "text": "Mocked Prisma or Repository Implementations for Persistence Integration\nOrion could mock Prisma or persistence adapters to keep tests fast.\nSuch tests may still be useful for isolated application logic.\nThey were not selected as the persistence-integration strategy because a mock cannot demonstrate that the real Prisma queries, PostgreSQL schema, migrations, constraints, and transactions behave correctly.\nMocks remain appropriate when the behavior being tested is above the persistence boundary and persistence behavior itself is intentionally outside test scope.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Shared Permanent Test Database",
+    "anchor": "shared-permanent-test-database",
+    "text": "Shared Permanent Test Database\nOrion could maintain one long-running PostgreSQL test instance used by all developers and CI jobs.\nThis may reduce container startup overhead.\nIt was not selected as the foundation default because shared persistent test infrastructure introduces state leakage, environment drift, coordination requirements, and reduced reproducibility.\nReusable infrastructure may still exist as an optimization when it preserves deterministic test isolation, but tests must not depend on a manually maintained shared database state.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "jsdom as the Default React Test Environment",
+    "anchor": "jsdom-as-the-default-react-test-environment",
+    "text": "jsdom as the Default React Test Environment\nA simulated DOM environment provides fast execution and has historically been common for React component testing.\nIt remains useful for tests that need DOM-like APIs without requiring actual browser behavior.\nIt was not selected as Orion's default browser-fidelity environment because simulated DOM semantics can differ from actual browser behavior.\nVitest Browser Mode allows tests whose correctness depends on browser semantics to execute in a real browser while preserving integration with the primary test runner.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Playwright for All Frontend Tests",
+    "anchor": "playwright-for-all-frontend-tests",
+    "text": "Playwright for All Frontend Tests\nOrion could use Playwright Test for both component behavior and complete user journeys.\nThis would reduce the number of test APIs used for browser-facing code.\nIt was not selected because many component and feature tests benefit from the faster, more focused lifecycle of Vitest Browser Mode.\nFull Playwright E2E environments should be reserved for behavior that genuinely requires the complete application stack.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Cypress",
+    "anchor": "cypress",
+    "text": "Cypress\nCypress provides mature browser testing capabilities, developer tooling, and component/E2E support.\nIt would be a technically valid browser testing solution.\nPlaywright was selected because it provides a strong fit for modern multi-browser automation, isolated browser contexts, parallel execution, tracing, and the additional benefit of serving as the browser provider for Vitest Browser Mode.\nThis reduces the number of browser automation technologies in the foundation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mandatory 100% Code Coverage",
+    "anchor": "mandatory-100-code-coverage",
+    "text": "Mandatory 100% Code Coverage\nOrion could enforce complete code coverage as a repository rule.\nThis would provide a simple measurable threshold.\nIt was not selected because coverage measures executed code rather than test correctness or assertion quality.\nArtificially maximizing coverage can create low-value tests and discourage appropriate prioritization.\nCoverage remains useful as a diagnostic and regression signal, and targeted expectations may be introduced where risk justifies them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion has one primary TypeScript test runner.\nFast unit tests provide rapid feedback for pure logic.\nReal PostgreSQL integration tests verify the database actually used in production.\nPrisma persistence behavior is tested against PostgreSQL rather than mocks.\nProduction migrations are exercised by integration-test database creation.\nCustom PostgreSQL SQL and extensions can be tested realistically.\nTestcontainers provides reproducible ephemeral infrastructure for local development and CI.\nFastify request injection enables realistic backend integration tests without unnecessary network overhead.\nReact component behavior can be tested in real browsers without requiring complete E2E environments.\nPlaywright provides a consistent browser automation foundation.\nFull E2E tests can focus on critical user journeys rather than every rule permutation.\nTests are expected to remain isolated and parallelizable.\nTest data remains local and explicit rather than relying on large implicit global fixtures.\nCoverage remains available without becoming an arbitrary quality metric.\nThe strategy can scale from small repositories to large test suites.\nIndividual test classes remain independently executable and optimizable in CI.\nFlaky tests are treated as defects rather than accepted background noise.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nOrion introduces multiple test execution modes that contributors must understand.\nTestcontainers requires a compatible container runtime in environments executing infrastructure tests.\nReal PostgreSQL integration tests are slower than database mocks or in-memory substitutes.\nMigration-based test database initialization adds execution cost.\nSharing infrastructure for performance requires careful state isolation.\nBrowser Mode tests are slower and more resource-intensive than Node-only tests.\nPlaywright requires browser binaries and corresponding CI resources.\nMaintaining separate component-browser and E2E test levels requires contributors to choose the appropriate level.\nTest isolation may require additional infrastructure code and test factories.\nNot using broad internal mocks means some integration tests will require more setup than heavily mocked alternatives.\nAbsence of a global coverage threshold provides less immediately visible numerical enforcement and requires engineering judgment.\nMulti-browser execution, when introduced, can materially increase CI cost.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
     "text": "Operational or Migration Impact\nOrion does not currently have an established testing implementation that must be migrated.\nThe initial repository testing foundation will therefore be introduced directly using:\nVitest\nTestcontainers\nVitest Browser Mode\nPlaywright\nPlaywright Test\n\nTest dependencies should only be added when the corresponding test capability exists.\nUnit and integration test scripts must be integrated with repository validation as soon as meaningful test suites exist.\nPostgreSQL integration-test infrastructure must use a PostgreSQL version compatible with the production baseline established by Orion's database tooling.\nTest databases must be initialized from committed migration history.\nContainer lifecycle and database-isolation strategies should initially favor correctness and simplicity, then be optimized using measurement when test execution time becomes material.\nFastify integration tests should use request injection by default unless real network behavior is part of the requirement.\nBrowser-dependent React tests should use Vitest Browser Mode when real browser semantics matter.\nPlaywright Test should be introduced for critical end-to-end workflows once the initial web application can be exercised through a complete running stack.\nChromium will be the initial routine E2E browser.\nAdditional browser projects should be added according to real product browser-support requirements.\nV8 coverage should be configured when coverage reporting becomes useful, without imposing an arbitrary foundation-level percentage threshold.\nCI execution strategy, including parallel jobs, container caching, browser installation, test sharding, and artifact retention, will be defined by ADR-0011.\nRoutine compatible upgrades of Vitest, Testcontainers, or Playwright do not require a new ADR when they preserve the responsibilities established here.\nReplacing the primary test runner, database integration strategy, or browser E2E framework would constitute a material testing-architecture change and should supersede this ADR.\n"
@@ -1015,176 +1150,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
-    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nAuthentication can be exercised with signed synthetic tokens and a local JWKS endpoint; authorization tests need no real accounts.\nApplication and domain operations receive only a stable principal ID and capability set.\n"
-  },
-  {
-    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
-    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nA future issuer must supply the required JWT profile, stable Orion principal mapping, human actor assertion, and review scope. Provider compatibility must be checked before production integration.\nLocal signature verification does not by itself provide immediate provider-side token revocation. Provider-specific revocation and session behavior remain deferred; short token lifetimes and operational controls must be assessed with a chosen provider.\n"
-  },
-  {
-    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
-    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nDeployments using the Approval Request feature must supply separate runtime database credentials and trusted token issuer/audience/JWKS settings. Keys may rotate through JWKS. Provider provisioning, issuer claims, and secure configuration are tracked under [H-07](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/human-actions.md#h-07) only when a real provider is selected.\n"
-  },
-  {
-    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
-    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Approval Request identity decision](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/domains/approval-request.md#identity-and-authorization-boundary)\n[Authentication policy](../security/authentication.md)\n[Authorization policy](../security/authorization.md)\n[Approval Request implementation conventions](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/domains/approval-request-implementation.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "anchor": "adr-0013-keep-agentsmd-as-the-agent-neutral-instruction-source",
-    "text": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source\n**Status:** accepted\n**Date:** 2026-09-29\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion is built and maintained by humans together with AI coding agents. Its foundation was developed with OpenAI Codex, and its instructions and tracking documents named Codex as the actor responsible for maintaining the plan and human actions. Orion must remain usable with other agents, including Claude Code and Gemini CLI, without becoming coupled to one model, vendor, or harness.\nEach tool has its own discovery convention. Duplicating repository rules into `CLAUDE.md`, `GEMINI.md`, or similar files would create competing authorities that drift apart, contradicting the single-canonical-source principle in [contributing](../contributing.md#authored-meaning-and-generated-facts). The owner directed that `AGENTS.md` remain canonical, that tool-specific files be added only as thin compatibility layers, and that tool behavior be verified against current documentation rather than assumed.\nVerification on 2026-09-29 established that Codex reads `AGENTS.md` natively from the project root down to its working directory, with a 32 KiB default combined limit; that Claude Code 2.1.277 and later reads `AGENTS.md` natively, including nested files on demand, unless a `CLAUDE.md` is present; and that Gemini CLI 0.61.0 reads `GEMINI.md` by default but loads the `AGENTS.md` hierarchy when `context.fileName` names it. [Agent instructions](../architecture/agent-instructions.md) records the detailed, reverifiable behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nThe root `AGENTS.md` and its nested `AGENTS.md` files are Orion's only repository instruction source for every contributor and agent. Normative repository text assigns obligations to the responsibility, such as a contributor or an authorized coding agent, and names a specific tool only to describe that tool's behavior.\nA tool that cannot discover `AGENTS.md` receives a minimal committed discovery adapter that points it at `AGENTS.md` and contains no instructions. Currently only Gemini CLI needs one: `.gemini/settings.json` sets `context.fileName` to `[\"AGENTS.md\"]`. Orion commits no `CLAUDE.md`, `GEMINI.md`, or other instruction copy.\nPortability constraints are enforced mechanically where practical: validation rejects competing instruction files, restricts the Gemini adapter to discovery, and keeps each root-to-directory instruction chain within the 32 KiB limit that all verified tools load completely. The root instructions require reading applicable nested files before editing because not every tool loads them automatically.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\n`AGENTS.md` is supported natively or through configuration by all three verified tools, so one hierarchy can serve them without copies. Native discovery is preferred to import-based shims: a `CLAUDE.md` containing `@AGENTS.md` would work, but it is unnecessary on current Claude Code and would suppress direct `AGENTS.md` discovery by default. Gemini offers no native `AGENTS.md` default, and its supported project setting is the smallest configuration that loads the canonical hierarchy.\nMechanical checks make the policy durable as tools and contributors change. Executable validation, not prompting, remains the authority for architecture and behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Vendor-specific instruction files",
-    "anchor": "vendor-specific-instruction-files",
-    "text": "Vendor-specific instruction files\nMaintaining `CLAUDE.md` and `GEMINI.md` beside `AGENTS.md` would give each tool its preferred file, but the copies would drift and create ambiguity about which rule is authoritative.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Import or symlink shims for every tool",
-    "anchor": "import-or-symlink-shims-for-every-tool",
-    "text": "Import or symlink shims for every tool\n`@AGENTS.md` imports or symlinked files keep one source, but they add files that current tools do not need. Symlinks are unreliable in Windows checkouts, and a committed `CLAUDE.md` changes Claude Code's default discovery. They remain options only for a tool that requires them.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A tool-neutral instruction format generated into vendor files",
-    "anchor": "a-tool-neutral-instruction-format-generated-into-vendor-files",
-    "text": "A tool-neutral instruction format generated into vendor files\nGenerating vendor files from another source would add tooling and generated artifacts without a benefit over the widely supported `AGENTS.md` convention.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOne instruction hierarchy serves humans and all verified agents.\nAgent-specific wording no longer implies that only one tool may maintain the plan or human actions.\nValidation detects accidental instruction copies and oversized instruction chains.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nTool behavior changes over time, so the compatibility table must be reverified before changing adapters or relying on a tool.\nGemini CLI applies the project setting only in a trusted workspace, and user or organization settings outside the repository can still change what any tool loads.\nInstructions must stay concise enough for the smallest verified combined limit.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nContributors using an older Claude Code version or a local `CLAUDE.local.md` must update or configure their client to read `AGENTS.md`; the repository does not add a workaround file.\n"
-  },
-  {
-    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
-    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Agent instructions and tool compatibility](../architecture/agent-instructions.md)\n[Repository structure: local agent instructions](../architecture/repository-structure.md#local-agent-instructions)\n[ADR-0003: repository validation and architecture enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "anchor": "adr-0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n**Superseded by:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted\n**Superseded by:** [ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the `@orion/*` package scope; the Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
-  },
-  {
-    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own `origin`, pull requests, CI history, human actions, product decisions, and releases, while the canonical `GabriellMDias/Orion` repository continues evolving as the upstream foundation. Projects need to know which Orion revision they contain and to adopt later Orion improvements without losing product changes.\nThe repository also contains state that cannot be inherited as true for a new repository: Orion's implementation plan and acceptance evidence describe how Orion itself was built, several completed human actions verified GitHub settings for the Orion repository only, and the Approval Request feature is an executable reference rather than a product requirement. The owner directed a workflow that preserves Git ancestry, protects the canonical repository from accidental product pushes, records machine-readable provenance, and keeps upgrades as reviewable changes.\n"
   }
 ]

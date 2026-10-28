@@ -1,5 +1,473 @@
 [
   {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "10. Prefer Vertical Completeness",
+    "anchor": "10-prefer-vertical-completeness",
+    "text": "10. Prefer Vertical Completeness\nImplement and validate a feature across every layer it actually touches—data, application/domain behavior, contract, API, client, UI, tests, telemetry, and documentation—as one coherent behavior. Not every feature needs every layer.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "11. Documentation Is Part of the System",
+    "anchor": "11-documentation-is-part-of-the-system",
+    "text": "11. Documentation Is Part of the System\nDocument intent, business rules, rationale, invariants, constraints, side effects, failures, procedures, integrations, and security behavior that code cannot safely explain alone. Do not restate obvious code. Code and documentation evolve together; incorrect documentation makes a change incomplete.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "12. Current Documentation Describes Current Truth",
+    "anchor": "12-current-documentation-describes-current-truth",
+    "text": "12. Current Documentation Describes Current Truth\nCurrent policy describes current behavior and direction, without obsolete development states. Git owns development history; migrations own released database transitions; a changelog owns externally relevant released changes; ADRs own significant decision history.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "13. Release History Must Be Intentional",
+    "anchor": "13-release-history-must-be-intentional",
+    "text": "13. Release History Must Be Intentional\nUnreleased experiments may be refined; released artifacts describe meaningful transitions and must not be rewritten when doing so could invalidate deployed systems or persistent environments. This applies especially to migrations, compatibility guarantees, changelogs, and generated release artifacts. Safety outranks migration-count elegance.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "14. Make Invalid States Difficult to Represent",
+    "anchor": "14-make-invalid-states-difficult-to-represent",
+    "text": "14. Make Invalid States Difficult to Represent\nUse constrained types, validated schemas, explicit state machines, domain rules, and database constraints at appropriate boundaries so invalid states are prevented where practical, not merely discovered later.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "15. External Input Is Untrusted",
+    "anchor": "15-external-input-is-untrusted",
+    "text": "15. External Input Is Untrusted\nValidate HTTP/client input, files, webhooks, external responses, messages, environment variables, CLI arguments, and imported data at the trust boundary. Client validation improves UX but never replaces server enforcement.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "16. Errors Are Part of the Contract",
+    "anchor": "16-errors-are-part-of-the-contract",
+    "text": "16. Errors Are Part of the Contract\nRepresent expected domain, validation, authentication, and authorization failures explicitly. Keep unexpected failures observable and correlated; consumers should not parse arbitrary messages, and users must not receive internal implementation details.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "17. Production Behavior Must Be Observable",
+    "anchor": "17-production-behavior-must-be-observable",
+    "text": "17. Production Behavior Must Be Observable\nProduction-relevant operations need sufficient safe logs, traces, metrics, error reports, and correlation/release context to investigate failures without relying solely on user reports. Observability remains subject to privacy and security policy.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "18. Logs Must Be Structured",
+    "anchor": "18-logs-must-be-structured",
+    "text": "18. Logs Must Be Structured\nPrefer structured operational events with stable event, request/trace, operation, result, duration, and error-code fields when relevant. Human-readable messages can supplement, not replace, useful dimensions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "19. Sensitive Information Must Not Become Telemetry",
+    "anchor": "19-sensitive-information-must-not-become-telemetry",
+    "text": "19. Sensitive Information Must Not Become Telemetry\nNever intentionally log passwords, tokens, API keys, private keys, payment credentials, or cryptographic secrets. Collect other personal or sensitive data only when justified by classification, retention, and redaction policy.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "20. Failures Must Be Actionable",
+    "anchor": "20-failures-must-be-actionable",
+    "text": "20. Failures Must Be Actionable\nDevelopment-tool failures should identify the violated rule, relevant location, and next step where practical. Diagnostics are part of the human and agent development interface.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "21. Tests Protect Behavior",
+    "anchor": "21-tests-protect-behavior",
+    "text": "21. Tests Protect Behavior\nProtect business rules, contracts, architectural invariants, and observable behavior without excessive coupling to implementation details. Use the lowest-cost test that reliably checks a rule and broader tests for boundaries, databases, integrations, workflows, and infrastructure.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "22. Bugs Should Improve the System",
+    "anchor": "22-bugs-should-improve-the-system",
+    "text": "22. Bugs Should Improve the System\nFix the symptom and examine why existing invariants, tests, telemetry, documentation, or boundaries missed it. Add a regression test when practical and strengthen the appropriate control.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "23. Prefer Deterministic Development Workflows",
+    "anchor": "23-prefer-deterministic-development-workflows",
+    "text": "23. Prefer Deterministic Development Workflows\nSetup, development, validation, tests, generation, database work, and builds need canonical reproducible commands. Contributors should not rely on undocumented sequences or hidden machine state; [setup](../setup.md) owns the local path.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "24. Automation Must Be Reproducible",
+    "anchor": "24-automation-must-be-reproducible",
+    "text": "24. Automation Must Be Reproducible\nMake generated outputs, builds, migrations, and checks consistent across environments where practical, with explicit inputs and configuration. CI should exercise the same fundamental workflow as local development.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "25. Defaults Should Be Safe",
+    "anchor": "25-defaults-should-be-safe",
+    "text": "25. Defaults Should Be Safe\nThe ordinary path should preserve secure configuration, validated boundaries, explicit errors, safe telemetry, database integrity, and secret handling without special contributor knowledge.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "26. Prefer Boring Solutions for Solved Problems",
+    "anchor": "26-prefer-boring-solutions-for-solved-problems",
+    "text": "26. Prefer Boring Solutions for Solved Problems\nUse mature, maintainable, observable, documented, and automatable technology for routine infrastructure. New complexity requires a concrete engineering or product benefit.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "27. Avoid Premature Abstraction",
+    "anchor": "27-avoid-premature-abstraction",
+    "text": "27. Avoid Premature Abstraction\nAdd an abstraction when evidence shows a repeated concept or meaningful boundary and it reduces reasoning cost. Prefer clear concrete code over a speculative framework.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "28. Prefer Small, Cohesive Units",
+    "anchor": "28-prefer-small-cohesive-units",
+    "text": "28. Prefer Small, Cohesive Units\nKeep modules, packages, services, components, and functions focused. Split by responsibility, not arbitrary size; many tiny layers can obscure ownership as much as one oversized unit.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "29. Optimize for Local Reasoning",
+    "anchor": "29-optimize-for-local-reasoning",
+    "text": "29. Optimize for Local Reasoning\nUse explicit interfaces, ownership, predictable placement, limited coupling, and local documentation so a contributor can safely change one area without loading the whole repository. This also reduces agent context ambiguity.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "30. Make Side Effects Visible",
+    "anchor": "30-make-side-effects-visible",
+    "text": "30. Make Side Effects Visible\nDatabase writes, external calls, events, notifications, file changes, cache invalidation, and jobs should be discoverable in the contract or implementation. Apparently pure operations must not hide unrelated effects.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "31. Idempotency Should Be Deliberate",
+    "anchor": "31-idempotency-should-be-deliberate",
+    "text": "31. Idempotency Should Be Deliberate\nRetryable operations must not duplicate meaningful effects. Where idempotency is required, define its scope and mechanism explicitly and test repeats and conflicts.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "32. Concurrency Must Be Considered Explicitly",
+    "anchor": "32-concurrency-must-be-considered-explicitly",
+    "text": "32. Concurrency Must Be Considered Explicitly\nShared-state mutations must assume concurrent execution. Choose constraints, transactions, optimistic versions, locks, keys, or serialization according to domain consistency needs, and test stale/conflicting cases.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "33. Data Integrity Belongs Close to the Data",
+    "anchor": "33-data-integrity-belongs-close-to-the-data",
+    "text": "33. Data Integrity Belongs Close to the Data\nProtect critical relational invariants with appropriate database constraints and transactions as well as application validation. Do not rely solely on application code for guarantees the database can enforce.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "34. Database Behavior Must Be Discoverable",
+    "anchor": "34-database-behavior-must-be-discoverable",
+    "text": "34. Database Behavior Must Be Discoverable\nDocument application-owned tables, columns, views, functions, triggers, constraints, and important indexes under [schema policy](../database/schema-documentation.md). Database-resident business logic needs explicit justification and visibility; generate structural references from canonical schema facts where practical.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "35. Backward Compatibility Must Be Evaluated",
+    "anchor": "35-backward-compatibility-must-be-evaluated",
+    "text": "35. Backward Compatibility Must Be Evaluated\nEvaluate actual consumers before changing APIs, schemas, messages, configuration, stored files, or generated SDKs. Plan breaking changes, migration, and deprecation when a released or independently evolving boundary requires them.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "36. Deployment Safety Takes Priority Over Elegance",
+    "anchor": "36-deployment-safety-takes-priority-over-elegance",
+    "text": "36. Deployment Safety Takes Priority Over Elegance\nUse temporary expand–migrate–switch–contract compatibility when a real deployment needs it; remove transitional code after migration. The cleanest final shape does not justify an unsafe rollout.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "37. Configuration Is Part of the Contract",
+    "anchor": "37-configuration-is-part-of-the-contract",
+    "text": "37. Configuration Is Part of the Contract\nConfiguration should be explicit, typed or validated, documented, and fail safely. Invalid required values fail early; secrets are handled separately from ordinary configuration.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "38. Environment Differences Must Be Intentional",
+    "anchor": "38-environment-differences-must-be-intentional",
+    "text": "38. Environment Differences Must Be Intentional\nDocument necessary development, test, staging, and production differences. Keep core behavior consistent where practical and exercise production-only behavior before production where feasible.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "39. Security Boundaries Must Be Explicit",
+    "anchor": "39-security-boundaries-must-be-explicit",
+    "text": "39. Security Boundaries Must Be Explicit\nAuthentication establishes the actor; authorization decides whether that actor may perform an operation. Enforce permissions at trusted application boundaries, never solely through client or UI visibility.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "40. Infrastructure Should Serve the Architecture",
+    "anchor": "40-infrastructure-should-serve-the-architecture",
+    "text": "40. Infrastructure Should Serve the Architecture\nIntroduce brokers, caches, orchestration, microservices, search, or extra databases only for concrete requirements and with their operational cost understood.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "41. Monolith First Unless Boundaries Require Otherwise",
+    "anchor": "41-monolith-first-unless-boundaries-require-otherwise",
+    "text": "41. Monolith First Unless Boundaries Require Otherwise\nPrefer logical modularity before distribution. Separate services only for justified scaling, isolation, deployment autonomy, security, ownership, or runtime needs.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "42. Generated Code Must Remain Replaceable",
+    "anchor": "42-generated-code-must-remain-replaceable",
+    "text": "42. Generated Code Must Remain Replaceable\nKnow every generated file's canonical input and regeneration process. Do not hand-edit derived output except at an explicit extension point; keep it reproducible and replaceable.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "43. Tooling Is Part of Developer Experience",
+    "anchor": "43-tooling-is-part-of-developer-experience",
+    "text": "43. Tooling Is Part of Developer Experience\nDesign commands, generators, setup, and diagnostics for deterministic behavior, clear names, actionable output, and little hidden state. Tooling is an internal product for humans and agents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "44. AI Agents Must Operate Through Verifiable Feedback",
+    "anchor": "44-ai-agents-must-operate-through-verifiable-feedback",
+    "text": "44. AI Agents Must Operate Through Verifiable Feedback\nPair instructions with compiler, type, lint, architecture, test, schema, generation, and build feedback that can prove important changes valid. Increase mechanical coverage as real capabilities arrive.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "45. AI-Specific Architecture Must Also Benefit Humans",
+    "anchor": "45-ai-specific-architecture-must-also-benefit-humans",
+    "text": "45. AI-Specific Architecture Must Also Benefit Humans\nAgent-oriented structure should improve clarity, consistency, discoverability, automation, maintenance, or onboarding for people too. Do not optimize the repository for one AI tool's quirks.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "46. Important Decisions Must Preserve Rationale",
+    "anchor": "46-important-decisions-must-preserve-rationale",
+    "text": "46. Important Decisions Must Preserve Rationale\nFor consequential architecture, retain context, alternatives, choice, tradeoffs, and consequences in an ADR when the [authoring policy](../adr/authoring.md) calls for one. Distinguish deliberate constraints from accidents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "47. Prefer Reversible Decisions Early",
+    "anchor": "47-prefer-reversible-decisions-early",
+    "text": "47. Prefer Reversible Decisions Early\nWhen evidence is incomplete, preserve flexibility with clear boundaries, explicit contracts, limited coupling, and documented decisions rather than speculative abstraction. Commit to specifics when requirements justify them.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "48. Complexity Must Pay Rent",
+    "anchor": "48-complexity-must-pay-rent",
+    "text": "48. Complexity Must Pay Rent\nEvery layer, dependency, service, package, process, or technology adds knowledge cost. Use it only when its concrete benefit exceeds a simpler alternative.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "49. Prefer Consistency Over Personal Preference",
+    "anchor": "49-prefer-consistency-over-personal-preference",
+    "text": "49. Prefer Consistency Over Personal Preference\nFollow established good patterns unless there is a concrete reason to improve them. Change an inadequate pattern deliberately rather than creating silent competing conventions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "50. The Architecture Must Be Able to Evolve",
+    "anchor": "50-the-architecture-must-be-able-to-evolve",
+    "text": "50. The Architecture Must Be Able to Evolve\nWhen evidence invalidates a fundamental choice, identify the limit, evaluate alternatives, document the new decision, migrate deliberately, remove obsolete architecture, and update validation/documentation. Do not accumulate contradictory generations of policy.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Decision Priority",
+    "anchor": "decision-priority",
+    "text": "Decision Priority\nWhen principles conflict, consider correctness, security/privacy, data integrity, production safety, explicit contracts/boundaries, observability, maintainability, simplicity, consistency, then development convenience. This is guidance, not a substitute for explaining significant tradeoffs.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Exceptions",
+    "anchor": "exceptions",
+    "text": "Exceptions\nAn exception needs a concrete reason, understood consequences, explicit scope, documentation when significant, and no silent competing pattern. Give temporary deviations a removal path where practical.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Relationship to Other Documentation",
+    "anchor": "relationship-to-other-documentation",
+    "text": "Relationship to Other Documentation\nThis page owns architectural principles, not implementation recipes. [Policies](../README.md) own current requirements, [ADRs](../adr/README.md) own decision rationale, [setup](../setup.md) owns development commands, and [AGENTS.md](../../AGENTS.md) owns global contributor/agent instructions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Repository Structure",
+    "anchor": "repository-structure",
+    "text": "Repository Structure\n[Documentation index](../README.md) · [Application boundaries](application-boundaries.md) · [Dependency rules](dependency-rules.md)\nThis page owns repository placement and local discovery. [ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md) governs workspace management; [ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) governs enforcement. Organize by responsibility so humans and agents can change one area without loading the whole repository.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "High-Level Structure",
+    "anchor": "high-level-structure",
+    "text": "High-Level Structure\nThese locations exist:\nLocation\nResponsibility and entry point\nRepository root\nRepository-wide instructions, workspace/lockfile, dependency and validation configuration. Start with [README](../../README.md) and [AGENTS.md](../../AGENTS.md).\n`apps/api/`\nFastify executable, composed API modules, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md).\n`apps/web/`\nReact/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md).\n`apps/player/`\nAndroid TV player: a Gradle build outside the pnpm workspace whose `core` module holds the screen's rules on the JVM (ADR-0031). Start with its [README](../../apps/player/README.md).\n`packages/sdk/`\nPublic API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md).\n`infra/pilot/`\nDeclarative pilot deployment: the container images, Compose composition, reverse proxy, PostgreSQL bootstrap, backup and restore, systemd timers and the rehearsal CI runs. Start with its [README](../../infra/pilot/README.md).\n`docs/`\nCurrent policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md).\n`tooling/validate/`\nRepository documentation, agent-instruction, environment-example, and release-history checks.\n`tooling/documentation/`\nPortal dataset and component-reference generation.\n`tooling/project/`\nProject initialization, pruning, provenance, and Orion upgrade commands and the project-owned file templates; see [project derivation](../project-derivation.md).\n`.orion/`\n[`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance; [`derivation.json`](../../.orion/derivation.json): the clean-baseline contract of foundation-only and project-owned content.\n`.gemini/`\nGemini CLI discovery adapter only; see [agent instructions](agent-instructions.md).\n`.github/`\nGitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings.\n`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.\nKeep the root small: application-specific implementation belongs to its application; runtime sharing belongs to a meaningful package; repository automation belongs under `tooling/`. Introduce `infra/` only for real declarative deployment/operational infrastructure, never ordinary business logic. Infrastructure may consume application artifacts and configuration requirements; runtime code must not import infrastructure definitions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "apps/",
+    "anchor": "apps",
+    "text": "`apps/`\nAn application is an independently meaningful executable runtime or delivery surface. It owns its entry point, lifecycle, configuration, dependency composition, build, runtime integrations, telemetry initialization, and platform-specific behavior. Its local guide should make purpose, public interfaces, dependencies, commands, operational characteristics, and any deployment assumptions discoverable.\nApplications must not import another application's implementation or become shared backend libraries. Runtime communication uses explicit contracts; genuine shared implementation may move into a package. See [application boundaries](application-boundaries.md) for trust, persistence, communication, and extraction decisions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Creating a New Application",
+    "anchor": "creating-a-new-application",
+    "text": "Creating a New Application\nEstablish the concrete runtime/delivery need, why an existing application cannot own it, public contracts, dependencies, data ownership, configuration, observability, failure modes, and deployment/distribution expectations. A significant new boundary normally requires an ADR. Prefer logical modularity before physical distribution; code size alone does not justify another runtime.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "packages/",
+    "anchor": "packages",
+    "text": "`packages/`\nPackages define cohesive shared responsibilities, intentional public APIs, allowed consumers/dependencies, private implementation, and runtime/platform compatibility. Consume a package through its public exports rather than arbitrary internal paths. Packages must not depend on applications. Avoid both one package per small utility and broad `common`, `shared`, or `utils` dumping grounds.\nThe SDK is currently the only shared package. Extract other capabilities only when ownership or reuse warrants it:\nResponsibility\nConstraint if extracted\nDomain concepts and business behavior\nPlatform-independent where useful; no unnecessary HTTP, UI, database, telemetry-vendor, or filesystem dependency. A domain package is not mandatory for application-local business logic.\nCommunication contracts\nCanonical wire schemas, identifiers, errors, or events; internal models do not automatically become public contracts.\nDatabase infrastructure\nSchema, migrations, client setup, metadata, or shared persistence primitives; sharing infrastructure does not grant unrestricted table access.\nObservability\nConsistent logging, context, propagation, metrics, reporting, and redaction semantics; isolate vendors only where that provides a meaningful boundary.\nConfiguration\nShared validation/loading primitives; application-specific configuration remains owned by its application.\nTesting\nGenuinely reusable fixtures, factories, assertions, or infrastructure; behavior tests remain near their owner.\nUI\nShared design tokens or components only where runtime, interaction, and accessibility semantics are compatible; do not force cross-platform component reuse.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Creating a New Package",
+    "anchor": "creating-a-new-package",
+    "text": "Creating a New Package\nFirst search existing owners. Explain the cohesive responsibility, actual consumers, public API, allowed dependency directions, platform constraints, and architectural benefit. A second consumer alone does not justify extraction: consumers must share meaning, not just similar code. Prefer simple local duplication over an abstraction with conflicting responsibilities. A package should make ownership and the dependency graph clearer.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Feature Organization",
+    "anchor": "feature-organization",
+    "text": "Feature Organization\nKeep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.\nTests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Documentation and Generated Artifacts",
+    "anchor": "documentation-and-generated-artifacts",
+    "text": "Documentation and Generated Artifacts\n[Contributing](../contributing.md#documentation-ownership) owns documentation placement and canonical-source rules. Repository policy lives under `docs/`; application/package knowledge belongs near its owner. Documentation may reference implementation, but ordinary application behavior must not depend on parsing human-authored policy. If behavior needs machine-readable rules, give those rules a canonical machine-readable source. Documentation-as-product content, such as the portal, is an intentional exception.\nGenerated code and references must be distinguishable from authored files, reproducible, and linked to their source/generator. Current locations and handling are defined by [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage) and [living documentation](living-documentation.md). Generated clients are consumers of contracts, never their authority. Reviewed SQL migrations follow their separate release-history rules.\n"
+  },
+  {
     "id": "repository/docs/architecture/repository-structure",
     "title": "Repository Structure",
     "group": "Architecture",
@@ -42,7 +510,7 @@
     "kind": "repository",
     "heading": "Accepted Teluni product directions",
     "anchor": "accepted-teluni-product-directions",
-    "text": "Accepted Teluni product directions\nThe owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. ADR-0027 was accepted on 2026-10-19 under PH-22 and ADR-0028 the same day under PH-23; ADR-0029 the same day under PH-24; ADR-0030 on 2026-10-20 under PH-25. ADR-0031 and ADR-0032 were accepted on 2026-10-20 by the agent under the owner's delegation of every pending decision the same day. ADR-0033 was accepted on 2026-10-22 by the agent under the owner's request of that day to take every pending decision that is only a decision. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).\nGoverning decision\nAccepted direction\nCurrent policy / remaining gate\n[ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md)\nShared PostgreSQL database/schema with explicit tenant ownership, scoped references and modular backend\n[Architecture](../project/architecture.md); concrete constraints, additional RLS evaluation and cross-tenant tests pending\n[ADR-0019](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md)\nImmutable versioned publications and complete durable player activation/recovery\n[Playback/sync](../project/playback-and-sync.md); protocol and failure/power qualification pending\n[ADR-0020](../adr/0020-propose-a-native-android-tv-player.md)\nIndependent native Kotlin/Media3 Android TV player with durable local state\n[Architecture](../project/architecture.md); supported hardware, packaging, persistence and recovery tests pending\n[ADR-0021](../adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nInitial Debian/Compose host, HTTPS, private PostgreSQL and portable persistent media\n[Operations](../project/operations.md); host/network/backup/restore and real-customer readiness pending\n[ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md)\nVersioned declarative composition and typed catalogs in immutable publications\n[Release policies](../project/release-policies.md); concrete schemas, rendering/storage and qualified interoperability pending\n[ADR-0024](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md)\nSelf-hosted Keycloak and server-managed human browser sessions, preserving ADR-0012\n[Identity/access](../project/identity-and-access.md); pinned-source assessment supports selection, actual provider/session integration pending\n[ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md)\nApplication-owned scoped standard/custom profiles and attributable consent-based support\n[Identity/access](../project/identity-and-access.md); concrete authorization/session contracts and all IA cases pending\n[ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nTransactional email through a PostgreSQL outbox, an in-process dispatcher and a provider-neutral SMTP relay (`nodemailer`), at least once\n[Invitation and email delivery design](../project/invitation-delivery-design.md); accepted 2026-10-18 under PH-21; real sender/provider PH-17 and retention PH-13 pending\n[ADR-0027](../adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nCode-based device enrollment shaped like RFC 8628 and device-generated bearer credentials stored only as hashes, separate from human sessions\n[Device enrollment design](../project/device-enrollment-design.md); accepted 2026-10-19 under PH-22; Android player PJ-12 and hardware PH-08 pending\n[ADR-0028](../adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nImmutable per-company content-addressed media objects on the media volume, parsed and converted only by FFmpeg in isolated child processes under a PostgreSQL-leased processor\n[Media library design](../project/media-library-design.md); accepted 2026-10-19 under PH-23; device profiles PH-08, production image PJ-13 and malware scanning PH-13 pending\n[ADR-0029](../adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nSchedules evaluated per screen zone by a pure API evaluator over the Temporal API (`temporal-polyfill` until Node.js ships it), verified with canonical JSON fixtures that the player also runs\n[Programming design](../project/programming-design.md); accepted 2026-10-19 under PH-24; player implementation PJ-12 pending\n[ADR-0030](../adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nScreens poll `POST /device/sync` every 30 seconds for a desired publication computed from current rows, download exact-byte manifests and SHA-256-identified renditions of that publication only, and receive ES256 JWS authorization statements with a seven-day expiry and signed server time\n[Publication and synchronization design](../project/publication-sync-design.md); accepted 2026-10-20 under PH-25; player conformance PJ-12 and key provisioning PJ-13 pending\n[ADR-0031](../adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nThe Android TV player is one Gradle build with a pure-JVM `core` (rules, protocol, evaluator, trusted time, store, synchronization) and an Android `app`; local state is write-once files plus one atomically replaced record; business time uses zone offsets from the sync response; managed devices run the player as device owner with server-distributed, roll-forward-only updates\n[Player design](../project/player-design.md); accepted 2026-10-20 under the owner's delegation; Android build access PH-26, signing key PH-27 and hardware PH-08 pending\n[ADR-0032](../adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nAmounts are integer minor units of one ISO 4217 currency fixed per money field, never floats and never converted; non-monetary decimals are canonical strings; locale only formats\n[Catalog and composition design](../project/catalog-composition-design.md); accepted 2026-10-20 under the owner's delegation; catalogs PJ-21 in progress\n[ADR-0033](../adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nThe pilot host ends TLS itself in Caddy with Let's Encrypt certificates, reached directly or through a TCP relay over WireGuard, never through a TLS-terminating tunnel or CDN; restic snapshots (database dumps, then media objects) go every 6 hours to an off-host S3-compatible bucket, initially Backblaze B2, kept about 35 days\n[Deployment design](../project/deployment-design.md); accepted 2026-10-22 under the owner's delegation; host facts and accounts PH-10, PH-07, PH-15 to PH-17 pending\n"
+    "text": "Accepted Teluni product directions\nThe owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. ADR-0027 was accepted on 2026-10-19 under PH-22 and ADR-0028 the same day under PH-23; ADR-0029 the same day under PH-24; ADR-0030 on 2026-10-20 under PH-25. ADR-0031 and ADR-0032 were accepted on 2026-10-20 by the agent under the owner's delegation of every pending decision the same day. ADR-0033 was accepted on 2026-10-22 by the agent under the owner's request of that day to take every pending decision that is only a decision. ADR-0034 was accepted on 2026-10-27 by the agent when the owner asked for the best technology for a grid that sorts, filters and handles very many rows, and ADR-0035 the same day when the owner asked for Excel and PDF exports and left other formats to the agent. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).\nGoverning decision\nAccepted direction\nCurrent policy / remaining gate\n[ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md)\nShared PostgreSQL database/schema with explicit tenant ownership, scoped references and modular backend\n[Architecture](../project/architecture.md); concrete constraints, additional RLS evaluation and cross-tenant tests pending\n[ADR-0019](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md)\nImmutable versioned publications and complete durable player activation/recovery\n[Playback/sync](../project/playback-and-sync.md); protocol and failure/power qualification pending\n[ADR-0020](../adr/0020-propose-a-native-android-tv-player.md)\nIndependent native Kotlin/Media3 Android TV player with durable local state\n[Architecture](../project/architecture.md); supported hardware, packaging, persistence and recovery tests pending\n[ADR-0021](../adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nInitial Debian/Compose host, HTTPS, private PostgreSQL and portable persistent media\n[Operations](../project/operations.md); host/network/backup/restore and real-customer readiness pending\n[ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md)\nVersioned declarative composition and typed catalogs in immutable publications\n[Release policies](../project/release-policies.md); concrete schemas, rendering/storage and qualified interoperability pending\n[ADR-0024](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md)\nSelf-hosted Keycloak and server-managed human browser sessions, preserving ADR-0012\n[Identity/access](../project/identity-and-access.md); pinned-source assessment supports selection, actual provider/session integration pending\n[ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md)\nApplication-owned scoped standard/custom profiles and attributable consent-based support\n[Identity/access](../project/identity-and-access.md); concrete authorization/session contracts and all IA cases pending\n[ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nTransactional email through a PostgreSQL outbox, an in-process dispatcher and a provider-neutral SMTP relay (`nodemailer`), at least once\n[Invitation and email delivery design](../project/invitation-delivery-design.md); accepted 2026-10-18 under PH-21; real sender/provider PH-17 and retention PH-13 pending\n[ADR-0027](../adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nCode-based device enrollment shaped like RFC 8628 and device-generated bearer credentials stored only as hashes, separate from human sessions\n[Device enrollment design](../project/device-enrollment-design.md); accepted 2026-10-19 under PH-22; Android player PJ-12 and hardware PH-08 pending\n[ADR-0028](../adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nImmutable per-company content-addressed media objects on the media volume, parsed and converted only by FFmpeg in isolated child processes under a PostgreSQL-leased processor\n[Media library design](../project/media-library-design.md); accepted 2026-10-19 under PH-23; device profiles PH-08, production image PJ-13 and malware scanning PH-13 pending\n[ADR-0029](../adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nSchedules evaluated per screen zone by a pure API evaluator over the Temporal API (`temporal-polyfill` until Node.js ships it), verified with canonical JSON fixtures that the player also runs\n[Programming design](../project/programming-design.md); accepted 2026-10-19 under PH-24; player implementation PJ-12 pending\n[ADR-0030](../adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nScreens poll `POST /device/sync` every 30 seconds for a desired publication computed from current rows, download exact-byte manifests and SHA-256-identified renditions of that publication only, and receive ES256 JWS authorization statements with a seven-day expiry and signed server time\n[Publication and synchronization design](../project/publication-sync-design.md); accepted 2026-10-20 under PH-25; player conformance PJ-12 and key provisioning PJ-13 pending\n[ADR-0031](../adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nThe Android TV player is one Gradle build with a pure-JVM `core` (rules, protocol, evaluator, trusted time, store, synchronization) and an Android `app`; local state is write-once files plus one atomically replaced record; business time uses zone offsets from the sync response; managed devices run the player as device owner with server-distributed, roll-forward-only updates\n[Player design](../project/player-design.md); accepted 2026-10-20 under the owner's delegation; Android build access PH-26, signing key PH-27 and hardware PH-08 pending\n[ADR-0032](../adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nAmounts are integer minor units of one ISO 4217 currency fixed per money field, never floats and never converted; non-monetary decimals are canonical strings; locale only formats\n[Catalog and composition design](../project/catalog-composition-design.md); accepted 2026-10-20 under the owner's delegation; catalogs PJ-21 in progress\n[ADR-0033](../adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nThe pilot host ends TLS itself in Caddy with Let's Encrypt certificates, reached directly or through a TCP relay over WireGuard, never through a TLS-terminating tunnel or CDN; restic snapshots (database dumps, then media objects) go every 6 hours to an off-host S3-compatible bucket, initially Backblaze B2, kept about 35 days\n[Deployment design](../project/deployment-design.md); accepted 2026-10-22 under the owner's delegation; host facts and accounts PH-10, PH-07, PH-15 to PH-17 pending\n[ADR-0034](../adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md)\nWeb grids use headless TanStack Table v9 for sorting, value filters, faceting and column sizing, and TanStack Virtual v3 to render only rows and filter options in view; Teluni owns markup, styling and caller-owned selection\n[Component practices](web-components.md); accepted 2026-10-27 under the owner's request and the PH-25 delegation; sorting and filtering cover loaded rows only, server-side processing is not provided\n[ADR-0035](../adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md)\nGrids opt in to browser-side exports of the rows shown: XLSX through write-excel-file, CSV generated by the product (locale separators, formula-injection guard), PDF through jsPDF with jspdf-autotable, all loaded on demand\n[Component practices](web-components.md); accepted 2026-10-27 under the owner's request and the PH-25 delegation; no server-side exports\n"
   },
   {
     "id": "repository/docs/architecture/technology-decisions",
@@ -51,7 +519,7 @@
     "kind": "repository",
     "heading": "Deliberately unresolved or conditional choices",
     "anchor": "deliberately-unresolved-or-conditional-choices",
-    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\n[Component reuse/catalog practices](web-components.md) and a small native reference set are implemented. Product visual identities and any broader design system, styling library, accessibility toolkit, charts, grids or form engine remain requirement-driven. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012; Teluni accepts Keycloak and server-managed sessions through ADR-0024, while concrete session/refresh/revocation implementation and qualification remain pending. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements. Teluni's transactional email uses the PostgreSQL outbox, in-process dispatcher and SMTP relay accepted in ADR-0026; that does not make them a general job or messaging platform.\nMobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery are product/deployment decisions. Teluni has accepted its Android and initial Compose directions above; detailed tooling and operational readiness are not thereby supplied. Testcontainers does not select an application deployment platform.\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
+    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\n[Component reuse/catalog practices](web-components.md) and a small native reference set are implemented. Grids use the headless libraries of ADR-0034 and the export libraries of ADR-0035. Product visual identities and any broader design system, styling library, accessibility toolkit, charts or form engine remain requirement-driven. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012; Teluni accepts Keycloak and server-managed sessions through ADR-0024, while concrete session/refresh/revocation implementation and qualification remain pending. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements. Teluni's transactional email uses the PostgreSQL outbox, in-process dispatcher and SMTP relay accepted in ADR-0026; that does not make them a general job or messaging platform.\nMobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery are product/deployment decisions. Teluni has accepted its Android and initial Compose directions above; detailed tooling and operational readiness are not thereby supplied. Testcontainers does not select an application deployment platform.\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
   },
   {
     "id": "repository/docs/architecture/testing-strategy",
@@ -285,7 +753,7 @@
     "kind": "repository",
     "heading": "Styling, themes and accessibility",
     "anchor": "styling-themes-and-accessibility",
-    "text": "Styling, themes and accessibility\nThe small [reference stylesheet](../../apps/web/src/ui.css) uses component-scoped classes and inherited semantic CSS variables with neutral fallbacks. `--ui-font-family`, `--ui-font-size` and `--ui-font-weight-semibold` control typography; `--ui-space-2`, `--ui-space-3` and `--ui-space-4` are the implemented spacing hooks; `--ui-radius` controls shape. Semantic `--ui-color-*` values cover surface, text, border, action/on-action, focus, muted text and danger/surface/border. Add a token only for a demonstrated shared visual meaning, and retain one source for each value rather than duplicating unexplained literals across shared controls.\nProducts own token values, typography, theme selection, brand assets, shell and layout. Override tokens on the application root or a scoped theme container; controls inherit them without a React provider or a mandatory light/dark palette. The catalog's token-override example is synthetic, scoped to the preview, and imposes no product identity. Preserve existing class hooks when evolving a shared component compatibly; migrate legacy feature styling incrementally when touched, rather than redesigning the entire application as a side effect.\nUse native semantics and preserve native props/ref forwarding where practical. Define default, hover, focus, disabled, pending, validation and empty/populated states as relevant. Keep focus visible, disabled activation reliable, labels persistent, hint/error relationships explicit and errors understandable without color alone. Preserve keyboard operation and native form behavior; use links for navigation and explicit submit buttons for form submission. Test themes for readable contrast and relevant accessibility at the browser boundary. Features own asynchronous work, validation and live announcements; a visual component never grants authorization or retries an unknown write outcome.\nThe reference set intentionally stays small: **Button**, **TextField**, and **ErrorNotice**, exercised in real composition and local examples. No modal, grid, form engine or general layout library is implied by a taxonomy entry. More complex keyboard/focus patterns require their own concrete requirement and proportional tests before introduction.\n"
+    "text": "Styling, themes and accessibility\nThe small [reference stylesheet](../../apps/web/src/ui.css) and each composed component's own stylesheet use component-scoped classes and inherited semantic CSS variables with neutral fallbacks. `--ui-font-family`, `--ui-font-size` and `--ui-font-weight-semibold` control typography; `--ui-space-2`, `--ui-space-3` and `--ui-space-4` are the implemented spacing hooks; `--ui-radius` controls shape. Semantic `--ui-color-*` values cover surface and muted surface, text, border, divider (the subtle lines between grid cells and around lists), action/on-action, focus, selected rows, muted text and danger/surface/border. `--ui-shadow-overlay` shades popovers and `--ui-datagrid-max-height` limits a grid's scrolling height. Add a token only for a demonstrated shared visual meaning, and retain one source for each value rather than duplicating unexplained literals across shared controls.\nProducts own token values, typography, theme selection, brand assets, shell and layout. Override tokens on the application root or a scoped theme container; controls inherit them without a React provider or a mandatory light/dark palette. The catalog's token-override example is synthetic, scoped to the preview, and imposes no product identity. Preserve existing class hooks when evolving a shared component compatibly; migrate legacy feature styling incrementally when touched, rather than redesigning the entire application as a side effect.\nUse native semantics and preserve native props/ref forwarding where practical. Define default, hover, focus, disabled, pending, validation and empty/populated states as relevant. Keep focus visible, disabled activation reliable, labels persistent, hint/error relationships explicit and errors understandable without color alone. Preserve keyboard operation and native form behavior; use links for navigation and explicit submit buttons for form submission. Test themes for readable contrast and relevant accessibility at the browser boundary. Features own asynchronous work, validation and live announcements; a visual component never grants authorization or retries an unknown write outcome.\nThe reference set intentionally stays small: **Button**, **TextField**, **Checkbox** and **ErrorNotice** ([`controls.tsx`](../../apps/web/src/controls.tsx) and the entry point), exercised in real composition and local examples. Record screens added a concrete requirement for overlays and grids, so the set also composes **Popover** (the native popover attribute in the top layer), **Menu**, **MultiSelectList**, **DataGrid** and **DataSet**; DataGrid and MultiSelectList build on the headless libraries of [ADR-0034](../adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md), grids offer opt-in Excel, CSV and PDF exports under [ADR-0035](../adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md) and each carries browser tests for its keyboard and focus behavior. No modal, form engine or general layout library is implied by a taxonomy entry. Further complex keyboard/focus patterns require their own concrete requirement and proportional tests before introduction.\n"
   },
   {
     "id": "repository/docs/contributing",
@@ -511,221 +979,5 @@
     "heading": "Access, classification, and lifecycle",
     "anchor": "access-classification-and-lifecycle",
     "text": "Access, classification, and lifecycle\nUse machine-readable [classification](../security/data-classification.md) near the schema. Sensitive fields require proportionate controls for projections, grants, telemetry, backups, exports, replicas, and support access. Read-only access can still disclose data. Encryption at rest does not lower classification; field encryption requires explicit key-management, search, rotation, migration, and recovery design. Password hashes remain restricted. Do not put infrastructure secrets in ordinary business tables for convenience.\nSeparate runtime and migration credentials when privileges differ; the current runtime uses `ORION_DATABASE_URL`, and only the Prisma CLI receives `ORION_MIGRATION_DATABASE_URL`. See the [API runtime guide](../../apps/api/README.md#configuration-and-database-access) for the implemented restricted role. [Secrets management](../security/secrets-management.md) and [production access](../security/production-access.md) govern operational access. Significant administrative access should be attributable; database tools must not become silent authorization bypasses.\n[Data retention](../security/data-retention.md) owns deletion, soft-delete justification, archival, copies, backup/recovery, and audit lifecycle. Replicas inherit data controls and may return stale reads. If business audit history is required, model it explicitly; ordinary logs and modification timestamps do not provide authoritative auditability. Development/test seeds must be synthetic and distinct from production bootstrap/reference-data evolution.\n"
-  },
-  {
-    "id": "repository/docs/database/principles",
-    "title": "Database Principles",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Runtime reliability",
-    "anchor": "runtime-reliability",
-    "text": "Runtime reliability\nConnection pools are finite resources; size them against actual application concurrency, database limits, replicas, and deployment scale. Saturation needs evidence, not reflexively larger pools. Bound query waits and propagate cancellation where supported and safe. Observe latency, pool wait, transaction failure, lock contention/deadlocks, timeouts, migration duration, and replica lag where relevant.\nFollow [redaction](../security/telemetry-redaction.md): raw SQL and parameters may disclose sensitive data. Translate known constraint failures to owned semantic errors, preserve unexpected failures as safe observable internal errors, and do not expose database implementation details publicly. [Health policy](../reliability/health-checks.md) distinguishes database-dependent readiness from process liveness.\n"
-  },
-  {
-    "id": "repository/docs/database/principles",
-    "title": "Database Principles",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Schema Evolution",
-    "anchor": "schema-evolution",
-    "text": "Schema Evolution\nUse [migrations](migrations.md) for every durable schema transition and verify release status before editing history. Released or uncertain history is immutable until verified; schema diffs alone cannot establish migration intent. Keep current schema/metadata/reference coherent without requiring readers to reconstruct current meaning from old migrations.\nChoose descriptive, consistent table/column/relationship/constraint/index names using the current schema as the local pattern. Deprecated objects and temporary compatibility fields need explicit purpose and removal conditions. Manual production schema drift is a defect; emergency changes must be recorded and reconciled. Reviewed, scoped, auditable data fixes may use controlled scripts rather than permanent migration history when they repair only one environment.\n"
-  },
-  {
-    "id": "repository/docs/database/principles",
-    "title": "Database Principles",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "New Table Checklist",
-    "anchor": "new-table-checklist",
-    "text": "New Table Checklist\nBefore creating or changing durable structures:\nInspect current schema, metadata, owning domain, access boundaries, migrations/release status, consumers, and tests. Do not guess missing non-obvious semantics.\nIdentify the persisted concept, canonical versus derived status, reader/writer authority, identifiers, lifecycle/retention, classification, and required columns.\nFor each field, define type, null/default/unit meaning, source, public-contract impact, existing-row population, constraints, and index needs.\nFor each constraint/index/native feature, explain its invariant/query purpose, existing-data compatibility, concurrency, locking/write cost, failure mapping, and discovery route.\nDesign migration, rollback or forward recovery, transaction/concurrency boundaries, and operational evidence proportional to risk. Data being unused by current code does not prove it is disposable.\nUpdate [canonical schema documentation](schema-documentation.md) and generate references. Test important constraints, atomic failure, concurrent races, and migrations against real PostgreSQL. Mocks or sequential tests alone cannot prove those guarantees.\nCurrent [validation](../validation.md) covers fresh migrations, PostgreSQL integration, reference completeness/freshness for supported object types, release-history integrity, and import boundaries. Real released upgrade paths and deployment-specific drift/recovery checks require actual supported environments; do not claim them from a fresh-install test.\n"
-  },
-  {
-    "id": "repository/docs/database/release-evolution",
-    "title": "Release and Evolution Workflow",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Release and Evolution Workflow",
-    "anchor": "release-and-evolution-workflow",
-    "text": "Release and Evolution Workflow\n[Migration policy](migrations.md) · [Compatibility policy](../architecture/versioning-and-compatibility.md) · [API versioning](../api/versioning.md)\nThis is the current contributor workflow for deciding whether a database or API change needs historical compatibility protection. It implements the policies above without declaring a deployment, a released contract, or a supported rollback window. The repository currently has no recorded durable release in [`release-history.json`](../../apps/api/prisma/release-history.json). An empty registry means **no release has been recorded here**; it is not proof that an unlisted persistent database does not exist. Do not edit existing migration history while its release status is uncertain.\n"
-  },
-  {
-    "id": "repository/docs/database/release-evolution",
-    "title": "Release and Evolution Workflow",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Record the first durable migration boundary",
-    "anchor": "record-the-first-durable-migration-boundary",
-    "text": "Record the first durable migration boundary\nBefore the first persistent release, record a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)) to identify the actual durable environment, the deployed Git commit, and which migrations have completed there. Disposable Testcontainers or local databases are not durable release evidence. Inspect the target database's Prisma `_prisma_migrations` records with read-only access and correlate successful, non-rolled-back migration names with the migration deployment record. Investigate missing, failed, or manually changed migrations before recording a release. Do not put credentials or connection strings in the registry or issue evidence.\nOnce a release actually exists, run `pnpm release:checksums <full-deployed-commit-sha>` to print the complete migration set and normalized source SHA-256 values from that commit. Verify the deployed migration set against the database record and deployment artifact, then append an entry to [`release-history.json`](../../apps/api/prisma/release-history.json) containing a stable release ID, non-secret environment identifier, deployed commit SHA, and every migration directory/checksum printed for that commit. The registry's checksum is for the Git source with normalized line endings; Prisma's database checksum is evidence about the actual deployed file and may differ if checkout line endings differed. Do not substitute one for the other without verifying the deployed artifact. A release entry must follow the real durable application of the migrations, not a planned deployment.\n`pnpm release:check` verifies recorded commits, their complete migration sets, current SQL hashes, and append-only registry history against a Git base. CI fetches full Git history and supplies the PR base, merge-group base, or push's preceding commit through `ORION_RELEASE_BASE_REF`; `pnpm validate` runs the same check locally. GitHub supplies exactly forty zeroes for a first push with no previous commit. The validator treats that sentinel as an absent comparison base, without falling back to local ancestry: an empty registry is valid, while a nonempty registry still fails because a real Git base is required to verify append-only history. Every other supplied base must be a full SHA resolving to an existing commit; malformed or unavailable bases fail rather than bypass comparison.\nThe validator deliberately leaves migrations absent from recorded durable releases refinable, subject to the policy requirement to verify that they are genuinely unreleased before editing them. Corrections to released migrations require a new reviewed forward migration. Deleting or rewriting an old release entry does not turn a released migration back into an unreleased one.\n"
-  },
-  {
-    "id": "repository/docs/database/release-evolution",
-    "title": "Release and Evolution Workflow",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Validate schema changes",
-    "anchor": "validate-schema-changes",
-    "text": "Validate schema changes\nFor every migration change, review authored Prisma schema and SQL together, including custom PostgreSQL objects and data impact. `pnpm references:check` applies the committed migrations to a fresh disposable PostgreSQL and checks the generated physical database reference and adjacent semantic metadata. It compares generated text after normalizing checkout line endings, so Windows CRLF is not mistaken for content drift. `pnpm validate` also runs the real-database tests and emitted application smoke. These are fresh-install checks; they do not prove an upgrade from a released state.\nWhen a real supported release baseline exists, add an upgrade test from that exact baseline: initialize a disposable database with the released migrations, preserve representative data permitted by the test policy, apply the new committed migrations, and verify data, constraints, and the supported application/database combinations. Record the actual supported versions and rollout order from that human action. Do not synthesize a historical state or require arbitrary old/new combinations before support obligations exist.\nApplication rollback means running earlier application code against the **current** schema only if that combination has been verified compatible. It does not rewind PostgreSQL or recover data dropped by a migration. If a released migration needs correction, prefer a reviewed forward migration; data loss may require a separate backup/restore decision and procedure for the actual environment. No production rollback command, deployment window, or recovery objective is selected here.\n"
-  },
-  {
-    "id": "repository/docs/database/release-evolution",
-    "title": "Release and Evolution Workflow",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Review API and temporary compatibility",
-    "anchor": "review-api-and-temporary-compatibility",
-    "text": "Review API and temporary compatibility\nThe current API, generated OpenAPI, SDK, and web consumer evolve together in this repository. `pnpm references:check` regenerates API and SDK representations from current executable contracts without changing tracked files; it detects current-source drift, not compatibility with a released historical consumer. Before a change, review the executable operation IDs, requests/responses, [error registry](../generated/api/errors.md), authorization, list scope/order/cursor/defaults, state transitions, idempotency, and side effects against the owning module's business specification and implementation conventions. The module's server and browser tests protect those current semantics.\nUse these current sources when reviewing contract impact:\nConcern\nCurrent source and verification\nStructure and defaults\nA module's TypeBox operations own request/response shapes and stable operation IDs; its routes own defaults such as page sizes and list scopes. OpenAPI and SDK freshness checks keep current artifacts aligned.\nErrors\nThe [shared registry](../../apps/api/src/errors.ts) and each module's registered codes own stable codes and status mapping; HTTP integration tests cover the module's denials, validation, conflicts, and rate limiting. No historical status/code compatibility is asserted.\nAuthorization\nThe module's business specification owns actor and capability rules; synthetic-principal tests exercise the transport and persisted query scopes.\nOrdering and cursor\nThe module's implementation conventions own ordering, cursor behavior, and snapshot semantics; migrated-PostgreSQL tests verify authorization before pagination and cursor use.\nSide effects and retry semantics\nThe module's recovery contract records external effects, replay, and version conflicts; concurrency and process-interruption tests protect these facts.\nThis is a review of the **current** contract, not a released API baseline or a promise to support an older client. A future change can alter unreleased semantics deliberately, but must update the owning source, tests, and generated client together.\nIf an independently evolving consumer or published contract becomes real, record its released OpenAPI and supported consumer versions in a human action before introducing a baseline comparison. Mechanical comparisons can detect removed operations, required fields, types, and response shapes, while changes to authorization, errors, ordering, defaults, retry semantics, and side effects still need semantic review. No API version or deprecation window is created solely for unreleased development.\nThere is currently no temporary compatibility shim, dual-write path, deprecated endpoint, or retained old payload format to remove. If one is introduced for a real released boundary, record its consumers, migration path, support window, test coverage, and observable removal condition alongside that implementation. Remove it only after the actual dependent consumers and persisted data are safe, following [compatibility policy](../architecture/versioning-and-compatibility.md) and [API versioning](../api/versioning.md).\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Database Schema Documentation",
-    "anchor": "database-schema-documentation",
-    "text": "Database Schema Documentation\n[Task index](../README.md) · [Database principles](principles.md) · [Generated reference](../generated/database/schema.md) · [Living documentation](../architecture/living-documentation.md)\nThis policy owns documentation of application-owned database structures. [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) makes fully migrated PostgreSQL the complete physical authority, including custom SQL absent from Prisma Schema Language. Document meaning next to the schema and generate structure; readers should not reconstruct current semantics from migration history or reverse engineer queries.\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Canonical sources and current tooling",
-    "anchor": "canonical-sources-and-current-tooling",
-    "text": "Canonical sources and current tooling\nInformation\nSource\nAuthored representable model\n[Prisma schema folder](../../apps/api/prisma/schema/schema.prisma)\nPhysical names, types, nullability, defaults, constraints, indexes, enum values\nPostgreSQL migrated from committed SQL\nMeaning, ownership, classification, lifecycle, null/unit semantics, object purpose\nSchema-adjacent metadata in `apps/api/prisma/metadata/<module>.json`; a table or enum belongs to exactly one file\nGenerated textual presentation\n[Database reference](../generated/database/schema.md), produced by the [catalog-backed generator](../../apps/api/scripts/database-reference.ts); with no application tables it states that explicitly\nCross-file domain behavior and rationale\nThe owning module's specification and implementation conventions, policies, and ADRs\nThe current metadata uses `tables` and `enums`; table metadata contains owner, description, classification, lifecycle, column metadata, and constraint/index purposes. Structural facts are introspected, not independently copied into JSON. Database-native comments, diagrams, broader manifests, and code-to-schema links remain optional future mechanisms, not alternative canonical sources already in use.\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Database Documentation",
-    "anchor": "database-documentation",
-    "text": "Database Documentation\nEvery application-owned table and column requires canonical documentation, and each table requires an architectural domain owner. Document additional application-owned objects as they appear. Engine/ORM/extension/hosting internals need documentation only when material to application architecture or operations; architectural ownership is distinct from the database role that owns an object.\nKeep one source for each fact. Machine-readable policy must use structured metadata rather than parsing free-form comments. Use English, concise semantic descriptions, and synthetic examples. A name repeated as a sentence is insufficient when meaning is unclear; conventional fields may use short standardized descriptions when semantics truly match. Never invent descriptions solely to satisfy completeness checks.\nCurrent descriptions explain current truth. Migration-specific safety stages belong in migration comments or runbooks; significant rationale belongs in ADRs; complex business/authorization/retention policy belongs to its owner and is linked rather than copied into every column. Preserve deprecated-object purpose and replacement while it exists, and remove stale metadata when the object is removed. Ownership changes require metadata updates and may signal an ADR-level boundary change.\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Table Documentation",
-    "anchor": "table-documentation",
-    "text": "Table Documentation\nExplain the durable concept, owning domain, allowed role in the architecture, and important lifecycle/relationships. Distinguish canonical domain state, relationships, projections, audit, integration, operational, and reference data. A derived table must identify its canonical source and regeneration/freshness expectations. Link broader lifecycle or domain rules when needed instead of writing a second policy in metadata.\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Column Documentation",
-    "anchor": "column-documentation",
-    "text": "Column Documentation\nDocument meaning and classification for every column, plus the following when relevant:\nConcern\nRequired meaning\nNull/default\nWhether null means absent, unknown, unassigned, inapplicable, or removed; explain non-obvious defaults without duplicating structural facts\nQuantity/money\nUnit, precision/rounding expectations, currency relationship; avoid ambiguous numeric values\nTime\nInstant versus local/calendar semantics, authoritative clock/update behavior, time zone where relevant, and whether it is informational or a concurrency token\nIdentity\nInternal/public/provider/business/idempotency purpose, scope, stability, public exposure; provider identifiers need provider ownership and lifecycle\nState/derived data\nNon-obvious state values, source, calculation/update behavior, immutability or lifecycle constraints\nSensitive content\nMachine-readable [classification](../security/data-classification.md), and category/control metadata only when useful and maintainable\nThe current generator requires `nullMeaning` for every nullable column. Additional telemetry metadata may be introduced only when consistently enforceable; classification does not itself authorize telemetry export.\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Constraints, relationships, and indexes",
-    "anchor": "constraints-relationships-and-indexes",
-    "text": "Constraints, relationships, and indexes\nGenerate physical definitions and actual referential actions where covered. Explain the invariant protected by non-obvious checks/uniqueness, significant query/order patterns, and specialized/partial index maintenance implications. Relationships must distinguish owner, creator, approver, membership, assignment, or historical attribution when structure cannot explain the distinction. Cascading deletion and nulling deserve explicit lifecycle rationale.\nKeep constraint-to-public-error translation discoverable near persistence/error code without duplicating mappings across prose. Primary-key semantics still need explanation when non-obvious. Do not infer an API resource relation from a table name, or remove similar-looking indexes without workload evidence.\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Other application-owned objects",
-    "anchor": "other-application-owned-objects",
-    "text": "Other application-owned objects\nThese requirements apply when the object exists; extend generation/validation with its introduction.\nObject\nDocumentation required\nView\nPurpose, owner, sources, derived/canonical role, consumers, and any stable reporting/integration contract\nMaterialized view\nView meaning plus refresh mechanism/frequency, staleness, failure and recovery behavior\nFunction/procedure\nPurpose, input/output meaning, units, read/write effects, modified data, transaction/security assumptions, and significant failures\nTrigger\nActivation event/table, timing, effects, reason for database placement, recursive/cascading behavior, and tests; hidden effects are prohibited\nGenerated column\nSemantic purpose and expression where safe/useful\nEnum/domain/custom type\nSemantic values, purpose, constraints, units, ownership; migration constraints belong in evolution guidance\nSequence\nPurpose and allocation meaning; ordinary sequences do not promise gapless numbering\nPartition/inheritance\nKey/relationship, purpose, query/retention consequences, and operational owner\nRow-level security policy\nProtected table, actor/role scope, covered operations, and interaction with application authorization\nSignificant role/grant\nRuntime, migration, or operational privileges and responsible security/operations guidance\nExtension\nWhy required, dependent capabilities, setup and operational implications\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Generated Reference",
-    "anchor": "generated-reference",
-    "text": "Generated Reference\n`pnpm -C apps/api references:write` intentionally regenerates current API/database/configuration/error references using a freshly migrated disposable PostgreSQL. `pnpm references:check` checks freshness without editing tracked files; `pnpm docs:references:check` checks the portal's derived representation. See [artifact workflow](../architecture/backend-execution-and-generated-artifacts.md) for the complete order and [validation](../validation.md) for requirements.\nThe current database generator covers ordinary application tables in `public`, their columns, primary and other constraints, indexes, and enums; it excludes Prisma's migration table. It compares Prisma-representable structure to the freshly migrated database and rejects unmodeled application-owned object kinds rather than silently omitting them. It is still not a universal PostgreSQL catalog export: new schemas, partitioned tables, views, triggers, functions, RLS, or other object kinds require deliberate generator coverage and metadata before adoption.\nFor covered objects it checks exact names, stale/missing entries, required owner/descriptions/lifecycle, valid table/column classifications, nullable-column meaning, object purposes, enum descriptions, and generated drift. Units and broader business semantics still require review. Schema drift in a deployed database and reference drift from repository sources are separate defects; this disposable-database check does not inspect deployments.\nGenerated files are read-only representations. Change schema/metadata or generator sources and regenerate; never patch output to hide drift. The portal adds human navigation without becoming another schema source. Keep structured text searchable by domain/object/field meaning for agents. Generated diagrams, if added, should reflect actual schema; authored simplified diagrams must be clearly explanatory rather than canonical. Reliable metadata, not guesses, should drive links to code, domain, or API.\n"
-  },
-  {
-    "id": "repository/docs/database/schema-documentation",
-    "title": "Database Schema Documentation",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Schema Documentation Requirements",
-    "anchor": "schema-documentation-requirements",
-    "text": "Schema Documentation Requirements\nBefore handing off a schema change:\nInspect the current physical/authored schema, metadata, ownership, classification, constraints, relationships, domain rules, and migration release status. Escalate uncertain non-obvious meaning as a documentation defect rather than guessing.\nUpdate object/column meaning, classification, null/unit/lifecycle semantics, native side effects, and ownership with the schema change. Give newly sensitive fields explicit review.\nExtend metadata and generator coverage for newly introduced object kinds; missing documentation must fail validation wherever that coverage exists.\nRegenerate the current reference and portal data. Review schema, SQL, metadata, and reference diffs together, especially nullability, constraints, relationships, and classification changes.\nVerify links/navigation, current terminology, test evidence, and that structural facts are derived rather than maintained independently. Generation proves covered consistency, not semantic correctness.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Transactions and Concurrency",
-    "anchor": "transactions-and-concurrency",
-    "text": "Transactions and Concurrency\n[Task index](../README.md) · [Database principles](principles.md) · [Delivery and side effects](../architecture/delivery-and-side-effects.md) · [Testing](../architecture/testing-strategy.md)\nThis policy owns database atomicity, isolation, conditional writes, locks, and transaction retries. Cross-system delivery, idempotency, message claiming, retry ownership, and reconciliation belong to [delivery policy](../architecture/delivery-and-side-effects.md). [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) permits appropriate Prisma or explicit SQL transaction mechanisms; [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) requires real-database verification where its semantics matter.\nEach module's implementation conventions record its concrete transaction choices, such as atomic PostgreSQL creation/conditional writes, durable create replay, and integer version preconditions. The shared runtime does not automatically retry writes. Do not infer that outboxes, distributed locks, or generic transaction infrastructure already exist.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Transactions",
-    "anchor": "transactions",
-    "text": "Transactions\nAssume concurrent requests, processes, retries, workers, and deployment overlap unless the architecture proves exclusive ownership. Sequential code does not imply sequential execution across the system. Identify the durable invariant, which changes must become visible together, relevant competing actors, and failure/recovery semantics before choosing a mechanism.\nTransactions protect all-or-nothing state within their actual database boundary. They must remain as short as practical and should not automatically surround every HTTP request or every repository method. Splitting dependent writes into independently committed methods can destroy atomicity; wrapping remote work in a transaction can hold locks without providing distributed rollback.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Application-Level Transaction Ownership",
-    "anchor": "application-level-transaction-ownership",
-    "text": "Application-Level Transaction Ownership\nThe application operation owns the complete consistency requirement; domain logic stays independent of SQL/Prisma transaction APIs. Persistence infrastructure must make scope and participating connection/context discoverable. Repositories in one atomic operation must use the same transaction rather than silently opening independent connections or escaping context.\nNested transaction calls may mean savepoints rather than independent transactions; understand actual library/database semantics. Use savepoints, Unit of Work, implicit async-local context, or transaction hooks only when they add concrete value and remain predictable/testable. Hooks need explicit retry, rollback, and crash semantics. An after-commit callback is best effort unless required work is durably recorded under [delivery policy](../architecture/delivery-and-side-effects.md#after-commit-work).\nExternal calls generally stay outside database transactions. Rollback cannot unsend mail, reverse an accepted provider mutation, remove an uploaded file reliably, or retract a published message. Never place unsafe non-idempotent external effects in transparently retried blocks. A payment provider's “transaction” is not a shared database transaction.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Isolation Levels",
-    "anchor": "isolation-levels",
-    "text": "Isolation Levels\nChoose isolation and conflict mechanisms for actual invariants, not framework defaults or labels. PostgreSQL's real behavior matters; names shared with other databases need not imply identical guarantees. Consider relevant anomalies: dirty/non-repeatable reads, phantoms, lost updates, and write skew. The default is not a universal guarantee; serializable execution can still abort and require bounded safe retry.\nA read/snapshot may become stale immediately after commit. Read-committed work still needs constraints or conditional updates where read-then-write would race; stronger isolation carries contention, resource, and throughput costs. Do not weaken correctness because of speculative performance concerns, or select the strongest isolation without considering its actual benefit.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Check-Then-Act Race",
-    "anchor": "check-then-act-race",
-    "text": "Check-Then-Act Race\nApplication checks can become stale before a write. Protect uniqueness with database constraints even when a precheck improves feedback. Prefer atomic counter updates, conditional decrements/state transitions, reservations, or other native atomic operations to unprotected read–calculate–write sequences.\nFor example, updating only where ID, expected version, valid source state, and protected ownership still match lets PostgreSQL arbitrate competing writes. Inspect affected-row count and safely classify failure; zero rows alone does not prove which precondition failed. Authorization checks must not leak hidden state while classifying a conflict.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Optimistic concurrency",
-    "anchor": "optimistic-concurrency",
-    "text": "Optimistic concurrency\nUse a deliberate expected version/state when stale writes must be rejected. Increment a dedicated version exactly once per successful mutation and return meaningful conflict semantics. Reload/reconciliation versus safe retry depends on the domain; do not silently rebase a user's stale intent onto a newer version.\nTimestamps are concurrency tokens only with proven precision and update semantics; explicit versions are often clearer. Wall-clock timestamps across machines do not guarantee total order. Use database time, sequences, or logical versions when correctness requires ordering.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Locks and reservations",
-    "anchor": "locks-and-reservations",
-    "text": "Locks and reservations\nPessimistic row locks can serialize high-conflict short work. Cover the smallest meaningful resource, bound waits, and use deterministic multi-resource lock ordering to reduce deadlocks. Locks consume connections and can cause blocking/latency; measure their cost. Advisory locks require explicit ownership, timeout, and failure semantics.\nDistributed locks are not a default. First consider constraints, conditional writes, versions, row locks, queue ownership, or a single logical writer. Expiring leases can leave a stale worker running after another acquires the lease; high-risk protocols may need fencing tokens or equivalent enforcement. A lease alone does not prove exclusivity.\nBusiness reservations such as seat holds are durable domain state with expiry/renewal/release/claim races; do not implement minutes-long business holds as long-lived database locks. Concurrent numbering needs safe allocation, never `MAX(number) + 1`. Sequences may contain gaps; a gapless requirement is a stronger business decision with concurrency cost.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Deadlock Retry",
-    "anchor": "deadlock-retry",
-    "text": "Deadlock Retry\nDeadlocks and serialization failures are recognized conflict modes, not evidence of corruption. Repeated deadlocks or lock timeouts may indicate poor access ordering, contention, or defects and must remain observable. Distinguish lock contention from database unavailability and domain/constraint failures.\nRetry only classified transient failures for an operation safe to repeat, with bounded attempts/time and appropriate backoff/jitter based on evidence. Do not retry permanent constraint/query/schema failures blindly. Expected transient retries need useful telemetry without becoming duplicate incident reports.\n"
   }
 ]

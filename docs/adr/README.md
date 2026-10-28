@@ -43,3 +43,5 @@ Teluni's decision identifiers remain stable. The [imported Orion decision index]
 | [ADR-0031](0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md) | Build the Player on a Portable Core with File-Based Atomic State and Managed Installation |
 | [ADR-0032](0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md) | Represent Money as Integer Minor Units with a Currency per Field |
 | [ADR-0033](0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md) | Expose the Pilot Host with End-to-End TLS and Back It Up with Encrypted Off-Host Snapshots |
+| [ADR-0034](0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md) | Build Data Grids on TanStack Table and TanStack Virtual |
+| [ADR-0035](0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md) | Export Grid Data in the Browser to XLSX, CSV and PDF |

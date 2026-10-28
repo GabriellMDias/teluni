@@ -320,7 +320,7 @@ test("keeps dataset selection, mode and duplication in the URL", async () => {
     { id: other, displayName: "Beta" },
   ]);
   const { screen, router } = await open("/companies");
-  await screen.getByRole("cell", { name: "Beta" }).click();
+  await screen.getByRole("gridcell", { name: "Beta" }).click();
   expect(router.state.location.search).toEqual({ record: other });
   await screen
     .getByRole("toolbar")

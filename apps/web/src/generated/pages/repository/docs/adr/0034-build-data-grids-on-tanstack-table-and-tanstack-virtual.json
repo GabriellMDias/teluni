@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md",
+  "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-27</p>\n<p><strong>Acceptance scope:</strong> On 2026-10-27 the owner asked for sorting, column filters, column resizing and configurable multiple selection in the shared <code>DataSet</code>, designed for very many rows, and asked the agent to use the best available technology. The agent accepted this decision under that request and the delegation recorded with <a href=\"/docs/repository/docs/project/human-actions#ph-25\">PH-25</a>; merging the pull request that adds it is the repository review. It selects the web panel's grid libraries. It does not add server-side sorting or filtering to any API.</p>\n<h2 id=\"context\">Context</h2>\n<p><a href=\"/docs/repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications\">ADR-0008</a> chose React, Vite and TanStack Router and Query, and deferred data grids and virtualization until their requirements were understood. The companies page's <code>DataSet</code> now needs a grid that:</p>\n<ul>\n<li>sorts by clicking a header or from a header menu, and filters a column by choosing among its values with search and select-all;</li>\n<li>resizes columns and supports single or multiple selection;</li>\n<li>stays responsive with tens of thousands of rows in the body and in a column's value list.</li>\n</ul>\n<p>Rendering every row as DOM does not scale to that size, and sorting, value faceting and resizing have subtle edge cases (blank values, filters that interact, live resizing). The product owns its markup, styles, accessibility and theme through <code>--ui-*</code> tokens, so a grid must not impose its own look. The React Compiler is enabled.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>The web panel builds grids on two headless libraries, pinned exactly in <code>apps/web</code>:</p>\n<ul>\n<li><strong>TanStack Table v9</strong> (<code>@tanstack/react-table</code>) owns the grid model: sorting, column filtering, value faceting and column sizing/resizing, with only those features registered.</li>\n<li><strong>TanStack Virtual v3</strong> (<code>@tanstack/react-virtual</code>) renders only the rows, and filter options, in view.</li>\n</ul>\n<p>Teluni renders all markup itself in the shared <code>DataGrid</code>, which <code>DataSet</code> composes, and the shared <code>MultiSelectList</code>. Row selection remains caller-owned rather than table state, so features keep selection next to their URL and API state. Sorting and filtering run in the browser over the rows the caller supplies; a list that cannot load all its rows needs server-side sorting and filtering added to its API first.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<ul>\n<li>Both libraries are headless, so the product keeps its semantic markup, ARIA grid roles, keyboard model and token-based styling.</li>\n<li>They belong to the TanStack family already selected by ADR-0008, are MIT-licensed and widely used, and add only the registered features to the bundle.</li>\n<li>TanStack Table's faceting gives each column's distinct values while applying the other columns' filters, which is the behavior a value filter needs. Its row models are memoized and recompute only when data or state change.</li>\n<li>Virtualization keeps the DOM to a few dozen rows regardless of size. In a development build, 10,000 rows sorted in about 75 ms and a filter with 10,000 distinct values opened in about 80 ms rendering 14 options.</li>\n<li>TanStack Table v9's React adapter returns a new table reference when its state changes, so components compiled by the React Compiler update. The virtualizer keeps one instance whose output changes while scrolling, so the components that read it opt out with the <code>&quot;use no memo&quot;</code> directive.</li>\n</ul>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"a-complete-data-grid-component-for-example-ag-grid-or-mui-x-data-grid\">A complete data grid component (for example AG Grid or MUI X Data Grid)</h3>\n<p>These provide sorting, filtering and virtualization, but bring their own markup, styling system and theming, are much larger, and reserve some features for commercial licenses. Adapting them to the product's tokens and accessibility choices would fight the library.</p>\n<h3 id=\"own-implementation-without-libraries\">Own implementation without libraries</h3>\n<p>Sorting and selection are small, but virtualization with scrolling to a row, faceting under interacting filters and live column resizing would be new code with its own defects and tests, duplicating mature libraries.</p>\n<h3 id=\"virtualization-only-with-an-own-grid-model\">Virtualization only, with an own grid model</h3>\n<p>TanStack Virtual alone solves rendering size, but leaves the faceting and resizing edge cases above to the product.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>One grid serves small lists like companies and large in-browser lists, with consistent sorting, filtering, resizing and selection.</li>\n<li>The headless model keeps the existing styling, theme and accessibility responsibilities in the product.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Two runtime dependencies to keep current; TanStack Table v9 is recent, so upgrades need the browser tests that cover the grid.</li>\n<li>Sorting and filtering apply only to loaded rows; paginated lists filter the loaded page until their APIs support server-side processing.</li>\n<li>Text sorts with <code>Intl.Collator</code> for the person's locale without numeric collation, which was about 2.7 times slower in measurement; &quot;Loja 10&quot; therefore sorts before &quot;Loja 9&quot;. Numeric values sort as numbers.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>No API, database or deployment change. Replacing either library would affect only <code>apps/web/src/data-grid.tsx</code> and <code>apps/web/src/multi-select-list.tsx</code>.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications\">ADR-0008</a></li>\n<li><a href=\"/docs/repository/docs/architecture/web-components\">Component architecture and design practices</a></li>\n<li><a href=\"/docs/repository/apps/web/README#companies-and-branches\">Web application guide</a></li>\n<li><a href=\"/docs/repository/docs/project/implementation-plan#companies-dataset-grid-increment\">Implementation plan</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+      "text": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "a-complete-data-grid-component-for-example-ag-grid-or-mui-x-data-grid",
+      "text": "A complete data grid component (for example AG Grid or MUI X Data Grid)",
+      "level": 3
+    },
+    {
+      "id": "own-implementation-without-libraries",
+      "text": "Own implementation without libraries",
+      "level": 3
+    },
+    {
+      "id": "virtualization-only-with-an-own-grid-model",
+      "text": "Virtualization only, with an own grid model",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

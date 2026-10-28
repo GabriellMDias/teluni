@@ -411,7 +411,6 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
         : mode === "form"
           ? (rows[0]?.id ?? "new")
           : undefined;
-  const position = rows.findIndex((row) => row.id === record);
   const returnTo = `/companies?${new URLSearchParams(
     Object.entries(search).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",
@@ -464,11 +463,12 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
               mode={mode}
               rows={rows}
               rowId={(row) => row.id}
-              rowName={(row) => row.displayName}
               columns={[
                 {
                   key: "name",
                   header: t.fieldCompanyName,
+                  value: (row) => row.displayName,
+                  width: 360,
                   render: (row) => (
                     <Link
                       to="/companies/$companyId"
@@ -481,8 +481,9 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                 {
                   key: "roles",
                   header: t.yourAccess,
-                  render: (row) =>
+                  value: (row) =>
                     row.roles.map((role) => t.roles[role]).join(", "),
+                  width: 280,
                 },
               ]}
               selectedId={record}
@@ -499,16 +500,6 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
               onAdd={
                 idle ? () => go({ mode: "form", record: "new" }) : undefined
               }
-              onPrevious={
-                idle && position > 0
-                  ? () => select(rows[position - 1].id)
-                  : undefined
-              }
-              onNext={
-                idle && record !== "new" && position < rows.length - 1
-                  ? () => select(rows[position + 1].id)
-                  : undefined
-              }
               onDuplicate={
                 idle && record && record !== "new"
                   ? () => go({ mode: "form", record: "new", copy: record })
@@ -523,6 +514,7 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                   : undefined
               }
               refreshing={refreshing}
+              exportName={t.companiesExport}
               empty={
                 <p className="empty-state">
                   {cursor ? t.pageEmpty : t.companiesEmpty}

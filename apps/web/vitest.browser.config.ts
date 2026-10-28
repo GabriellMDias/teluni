@@ -16,6 +16,11 @@ export default defineConfig({
     include: [
       "@tanstack/react-query",
       "@tanstack/react-router",
+      "@tanstack/react-table",
+      "@tanstack/react-virtual",
+      "jspdf",
+      "jspdf-autotable",
+      "write-excel-file/browser",
       "react-dom/client",
     ],
   },
