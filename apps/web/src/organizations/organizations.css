@@ -2,49 +2,62 @@
   max-width: 52rem;
 }
 /*
- * The companies dataset uses the whole workspace: full width, and on wider
- * screens the viewport's height, with the grid scrolling inside its frame.
+ * Pages built around a dataset (companies, branches, screens) use the whole
+ * workspace: full width, and on wider screens the viewport's height, with
+ * the grid scrolling inside its frame. A `dataset-region` wraps the dataset
+ * when the page has other content around it.
  */
-.product-shell .main-content:has(> .companies-panel) {
+.product-shell .main-content:has(> .dataset-panel) {
   max-width: none;
 }
-.organization-panel.companies-panel {
+.panel.dataset-panel {
   max-width: none;
   display: flex;
   flex-direction: column;
 }
-.companies-panel > :is(p, h1) {
+.dataset-panel > :is(p, h1) {
   margin-block: 0 0.75rem;
 }
+.dataset-region {
+  display: flex;
+  flex-direction: column;
+}
 @media (min-width: 761px) {
-  .main-content:has(> .companies-panel) {
+  .main-content:has(> .dataset-panel) {
     padding-bottom: var(--space-page);
   }
-  .organization-panel.companies-panel {
+  .panel.dataset-panel {
     height: calc(100dvh - 2 * var(--space-page));
     min-height: 28rem;
   }
-  .companies-panel .ui-dataset {
+  .dataset-panel .dataset-region {
     flex: 1 1 0;
     min-height: 0;
+  }
+  .dataset-panel .ui-dataset {
+    flex: 1 1 0;
+    min-height: 16rem;
     display: flex;
     flex-direction: column;
   }
-  .companies-panel .ui-datagrid {
+  .dataset-panel .ui-datagrid {
     flex: 1 1 0;
     min-height: 0;
     grid-template-rows: minmax(0, 1fr);
   }
-  .companies-panel .ui-datagrid-scroll {
+  .dataset-panel .ui-datagrid-scroll {
     max-height: none;
   }
-  .companies-panel :is(.ui-dataset-form, .ui-dataset-empty) {
+  .dataset-panel :is(.ui-dataset-form, .ui-dataset-empty) {
     flex: 1 1 0;
     overflow: auto;
   }
-  .companies-panel .pagination {
+  .dataset-panel .pagination {
     margin-block: 0.75rem 0;
   }
+}
+.dataset-region > h2 {
+  margin-block: 0.25rem 0.75rem;
 }
 .organization-panel .notice {
   margin: 1rem 0;

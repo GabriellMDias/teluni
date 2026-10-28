@@ -178,11 +178,11 @@ test("keeps the edited version across refetch and reviews current data after a c
       },
     };
   });
-  const { screen, client } = await open(companyPath);
-  await screen
-    .getByRole("button", { name: `${t.rename}: Original branch` })
-    .click();
-  await screen.getByLabelText(t.fieldBranchName).nth(0).fill("My change");
+  // The branches dataset opens the branch in form mode from the URL.
+  const { screen, client } = await open(
+    `${companyPath}?mode=form&record=${branchId}`,
+  );
+  await screen.getByLabelText(t.fieldBranchName).fill("My change");
   version = 2;
   name = "Concurrent change";
   await client.invalidateQueries({ queryKey: branchesKey(companyId) });
@@ -202,13 +202,10 @@ test("keeps the edited version across refetch and reviews current data after a c
   });
   await screen.getByRole("button", { name: t.reload }).click();
   await expect
-    .element(screen.getByText("Concurrent change", { exact: true }))
+    .element(screen.getByRole("heading", { name: "Concurrent change" }))
     .toBeVisible();
-  await screen
-    .getByRole("button", { name: `${t.rename}: Concurrent change` })
-    .click();
   await expect
-    .element(screen.getByLabelText(t.fieldBranchName).nth(0))
+    .element(screen.getByLabelText(t.fieldBranchName))
     .toHaveValue("Concurrent change");
 });
 

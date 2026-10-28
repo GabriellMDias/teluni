@@ -139,6 +139,15 @@
     "title": "Teluni Implementation Plan",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Branches and screens as datasets",
+    "anchor": "branches-and-screens-as-datasets",
+    "text": "Branches and screens as datasets\nOn 2026-10-28 the owner asked for the branches and screens lists to use the `DataSet` component. The company page's branches view and `/companies/$companyId/screens` now use it with the full-workspace layout of the companies page (shared `dataset-panel`/`dataset-region` styles). Branches show name, status and time zone; the form creates a branch or renames and archives the selected one, keeping the version observed when editing started. Screens show name, branch, status with erasure, last check-in and synchronization under the existing server-side branch and status filters; adding a record opens pairing, and the form shows a screen summary linking to the screen page, where configuration, moving, unlinking and history stay. Mode and record live in the route search. When there is no record yet, a manager starts on the form, pinned in the URL so it survives the record it adds; both forms gained a Cancel action. Browser component tests and the affected E2E journeys were updated.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Collapsible sidebar increment",
     "anchor": "collapsible-sidebar-increment",
     "text": "Collapsible sidebar increment\nOn 2026-10-26 the owner requested visual refinements, starting with a collapsible left sidebar. On desktop widths, a localized “Recolher menu”/“Expandir menu” control at the foot of the sidebar narrows it to a brand mark and navigation icons. Link and button labels remain in the accessibility tree, the company context label and switch link are hidden while collapsed, and every product and portal entry now carries an icon. Only `teluni.sidebar=collapsed` is stored, with the same tab synchronization and storage-denial fallback as the theme; expanding removes the key. The mobile menu ignores the stored layout. No route, permission or API behavior changes. A shell E2E journey covers collapse, reload persistence, navigation, both themes with axe scans, and the mobile fallback.\n"
@@ -448,14 +457,5 @@
     "heading": "Permissions",
     "anchor": "permissions",
     "text": "Permissions\nFour capabilities are added to the organizations domain, which owns role presets and delegable profile capabilities:\nCapability\nCompany administrator\nBranch manager\nOperator\n`media.view`: list, search, preview and use assets\nCompany\nGranted branches and company assets\nGranted branches and company assets\n`media.upload`: upload, rename, tag, discard unusable uploads, download originals\nCompany\nGranted branches\nGranted branches\n`media.archive`: archive and restore\nCompany\nGranted branches\nNo (additional grant)\n`media.delete`: delete to trash, restore from trash\nCompany\nNo\nNo\n`media.view`, `media.upload` and `media.archive` are delegable in company-customized profiles; `media.delete` is not, because the matrix gives permanent deletion only to administrators. Company-scoped assets are viewable through any `media.view` grant in the company, but uploading, editing or archiving them needs the capability company-wide. Hidden assets answer `RESOURCE_NOT_FOUND`.\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Abuse limits",
-    "anchor": "abuse-limits",
-    "text": "Abuse limits\nProposed initial values, each answering `RATE_LIMITED` with `Retry-After`:\nAt most 5 assets in `UPLOADING` per person and 20 per company.\nAt most 200 asset creations per company per day.\nAt most 20 assets in `PROCESSING` per company, so one company cannot monopolize the processor.\nThe upload `PUT` has no request-size limit beyond the declared size, a 2-hour request timeout and an idle timeout of 60 seconds without bytes.\nCommercial original-media quotas (2 GiB trial, 10 GiB paid) and their warnings arrive with PJ-27, which will count each original object once per company as the commercial policies require; the creation request is where admission will be checked.\n"
   }
 ]

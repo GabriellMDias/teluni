@@ -95,7 +95,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: "Telas", exact: true }).click();
-  await afterNavigation(page).toHaveURL(`${companyUrl}/screens`);
+  await afterNavigation(page).toHaveURL(new RegExp(`^${companyUrl}/screens`));
   await page.getByLabel("Código da TV").fill(userCode);
   await page.getByLabel("Nome da tela").fill("Caixa 1");
   await page.getByRole("button", { name: "Parear tela" }).click();
@@ -154,7 +154,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   // The screen joins the group once its owner accepts the neutral screen.
   await page.goto(`${companyUrl}/screens`);
   await page
-    .getByRole("listitem")
+    .getByRole("region", { name: "Registros de telas" })
     .getByRole("link", { name: "Caixa 1" })
     .click();
   await page

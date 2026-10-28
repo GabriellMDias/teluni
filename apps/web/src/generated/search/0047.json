@@ -4,6 +4,15 @@
     "title": "Teluni Media Library Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Abuse limits",
+    "anchor": "abuse-limits",
+    "text": "Abuse limits\nProposed initial values, each answering `RATE_LIMITED` with `Retry-After`:\nAt most 5 assets in `UPLOADING` per person and 20 per company.\nAt most 200 asset creations per company per day.\nAt most 20 assets in `PROCESSING` per company, so one company cannot monopolize the processor.\nThe upload `PUT` has no request-size limit beyond the declared size, a 2-hour request timeout and an idle timeout of 60 seconds without bytes.\nCommercial original-media quotas (2 GiB trial, 10 GiB paid) and their warnings arrive with PJ-27, which will count each original object once per company as the commercial policies require; the creation request is where admission will be checked.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Data",
     "anchor": "data",
     "text": "Data\nAll tables belong to the media module, with Prisma models in `prisma/schema/media.prisma`, semantic metadata, runtime grants and one reviewed migration.\nTable\nContents\nNotes\n`media_objects`\n`(company_id, sha256)` key, byte size, content type, created time\nOne row per stored file per company; publication and purge serialize on a transaction-scoped advisory lock per object\n`media_assets`\n`(company_id, id)`, optional composite `(company_id, branch_id)` reference, name, tags, kind, status, rejection reason, declared type and size, original/display/thumbnail object hashes (composite references to `media_objects`), inspected facts, processing stage/progress/attempts/lease, created-by membership, created/ready/archived/deleted/purge-after/purged times, version\nComposite tenant references; runtime role never updates `company_id` or `branch_id`\n`media_audit_events`\nCompany, actor, action, target asset, allowlisted details\nAppend-only; `media.created`, `media.uploaded`, `media.ready`, `media.failed`, `media.rejected`, `media.renamed`, `media.tagged`, `media.archived`, `media.restored`, `media.deleted`, `media.trash_restored`, `media.purged`, `media.discarded`. Details hold IDs, kinds, sizes and reason codes, never file names of other assets, hashes or paths\nNames, tags, inspected facts and the stored bytes are `CONFIDENTIAL`. The original file name is used as the default name only; it is not stored separately.\n"

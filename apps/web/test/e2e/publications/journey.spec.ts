@@ -168,7 +168,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: "Telas", exact: true }).click();
-  await afterNavigation(page).toHaveURL(`${companyUrl}/screens`);
+  await afterNavigation(page).toHaveURL(new RegExp(`^${companyUrl}/screens`));
   await page.getByLabel("Código da TV").fill(userCode);
   await page.getByLabel("Nome da tela").fill("Caixa 1");
   await page.getByRole("button", { name: "Parear tela" }).click();
@@ -236,7 +236,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   // A published destination needs no neutral-screen confirmation.
   await page.goto(`${companyUrl}/screens`);
   await page
-    .getByRole("listitem")
+    .getByRole("region", { name: "Registros de telas" })
     .getByRole("link", { name: "Caixa 1" })
     .click();
   const screenUrl = page.url();

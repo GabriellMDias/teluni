@@ -85,23 +85,28 @@ test("creates a company and manages branches, settings, members, responsibility 
     page.getByText("Responsável pela empresa", { exact: false }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Filiais" })).toBeVisible();
-  await expect(page.getByText("Nenhuma filial ainda.")).toBeVisible();
 
+  // Without branches, the dataset starts on a new branch.
   await page.getByLabel("Nome da filial").fill("Centro");
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
   // A second active branch cannot reuse the name, whatever the case.
+  const branches = page.getByRole("region", { name: "Registros de filiais" });
+  await branches
+    .getByRole("button", { name: "Adicionar", exact: true })
+    .click();
   await page.getByLabel("Nome da filial").fill("centro");
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByRole("alert")).toHaveText(
     /Já existe uma filial ativa com esse nome\./,
   );
+  await page.getByRole("button", { name: "Cancelar" }).click();
 
-  await page.getByRole("button", { name: "Renomear: Centro" }).click();
-  await page.getByLabel("Nome da filial").first().fill("Centro Histórico");
+  await page.getByText("Centro", { exact: true }).dblclick();
+  await page.getByLabel("Nome da filial").fill("Centro Histórico");
   await page.getByRole("button", { name: "Salvar" }).click();
   await expect(
-    page.getByText("Centro Histórico", { exact: true }),
+    page.getByRole("heading", { name: "Centro Histórico" }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Arquivar: Centro Histórico" })

@@ -98,8 +98,10 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: "Telas", exact: true }).click();
-  await afterNavigation(page).toHaveURL(`${companyUrl}/screens`);
-  await expect(page.getByText("Nenhuma tela pareada ainda.")).toBeVisible();
+  // Without screens, the dataset starts on pairing.
+  await afterNavigation(page).toHaveURL(
+    `${companyUrl}/screens?mode=form&record=new`,
+  );
   await page.getByLabel("Código da TV").fill(enrollment.userCode.toLowerCase());
   await page.getByLabel("Nome da tela").fill("Caixa 1");
   await page.getByLabel("Rotação").selectOption("90°");
@@ -124,8 +126,9 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
     clearRequired: false,
   });
 
+  await page.getByRole("button", { name: "Modo grade", exact: true }).click();
   await page
-    .getByRole("listitem")
+    .getByRole("region", { name: "Registros de telas" })
     .getByRole("link", { name: "Caixa 1" })
     .click();
   await afterNavigation(

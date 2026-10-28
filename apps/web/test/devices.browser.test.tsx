@@ -225,8 +225,11 @@ test("pairs a screen with the code only in the request body", async () => {
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["devices.view", "devices.manage"]) };
   });
-  const { screen } = await open(screensPath);
-  await expect.element(screen.getByText(t.empty)).toBeVisible();
+  const { screen, router } = await open(screensPath);
+  // Without screens, a manager starts on pairing, pinned in the URL.
+  await expect
+    .poll(() => router.state.location.search)
+    .toEqual({ mode: "form", record: "new" });
   await screen.getByLabelText(t.fieldCode).fill("bcdf-ghjk");
   await screen.getByLabelText(t.fieldName).fill("Vitrine");
   await screen.getByLabelText(t.fieldBranch).selectOptions("Bairro");
@@ -316,13 +319,19 @@ test("blocks repeated pairing while pending and reconciles a lost response befor
     document.querySelector<HTMLFormElement>(".devices-pair")!.requestSubmit();
     expect(writes).toBe(1);
     await screen.getByRole("button", { name: t.reload, exact: true }).click();
+    // The form keeps its values; the grid shows the screen the lost write added.
+    await expect
+      .element(screen.getByLabelText(t.fieldCode))
+      .toHaveValue("BCDF-GHJK");
+    await screen
+      .getByRole("button", {
+        name: locale === "pt-BR" ? "Modo grade" : "Grid mode",
+      })
+      .click();
     await expect
       .element(screen.getByRole("link", { name: "Vitrine", exact: true }))
       .toBeVisible();
     expect(writes).toBe(1);
-    await expect
-      .element(screen.getByLabelText(t.fieldCode))
-      .toHaveValue("BCDF-GHJK");
   } finally {
     release();
   }

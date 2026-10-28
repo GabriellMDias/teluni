@@ -10,6 +10,10 @@ const ptBR = {
   backToCompany: "Voltar para a empresa",
   backToScreens: "Voltar para telas",
   empty: "Nenhuma tela pareada ainda.",
+  screensRecords: "Registros de telas",
+  screensExport: "Telas",
+  statusColumn: "Situação",
+  openScreen: "Abrir detalhes da tela",
   pageEmpty:
     "Não há mais telas nesta página. Volte à primeira página para atualizar a lista.",
   nextPage: "Próxima página",
@@ -203,6 +207,10 @@ const enUS: Messages = {
   backToCompany: "Back to the company",
   backToScreens: "Back to screens",
   empty: "No screens paired yet.",
+  screensRecords: "Screen records",
+  screensExport: "Screens",
+  statusColumn: "Status",
+  openScreen: "Open screen details",
   pageEmpty:
     "There are no more screens on this page. Go back to the first page to refresh the list.",
   nextPage: "Next page",
