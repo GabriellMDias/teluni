@@ -1,5 +1,140 @@
 [
   {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Microsoft SQL Server",
+    "anchor": "microsoft-sql-server",
+    "text": "Microsoft SQL Server\nSQL Server provides a mature relational platform with strong transactional capabilities, tooling, enterprise features, and production support.\nIt would be a strong option in environments already centered on the Microsoft ecosystem.\nIt was not selected because Orion is intended to remain broadly deployable across different infrastructure environments and has selected TypeScript and Node.js rather than a Microsoft-centered application platform.\nPostgreSQL provides a stronger default combination of portability, ecosystem compatibility, open deployment options, and extensibility for Orion.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "SQLite",
+    "anchor": "sqlite",
+    "text": "SQLite\nSQLite provides extremely low operational complexity and is an excellent database for embedded applications, local tooling, prototypes, tests, and applications whose concurrency and deployment requirements fit its architecture.\nIt was not selected as Orion's primary application database because Orion must support large multi-user server applications with significant concurrent access, operational requirements, and long-lived relational datasets.\nSQLite may still be used by individual tools or applications where its characteristics are appropriate.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dedicated Vector Database as a Baseline Dependency",
+    "anchor": "dedicated-vector-database-as-a-baseline-dependency",
+    "text": "Dedicated Vector Database as a Baseline Dependency\nA specialized vector database could be included in the Orion foundation to support future AI and semantic-search features.\nThis was not selected because most Orion applications will not necessarily require vector retrieval.\nMaking such infrastructure mandatory would increase operational, deployment, security, and development complexity before a corresponding requirement exists.\nPostgreSQL with optional pgvector provides a simpler initial architecture for applications whose vector workloads can be served adequately by the primary database.\nDedicated vector infrastructure remains an available future option when concrete scale or capability requirements justify it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Non-Relational Database as the Primary Store",
+    "anchor": "non-relational-database-as-the-primary-store",
+    "text": "Non-Relational Database as the Primary Store\nDocument, key-value, wide-column, or other non-relational databases may provide significant advantages for specific data models and workloads.\nThey were not selected as Orion's default because the expected application portfolio includes business systems where relationships, transactions, referential integrity, and structured constraints are central concerns.\nUsing a non-relational database as the universal default would weaken the natural representation and enforcement of those requirements.\nSpecialized non-relational databases may still be introduced for concrete workloads when their benefits materially justify another persistence technology.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion receives a mature relational database suitable for both small and large applications.\nStrong transactional guarantees support complex business workflows.\nDatabase constraints can provide an additional integrity boundary beyond application validation.\nPostgreSQL supports rich relational queries and indexing strategies.\nThe same primary database can remain viable across substantial application growth.\nPostgreSQL is broadly available across local, self-hosted, cloud, and managed environments.\nOrion does not require multiple persistence technologies merely to anticipate future scale.\nPostgreSQL's extensibility allows specialized capabilities to be introduced without immediately replacing the primary database.\npgvector provides an incremental path to embeddings and semantic search when an application requires them.\nAI-enabled applications can support semantic retrieval without automatically introducing a dedicated vector database.\nRelational and vector queries can coexist within the same database when this is operationally appropriate.\nVector infrastructure remains optional for applications that do not need it.\nThe architecture preserves a path to specialized data stores when demonstrated workloads justify them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nPostgreSQL introduces a server database that must be operated locally, in CI, and in production where persistence is required.\nCorrect database design still requires explicit attention to indexes, transactions, locking, isolation, query plans, connection management, and migrations.\nPostgreSQL-specific features can increase database portability costs when used extensively.\nExtensions such as pgvector create additional deployment compatibility requirements for applications that depend on them.\nKeeping vector and transactional workloads in the same database can create resource contention at sufficiently large scale.\npgvector may not be the optimal solution for every large or specialized vector-search workload.\nA future application may still require another database technology, increasing system complexity when such requirements emerge.\nSupporting AI access safely requires application-level tooling and authorization rather than simply exposing database queries to the model.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established production database that must be migrated.\nThe initial persistence implementation will therefore target PostgreSQL directly.\nDevelopment and automated testing environments that exercise real persistence behavior should use PostgreSQL-compatible infrastructure rather than relying on a different database engine whose behavior may diverge from production.\nThe database-access and migration tooling selected later must support PostgreSQL as the canonical database target.\nApplications requiring pgvector must explicitly declare the extension as part of their database and deployment requirements.\nApplications that do not require vector functionality should not enable pgvector solely because Orion supports it.\nMigration history involving PostgreSQL extensions must follow Orion's existing migration policy:\nunreleased migration history\n    → refinable\n\nreleased migration history\n    → immutable\n\nEnabling, upgrading, or removing an extension in a released environment must therefore be represented through controlled database evolution.\nRoutine PostgreSQL upgrades do not require a new ADR when they preserve this architectural decision.\nIntroducing a specialized database for a particular workload does not necessarily supersede this ADR if PostgreSQL remains Orion's primary relational database.\nReplacing PostgreSQL as Orion's primary database would be an architectural change and should supersede this ADR.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [principles](../database/principles.md)\nRelated policy: [migrations](../database/migrations.md)\nRelated policy: [schema documentation](../database/schema-documentation.md)\nRelated policy: [transactions and concurrency](../database/transactions-and-concurrency.md)\nRelated policy: [data classification](../security/data-classification.md)\nRelated policy: [data retention](../security/data-retention.md)\nRelated policy: [production access](../security/production-access.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "anchor": "adr-0006-select-prisma-orm-for-database-access-and-migrations",
+    "text": "ADR-0006: Select Prisma ORM for Database Access and Migrations\n**Status:** accepted\n**Date:** 2026-09-13\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a database access and schema-evolution strategy after selecting PostgreSQL as its primary relational database.\nThe selected approach must support applications ranging from small systems to large, long-lived business applications with complex transactional behavior, substantial schemas, specialized queries, and PostgreSQL-specific capabilities.\nThe persistence tooling should support:\nstrong TypeScript integration;\nstatically typed database access;\nan explicit and readable persistence schema;\nsafe database evolution;\nreviewable SQL migrations;\ndeterministic local development and CI;\nproduction-safe migration workflows;\nexplicit transactions;\ncomplex relational queries;\ndirect SQL when ORM abstractions are insufficient;\nPostgreSQL-specific capabilities when they provide concrete value;\nintegration with optional PostgreSQL extensions such as pgvector;\ngenerated database documentation;\nclear separation between persistence models and domain, application, API, and UI models.\nOrion's database migration policy already distinguishes between unreleased development history and released database history.\nUnreleased migrations may be refined, regenerated, consolidated, or removed when requirements change.\nReleased migrations are immutable.\nThe selected migration tooling must support this policy without making generated migrations opaque or preventing SQL from being reviewed and adjusted before release.\nOrion also does not require every PostgreSQL feature to be representable through the database-access abstraction.\nLarge systems may require:\ncomplex joins;\ncommon table expressions;\nwindow functions;\nreporting queries;\nbulk operations;\nspecialized indexes;\ndatabase constraints;\nviews;\ntriggers;\nPostgreSQL extensions;\nvector similarity queries;\nother PostgreSQL-specific features.\nThe persistence strategy must therefore provide an escape path to explicit SQL rather than forcing all database behavior through ORM abstractions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **Prisma ORM as its primary database-access and persistence tooling for PostgreSQL applications**.\nThe initial Orion baseline will use the supported **Prisma ORM 7 release line**.\nPrisma ORM 8 will not be adopted as the initial baseline. It may be evaluated after its stable general-availability release and after compatibility, migration, operational, and feature requirements have been assessed.\nA compatible future upgrade from Prisma ORM 7 to Prisma ORM 8 or another Prisma major version does not require a new ADR when Prisma retains the architectural responsibilities defined here.\nThe exact Prisma versions will be pinned mechanically through the package-management strategy established by ADR-0002.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Architectural boundary",
+    "anchor": "architectural-boundary",
+    "text": "Architectural boundary\nPrisma is a **persistence infrastructure concern**.\nThe intended dependency direction is:\ndomain\n    ↑\napplication\n    ↑\npersistence ports\n    ↑\nPrisma persistence adapters\n    ↓\nPostgreSQL\n\nDomain code must not depend on Prisma.\nApplication code should remain independent from Prisma-specific APIs and generated persistence types except where an explicitly scoped infrastructure concern requires otherwise.\nPrisma-generated records and types are persistence representations.\nThey are not domain entities, application models, API contracts, or UI models.\nThe architectural distinction remains:\nPrisma persistence models\n    !=\ndomain entities\n    !=\napplication models\n    !=\nAPI contracts\n    !=\nUI models\n\nPersistence adapters are responsible for translating between database representations and framework-independent application or domain representations where such translation is necessary.\nThis rule does not require ceremonial mapping layers for every trivial projection.\nThe purpose is to preserve responsibility boundaries rather than introduce abstraction for its own sake.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Prisma Schema Language",
+    "anchor": "prisma-schema-language",
+    "text": "Prisma Schema Language\nPrisma Schema Language will be the primary authored representation for database structures that Prisma can represent appropriately.\nThe Prisma schema should clearly describe ordinary persistence concerns such as:\ntables and models;\ncolumns and scalar types;\nnullability;\nidentifiers;\nrelations;\nuniqueness;\nindexes supported by the selected Prisma version;\nsupported database-native types;\nother schema properties that Prisma can represent reliably.\nThe Prisma schema is not considered a complete representation of every possible PostgreSQL capability.\nPostgreSQL-specific structures that cannot be represented correctly through Prisma must not be omitted merely to preserve ORM purity.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Canonical database representations",
+    "anchor": "canonical-database-representations",
+    "text": "Canonical database representations\nOrion will distinguish between three related database representations.\n"
+  },
+  {
     "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
     "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
     "group": "Decisions",
@@ -907,140 +1042,5 @@
     "heading": "Flaky tests",
     "anchor": "flaky-tests",
     "text": "Flaky tests\nPersistent test flakiness is considered a defect.\nFlaky tests must not be normalized as an unavoidable property of the test suite.\nArbitrary delays such as fixed `sleep` calls should not be used as the normal synchronization strategy.\nBrowser tests should prefer deterministic readiness signals, Playwright locators, assertions, and automatic waiting behavior.\nRetries may be used as a diagnostic or resilience mechanism in CI, but passing only after retries must not be treated as evidence that persistent flakiness is acceptable.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Test execution and repository validation",
-    "anchor": "test-execution-and-repository-validation",
-    "text": "Test execution and repository validation\nTest capabilities will participate in Orion's canonical validation workflow as they become applicable.\nThe repository should expose independently runnable commands with responsibilities similar to:\npnpm test:unit\npnpm test:integration\npnpm test:browser\npnpm test:e2e\n\nExact script names and composition may be refined during implementation.\nThe canonical:\npnpm validate\n\nmust remain the stable repository-level validation contract established by ADR-0003.\nNot every repository or package must execute test classes that do not yet exist.\nFor example, browser and E2E validation should be introduced when the web application and corresponding test scenarios exist.\nHow the validation work is partitioned, cached, parallelized, or sharded in CI will be determined by ADR-0011.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nVitest is selected because it fits naturally into Orion's TypeScript, ESM, React, and Vite ecosystem while providing a fast and capable general-purpose test runner.\nUsing one primary runner for ordinary TypeScript tests reduces the number of test conventions contributors must understand.\nVitest does not replace TypeScript validation.\nMaintaining `tsc` as the source of truth for type correctness keeps the responsibilities established by ADR-0003 intact.\nReal infrastructure is selected for integration testing whenever correctness materially depends on that infrastructure.\nThis is particularly important for PostgreSQL.\nOrion explicitly permits PostgreSQL-specific capabilities, custom migrations, constraints, explicit SQL, extensions, and transaction behavior.\nReplacing PostgreSQL with SQLite or database mocks during integration testing would create a substantial semantic gap between the test system and production system.\nTestcontainers provides a practical way to reduce that gap without requiring permanently shared development infrastructure.\nIt allows tests to construct disposable service environments that can be reproduced locally and in CI.\nThe decision to construct test databases from the committed production migration history provides additional confidence that Orion's canonical schema-evolution path remains executable.\nFastify request injection provides an efficient middle layer between unit testing and full network E2E testing.\nIt allows validation, serialization, routing, application logic, and persistence to be tested together without unnecessarily starting external listeners.\nVitest Browser Mode is selected for browser-dependent component and feature behavior because actual browser execution provides higher fidelity than simulated DOM environments.\nThis avoids making jsdom semantics an implicit substitute for browser semantics when the behavior genuinely depends on the browser.\nPlaywright serves two related but distinct roles:\nbrowser provider for Vitest Browser Mode;\nstandalone E2E test framework for complete user journeys.\nThis gives Orion a consistent browser automation foundation without requiring all browser tests to become expensive E2E scenarios.\nPlaywright Test is selected for E2E because it provides strong isolation, modern browser automation, automatic waiting, parallel execution, tracing, and multi-browser capabilities suitable for growing test suites.\nThe strategy deliberately avoids requiring every browser or every system layer for every test.\nOrion instead optimizes for the cheapest environment that can prove a behavior reliably.\nThis produces a testing spectrum:\nfast feedback                                      high fidelity\n←────────────────────────────────────────────────────────────→\n\nVitest         Vitest             Vitest Browser       Playwright\nNode           integration        Mode                  E2E\n │                 │                   │                   │\npure logic     real services       real browser        full system\n\nThis approach allows the test suite to grow without making complete-system tests the primary source of development feedback.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Jest",
-    "anchor": "jest",
-    "text": "Jest\nJest provides a mature and widely used JavaScript testing ecosystem.\nIt has extensive documentation, broad library support, and substantial production adoption.\nIt was not selected because Vitest aligns more directly with Orion's ESM, TypeScript, Vite, and modern frontend tooling while providing the capabilities required by the foundation.\nUsing Vitest also reduces divergence between web tooling and test transformation behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Node.js Built-in Test Runner",
-    "anchor": "nodejs-built-in-test-runner",
-    "text": "Node.js Built-in Test Runner\nNode.js provides a native test runner without requiring a third-party testing framework.\nUsing the built-in runner would reduce external dependencies.\nIt was not selected because Vitest provides a more integrated TypeScript/frontend experience, richer repository-level tooling, browser testing integration, coverage support, and consistency with the selected Vite ecosystem.\nThe native runner remains technically suitable for specialized isolated use, but it is not Orion's default.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "SQLite for Database Tests",
-    "anchor": "sqlite-for-database-tests",
-    "text": "SQLite for Database Tests\nSQLite can provide extremely fast and simple relational tests.\nIt is useful for applications whose production behavior is sufficiently database-agnostic.\nIt was not selected as Orion's PostgreSQL integration substitute because Orion intentionally depends on PostgreSQL capabilities and semantics.\nSQLite cannot reliably prove behavior involving PostgreSQL-specific:\ntypes;\nconstraints;\nindexes;\nextensions;\ntransaction semantics;\ncustom SQL;\nPrisma/PostgreSQL integration.\nThe difference would reduce the value of persistence integration tests.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Mocked Prisma or Repository Implementations for Persistence Integration",
-    "anchor": "mocked-prisma-or-repository-implementations-for-persistence-integration",
-    "text": "Mocked Prisma or Repository Implementations for Persistence Integration\nOrion could mock Prisma or persistence adapters to keep tests fast.\nSuch tests may still be useful for isolated application logic.\nThey were not selected as the persistence-integration strategy because a mock cannot demonstrate that the real Prisma queries, PostgreSQL schema, migrations, constraints, and transactions behave correctly.\nMocks remain appropriate when the behavior being tested is above the persistence boundary and persistence behavior itself is intentionally outside test scope.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Shared Permanent Test Database",
-    "anchor": "shared-permanent-test-database",
-    "text": "Shared Permanent Test Database\nOrion could maintain one long-running PostgreSQL test instance used by all developers and CI jobs.\nThis may reduce container startup overhead.\nIt was not selected as the foundation default because shared persistent test infrastructure introduces state leakage, environment drift, coordination requirements, and reduced reproducibility.\nReusable infrastructure may still exist as an optimization when it preserves deterministic test isolation, but tests must not depend on a manually maintained shared database state.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "jsdom as the Default React Test Environment",
-    "anchor": "jsdom-as-the-default-react-test-environment",
-    "text": "jsdom as the Default React Test Environment\nA simulated DOM environment provides fast execution and has historically been common for React component testing.\nIt remains useful for tests that need DOM-like APIs without requiring actual browser behavior.\nIt was not selected as Orion's default browser-fidelity environment because simulated DOM semantics can differ from actual browser behavior.\nVitest Browser Mode allows tests whose correctness depends on browser semantics to execute in a real browser while preserving integration with the primary test runner.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Playwright for All Frontend Tests",
-    "anchor": "playwright-for-all-frontend-tests",
-    "text": "Playwright for All Frontend Tests\nOrion could use Playwright Test for both component behavior and complete user journeys.\nThis would reduce the number of test APIs used for browser-facing code.\nIt was not selected because many component and feature tests benefit from the faster, more focused lifecycle of Vitest Browser Mode.\nFull Playwright E2E environments should be reserved for behavior that genuinely requires the complete application stack.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Cypress",
-    "anchor": "cypress",
-    "text": "Cypress\nCypress provides mature browser testing capabilities, developer tooling, and component/E2E support.\nIt would be a technically valid browser testing solution.\nPlaywright was selected because it provides a strong fit for modern multi-browser automation, isolated browser contexts, parallel execution, tracing, and the additional benefit of serving as the browser provider for Vitest Browser Mode.\nThis reduces the number of browser automation technologies in the foundation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Mandatory 100% Code Coverage",
-    "anchor": "mandatory-100-code-coverage",
-    "text": "Mandatory 100% Code Coverage\nOrion could enforce complete code coverage as a repository rule.\nThis would provide a simple measurable threshold.\nIt was not selected because coverage measures executed code rather than test correctness or assertion quality.\nArtificially maximizing coverage can create low-value tests and discourage appropriate prioritization.\nCoverage remains useful as a diagnostic and regression signal, and targeted expectations may be introduced where risk justifies them.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion has one primary TypeScript test runner.\nFast unit tests provide rapid feedback for pure logic.\nReal PostgreSQL integration tests verify the database actually used in production.\nPrisma persistence behavior is tested against PostgreSQL rather than mocks.\nProduction migrations are exercised by integration-test database creation.\nCustom PostgreSQL SQL and extensions can be tested realistically.\nTestcontainers provides reproducible ephemeral infrastructure for local development and CI.\nFastify request injection enables realistic backend integration tests without unnecessary network overhead.\nReact component behavior can be tested in real browsers without requiring complete E2E environments.\nPlaywright provides a consistent browser automation foundation.\nFull E2E tests can focus on critical user journeys rather than every rule permutation.\nTests are expected to remain isolated and parallelizable.\nTest data remains local and explicit rather than relying on large implicit global fixtures.\nCoverage remains available without becoming an arbitrary quality metric.\nThe strategy can scale from small repositories to large test suites.\nIndividual test classes remain independently executable and optimizable in CI.\nFlaky tests are treated as defects rather than accepted background noise.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nOrion introduces multiple test execution modes that contributors must understand.\nTestcontainers requires a compatible container runtime in environments executing infrastructure tests.\nReal PostgreSQL integration tests are slower than database mocks or in-memory substitutes.\nMigration-based test database initialization adds execution cost.\nSharing infrastructure for performance requires careful state isolation.\nBrowser Mode tests are slower and more resource-intensive than Node-only tests.\nPlaywright requires browser binaries and corresponding CI resources.\nMaintaining separate component-browser and E2E test levels requires contributors to choose the appropriate level.\nTest isolation may require additional infrastructure code and test factories.\nNot using broad internal mocks means some integration tests will require more setup than heavily mocked alternatives.\nAbsence of a global coverage threshold provides less immediately visible numerical enforcement and requires engineering judgment.\nMulti-browser execution, when introduced, can materially increase CI cost.\n"
   }
 ]

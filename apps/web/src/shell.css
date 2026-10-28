@@ -3,6 +3,7 @@
   --ui-color-text: var(--color-ink);
   --ui-color-surface: var(--color-surface);
   --ui-color-border: var(--color-input-border);
+  --ui-color-divider: var(--color-border);
   --ui-color-action: var(--color-primary);
   --ui-color-on-action: var(--color-on-primary);
   --ui-color-focus: var(--color-focus);

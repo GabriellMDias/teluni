@@ -1,16 +1,19 @@
-import { useId, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import type { RowData } from "@tanstack/react-table";
+import {
+  DataGridView,
+  ExportMenu,
+  useDataGridModel,
+  type DataGridColumn,
+  type DataGridSelection,
+} from "./data-grid.js";
 import type { Locale } from "./locale.js";
+import { UiIcon, type UiIconName } from "./ui-icon.js";
 import "./dataset.css";
 
 export type DataSetMode = "grid" | "form";
 
-export type DataSetColumn<Row> = {
-  /** Stable column identity. */
-  key: string;
-  header: string;
-  render: (row: Row) => ReactNode;
-  align?: "start" | "end";
-};
+export type DataSetColumn<Row> = DataGridColumn<Row>;
 
 const messages = {
   "pt-BR": {
@@ -23,7 +26,6 @@ const messages = {
     delete: "Excluir",
     duplicate: "Duplicar",
     refresh: "Atualizar",
-    select: (name: string) => `Selecionar ${name}`,
   },
   "en-US": {
     toolbar: "Record actions",
@@ -35,19 +37,7 @@ const messages = {
     delete: "Delete",
     duplicate: "Duplicate",
     refresh: "Refresh",
-    select: (name: string) => `Select ${name}`,
   },
-} as const;
-
-const icons = {
-  grid: "M3 4h18v16H3zM3 9h18M3 14h18M9 9v11",
-  form: "M5 3h14v18H5zM8 8h8M8 12h8M8 16h5",
-  add: "M12 5v14M5 12h14",
-  previous: "m15 6-6 6 6 6",
-  next: "m9 6 6 6-6 6",
-  delete: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
-  duplicate: "M8 8h12v12H8zM4 16V4h12",
-  refresh: "M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7",
 } as const;
 
 function ToolbarButton({
@@ -57,7 +47,7 @@ function ToolbarButton({
   pending = false,
   primary = false,
 }: {
-  icon: keyof typeof icons;
+  icon: UiIconName;
   label: string;
   onClick?: () => void;
   pending?: boolean;
@@ -73,65 +63,68 @@ function ToolbarButton({
       aria-busy={pending || undefined}
       onClick={onClick}
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d={icons[icon]} />
-      </svg>
+      <UiIcon name={icon} />
       {primary && <span aria-hidden="true">{label}</span>}
     </button>
   );
 }
 
 /**
- * Presentation for record-oriented CRUD: a toolbar, a selectable grid and a
+ * Presentation for record-oriented CRUD: a toolbar, a DataGrid and a
  * caller-rendered form. The caller owns records, selection, mode, API calls
- * and permissions; an omitted handler disables its action.
+ * and permissions; an omitted handler disables its action. Sorting, filters
+ * and column widths persist while the dataset switches modes, and previous
+ * and next follow the order the grid shows.
  */
-export function DataSet<Row>({
+export function DataSet<Row extends RowData>({
   label,
   locale,
   mode,
   rows,
   columns,
   rowId,
-  rowName,
   selectedId,
   onSelect,
+  multiple,
+  selectedIds,
+  onSelectedIdsChange,
   onModeChange,
   onAdd,
-  onPrevious,
-  onNext,
   onDelete,
   onDuplicate,
   onRefresh,
   refreshing = false,
+  exportName,
   empty,
   children,
-}: {
+}: Omit<DataGridSelection, "onRowActivate"> & {
   label: string;
   locale: Locale;
   mode: DataSetMode;
   rows: readonly Row[];
   columns: readonly DataSetColumn<Row>[];
   rowId: (row: Row) => string;
-  rowName: (row: Row) => string;
-  selectedId?: string;
-  onSelect?: (id: string) => void;
   onModeChange?: (mode: DataSetMode) => void;
   onAdd?: () => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
   /** Omit when the records cannot be deleted; null shows it disabled. */
   onDelete?: (() => void) | null;
   onDuplicate?: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  /**
+   * Offers Excel, CSV and PDF exports of the rows the grid shows, with this
+   * file name and title; omit where records must not leave the screen.
+   */
+  exportName?: string;
   /** Shown in grid mode when there are no rows. */
   empty?: ReactNode;
   /** The form for the current record, rendered in form mode. */
   children?: ReactNode;
 }) {
   const t = messages[locale];
-  const radioGroup = useId();
+  const table = useDataGridModel({ rows, columns, rowId, locale });
+  const shown = table.getRowModel().rows;
+  const position = shown.findIndex((row) => row.id === selectedId);
   const toggle = mode === "grid" ? "form" : "grid";
   return (
     <section className="ui-dataset" aria-label={label} data-mode={mode}>
@@ -148,9 +141,21 @@ export function DataSet<Row>({
           <ToolbarButton
             icon="previous"
             label={t.previous}
-            onClick={onPrevious}
+            onClick={
+              onSelect && position > 0
+                ? () => onSelect(shown[position - 1].id)
+                : undefined
+            }
           />
-          <ToolbarButton icon="next" label={t.next} onClick={onNext} />
+          <ToolbarButton
+            icon="next"
+            label={t.next}
+            onClick={
+              onSelect && position >= 0 && position < shown.length - 1
+                ? () => onSelect(shown[position + 1].id)
+                : undefined
+            }
+          />
         </div>
         <div className="ui-dataset-group">
           {onDelete !== undefined && (
@@ -174,75 +179,38 @@ export function DataSet<Row>({
             pending={refreshing}
           />
         </div>
+        {exportName && (
+          <div className="ui-dataset-group">
+            <ExportMenu
+              table={table}
+              columns={columns}
+              title={exportName}
+              locale={locale}
+              className="ui-dataset-action"
+            />
+          </div>
+        )}
       </div>
       {mode === "form" ? (
         <div className="ui-dataset-form">{children}</div>
       ) : rows.length === 0 ? (
         <div className="ui-dataset-empty">{empty}</div>
       ) : (
-        <div className="ui-dataset-grid">
-          <table>
-            <thead>
-              <tr>
-                <td />
-                {columns.map((column) => (
-                  <th
-                    key={column.key}
-                    scope="col"
-                    data-align={column.align ?? "start"}
-                  >
-                    {column.header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const id = rowId(row);
-                const selected = id === selectedId;
-                return (
-                  <tr
-                    key={id}
-                    aria-selected={selected}
-                    onClick={(event) => {
-                      if (
-                        event.target instanceof Element &&
-                        event.target.closest("a, button")
-                      )
-                        return;
-                      onSelect?.(id);
-                    }}
-                    onDoubleClick={(event) => {
-                      if (
-                        event.target instanceof Element &&
-                        event.target.closest("a, button")
-                      )
-                        return;
-                      onSelect?.(id);
-                      onModeChange?.("form");
-                    }}
-                  >
-                    <td className="ui-dataset-select">
-                      <input
-                        type="radio"
-                        name={radioGroup}
-                        aria-label={t.select(rowName(row))}
-                        checked={selected}
-                        disabled={!onSelect}
-                        onChange={() => onSelect?.(id)}
-                      />
-                    </td>
-                    {columns.map((column) => (
-                      <td key={column.key} data-align={column.align ?? "start"}>
-                        {column.render(row)}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataGridView
+          table={table}
+          label={label}
+          locale={locale}
+          columns={columns}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          multiple={multiple}
+          selectedIds={selectedIds}
+          onSelectedIdsChange={onSelectedIdsChange}
+          onRowActivate={(id) => {
+            onSelect?.(id);
+            onModeChange?.("form");
+          }}
+        />
       )}
     </section>
   );

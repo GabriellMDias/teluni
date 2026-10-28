@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { actionLink, mailedLink } from "../identity/mail.ts";
 import {
@@ -483,7 +484,7 @@ test("creates a company, verifies in two steps and manages branches, settings, m
   }
 
   await page.getByRole("link", { name: "Suas empresas" }).click();
-  const rows = page.locator(".ui-dataset-grid tbody tr");
+  const rows = page.locator(".ui-datagrid tbody tr");
   await expect(
     rows.filter({ hasText: "Lanchonete Central Renovada" }),
   ).toContainText("Administrador");
@@ -492,10 +493,21 @@ test("creates a company, verifies in two steps and manages branches, settings, m
   );
 
   // The dataset switches between the grid and the selected record's form.
+  // Rows are selected by clicking them; only their color marks the choice.
   const toolbar = page.getByRole("toolbar", { name: "Ações do registro" });
-  await page
-    .getByRole("radio", { name: "Selecionar Lanchonete Central Renovada" })
-    .check();
+  const renamed = rows.filter({ hasText: "Lanchonete Central Renovada" });
+  await renamed.getByRole("gridcell").nth(1).click();
+  await expect(renamed).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("radio")).toHaveCount(0);
+  // The shown rows export as a CSV that Portuguese spreadsheets read.
+  const exported = page.waitForEvent("download");
+  await toolbar.getByRole("button", { name: "Exportar" }).click();
+  await page.getByRole("menuitem", { name: "CSV (.csv)" }).click();
+  const file = await exported;
+  expect(file.suggestedFilename()).toMatch(/^Empresas \d{4}-\d{2}-\d{2}\.csv$/);
+  const csv = await readFile(await file.path(), "utf8");
+  expect(csv.startsWith("\uFEFFNome da empresa;Seu acesso\r\n")).toBe(true);
+  expect(csv).toContain("Lanchonete Central Renovada;Administrador");
   await toolbar.getByRole("button", { name: "Modo formulário" }).click();
   await expect(page.getByLabel("Nome da empresa")).toHaveValue(
     "Lanchonete Central Renovada",

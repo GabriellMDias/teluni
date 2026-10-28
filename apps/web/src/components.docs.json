@@ -125,6 +125,45 @@
       ]
     },
     {
+      "name": "Checkbox",
+      "category": "Inputs",
+      "scope": "shared",
+      "owner": "Web UI",
+      "summary": "A native checkbox with a persistent label and an optional mixed state.",
+      "usage": "Use for independent on/off choices and for select-all controls whose options are partly chosen. The checked value stays caller-owned. Native input props and refs are forwarded.",
+      "accessibility": "The native input stays focusable and announced while a drawn box shows checked, mixed, focus and disabled states; the whole label toggles it. indeterminate sets the native mixed state that assistive technology reports.",
+      "props": [
+        {
+          "name": "label",
+          "type": "ReactNode",
+          "meaning": "Visible label that names the checkbox.",
+          "required": true
+        },
+        {
+          "name": "indeterminate",
+          "type": "boolean",
+          "meaning": "Shows the mixed state, for example when only some options are chosen.",
+          "required": false,
+          "default": "false"
+        },
+        {
+          "name": "…inputProps",
+          "type": "ComponentPropsWithRef<\"input\">",
+          "meaning": "Native props such as checked, onChange, disabled, name and ref are forwarded."
+        }
+      ],
+      "states": ["Unchecked", "Checked", "Mixed", "Keyboard focus", "Disabled"],
+      "examples": [
+        {
+          "id": "checkbox-states",
+          "label": "Checkbox states",
+          "description": "Checked, mixed and disabled examples held locally.",
+          "code": "<Checkbox label=\"Select all\" checked={all} indeterminate={some} onChange={toggleAll} />",
+          "live": true
+        }
+      ]
+    },
+    {
       "name": "ErrorNotice",
       "category": "Feedback",
       "scope": "composed",
@@ -169,51 +208,352 @@
       ]
     },
     {
-      "name": "DataSet",
-      "category": "Data Display",
+      "name": "Popover",
+      "category": "Overlays",
+      "scope": "shared",
+      "owner": "Web UI",
+      "summary": "A non-modal surface in the browser's top layer, placed next to an anchor element.",
+      "usage": "Use for small panels tied to a control, such as filters or details, that should not be clipped by scrolling containers. The caller owns open and closes it from onClose. Content renders only while open, so its local state starts fresh each time. Use a page or form for long workflows.",
+      "accessibility": "Uses the native popover attribute with role=dialog (or menu) and an aria-label. Opening focuses the element marked data-autofocus, or the popover itself. Escape, an outside click or another popover closes it; focus that would otherwise be lost returns to returnFocus or the anchor.",
+      "props": [
+        {
+          "name": "anchor",
+          "type": "HTMLElement | null",
+          "meaning": "Element the popover is placed below, or above when only that fits.",
+          "required": true
+        },
+        {
+          "name": "open / onClose",
+          "type": "boolean / () => void",
+          "meaning": "Caller-owned visibility; onClose reports Escape, outside clicks and other popovers.",
+          "required": true
+        },
+        {
+          "name": "label",
+          "type": "string",
+          "meaning": "Accessible name of the popover.",
+          "required": true
+        },
+        {
+          "name": "returnFocus",
+          "type": "HTMLElement | null",
+          "meaning": "Receives focus when the popover closes with focus inside it.",
+          "required": false,
+          "default": "anchor"
+        },
+        {
+          "name": "role",
+          "type": "dialog | menu",
+          "meaning": "Semantic role of the surface.",
+          "required": false,
+          "default": "dialog"
+        },
+        {
+          "name": "align",
+          "type": "start | end",
+          "meaning": "Aligns the popover with the anchor's start or end edge.",
+          "required": false,
+          "default": "start"
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "meaning": "Content rendered while open.",
+          "required": true
+        }
+      ],
+      "states": [
+        "Closed",
+        "Open below the anchor",
+        "Open above when only that fits",
+        "Dismissed by Escape or an outside click"
+      ],
+      "examples": [
+        {
+          "id": "popover-anchored",
+          "label": "Anchored details",
+          "description": "A button toggles synthetic details; no request is made.",
+          "code": "<Button ref={setAnchor} onClick={() => setOpen(!open)}>Details</Button>\n<Popover anchor={anchor} open={open} onClose={() => setOpen(false)} label=\"Details\">…</Popover>",
+          "live": true
+        }
+      ]
+    },
+    {
+      "name": "Menu",
+      "category": "Actions",
       "scope": "composed",
       "owner": "Web UI",
-      "summary": "Record-oriented CRUD presentation: a toolbar, a selectable grid and a caller-rendered form.",
+      "summary": "A button that opens a list of actions in a Popover.",
+      "usage": "Use for a few secondary actions attached to a control, such as column options. Each item's onSelect runs as the menu closes; pass checked for items with an on/off state and disabled for unavailable ones. Trigger props such as className, ref and data attributes are forwarded.",
+      "accessibility": "The trigger is a labeled button with aria-haspopup=menu and aria-expanded. Items use menuitem or menuitemcheckbox roles. Enter, Space or ArrowDown opens on the first item and ArrowUp on the last; arrow keys, Home and End move between enabled items; Escape returns focus to the trigger and Tab closes the menu.",
       "props": [
         {
           "name": "label",
           "type": "string",
-          "meaning": "Accessible name of the dataset region."
+          "meaning": "Names the trigger and the menu; also the trigger's tooltip.",
+          "required": true
+        },
+        {
+          "name": "items",
+          "type": "MenuItem[]",
+          "meaning": "Items with a stable key, label and onSelect, plus optional icon, checked and disabled.",
+          "required": true
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "meaning": "Trigger content, usually an icon.",
+          "required": true
+        },
+        {
+          "name": "align",
+          "type": "start | end",
+          "meaning": "Aligns the menu with the trigger's start or end edge.",
+          "required": false,
+          "default": "start"
+        },
+        {
+          "name": "…buttonProps",
+          "type": "ComponentPropsWithRef<\"button\">",
+          "meaning": "Native trigger props such as className, ref and data attributes are forwarded."
+        }
+      ],
+      "states": [
+        "Closed",
+        "Open",
+        "Checked item",
+        "Disabled item",
+        "Keyboard focus"
+      ],
+      "examples": [
+        {
+          "id": "menu-actions",
+          "label": "Secondary actions",
+          "description": "One available and one disabled synthetic action; no request is made.",
+          "code": "<Menu label=\"Store actions\" items={[{ key: \"rename\", label: \"Rename\", onSelect: rename }]}>\n  <MoreIcon />\n</Menu>",
+          "live": true
+        }
+      ]
+    },
+    {
+      "name": "MultiSelectList",
+      "category": "Inputs",
+      "scope": "composed",
+      "owner": "Web UI",
+      "summary": "A searchable list for choosing several options, with select-all, that renders only the options in view.",
+      "usage": "Use when people choose several values from a long list, such as a column filter. Options keep their display order and a stable value; the selection set stays caller-owned. Search ignores case and accents; pass query and onQueryChange when the caller needs the search, and use searchOptions to find the same matches. Select all applies to the options the search found.",
+      "accessibility": "Composes TextField for the search and Checkbox for select-all, which shows a mixed state when only some options are chosen. The options form a listbox with aria-multiselectable, aria-activedescendant and aria-setsize/aria-posinset, so arrow keys, Page Up/Down, Home and End reach every option while only those in view are rendered; Space toggles the active option, and ArrowDown moves from the search into the list.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "meaning": "Accessible name of the option list.",
+          "required": true
         },
         {
           "name": "locale",
           "type": "pt-BR | en-US",
-          "meaning": "Language of the toolbar and selection labels."
+          "meaning": "Language of the search and select-all labels, and of search matching.",
+          "required": true
         },
         {
-          "name": "mode",
-          "type": "grid | form",
-          "meaning": "Caller-owned view; keep it in the URL when it identifies the page state."
+          "name": "options",
+          "type": "readonly MultiSelectOption[]",
+          "meaning": "Options with a stable value and a label, in display order. Keep the array stable between renders.",
+          "required": true
+        },
+        {
+          "name": "selected / onChange",
+          "type": "ReadonlySet<string> / (selected: Set<string>) => void",
+          "meaning": "Caller-owned chosen values.",
+          "required": true
+        },
+        {
+          "name": "query / onQueryChange",
+          "type": "string / (query) => void",
+          "meaning": "Optional controlled search text."
+        },
+        {
+          "name": "height",
+          "type": "number",
+          "meaning": "Maximum height of the scrolling list in pixels.",
+          "required": false,
+          "default": "240"
+        }
+      ],
+      "states": [
+        "All chosen",
+        "Some chosen (mixed select-all)",
+        "Searching",
+        "No results",
+        "Keyboard focus on the active option"
+      ],
+      "examples": [
+        {
+          "id": "multi-select-list-search",
+          "label": "Searchable choices",
+          "description": "Synthetic cities chosen locally; no request is made.",
+          "code": "<MultiSelectList label=\"Cities\" locale=\"en-US\" options={options} selected={selected} onChange={setSelected} />",
+          "live": true
+        }
+      ]
+    },
+    {
+      "name": "DataGrid",
+      "category": "Data Display",
+      "scope": "composed",
+      "owner": "Web UI",
+      "summary": "A virtualized grid that sorts, filters and resizes columns over the rows it receives, with single or multiple selection.",
+      "usage": "Use for lists of records that people scan, sort and filter in the browser; DataSet adds the CRUD toolbar and form. Give each column a value to sort and filter by. Sorting and filtering apply to the rows passed in, so a paginated caller sorts and filters only the loaded page; server-side sorting and filtering are not provided. Keep rows and columns stable between renders. Selection stays caller-owned. Pass exportName to offer Excel, CSV and PDF exports of the rows shown.",
+      "accessibility": "Uses role=grid with aria-rowcount and aria-rowindex, so assistive technology knows the full size while only the rows in view are rendered. Rows expose aria-selected (aria-multiselectable with multiple) and form one tab stop: arrow keys, Page Up/Down, Home and End move between rows, Enter activates and Space selects. Column headers expose aria-sort; their sort button, options Menu and a separator that Left/Right arrows resize are keyboard reachable, and the options appear on hover or focus. A live status reports the shown, total and selected counts. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "meaning": "Accessible name of the grid.",
+          "required": true
+        },
+        {
+          "name": "locale",
+          "type": "pt-BR | en-US",
+          "meaning": "Language of the grid labels, sorting and number formatting.",
+          "required": true
         },
         {
           "name": "rows",
           "type": "readonly Row[]",
-          "meaning": "Records of the current page, already authorized by the API."
+          "meaning": "All rows to show. Keep the array stable between renders.",
+          "required": true
         },
         {
           "name": "columns",
-          "type": "DataSetColumn<Row>[]",
-          "meaning": "Grid columns with a stable key, header and cell renderer."
+          "type": "DataGridColumn<Row>[]",
+          "meaning": "Stable key and header; value enables sorting and filtering, render overrides the formatted value, format names values, and width, minWidth, align, sortable, filterable and resizable tune the column. Keep the array stable between renders.",
+          "required": true
         },
         {
-          "name": "rowId / rowName",
+          "name": "rowId",
           "type": "(row) => string",
-          "meaning": "Stable record identity and the name used in the selection label."
+          "meaning": "Stable row identity.",
+          "required": true
         },
         {
           "name": "selectedId / onSelect",
           "type": "string / (id) => void",
-          "meaning": "Caller-owned selection; double-clicking a row selects it and requests form mode."
+          "meaning": "The current row. With single selection it is the highlighted row; clicking a row or moving with the arrow keys calls onSelect."
         },
         {
-          "name": "onModeChange, onAdd, onPrevious, onNext, onDuplicate, onRefresh",
+          "name": "multiple",
+          "type": "boolean",
+          "meaning": "Allows choosing several rows: Ctrl/⌘ toggles a row, Shift selects a range, Space toggles the focused row and Ctrl/⌘+A selects every shown row.",
+          "required": false,
+          "default": "false"
+        },
+        {
+          "name": "selectedIds / onSelectedIdsChange",
+          "type": "readonly string[] / (ids) => void",
+          "meaning": "Caller-owned multiple selection; used only with multiple."
+        },
+        {
+          "name": "onRowActivate",
+          "type": "(id) => void",
+          "meaning": "Double-click or Enter on a row."
+        },
+        {
+          "name": "exportName",
+          "type": "string",
+          "meaning": "Offers an Export menu in the footer with Excel (.xlsx), CSV and PDF files of the rows the grid shows, in their order and with its filters; the name titles the files. Omit it where records must not leave the screen."
+        },
+        {
+          "name": "empty",
+          "type": "ReactNode",
+          "meaning": "Shown instead of the grid when there are no rows."
+        }
+      ],
+      "states": [
+        "Sorted ascending or descending",
+        "Filtered, with the filter shown on the header",
+        "No rows match the filters",
+        "Single selection",
+        "Multiple selection",
+        "Resizing a column",
+        "Many rows (only those in view rendered)",
+        "Exporting"
+      ],
+      "examples": [
+        {
+          "id": "data-grid-large",
+          "label": "Ten thousand rows",
+          "description": "Synthetic screens generated locally; the example passes multiple, so Ctrl/⌘ and Shift choose several rows, and exportName, so the footer exports them. Sorting, filtering, resizing and exports make no request.",
+          "code": "<DataGrid label=\"Screens\" locale=\"en-US\" rows={screens} columns={columns} rowId={(row) => row.id}\n  multiple selectedIds={selected} onSelectedIdsChange={setSelected} exportName=\"Screens\" />",
+          "live": true
+        }
+      ]
+    },
+    {
+      "name": "DataSet",
+      "category": "Data Display",
+      "scope": "composed",
+      "owner": "Web UI",
+      "summary": "Record-oriented CRUD presentation: a toolbar, a DataGrid and a caller-rendered form.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "meaning": "Accessible name of the dataset region and its grid.",
+          "required": true
+        },
+        {
+          "name": "locale",
+          "type": "pt-BR | en-US",
+          "meaning": "Language of the toolbar and grid labels.",
+          "required": true
+        },
+        {
+          "name": "mode",
+          "type": "grid | form",
+          "meaning": "Caller-owned view; keep it in the URL when it identifies the page state.",
+          "required": true
+        },
+        {
+          "name": "rows",
+          "type": "readonly Row[]",
+          "meaning": "Records of the current page, already authorized by the API. Keep the array stable between renders.",
+          "required": true
+        },
+        {
+          "name": "columns",
+          "type": "DataGridColumn<Row>[]",
+          "meaning": "Stable key and header; value enables sorting and filtering, render overrides the formatted value, format names values, and width, minWidth, align, sortable, filterable and resizable tune the column. Keep the array stable between renders.",
+          "required": true
+        },
+        {
+          "name": "rowId",
+          "type": "(row) => string",
+          "meaning": "Stable record identity.",
+          "required": true
+        },
+        {
+          "name": "selectedId / onSelect",
+          "type": "string / (id) => void",
+          "meaning": "The current row. With single selection it is the highlighted row; clicking a row or moving with the arrow keys calls onSelect."
+        },
+        {
+          "name": "multiple",
+          "type": "boolean",
+          "meaning": "Allows choosing several rows: Ctrl/⌘ toggles a row, Shift selects a range, Space toggles the focused row and Ctrl/⌘+A selects every shown row.",
+          "required": false,
+          "default": "false"
+        },
+        {
+          "name": "selectedIds / onSelectedIdsChange",
+          "type": "readonly string[] / (ids) => void",
+          "meaning": "Caller-owned multiple selection; used only with multiple."
+        },
+        {
+          "name": "onModeChange, onAdd, onDuplicate, onRefresh",
           "type": "() => void (optional)",
-          "meaning": "Toolbar actions; an omitted handler disables its button, for example at the first record or while a draft is unsaved."
+          "meaning": "Toolbar actions; an omitted handler disables its button, for example while a draft is unsaved. Double-click or Enter on a row selects it and requests form mode."
         },
         {
           "name": "onDelete",
@@ -223,7 +563,14 @@
         {
           "name": "refreshing",
           "type": "boolean",
-          "meaning": "Marks the refresh action busy while the caller reloads data. Defaults to false."
+          "meaning": "Marks the refresh action busy while the caller reloads data.",
+          "required": false,
+          "default": "false"
+        },
+        {
+          "name": "exportName",
+          "type": "string",
+          "meaning": "Offers an Export menu in the toolbar with Excel (.xlsx), CSV and PDF files of the rows the grid shows, in their order and with its filters; the name titles the files. Omit it where records must not leave the screen."
         },
         {
           "name": "empty",
@@ -237,19 +584,24 @@
         }
       ],
       "states": [
-        "Grid with selection",
+        "Grid with single selection",
+        "Grid with multiple selection",
+        "Sorted and filtered grid",
         "Empty grid",
         "Form mode",
         "Actions disabled",
-        "Refreshing"
+        "Refreshing",
+        "Exporting"
       ],
-      "accessibility": "The toolbar uses role=toolbar with labeled icon buttons and tooltips. Rows are selected through labeled native radio buttons, so keyboard selection works without pointer gestures; links and buttons inside cells keep their own behavior.",
-      "usage": "Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold navigation handlers while a form has unsaved changes.",
+      "accessibility": "The toolbar uses role=toolbar with labeled icon buttons and tooltips. The grid follows DataGrid: rows show selection only through color and aria-selected, are reached with the arrow keys, and Enter opens the form like a double-click. Links and buttons inside cells keep their own behavior. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert.",
+      "usage": "Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold onSelect and navigation while a form has unsaved changes. Sorting, filters and column widths persist while the dataset switches modes; previous and next follow the order the grid shows. Enable multiple only where several records can be acted on together. Pass exportName to offer exports; columns without a value are left out, numbers stay numeric in Excel, and CSV uses the locale's separator and decimal mark.",
       "examples": [
         {
           "id": "dataset-modes",
           "label": "Grid and form modes",
-          "description": "Synthetic local records; selection and mode are held by the example and no request is made."
+          "description": "Synthetic local records with single selection, as on the companies page; selection and mode are held by the example and no request is made. A screen that acts on several records at once passes multiple; DataGrid's example shows it.",
+          "code": "<DataSet label=\"Stores\" locale=\"en-US\" mode={mode} rows={stores} columns={columns}\n  rowId={(row) => row.id} selectedId={selected} onSelect={setSelected} onModeChange={setMode}\n  exportName=\"Stores\">\n  <StoreForm id={selected} />\n</DataSet>\n\n// Only where a screen acts on several records at once:\n<DataSet multiple selectedIds={chosen} onSelectedIdsChange={setChosen} {...props} />",
+          "live": true
         }
       ]
     }

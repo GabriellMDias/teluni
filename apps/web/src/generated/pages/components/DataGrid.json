@@ -1,0 +1,99 @@
+{
+  "name": "DataGrid",
+  "category": "Data Display",
+  "scope": "composed",
+  "owner": "Web UI",
+  "summary": "A virtualized grid that sorts, filters and resizes columns over the rows it receives, with single or multiple selection.",
+  "usage": "Use for lists of records that people scan, sort and filter in the browser; DataSet adds the CRUD toolbar and form. Give each column a value to sort and filter by. Sorting and filtering apply to the rows passed in, so a paginated caller sorts and filters only the loaded page; server-side sorting and filtering are not provided. Keep rows and columns stable between renders. Selection stays caller-owned. Pass exportName to offer Excel, CSV and PDF exports of the rows shown.",
+  "accessibility": "Uses role=grid with aria-rowcount and aria-rowindex, so assistive technology knows the full size while only the rows in view are rendered. Rows expose aria-selected (aria-multiselectable with multiple) and form one tab stop: arrow keys, Page Up/Down, Home and End move between rows, Enter activates and Space selects. Column headers expose aria-sort; their sort button, options Menu and a separator that Left/Right arrows resize are keyboard reachable, and the options appear on hover or focus. A live status reports the shown, total and selected counts. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert.",
+  "props": [
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Accessible name of the grid.",
+      "required": true
+    },
+    {
+      "name": "locale",
+      "type": "pt-BR | en-US",
+      "meaning": "Language of the grid labels, sorting and number formatting.",
+      "required": true
+    },
+    {
+      "name": "rows",
+      "type": "readonly Row[]",
+      "meaning": "All rows to show. Keep the array stable between renders.",
+      "required": true
+    },
+    {
+      "name": "columns",
+      "type": "DataGridColumn<Row>[]",
+      "meaning": "Stable key and header; value enables sorting and filtering, render overrides the formatted value, format names values, and width, minWidth, align, sortable, filterable and resizable tune the column. Keep the array stable between renders.",
+      "required": true
+    },
+    {
+      "name": "rowId",
+      "type": "(row) => string",
+      "meaning": "Stable row identity.",
+      "required": true
+    },
+    {
+      "name": "selectedId / onSelect",
+      "type": "string / (id) => void",
+      "meaning": "The current row. With single selection it is the highlighted row; clicking a row or moving with the arrow keys calls onSelect."
+    },
+    {
+      "name": "multiple",
+      "type": "boolean",
+      "meaning": "Allows choosing several rows: Ctrl/⌘ toggles a row, Shift selects a range, Space toggles the focused row and Ctrl/⌘+A selects every shown row.",
+      "required": false,
+      "default": "false"
+    },
+    {
+      "name": "selectedIds / onSelectedIdsChange",
+      "type": "readonly string[] / (ids) => void",
+      "meaning": "Caller-owned multiple selection; used only with multiple."
+    },
+    {
+      "name": "onRowActivate",
+      "type": "(id) => void",
+      "meaning": "Double-click or Enter on a row."
+    },
+    {
+      "name": "exportName",
+      "type": "string",
+      "meaning": "Offers an Export menu in the footer with Excel (.xlsx), CSV and PDF files of the rows the grid shows, in their order and with its filters; the name titles the files. Omit it where records must not leave the screen."
+    },
+    {
+      "name": "empty",
+      "type": "ReactNode",
+      "meaning": "Shown instead of the grid when there are no rows."
+    }
+  ],
+  "states": [
+    "Sorted ascending or descending",
+    "Filtered, with the filter shown on the header",
+    "No rows match the filters",
+    "Single selection",
+    "Multiple selection",
+    "Resizing a column",
+    "Many rows (only those in view rendered)",
+    "Exporting"
+  ],
+  "examples": [
+    {
+      "id": "data-grid-large",
+      "label": "Ten thousand rows",
+      "description": "Synthetic screens generated locally; the example passes multiple, so Ctrl/⌘ and Shift choose several rows, and exportName, so the footer exports them. Sorting, filtering, resizing and exports make no request.",
+      "code": "<DataGrid label=\"Screens\" locale=\"en-US\" rows={screens} columns={columns} rowId={(row) => row.id}\n  multiple selectedIds={selected} onSelectedIdsChange={setSelected} exportName=\"Screens\" />",
+      "live": true
+    }
+  ],
+  "id": "DataGrid",
+  "exportName": "DataGrid",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

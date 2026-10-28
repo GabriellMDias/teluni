@@ -1,0 +1,59 @@
+/* Semantic fallbacks are local to components; products override inherited tokens. */
+.ui-multiselect {
+  display: grid;
+  gap: 0.6rem;
+  font-family: var(--ui-font-family, inherit);
+  font-size: 0.875rem;
+  color: var(--ui-color-text, #182638);
+}
+.ui-multiselect .ui-field {
+  gap: 0.3rem;
+  font-size: inherit;
+}
+.ui-multiselect .ui-field .ui-field-control {
+  padding: 0.45rem 0.6rem;
+}
+.ui-multiselect > .ui-checkbox {
+  padding-inline: 0.5rem;
+}
+.ui-multiselect-list {
+  position: relative;
+  overflow: auto;
+  border: 1px solid var(--ui-color-divider, #dbe3ea);
+  border-radius: var(--ui-radius, 0.4375rem);
+}
+.ui-multiselect-list:focus-visible {
+  outline: 3px solid var(--ui-color-focus, #256ec3);
+  outline-offset: 2px;
+}
+.ui-multiselect-list > div {
+  position: relative;
+}
+.ui-multiselect-option {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2, 0.5rem);
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: 0.5rem;
+  cursor: pointer;
+}
+.ui-multiselect-option:hover {
+  background: var(--ui-color-surface-muted, #f3f6f9);
+}
+.ui-multiselect-list:focus-visible .ui-multiselect-option[data-active] {
+  box-shadow: inset 0 0 0 2px var(--ui-color-focus, #256ec3);
+}
+.ui-multiselect-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-multiselect-empty {
+  margin: 0;
+  padding: 0.5rem;
+  color: var(--ui-color-muted, #536677);
+}

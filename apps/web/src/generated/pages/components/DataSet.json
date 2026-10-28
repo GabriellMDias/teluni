@@ -3,47 +3,65 @@
   "category": "Data Display",
   "scope": "composed",
   "owner": "Web UI",
-  "summary": "Record-oriented CRUD presentation: a toolbar, a selectable grid and a caller-rendered form.",
+  "summary": "Record-oriented CRUD presentation: a toolbar, a DataGrid and a caller-rendered form.",
   "props": [
     {
       "name": "label",
       "type": "string",
-      "meaning": "Accessible name of the dataset region."
+      "meaning": "Accessible name of the dataset region and its grid.",
+      "required": true
     },
     {
       "name": "locale",
       "type": "pt-BR | en-US",
-      "meaning": "Language of the toolbar and selection labels."
+      "meaning": "Language of the toolbar and grid labels.",
+      "required": true
     },
     {
       "name": "mode",
       "type": "grid | form",
-      "meaning": "Caller-owned view; keep it in the URL when it identifies the page state."
+      "meaning": "Caller-owned view; keep it in the URL when it identifies the page state.",
+      "required": true
     },
     {
       "name": "rows",
       "type": "readonly Row[]",
-      "meaning": "Records of the current page, already authorized by the API."
+      "meaning": "Records of the current page, already authorized by the API. Keep the array stable between renders.",
+      "required": true
     },
     {
       "name": "columns",
-      "type": "DataSetColumn<Row>[]",
-      "meaning": "Grid columns with a stable key, header and cell renderer."
+      "type": "DataGridColumn<Row>[]",
+      "meaning": "Stable key and header; value enables sorting and filtering, render overrides the formatted value, format names values, and width, minWidth, align, sortable, filterable and resizable tune the column. Keep the array stable between renders.",
+      "required": true
     },
     {
-      "name": "rowId / rowName",
+      "name": "rowId",
       "type": "(row) => string",
-      "meaning": "Stable record identity and the name used in the selection label."
+      "meaning": "Stable record identity.",
+      "required": true
     },
     {
       "name": "selectedId / onSelect",
       "type": "string / (id) => void",
-      "meaning": "Caller-owned selection; double-clicking a row selects it and requests form mode."
+      "meaning": "The current row. With single selection it is the highlighted row; clicking a row or moving with the arrow keys calls onSelect."
     },
     {
-      "name": "onModeChange, onAdd, onPrevious, onNext, onDuplicate, onRefresh",
+      "name": "multiple",
+      "type": "boolean",
+      "meaning": "Allows choosing several rows: Ctrl/⌘ toggles a row, Shift selects a range, Space toggles the focused row and Ctrl/⌘+A selects every shown row.",
+      "required": false,
+      "default": "false"
+    },
+    {
+      "name": "selectedIds / onSelectedIdsChange",
+      "type": "readonly string[] / (ids) => void",
+      "meaning": "Caller-owned multiple selection; used only with multiple."
+    },
+    {
+      "name": "onModeChange, onAdd, onDuplicate, onRefresh",
       "type": "() => void (optional)",
-      "meaning": "Toolbar actions; an omitted handler disables its button, for example at the first record or while a draft is unsaved."
+      "meaning": "Toolbar actions; an omitted handler disables its button, for example while a draft is unsaved. Double-click or Enter on a row selects it and requests form mode."
     },
     {
       "name": "onDelete",
@@ -53,7 +71,14 @@
     {
       "name": "refreshing",
       "type": "boolean",
-      "meaning": "Marks the refresh action busy while the caller reloads data. Defaults to false."
+      "meaning": "Marks the refresh action busy while the caller reloads data.",
+      "required": false,
+      "default": "false"
+    },
+    {
+      "name": "exportName",
+      "type": "string",
+      "meaning": "Offers an Export menu in the toolbar with Excel (.xlsx), CSV and PDF files of the rows the grid shows, in their order and with its filters; the name titles the files. Omit it where records must not leave the screen."
     },
     {
       "name": "empty",
@@ -67,19 +92,23 @@
     }
   ],
   "states": [
-    "Grid with selection",
+    "Grid with single selection",
+    "Grid with multiple selection",
+    "Sorted and filtered grid",
     "Empty grid",
     "Form mode",
     "Actions disabled",
-    "Refreshing"
+    "Refreshing",
+    "Exporting"
   ],
-  "accessibility": "The toolbar uses role=toolbar with labeled icon buttons and tooltips. Rows are selected through labeled native radio buttons, so keyboard selection works without pointer gestures; links and buttons inside cells keep their own behavior.",
-  "usage": "Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold navigation handlers while a form has unsaved changes.",
+  "accessibility": "The toolbar uses role=toolbar with labeled icon buttons and tooltips. The grid follows DataGrid: rows show selection only through color and aria-selected, are reached with the arrow keys, and Enter opens the form like a double-click. Links and buttons inside cells keep their own behavior. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert.",
+  "usage": "Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold onSelect and navigation while a form has unsaved changes. Sorting, filters and column widths persist while the dataset switches modes; previous and next follow the order the grid shows. Enable multiple only where several records can be acted on together. Pass exportName to offer exports; columns without a value are left out, numbers stay numeric in Excel, and CSV uses the locale's separator and decimal mark.",
   "examples": [
     {
       "id": "dataset-modes",
       "label": "Grid and form modes",
-      "description": "Synthetic local records; selection and mode are held by the example and no request is made.",
+      "description": "Synthetic local records with single selection, as on the companies page; selection and mode are held by the example and no request is made. A screen that acts on several records at once passes multiple; DataGrid's example shows it.",
+      "code": "<DataSet label=\"Stores\" locale=\"en-US\" mode={mode} rows={stores} columns={columns}\n  rowId={(row) => row.id} selectedId={selected} onSelect={setSelected} onModeChange={setMode}\n  exportName=\"Stores\">\n  <StoreForm id={selected} />\n</DataSet>\n\n// Only where a screen acts on several records at once:\n<DataSet multiple selectedIds={chosen} onSelectedIdsChange={setChosen} {...props} />",
       "live": true
     }
   ],

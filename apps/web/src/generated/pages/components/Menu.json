@@ -1,0 +1,64 @@
+{
+  "name": "Menu",
+  "category": "Actions",
+  "scope": "composed",
+  "owner": "Web UI",
+  "summary": "A button that opens a list of actions in a Popover.",
+  "usage": "Use for a few secondary actions attached to a control, such as column options. Each item's onSelect runs as the menu closes; pass checked for items with an on/off state and disabled for unavailable ones. Trigger props such as className, ref and data attributes are forwarded.",
+  "accessibility": "The trigger is a labeled button with aria-haspopup=menu and aria-expanded. Items use menuitem or menuitemcheckbox roles. Enter, Space or ArrowDown opens on the first item and ArrowUp on the last; arrow keys, Home and End move between enabled items; Escape returns focus to the trigger and Tab closes the menu.",
+  "props": [
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Names the trigger and the menu; also the trigger's tooltip.",
+      "required": true
+    },
+    {
+      "name": "items",
+      "type": "MenuItem[]",
+      "meaning": "Items with a stable key, label and onSelect, plus optional icon, checked and disabled.",
+      "required": true
+    },
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "Trigger content, usually an icon.",
+      "required": true
+    },
+    {
+      "name": "align",
+      "type": "start | end",
+      "meaning": "Aligns the menu with the trigger's start or end edge.",
+      "required": false,
+      "default": "start"
+    },
+    {
+      "name": "…buttonProps",
+      "type": "ComponentPropsWithRef<\"button\">",
+      "meaning": "Native trigger props such as className, ref and data attributes are forwarded."
+    }
+  ],
+  "states": [
+    "Closed",
+    "Open",
+    "Checked item",
+    "Disabled item",
+    "Keyboard focus"
+  ],
+  "examples": [
+    {
+      "id": "menu-actions",
+      "label": "Secondary actions",
+      "description": "One available and one disabled synthetic action; no request is made.",
+      "code": "<Menu label=\"Store actions\" items={[{ key: \"rename\", label: \"Rename\", onSelect: rename }]}>\n  <MoreIcon />\n</Menu>",
+      "live": true
+    }
+  ],
+  "id": "Menu",
+  "exportName": "Menu",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

@@ -1,0 +1,70 @@
+{
+  "name": "MultiSelectList",
+  "category": "Inputs",
+  "scope": "composed",
+  "owner": "Web UI",
+  "summary": "A searchable list for choosing several options, with select-all, that renders only the options in view.",
+  "usage": "Use when people choose several values from a long list, such as a column filter. Options keep their display order and a stable value; the selection set stays caller-owned. Search ignores case and accents; pass query and onQueryChange when the caller needs the search, and use searchOptions to find the same matches. Select all applies to the options the search found.",
+  "accessibility": "Composes TextField for the search and Checkbox for select-all, which shows a mixed state when only some options are chosen. The options form a listbox with aria-multiselectable, aria-activedescendant and aria-setsize/aria-posinset, so arrow keys, Page Up/Down, Home and End reach every option while only those in view are rendered; Space toggles the active option, and ArrowDown moves from the search into the list.",
+  "props": [
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Accessible name of the option list.",
+      "required": true
+    },
+    {
+      "name": "locale",
+      "type": "pt-BR | en-US",
+      "meaning": "Language of the search and select-all labels, and of search matching.",
+      "required": true
+    },
+    {
+      "name": "options",
+      "type": "readonly MultiSelectOption[]",
+      "meaning": "Options with a stable value and a label, in display order. Keep the array stable between renders.",
+      "required": true
+    },
+    {
+      "name": "selected / onChange",
+      "type": "ReadonlySet<string> / (selected: Set<string>) => void",
+      "meaning": "Caller-owned chosen values.",
+      "required": true
+    },
+    {
+      "name": "query / onQueryChange",
+      "type": "string / (query) => void",
+      "meaning": "Optional controlled search text."
+    },
+    {
+      "name": "height",
+      "type": "number",
+      "meaning": "Maximum height of the scrolling list in pixels.",
+      "required": false,
+      "default": "240"
+    }
+  ],
+  "states": [
+    "All chosen",
+    "Some chosen (mixed select-all)",
+    "Searching",
+    "No results",
+    "Keyboard focus on the active option"
+  ],
+  "examples": [
+    {
+      "id": "multi-select-list-search",
+      "label": "Searchable choices",
+      "description": "Synthetic cities chosen locally; no request is made.",
+      "code": "<MultiSelectList label=\"Cities\" locale=\"en-US\" options={options} selected={selected} onChange={setSelected} />",
+      "live": true
+    }
+  ],
+  "id": "MultiSelectList",
+  "exportName": "MultiSelectList",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/components.docs.json"
+}

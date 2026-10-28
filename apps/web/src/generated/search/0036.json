@@ -1,5 +1,176 @@
 [
   {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nAuthentication can be exercised with signed synthetic tokens and a local JWKS endpoint; authorization tests need no real accounts.\nApplication and domain operations receive only a stable principal ID and capability set.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nA future issuer must supply the required JWT profile, stable Orion principal mapping, human actor assertion, and review scope. Provider compatibility must be checked before production integration.\nLocal signature verification does not by itself provide immediate provider-side token revocation. Provider-specific revocation and session behavior remain deferred; short token lifetimes and operational controls must be assessed with a chosen provider.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nDeployments using the Approval Request feature must supply separate runtime database credentials and trusted token issuer/audience/JWKS settings. Keys may rotate through JWKS. Provider provisioning, issuer claims, and secure configuration are tracked under [H-07](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/human-actions.md#h-07) only when a real provider is selected.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Approval Request identity decision](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/domains/approval-request.md#identity-and-authorization-boundary)\n[Authentication policy](../security/authentication.md)\n[Authorization policy](../security/authorization.md)\n[Approval Request implementation conventions](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/domains/approval-request-implementation.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "anchor": "adr-0013-keep-agentsmd-as-the-agent-neutral-instruction-source",
+    "text": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source\n**Status:** accepted\n**Date:** 2026-09-29\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion is built and maintained by humans together with AI coding agents. Its foundation was developed with OpenAI Codex, and its instructions and tracking documents named Codex as the actor responsible for maintaining the plan and human actions. Orion must remain usable with other agents, including Claude Code and Gemini CLI, without becoming coupled to one model, vendor, or harness.\nEach tool has its own discovery convention. Duplicating repository rules into `CLAUDE.md`, `GEMINI.md`, or similar files would create competing authorities that drift apart, contradicting the single-canonical-source principle in [contributing](../contributing.md#authored-meaning-and-generated-facts). The owner directed that `AGENTS.md` remain canonical, that tool-specific files be added only as thin compatibility layers, and that tool behavior be verified against current documentation rather than assumed.\nVerification on 2026-09-29 established that Codex reads `AGENTS.md` natively from the project root down to its working directory, with a 32 KiB default combined limit; that Claude Code 2.1.277 and later reads `AGENTS.md` natively, including nested files on demand, unless a `CLAUDE.md` is present; and that Gemini CLI 0.61.0 reads `GEMINI.md` by default but loads the `AGENTS.md` hierarchy when `context.fileName` names it. [Agent instructions](../architecture/agent-instructions.md) records the detailed, reverifiable behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nThe root `AGENTS.md` and its nested `AGENTS.md` files are Orion's only repository instruction source for every contributor and agent. Normative repository text assigns obligations to the responsibility, such as a contributor or an authorized coding agent, and names a specific tool only to describe that tool's behavior.\nA tool that cannot discover `AGENTS.md` receives a minimal committed discovery adapter that points it at `AGENTS.md` and contains no instructions. Currently only Gemini CLI needs one: `.gemini/settings.json` sets `context.fileName` to `[\"AGENTS.md\"]`. Orion commits no `CLAUDE.md`, `GEMINI.md`, or other instruction copy.\nPortability constraints are enforced mechanically where practical: validation rejects competing instruction files, restricts the Gemini adapter to discovery, and keeps each root-to-directory instruction chain within the 32 KiB limit that all verified tools load completely. The root instructions require reading applicable nested files before editing because not every tool loads them automatically.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\n`AGENTS.md` is supported natively or through configuration by all three verified tools, so one hierarchy can serve them without copies. Native discovery is preferred to import-based shims: a `CLAUDE.md` containing `@AGENTS.md` would work, but it is unnecessary on current Claude Code and would suppress direct `AGENTS.md` discovery by default. Gemini offers no native `AGENTS.md` default, and its supported project setting is the smallest configuration that loads the canonical hierarchy.\nMechanical checks make the policy durable as tools and contributors change. Executable validation, not prompting, remains the authority for architecture and behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Vendor-specific instruction files",
+    "anchor": "vendor-specific-instruction-files",
+    "text": "Vendor-specific instruction files\nMaintaining `CLAUDE.md` and `GEMINI.md` beside `AGENTS.md` would give each tool its preferred file, but the copies would drift and create ambiguity about which rule is authoritative.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Import or symlink shims for every tool",
+    "anchor": "import-or-symlink-shims-for-every-tool",
+    "text": "Import or symlink shims for every tool\n`@AGENTS.md` imports or symlinked files keep one source, but they add files that current tools do not need. Symlinks are unreliable in Windows checkouts, and a committed `CLAUDE.md` changes Claude Code's default discovery. They remain options only for a tool that requires them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A tool-neutral instruction format generated into vendor files",
+    "anchor": "a-tool-neutral-instruction-format-generated-into-vendor-files",
+    "text": "A tool-neutral instruction format generated into vendor files\nGenerating vendor files from another source would add tooling and generated artifacts without a benefit over the widely supported `AGENTS.md` convention.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOne instruction hierarchy serves humans and all verified agents.\nAgent-specific wording no longer implies that only one tool may maintain the plan or human actions.\nValidation detects accidental instruction copies and oversized instruction chains.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nTool behavior changes over time, so the compatibility table must be reverified before changing adapters or relying on a tool.\nGemini CLI applies the project setting only in a trusted workspace, and user or organization settings outside the repository can still change what any tool loads.\nInstructions must stay concise enough for the smallest verified combined limit.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nContributors using an older Claude Code version or a local `CLAUDE.local.md` must update or configure their client to read `AGENTS.md`; the repository does not add a workaround file.\n"
+  },
+  {
+    "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+    "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Agent instructions and tool compatibility](../architecture/agent-instructions.md)\n[Repository structure: local agent instructions](../architecture/repository-structure.md#local-agent-instructions)\n[ADR-0003: repository validation and architecture enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "anchor": "adr-0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n**Superseded by:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted\n**Superseded by:** [ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the `@orion/*` package scope; the Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
+  },
+  {
+    "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+    "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own `origin`, pull requests, CI history, human actions, product decisions, and releases, while the canonical `GabriellMDias/Orion` repository continues evolving as the upstream foundation. Projects need to know which Orion revision they contain and to adopt later Orion improvements without losing product changes.\nThe repository also contains state that cannot be inherited as true for a new repository: Orion's implementation plan and acceptance evidence describe how Orion itself was built, several completed human actions verified GitHub settings for the Orion repository only, and the Approval Request feature is an executable reference rather than a product requirement. The owner directed a workflow that preserves Git ancestry, protects the canonical repository from accidental product pushes, records machine-readable provenance, and keeps upgrades as reviewable changes.\n"
+  },
+  {
     "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
     "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
     "group": "Decisions",
@@ -1438,203 +1609,5 @@
     "heading": "Decision",
     "anchor": "decision",
     "text": "Decision\nTeluni will store media as immutable content-addressed objects on a local volume and process it only with FFmpeg in isolated child processes:\nThe media module owns an object interface (`put`, `open` with an optional byte range, `delete`, `list`) implemented over a configured directory on durable storage. Each object is named by the SHA-256 of its bytes inside its company and is never modified; identical bytes are stored once per company and never shared across companies.\nObjects are written to a work directory on the same filesystem, flushed, and published by an atomic rename while a transaction-scoped PostgreSQL advisory lock on the object is held, before the referencing asset commits. PostgreSQL is the authority for which objects exist and who may read them; paths never leave the module.\nUntrusted files are parsed and converted only by the FFmpeg executables (`ffprobe`, `ffmpeg`, version 6.1 or later), run without a shell, with a scrubbed environment, a forced demuxer, the file protocol only, bounded output and timeouts, and resource limits where the host offers them. No media parser or image library runs inside the API process.\nWork is queued in PostgreSQL and claimed by an in-process processor with leases, so several API processes can share it and interrupted work resumes.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nContent addressing makes objects immutable, integrity checkable and deduplicated, which publications (ADR-0019) need for manifests and the player's shared-file accounting (AT-05). Publishing by rename under the object lock gives a simple crash rule: a file may exist without a reference and is swept, but a reference never exists without its file. Per-company naming keeps tenants independent at the cost of storing a file twice when two companies upload it.\nFFmpeg is the established tool for both inspection and conversion of every format the release needs, including EXIF orientation and metadata removal for images, so one external tool covers both kinds instead of FFmpeg plus an in-process image library. Running it as a separate executable keeps memory-safety defects in parsers out of the API process and lets timeouts and limits kill a hostile file. It also keeps Teluni's Apache-2.0 code separate from FFmpeg's GPL build. The trade-off is CPU-heavy work on the API host and a binary dependency that every environment must provide.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "S3-compatible object storage now",
-    "anchor": "s3-compatible-object-storage-now",
-    "text": "S3-compatible object storage now\nA MinIO or cloud bucket would separate storage from the API host and scale later, but it adds a service to run on the single-host pilot or a paid dependency. The object interface keeps this as a later implementation without changing object identity.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Media in PostgreSQL",
-    "anchor": "media-in-postgresql",
-    "text": "Media in PostgreSQL\nLarge objects or `bytea` would make storage transactional, but they inflate database backups and I/O with gigabytes of video and complicate streaming and range reads.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "libvips (sharp) for images and FFmpeg for video",
-    "anchor": "libvips-sharp-for-images-and-ffmpeg-for-video",
-    "text": "libvips (`sharp`) for images and FFmpeg for video\nFaster image handling, but it parses untrusted images inside the API process and adds a second native toolchain to qualify and isolate.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A separate processing service with a broker",
-    "anchor": "a-separate-processing-service-with-a-broker",
-    "text": "A separate processing service with a broker\nStronger isolation and independent scaling, but it adds deployment and failure modes that the pilot does not yet need. A separate, network-less processing container running the same commands is the deployment-level hardening step, without changing this decision.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nImmutable, verifiable objects that publications and players can reference by hash.\nCrash-safe publication and reference-safe purge with a single lock order.\nHostile files cannot run code in, or exhaust, the API process.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nConversion competes with the API for CPU on the pilot host; concurrency is limited to one job by default and long videos take minutes.\nEvery environment (development, CI, production image) must provide a compatible FFmpeg build, and its security updates become an operational duty.\nStorage is tied to one host until another object store implementation exists; backups must cover the media volume together with PostgreSQL.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nBackups and restore must copy the media volume and the database consistently; restored objects are verified against their hashes, and a sweep removes files without rows.\nMoving to another object store copies objects by hash and switches the implementation; asset and object identities stay the same.\nThe production image must ship FFmpeg with its license notices (PJ-13).\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Media library design](../project/media-library-design.md)\n[Release policies: media and deletion lifecycle](../project/release-policies.md#media-and-deletion-lifecycle)\n[Acceptance targets](../project/release-targets.md#media-and-rendering-targets)\n[Operations: persistent state and storage portability](../project/operations.md#persistent-state-and-storage-portability)\n[ADR-0019](0019-propose-immutable-publications-and-atomic-player-activation.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "anchor": "adr-0029-evaluate-schedules-with-the-temporal-api-and-shared-fixtures",
-    "text": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures\n**Status:** accepted\n**Date:** 2026-10-19\n**Acceptance scope:** The owner explicitly approved this decision and the eleven decisions of the programming design on 2026-10-19 under PH-24. Acceptance establishes the direction for local and CI implementation of PJ-10, not the player's evaluator (PJ-12) or device qualification (PH-08).\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni schedules playlists by local business time per screen: weekdays, local hours, overnight windows, inclusive final dates and all-day windows, interpreted in the screen's time zone or its branch's, never the server's (FR-06). The [release policies](../project/release-policies.md#time-and-scheduling) fix how DST gaps and repeated hours resolve and require the backend preview and the Android player to share fixtures. Node.js 24, the API runtime, does not ship the ECMAScript Temporal API, and the standard `Date` and `Intl` objects give offsets for an instant but no way to resolve a local time that falls in a gap or a repeated hour. D-10 has not selected a time-zone library.\nThis record decides how the API represents and resolves local time for schedules and how the API and the player agree on the results. The rules themselves are in the [programming design](../project/programming-design.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nTeluni will evaluate schedules with a pure evaluator over the Temporal API and verify every implementation against one fixture file:\nThe API's programming module owns a pure TypeScript evaluator that takes rules, a default, an IANA zone name and an instant range and returns resolved segments. It never reads a clock or the process time zone.\nLocal dates and times are Temporal `PlainDate` and `PlainTime` values, instants are Temporal `Instant` values, and zone resolution uses `ZonedDateTime` with explicit disambiguation plus transition lookup for gaps. Until Node.js provides Temporal natively, the API uses the `temporal-polyfill` package, pinned to an exact version, imported only by the programming module.\nCanonical fixtures in JSON (rules, zone, range and expected segments in UTC and local form, and expected validation codes) are owned by the API module and run by its tests. The player runs the same file against its implementation in PJ-12; neither implementation is the reference for the other.\nPreview is computed only by the API; the panel displays its segments.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nTemporal models exactly the concepts the policies use (plain local dates and times, instants, zones and explicit disambiguation), and its model matches `java.time`, which an Android player is expected to use, so both implementations reason in the same terms and the fixtures express the same cases. A spec-conformant polyfill keeps the code on the standard API, so removing it when Node.js ships Temporal is an import change rather than a rewrite. Fixtures, not shared code, are the contract between two runtimes in different languages. Keeping the evaluator pure makes validation, preview and tests deterministic and independent of the host.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Luxon or date-fns-tz",
-    "anchor": "luxon-or-date-fns-tz",
-    "text": "Luxon or date-fns-tz\nMature libraries, but each has its own model of gaps and repeated hours that differs from `java.time` and from the standard on the way to Node.js, so the fixtures would encode library behavior rather than the policy.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Hand-written resolution over Intl.DateTimeFormat",
-    "anchor": "hand-written-resolution-over-intldatetimeformat",
-    "text": "Hand-written resolution over `Intl.DateTimeFormat`\nAvoids a dependency, but searching transitions and disambiguating local times is where subtle errors appear, and the code would duplicate a standard that is about to ship.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A shared evaluator package compiled for both runtimes",
-    "anchor": "a-shared-evaluator-package-compiled-for-both-runtimes",
-    "text": "A shared evaluator package compiled for both runtimes\nOne implementation for the API and the player would remove the second implementation, but the player is a native Android application; embedding a JavaScript engine to run schedules adds a runtime and its own failure modes on the device.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nDeterministic, host-independent schedule results with the selected DST rules.\nOne fixture file that both the API and the player must pass.\nA direct path to native Temporal.\n"
-  },
-  {
-    "id": "repository/docs/adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures",
-    "title": "ADR-0029: Evaluate Schedules with the Temporal API and Shared Fixtures",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nA runtime dependency in the API until Node.js ships Temporal, which must be kept current with the zone database it relies on (the polyfill uses the runtime's `Intl` zone data).\nTwo implementations of the evaluator, kept equal only by the fixtures.\n"
   }
 ]

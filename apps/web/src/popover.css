@@ -1,0 +1,89 @@
+/* Semantic fallbacks are local to components; products override inherited tokens. */
+.ui-popover {
+  position: fixed;
+  inset: auto;
+  box-sizing: border-box;
+  max-width: calc(100vw - 1rem);
+  max-height: calc(100vh - 1rem);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  font-family: var(--ui-font-family, inherit);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--ui-color-text, #182638);
+  background: var(--ui-color-surface, #fff);
+  border: 1px solid var(--ui-color-divider, #dbe3ea);
+  border-radius: var(--ui-radius, 0.4375rem);
+  box-shadow: var(--ui-shadow-overlay, 0 10px 30px rgb(15 23 42 / 18%));
+}
+.ui-popover:focus {
+  outline: none;
+}
+.ui-menu {
+  min-width: 12rem;
+  padding: 0.25rem;
+}
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  background: none;
+  border: 0;
+  border-radius: calc(var(--ui-radius, 0.4375rem) - 2px);
+  cursor: pointer;
+}
+.ui-menu-item:hover:not(:disabled),
+.ui-menu-item:focus-visible {
+  background: var(--ui-color-surface-muted, #f3f6f9);
+  outline: none;
+}
+.ui-menu-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ui-color-focus, #256ec3);
+}
+.ui-menu-item:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.ui-menu-item .ui-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--ui-color-muted, #536677);
+}
+.ui-menu-check {
+  display: inline-flex;
+  width: 1rem;
+}
+.ui-menu-check .ui-icon {
+  color: var(--ui-color-action, #185f9b);
+  stroke-width: 2.4;
+}
+.ui-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: var(--ui-color-muted, #536677);
+  background: none;
+  border: 0;
+  border-radius: calc(var(--ui-radius, 0.4375rem) - 2px);
+  cursor: pointer;
+}
+.ui-menu-trigger:hover,
+.ui-menu-trigger[aria-expanded="true"] {
+  color: var(--ui-color-text, #182638);
+  background: var(--ui-color-surface-muted, #f3f6f9);
+}
+.ui-menu-trigger:focus-visible {
+  outline: 3px solid var(--ui-color-focus, #256ec3);
+  outline-offset: 1px;
+}

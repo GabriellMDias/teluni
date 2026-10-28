@@ -2810,6 +2810,34 @@
       "file": "pages/components/Button.json"
     },
     {
+      "id": "components/Checkbox",
+      "kind": "component",
+      "title": "Checkbox",
+      "group": "Inputs",
+      "category": "Inputs",
+      "scope": "shared",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A native checkbox with a persistent label and an optional mixed state.",
+      "headings": [],
+      "file": "pages/components/Checkbox.json"
+    },
+    {
+      "id": "components/DataGrid",
+      "kind": "component",
+      "title": "DataGrid",
+      "group": "Data Display",
+      "category": "Data Display",
+      "scope": "composed",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A virtualized grid that sorts, filters and resizes columns over the rows it receives, with single or multiple selection.",
+      "headings": [],
+      "file": "pages/components/DataGrid.json"
+    },
+    {
       "id": "components/DataSet",
       "kind": "component",
       "title": "DataSet",
@@ -2819,7 +2847,7 @@
       "owner": "Web UI",
       "metadataSource": "apps/web/src/components.docs.json",
       "source": "apps/web/src/components.tsx",
-      "summary": "Record-oriented CRUD presentation: a toolbar, a selectable grid and a caller-rendered form.",
+      "summary": "Record-oriented CRUD presentation: a toolbar, a DataGrid and a caller-rendered form.",
       "headings": [],
       "file": "pages/components/DataSet.json"
     },
@@ -2836,6 +2864,48 @@
       "summary": "Displays a public API failure message and an optional reload action.",
       "headings": [],
       "file": "pages/components/ErrorNotice.json"
+    },
+    {
+      "id": "components/Menu",
+      "kind": "component",
+      "title": "Menu",
+      "group": "Actions",
+      "category": "Actions",
+      "scope": "composed",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A button that opens a list of actions in a Popover.",
+      "headings": [],
+      "file": "pages/components/Menu.json"
+    },
+    {
+      "id": "components/MultiSelectList",
+      "kind": "component",
+      "title": "MultiSelectList",
+      "group": "Inputs",
+      "category": "Inputs",
+      "scope": "composed",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A searchable list for choosing several options, with select-all, that renders only the options in view.",
+      "headings": [],
+      "file": "pages/components/MultiSelectList.json"
+    },
+    {
+      "id": "components/Popover",
+      "kind": "component",
+      "title": "Popover",
+      "group": "Overlays",
+      "category": "Overlays",
+      "scope": "shared",
+      "owner": "Web UI",
+      "metadataSource": "apps/web/src/components.docs.json",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A non-modal surface in the browser's top layer, placed next to an anchor element.",
+      "headings": [],
+      "file": "pages/components/Popover.json"
     },
     {
       "id": "components/TextField",
@@ -3330,6 +3400,26 @@
       "summary": "Acceptance scope: On 2026-10-22 the owner asked the agent to take every pending decision that is only a decision, which extends the delegation recorded with PH-25. The agent…",
       "headings": [],
       "file": "pages/repository/docs/adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.json"
+    },
+    {
+      "id": "repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual",
+      "kind": "repository",
+      "title": "ADR-0034: Build Data Grids on TanStack Table and TanStack Virtual",
+      "group": "Decisions",
+      "source": "docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md",
+      "summary": "Acceptance scope: On 2026-10-27 the owner asked for sorting, column filters, column resizing and configurable multiple selection in the shared DataSet, designed for very many…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.json"
+    },
+    {
+      "id": "repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf",
+      "kind": "repository",
+      "title": "ADR-0035: Export Grid Data in the Browser to XLSX, CSV and PDF",
+      "group": "Decisions",
+      "source": "docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md",
+      "summary": "Acceptance scope: On 2026-10-27 the owner asked for exports of the data the shared DataSet shows, at least to Excel and PDF, and left further formats and the technology to the…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -4288,28 +4378,28 @@
       { "file": "search/0031.json", "count": 26, "kinds": ["database"] },
       {
         "file": "search/0032.json",
-        "count": 51,
+        "count": 49,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0033.json", "count": 94, "kinds": ["repository"] },
+      { "file": "search/0033.json", "count": 86, "kinds": ["repository"] },
       { "file": "search/0034.json", "count": 116, "kinds": ["repository"] },
-      { "file": "search/0035.json", "count": 132, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 182, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 135, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 130, "kinds": ["repository"] },
-      { "file": "search/0039.json", "count": 81, "kinds": ["repository"] },
-      { "file": "search/0040.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0035.json", "count": 128, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 179, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 158, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 102, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 93, "kinds": ["repository"] },
       { "file": "search/0041.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 51, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 52, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 41, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 63, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 77, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 76, "kinds": ["repository"] },
-      { "file": "search/0049.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0050.json", "count": 46, "kinds": ["repository"] }
+      { "file": "search/0042.json", "count": 60, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 65, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 55, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 36, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0049.json", "count": 104, "kinds": ["repository"] },
+      { "file": "search/0050.json", "count": 84, "kinds": ["repository"] }
     ],
-    "count": 2031
+    "count": 2082
   }
 }

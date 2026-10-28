@@ -79,3 +79,90 @@
   display: block;
   margin-top: var(--ui-space-3, 0.75rem);
 }
+.ui-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2, 0.5rem);
+  font-family: var(--ui-font-family, inherit);
+  color: var(--ui-color-text, #182638);
+  cursor: pointer;
+}
+.ui-checkbox:has(:disabled) {
+  cursor: default;
+}
+/* The transparent native input covers the box, which draws its state. */
+.ui-checkbox-input {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  opacity: 0;
+  transform: translateY(-50%);
+  cursor: inherit;
+  z-index: 1;
+}
+.ui-checkbox-box {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid var(--ui-color-border, #b5c4d2);
+  border-radius: 0.25rem;
+  background: var(--ui-color-surface, #fff);
+}
+.ui-checkbox-input:checked + .ui-checkbox-box,
+.ui-checkbox-input:indeterminate + .ui-checkbox-box,
+.ui-checkbox-box[data-checked="true"] {
+  background: var(--ui-color-action, #185f9b);
+  border-color: var(--ui-color-action, #185f9b);
+}
+.ui-checkbox-input:checked + .ui-checkbox-box::after,
+.ui-checkbox-box[data-checked="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 0.06rem;
+  width: 0.22rem;
+  height: 0.48rem;
+  border: solid var(--ui-color-on-action, #fff);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ui-checkbox-input:indeterminate + .ui-checkbox-box::after {
+  content: "";
+  position: absolute;
+  inset: calc(50% - 1px) 0.18rem auto;
+  width: auto;
+  height: 2px;
+  border: 0;
+  transform: none;
+  background: var(--ui-color-on-action, #fff);
+}
+.ui-checkbox-input:focus-visible + .ui-checkbox-box {
+  outline: 3px solid var(--ui-color-focus, #256ec3);
+  outline-offset: 2px;
+}
+.ui-checkbox-input:disabled + .ui-checkbox-box {
+  opacity: 0.6;
+}
+@media (forced-colors: active) {
+  .ui-checkbox-input:checked + .ui-checkbox-box,
+  .ui-checkbox-input:indeterminate + .ui-checkbox-box,
+  .ui-checkbox-box[data-checked="true"] {
+    background: Highlight;
+  }
+}
