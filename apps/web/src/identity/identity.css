@@ -132,3 +132,9 @@
     gap: 1.5rem;
   }
 }
+.welcome-two-step .action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: 1.2rem 0 0.6rem;
+}

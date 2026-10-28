@@ -24,7 +24,6 @@ const signedIn = {
   expiresAt: "2026-10-19T12:00:00.000Z",
   assuranceLevel: "teluni-aal1",
   authenticatedAt: "2026-10-19T08:00:00.000Z",
-  strongAuthenticatedAt: null,
 };
 
 afterEach(() => vi.unstubAllGlobals());
@@ -89,20 +88,22 @@ test("sends a visitor from the entry to the sign-in page", async () => {
 
 test("shows a signed-in person's companies and account on the home page", async () => {
   respond((url) =>
-    url.pathname.endsWith("/companies")
-      ? {
-          body: {
-            items: [
-              {
-                id: "00000000-0000-4000-8000-000000000001",
-                displayName: "Home company",
-                roles: ["COMPANY_ADMINISTRATOR"],
-              },
-            ],
-            nextCursor: null,
-          },
-        }
-      : { body: {} },
+    url.pathname.endsWith("/auth/two-step")
+      ? { body: { enabled: false } }
+      : url.pathname.endsWith("/companies")
+        ? {
+            body: {
+              items: [
+                {
+                  id: "00000000-0000-4000-8000-000000000001",
+                  displayName: "Home company",
+                  roles: ["COMPANY_ADMINISTRATOR"],
+                },
+              ],
+              nextCursor: null,
+            },
+          }
+        : { body: {} },
   );
   const { screen } = await open("/", signedIn);
   await expect
@@ -111,10 +112,11 @@ test("shows a signed-in person's companies and account on the home page", async 
   await expect
     .element(screen.getByRole("link", { name: "Home company" }))
     .toHaveAttribute("href", "/companies/00000000-0000-4000-8000-000000000001");
-  await expect.element(screen.getByText(t.twoStepMissing)).toBeVisible();
+  // Two-step verification is optional; the home page recommends it.
+  await expect.element(screen.getByText(t.twoStepDisabled)).toBeVisible();
   await expect
     .element(screen.getByRole("link", { name: t.twoStepButton }))
-    .toHaveAttribute("href", "/api/auth/login?returnTo=%2F&assurance=strong");
+    .toHaveAttribute("href", "/api/auth/login?returnTo=%2F&twoStep=enable");
   // The browser runner's small viewport uses the navigation disclosure.
   if (matchMedia("(max-width: 760px)").matches)
     await screen
@@ -126,16 +128,22 @@ test("shows a signed-in person's companies and account on the home page", async 
 });
 
 test("invites a person without companies to create the first one", async () => {
-  respond(() => ({ body: { items: [], nextCursor: null } }));
+  respond((url) =>
+    url.pathname.endsWith("/auth/two-step")
+      ? { body: { enabled: true } }
+      : { body: { items: [], nextCursor: null } },
+  );
   const { screen } = await open("/", {
     ...signedIn,
-    strongAuthenticatedAt: "2026-10-19T08:00:00.000Z",
   });
   await expect.element(screen.getByText(t.companiesEmpty)).toBeVisible();
   await expect
     .element(screen.getByRole("link", { name: t.createFirst }))
     .toHaveAttribute("href", "/companies");
-  await expect.element(screen.getByText(t.twoStepDone)).toBeVisible();
+  await expect.element(screen.getByText(t.twoStepEnabled)).toBeVisible();
+  await expect
+    .element(screen.getByRole("link", { name: t.twoStepButton }))
+    .not.toBeInTheDocument();
 });
 
 test("sends a signed-in person from sign-in to the requested page", async () => {

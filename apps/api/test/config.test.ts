@@ -173,21 +173,6 @@ describe("human identity configuration", () => {
     ]);
   });
 
-  it("requires MFA by default and accepts an explicit local development exception", () => {
-    expect(parseServerConfig(complete).developmentMfaMode).toBe("required");
-    expect(
-      parseServerConfig({
-        ...complete,
-        ORION_ENV: "development",
-        TELUNI_DEV_MFA_MODE: "optional",
-      }).developmentMfaMode,
-    ).toBe("optional");
-    expect(
-      parseServerConfig({ ...complete, TELUNI_DEV_MFA_MODE: "required" })
-        .developmentMfaMode,
-    ).toBe("required");
-  });
-
   it.each(["http://keycloak:8080", "https://identity.internal/auth"])(
     "keeps the public issuer when administration uses %s",
     (adminUrl) => {
@@ -241,37 +226,6 @@ describe("human identity configuration", () => {
       }),
     ).toThrow("Keycloak admin URL");
     expect(parseServerConfig(complete).keycloakAdminUrl).toBeUndefined();
-  });
-
-  it.each([
-    { ORION_ENV: "test" },
-    {
-      ORION_ENV: "production",
-      TELUNI_PUBLIC_ORIGIN: "https://app.example.test",
-    },
-    { ORION_API_HOST: "0.0.0.0" },
-    { TELUNI_PUBLIC_ORIGIN: "https://app.example.test" },
-    { ORION_TOKEN_ISSUER: "https://id.example.test/realms/teluni" },
-    { TELUNI_DEV_MFA_MODE: "true" },
-    { TELUNI_DEV_MFA_MODE: "false" },
-    { TELUNI_DEV_MFA_MODE: "" },
-  ])("rejects invalid or nonlocal optional MFA configuration %#", (change) => {
-    expect(() =>
-      parseServerConfig({
-        ...complete,
-        ORION_ENV: "development",
-        TELUNI_DEV_MFA_MODE: "optional",
-        ...change,
-      }),
-    ).toThrow("Invalid API configuration");
-  });
-  it("rejects optional MFA without a human identity provider", () => {
-    expect(() =>
-      parseServerConfig({
-        ORION_ENV: "development",
-        TELUNI_DEV_MFA_MODE: "optional",
-      }),
-    ).toThrow("optional MFA");
   });
 
   it.each([

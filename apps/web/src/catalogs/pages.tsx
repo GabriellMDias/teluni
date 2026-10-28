@@ -148,21 +148,6 @@ function FieldIssues({ error, path }: { error: unknown; path: string }) {
   );
 }
 
-function StepUpPrompt({ returnTo }: { returnTo: string }) {
-  const { t } = useCatalogMessages();
-  return (
-    <div role="status" className="notice notice-error">
-      {t.stepUpNotice}
-      <a
-        className="button-link button-primary"
-        href={loginHref(returnTo, "strong")}
-      >
-        {t.stepUpButton}
-      </a>
-    </div>
-  );
-}
-
 /** A write whose outcome is unknown or stale needs a reload, not a retry. */
 function mustReload(error: unknown): boolean {
   return (
@@ -214,23 +199,15 @@ function CompanyGate({
       </a>
     );
   else if (company.isError)
-    body =
-      company.error instanceof ApiFailure &&
-      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-        <StepUpPrompt returnTo={returnTo} />
-      ) : (
-        <Failure
-          error={company.error}
-          operation="read"
-          onReload={() => void company.refetch()}
-        />
-      );
+    body = (
+      <Failure
+        error={company.error}
+        operation="read"
+        onReload={() => void company.refetch()}
+      />
+    );
   else if (company.data && !can(company.data, "catalogs.view"))
-    body = company.data.access.capabilitiesAfterStrongAuthentication.includes(
-      "catalogs.view",
-    ) ? (
-      <StepUpPrompt returnTo={returnTo} />
-    ) : (
+    body = (
       <p role="alert" className="notice notice-error">
         {t.errors.PERMISSION_DENIED}
       </p>
@@ -2631,7 +2608,6 @@ function RecordDetail({
         <section aria-labelledby="catalog-prices-title">
           <h2 id="catalog-prices-title">{t.pricesTitle}</h2>
           <p className="hint">{t.pricesLead}</p>
-          {prices && <p className="hint">{t.pricesStrongHint}</p>}
           {money.map((field) => (
             <PriceSection
               key={field.id}

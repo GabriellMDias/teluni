@@ -39,7 +39,7 @@ export { assuranceLevels };
  * Versioned browser flow. A structural change creates a new alias and rebinds
  * the realm instead of mutating a flow that live sessions may be using.
  */
-export const browserFlowAlias = "teluni-browser-v1";
+export const browserFlowAlias = "teluni-browser-v2";
 
 const uuidPattern =
   "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$";
@@ -150,10 +150,7 @@ function webClient(options: TeluniRealmOptions) {
       "oidc.ciba.grant.enabled": "false",
       "standard.token.exchange.enabled": "false",
       "use.refresh.tokens": "true",
-      "acr.loa.map": JSON.stringify({
-        [assuranceLevels.standard]: 1,
-        [assuranceLevels.strong]: 2,
-      }),
+      "acr.loa.map": JSON.stringify({ [assuranceLevels.standard]: 1 }),
     },
     defaultClientScopes: ["basic", "acr", "profile", "email"],
     optionalClientScopes: [],
@@ -377,9 +374,10 @@ type Execution = {
 } & Record<string, unknown>;
 
 /**
- * Creates the step-up browser flow (P12/P13/P14): password at level 1, then
- * password plus OTP at level 2, where a level-2 authentication counts for
- * five minutes. A user without OTP enrolls one when level 2 is requested.
+ * Creates the browser flow: the password, then the authenticator code only
+ * for people who enabled two-step verification, which is optional for each
+ * person. Enrolling and removing an authenticator are application-initiated
+ * actions (CONFIGURE_TOTP, delete_credential) that run after this flow.
  */
 async function configureBrowserFlow(
   admin: KeycloakAdmin,
@@ -397,7 +395,7 @@ async function configureBrowserFlow(
   expectOk(
     await admin.request("POST", `${base}/flows`, {
       alias: browserFlowAlias,
-      description: "Teluni browser login with level-of-authentication step-up",
+      description: "Teluni browser login with optional two-step verification",
       providerId: "basic-flow",
       topLevel: true,
       builtIn: false,
@@ -405,7 +403,6 @@ async function configureBrowserFlow(
     "flow creation",
   );
   const forms = `${browserFlowAlias}-forms`;
-  const first = `${browserFlowAlias}-first-factor`;
   const second = `${browserFlowAlias}-second-factor`;
   const add = async (
     flow: string,
@@ -431,37 +428,18 @@ async function configureBrowserFlow(
     },
     "flow",
   );
-  await add(
-    forms,
-    {
-      alias: first,
-      type: "basic-flow",
-      provider: "registration-page-form",
-      description: "Level 1",
-    },
-    "flow",
-  );
-  await add(
-    first,
-    { provider: "conditional-level-of-authentication" },
-    "execution",
-  );
-  await add(first, { provider: "auth-username-password-form" }, "execution");
+  await add(forms, { provider: "auth-username-password-form" }, "execution");
   await add(
     forms,
     {
       alias: second,
       type: "basic-flow",
       provider: "registration-page-form",
-      description: "Level 2",
+      description: "Two-step verification when enabled",
     },
     "flow",
   );
-  await add(
-    second,
-    { provider: "conditional-level-of-authentication" },
-    "execution",
-  );
+  await add(second, { provider: "conditional-user-configured" }, "execution");
   await add(second, { provider: "auth-otp-form" }, "execution");
 
   const listed = await admin.request(
@@ -502,44 +480,41 @@ async function configureBrowserFlow(
     ),
     "ALTERNATIVE",
   );
-  const subflows = executions.filter(
-    (item) => item.authenticationFlow === true && item.level === 1,
+  await requirement(
+    find(
+      (item) => item.providerId === "auth-username-password-form",
+      "password",
+    ),
+    "REQUIRED",
   );
-  if (subflows.length !== 2)
-    throw new Error("Unexpected browser flow shape: factors");
-  for (const subflow of subflows) await requirement(subflow, "CONDITIONAL");
+  await requirement(
+    find(
+      (item) => item.authenticationFlow === true && item.level === 1,
+      "second factor",
+    ),
+    "CONDITIONAL",
+  );
   for (const execution of executions.filter((item) => item.level === 2))
     await requirement(execution, "REQUIRED");
-  // Executions list in creation order: level 1's condition precedes level 2's.
-  const ordered = executions.filter(
-    (item) => item.providerId === "conditional-level-of-authentication",
-  );
-  if (ordered.length !== 2)
-    throw new Error("Unexpected browser flow shape: conditions");
-  const configs: [
-    Execution,
-    { alias: string; level: string; maxAge: string },
-  ][] = [
-    [
-      ordered[0],
-      { alias: `${browserFlowAlias}-level-1`, level: "1", maxAge: "43200" },
-    ],
-    [
-      ordered[1],
-      { alias: `${browserFlowAlias}-level-2`, level: "2", maxAge: "300" },
-    ],
-  ];
-  for (const [execution, config] of configs)
+}
+
+/** Enables the application-initiated actions that enroll and remove an authenticator. */
+async function enableRequiredActions(
+  admin: KeycloakAdmin,
+  realm: string,
+): Promise<void> {
+  for (const alias of ["CONFIGURE_TOTP", "delete_credential"]) {
+    const path = `/realms/${realm}/authentication/required-actions/${alias}`;
+    const current = await admin.request("GET", path);
+    expectOk(current, "required action lookup");
     expectOk(
-      await admin.request("POST", `${base}/executions/${execution.id}/config`, {
-        alias: config.alias,
-        config: {
-          "loa-condition-level": config.level,
-          "loa-max-age": config.maxAge,
-        },
+      await admin.request("PUT", path, {
+        ...((await current.json()) as Record<string, unknown>),
+        enabled: true,
       }),
-      "condition configuration",
+      "required action update",
     );
+  }
 }
 
 export async function provisionTeluniRealm(
@@ -565,6 +540,7 @@ export async function provisionTeluniRealm(
   }
   await configureUserProfile(admin, options.realm);
   await configureBrowserFlow(admin, options.realm);
+  await enableRequiredActions(admin, options.realm);
   expectOk(
     await admin.request("PUT", `/realms/${options.realm}`, {
       ...realmSettings({ ...options, bindBrowserFlow: true }),

@@ -45,14 +45,12 @@ const sessions: HumanSessionPort = {
       return Promise.reject(
         Object.assign(new Error("no session"), { code: "AUTH" }),
       );
-    const strong = headers["x-test-strong"] === "true";
     return Promise.resolve({
       principalId,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
+      assuranceLevel: "teluni-aal1",
       authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date() : null,
-      strongAuthenticationAgeSeconds: strong ? 1 : null,
+      authenticationAgeSeconds: 1,
       scopes: new Set(),
     });
   },
@@ -166,7 +164,7 @@ async function call(
   person: Person | null,
   method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
   url: string,
-  options: { body?: unknown; bytes?: Buffer; strong?: boolean } = {},
+  options: { body?: unknown; bytes?: Buffer } = {},
 ): Promise<Result> {
   const response = await app.inject({
     method,
@@ -175,7 +173,6 @@ async function call(
       ...(person
         ? {
             "x-test-principal": people[person],
-            "x-test-strong": String(options.strong ?? person !== "aOperator"),
           }
         : {}),
       ...(options.bytes ? { "content-type": "application/octet-stream" } : {}),
@@ -223,7 +220,6 @@ async function createBranch(person: Person, companyId: string, name: string) {
     "POST",
     `/companies/${companyId}/branches`,
     {
-      strong: true,
       body: { name },
     },
   );
@@ -266,7 +262,6 @@ async function ready(
     "POST",
     `/companies/${companyId}/media`,
     {
-      strong: true,
       body: {
         name: file.split("/").pop(),
         branchId,
@@ -280,7 +275,7 @@ async function ready(
     "aAdmin",
     "PUT",
     `/companies/${companyId}/media/${created.body.id}/content`,
-    { strong: true, bytes },
+    { bytes },
   );
   expect(sent.status, JSON.stringify(sent.body)).toBe(200);
   while ((await media.runOnce()) > 0);
@@ -634,7 +629,7 @@ describe("layouts: areas, catalog views, pages and their guards", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${image}/archive`,
-      { strong: true, body: { expectedVersion: 3 } },
+      { body: { expectedVersion: 3 } },
     );
     expect(
       code(
@@ -643,7 +638,6 @@ describe("layouts: areas, catalog views, pages and their guards", () => {
           "POST",
           `/companies/${companyA}/media/${image}/delete`,
           {
-            strong: true,
             body: { expectedVersion: archived.body.version },
           },
         ),

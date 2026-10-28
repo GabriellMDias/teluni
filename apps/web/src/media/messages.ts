@@ -117,9 +117,6 @@ const ptBR = {
   discarded: "Envio descartado.",
   loading: "Carregando…",
   reload: "Recarregar",
-  stepUpNotice:
-    "Enviar, arquivar e excluir mídia exige verificação em duas etapas nesta empresa.",
-  stepUpButton: "Verificar em duas etapas",
   errors: {
     MEDIA_TYPE_UNSUPPORTED: "Tipo de arquivo não aceito.",
     MEDIA_TOO_LARGE: "Arquivo grande demais para este tipo.",
@@ -138,8 +135,6 @@ const ptBR = {
     PERMISSION_DENIED: "Você não tem permissão para esta ação neste escopo.",
     COMPANY_SUSPENDED:
       "Esta empresa está suspensa. Fale com o suporte do Teluni.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "Esta ação exige verificação em duas etapas.",
     RESOURCE_VERSION_CONFLICT:
       "A mídia mudou enquanto você editava. Recarregue antes de tentar de novo.",
     VALIDATION_FAILED: "Confira os campos e tente de novo.",
@@ -269,9 +264,6 @@ const enUS: Messages = {
   discarded: "Upload discarded.",
   loading: "Loading…",
   reload: "Reload",
-  stepUpNotice:
-    "Uploading, archiving and deleting media requires two-step verification in this company.",
-  stepUpButton: "Verify with two steps",
   errors: {
     MEDIA_TYPE_UNSUPPORTED: "File type not accepted.",
     MEDIA_TOO_LARGE: "File too large for its type.",
@@ -288,8 +280,6 @@ const enUS: Messages = {
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You are not allowed to do this in this scope.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "This action requires two-step verification.",
     RESOURCE_VERSION_CONFLICT:
       "The media changed while you were editing. Reload before trying again.",
     VALIDATION_FAILED: "Check the fields and try again.",

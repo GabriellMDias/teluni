@@ -62,8 +62,8 @@
       "Nullable": "yes",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.",
-      "Null meaning": "A standard login without a requested level.",
+      "Meaning": "Retired: authentication context class (acr) a login requested under the former mandatory two-step policy. The API no longer writes or reads it. Kept until a reviewed contract migration removes it.",
+      "Null meaning": "Every login attempt created since two-step verification became optional, and earlier standard logins.",
       "Unit": "—"
     },
     {

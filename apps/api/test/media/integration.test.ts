@@ -55,14 +55,12 @@ const sessions: HumanSessionPort = {
       return Promise.reject(
         Object.assign(new Error("no session"), { code: "AUTH" }),
       );
-    const strong = headers["x-test-strong"] === "true";
     return Promise.resolve({
       principalId,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
+      assuranceLevel: "teluni-aal1",
       authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date() : null,
-      strongAuthenticationAgeSeconds: strong ? 1 : null,
+      authenticationAgeSeconds: 1,
       scopes: new Set(),
     });
   },
@@ -150,7 +148,6 @@ async function call(
   options: {
     body?: unknown;
     bytes?: Buffer;
-    strong?: boolean;
     headers?: Record<string, string>;
   } = {},
 ): Promise<Result> {
@@ -161,7 +158,6 @@ async function call(
       ...(person
         ? {
             "x-test-principal": people[person],
-            "x-test-strong": String(options.strong ?? false),
           }
         : {}),
       ...(options.bytes ? { "content-type": "application/octet-stream" } : {}),
@@ -209,7 +205,7 @@ async function createBranch(person: Person, companyId: string, name: string) {
     person,
     "POST",
     `/companies/${companyId}/branches`,
-    { strong: true, body: { name } },
+    { body: { name } },
   );
   expect(created.status).toBe(201);
   return created.body as { id: string; version: number };
@@ -255,14 +251,12 @@ async function upload(
   options: {
     branchId?: string | null;
     contentType?: string;
-    strong?: boolean;
     name?: string;
   } = {},
 ) {
   const bytes = await readFile(file);
   const extension = file.split(".").pop() ?? "";
   const created = await call(person, "POST", `/companies/${companyId}/media`, {
-    strong: options.strong ?? true,
     body: {
       name: options.name ?? file.split("/").pop(),
       branchId: options.branchId ?? null,
@@ -275,7 +269,7 @@ async function upload(
     person,
     "PUT",
     `/companies/${companyId}/media/${created.body.id}/content`,
-    { strong: options.strong ?? true, bytes },
+    { bytes },
   );
   expect(sent.status, JSON.stringify(sent.body)).toBe(200);
   expect(sent.body.status).toBe("PROCESSING");
@@ -287,9 +281,7 @@ async function processAll() {
 }
 
 async function get(person: Person, companyId: string, id: string) {
-  return call(person, "GET", `/companies/${companyId}/media/${id}`, {
-    strong: true,
-  });
+  return call(person, "GET", `/companies/${companyId}/media/${id}`, {});
 }
 
 async function probeBytes(bytes: Buffer) {
@@ -347,7 +339,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${item.id}/content?variant=display`,
-      { strong: true },
+      {},
     );
     expect(display.status).toBe(200);
     expect(display.headers["content-type"]).toBe("image/jpeg");
@@ -360,7 +352,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${item.id}/content?variant=original`,
-      { strong: true },
+      {},
     );
     expect(original.raw.equals(await readFile(fixtures.jpegRotated))).toBe(
       true,
@@ -371,7 +363,6 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "GET",
       `/companies/${companyA}/media/${item.id}/content?variant=display`,
       {
-        strong: true,
         headers: { "if-none-match": String(display.headers.etag) },
       },
     );
@@ -387,7 +378,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${item.id}/content?variant=thumbnail`,
-      { strong: true },
+      {},
     );
     expect(thumbnail.headers["content-type"]).toBe("image/png");
   }, 60_000);
@@ -441,7 +432,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${compliant.id}/content?variant=display`,
-      { strong: true },
+      {},
     );
     const remuxed = await probeBytes(display.raw);
     expect(remuxed.streams.map((stream) => stream.codec_name).sort()).toEqual([
@@ -452,7 +443,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${compliant.id}/content?variant=display`,
-      { strong: true, headers: { range: "bytes=0-99" } },
+      { headers: { range: "bytes=0-99" } },
     );
     expect(partial.status).toBe(206);
     expect(partial.raw.length).toBe(100);
@@ -463,7 +454,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${compliant.id}/content?variant=display`,
-      { strong: true, headers: { range: `bytes=${display.raw.length}-` } },
+      { headers: { range: `bytes=${display.raw.length}-` } },
     );
     expect(unsatisfiable.status).toBe(416);
 
@@ -473,7 +464,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${vp9.id}/content?variant=display`,
-      { strong: true },
+      {},
     );
     const vp9Probe = await probeBytes(vp9Display.raw);
     expect(vp9Probe.streams[0].codec_name).toBe("h264");
@@ -488,7 +479,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${rotated.id}/content?variant=display`,
-      { strong: true },
+      {},
     );
     const rotatedProbe = await probeBytes(rotatedDisplay.raw);
     const video = rotatedProbe.streams.find(
@@ -511,7 +502,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aManager",
       "POST",
       `/companies/${companyA}/media`,
-      { strong: true, body: { ...base, branchId: null } },
+      { body: { ...base, branchId: null } },
     );
     expect(code(managerCompany)).toBe("PERMISSION_DENIED");
     const otherBranch = await call(
@@ -532,14 +523,14 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "bAdmin",
       "POST",
       `/companies/${companyA}/media`,
-      { strong: true, body: { ...base, branchId: null } },
+      { body: { ...base, branchId: null } },
     );
     expect(code(foreign)).toBe("RESOURCE_NOT_FOUND");
     const foreignBranch = await call(
       "bAdmin",
       "POST",
       `/companies/${companyB}/media`,
-      { strong: true, body: { ...base, branchId: a1.id } },
+      { body: { ...base, branchId: a1.id } },
     );
     expect(code(foreignBranch)).toBe("VALIDATION_FAILED");
     const tooLarge = await call(
@@ -547,7 +538,6 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "POST",
       `/companies/${companyA}/media`,
       {
-        strong: true,
         body: { ...base, branchId: null, size: 20 * 1024 * 1024 + 1 },
       },
     );
@@ -557,7 +547,6 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "POST",
       `/companies/${companyA}/media`,
       {
-        strong: true,
         body: { ...base, branchId: null, contentType: "image/gif" },
       },
     );
@@ -577,7 +566,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "bAdmin",
       "PUT",
       `/companies/${companyA}/media/${operator.body.id}/content`,
-      { strong: true, bytes: Buffer.alloc(1000) },
+      { bytes: Buffer.alloc(1000) },
     );
     expect(code(hidden)).toBe("RESOURCE_NOT_FOUND");
     const discarded = await call(
@@ -630,7 +619,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aManager",
       "PATCH",
       `/companies/${companyA}/media/${shared.id}`,
-      { strong: true, body: { expectedVersion: 3, name: "Outro" } },
+      { body: { expectedVersion: 3, name: "Outro" } },
     );
     expect(code(rename)).toBe("PERMISSION_DENIED");
     const retag = await call(
@@ -638,7 +627,6 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "PATCH",
       `/companies/${companyA}/media/${local.id}`,
       {
-        strong: true,
         body: { expectedVersion: 3, tags: [" Almoço ", "almoço", "Menu"] },
       },
     );
@@ -664,7 +652,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aManager",
       "PATCH",
       `/companies/${companyA}/media/${local.id}`,
-      { strong: true, body: { expectedVersion: 3, name: "Velho" } },
+      { body: { expectedVersion: 3, name: "Velho" } },
     );
     expect(code(conflict)).toBe("RESOURCE_VERSION_CONFLICT");
     // Cursors stay bound to the caller and filters.
@@ -672,14 +660,14 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media?limit=1`,
-      { strong: true },
+      {},
     );
     expect(first.body.nextCursor).toBeTruthy();
     const foreignCursor = await call(
       "aManager",
       "GET",
       `/companies/${companyA}/media?limit=1&cursor=${String(first.body.nextCursor)}`,
-      { strong: true },
+      {},
     );
     expect(code(foreignCursor)).toBe("VALIDATION_FAILED");
     // Operators cannot archive without an additional grant.
@@ -708,21 +696,21 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aManager",
       "POST",
       `/companies/${companyA}/media/${first.id}/archive`,
-      { strong: true, body: { expectedVersion: 3 } },
+      { body: { expectedVersion: 3 } },
     );
     expect(code(archived)).toBe("PERMISSION_DENIED");
     const adminArchive = await call(
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${first.id}/archive`,
-      { strong: true, body: { expectedVersion: 3 } },
+      { body: { expectedVersion: 3 } },
     );
     expect(adminArchive.body.status).toBe("ARCHIVED");
     const selectable = await call(
       "aAdmin",
       "GET",
       `/companies/${companyA}/media?view=selectable&limit=100`,
-      { strong: true },
+      {},
     );
     expect(
       (selectable.body.items as { id: string }[]).some(
@@ -734,7 +722,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${twin.id}/delete`,
-      { strong: true, body: { expectedVersion: 3 } },
+      { body: { expectedVersion: 3 } },
     );
     expect(code(notArchived)).toBe("MEDIA_INVALID_STATE");
     protectedAssets.set(first.id, [{ kind: "playlist", branchId: null }]);
@@ -742,7 +730,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${first.id}/delete`,
-      { strong: true, body: { expectedVersion: 4 } },
+      { body: { expectedVersion: 4 } },
     );
     expect(code(inUse)).toBe("MEDIA_IN_USE");
     protectedAssets.delete(first.id);
@@ -750,7 +738,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${first.id}/delete`,
-      { strong: true, body: { expectedVersion: 4 } },
+      { body: { expectedVersion: 4 } },
     );
     expect(deleted.body.status).toBe("DELETED");
     const purgeAfter = new Date(deleted.body.purgeAfter as string).getTime();
@@ -763,21 +751,21 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aManager",
       "GET",
       `/companies/${companyA}/media?view=trash`,
-      { strong: true },
+      {},
     );
     expect(code(trash)).toBe("PERMISSION_DENIED");
     const restored = await call(
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${first.id}/restore-deleted`,
-      { strong: true, body: { expectedVersion: 5 } },
+      { body: { expectedVersion: 5 } },
     );
     expect(restored.body.status).toBe("ARCHIVED");
     await call(
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${first.id}/delete`,
-      { strong: true, body: { expectedVersion: 6 } },
+      { body: { expectedVersion: 6 } },
     );
     // A protected item stays in the trash past its purge instant.
     await sql.query(
@@ -812,7 +800,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/media/${twin.id}/content?variant=display`,
-      { strong: true },
+      {},
     );
     expect(twinDisplay.status).toBe(200);
     const audit = await sql.query<{ action: string }>(
@@ -849,7 +837,7 @@ describe("media: upload, processing, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyB}/media/${item.id}/content?variant=display`,
-      { strong: true },
+      {},
     );
     expect(code(fromA)).toBe("RESOURCE_NOT_FOUND");
     expect(await readdir(join(root, "work"))).toEqual([]);

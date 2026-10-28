@@ -58,7 +58,6 @@ import {
   CompanyGate,
   ConfirmedDelete,
   Failure,
-  StepUpPrompt,
   mustReload,
   scopeName,
   useBranchChoices,
@@ -1872,7 +1871,6 @@ function GroupDetail({
         companyId={companyId}
         source={{ kind: "group", groupId }}
         company={company}
-        returnTo={`/companies/${companyId}/programming/groups/${groupId}`}
       />
       {edit && (
         <>
@@ -2085,12 +2083,10 @@ function ScreenProgrammingDetail({
   companyId,
   deviceId,
   company,
-  returnTo,
 }: {
   companyId: string;
   deviceId: string;
   company: CompanyWithAccess;
-  returnTo: string;
 }) {
   const { t } = useProgrammingMessages();
   const queryClient = useQueryClient();
@@ -2116,11 +2112,6 @@ function ScreenProgrammingDetail({
     );
   const current = programming.data;
   const zone = current.device.timeZone ?? current.device.branch.timeZone;
-  const stepUp =
-    !assign &&
-    company.access.capabilitiesAfterStrongAuthentication.includes(
-      "programming.assign",
-    );
   return (
     <>
       <p className="hint">
@@ -2150,7 +2141,6 @@ function ScreenProgrammingDetail({
               : t.hiddenGroup}
         </dd>
       </dl>
-      {stepUp && <StepUpPrompt returnTo={returnTo} />}
       {assign && groups.isPending && <p>{t.loading}</p>}
       {assign && groups.isError && (
         <Failure
@@ -2208,7 +2198,6 @@ function ScreenProgrammingDetail({
           companyId={companyId}
           source={{ kind: "device", deviceId }}
           company={company}
-          returnTo={returnTo}
         />
       )}
     </>
@@ -2230,7 +2219,6 @@ export function ScreenProgrammingPage({
           companyId={companyId}
           deviceId={deviceId}
           company={company}
-          returnTo={returnTo}
         />
       )}
     </CompanyGate>

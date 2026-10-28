@@ -20,7 +20,7 @@ The design applies these selected policies without changing them:
 - Detect a desired publication within 30 seconds (AT-11); report state every 30 seconds, stale after 90 seconds and offline after 120 seconds, always with the last observed time (AT-24); show an observed acknowledgement within 10 seconds of receiving it (AT-14).
 - Offline authorization ends no later than seven days after the last renewal (AT-15); trusted-time uncertainty of at most 60 seconds (AT-16); the player keeps the active and previous valid generations and a valid staging attempt (AT-19) within the reserve of AT-05.
 - Inactive publication history stays recoverable for at least 90 days (AT-18); detailed operational reports are kept 30 days by default (AT-20); the current and previous protocol generations are supported for at least 90 days after a transition (AT-26).
-- Publishing or restoring a published version is allowed to administrators company-wide and branch managers in their branches; operators need an additional grant ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)). Anyone granted publication needs strong authentication, and ordinary publication uses the normal compliant session without a new prompt.
+- Publishing or restoring a published version is allowed to administrators company-wide and branch managers in their branches; operators need an additional grant ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)). Ordinary publication uses the normal session without a new prompt.
 
 ## Concepts
 
@@ -116,12 +116,12 @@ The programming module's assignment confirmation becomes exact: `confirmUnpublis
 
 Screens use their device credential (ADR-0027) on every request and poll; the server never pushes.
 
-| Operation | Purpose |
-| --- | --- |
-| `POST /device/sync` | Every 30 seconds: the screen sends its state report and receives its status, time zone, desired publication and a fresh authorization statement |
-| `GET /device/publications/{publicationId}/manifest` | The manifest bytes of the screen's current desired publication |
-| `GET /device/media/{mediaId}` | The display rendition of a media item of the current desired publication, with single-range requests for resuming |
-| `GET /device/keys` | The public keys that verify authorization statements |
+| Operation                                           | Purpose                                                                                                                                         |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /device/sync`                                 | Every 30 seconds: the screen sends its state report and receives its status, time zone, desired publication and a fresh authorization statement |
+| `GET /device/publications/{publicationId}/manifest` | The manifest bytes of the screen's current desired publication                                                                                  |
+| `GET /device/media/{mediaId}`                       | The display rendition of a media item of the current desired publication, with single-range requests for resuming                               |
+| `GET /device/keys`                                  | The public keys that verify authorization statements                                                                                            |
 
 The sync response carries `serverTime`; `status` (`active`, `suspended` or `unlinked`, as in `GET /device/self`); the effective `timeZone` (the screen's own, otherwise its branch's) with `zoneOffsets`, its UTC offsets from three days before `serverTime` to 35 days after it, and the configured `rotation`, both added for the player ([player design](player-design.md#server-additions)); the screen's `branchId`, which protocol 2 needs for branch prices; `desired` with the publication ID, its protocol, generation, manifest SHA-256 and size and whether it comes from a group or the screen's own program, or `null` for an unpublished source; the `authorization` statement; and `nextSyncSeconds` (30). A suspended company renews nothing: the response has no statement and no desired publication, and the screen keeps its current state until its last statement expires. An unlinked screen receives `clearRequired` and nothing else, and continues with the devices module's erasure confirmation.
 
@@ -133,12 +133,12 @@ Protocol compatibility: every manifest and exchange names its protocol. The sync
 
 Each sync response for an active screen carries a statement signed by the server as a compact JWS with `ES256` (ECDSA P-256 with SHA-256), a `kid` naming the key and `typ` `teluni-authorization+jws`. Its claims:
 
-| Claim | Meaning |
-| --- | --- |
-| `sub`, `company` | The screen and its company |
-| `iat` | The server's time when it was issued: a signed time reference for the player's trusted clock (D-07, AT-16) |
-| `exp` | `iat` plus seven days (AT-15), the latest moment the player may show protected content without a newer statement; capped by commercial validity in PJ-27 |
-| `publications` | The publications the player may activate or keep active until `exp`: each ID with its manifest SHA-256 |
+| Claim            | Meaning                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sub`, `company` | The screen and its company                                                                                                                               |
+| `iat`            | The server's time when it was issued: a signed time reference for the player's trusted clock (D-07, AT-16)                                               |
+| `exp`            | `iat` plus seven days (AT-15), the latest moment the player may show protected content without a newer statement; capped by commercial validity in PJ-27 |
+| `publications`   | The publications the player may activate or keep active until `exp`: each ID with its manifest SHA-256                                                   |
 
 `publications` holds the desired publication and, while the screen has not activated it, the active and recovery generations the screen reported, when they are unpruned publications of the screen's company. An unpublished source yields an empty list, so the screen shows neutral output after applying an assignment, as the policies require; a failed staging keeps the previous generation authorized. Revoking a specific publication (incident response) would remove it from every list; no revocation operation is part of this design.
 
@@ -171,11 +171,11 @@ The publications module registers a `publication` media reference guard: media r
 
 ## Permissions
 
-| Capability | Company administrator | Branch manager | Operator | Delegable |
-| --- | --- | --- | --- | --- |
-| `publications.publish`: publish and restore programs | Company | Branches | No (additional grant) | Yes, with `programming.view` |
+| Capability                                           | Company administrator | Branch manager | Operator              | Delegable                    |
+| ---------------------------------------------------- | --------------------- | -------------- | --------------------- | ---------------------------- |
+| `publications.publish`: publish and restore programs | Company               | Branches       | No (additional grant) | Yes, with `programming.view` |
 
-Scope follows the programming design: a group's program needs the capability on every branch of its span (company scope for a whole-company group), a screen's program on the screen's branch. `publications.publish` always needs strong authentication, also through a profile, and works in the normal session without a recent re-authentication. A program's history and check need `programming.view` on the same scope; a screen's synchronization state needs `devices.view` on its branch.
+Scope follows the programming design: a group's program needs the capability on every branch of its span (company scope for a whole-company group), a screen's program on the screen's branch. `publications.publish` works in the normal session, also through a profile, without a recent re-authentication. A program's history and check need `programming.view` on the same scope; a screen's synchronization state needs `devices.view` on its branch.
 
 ## Abuse limits
 
@@ -187,14 +187,14 @@ At most 30 publications per program per hour and 300 per company per day (`RATE_
 
 ## Data
 
-| Table | Purpose |
-| --- | --- |
-| `publications` | Company, program (composite reference, deleted with the program), generation (unique per program), protocol, content digest, manifest bytes (null once pruned), manifest SHA-256 and size, item and media counts and bytes, restored-from publication, origin (manual, restore or price), publisher membership, published, superseded and pruned times |
-| `publication_playlists` | Each playlist copied into a publication with the branch that owned it then, for restore checks |
-| `publication_media` | Each media item of a retained publication with its rendition SHA-256, size and type (composite reference to the media item); deleted when pruned |
-| `publication_device_states` | One row per screen: last report fields, time received and the desired publication answered |
-| `publication_device_events` | Report transitions per screen, kept 30 days |
-| `publication_audit_events` | Append-only audit rows with the branches they concern |
+| Table                       | Purpose                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `publications`              | Company, program (composite reference, deleted with the program), generation (unique per program), protocol, content digest, manifest bytes (null once pruned), manifest SHA-256 and size, item and media counts and bytes, restored-from publication, origin (manual, restore or price), publisher membership, published, superseded and pruned times |
+| `publication_playlists`     | Each playlist copied into a publication with the branch that owned it then, for restore checks                                                                                                                                                                                                                                                         |
+| `publication_media`         | Each media item of a retained publication with its rendition SHA-256, size and type (composite reference to the media item); deleted when pruned                                                                                                                                                                                                       |
+| `publication_device_states` | One row per screen: last report fields, time received and the desired publication answered                                                                                                                                                                                                                                                             |
+| `publication_device_events` | Report transitions per screen, kept 30 days                                                                                                                                                                                                                                                                                                            |
+| `publication_audit_events`  | Append-only audit rows with the branches they concern                                                                                                                                                                                                                                                                                                  |
 
 Every table carries `company_id` with composite tenant references, as the [tenant data design](tenant-data-design.md) requires; reported publication IDs are stored as reported, without references, because they are untrusted. Manifests are `CONFIDENTIAL` like the schedules they contain.
 
@@ -226,7 +226,7 @@ Copy is in `pt-BR` and `en-US`; reported states are labeled as reported by the s
 Implemented in [PJ-11](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-25](human-actions.md#ph-25):
 
 - The [`publications` API module](../../apps/api/src/features/publications/AGENTS.md), its reviewed migration (which also lets profiles delegate `publications.publish`), runtime grants, schema metadata, the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK, and the `TELUNI_SYNC_SIGNING_KEYS` setting; without it the module stays unmounted.
-- `publications.publish` for administrators and branch managers and as a delegable profile capability with `programming.view`, always with strong authentication.
+- `publications.publish` for administrators and branch managers and as a delegable profile capability with `programming.view`.
 - Check, publish with the reviewed content digest, history and restore over the programming port's locked snapshot; the protocol 1 manifest and content digest in [`domain.ts`](../../apps/api/src/features/publications/domain.ts); ES256 statements and the key set with `jose`.
 - The sync exchange, delivery of the desired publication's manifest and renditions with ranges and at most two downloads per screen, screen states and 30-day transitions, the `publication` media guard, hourly pruning, and the programming assignment that asks for confirmation only for unpublished destinations.
 - [Domain tests](../../apps/api/test/publications/domain.test.ts) for exact manifest bytes, fixture-format rules, digests, statements with rotated keys, authorization lists, AT-24 thresholds and protocol agreement, and the [two-company integration suite](../../apps/api/test/publications/integration.test.ts) with simulated screens against PostgreSQL as the runtime role.
@@ -252,7 +252,7 @@ The owner approved each item as proposed on 2026-10-20 under [PH-25](human-actio
 4. **Manifest protocol 1.** Exact JSON bytes identified by SHA-256, identifiers instead of names, rules in the fixture format, media descriptors with size, SHA-256, type and dimensions; zones delivered per screen.
 5. **Signed authorization statement (ADR-0030).** ES256 JWS from the `TELUNI_SYNC_SIGNING_KEYS` key ring with signed server time, a seven-day expiry and the manifests the screen may play; public keys at `GET /device/keys`; the player obligations listed above.
 6. **Publication validation.** Scope, media availability (archived allowed), schedule validity and size are checked again; fades are refused until a qualified profile exists rather than downgraded.
-7. **Permissions.** `publications.publish` as in the table, delegable with `programming.view`, always with strong authentication and no recent re-authentication; history with `programming.view`, screen state with `devices.view`.
+7. **Permissions.** `publications.publish` as in the table, delegable with `programming.view`, with no recent re-authentication; history with `programming.view`, screen state with `devices.view`.
 8. **Reports and monitoring.** Latest report per screen and 30-day transition events; connection thresholds of AT-24 from the last sync; reports are facts, never desired state.
 9. **Retention and restore.** Retained while latest, reported in use within seven days, or within 90 days of being superseded; pruning keeps the history row; restore republishes a retained generation as a new one; a `publication` media guard protects retained media.
 10. **Limits.** 30 publications per program per hour and 300 per company per day; 2,000 items and 1,000 media per snapshot; two concurrent media downloads per screen.

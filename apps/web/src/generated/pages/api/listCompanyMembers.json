@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "listCompanyMembers",
   "summary": "",
-  "description": "List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration and two-step verification. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page.",
+  "description": "List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

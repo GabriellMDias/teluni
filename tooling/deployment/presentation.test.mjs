@@ -63,7 +63,6 @@ test("generates private, schema-valid configuration with separate credentials an
       TELUNI_KEYCLOAK_ADMIN_URL: "http://keycloak:8080/identity",
     });
     assert.equal(parsed.environment, "production");
-    assert.equal(parsed.developmentMfaMode, "required");
     assert.equal(
       parsed.tokenIssuer,
       "https://demo.example.test/identity/realms/teluni",

@@ -61,14 +61,12 @@ const sessions: HumanSessionPort = {
       return Promise.reject(
         Object.assign(new Error("no session"), { code: "AUTH" }),
       );
-    const strong = headers["x-test-strong"] === "true";
     return Promise.resolve({
       principalId,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
+      assuranceLevel: "teluni-aal1",
       authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date() : null,
-      strongAuthenticationAgeSeconds: strong ? 1 : null,
+      authenticationAgeSeconds: 1,
       scopes: new Set(),
     });
   },
@@ -203,7 +201,6 @@ async function call(
   options: {
     body?: unknown;
     bytes?: Buffer;
-    strong?: boolean;
     headers?: Record<string, string>;
   } = {},
 ): Promise<Result> {
@@ -216,7 +213,6 @@ async function call(
             "x-test-principal": people[person],
             // Administrator, manager and publisher grants need two-step
             // verification.
-            "x-test-strong": String(options.strong ?? person !== "aOperator"),
           }
         : {}),
       ...(options.bytes ? { "content-type": "application/octet-stream" } : {}),
@@ -259,7 +255,7 @@ async function createBranch(person: Person, companyId: string, name: string) {
     person,
     "POST",
     `/companies/${companyId}/branches`,
-    { strong: true, body: { name } },
+    { body: { name } },
   );
   expect(created.status).toBe(201);
   return created.body;
@@ -307,7 +303,6 @@ async function ready(
 ): Promise<string> {
   const bytes = await readFile(file);
   const created = await call(person, "POST", `/companies/${companyId}/media`, {
-    strong: true,
     body: {
       name: file.split("/").pop(),
       branchId,
@@ -320,7 +315,7 @@ async function ready(
     person,
     "PUT",
     `/companies/${companyId}/media/${created.body.id}/content`,
-    { strong: true, bytes },
+    { bytes },
   );
   expect(sent.status, JSON.stringify(sent.body)).toBe(200);
   while ((await media.runOnce()) > 0);
@@ -368,7 +363,6 @@ async function screen(
   });
   expect(started.status).toBe(201);
   const paired = await call(pairer, "POST", `/companies/${companyId}/devices`, {
-    strong: true,
     body: { userCode: started.body.userCode, name, branchId, rotation: 0 },
   });
   expect(paired.status, JSON.stringify(paired.body)).toBe(201);
@@ -1604,16 +1598,6 @@ describe("publications: publishing, synchronization and retention", () => {
     await schedule(`groups/${centro.id}`, [
       { ...morning, playlistId: local.id, startTime: "09:00" },
     ]);
-    expect(
-      code(
-        await call(
-          "aPublisher",
-          "POST",
-          `${base}/groups/${centro.id}/publications/check`,
-          { strong: false },
-        ),
-      ),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
     expect((await publish(`groups/${centro.id}`, "aPublisher")).status).toBe(
       201,
     );
@@ -2183,7 +2167,6 @@ describe("publications: publishing, synchronization and retention", () => {
             principalId: randomUUID(),
             responsible: false,
             grants: [],
-            strong: true,
           }),
           catalogId: randomUUID(),
           branchId: null,

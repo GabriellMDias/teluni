@@ -72,7 +72,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Provider-reported instant of the user's authentication (auth_time) for this session.",
+      "Meaning": "Provider-reported instant of the user's authentication (auth_time) for this session, used for recent-authentication checks (at most five minutes old for sensitive operations).",
       "Null meaning": "—",
       "Unit": "UTC instant, millisecond precision"
     },
@@ -82,8 +82,8 @@
       "Nullable": "yes",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Instant of the latest strong authentication verified for this session, used for recent-authentication checks.",
-      "Null meaning": "No strong authentication has been verified for this session.",
+      "Meaning": "Retired: instant of a teluni-aal2 step-up under the former mandatory two-step policy. Since two-step verification became optional for each person, the API neither writes nor reads it; recent-authentication checks use authenticated_at. Kept until a reviewed contract migration removes it.",
+      "Null meaning": "Every session created since two-step verification became optional, and earlier sessions without a step-up.",
       "Unit": "UTC instant, millisecond precision"
     },
     {

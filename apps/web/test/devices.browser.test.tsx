@@ -53,7 +53,7 @@ function device(overrides: Partial<Device> = {}): Device {
   };
 }
 
-function company(capabilities: string[], afterStrong: string[] = []) {
+function company(capabilities: string[]) {
   return {
     company: { id: companyId, displayName: "Synthetic company" },
     access: {
@@ -61,7 +61,6 @@ function company(capabilities: string[], afterStrong: string[] = []) {
       profiles: [],
       responsible: true,
       capabilities: ["company.view", "branches.view", ...capabilities],
-      capabilitiesAfterStrongAuthentication: afterStrong,
     },
     responsibilityTransfer: null,
   };
@@ -327,22 +326,6 @@ test("blocks repeated pairing while pending and reconciles a lost response befor
   } finally {
     release();
   }
-});
-
-test("asks for step-up when managing screens needs strong authentication", async () => {
-  respond((url) => {
-    if (url.pathname.endsWith("/devices"))
-      return { body: { items: [], nextCursor: null } };
-    if (url.pathname.endsWith("/branches")) return { body: branches };
-    return { body: company(["devices.view"], ["devices.manage"]) };
-  });
-  const { screen } = await open(screensPath);
-  await expect
-    .element(screen.getByRole("link", { name: t.stepUpButton }))
-    .toHaveAttribute(
-      "href",
-      `/api/auth/login?returnTo=${encodeURIComponent(screensPath)}&assurance=strong`,
-    );
 });
 
 test("limits rotation to reported values and sends the edited version", async () => {
@@ -760,35 +743,24 @@ test("pages screen history through URL search and safely labels actors and unkno
   expect(requests).toEqual(["first", "older", "first"]);
 });
 
-test.each([false, true])(
-  "does not fetch screen audit without current permission (step-up: %s)",
-  async (stepUp) => {
-    let reads = 0;
-    respond((url) => {
-      if (url.pathname.endsWith("/audit-events")) {
-        reads++;
-        return { body: { items: [], nextCursor: null } };
-      }
-      if (url.pathname.endsWith(`/devices/${deviceId}`))
-        return { body: device() };
-      return { body: company(["devices.view"], stepUp ? ["audit.view"] : []) };
-    });
-    const { screen } = await open(`${screensPath}/${deviceId}?view=history`);
-    await expect
-      .element(screen.getByRole(stepUp ? "status" : "alert"))
-      .toBeVisible();
-    expect(reads).toBe(0);
-    if (stepUp) {
-      const link = screen.getByRole("link", { name: t.stepUpButton });
-      await expect
-        .element(link)
-        .toHaveAttribute("href", expect.stringContaining("view%3Dhistory"));
-    } else
-      await expect
-        .element(screen.getByRole("link", { name: t.historyTitle }))
-        .not.toBeInTheDocument();
-  },
-);
+test("does not fetch screen audit without current permission", async () => {
+  let reads = 0;
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      reads++;
+      return { body: { items: [], nextCursor: null } };
+    }
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    return { body: company(["devices.view"]) };
+  });
+  const { screen } = await open(`${screensPath}/${deviceId}?view=history`);
+  await expect.element(screen.getByRole("alert")).toBeVisible();
+  expect(reads).toBe(0);
+  await expect
+    .element(screen.getByRole("link", { name: t.historyTitle }))
+    .not.toBeInTheDocument();
+});
 
 test("reloads a failed history read without showing private errors and supports a deep page link", async () => {
   let fail = true;

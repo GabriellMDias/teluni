@@ -8,7 +8,7 @@
 
 **Accepted provider direction:** self-hosted Keycloak, with the [pinned-source compatibility assessment](identity-provider-evaluation.md#pinned-source-assessment) and owner acceptance recorded on 2026-10-18. Actual deployment remains subject to PH-10 host feasibility and PJ-24 integration qualification. No recurring identity/email procurement budget is authorized. This does not establish zero operating cost or an available email service. Google is the only selected external login provider; Microsoft is not part of this delivery.
 
-**Accepted architecture:** the owner explicitly approved [ADR-0024](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md) and [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) on 2026-10-18. They do not supersede accepted ADR-0012. **Implemented:** Keycloak login, server-managed sessions, OTP step-up and the first organization/access increment; [D-02 status](identity-session-design.md#implementation-status) and [D-01 status](tenant-data-design.md#implementation-status) own the implementation evidence and remaining workflows. PH-11 is completed for selection, and PH-20 records owner approval and the PJ-03/PJ-24 implementation request. External provisioning and unperformed release qualification remain pending.
+**Accepted architecture:** the owner explicitly approved [ADR-0024](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md) and [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) on 2026-10-18. They do not supersede accepted ADR-0012. **Implemented:** Keycloak login, server-managed sessions, optional per-person two-step verification (authenticator-app OTP) and the first organization/access increment; [D-02 status](identity-session-design.md#implementation-status) and [D-01 status](tenant-data-design.md#implementation-status) own the implementation evidence and remaining workflows. PH-11 is completed for selection, and PH-20 records owner approval and the PJ-03/PJ-24 implementation request. External provisioning and unperformed release qualification remain pending.
 
 ## Enrollment and account continuity
 
@@ -17,16 +17,16 @@
 - Require trusted email verification before company access. Company invitations are recipient-bound, single-use, revocable and valid for **seven days**; a resend invalidates the previous pending invitation. Acceptance requires the matching authenticated identity and explicit membership confirmation. Changing recipient requires a new invitation. Verification establishes mailbox control, not legal identity or company ownership.
 - Link login methods only through an explicit flow proving the existing account and new method with recent authentication. Never merge accounts solely by equal email. A new email must be verified, the previous address notified and the stable application identity preserved. Method removal must leave a usable method meeting assurance requirements. This applies equally to first Google login and later linking.
 - One human identity may hold independent memberships in multiple companies and different scopes/roles within each. Switching company explicitly revalidates access. A company administrator cannot enumerate the person's other companies or manage their global credentials.
-- Each company has a **designated responsible administrator** who approves additional company administrators. Other administrators retain the matrix's ordinary administrative capabilities but cannot bypass that approval. Establish the first responsible administrator from the verified automatic signup flow; controlled assisted enrollment may serve support/migration needs without overriding the public-registration decision. Responsibility transfer requires an attributable, strongly authenticated flow and successor acceptance; prevent loss of the last active administrator or responsibility without a valid transfer. Responsibility is a company relationship, not an inferred legal-ownership determination or platform privilege.
+- Each company has a **designated responsible administrator** who approves additional company administrators. Other administrators retain the matrix's ordinary administrative capabilities but cannot bypass that approval. Establish the first responsible administrator from the verified automatic signup flow; controlled assisted enrollment may serve support/migration needs without overriding the public-registration decision. Responsibility transfer requires an attributable, recently authenticated flow and successor acceptance; prevent loss of the last active administrator or responsibility without a valid transfer. Responsibility is a company relationship, not an inferred legal-ownership determination or platform privilege.
 - Provision platform administrators through a controlled procedure, outside public signup and tenant administration. Use individual administrative accounts distinct from ordinary customer operation, with phishing-resistant assurance and prepared recovery. Product administration does not grant access to provider administration, infrastructure, database credentials or customer content.
 
 ## Assurance, recovery and abuse
 
-Strong authentication is mandatory for platform administrators, company administrators and branch managers. Operators may opt in, and companies can require it for everyone. Any operator/profile granted publication or automatic-price distribution must also meet the strong-authentication requirement. Do not let custom role labels bypass an assurance requirement attached to a capability.
+**Revised by the owner on 2026-10-28** (supersedes the mandatory part of P12 for company users): two-step verification (an authenticator-app code) is **optional for every company user**, administrators and branch managers included. Each person enables or disables it on their account; Teluni suggests enabling it right after a new person's first sign-in, without requiring it. Once enabled, the code is asked at every sign-in. No role, profile or capability requires it, and no operation asks for it by itself. Platform administration, not yet implemented, keeps its phishing-resistant requirement. A company-wide option to require it for all members is not implemented and needs a new owner decision before it is.
 
-Prefer passkeys with user verification; password plus an authenticator-app second factor is the selected alternative, with protected single-use recovery codes. Platform administration requires a phishing-resistant method and protected recovery. Social login or a generic passkey label does not alone prove equivalent assurance: qualify the actual flow and assertion. Email-only recovery cannot bypass mandatory MFA. Do not use SMS as the default method.
+Prefer passkeys with user verification; password plus an authenticator-app second factor is the selected alternative, with protected single-use recovery codes. Platform administration requires a phishing-resistant method and protected recovery. Social login or a generic passkey label does not alone prove equivalent assurance: qualify the actual flow and assertion. Email-only recovery cannot remove an enabled second factor. Do not use SMS as the default method.
 
-Require strong authentication no more than **five minutes** old when promoting administrators, changing credentials/MFA/email, transferring responsibility, granting support access, exporting in bulk or unlinking/destroying in bulk. Ordinary authorized publication/price operations use the normal compliant session, without a new prompt for every save. Sensitive operations by users without an enrolled adequate factor must first obtain the required assurance. Confirmation dialogs do not constitute authentication.
+Require an authentication no more than **five minutes** old when promoting administrators, changing credentials/MFA/email, transferring responsibility, granting support access, exporting in bulk or unlinking/destroying in bulk. Since the 2026-10-28 revision this means signing in again: the password, plus the code for people who enabled two-step verification. Disabling two-step verification asks for the password and the current code. Ordinary authorized publication/price operations use the normal session, without a new prompt for every save. Confirmation dialogs do not constitute authentication.
 
 Use provider-owned password recovery with enumeration-safe public responses. The selected reset-link target is **15 minutes**, single-purpose and single-use; verify exact invalidation semantics in the selected version. Successful password recovery revokes earlier sessions. MFA recovery first uses a valid alternate authenticator or recovery code. Suspected compromise offers global session termination and a support channel.
 
@@ -36,15 +36,15 @@ Apply context/operation rate limits, progressive delays, enumeration-safe respon
 
 ## Human session lifecycle
 
-| Policy | Selected boundary |
-| --- | --- |
-| Inactivity | 30 minutes for administrative contexts, including branch-management operation; two hours for operators |
-| Absolute session duration | 12 hours; companies may select shorter limits |
-| Remember me | Not offered in this delivery; no implicit persistent seven-day human login |
-| Concurrent sessions | Up to five per person; at most two platform-administration contexts. On reaching the limit, explicitly choose a session to terminate |
-| Recent strong authentication | Five minutes for the sensitive operations above |
-| Access-token lifetime target | Five minutes, with independent session/account/membership enforcement |
-| Revocation/freshness | Deny new protected operations within 30 seconds of global disablement, session termination or membership removal/reduction; sensitive confirmation uses current state |
+| Policy                       | Selected boundary                                                                                                                                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inactivity                   | 30 minutes for administrative contexts, including branch-management operation; two hours for operators                                                                |
+| Absolute session duration    | 12 hours; companies may select shorter limits                                                                                                                         |
+| Remember me                  | Not offered in this delivery; no implicit persistent seven-day human login                                                                                            |
+| Concurrent sessions          | Up to five per person; at most two platform-administration contexts. On reaching the limit, explicitly choose a session to terminate                                  |
+| Recent authentication        | Five minutes for the sensitive operations above                                                                                                                       |
+| Access-token lifetime target | Five minutes, with independent session/account/membership enforcement                                                                                                 |
+| Revocation/freshness         | Deny new protected operations within 30 seconds of global disablement, session termination or membership removal/reduction; sensitive confirmation uses current state |
 
 List sessions using minimized, justified metadata; allow termination of one or all. Background polling/refresh does not count as human activity and cannot extend absolute duration. Warn before timeout and protect recoverable drafts without leaking them across account/company changes or retaining protected caches after logout. Detailed concurrent-session accounting across provider and application sessions remains design/qualification work.
 
@@ -64,23 +64,23 @@ Grants combine within their explicit scopes. A person can manage one branch and 
 
 In the table, **company** means that company only, **branches** means explicit authorized branches, and **additional grant** is not part of the default role. All ordinary grants are constrained by resource state, lifecycle protections and authentication assurance. P10's responsible-administrator approval takes precedence over the generic administration row.
 
-| Capability | Company administrator | Branch manager | Operator |
-| --- | --- | --- | --- |
-| General company settings and branches | Company | No | No |
-| Manage administrators and profiles | Company; new administrators require responsible-administrator approval | No | No |
-| Invite operators | Company | Own branches, without granting authority beyond the manager's | No |
-| View content and device state | Company | Branches and explicitly shared resources | Branches and explicitly shared resources |
-| Upload media and prepare drafts | Company | Branches | Branches |
-| Author layouts, playlists and agendas | Company | Branches | Branches, drafts only |
-| Publish or restore a published version | Company | Branches | Additional grant |
-| Change prices with automatic publication | Company | Only when authorized for every affected target | Additional grant, with the same impact checks |
-| Create shared company catalog/schema | Company | Additional grant | Additional grant |
-| Edit records without automatic publication | Company | Authorized branches/resources | Authorized branches/resources, drafts only |
-| Pair, move, unlink or reset devices | Company | Authorized source/destination branches and required confirmations | Additional grant |
-| Archive or restore permitted resources | Company | Branches, preserving references | Additional grant |
-| Permanently delete content | Company, subject to retention/reference controls | No | No |
-| View audit | Company | Own branch operations, without other-scope data | No |
-| Bulk export | Company, recent strong authentication | Additional grant, recent strong authentication | No |
+| Capability                                 | Company administrator                                                  | Branch manager                                                    | Operator                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------- |
+| General company settings and branches      | Company                                                                | No                                                                | No                                            |
+| Manage administrators and profiles         | Company; new administrators require responsible-administrator approval | No                                                                | No                                            |
+| Invite operators                           | Company                                                                | Own branches, without granting authority beyond the manager's     | No                                            |
+| View content and device state              | Company                                                                | Branches and explicitly shared resources                          | Branches and explicitly shared resources      |
+| Upload media and prepare drafts            | Company                                                                | Branches                                                          | Branches                                      |
+| Author layouts, playlists and agendas      | Company                                                                | Branches                                                          | Branches, drafts only                         |
+| Publish or restore a published version     | Company                                                                | Branches                                                          | Additional grant                              |
+| Change prices with automatic publication   | Company                                                                | Only when authorized for every affected target                    | Additional grant, with the same impact checks |
+| Create shared company catalog/schema       | Company                                                                | Additional grant                                                  | Additional grant                              |
+| Edit records without automatic publication | Company                                                                | Authorized branches/resources                                     | Authorized branches/resources, drafts only    |
+| Pair, move, unlink or reset devices        | Company                                                                | Authorized source/destination branches and required confirmations | Additional grant                              |
+| Archive or restore permitted resources     | Company                                                                | Branches, preserving references                                   | Additional grant                              |
+| Permanently delete content                 | Company, subject to retention/reference controls                       | No                                                                | No                                            |
+| View audit                                 | Company                                                                | Own branch operations, without other-scope data                   | No                                            |
+| Bulk export                                | Company, recent authentication                                         | Additional grant, recent authentication                           | No                                            |
 
 Share media, layouts and catalogs explicitly with selected branches or the whole company, separating read/use from edit authority. Sharing does not confer publication authority over another branch or expose private referenced records/previews/URLs. Enforce scopes on detail/list/search/count/export, uploads/downloads/previews, imports, manifests, telemetry, caches and bulk requests, not only visible buttons.
 
@@ -110,68 +110,68 @@ Require application-stable principal IDs, application-owned memberships/permissi
 
 These are specified allow/deny and lifecycle cases, **not executed tests**. PJ-03/PJ-24 own implementation evidence; PJ-07 owns design review.
 
-| Case | Required expected result |
-| --- | --- |
-| IA-01 — Public enrollment | Verified eligible signup creates a new isolated company and its responsible administrator; cannot claim an existing tenant, set privileged principal claims or gain platform authority |
-| IA-02 — Invitation and linking | Correct verified recipient accepts once within seven days; wrong recipient, replay, revoked/replaced/expired invite and email-only account merging fail |
-| IA-03 — Company context | One identity uses independently scoped memberships; switching/reusing IDs, mixed-tenant references, collections, counts, downloads and caches cannot cross scope |
-| IA-04 — Responsibility | Responsible administrator approves additional administrators; ordinary admin cannot bypass it; last-admin removal and incomplete transfer fail |
-| IA-05 — Assurance | Required roles/capabilities cannot bypass MFA; sensitive actions require trusted assurance no older than five minutes; social/weak recovery cannot satisfy it implicitly |
-| IA-06 — Recovery | Reset-link expiry/single use, MFA recovery and earlier-session revocation work; insufficient assisted-recovery evidence cannot grant access or affect unrelated memberships |
-| IA-07 — Sessions | Idle/absolute limits, no remember-me, five-session/two-platform-context bounds and explicit termination work across tabs, refresh concurrency and logout |
-| IA-08 — Revocation | Global/session/local removal and profile reductions prevent new operations within 30 seconds; stale JWT/grants cannot authorize sensitive effects; unrelated memberships remain available |
-| IA-09 — Browser boundary | OIDC state/nonce/PKCE/redirect checks, protected cookies, CSRF/fixation controls, token redaction and server-only token storage resist bypass; provider logout/refresh replay are reconciled |
-| IA-10 — Scoped profiles | Matrix allow cases work; operator publish/delete/export, manager cross-branch actions, unauthorized grants/profile edits and temporary-grant expiry fail closed |
-| IA-11 — Price impact | Authorized all-target save publishes; any unauthorized target rejects the whole mutation without a partial save/distribution or hidden approval fallback; authorized local override stays local |
-| IA-12 — Optional approvals | Disabled policy allows authorized direct publication; enabled policy requires independent scoped approval and never labels a price proposal already effective |
-| IA-13 — Delayed work | Removal/reduction blocks an outstanding protected effect; issued valid publications continue normally; retries do not expand scope or lose real authorship |
-| IA-14 — Support/emergency | No default customer-content privilege; scoped consent expires within its grant, read grants cannot write, no impersonation, exceptional access follows separately reviewed controls |
-| IA-15 — Failure and continuity | Identity/JWKS/session/email outages fail safely without administrative bypass; environments, restore and migration preserve principal scope/revocation and independent player behavior |
-| IA-16 — Evidence and abuse | Safe public errors, bounded abuse controls, audit access/notifications and redaction preserve attribution without enumerating identities or leaking secrets |
+| Case                           | Required expected result                                                                                                                                                                                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IA-01 — Public enrollment      | Verified eligible signup creates a new isolated company and its responsible administrator; cannot claim an existing tenant, set privileged principal claims or gain platform authority                                                                                                |
+| IA-02 — Invitation and linking | Correct verified recipient accepts once within seven days; wrong recipient, replay, revoked/replaced/expired invite and email-only account merging fail                                                                                                                               |
+| IA-03 — Company context        | One identity uses independently scoped memberships; switching/reusing IDs, mixed-tenant references, collections, counts, downloads and caches cannot cross scope                                                                                                                      |
+| IA-04 — Responsibility         | Responsible administrator approves additional administrators; ordinary admin cannot bypass it; last-admin removal and incomplete transfer fail                                                                                                                                        |
+| IA-05 — Assurance              | Two-step verification stays optional for each person and, once enabled, is asked at every sign-in; disabling it needs the password and current code; sensitive actions require a trusted authentication no older than five minutes; social/weak recovery cannot satisfy it implicitly |
+| IA-06 — Recovery               | Reset-link expiry/single use, MFA recovery and earlier-session revocation work; insufficient assisted-recovery evidence cannot grant access or affect unrelated memberships                                                                                                           |
+| IA-07 — Sessions               | Idle/absolute limits, no remember-me, five-session/two-platform-context bounds and explicit termination work across tabs, refresh concurrency and logout                                                                                                                              |
+| IA-08 — Revocation             | Global/session/local removal and profile reductions prevent new operations within 30 seconds; stale JWT/grants cannot authorize sensitive effects; unrelated memberships remain available                                                                                             |
+| IA-09 — Browser boundary       | OIDC state/nonce/PKCE/redirect checks, protected cookies, CSRF/fixation controls, token redaction and server-only token storage resist bypass; provider logout/refresh replay are reconciled                                                                                          |
+| IA-10 — Scoped profiles        | Matrix allow cases work; operator publish/delete/export, manager cross-branch actions, unauthorized grants/profile edits and temporary-grant expiry fail closed                                                                                                                       |
+| IA-11 — Price impact           | Authorized all-target save publishes; any unauthorized target rejects the whole mutation without a partial save/distribution or hidden approval fallback; authorized local override stays local                                                                                       |
+| IA-12 — Optional approvals     | Disabled policy allows authorized direct publication; enabled policy requires independent scoped approval and never labels a price proposal already effective                                                                                                                         |
+| IA-13 — Delayed work           | Removal/reduction blocks an outstanding protected effect; issued valid publications continue normally; retries do not expand scope or lose real authorship                                                                                                                            |
+| IA-14 — Support/emergency      | No default customer-content privilege; scoped consent expires within its grant, read grants cannot write, no impersonation, exceptional access follows separately reviewed controls                                                                                                   |
+| IA-15 — Failure and continuity | Identity/JWKS/session/email outages fail safely without administrative bypass; environments, restore and migration preserve principal scope/revocation and independent player behavior                                                                                                |
+| IA-16 — Evidence and abuse     | Safe public errors, bounded abuse controls, audit access/notifications and redaction preserve attribution without enumerating identities or leaking secrets                                                                                                                           |
 
 ## PH-11 decision record
 
 Evidence: the owner supplied the completed response table on **2026-10-18**. All dispositions below are direct answers, with no delegated/unanswered selection. Each letter refers to the temporary questionnaire, not a persistent implementation identifier.
 
-| Question | Owner answer | Recorded outcome |
-| --- | --- | --- |
-| P01 | A | Self-hosted identity, conditional on PH-10 feasibility |
-| P02 | A | Keycloak selected as candidate, with compatibility/recovery review |
-| P03 | A | No recurring identity/email procurement now; readiness may remain pending |
-| P04 | A | Email/password plus optional passkeys |
-| P05 | B | Google only as external login; no Microsoft in this delivery |
-| P06 | C | Public signup and automatic company activation after verification/abuse checks; commercial/privacy prerequisites remain |
-| P07 | A | Verified email; recipient-bound seven-day single-use/revocable invites; resend supersedes pending invite |
-| P08 | A | Explicit proven account/method linking; no email-only merge |
-| P09 | A | Independent multi-company memberships and explicit context switching |
-| P10 | C | Designated responsible administrator approves other administrators; controlled responsibility transfer |
-| P11 | A | Separate individually provisioned platform-administration accounts |
-| P12 | A | Mandatory strong authentication for administrators/managers and distribution-capable operators; company-wide option |
-| P13 | A | User-verified passkeys preferred, authenticator alternative/recovery codes; platform phishing resistance |
-| P14 | A | Five-minute recent strong authentication for selected sensitive operations; normal compliant publication session |
-| P15 | A | Provider-owned safe recovery; 15-minute reset-link target and earlier-session revocation |
-| P16 | A | Exceptional proportionate assisted recovery; no global credential reset by company admins |
-| P17 | A | Administrative idle 30 minutes; operator idle two hours; absolute 12 hours; shorter company limits allowed |
-| P18 | A | No remember-me in this delivery |
-| P19 | A | Five sessions/person, two platform-administration contexts; explicit session termination |
-| P20 | A | 30-second revocation/freshness bound with current-state sensitive confirmation; five-minute access-token target |
-| P21 | A | Server-managed browser session direction, subject to ADR review |
-| P22 | A | Continue only safely verifiable authorized operations during outages; otherwise fail closed |
-| P23 | A | Standard and company-customizable scoped capability profiles |
-| P24 | A | Default permission matrix, subject to the more specific P10/P27 controls |
-| P25 | A | Multiple additive grants in explicit scopes; suspended/expired state denies |
-| P26 | A | Explicit company/branch resource sharing; read/use separate from editing/publication |
-| P27 | A | Reject entire out-of-scope price mutation; no automatic approval-request fallback |
-| P28 | A | Optional independent approval policies; disabled by default; proposals are not effective price saves |
-| P29 | A | Revalidate before outstanding protected effects; already-issued valid versions retain their lifecycle |
-| P30 | A | Explicitly expiring temporary access, without automatic renewal |
-| P31 | A | Individual attributable human accounts, no shared shift credentials |
-| P32 | A | Local membership removal distinct from global identity, content ownership and company suspension |
-| P33 | A | Explicit scoped customer support consent, one-hour default maximum, read-first/separate writes |
-| P34 | A | Support's own identity, no impersonation; separate exceptional emergency procedure |
-| P35 | A | User sessions/notices, company/branch-scoped audit and minimized platform security events |
-| P36 | A | Contextual abuse controls and justified challenges; no permanent attacker-triggered lockout |
-| P37 | A | Stable application identity/portability/environment isolation; no additional mandatory pre-pilot export/import proof |
-| P38 | A | Consolidate policies and proposed ADRs; close decision portion only after reviewed/accepted technical decision; provision/test separately |
+| Question | Owner answer | Recorded outcome                                                                                                                                                                                                                          |
+| -------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P01      | A            | Self-hosted identity, conditional on PH-10 feasibility                                                                                                                                                                                    |
+| P02      | A            | Keycloak selected as candidate, with compatibility/recovery review                                                                                                                                                                        |
+| P03      | A            | No recurring identity/email procurement now; readiness may remain pending                                                                                                                                                                 |
+| P04      | A            | Email/password plus optional passkeys                                                                                                                                                                                                     |
+| P05      | B            | Google only as external login; no Microsoft in this delivery                                                                                                                                                                              |
+| P06      | C            | Public signup and automatic company activation after verification/abuse checks; commercial/privacy prerequisites remain                                                                                                                   |
+| P07      | A            | Verified email; recipient-bound seven-day single-use/revocable invites; resend supersedes pending invite                                                                                                                                  |
+| P08      | A            | Explicit proven account/method linking; no email-only merge                                                                                                                                                                               |
+| P09      | A            | Independent multi-company memberships and explicit context switching                                                                                                                                                                      |
+| P10      | C            | Designated responsible administrator approves other administrators; controlled responsibility transfer                                                                                                                                    |
+| P11      | A            | Separate individually provisioned platform-administration accounts                                                                                                                                                                        |
+| P12      | A            | Mandatory strong authentication for administrators/managers and distribution-capable operators; company-wide option. **Revised 2026-10-28:** optional for every company user, suggested after signup, asked at every sign-in once enabled |
+| P13      | A            | User-verified passkeys preferred, authenticator alternative/recovery codes; platform phishing resistance                                                                                                                                  |
+| P14      | A            | Five-minute recent strong authentication for selected sensitive operations; normal compliant publication session. **Revised 2026-10-28:** a five-minute recent authentication (password, plus the code when enabled)                      |
+| P15      | A            | Provider-owned safe recovery; 15-minute reset-link target and earlier-session revocation                                                                                                                                                  |
+| P16      | A            | Exceptional proportionate assisted recovery; no global credential reset by company admins                                                                                                                                                 |
+| P17      | A            | Administrative idle 30 minutes; operator idle two hours; absolute 12 hours; shorter company limits allowed                                                                                                                                |
+| P18      | A            | No remember-me in this delivery                                                                                                                                                                                                           |
+| P19      | A            | Five sessions/person, two platform-administration contexts; explicit session termination                                                                                                                                                  |
+| P20      | A            | 30-second revocation/freshness bound with current-state sensitive confirmation; five-minute access-token target                                                                                                                           |
+| P21      | A            | Server-managed browser session direction, subject to ADR review                                                                                                                                                                           |
+| P22      | A            | Continue only safely verifiable authorized operations during outages; otherwise fail closed                                                                                                                                               |
+| P23      | A            | Standard and company-customizable scoped capability profiles                                                                                                                                                                              |
+| P24      | A            | Default permission matrix, subject to the more specific P10/P27 controls                                                                                                                                                                  |
+| P25      | A            | Multiple additive grants in explicit scopes; suspended/expired state denies                                                                                                                                                               |
+| P26      | A            | Explicit company/branch resource sharing; read/use separate from editing/publication                                                                                                                                                      |
+| P27      | A            | Reject entire out-of-scope price mutation; no automatic approval-request fallback                                                                                                                                                         |
+| P28      | A            | Optional independent approval policies; disabled by default; proposals are not effective price saves                                                                                                                                      |
+| P29      | A            | Revalidate before outstanding protected effects; already-issued valid versions retain their lifecycle                                                                                                                                     |
+| P30      | A            | Explicitly expiring temporary access, without automatic renewal                                                                                                                                                                           |
+| P31      | A            | Individual attributable human accounts, no shared shift credentials                                                                                                                                                                       |
+| P32      | A            | Local membership removal distinct from global identity, content ownership and company suspension                                                                                                                                          |
+| P33      | A            | Explicit scoped customer support consent, one-hour default maximum, read-first/separate writes                                                                                                                                            |
+| P34      | A            | Support's own identity, no impersonation; separate exceptional emergency procedure                                                                                                                                                        |
+| P35      | A            | User sessions/notices, company/branch-scoped audit and minimized platform security events                                                                                                                                                 |
+| P36      | A            | Contextual abuse controls and justified challenges; no permanent attacker-triggered lockout                                                                                                                                               |
+| P37      | A            | Stable application identity/portability/environment isolation; no additional mandatory pre-pilot export/import proof                                                                                                                      |
+| P38      | A            | Consolidate policies and proposed ADRs; close decision portion only after reviewed/accepted technical decision; provision/test separately                                                                                                 |
 
 No owner questionnaire response remains unanswered. Following the answers, the owner explicitly accepted ADR-0024/ADR-0025 and all other pending Teluni ADRs on 2026-10-18. The pinned-source compatibility assessment supports that selection, and PH-11 is completed for decisions. Actual provider/session qualification remains PJ-24 and is not inferred from acceptance. External identity, Google and mail setup are tracked separately in PH-15–PH-17. Hardware, host, actual commercial and privacy gates remain PH-08/PH-10/PH-13/PH-18/PH-19; PH-12 owner commercial selection is complete.

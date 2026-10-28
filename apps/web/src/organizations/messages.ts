@@ -40,9 +40,6 @@ const ptBR = {
   } satisfies Record<Role, string>,
   responsible: "Responsável pela empresa",
   yourAccess: "Seu acesso",
-  stepUpNotice:
-    "Seu papel nesta empresa exige verificação em duas etapas antes de administrar.",
-  stepUpButton: "Verificar em duas etapas",
   branchesTitle: "Filiais",
   screensTitle: "Telas",
   mediaTitle: "Mídia",
@@ -297,8 +294,6 @@ const ptBR = {
     PERMISSION_DENIED: "Você não tem permissão para esta ação.",
     COMPANY_SUSPENDED:
       "Esta empresa está suspensa. Fale com o suporte do Teluni.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "Esta ação exige verificação em duas etapas.",
     RECENT_AUTHENTICATION_REQUIRED:
       "Confirme sua identidade novamente para continuar.",
     RESOURCE_VERSION_CONFLICT:
@@ -368,9 +363,6 @@ const enUS: OrganizationMessages = {
   },
   responsible: "Responsible for the company",
   yourAccess: "Your access",
-  stepUpNotice:
-    "Your role in this company requires two-step verification before administering it.",
-  stepUpButton: "Verify in two steps",
   branchesTitle: "Branches",
   screensTitle: "Screens",
   mediaTitle: "Media",
@@ -620,8 +612,6 @@ const enUS: OrganizationMessages = {
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You do not have permission for this action.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "This action requires two-step verification.",
     RECENT_AUTHENTICATION_REQUIRED: "Confirm your identity again to continue.",
     RESOURCE_VERSION_CONFLICT:
       "The data changed while you were editing. Reload before trying again.",

@@ -64,7 +64,6 @@ try {
           ? {}
           : { keycloakAdminUrl: config.keycloakAdminUrl }),
         sessionKeys: parseSessionKeys(config.sessionKeys),
-        developmentMfaMode: config.developmentMfaMode,
       }
     : undefined;
   const mail = config.mailKeys

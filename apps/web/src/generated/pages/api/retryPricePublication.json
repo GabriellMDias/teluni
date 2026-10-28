@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "retryPricePublication",
   "summary": "",
-  "description": "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program, with strong authentication.",
+  "description": "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program,.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

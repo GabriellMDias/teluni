@@ -59,9 +59,8 @@ async function arrange(page: Page) {
           sessionId: "synthetic-session",
           state: "ACTIVE",
           expiresAt: "2099-10-24T12:00:00.000Z",
-          assuranceLevel: "teluni-aal2",
+          assuranceLevel: "teluni-aal1",
           authenticatedAt: "2026-10-24T12:00:00.000Z",
-          strongAuthenticatedAt: "2026-10-24T12:00:00.000Z",
           csrfToken: "synthetic-csrf",
         },
       });
@@ -79,7 +78,6 @@ async function arrange(page: Page) {
               "devices.view",
               "devices.manage",
             ],
-            capabilitiesAfterStrongAuthentication: [],
           },
           responsibilityTransfer: null,
         },

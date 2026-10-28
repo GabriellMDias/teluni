@@ -8,7 +8,6 @@ import {
   invitationDecision,
   invitationLimits,
   invitationVisibility,
-  reachableWithStrongAuthentication,
   type InvitationVisibility,
   OrganizationFailure,
   type AccessRole,
@@ -69,9 +68,8 @@ export type InvitationMessage = Readonly<{
   inviterName: string | null;
 }>;
 
-/** Who is acting, with the assurance of the current session. */
-export type InvitingActor = Actor &
-  Readonly<{ strong: boolean; strongAuthenticatedAt: Date | null }>;
+/** Who is acting, with when the current session authenticated. */
+export type InvitingActor = Actor & Readonly<{ authenticatedAt: Date }>;
 
 export const invitationTemplate = "organizations.invitation";
 const producer = "organizations.invitation";
@@ -446,13 +444,7 @@ export class PrismaInvitationRepository {
       const inviter = lockedById.get(invitation.invited_by_membership_id);
       const inviterAccess =
         inviter?.status === "ACTIVE"
-          ? await accessOf(
-              tx,
-              companyId,
-              inviter.id,
-              inviter.principal_id,
-              true,
-            )
+          ? await accessOf(tx, companyId, inviter.id, inviter.principal_id)
           : null;
       if (
         !inviterAccess ||
@@ -624,16 +616,13 @@ export class PrismaInvitationRepository {
       companyId,
       actor.membershipId,
       actor.principalId,
-      actor.strong,
     );
     const decision = invitationDecision(access, request);
-    if (decision === "strong_required")
-      throw new OrganizationFailure("STRONG_AUTHENTICATION_REQUIRED");
     if (decision === "responsible_required")
       throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
     if (decision === "deny") throw new OrganizationFailure("PERMISSION_DENIED");
     if (request.role === "COMPANY_ADMINISTRATOR")
-      await requireRecent(tx, actor.strongAuthenticatedAt);
+      await requireRecent(tx, actor.authenticatedAt);
     if (request.grantExpiresAt) {
       const [future] = await tx.$queryRaw<{ valid: boolean }[]>`
         SELECT ${request.grantExpiresAt}::timestamptz > statement_timestamp() + interval '1 minute' AS valid`;
@@ -697,16 +686,9 @@ export class PrismaInvitationRepository {
       companyId,
       actor.membershipId,
       actor.principalId,
-      actor.strong,
     );
     const visibility = invitationVisibility(access);
-    if (!visibility)
-      throw new OrganizationFailure(
-        !actor.strong &&
-          reachableWithStrongAuthentication(access, "invitations.manage")
-          ? "STRONG_AUTHENTICATION_REQUIRED"
-          : "PERMISSION_DENIED",
-      );
+    if (!visibility) throw new OrganizationFailure("PERMISSION_DENIED");
     const row = await this.#lockVisible(
       tx,
       companyId,

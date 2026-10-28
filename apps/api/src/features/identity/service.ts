@@ -1,16 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { AccessTokenVerifier } from "../../authentication.js";
 import {
-  assuranceLevels,
   isUnsafeMethod,
   LoginFailure,
-  recentStrongAuthenticationSeconds,
+  recentAuthenticationSeconds,
   safeReturnPath,
   SessionFailure,
   sessionPolicy,
   type HumanContext,
-  type RequestedAssurance,
   type RevocationReason,
+  type TwoStepAction,
 } from "./domain.js";
 import type {
   PrismaIdentityRepository,
@@ -60,7 +59,6 @@ export type SessionSummary = Readonly<{
   expiresAt: Date;
   assuranceLevel: string;
   authenticatedAt: Date;
-  strongAuthenticatedAt: Date | null;
   csrfToken: string;
 }>;
 
@@ -105,7 +103,6 @@ export class IdentityService {
   readonly #publicOrigin: string;
   readonly #issuer: string;
   readonly #events: IdentityEvents;
-  readonly #developmentMfaBypass: boolean;
 
   constructor(options: {
     repository: PrismaIdentityRepository;
@@ -116,8 +113,6 @@ export class IdentityService {
     /** Issuer whose subjects this service manages. */
     issuer: string;
     events: IdentityEvents;
-    /** Only the module's guarded local-development mode may enable this. */
-    developmentMfaBypass?: boolean;
   }) {
     this.#repository = options.repository;
     this.#provider = options.provider;
@@ -126,25 +121,42 @@ export class IdentityService {
     this.#publicOrigin = options.publicOrigin;
     this.#issuer = options.issuer;
     this.#events = options.events;
-    this.#developmentMfaBypass = options.developmentMfaBypass ?? false;
   }
 
   /**
    * Starts an authorization-code login; the handle goes into the
    * login-attempt cookie. A signup opens the provider's account creation,
-   * which verifies the email before the person returns.
+   * which verifies the email before the person returns. `reauthenticate`
+   * forces a new authentication for operations that need one within five
+   * minutes. A two-step action needs the current session: enabling enrolls
+   * an authenticator at the provider; disabling forces a new authentication
+   * (password and current code) before the provider removes it. An action
+   * with nothing to do returns straight to the return path, without a login.
    */
-  async startLogin(
-    returnTo: string | undefined,
-    assurance?: RequestedAssurance,
-    intent?: "signup",
-  ): Promise<{ redirectTo: URL; loginHandle: string }> {
-    // Step-up asks for the strong level; "recent" also forces a new
-    // authentication so the strong factor is at most five minutes old.
-    const requestedAssurance =
-      assurance && !this.#developmentMfaBypass ? assuranceLevels.strong : null;
-    const maxAgeSeconds =
-      assurance === "recent" && !this.#developmentMfaBypass ? 0 : null;
+  async startLogin(input: {
+    returnTo?: string | undefined;
+    reauthenticate?: boolean | undefined;
+    intent?: "signup" | undefined;
+    twoStep?: TwoStepAction | undefined;
+    session?: SessionRequest | undefined;
+  }): Promise<{ redirectTo: string; loginHandle: string | null }> {
+    const returnTo = safeReturnPath(input.returnTo);
+    let action: string | null = null;
+    let reauthenticate = input.reauthenticate === true;
+    if (input.twoStep) {
+      const credentials = await this.#otpCredentials(input.session);
+      if (input.twoStep === "enable") {
+        if (credentials.length > 0)
+          return { redirectTo: returnTo, loginHandle: null };
+        action = "CONFIGURE_TOTP";
+      } else {
+        if (credentials.length === 0)
+          return { redirectTo: returnTo, loginHandle: null };
+        action = `delete_credential:${credentials[0]}`;
+        reauthenticate = true;
+      }
+    }
+    const maxAgeSeconds = reauthenticate ? 0 : null;
     const challenge = await this.#unavailableAs503(() =>
       this.#provider.newChallenge(),
     );
@@ -163,18 +175,39 @@ export class IdentityService {
         }),
         `login:${id}`,
       ),
-      returnTo: safeReturnPath(returnTo),
-      requestedAssurance,
+      returnTo,
       maxAgeSeconds,
     });
     const redirectTo = await this.#unavailableAs503(() =>
       this.#provider.authorizationUrl(challenge, {
-        ...(requestedAssurance ? { acrValues: requestedAssurance } : {}),
         ...(maxAgeSeconds === null ? {} : { maxAgeSeconds }),
-        ...(intent === "signup" ? { prompt: "create" as const } : {}),
+        ...(action ? { action } : {}),
+        ...(input.intent === "signup" ? { prompt: "create" as const } : {}),
       }),
     );
-    return { redirectTo, loginHandle };
+    return { redirectTo: redirectTo.href, loginHandle };
+  }
+
+  /** Whether the caller's account has two-step verification enabled. */
+  async twoStepStatus(request: SessionRequest): Promise<{ enabled: boolean }> {
+    return {
+      enabled: (await this.#otpCredentials(request)).length > 0,
+    };
+  }
+
+  /** The caller's authenticator credentials at the provider. */
+  async #otpCredentials(
+    request: SessionRequest | undefined,
+  ): Promise<readonly string[]> {
+    if (!request) throw new SessionFailure("AUTHENTICATION_REQUIRED");
+    const context = await this.authenticate(request, { allowPending: true });
+    const session = await this.#repository.findSession({
+      id: context.sessionId,
+    });
+    if (!session) throw new SessionFailure("AUTHENTICATION_REQUIRED");
+    return this.#unavailableAs503(() =>
+      this.#provider.otpCredentials(session.subject),
+    );
   }
 
   /**
@@ -186,7 +219,13 @@ export class IdentityService {
     rawQuery: string;
     state: string | undefined;
     previousSessionToken: string | undefined;
-  }): Promise<{ sessionToken: string; returnTo: string; pending: boolean }> {
+  }): Promise<{
+    sessionToken: string;
+    returnTo: string;
+    pending: boolean;
+    /** The person signed in to Teluni for the first time. */
+    firstLogin: boolean;
+  }> {
     if (!input.loginHandle || !input.state)
       throw new LoginFailure("login_expired");
     const attempt = await this.#repository.consumeLoginAttempt(
@@ -214,18 +253,11 @@ export class IdentityService {
     const { claims } = login;
     let { tokens } = login;
     if (!claims.emailVerified) throw new LoginFailure("email_unverified");
-    const strong = claims.assuranceLevel === assuranceLevels.strong;
-    // The provider may answer a step-up request with a lower level; the
-    // application never treats that as strong authentication.
-    if (
-      attempt.requestedAssurance &&
-      claims.assuranceLevel !== attempt.requestedAssurance
-    )
-      throw new LoginFailure("assurance_not_met");
+    // A reauthentication the provider did not perform is never accepted as one.
     if (
       attempt.maxAgeSeconds !== null &&
       Date.now() - claims.authenticatedAt.getTime() >
-        (attempt.maxAgeSeconds + recentStrongAuthenticationSeconds) * 1000
+        (attempt.maxAgeSeconds + recentAuthenticationSeconds) * 1000
     )
       throw new LoginFailure("assurance_not_met");
 
@@ -282,7 +314,6 @@ export class IdentityService {
       providerSessionId: claims.providerSessionId,
       assuranceLevel: claims.assuranceLevel,
       authenticatedAt: claims.authenticatedAt,
-      strongAuthenticatedAt: strong ? claims.authenticatedAt : null,
       // Per-membership idle limits remain pending; use the stricter bound.
       idleTimeoutSeconds: sessionPolicy.administrativeIdleSeconds,
       providerTokens: this.#seal(id, tokens),
@@ -292,6 +323,7 @@ export class IdentityService {
       sessionToken,
       returnTo: attempt.returnTo,
       pending: state === "PENDING_LIMIT",
+      firstLogin: principal.created,
     };
   }
 
@@ -351,18 +383,9 @@ export class IdentityService {
     return {
       principalId: session.principalId,
       sessionId: session.id,
-      // Local development simulates effective assurance only after every real
-      // identity/session check. Never persist it or label it provider AAL2.
-      assuranceLevel: this.#developmentMfaBypass
-        ? "teluni-development"
-        : session.assuranceLevel,
+      assuranceLevel: session.assuranceLevel,
       authenticatedAt: session.authenticatedAt,
-      strongAuthenticatedAt: this.#developmentMfaBypass
-        ? new Date()
-        : session.strongAuthenticatedAt,
-      strongAuthenticationAgeSeconds: this.#developmentMfaBypass
-        ? 0
-        : session.strongAuthenticationAgeSeconds,
+      authenticationAgeSeconds: session.authenticationAgeSeconds,
       scopes: verified.scopes,
       pending,
     };
@@ -381,7 +404,6 @@ export class IdentityService {
       expiresAt: session.expiresAt,
       assuranceLevel: context.assuranceLevel,
       authenticatedAt: context.authenticatedAt,
-      strongAuthenticatedAt: context.strongAuthenticatedAt,
       csrfToken: this.#keys.csrfToken(context.sessionId),
     };
   }

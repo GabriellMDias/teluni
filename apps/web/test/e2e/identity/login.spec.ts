@@ -7,6 +7,7 @@ import {
   enrollAuthenticator,
   enterCredentials,
   registerAccount,
+  totp,
 } from "./provider.ts";
 import { startIdentityStack, type IdentityStack } from "./stack.ts";
 
@@ -92,28 +93,73 @@ test("ending the current session from the list signs the browser out", async ({
   await expect(page.getByText("Entre para ver suas sessões.")).toBeVisible();
 });
 
-test("enables two-step verification from the sessions page", async ({
+/** Waits for the next TOTP period so Keycloak does not reject a reused code. */
+async function freshCode(secret: string, previous: string): Promise<string> {
+  let code = totp(secret);
+  while (code === previous) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    code = totp(secret);
+  }
+  return code;
+}
+
+/** Keycloak may ask for the password again before an account action. */
+async function passwordIfAsked(page: Page, password: string): Promise<void> {
+  await page.locator("#password, #totp, #otp, #kc-accept").first().waitFor();
+  if ((await page.locator("#password").count()) > 0) {
+    await page.locator("#password").fill(password);
+    await page.locator("#kc-login").click();
+  }
+}
+
+test("enables optional two-step verification, asks for the code at sign-in and disables it", async ({
   page,
 }) => {
   await page.goto(`${stack.webUrl}/sign-in?returnTo=%2Faccount%2Fsessions`);
   await page.getByRole("link", { name: "Entrar com segurança" }).click();
   await signInAtProvider(page);
   await afterNavigation(page).toHaveURL(`${stack.webUrl}/account/sessions`);
-  await expect(
-    page.getByText("Esta sessão não usou verificação em duas etapas.", {
-      exact: false,
-    }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
+  await expect(page.getByText("Desativada.", { exact: false })).toBeVisible();
+  await page
+    .getByRole("link", { name: "Ativar verificação em duas etapas" })
+    .click();
+  await passwordIfAsked(page, stack.user.password);
   // Keycloak asks this user to register an authenticator app.
-  expect(await enrollAuthenticator(page)).not.toBe("");
+  const secret = await enrollAuthenticator(page);
+  expect(secret).not.toBe("");
+  let code = totp(secret);
   await afterNavigation(page).toHaveURL(`${stack.webUrl}/account/sessions`);
-  await expect(
-    page.getByText("Esta sessão foi verificada em duas etapas em", {
-      exact: false,
-    }),
+  await afterNavigation(
+    page.getByText("Ativada.", { exact: false }),
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  // Every sign-in now asks for the code after the password.
+  await page.getByRole("button", { name: "Sair" }).click();
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/sign-in`);
+  await page.getByRole("link", { name: "Entrar com segurança" }).click();
+  await enterCredentials(page, stack.user, "stay");
+  await expect(page.locator("#otp")).toBeVisible({ timeout: 20_000 });
+  code = await freshCode(secret, code);
+  await page.locator("#otp").fill(code);
+  await page.locator("#kc-login").click();
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/`);
+
+  // Turning it off asks for the password and the current code again.
+  await page.goto(`${stack.webUrl}/account/sessions`);
+  await page
+    .getByRole("link", { name: "Desativar verificação em duas etapas" })
+    .click();
+  await passwordIfAsked(page, stack.user.password);
+  await expect(page.locator("#otp")).toBeVisible({ timeout: 20_000 });
+  code = await freshCode(secret, code);
+  await page.locator("#otp").fill(code);
+  await page.locator("#kc-login").click();
+  await page.locator("#kc-accept").click();
+  await afterNavigation(page).toHaveURL(`${stack.webUrl}/account/sessions`);
+  await afterNavigation(
+    page.getByText("Desativada.", { exact: false }),
+  ).toBeVisible();
 });
 
 test("creates an account, confirms the email, chooses a password and creates a company", async ({
@@ -130,6 +176,14 @@ test("creates an account, confirms the email, chooses a password and creates a c
   await page.goto(await mailedLink(stack.mailUrl, email, actionLink, since));
   await choosePassword(page, password);
 
+  // The first sign-in suggests two-step verification, which stays optional.
+  await afterNavigation(
+    page.getByRole("heading", { name: "Proteja sua conta" }),
+  ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("link", { name: "Configurar agora" }).click();
+  await passwordIfAsked(page, password);
+  await enrollAuthenticator(page);
   await afterNavigation(page).toHaveURL(`${stack.webUrl}/companies`);
   await afterNavigation(
     page.getByText("Você ainda não participa de nenhuma empresa.", {
@@ -140,14 +194,6 @@ test("creates an account, confirms the email, chooses a password and creates a c
   await page.getByLabel("Fuso horário").selectOption("America/Sao_Paulo");
   await page.getByRole("button", { name: "Criar empresa" }).click();
   await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
-  const companyUrl = page.url();
-  await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
-  // Signing up is not a password authentication, so stepping up asks for
-  // the new password before enrolling the authenticator.
-  await page.locator("#password").fill(password);
-  await page.locator("#kc-login").click();
-  await enrollAuthenticator(page);
-  await afterNavigation(page).toHaveURL(companyUrl);
   await afterNavigation(
     page.getByText("Responsável pela empresa", { exact: false }),
   ).toBeVisible();

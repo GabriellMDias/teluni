@@ -9,12 +9,12 @@ import { activateModules } from "../../src/module.js";
 import { withMigratedDatabase } from "../../scripts/migrated-database.js";
 import { CookieJar } from "./keycloak-browser.js";
 
-// A provider that answers a step-up request with only the standard level
-// must not produce a strongly authenticated session.
+// A provider that answers a reauthentication request with an older
+// authentication must not produce a session that counts as recent.
 let release: () => void;
 let stopped: Promise<void>;
 let apiUrl: string;
-let requested: { acrValues?: string; maxAgeSeconds?: number } | undefined;
+let requested: { maxAgeSeconds?: number; action?: string } | undefined;
 
 const provider: IdentityProvider = {
   newChallenge: () =>
@@ -42,7 +42,7 @@ const provider: IdentityProvider = {
         emailVerified: true,
         providerSessionId: null,
         assuranceLevel: "teluni-aal1",
-        authenticatedAt: new Date(),
+        authenticatedAt: new Date(Date.now() - 20 * 60 * 1000),
       },
     }),
   refresh: () => Promise.reject(new Error("unexpected")),
@@ -50,6 +50,7 @@ const provider: IdentityProvider = {
   endSession: () => Promise.resolve(),
   endAllSessions: () => Promise.resolve(),
   ensurePrincipalAttribute: () => Promise.reject(new Error("unexpected")),
+  otpCredentials: () => Promise.reject(new Error("unexpected")),
   verifyLogoutToken: () => Promise.reject(new Error("unexpected")),
 };
 
@@ -98,39 +99,54 @@ afterAll(async () => {
   await stopped;
 }, 60_000);
 
-describe("step-up assurance", () => {
-  it.each([
-    ["strong", { acrValues: "teluni-aal2" }],
-    ["recent", { acrValues: "teluni-aal2", maxAgeSeconds: 0 }],
-  ] as const)(
-    "requests %s assurance and rejects a lower achieved level",
-    async (assurance, expected) => {
-      const jar = new CookieJar();
-      const start = await fetch(`${apiUrl}/auth/login?assurance=${assurance}`, {
-        redirect: "manual",
-      });
-      jar.store(start);
-      expect(start.status).toBe(303);
-      expect(requested).toEqual(expected);
-      const callback = await fetch(
-        `${apiUrl}/auth/callback?state=state-value&code=code-value`,
-        { redirect: "manual", headers: { cookie: jar.header() } },
-      );
-      expect(callback.headers.get("location")).toBe(
-        "/sign-in?error=assurance_not_met",
-      );
-      expect(
-        callback.headers
-          .getSetCookie()
-          .some((cookie) => cookie.startsWith("teluni_session=")),
-      ).toBe(false);
-    },
-  );
-
-  it("rejects unknown assurance values", async () => {
-    const response = await fetch(`${apiUrl}/auth/login?assurance=maximum`, {
+describe("reauthentication and account actions", () => {
+  it("requests a new authentication and rejects an older one", async () => {
+    const jar = new CookieJar();
+    const start = await fetch(`${apiUrl}/auth/login?reauthenticate=true`, {
       redirect: "manual",
     });
-    expect(response.status).toBe(400);
+    jar.store(start);
+    expect(start.status).toBe(303);
+    expect(requested).toEqual({ maxAgeSeconds: 0 });
+    const callback = await fetch(
+      `${apiUrl}/auth/callback?state=state-value&code=code-value`,
+      { redirect: "manual", headers: { cookie: jar.header() } },
+    );
+    expect(callback.headers.get("location")).toBe(
+      "/sign-in?error=assurance_not_met",
+    );
+    expect(
+      callback.headers
+        .getSetCookie()
+        .some((cookie) => cookie.startsWith("teluni_session=")),
+    ).toBe(false);
   });
+
+  it("starts two-step account actions only from a session", async () => {
+    for (const action of ["enable", "disable"]) {
+      const response = await fetch(`${apiUrl}/auth/login?twoStep=${action}`, {
+        redirect: "manual",
+      });
+      expect(response.status).toBe(401);
+      expect(response.headers.getSetCookie()).toEqual([]);
+    }
+  });
+
+  it("ignores the retired assurance parameter, starting an ordinary login", async () => {
+    const response = await fetch(`${apiUrl}/auth/login?assurance=strong`, {
+      redirect: "manual",
+    });
+    expect(response.status).toBe(303);
+    expect(requested).toEqual({});
+  });
+
+  it.each(["reauthenticate=false", "twoStep=maybe"])(
+    "rejects invalid login parameter values (%s)",
+    async (query) => {
+      const response = await fetch(`${apiUrl}/auth/login?${query}`, {
+        redirect: "manual",
+      });
+      expect(response.status).toBe(400);
+    },
+  );
 });

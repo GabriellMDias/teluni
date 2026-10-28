@@ -75,21 +75,6 @@ function SignInPrompt({ returnTo }: { returnTo: string }) {
   );
 }
 
-function StepUpPrompt({ returnTo }: { returnTo: string }) {
-  const { t } = useOrganizationMessages();
-  return (
-    <div role="status" className="notice notice-error">
-      {t.stepUpNotice}
-      <a
-        className="button-link button-primary"
-        href={loginHref(returnTo, "strong")}
-      >
-        {t.stepUpButton}
-      </a>
-    </div>
-  );
-}
-
 function zoneChoices(): string[] {
   const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return timeZoneChoices.includes(own)
@@ -234,11 +219,9 @@ function CreateCompanyForm({
 /** Loads a company before rendering its form, for editing or duplication. */
 function CompanyRecord({
   companyId,
-  returnTo,
   children,
 }: {
   companyId: string;
-  returnTo: string;
   children: (company: CompanyWithAccess) => ReactNode;
 }) {
   const { t } = useOrganizationMessages();
@@ -248,10 +231,7 @@ function CompanyRecord({
   });
   if (company.isPending) return <p>{t.loading}</p>;
   if (company.isError)
-    return company.error instanceof ApiFailure &&
-      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-      <StepUpPrompt returnTo={returnTo} />
-    ) : (
+    return (
       <Failure
         error={company.error}
         operation="read"
@@ -263,11 +243,9 @@ function CompanyRecord({
 
 function EditCompanyForm({
   record,
-  returnTo,
   onDirtyChange,
 }: {
   record: CompanyWithAccess;
-  returnTo: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useOrganizationMessages();
@@ -294,9 +272,6 @@ function EditCompanyForm({
     },
   });
   const canManage = access.capabilities.includes("company.settings.manage");
-  const needsStepUp = access.capabilitiesAfterStrongAuthentication.includes(
-    "company.settings.manage",
-  );
   const mustReload =
     Boolean(save.error) &&
     (!(save.error instanceof ApiFailure) ||
@@ -319,11 +294,7 @@ function EditCompanyForm({
         </Link>
       </p>
       {saved && <p role="status">{t.settingsSaved}</p>}
-      {needsStepUp ? (
-        <StepUpPrompt returnTo={returnTo} />
-      ) : (
-        !canManage && <p className="hint">{t.settingsReadOnly}</p>
-      )}
+      {!canManage && <p className="hint">{t.settingsReadOnly}</p>}
       <CompanyFields
         idPrefix="company"
         values={{
@@ -526,7 +497,6 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                   <CompanyRecord
                     key={`copy-${search.copy}`}
                     companyId={search.copy}
-                    returnTo={returnTo}
                   >
                     {({ company }) => (
                       <CreateCompanyForm
@@ -554,17 +524,9 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                 )
               ) : (
                 record && (
-                  <CompanyRecord
-                    key={record}
-                    companyId={record}
-                    returnTo={returnTo}
-                  >
+                  <CompanyRecord key={record} companyId={record}>
                     {(data) => (
-                      <EditCompanyForm
-                        record={data}
-                        returnTo={returnTo}
-                        onDirtyChange={setDirty}
-                      />
+                      <EditCompanyForm record={data} onDirtyChange={setDirty} />
                     )}
                   </CompanyRecord>
                 )
@@ -1082,21 +1044,15 @@ export function CompanyPage({
     return (
       <section className="panel organization-panel" lang={locale}>
         <h1>{t.companyUnavailableTitle}</h1>
-        {company.error instanceof ApiFailure &&
-        company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-          <StepUpPrompt returnTo={returnTo} />
-        ) : (
-          <Failure
-            error={company.error}
-            operation="read"
-            onReload={() => void company.refetch()}
-          />
-        )}
+        <Failure
+          error={company.error}
+          operation="read"
+          onReload={() => void company.refetch()}
+        />
         <Link to="/companies">{t.backToCompanies}</Link>
       </section>
     );
   const { access, responsibilityTransfer: transfer } = company.data;
-  const needsStepUp = access.capabilitiesAfterStrongAuthentication.length > 0;
   const canView = access.capabilities.includes("branches.view");
   return (
     <section
@@ -1116,7 +1072,6 @@ export function CompanyPage({
         ].join(", ")}
         {access.responsible ? ` · ${t.responsible}` : ""}
       </p>
-      {needsStepUp && <StepUpPrompt returnTo={returnTo} />}
       {transfer && (
         <ResponsibilityTransferNotice
           key={transfer.id}

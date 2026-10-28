@@ -39,20 +39,14 @@ type Person = keyof typeof people;
 const sessions: HumanSessionPort = {
   authenticate: ({ headers }) => {
     const principalId = headers["x-test-principal"] as string;
-    const strong = headers["x-test-strong"] === "true";
+    // A session authenticated x-test-auth-age seconds ago (default 1).
+    const age = Number(headers["x-test-auth-age"] ?? 1);
     return Promise.resolve({
       principalId,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
-      authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong
-        ? new Date(
-            Date.now() - Number(headers["x-test-strong-age"] ?? 1) * 1000,
-          )
-        : null,
-      strongAuthenticationAgeSeconds: strong
-        ? Number(headers["x-test-strong-age"] ?? 1)
-        : null,
+      assuranceLevel: "teluni-aal1",
+      authenticatedAt: new Date(Date.now() - age * 1000),
+      authenticationAgeSeconds: age,
       scopes: new Set(),
     });
   },
@@ -126,7 +120,6 @@ async function call(
   url: string,
   options: {
     body?: unknown;
-    strong?: boolean;
     headers?: Record<string, string>;
   } = {},
 ) {
@@ -135,7 +128,6 @@ async function call(
     url,
     headers: {
       "x-test-principal": people[person],
-      "x-test-strong": String(options.strong ?? false),
       ...options.headers,
     },
     ...(options.body === undefined ? {} : { payload: options.body as object }),
@@ -173,7 +165,6 @@ async function createBranch(person: Person, companyId: string, name: string) {
     "POST",
     `/companies/${companyId}/branches`,
     {
-      strong: true,
       body: { name },
     },
   );
@@ -278,8 +269,7 @@ describe("organizations: two-company isolation", () => {
       roles: ["COMPANY_ADMINISTRATOR"],
       profiles: [],
       responsible: true,
-      capabilities: [],
-      capabilitiesAfterStrongAuthentication: [
+      capabilities: [
         "company.view",
         "company.settings.manage",
         "branches.view",
@@ -337,7 +327,6 @@ describe("organizations: two-company isolation", () => {
     });
     const id = (created.body.company as { id: string }).id;
     const changed = await call("outsider", "PATCH", `/companies/${id}`, {
-      strong: true,
       body: { expectedVersion: 1, displayName: "Renamed company" },
     });
     expect(changed.status).toBe(200);
@@ -398,7 +387,6 @@ describe("organizations: two-company isolation", () => {
         "POST",
         `/companies/${companyA}/branches`,
         {
-          strong: true,
           body: { name: "Audit rollback proof" },
         },
       );
@@ -439,7 +427,7 @@ describe("organizations: two-company isolation", () => {
       `/companies/${companyA}/branches/${a1.id}`,
       `/companies/${companyA}/audit-events`,
     ])
-      expect(code(await call("bAdmin", "GET", url, { strong: true }))).toBe(
+      expect(code(await call("bAdmin", "GET", url, {}))).toBe(
         "RESOURCE_NOT_FOUND",
       );
     // Substituting another company's branch under one's own company path.
@@ -449,9 +437,7 @@ describe("organizations: two-company isolation", () => {
           "bAdmin",
           "GET",
           `/companies/${companyB}/branches/${a1.id}`,
-          {
-            strong: true,
-          },
+          {},
         ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
@@ -462,7 +448,6 @@ describe("organizations: two-company isolation", () => {
           "PATCH",
           `/companies/${companyB}/branches/${a1.id}`,
           {
-            strong: true,
             body: { expectedVersion: 1, name: "Tomada" },
           },
         ),
@@ -472,49 +457,32 @@ describe("organizations: two-company isolation", () => {
       "bAdmin",
       "GET",
       `/companies/${companyB}/branches`,
-      {
-        strong: true,
-      },
+      {},
     );
     expect(
       (listed.body.items as { id: string }[]).map((item) => item.id),
     ).toEqual([b1.id]);
   });
 
-  it("requires two-step verification for administrators and managers but not operators", async () => {
-    expect(
-      code(
-        await call("aAdmin", "POST", `/companies/${companyA}/branches`, {
-          body: { name: "X" },
-        }),
-      ),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
-    expect(
-      code(await call("aAdmin", "GET", `/companies/${companyA}/branches`)),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
-    expect(
-      code(await call("aManager", "GET", `/companies/${companyA}/branches`)),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
-    const operator = await call(
-      "aOperator",
-      "GET",
-      `/companies/${companyA}/branches`,
-    );
-    expect(operator.status).toBe(200);
+  it("does not require two-step verification for any role", async () => {
+    for (const person of ["aAdmin", "aManager", "aOperator"] as const)
+      expect(
+        (await call(person, "GET", `/companies/${companyA}/branches`)).status,
+        person,
+      ).toBe(200);
   });
 
   it("limits branch-scoped members to their branches and denies administration", async () => {
-    for (const [person, strong, expected] of [
-      ["aManager", true, [a1.id]],
-      ["aOperator", false, [a1.id]],
-      ["multi", false, [a2.id]],
-      ["aAdmin", true, [a2.id, a1.id]],
+    for (const [person, expected] of [
+      ["aManager", [a1.id]],
+      ["aOperator", [a1.id]],
+      ["multi", [a2.id]],
+      ["aAdmin", [a2.id, a1.id]],
     ] as const) {
       const listed = await call(
         person,
         "GET",
         `/companies/${companyA}/branches`,
-        { strong },
       );
       expect(
         (listed.body.items as { id: string }[]).map((item) => item.id),
@@ -526,7 +494,7 @@ describe("organizations: two-company isolation", () => {
           "aManager",
           "GET",
           `/companies/${companyA}/branches/${a2.id}`,
-          { strong: true },
+          {},
         ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
@@ -540,7 +508,6 @@ describe("organizations: two-company isolation", () => {
     expect(
       code(
         await call("aManager", "PATCH", `/companies/${companyA}`, {
-          strong: true,
           body: { expectedVersion: 1, displayName: "Tomada" },
         }),
       ),
@@ -564,7 +531,6 @@ describe("organizations: two-company isolation", () => {
         "POST",
         `/companies/${company}/members/${member}/grants`,
         {
-          strong: true,
           body: { role: "OPERATOR", scope: "BRANCHES", branchIds },
         },
       );
@@ -579,7 +545,7 @@ describe("organizations: two-company isolation", () => {
           "aAdmin",
           "POST",
           `/companies/${company}/members/${member}/grants/${northGrant}/revoke`,
-          { strong: true },
+          {},
         )
       ).status,
     ).toBe(204);
@@ -590,7 +556,6 @@ describe("organizations: two-company isolation", () => {
           "PATCH",
           `/companies/${company}/branches/${south.id}`,
           {
-            strong: true,
             body: { expectedVersion: south.version, name: "Sul 2" },
           },
         )
@@ -599,7 +564,6 @@ describe("organizations: two-company isolation", () => {
     expect(
       (
         await call("aAdmin", "PATCH", `/companies/${company}`, {
-          strong: true,
           body: { expectedVersion: 1, displayName: "Branch audit 2" },
         })
       ).status,
@@ -613,9 +577,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/audit-events`,
-      {
-        strong: true,
-      },
+      {},
     );
     expect(full.status).toBe(200);
     expect(events(full.body)).toHaveLength(8);
@@ -624,7 +586,7 @@ describe("organizations: two-company isolation", () => {
       "aManager",
       "GET",
       `/companies/${company}/audit-events`,
-      { strong: true },
+      {},
     );
     expect(managed.status).toBe(200);
     expect(events(managed.body)).toEqual([
@@ -638,14 +600,14 @@ describe("organizations: two-company isolation", () => {
       "aManager",
       "GET",
       `/companies/${company}/audit-events?limit=2`,
-      { strong: true },
+      {},
     );
     expect(events(first.body)).toEqual(events(managed.body).slice(0, 2));
     const second = await call(
       "aManager",
       "GET",
       `/companies/${company}/audit-events?limit=2&cursor=${first.body.nextCursor as string}`,
-      { strong: true },
+      {},
     );
     expect(events(second.body)).toEqual(events(managed.body).slice(2));
     expect(second.body.nextCursor).toBeNull();
@@ -653,7 +615,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/audit-events?limit=1`,
-      { strong: true },
+      {},
     );
     expect(
       code(
@@ -661,22 +623,22 @@ describe("organizations: two-company isolation", () => {
           "aManager",
           "GET",
           `/companies/${company}/audit-events?cursor=${adminPage.body.nextCursor as string}`,
-          { strong: true },
+          {},
         ),
       ),
     ).toBe("VALIDATION_FAILED");
 
     expect(
-      code(await call("aManager", "GET", `/companies/${company}/audit-events`)),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
-    expect(
       code(await call("multi", "GET", `/companies/${company}/audit-events`)),
     ).toBe("PERMISSION_DENIED");
     expect(
       code(
-        await call("aManager", "GET", `/companies/${companyB}/audit-events`, {
-          strong: true,
-        }),
+        await call(
+          "aManager",
+          "GET",
+          `/companies/${companyB}/audit-events`,
+          {},
+        ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
 
@@ -709,7 +671,6 @@ describe("organizations: two-company isolation", () => {
       "PATCH",
       `/companies/${companyA}/branches/${a2.id}`,
       {
-        strong: true,
         body: { expectedVersion: a2.version + 5, name: "Outro" },
       },
     );
@@ -719,7 +680,6 @@ describe("organizations: two-company isolation", () => {
       "POST",
       `/companies/${companyA}/branches`,
       {
-        strong: true,
         body: { name: "  centro " },
       },
     );
@@ -731,14 +691,14 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/branches/${temporary.id}/archive`,
-      { strong: true, body: { expectedVersion: temporary.version } },
+      { body: { expectedVersion: temporary.version } },
     );
     expect(archived.body).toMatchObject({ status: "ARCHIVED", version: 2 });
     const afterArchive = await call(
       "aAdmin",
       "PATCH",
       `/companies/${companyA}/branches/${temporary.id}`,
-      { strong: true, body: { expectedVersion: 2, name: "De novo" } },
+      { body: { expectedVersion: 2, name: "De novo" } },
     );
     expect(code(afterArchive)).toBe("BRANCH_ARCHIVED");
     // The archived name can be reused by a new active branch.
@@ -749,9 +709,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/audit-events?limit=2`,
-      {
-        strong: true,
-      },
+      {},
     );
     const items = audit.body.items as {
       action: string;
@@ -770,7 +728,7 @@ describe("organizations: two-company isolation", () => {
       "multi",
       "GET",
       `/companies/${companyB}/audit-events?cursor=${audit.body.nextCursor as string}`,
-      { strong: true },
+      {},
     );
     expect(code(foreign)).toBe("VALIDATION_FAILED");
   });
@@ -812,7 +770,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/members?limit=2`,
-      { strong: true },
+      {},
     );
     expect(first.status).toBe(200);
     const ids = (first.body.items as { principalId: string }[]).map(
@@ -825,7 +783,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/members?limit=100&cursor=${first.body.nextCursor as string}`,
-      { strong: true },
+      {},
     );
     expect(next.status).toBe(200);
     const all = [
@@ -839,28 +797,23 @@ describe("organizations: two-company isolation", () => {
       "bAdmin",
       "GET",
       `/companies/${companyB}/members?cursor=${first.body.nextCursor as string}`,
-      { strong: true },
+      {},
     );
     expect(code(wrong)).toBe("VALIDATION_FAILED");
     const crossList = await call(
       "aAdmin",
       "GET",
       `/companies/${companyA}/audit-events?cursor=${first.body.nextCursor as string}`,
-      { strong: true },
+      {},
     );
     expect(code(crossList)).toBe("VALIDATION_FAILED");
-    for (const [person, strong, expected] of [
-      ["aOperator", false, "PERMISSION_DENIED"],
-      ["aManager", true, "PERMISSION_DENIED"],
-      ["outsider", true, "RESOURCE_NOT_FOUND"],
-      ["aAdmin", false, "STRONG_AUTHENTICATION_REQUIRED"],
+    for (const [person, expected] of [
+      ["aOperator", "PERMISSION_DENIED"],
+      ["aManager", "PERMISSION_DENIED"],
+      ["outsider", "RESOURCE_NOT_FOUND"],
     ] as const) {
       expect(
-        code(
-          await call(person, "GET", `/companies/${companyA}/members`, {
-            strong,
-          }),
-        ),
+        code(await call(person, "GET", `/companies/${companyA}/members`)),
       ).toBe(expected);
     }
   });
@@ -868,15 +821,17 @@ describe("organizations: two-company isolation", () => {
   it("changes only local membership access, preserves responsibility and keeps removal terminal", async () => {
     const company = await createCompany("aAdmin", "Member lifecycle");
     const member = await addCompanyMember("multi", company);
-    const list = await call("aAdmin", "GET", `/companies/${company}/members`, {
-      strong: true,
-    });
+    const list = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/members`,
+      {},
+    );
     const responsible = (
       list.body.items as { id: string; responsible: boolean }[]
     ).find((item) => item.responsible)!;
     const change = (id: string, version: number, status: string) =>
       call("aAdmin", "PATCH", `/companies/${company}/members/${id}`, {
-        strong: true,
         body: { expectedVersion: version, status },
       });
     for (const status of ["SUSPENDED", "REMOVED"])
@@ -888,8 +843,7 @@ describe("organizations: two-company isolation", () => {
       "RESOURCE_NOT_FOUND",
     );
     expect(
-      (await call("multi", "GET", `/companies/${companyB}`, { strong: true }))
-        .status,
+      (await call("multi", "GET", `/companies/${companyB}`, {})).status,
     ).toBe(200);
     expect(code(await change(member, 1, "ACTIVE"))).toBe(
       "RESOURCE_VERSION_CONFLICT",
@@ -914,7 +868,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/audit-events`,
-      { strong: true },
+      {},
     );
     expect(
       (audit.body.items as { action: string; details: object }[])
@@ -937,8 +891,7 @@ describe("organizations: two-company isolation", () => {
     await addCompanyMember("bAdmin", company, "COMPANY_ADMINISTRATOR");
     const update = (person: Person, version: number, status: string, age = 1) =>
       call(person, "PATCH", `/companies/${company}/members/${admin}`, {
-        strong: true,
-        headers: { "x-test-strong-age": String(age) },
+        headers: { "x-test-auth-age": String(age) },
         body: { expectedVersion: version, status },
       });
     expect((await update("aAdmin", 1, "SUSPENDED")).status).toBe(204);
@@ -976,7 +929,7 @@ describe("organizations: two-company isolation", () => {
       "multi",
       "PATCH",
       `/companies/${company}/members/${admin}`,
-      { strong: true, body: { expectedVersion: 1, status: "REMOVED" } },
+      { body: { expectedVersion: 1, status: "REMOVED" } },
     );
     expect(code(result)).toBe("LAST_ADMINISTRATOR_REQUIRED");
     expect(await auditCount(company)).toBe(before);
@@ -990,7 +943,6 @@ describe("organizations: two-company isolation", () => {
     const member = await addCompanyMember("multi", company);
     const update = (version: number, status: string) =>
       call("aAdmin", "PATCH", `/companies/${company}/members/${member}`, {
-        strong: true,
         body: { expectedVersion: version, status },
       });
     const before = await auditCount(company);
@@ -1009,7 +961,7 @@ describe("organizations: two-company isolation", () => {
         "aAdmin",
         "PATCH",
         `/companies/${company}/members/${rollbackTarget}`,
-        { strong: true, body: { expectedVersion: 1, status: "REMOVED" } },
+        { body: { expectedVersion: 1, status: "REMOVED" } },
       );
       expect(result.status).toBe(500);
     } finally {
@@ -1048,7 +1000,7 @@ describe("organizations: two-company isolation", () => {
         "multi",
         "PATCH",
         `/companies/${company}/members/${target}`,
-        { strong: true, body: { expectedVersion: 1, status: "REMOVED" } },
+        { body: { expectedVersion: 1, status: "REMOVED" } },
       );
       const deadline = Date.now() + 5000;
       for (;;) {
@@ -1093,12 +1045,11 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "POST",
       `/companies/${company}/branches/${retired.id}/archive`,
-      { strong: true, body: { expectedVersion: retired.version } },
+      { body: { expectedVersion: retired.version } },
     );
     const member = await addCompanyMember("multi", company);
-    const grant = (body: object, person: Person = "aAdmin", strong = true) =>
+    const grant = (body: object, person: Person = "aAdmin") =>
       call(person, "POST", `/companies/${company}/members/${member}/grants`, {
-        strong,
         body,
       });
     const before = await auditCount(company);
@@ -1167,7 +1118,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/members`,
-      { strong: true },
+      {},
     );
     const listed = (
       members.body.items as {
@@ -1182,9 +1133,7 @@ describe("organizations: two-company isolation", () => {
       ["BRANCH_MANAGER", "BRANCHES"],
       ["OPERATOR", "BRANCHES"],
     ]);
-    const companyView = await call("multi", "GET", `/companies/${company}`, {
-      strong: true,
-    });
+    const companyView = await call("multi", "GET", `/companies/${company}`, {});
     expect(companyView.body.access).toMatchObject({
       roles: ["BRANCH_MANAGER", "OPERATOR"],
       responsible: false,
@@ -1195,7 +1144,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/audit-events`,
-      { strong: true },
+      {},
     );
     expect(
       (audit.body.items as { action: string; details: object }[])
@@ -1223,9 +1172,6 @@ describe("organizations: two-company isolation", () => {
     expect(code(await grant(operatorBody, "outsider"))).toBe(
       "RESOURCE_NOT_FOUND",
     );
-    expect(code(await grant(operatorBody, "aAdmin", false))).toBe(
-      "STRONG_AUTHENTICATION_REQUIRED",
-    );
     const foreignMember = await sql.query<{ id: string }>(
       "SELECT id FROM memberships WHERE company_id = $1 LIMIT 1",
       [companyB],
@@ -1236,7 +1182,7 @@ describe("organizations: two-company isolation", () => {
           "aAdmin",
           "POST",
           `/companies/${company}/members/${foreignMember.rows[0].id}/grants`,
-          { strong: true, body: operatorBody },
+          { body: operatorBody },
         ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
@@ -1248,7 +1194,6 @@ describe("organizations: two-company isolation", () => {
           "PATCH",
           `/companies/${company}/members/${removed}`,
           {
-            strong: true,
             body: { expectedVersion: 1, status: "REMOVED" },
           },
         )
@@ -1260,7 +1205,7 @@ describe("organizations: two-company isolation", () => {
           "aAdmin",
           "POST",
           `/companies/${company}/members/${removed}/grants`,
-          { strong: true, body: operatorBody },
+          { body: operatorBody },
         ),
       ),
     ).toBe("MEMBERSHIP_REMOVED");
@@ -1272,8 +1217,7 @@ describe("organizations: two-company isolation", () => {
     const member = await addCompanyMember("multi", company);
     const grant = (person: Person, body: object, age = 1) =>
       call(person, "POST", `/companies/${company}/members/${member}/grants`, {
-        strong: true,
-        headers: { "x-test-strong-age": String(age) },
+        headers: { "x-test-auth-age": String(age) },
         body,
       });
     const administration = { role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" };
@@ -1292,16 +1236,15 @@ describe("organizations: two-company isolation", () => {
     });
     expect(existingOperator.status).toBe(200);
     expect(
-      (
-        await call("multi", "GET", `/companies/${company}/members`, {
-          strong: true,
-        })
-      ).status,
+      (await call("multi", "GET", `/companies/${company}/members`, {})).status,
     ).toBe(200);
 
-    const list = await call("aAdmin", "GET", `/companies/${company}/members`, {
-      strong: true,
-    });
+    const list = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${company}/members`,
+      {},
+    );
     const items = list.body.items as {
       id: string;
       principalId: string;
@@ -1314,7 +1257,7 @@ describe("organizations: two-company isolation", () => {
         person,
         "POST",
         `/companies/${company}/members/${memberId}/grants/${grantId}/revoke`,
-        { strong: true },
+        {},
       );
     expect(
       code(await revoke("bAdmin", responsible.id, responsible.grants[0].id)),
@@ -1325,7 +1268,6 @@ describe("organizations: two-company isolation", () => {
       "POST",
       `/companies/${company}/members/${responsible.id}/grants`,
       {
-        strong: true,
         body: {
           ...administration,
           expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
@@ -1349,11 +1291,7 @@ describe("organizations: two-company isolation", () => {
     ).toBe(204);
     expect(await auditCount(company)).toBe(before + 1);
     expect(
-      code(
-        await call("multi", "GET", `/companies/${company}/members`, {
-          strong: true,
-        }),
-      ),
+      code(await call("multi", "GET", `/companies/${company}/members`, {})),
     ).toBe("PERMISSION_DENIED");
     expect(code(await revoke("bAdmin", member, randomUUID()))).toBe(
       "RESOURCE_NOT_FOUND",
@@ -1365,7 +1303,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/audit-events?limit=1`,
-      { strong: true },
+      {},
     );
     expect(audit.body.items).toMatchObject([
       {
@@ -1402,7 +1340,7 @@ describe("organizations: two-company isolation", () => {
           "multi",
           "POST",
           `/companies/${lastCompany}/members/${last}/grants/${rows[0].id}/revoke`,
-          { strong: true },
+          {},
         ),
       ),
     ).toBe("LAST_ADMINISTRATOR_REQUIRED");
@@ -1428,8 +1366,7 @@ describe("organizations: two-company isolation", () => {
     const original = responsibility[0].membership_id;
     const propose = (person: Person, successorMembershipId: string, age = 1) =>
       call(person, "POST", `/companies/${company}/responsibility-transfers`, {
-        strong: true,
-        headers: { "x-test-strong-age": String(age) },
+        headers: { "x-test-auth-age": String(age) },
         body: { successorMembershipId },
       });
     expect(code(await propose("bAdmin", successor))).toBe(
@@ -1466,8 +1403,8 @@ describe("organizations: two-company isolation", () => {
       "RESPONSIBILITY_TRANSFER_PENDING",
     );
     const view = async (person: Person) =>
-      (await call(person, "GET", `/companies/${company}`, { strong: true }))
-        .body.responsibilityTransfer as { direction: string } | null;
+      (await call(person, "GET", `/companies/${company}`, {})).body
+        .responsibilityTransfer as { direction: string } | null;
     expect(await view("multi")).toMatchObject({
       id: transfer,
       direction: "incoming",
@@ -1477,24 +1414,17 @@ describe("organizations: two-company isolation", () => {
     expect(await view("bAdmin")).toBeNull();
     expect(await view("outsider")).toBeNull();
 
-    const accept = (
-      person: Person,
-      options: { strong?: boolean; age?: number } = {},
-    ) =>
+    const accept = (person: Person, options: { age?: number } = {}) =>
       call(
         person,
         "POST",
         `/companies/${company}/responsibility-transfers/${transfer}/accept`,
         {
-          strong: options.strong ?? true,
-          headers: { "x-test-strong-age": String(options.age ?? 1) },
+          headers: { "x-test-auth-age": String(options.age ?? 1) },
         },
       );
     for (const person of ["bAdmin", "outsider", "aAdmin", "aOperator"] as const)
       expect(code(await accept(person)), person).toBe("RESOURCE_NOT_FOUND");
-    expect(code(await accept("multi", { strong: false }))).toBe(
-      "STRONG_AUTHENTICATION_REQUIRED",
-    );
     expect(code(await accept("multi", { age: 301 }))).toBe(
       "RECENT_AUTHENTICATION_REQUIRED",
     );
@@ -1503,9 +1433,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/members`,
-      {
-        strong: true,
-      },
+      {},
     );
     const successorGrant = (
       members.body.items as { id: string; grants: { id: string }[] }[]
@@ -1516,7 +1444,7 @@ describe("organizations: two-company isolation", () => {
           "bAdmin",
           "POST",
           `/companies/${company}/members/${successor}/grants/${successorGrant}/revoke`,
-          { strong: true },
+          {},
         )
       ).status,
     ).toBe(204);
@@ -1528,7 +1456,6 @@ describe("organizations: two-company isolation", () => {
           "POST",
           `/companies/${company}/members/${successor}/grants`,
           {
-            strong: true,
             body: { role: "COMPANY_ADMINISTRATOR", scope: "COMPANY" },
           },
         )
@@ -1551,8 +1478,7 @@ describe("organizations: two-company isolation", () => {
     );
     expect(await view("multi")).toBeNull();
     expect(
-      (await call("multi", "GET", `/companies/${company}`, { strong: true }))
-        .body.access,
+      (await call("multi", "GET", `/companies/${company}`, {})).body.access,
     ).toMatchObject({ responsible: true });
     expect(code(await propose("aAdmin", otherAdmin))).toBe(
       "RESPONSIBLE_APPROVAL_REQUIRED",
@@ -1561,7 +1487,7 @@ describe("organizations: two-company isolation", () => {
       "multi",
       "GET",
       `/companies/${company}/audit-events?limit=1`,
-      { strong: true },
+      {},
     );
     expect(audit.body.items).toMatchObject([
       {
@@ -1578,7 +1504,6 @@ describe("organizations: two-company isolation", () => {
           "PATCH",
           `/companies/${company}/members/${original}`,
           {
-            strong: true,
             body: { expectedVersion: 1, status: "SUSPENDED" },
           },
         )
@@ -1591,7 +1516,6 @@ describe("organizations: two-company isolation", () => {
           "PATCH",
           `/companies/${company}/members/${successor}`,
           {
-            strong: true,
             body: { expectedVersion: 1, status: "SUSPENDED" },
           },
         ),
@@ -1613,7 +1537,6 @@ describe("organizations: two-company isolation", () => {
     );
     const propose = (successorMembershipId = successor) =>
       call("aAdmin", "POST", `/companies/${company}/responsibility-transfers`, {
-        strong: true,
         body: { successorMembershipId },
       });
     const close = (person: Person, transferId: string) =>
@@ -1648,8 +1571,8 @@ describe("organizations: two-company isolation", () => {
       [expired],
     );
     expect(
-      (await call("multi", "GET", `/companies/${company}`, { strong: true }))
-        .body.responsibilityTransfer,
+      (await call("multi", "GET", `/companies/${company}`, {})).body
+        .responsibilityTransfer,
     ).toBeNull();
     expect(
       code(
@@ -1657,7 +1580,7 @@ describe("organizations: two-company isolation", () => {
           "multi",
           "POST",
           `/companies/${company}/responsibility-transfers/${expired}/accept`,
-          { strong: true },
+          {},
         ),
       ),
     ).toBe("RESPONSIBILITY_TRANSFER_NOT_PENDING");
@@ -1674,7 +1597,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/audit-events`,
-      { strong: true },
+      {},
     );
     expect(
       (audit.body.items as { action: string }[])
@@ -1703,7 +1626,6 @@ describe("organizations: two-company isolation", () => {
         "POST",
         `/companies/${company}/responsibility-transfers`,
         {
-          strong: true,
           body: { successorMembershipId: successor },
         },
       )
@@ -1874,9 +1796,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/branches?limit=2`,
-      {
-        strong: true,
-      },
+      {},
     );
     const page = first.body.items as { id: string }[];
     expect(page).toHaveLength(2);
@@ -1884,7 +1804,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/branches?limit=2&cursor=${first.body.nextCursor as string}`,
-      { strong: true },
+      {},
     );
     const rest = second.body.items as { id: string }[];
     expect(rest.length).toBeGreaterThan(0);
@@ -1898,7 +1818,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/branches?limit=1`,
-      { strong: true },
+      {},
     );
     const cursor = first.body.nextCursor as string;
     const fields = JSON.parse(
@@ -1921,7 +1841,7 @@ describe("organizations: two-company isolation", () => {
         "aAdmin",
         "GET",
         `/companies/${companyA}/branches?cursor=${encodeURIComponent(invalid)}`,
-        { strong: true },
+        {},
       );
       expect(result.status).toBe(400);
       expect(code(result)).toBe("VALIDATION_FAILED");
@@ -1930,14 +1850,14 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/audit-events?cursor=${cursor}`,
-      { strong: true },
+      {},
     );
     expect(code(crossList)).toBe("VALIDATION_FAILED");
     const audit = await call(
       "aAdmin",
       "GET",
       `/companies/${companyA}/audit-events?limit=1`,
-      { strong: true },
+      {},
     );
     const auditFields = JSON.parse(
       Buffer.from(audit.body.nextCursor as string, "base64url").toString(
@@ -1948,7 +1868,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/audit-events?cursor=${encode({ ...auditFields, t: "not-a-date" })}`,
-      { strong: true },
+      {},
     );
     expect(invalidTime.status).toBe(400);
     expect(code(invalidTime)).toBe("VALIDATION_FAILED");
@@ -1973,11 +1893,7 @@ describe("organizations: two-company isolation", () => {
       companyB,
     ]);
     expect(
-      code(
-        await call("bAdmin", "GET", `/companies/${companyB}/branches`, {
-          strong: true,
-        }),
-      ),
+      code(await call("bAdmin", "GET", `/companies/${companyB}/branches`, {})),
     ).toBe("COMPANY_SUSPENDED");
     await sql.query("UPDATE companies SET status = 'ACTIVE' WHERE id = $1", [
       companyB,
@@ -1996,8 +1912,8 @@ describe("organizations: two-company isolation", () => {
     );
     await grantBranches("aManager", company, "BRANCH_MANAGER", [north.id]);
     const profiles = `/companies/${company}/access-profiles`;
-    const create = (body: object, person: Person = "aAdmin", strong = true) =>
-      call(person, "POST", profiles, { strong, body });
+    const create = (body: object, person: Person = "aAdmin") =>
+      call(person, "POST", profiles, { body });
 
     const created = await create({
       name: "Supervisão",
@@ -2033,34 +1949,24 @@ describe("organizations: two-company isolation", () => {
       code(
         await create(
           { name: "X", capabilities: ["branches.view"] },
-          "aAdmin",
-          false,
-        ),
-      ),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
-    expect(
-      code(
-        await create(
-          { name: "X", capabilities: ["branches.view"] },
           "aManager",
         ),
       ),
     ).toBe("PERMISSION_DENIED");
-    expect(code(await call("bAdmin", "GET", profiles, { strong: true }))).toBe(
+    expect(code(await call("bAdmin", "GET", profiles, {}))).toBe(
       "RESOURCE_NOT_FOUND",
     );
 
     // A grant carries exactly one role or one active profile of this company.
     const grant = (body: object) =>
       call("aAdmin", "POST", `/companies/${company}/members/${member}/grants`, {
-        strong: true,
         body,
       });
     const otherProfile = await call(
       "bAdmin",
       "POST",
       `/companies/${companyB}/access-profiles`,
-      { strong: true, body: { name: "B", capabilities: ["branches.view"] } },
+      { body: { name: "B", capabilities: ["branches.view"] } },
     );
     expect(otherProfile.status).toBe(201);
     for (const body of [
@@ -2103,17 +2009,13 @@ describe("organizations: two-company isolation", () => {
     expect(summary.body.access).toMatchObject({
       roles: [],
       profiles: ["Supervisão"],
-      capabilities: ["company.view", "branches.view"],
-      capabilitiesAfterStrongAuthentication: ["audit.view"],
+      capabilities: ["company.view", "branches.view", "audit.view"],
     });
-    expect(
-      code(await call("multi", "GET", `/companies/${company}/audit-events`)),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
     const audit = await call(
       "multi",
       "GET",
       `/companies/${company}/audit-events`,
-      { strong: true },
+      {},
     );
     expect(audit.status).toBe(200);
     expect(
@@ -2121,9 +2023,7 @@ describe("organizations: two-company isolation", () => {
     ).toEqual(["grant.created", "branch.created"]);
 
     // The detail shows who an edit would affect.
-    const detail = await call("aAdmin", "GET", `${profiles}/${profileId}`, {
-      strong: true,
-    });
+    const detail = await call("aAdmin", "GET", `${profiles}/${profileId}`, {});
     expect(detail.body).toMatchObject({
       profile: { memberCount: 1, grantCount: 1 },
       holders: [
@@ -2143,9 +2043,7 @@ describe("organizations: two-company isolation", () => {
           "bAdmin",
           "GET",
           `/companies/${companyB}/access-profiles/${profileId}`,
-          {
-            strong: true,
-          },
+          {},
         ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
@@ -2153,7 +2051,6 @@ describe("organizations: two-company isolation", () => {
     // Edits apply to the next request of every holder and are audited.
     const update = (body: object) =>
       call("aAdmin", "PATCH", `${profiles}/${profileId}`, {
-        strong: true,
         body,
       });
     expect(
@@ -2181,16 +2078,14 @@ describe("organizations: two-company isolation", () => {
     });
     expect(
       code(
-        await call("multi", "GET", `/companies/${company}/audit-events`, {
-          strong: true,
-        }),
+        await call("multi", "GET", `/companies/${company}/audit-events`, {}),
       ),
     ).toBe("PERMISSION_DENIED");
     const history = await call(
       "aAdmin",
       "GET",
       `/companies/${company}/audit-events?limit=1`,
-      { strong: true },
+      {},
     );
     expect(history.body.items).toMatchObject([
       {
@@ -2210,7 +2105,6 @@ describe("organizations: two-company isolation", () => {
     // Archival waits until nobody holds the profile; archived profiles are frozen.
     const archive = (expectedVersion: number) =>
       call("aAdmin", "POST", `${profiles}/${profileId}/archive`, {
-        strong: true,
         body: { expectedVersion },
       });
     expect(code(await archive(2))).toBe("PROFILE_IN_USE");
@@ -2218,7 +2112,7 @@ describe("organizations: two-company isolation", () => {
       "aAdmin",
       "GET",
       `/companies/${company}/members`,
-      { strong: true },
+      {},
     );
     const held = (
       members.body.items as {
@@ -2234,7 +2128,7 @@ describe("organizations: two-company isolation", () => {
           "aAdmin",
           "POST",
           `/companies/${company}/members/${member}/grants/${held.id}/revoke`,
-          { strong: true },
+          {},
         )
       ).status,
     ).toBe(204);
@@ -2247,15 +2141,13 @@ describe("organizations: two-company isolation", () => {
     expect(code(await grant({ profileId, scope: "COMPANY" }))).toBe(
       "VALIDATION_FAILED",
     );
-    const active = await call("aAdmin", "GET", profiles, { strong: true });
+    const active = await call("aAdmin", "GET", profiles, {});
     expect(active.body.items).toEqual([]);
     const all = await call(
       "aAdmin",
       "GET",
       `${profiles}?includeArchived=true`,
-      {
-        strong: true,
-      },
+      {},
     );
     expect(all.body.items).toMatchObject([
       { id: profileId, status: "ARCHIVED" },

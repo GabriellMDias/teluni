@@ -86,14 +86,14 @@
           "classification": "INTERNAL"
         },
         "authenticated_at": {
-          "description": "Provider-reported instant of the user's authentication (auth_time) for this session.",
+          "description": "Provider-reported instant of the user's authentication (auth_time) for this session, used for recent-authentication checks (at most five minutes old for sensitive operations).",
           "classification": "INTERNAL",
           "unit": "UTC instant, millisecond precision"
         },
         "strong_authenticated_at": {
-          "description": "Instant of the latest strong authentication verified for this session, used for recent-authentication checks.",
+          "description": "Retired: instant of a teluni-aal2 step-up under the former mandatory two-step policy. Since two-step verification became optional for each person, the API neither writes nor reads it; recent-authentication checks use authenticated_at. Kept until a reviewed contract migration removes it.",
           "classification": "INTERNAL",
-          "nullMeaning": "No strong authentication has been verified for this session.",
+          "nullMeaning": "Every session created since two-step verification became optional, and earlier sessions without a step-up.",
           "unit": "UTC instant, millisecond precision"
         },
         "idle_timeout_seconds": {
@@ -188,9 +188,9 @@
           "classification": "INTERNAL"
         },
         "requested_assurance": {
-          "description": "Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.",
+          "description": "Retired: authentication context class (acr) a login requested under the former mandatory two-step policy. The API no longer writes or reads it. Kept until a reviewed contract migration removes it.",
           "classification": "INTERNAL",
-          "nullMeaning": "A standard login without a requested level."
+          "nullMeaning": "Every login attempt created since two-step verification became optional, and earlier standard logins."
         },
         "max_age_seconds": {
           "description": "Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.",

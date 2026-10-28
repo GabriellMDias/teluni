@@ -23,11 +23,7 @@ const navigation = (page: Page) =>
 
 // These journeys qualify presentation with SDK-shaped synthetic responses.
 // Existing organization journeys own real provider, authorization and writes.
-async function arrange(
-  page: Page,
-  capabilities = administrator,
-  afterStrong: string[] = [],
-) {
+async function arrange(page: Page, capabilities = administrator) {
   const requests: string[] = [];
   await page.route("**/api/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
@@ -41,9 +37,8 @@ async function arrange(
           sessionId: "synthetic-session",
           state: "ACTIVE",
           expiresAt: "2099-10-23T12:00:00.000Z",
-          assuranceLevel: "teluni-aal2",
+          assuranceLevel: "teluni-aal1",
           authenticatedAt: "2026-10-23T08:00:00.000Z",
-          strongAuthenticatedAt: "2026-10-23T08:00:00.000Z",
           csrfToken: "synthetic-csrf",
         },
       });
@@ -87,7 +82,6 @@ async function arrange(
             profiles: [],
             responsible: isA,
             capabilities: isA ? capabilities : operator,
-            capabilitiesAfterStrongAuthentication: afterStrong,
           },
           responsibilityTransfer: null,
         },
@@ -180,13 +174,8 @@ test("distinguishes company views, clears cursors and restores selection through
   ]);
 });
 
-test("uses current capabilities rather than role names or step-up capabilities", async ({
-  page,
-}) => {
-  const requests = await arrange(page, operator, [
-    "members.manage",
-    "audit.view",
-  ]);
+test("uses current capabilities rather than role names", async ({ page }) => {
+  const requests = await arrange(page, operator);
   await page.goto(`${webUrl()}/companies/${companyA}?view=settings`);
   const group = navigation(page).getByRole("group", { name: "Loja Aurora" });
   await expect(

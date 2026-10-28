@@ -61,21 +61,6 @@ function Failure({
   );
 }
 
-function StepUpPrompt({ returnTo }: { returnTo: string }) {
-  const { t } = useDeviceMessages();
-  return (
-    <div role="status" className="notice notice-error">
-      {t.stepUpNotice}
-      <a
-        className="button-link button-primary"
-        href={loginHref(returnTo, "strong")}
-      >
-        {t.stepUpButton}
-      </a>
-    </div>
-  );
-}
-
 /** A write whose outcome is unknown or stale needs a reload, not a retry. */
 function mustReload(error: unknown): boolean {
   return (
@@ -124,17 +109,13 @@ function CompanyGate({
       </a>
     );
   else if (company.isError)
-    body =
-      company.error instanceof ApiFailure &&
-      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-        <StepUpPrompt returnTo={returnTo} />
-      ) : (
-        <Failure
-          error={company.error}
-          operation="read"
-          onReload={() => void company.refetch()}
-        />
-      );
+    body = (
+      <Failure
+        error={company.error}
+        operation="read"
+        onReload={() => void company.refetch()}
+      />
+    );
   else if (
     company.data &&
     !company.data.access.capabilities.includes("devices.view")
@@ -436,26 +417,19 @@ function ScreensContent({
   companyId,
   filter,
   company,
-  returnTo,
 }: {
   companyId: string;
   filter: DeviceFilter;
   company: CompanyWithAccess;
-  returnTo: string;
 }) {
   const { t } = useDeviceMessages();
   const branches = useBranchChoices(companyId);
   const manage = company.access.capabilities.includes("devices.manage");
-  const stepUp =
-    company.access.capabilitiesAfterStrongAuthentication.includes(
-      "devices.manage",
-    );
   const choices = branches.data?.items ?? [];
   return (
     <>
       <h1 id="devices-title">{t.title}</h1>
       <p>{t.lead}</p>
-      {stepUp && <StepUpPrompt returnTo={returnTo} />}
       <ScreenList companyId={companyId} filter={filter} branches={choices} />
       {manage &&
         (branches.isPending ? (
@@ -500,7 +474,6 @@ export function ScreensPage({
           companyId={companyId}
           filter={filter}
           company={company}
-          returnTo={returnTo}
         />
       )}
     </CompanyGate>
@@ -923,10 +896,7 @@ function ScreenDetail({
         >
           {t.detailsTitle}
         </Link>
-        {(company.access.capabilities.includes("audit.view") ||
-          company.access.capabilitiesAfterStrongAuthentication.includes(
-            "audit.view",
-          )) && (
+        {company.access.capabilities.includes("audit.view") && (
           <Link
             to="/companies/$companyId/screens/$deviceId"
             params={{ companyId, deviceId }}
@@ -945,12 +915,6 @@ function ScreenDetail({
             deviceId={deviceId}
             cursor={filter.cursor}
             accessScope={JSON.stringify([company.access, screen.branch.id])}
-          />
-        ) : company.access.capabilitiesAfterStrongAuthentication.includes(
-            "audit.view",
-          ) ? (
-          <StepUpPrompt
-            returnTo={`/companies/${companyId}/screens/${deviceId}?view=history`}
           />
         ) : (
           <p role="alert" className="notice notice-error">

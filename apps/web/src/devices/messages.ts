@@ -165,9 +165,6 @@ const ptBR = {
   cancel: "Cancelar",
   loading: "Carregando…",
   reload: "Recarregar",
-  stepUpNotice:
-    "Parear e administrar telas exige verificação em duas etapas nesta empresa.",
-  stepUpButton: "Verificar em duas etapas",
   errors: {
     PAIRING_CODE_INVALID:
       "Código inválido ou expirado. Confira o código na TV ou gere um novo.",
@@ -180,8 +177,6 @@ const ptBR = {
     PERMISSION_DENIED: "Você não tem permissão para esta ação nesta filial.",
     COMPANY_SUSPENDED:
       "Esta empresa está suspensa. Fale com o suporte do Teluni.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "Esta ação exige verificação em duas etapas.",
     RESOURCE_VERSION_CONFLICT:
       "A tela mudou enquanto você editava. Recarregue antes de tentar de novo.",
     VALIDATION_FAILED: "Confira os campos e tente de novo.",
@@ -363,9 +358,6 @@ const enUS: Messages = {
   cancel: "Cancel",
   loading: "Loading…",
   reload: "Reload",
-  stepUpNotice:
-    "Pairing and managing screens requires two-step verification in this company.",
-  stepUpButton: "Verify with two steps",
   errors: {
     PAIRING_CODE_INVALID:
       "Invalid or expired code. Check the code on the TV or get a new one.",
@@ -378,8 +370,6 @@ const enUS: Messages = {
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You are not allowed to do this in this branch.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "This action requires two-step verification.",
     RESOURCE_VERSION_CONFLICT:
       "The screen changed while you were editing. Reload before trying again.",
     VALIDATION_FAILED: "Check the fields and try again.",

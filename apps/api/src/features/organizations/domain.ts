@@ -35,8 +35,6 @@ export type Capability =
 
 type Preset = Readonly<{
   capabilities: ReadonlySet<Capability>;
-  /** P12: administrators and branch managers must authenticate strongly. */
-  requiresStrongAuthentication: boolean;
 }>;
 
 // Only the capabilities implemented so far are listed; the matrix's other
@@ -69,7 +67,6 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "catalogs.manage",
       "prices.edit",
     ]),
-    requiresStrongAuthentication: true,
   },
   BRANCH_MANAGER: {
     capabilities: new Set([
@@ -91,7 +88,6 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "catalogs.manage",
       "prices.edit",
     ]),
-    requiresStrongAuthentication: true,
   },
   OPERATOR: {
     capabilities: new Set([
@@ -105,7 +101,6 @@ export const rolePresets: Readonly<Record<AccessRole, Preset>> = {
       "catalogs.view",
       "catalogs.edit",
     ]),
-    requiresStrongAuthentication: false,
   },
 };
 
@@ -152,25 +147,6 @@ export const capabilityPrerequisites: Readonly<
   "prices.edit": "catalogs.view",
 };
 
-/**
- * Capabilities that need strong authentication whatever role or profile
- * confers them (P12), so a custom label never lowers the assurance a
- * capability requires.
- */
-const strongCapabilities: ReadonlySet<Capability> = new Set([
-  "company.settings.manage",
-  "branches.manage",
-  "members.manage",
-  "invitations.manage",
-  "audit.view",
-  "devices.manage",
-  "media.archive",
-  "media.delete",
-  "programming.assign",
-  "publications.publish",
-  "prices.edit",
-]);
-
 /** What a grant confers: a standard role or a company's access profile. */
 export type GrantAuthority = Readonly<
   | { role: AccessRole }
@@ -190,19 +166,6 @@ export type Grant = GrantAuthority &
 function capabilitiesOf(grant: GrantAuthority): ReadonlySet<Capability> {
   if ("role" in grant) return rolePresets[grant.role].capabilities;
   return new Set<Capability>(["company.view", ...grant.capabilities]);
-}
-
-/**
- * Whether using a capability through a grant needs strong authentication.
- * A standard role sets it for the whole role (P12: administrators and branch
- * managers always); a profile sets it per capability, so a profile's
- * read-only capabilities work in a standard session while its sensitive
- * ones never do.
- */
-function needsStrong(grant: GrantAuthority, capability: Capability): boolean {
-  return "role" in grant
-    ? rolePresets[grant.role].requiresStrongAuthentication
-    : strongCapabilities.has(capability);
 }
 
 /**
@@ -246,8 +209,6 @@ export type CompanyAccess = Readonly<{
   principalId: string;
   responsible: boolean;
   grants: readonly Grant[];
-  /** The session is strongly authenticated (teluni-aal2). */
-  strong: boolean;
 }>;
 
 export function companyAccess(
@@ -256,7 +217,7 @@ export function companyAccess(
   return Object.freeze({ ...value }) as CompanyAccess;
 }
 
-export type AccessDecision = "allow" | "deny" | "strong_required";
+export type AccessDecision = "allow" | "deny";
 
 // Basic company information is visible to every member, whatever the scope.
 const companyWide: ReadonlySet<Capability> = new Set(["company.view"]);
@@ -272,32 +233,27 @@ function covers(
 
 /**
  * Decides one capability, optionally for one branch. Grants combine
- * additively; a grant that needs strong authentication for the capability
- * counts only in a strongly authenticated session. A company-scoped decision (no branch)
- * needs a company-wide grant.
+ * additively. A company-scoped decision (no branch) needs a company-wide
+ * grant. Two-step verification is optional for each person, so no grant
+ * depends on it; sensitive operations ask for a recent authentication instead.
  */
 export function decide(
   access: CompanyAccess,
   capability: Capability,
   branchId?: string,
 ): AccessDecision {
-  let strongRequired = false;
-  for (const grant of access.grants) {
-    if (
-      !capabilitiesOf(grant).has(capability) ||
-      !covers(grant, capability, branchId)
-    )
-      continue;
-    if (!needsStrong(grant, capability) || access.strong) return "allow";
-    strongRequired = true;
-  }
-  return strongRequired ? "strong_required" : "deny";
+  return access.grants.some(
+    (grant) =>
+      capabilitiesOf(grant).has(capability) &&
+      covers(grant, capability, branchId),
+  )
+    ? "allow"
+    : "deny";
 }
 
 /**
  * Which branches a capability reaches, for query predicates: every branch,
- * an explicit set, or none. Grants needing strong authentication in a
- * standard session contribute nothing.
+ * an explicit set, or none.
  */
 export function branchReach(
   access: CompanyAccess,
@@ -306,29 +262,16 @@ export function branchReach(
   const reached = new Set<string>();
   for (const grant of access.grants) {
     if (!capabilitiesOf(grant).has(capability)) continue;
-    if (needsStrong(grant, capability) && !access.strong) continue;
     if (grant.scope === "COMPANY" || companyWide.has(capability)) return "all";
     for (const id of grant.branchIds) reached.add(id);
   }
   return reached;
 }
 
-/** True when some grant would reach the capability once strongly authenticated. */
-export function reachableWithStrongAuthentication(
-  access: CompanyAccess,
-  capability: Capability,
-): boolean {
-  return access.grants.some(
-    (grant) =>
-      capabilitiesOf(grant).has(capability) && needsStrong(grant, capability),
-  );
-}
-
 export type OrganizationFailureCode =
   | "RESOURCE_NOT_FOUND"
   | "PERMISSION_DENIED"
   | "COMPANY_SUSPENDED"
-  | "STRONG_AUTHENTICATION_REQUIRED"
   | "VALIDATION_FAILED"
   | "RESOURCE_VERSION_CONFLICT"
   | "IDEMPOTENCY_KEY_REUSED"
@@ -370,10 +313,8 @@ export function requireCapability(
 ): void {
   if (access.companyStatus === "SUSPENDED")
     throw new OrganizationFailure("COMPANY_SUSPENDED");
-  const decision = decide(access, capability, branchId);
-  if (decision === "strong_required")
-    throw new OrganizationFailure("STRONG_AUTHENTICATION_REQUIRED");
-  if (decision === "deny") throw new OrganizationFailure("PERMISSION_DENIED");
+  if (decide(access, capability, branchId) === "deny")
+    throw new OrganizationFailure("PERMISSION_DENIED");
 }
 
 /** IANA zones known to the runtime, including canonical aliases. */
@@ -455,7 +396,7 @@ export const invitationAddressRetentionDays = 90;
  * Whether the caller may invite with this grant request now (D-13 "Who may
  * invite"). Administrators invite operators and branch managers anywhere;
  * only the responsible administrator invites administrators, and the
- * repository additionally requires recent strong authentication. Branch
+ * repository additionally requires a recent authentication. Branch
  * managers invite operators to branches they manage, never company-wide.
  */
 export function invitationDecision(
@@ -479,11 +420,6 @@ export function invitationDecision(
     request.branchIds.every((id) => reach === "all" || reach.has(id))
   )
     return "allow";
-  if (
-    !access.strong &&
-    reachableWithStrongAuthentication(access, "invitations.manage")
-  )
-    return "strong_required";
   return "deny";
 }
 

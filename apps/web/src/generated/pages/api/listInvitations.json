@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "listInvitations",
   "summary": "",
-  "description": "The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Requires two-step verification. Cursors are bound to the company, caller and visible scope.",
+  "description": "The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Cursors are bound to the company, caller and visible scope.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

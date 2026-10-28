@@ -315,12 +315,6 @@ async function up(): Promise<void> {
       `ORION_API_HOST=127.0.0.1`,
       `ORION_API_PORT=${ports.api}`,
       "ORION_LOG_LEVEL=info",
-      // Local testing convenience is opt-in; rerunning up preserves the mode.
-      ...(await readFile(envFile, "utf8").catch(() => ""))
-        .split("\n")
-        .filter((line) =>
-          /^TELUNI_DEV_MFA_MODE=(required|optional)$/.test(line),
-        ),
       `ORION_DATABASE_URL=${runtimeUrl}`,
       `ORION_TOKEN_ISSUER=${issuer}`,
       `ORION_TOKEN_AUDIENCE=${audience}`,

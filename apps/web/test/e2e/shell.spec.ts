@@ -17,7 +17,6 @@ async function signedInHome(page: Page) {
         expiresAt: "2099-10-23T12:00:00.000Z",
         assuranceLevel: "teluni-aal1",
         authenticatedAt: "2026-10-23T08:00:00.000Z",
-        strongAuthenticatedAt: null,
         csrfToken: "synthetic-csrf",
       },
     }),

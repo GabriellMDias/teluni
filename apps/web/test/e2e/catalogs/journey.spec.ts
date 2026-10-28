@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { enrollAuthenticator, enterCredentials } from "../identity/provider.ts";
+import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
 // Catalogs through the real panel and API: a product catalog from the
@@ -36,9 +36,6 @@ test("creates a product catalog with a branch price and a promotion and reads th
   await page.getByRole("button", { name: "Criar empresa" }).click();
   await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
   const companyUrl = page.url();
-  await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
-  await enrollAuthenticator(page);
-  await afterNavigation(page).toHaveURL(companyUrl);
   await page.getByLabel("Nome da filial").fill("Centro");
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();

@@ -44,8 +44,7 @@ export function createIdentityModule(
         sessionId: context.sessionId,
         assuranceLevel: context.assuranceLevel,
         authenticatedAt: context.authenticatedAt,
-        strongAuthenticatedAt: context.strongAuthenticatedAt,
-        strongAuthenticationAgeSeconds: context.strongAuthenticationAgeSeconds,
+        authenticationAgeSeconds: context.authenticationAgeSeconds,
         scopes: context.scopes,
       };
     },
@@ -59,18 +58,6 @@ export function createIdentityModule(
     activate: ({ database, verifier, humanIdentity }) => {
       // Activation guarantees every declared requirement is configured.
       const settings = humanIdentity!;
-      if (
-        settings.developmentMfaMode === "optional" &&
-        (settings.environment !== "development" ||
-          ![settings.publicOrigin, settings.issuer].every((value) =>
-            ["localhost", "127.0.0.1", "[::1]"].includes(
-              new URL(value).hostname,
-            ),
-          ))
-      )
-        throw new Error(
-          "Optional MFA requires local development identity settings",
-        );
       const repository = new PrismaIdentityRepository(database!);
       const service = new IdentityService({
         repository,
@@ -79,7 +66,6 @@ export function createIdentityModule(
         keys: new SessionKeyRing(settings.sessionKeys),
         publicOrigin: settings.publicOrigin,
         issuer: settings.issuer,
-        developmentMfaBypass: settings.developmentMfaMode === "optional",
         events: {
           securityEvent: (event) =>
             log?.warn({ securityEvent: event }, "identity_security_event"),
@@ -94,11 +80,6 @@ export function createIdentityModule(
         name: "identity",
         register: (app) => {
           log = app.log;
-          if (settings.developmentMfaMode === "optional")
-            log.warn(
-              { developmentMfaMode: "optional" },
-              "development_mfa_optional",
-            );
           registerIdentityRoutes(app, service, {
             publicOrigin: settings.publicOrigin,
             ...(options.rateLimit ? { rateLimit: options.rateLimit } : {}),
