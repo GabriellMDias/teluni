@@ -1,6 +1,51 @@
 .organization-panel {
   max-width: 52rem;
 }
+/*
+ * The companies dataset uses the whole workspace: full width, and on wider
+ * screens the viewport's height, with the grid scrolling inside its frame.
+ */
+.product-shell .main-content:has(> .companies-panel) {
+  max-width: none;
+}
+.organization-panel.companies-panel {
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+}
+.companies-panel > :is(p, h1) {
+  margin-block: 0 0.75rem;
+}
+@media (min-width: 761px) {
+  .main-content:has(> .companies-panel) {
+    padding-bottom: var(--space-page);
+  }
+  .organization-panel.companies-panel {
+    height: calc(100dvh - 2 * var(--space-page));
+    min-height: 28rem;
+  }
+  .companies-panel .ui-dataset {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .companies-panel .ui-datagrid {
+    flex: 1 1 0;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .companies-panel .ui-datagrid-scroll {
+    max-height: none;
+  }
+  .companies-panel :is(.ui-dataset-form, .ui-dataset-empty) {
+    flex: 1 1 0;
+    overflow: auto;
+  }
+  .companies-panel .pagination {
+    margin-block: 0.75rem 0;
+  }
+}
 .organization-panel .notice {
   margin: 1rem 0;
 }

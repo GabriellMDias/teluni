@@ -4,6 +4,15 @@
     "title": "Teluni Media Library Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Data",
+    "anchor": "data",
+    "text": "Data\nAll tables belong to the media module, with Prisma models in `prisma/schema/media.prisma`, semantic metadata, runtime grants and one reviewed migration.\nTable\nContents\nNotes\n`media_objects`\n`(company_id, sha256)` key, byte size, content type, created time\nOne row per stored file per company; publication and purge serialize on a transaction-scoped advisory lock per object\n`media_assets`\n`(company_id, id)`, optional composite `(company_id, branch_id)` reference, name, tags, kind, status, rejection reason, declared type and size, original/display/thumbnail object hashes (composite references to `media_objects`), inspected facts, processing stage/progress/attempts/lease, created-by membership, created/ready/archived/deleted/purge-after/purged times, version\nComposite tenant references; runtime role never updates `company_id` or `branch_id`\n`media_audit_events`\nCompany, actor, action, target asset, allowlisted details\nAppend-only; `media.created`, `media.uploaded`, `media.ready`, `media.failed`, `media.rejected`, `media.renamed`, `media.tagged`, `media.archived`, `media.restored`, `media.deleted`, `media.trash_restored`, `media.purged`, `media.discarded`. Details hold IDs, kinds, sizes and reason codes, never file names of other assets, hashes or paths\nNames, tags, inspected facts and the stored bytes are `CONFIDENTIAL`. The original file name is used as the default name only; it is not stored separately.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Contracts",
     "anchor": "contracts",
     "text": "Contracts\nHuman operations (session access, CSRF as elsewhere): `GET /companies/{companyId}/media` (paginated, cursor-bound; filters by kind, status, scope, tag and name text), `POST .../media` (create), `GET .../media/{assetId}`, `PUT .../media/{assetId}/content` (upload bytes), `GET .../media/{assetId}/content` (download a variant), `PATCH .../media/{assetId}` (name, tags, expected version), `POST .../media/{assetId}/archive`, `.../restore`, `.../delete`, `.../restore-deleted` and `DELETE .../media/{assetId}` (discard). All are TypeBox contracts in the OpenAPI document; the shared module contract gains the `application/octet-stream` request body and a binary response so the document describes them. The web uses the generated SDK except for the upload body, which it sends with `XMLHttpRequest` to report progress. New expected errors: `MEDIA_TYPE_UNSUPPORTED`, `MEDIA_TOO_LARGE`, `MEDIA_UPLOAD_INCOMPLETE`, `MEDIA_NOT_UPLOADING`, `MEDIA_NOT_READY`, `MEDIA_IN_USE`, `MEDIA_STORAGE_FULL`, `MEDIA_INVALID_STATE`, plus the existing `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CONFLICT`, `RATE_LIMITED`, `VALIDATION_FAILED` and access errors. Rejection reasons (`MEDIA_TYPE_MISMATCH`, `MEDIA_TYPE_UNSUPPORTED`, `MEDIA_TOO_LARGE`, `MEDIA_DIMENSIONS_EXCEEDED`, `MEDIA_DURATION_EXCEEDED`, `MEDIA_UNREADABLE`, `MEDIA_CONVERSION_FAILED`) are a closed enumeration on the asset, not HTTP errors.\n"
@@ -556,14 +565,5 @@
     "heading": "Concepts",
     "anchor": "concepts",
     "text": "Concepts\nA **playlist** is an ordered, looping list of media items owned by a company or one branch, like media. It is reusable: several programs may schedule the same playlist.\nA **programming group** belongs to a company and names the branches it may span: either the whole company or a fixed set of one or more branches.\nA **program** is the draft programming of one source: a group, or one screen. It has one output today, the full screen (`screen`); PJ-20 adds layout areas as further outputs with their own rules and defaults, evaluated by the same functions. Each output has a set of **schedule rules** and an optional **default playlist**.\nA screen's **programming source** is its group's program when it belongs to a group and individual programming is not selected; otherwise its own program. A screen without a group is always programmed individually.\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Playlists",
-    "anchor": "playlists",
-    "text": "Playlists\nA playlist has a name (1 to 120 characters), an owning scope (company or one branch), a transition and 0 to 500 items.\nEach item references one media asset that is `READY`, not archived, and visible to the playlist's scope: a company playlist may use company media only; a branch playlist may use company media and that branch's media. An image item has a duration from 1 to 3,600 whole seconds, 10 by default; a video item has no duration and plays its whole display rendition. Items play in order and the playlist loops while its schedule window lasts; a boundary interrupts the current item. The same asset may appear more than once.\nThe transition is `CUT` (default) or `FADE` with a duration from 250 to 2,000 ms. A fade is stored and previewed, but publication (PJ-11) accepts it only for screens whose profile is qualified for fades and otherwise rejects it with an actionable reason instead of dropping it; at a schedule boundary that ends commercial content the player cuts.\nSaving items replaces the whole ordered list with an expected version, so reordering is one atomic change. An archived asset already in a playlist stays and keeps playing; it cannot be added again. The panel shows the playlist's total duration and its video count.\n"
   }
 ]

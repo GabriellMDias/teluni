@@ -130,6 +130,15 @@
     "title": "Teluni Implementation Plan",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Full-width companies page and theme switch",
+    "anchor": "full-width-companies-page-and-theme-switch",
+    "text": "Full-width companies page and theme switch\nOn 2026-10-28 the owner asked for less empty space on `/companies` at desktop resolutions, with the DataSet occupying most of the page, for the top header (\"Seu espaço de trabalho\" and the theme selector) to be removed and for a simpler sun/moon theme switch at the bottom of the sidebar. The desktop shell has no top header; narrow screens keep a bar with only the menu button. The switch (`role=\"switch\"`, “Tema escuro”) sits beside the collapse control and stays usable when the sidebar is collapsed; it follows the system until used, and choosing a theme no longer offers returning to System. The companies page removes the content width limit and, from 761 px, fills the viewport height with the grid scrolling inside the dataset frame; other pages keep their widths. A pre-existing narrow-screen defect that centered short pages vertically below the menu bar was fixed. Browser component tests, the shell, company-navigation, device-interface, screens and companies E2E journeys passed locally; no remote CI result is claimed.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "Teluni Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Collapsible sidebar increment",
     "anchor": "collapsible-sidebar-increment",
     "text": "Collapsible sidebar increment\nOn 2026-10-26 the owner requested visual refinements, starting with a collapsible left sidebar. On desktop widths, a localized “Recolher menu”/“Expandir menu” control at the foot of the sidebar narrows it to a brand mark and navigation icons. Link and button labels remain in the accessibility tree, the company context label and switch link are hidden while collapsed, and every product and portal entry now carries an icon. Only `teluni.sidebar=collapsed` is stored, with the same tab synchronization and storage-denial fallback as the theme; expanding removes the key. The mobile menu ignores the stored layout. No route, permission or API behavior changes. A shell E2E journey covers collapse, reload persistence, navigation, both themes with axe scans, and the mobile fallback.\n"
@@ -448,14 +457,5 @@
     "heading": "Abuse limits",
     "anchor": "abuse-limits",
     "text": "Abuse limits\nProposed initial values, each answering `RATE_LIMITED` with `Retry-After`:\nAt most 5 assets in `UPLOADING` per person and 20 per company.\nAt most 200 asset creations per company per day.\nAt most 20 assets in `PROCESSING` per company, so one company cannot monopolize the processor.\nThe upload `PUT` has no request-size limit beyond the declared size, a 2-hour request timeout and an idle timeout of 60 seconds without bytes.\nCommercial original-media quotas (2 GiB trial, 10 GiB paid) and their warnings arrive with PJ-27, which will count each original object once per company as the commercial policies require; the creation request is where admission will be checked.\n"
-  },
-  {
-    "id": "repository/docs/project/media-library-design",
-    "title": "Teluni Media Library Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Data",
-    "anchor": "data",
-    "text": "Data\nAll tables belong to the media module, with Prisma models in `prisma/schema/media.prisma`, semantic metadata, runtime grants and one reviewed migration.\nTable\nContents\nNotes\n`media_objects`\n`(company_id, sha256)` key, byte size, content type, created time\nOne row per stored file per company; publication and purge serialize on a transaction-scoped advisory lock per object\n`media_assets`\n`(company_id, id)`, optional composite `(company_id, branch_id)` reference, name, tags, kind, status, rejection reason, declared type and size, original/display/thumbnail object hashes (composite references to `media_objects`), inspected facts, processing stage/progress/attempts/lease, created-by membership, created/ready/archived/deleted/purge-after/purged times, version\nComposite tenant references; runtime role never updates `company_id` or `branch_id`\n`media_audit_events`\nCompany, actor, action, target asset, allowlisted details\nAppend-only; `media.created`, `media.uploaded`, `media.ready`, `media.failed`, `media.rejected`, `media.renamed`, `media.tagged`, `media.archived`, `media.restored`, `media.deleted`, `media.trash_restored`, `media.purged`, `media.discarded`. Details hold IDs, kinds, sizes and reason codes, never file names of other assets, hashes or paths\nNames, tags, inspected facts and the stored bytes are `CONFIDENTIAL`. The original file name is used as the default name only; it is not stored separately.\n"
   }
 ]

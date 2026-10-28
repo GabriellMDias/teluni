@@ -4,6 +4,15 @@
     "title": "Teluni Programming Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Playlists",
+    "anchor": "playlists",
+    "text": "Playlists\nA playlist has a name (1 to 120 characters), an owning scope (company or one branch), a transition and 0 to 500 items.\nEach item references one media asset that is `READY`, not archived, and visible to the playlist's scope: a company playlist may use company media only; a branch playlist may use company media and that branch's media. An image item has a duration from 1 to 3,600 whole seconds, 10 by default; a video item has no duration and plays its whole display rendition. Items play in order and the playlist loops while its schedule window lasts; a boundary interrupts the current item. The same asset may appear more than once.\nThe transition is `CUT` (default) or `FADE` with a duration from 250 to 2,000 ms. A fade is stored and previewed, but publication (PJ-11) accepts it only for screens whose profile is qualified for fades and otherwise rejects it with an actionable reason instead of dropping it; at a schedule boundary that ends commercial content the player cuts.\nSaving items replaces the whole ordered list with an expected version, so reordering is one atomic change. An archived asset already in a playlist stays and keeps playing; it cannot be added again. The panel shows the playlist's total duration and its video count.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Programming groups and sources",
     "anchor": "programming-groups-and-sources",
     "text": "Programming groups and sources\nA group has a name (1 to 80 characters, unique within the company, ignoring case) and its branch span. Only screens of branches in that span may join. Narrowing the span is refused while member screens of the removed branches remain, and changing it is refused when the group's rules would use a branch playlist outside the new span. Deleting a group is refused while it has members.\nJoining or leaving a group and selecting or clearing individual programming are **assignments**. An assignment never edits a program. Its request carries the screen's current settings version and, while the destination has no published programming, `confirmUnpublished: true`, which the panel asks for with a sentence explaining that the screen will show neutral output until the destination is published. Until PJ-11 exists no destination is published, so every assignment needs that confirmation; PJ-11 replaces the check with the real publication fact and requests the destination's latest publication.\nA screen that leaves its group keeps its own program, which is empty unless it was edited before. Selecting individual programming never copies the group's rules: the screen's own program is used as it is, so the person sees and edits it explicitly.\n"
@@ -646,14 +655,5 @@
     "heading": "Teluni Tenant Data Ownership and Access Design",
     "anchor": "teluni-tenant-data-ownership-and-access-design",
     "text": "Teluni Tenant Data Ownership and Access Design\n[Product architecture](architecture.md#pending-decisions) · [ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md) · [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) · [Identity and session design](identity-session-design.md) · [PH-20](human-actions.md#ph-20)\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Status and scope",
-    "anchor": "status-and-scope",
-    "text": "Status and scope\n**Approved detailed design for D-01, 2026-10-18.** The owner approved it as proposed under [PH-20](human-actions.md#ph-20). It applies accepted ADR-0018 (shared database and schema, company as tenant, relational tenant constraints) and ADR-0025 (application-owned memberships and scoped grants) to concrete persistence and data-access rules, and records the row-level-security evaluation that ADR-0018 requires before the first product migration. The first organizations increment applies these rules; [implementation status](#implementation-status) distinguishes it from the remaining scope. Approval authorizes PJ-03 and the dependent modules to apply these rules; the human session mechanism is [D-02](identity-session-design.md).\nThe inherited [database principles](../database/principles.md), [authorization policy](../security/authorization.md), [transactions policy](../database/transactions-and-concurrency.md) and the selected [permission matrix](identity-and-access.md#permission-model-and-default-matrix) still govern. Each module's implementation conventions will record its concrete tables, contracts and errors when the module is built; this document owns the rules every tenant-owned module shares.\n"
   }
 ]

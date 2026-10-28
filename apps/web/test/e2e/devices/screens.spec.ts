@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
+import { chooseTheme } from "../theme.ts";
 
 // Screen pairing through the real panel, with the player simulated over HTTP
 // against the API: enroll, pair in the panel, check in, unlink and confirm
@@ -139,10 +140,8 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
   const history = page.getByTestId("screen-history");
   await afterNavigation(history).toContainText("Tela pareada");
   await expect(history).toContainText("Você");
-  for (const theme of ["dark", "light"]) {
-    await page
-      .getByRole("combobox", { name: "Tema", exact: true })
-      .selectOption(theme);
+  for (const theme of ["dark", "light"] as const) {
+    await chooseTheme(page, theme);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
   await page.getByRole("link", { name: "Detalhes", exact: true }).click();

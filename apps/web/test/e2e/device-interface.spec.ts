@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import type { Device, ScreenState } from "../../src/devices/api.js";
+import { chooseTheme } from "./theme.ts";
 
 test.use({ locale: "pt-BR", colorScheme: "light" });
 const companyId = "00000000-0000-4000-8000-000000000001";
@@ -164,9 +165,7 @@ for (const theme of ["light", "dark"] as const) {
       const writes = await arrange(page);
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${webUrl()}${path}`);
-      await page
-        .getByRole("combobox", { name: "Tema", exact: true })
-        .selectOption(theme);
+      await chooseTheme(page, theme);
       const pair = page.getByRole("form", { name: "Parear uma tela" });
       await expect(pair).toBeVisible();
       await expect(

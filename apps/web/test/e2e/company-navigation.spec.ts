@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { chooseTheme } from "./theme.ts";
 
 test.use({ locale: "pt-BR", colorScheme: "light" });
 const webUrl = () => process.env.ORION_E2E_WEB_URL!;
@@ -107,10 +108,8 @@ test("keeps the company context and the active section across product modules in
   await expect(
     navigation(page).getByRole("link", { name: "Empresas", exact: true }),
   ).not.toHaveAttribute("aria-current", "page");
-  for (const theme of ["light", "dark"]) {
-    await page
-      .getByRole("combobox", { name: "Tema", exact: true })
-      .selectOption(theme);
+  for (const theme of ["light", "dark"] as const) {
+    await chooseTheme(page, theme);
     for (const [label, path] of [
       ["Telas", "screens"],
       ["Mídia", "media"],
@@ -250,10 +249,8 @@ test("mobile company navigation keeps scope, focus and contrast in both themes",
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${webUrl()}/companies/${companyA}`);
   const menu = page.getByRole("button", { name: "Menu", exact: true });
-  for (const theme of ["light", "dark"]) {
-    await page
-      .getByRole("combobox", { name: "Tema", exact: true })
-      .selectOption(theme);
+  for (const theme of ["light", "dark"] as const) {
+    await chooseTheme(page, theme);
     await menu.click();
     const group = navigation(page).getByRole("group", { name: "Loja Aurora" });
     await expect(group).toBeVisible();

@@ -398,7 +398,7 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
   const select = (id: string) => go({ mode: search.mode, record: id }, true);
   return (
     <section
-      className="panel organization-panel"
+      className="panel organization-panel companies-panel"
       aria-labelledby="companies-title"
       lang={locale}
     >

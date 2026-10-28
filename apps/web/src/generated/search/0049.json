@@ -4,6 +4,15 @@
     "title": "Teluni Tenant Data Ownership and Access Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Status and scope",
+    "anchor": "status-and-scope",
+    "text": "Status and scope\n**Approved detailed design for D-01, 2026-10-18.** The owner approved it as proposed under [PH-20](human-actions.md#ph-20). It applies accepted ADR-0018 (shared database and schema, company as tenant, relational tenant constraints) and ADR-0025 (application-owned memberships and scoped grants) to concrete persistence and data-access rules, and records the row-level-security evaluation that ADR-0018 requires before the first product migration. The first organizations increment applies these rules; [implementation status](#implementation-status) distinguishes it from the remaining scope. Approval authorizes PJ-03 and the dependent modules to apply these rules; the human session mechanism is [D-02](identity-session-design.md).\nThe inherited [database principles](../database/principles.md), [authorization policy](../security/authorization.md), [transactions policy](../database/transactions-and-concurrency.md) and the selected [permission matrix](identity-and-access.md#permission-model-and-default-matrix) still govern. Each module's implementation conventions will record its concrete tables, contracts and errors when the module is built; this document owns the rules every tenant-owned module shares.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Table categories",
     "anchor": "table-categories",
     "text": "Table categories\nCategory\nFirst-slice examples\nRule\nGlobal identity\nPrincipals and human sessions, owned by the identity capability\nNo `company_id`. Never read through a tenant query except by joining an authorized membership. A company administrator cannot list a principal's other memberships\nTenant root\nCompanies\n`id` is the tenant identifier. Lifecycle is a state (active, suspended), not deletion; hard deletion waits for PH-13 retention rules\nTenant-owned\nBranches, memberships, access profiles, grants and organization audit events; later devices, media, programming, catalogs and publications\nImmutable `company_id uuid NOT NULL` and a tenant key `UNIQUE (company_id, id)`\nBranch-scoped tenant-owned\nGrant branch scopes; later devices and branch overrides\nTenant-owned plus `branch_id` referencing the branch through the tenant key\nPlatform operational\nNone in the first slice\nSeparate platform capability and accounts (P11); lifecycle metadata only, never implicit tenant-content reads\n"
@@ -745,14 +754,5 @@
     "heading": "Mitigation, recovery, and verification",
     "anchor": "mitigation-recovery-and-verification",
     "text": "Mitigation, recovery, and verification\nMitigation reduces impact without necessarily correcting the cause. Explain what each important mitigation restores, disables, or puts at risk. Mark temporary measures and their follow-up/removal needs. Recovery restores safe normal operation; verify its prerequisites and restore progressively where risk warrants it.\nEvery state-changing procedure should define outcome verification. Command success or a cleared alert alone is not proof. Use relevant health, error-rate, latency, progress, data-integrity, or credential-revocation evidence. Where needed, prove that the previous unsafe behavior is no longer possible. Specify post-recovery observation signals and justified observation periods rather than arbitrary delays.\nDocument rollback only when real and safe; identify compatibility prerequisites. If rollback is unsafe or impossible, state that and provide the forward-recovery direction. Explicitly identify irreversible actions before execution.\nStop when evidence no longer matches the procedure, preconditions or required access cannot be verified, scope exceeds documented bounds, destructive effects are unknown, recovery fails, or corruption/security compromise is suspected. Preserve useful evidence and escalate rather than improvising outside the known safe scope. Identify actual escalation targets when organizational structure exists.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/authoring",
-    "title": "Authoring and Using Runbooks",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Integration with policy and operational evidence",
-    "anchor": "integration-with-policy-and-operational-evidence",
-    "text": "Integration with policy and operational evidence\n[Production access](../security/production-access.md) governs least privilege, authorization, elevated roles, and break-glass. Break-glass is for genuine emergencies where normal access is unavailable or insufficient, not a default first step.\n[Incident response](../security/incident-response.md) governs incident declaration, severity, communication, recovery evidence, and follow-up. Incident urgency does not expand an agent's authority.\n[Observability](../reliability/observability.md) and [health checks](../reliability/health-checks.md) govern investigation signals. Reference stable events, fields, metrics, operations, error codes, and relevant spans rather than fragile message strings or vague “check logs” instructions.\n[Alerting](../reliability/alerting.md) connects alerts to runbooks; reference the canonical alert name where possible. Add real provider queries and links only when the tooling exists.\n[Data classification](../security/data-classification.md), [redaction](../security/telemetry-redaction.md), [secrets](../security/secrets-management.md), and [retention](../security/data-retention.md) govern sensitive outputs. Temporary exports need a storage location, access scope, retention, and deletion method.\n"
   }
 ]

@@ -50,7 +50,7 @@ test.afterAll(async () => {
   await stack?.stop();
 });
 
-test("creates a company, verifies in two steps and manages branches, settings, members, responsibility and invitations", async ({
+test("creates a company and manages branches, settings, members, responsibility and invitations", async ({
   page,
   browser,
 }) => {

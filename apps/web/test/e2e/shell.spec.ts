@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { chooseTheme, themeSwitch } from "./theme.ts";
 
 test.use({ locale: "pt-BR", colorScheme: "light" });
 const webUrl = () => process.env.ORION_E2E_WEB_URL!;
@@ -42,11 +43,12 @@ test("applies accessible light/dark surfaces and preserves the selected theme ac
 }) => {
   await signedInHome(page);
   const shell = page.locator(".product-shell");
-  const theme = page.getByRole("combobox", { name: "Tema", exact: true });
+  const theme = themeSwitch(page);
   await expect(shell).toHaveAttribute("data-theme", "light");
+  await expect(theme).toHaveAttribute("aria-checked", "false");
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
-  for (const value of ["light", "dark"]) {
-    await theme.selectOption(value);
+  for (const value of ["light", "dark"] as const) {
+    await chooseTheme(page, value);
     await expect(shell).toHaveAttribute("data-theme", value);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
@@ -63,7 +65,7 @@ test("applies accessible light/dark surfaces and preserves the selected theme ac
   ).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.reload();
-  await expect(theme).toHaveValue("dark");
+  await expect(theme).toHaveAttribute("aria-checked", "true");
   expect(
     await shell.evaluate(
       (element) => getComputedStyle(element).backgroundColor,
@@ -72,9 +74,8 @@ test("applies accessible light/dark surfaces and preserves the selected theme ac
   expect(await page.evaluate(() => Object.entries(localStorage))).toEqual([
     ["teluni.theme", "dark"],
   ]);
-  await theme.selectOption("system");
+  await chooseTheme(page, "light");
   await expect(shell).toHaveAttribute("data-theme", "light");
-  expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });
 
 test("follows live system changes and synchronizes an explicit preference across tabs", async ({
@@ -87,16 +88,16 @@ test("follows live system changes and synchronizes an explicit preference across
   await expect(shell).toHaveAttribute("data-theme", "dark");
   const second = await context.newPage();
   await second.goto(`${webUrl()}/sign-in`);
-  await second
-    .getByRole("combobox", { name: "Tema", exact: true })
-    .selectOption("light");
+  // The second tab's system is light; choosing dark, then light, stores an
+  // explicit preference that the first tab follows.
+  await chooseTheme(second, "dark");
+  await expect(shell).toHaveAttribute("data-theme", "dark");
+  await chooseTheme(second, "light");
   await expect(shell).toHaveAttribute("data-theme", "light");
   await page.emulateMedia({ colorScheme: "light" });
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(shell).toHaveAttribute("data-theme", "light");
-  await second
-    .getByRole("combobox", { name: "Tema", exact: true })
-    .selectOption("system");
+  await chooseTheme(second, "dark");
   await expect(shell).toHaveAttribute("data-theme", "dark");
   await second.close();
 });
@@ -108,9 +109,7 @@ test("ignores invalid stored themes and keeps the control usable when storage is
     localStorage.setItem("teluni.theme", "invalid"),
   );
   await page.goto(`${webUrl()}/sign-in`);
-  await expect(
-    page.getByRole("combobox", { name: "Tema", exact: true }),
-  ).toHaveValue("system");
+  await expect(themeSwitch(page)).toHaveAttribute("aria-checked", "false");
   await page.evaluate(() => {
     Object.defineProperty(window, "localStorage", {
       get() {
@@ -118,18 +117,14 @@ test("ignores invalid stored themes and keeps the control usable when storage is
       },
     });
   });
-  await page
-    .getByRole("combobox", { name: "Tema", exact: true })
-    .selectOption("dark");
+  await chooseTheme(page, "dark");
   await expect(page.locator(".product-shell")).toHaveAttribute(
     "data-theme",
     "dark",
   );
   await page.goto(`${webUrl()}/docs`);
   await expect(page.locator(".docs-workspace")).toBeVisible();
-  await expect(
-    page.getByRole("combobox", { name: "Tema", exact: true }),
-  ).toHaveCount(0);
+  await expect(themeSwitch(page)).toHaveCount(0);
 
   const blocked = await page.context().newPage();
   await blocked.addInitScript(() => {
@@ -140,12 +135,8 @@ test("ignores invalid stored themes and keeps the control usable when storage is
     });
   });
   await blocked.goto(`${webUrl()}/sign-in`);
-  await expect(
-    blocked.getByRole("combobox", { name: "Tema", exact: true }),
-  ).toHaveValue("system");
-  await blocked
-    .getByRole("combobox", { name: "Tema", exact: true })
-    .selectOption("dark");
+  await expect(themeSwitch(blocked)).toHaveAttribute("aria-checked", "false");
+  await chooseTheme(blocked, "dark");
   await expect(blocked.locator(".product-shell")).toHaveAttribute(
     "data-theme",
     "dark",
@@ -192,10 +183,8 @@ test("mobile navigation closes with Escape and route selection, with no overflow
   await expect(page.getByRole("main")).toBeFocused();
   for (const width of [320, 760, 800, 1280]) {
     await page.setViewportSize({ width, height: 844 });
-    for (const value of ["light", "dark"]) {
-      await page
-        .getByRole("combobox", { name: "Tema", exact: true })
-        .selectOption(value);
+    for (const value of ["light", "dark"] as const) {
+      await chooseTheme(page, value);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
@@ -239,10 +228,8 @@ test("collapses the desktop sidebar to accessible icons and keeps the choice acr
   expect(await page.evaluate(() => Object.entries(localStorage))).toEqual([
     ["teluni.sidebar", "collapsed"],
   ]);
-  for (const value of ["light", "dark"]) {
-    await page
-      .getByRole("combobox", { name: "Tema", exact: true })
-      .selectOption(value);
+  for (const value of ["light", "dark"] as const) {
+    await chooseTheme(page, value);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
   await page.reload();
@@ -284,9 +271,7 @@ test("keeps denied company access explicit in the dark shell", async ({
       },
     }),
   );
-  await page
-    .getByRole("combobox", { name: "Tema", exact: true })
-    .selectOption("dark");
+  await chooseTheme(page, "dark");
   await page.getByRole("link", { name: "Loja Aurora", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(page.getByRole("alert")).toContainText(
