@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
+  keepPreviousData,
   useIsFetching,
   useMutation,
   useQuery,
@@ -328,6 +329,9 @@ function ScreensContent({
   const devices = useQuery({
     queryKey: [...devicesKey(companyId), filter],
     queryFn: () => listDevices(companyId, filter),
+    // Keep the dataset mounted while another filter or page loads, so focus
+    // stays on the action that changed it.
+    placeholderData: keepPreviousData,
   });
   const refreshing = useIsFetching({ queryKey: devicesKey(companyId) }) > 0;
   const rows = devices.data?.items ?? [];
@@ -386,45 +390,6 @@ function ScreensContent({
       <h1 id="devices-title">{t.title}</h1>
       <p>{t.lead}</p>
       <div className="dataset-region devices-list-section">
-        <div className="devices-filters">
-          <label htmlFor="filter-branch">{t.filterBranch}</label>
-          <select
-            id="filter-branch"
-            value={filter.branchId ?? ""}
-            onChange={(event) =>
-              setFilter({
-                ...filter,
-                branchId: event.target.value || undefined,
-              })
-            }
-          >
-            <option value="">{t.filterAll}</option>
-            {choices.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </select>
-          <label htmlFor="filter-status">{t.filterStatus}</label>
-          <select
-            id="filter-status"
-            value={filter.status ?? ""}
-            onChange={(event) =>
-              setFilter({
-                ...filter,
-                status:
-                  event.target.value === "ACTIVE" ||
-                  event.target.value === "REVOKED"
-                    ? event.target.value
-                    : undefined,
-              })
-            }
-          >
-            <option value="">{t.filterAll}</option>
-            <option value="ACTIVE">{t.statusActive}</option>
-            <option value="REVOKED">{t.statusRevoked}</option>
-          </select>
-        </div>
         {devices.isPending ? (
           <p>{t.loading}</p>
         ) : devices.isError ? (
@@ -500,6 +465,19 @@ function ScreensContent({
             }
             refreshing={refreshing}
             exportName={t.screensExport}
+            filters={{
+              active: (filter.branchId ? 1 : 0) + (filter.status ? 1 : 0),
+              render: (close) => (
+                <ScreenFilters
+                  filter={filter}
+                  branches={choices}
+                  onApply={(next) => {
+                    setFilter(next);
+                    close();
+                  }}
+                />
+              ),
+            }}
             empty={
               <p className="empty-state">
                 {filter.cursor ? t.pageEmpty : t.empty}
@@ -564,6 +542,67 @@ function ScreensContent({
         )}
       </div>
     </>
+  );
+}
+
+/** The screens list's server-side filters, edited in the dataset's modal. */
+function ScreenFilters({
+  filter,
+  branches,
+  onApply,
+}: {
+  filter: DeviceFilter;
+  branches: { id: string; name: string }[];
+  onApply: (filter: DeviceFilter) => void;
+}) {
+  const { t } = useDeviceMessages();
+  const [branchId, setBranchId] = useState(filter.branchId ?? "");
+  const [status, setStatus] = useState(filter.status ?? "");
+  return (
+    <form
+      className="form-stack"
+      aria-label={t.filtersTitle}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onApply({
+          ...(branchId ? { branchId } : {}),
+          ...(status === "ACTIVE" || status === "REVOKED" ? { status } : {}),
+        });
+      }}
+    >
+      <label htmlFor="filter-branch">{t.fieldBranch}</label>
+      <select
+        id="filter-branch"
+        data-autofocus
+        value={branchId}
+        onChange={(event) => setBranchId(event.target.value)}
+      >
+        <option value="">{t.filterAll}</option>
+        {branches.map((branch) => (
+          <option key={branch.id} value={branch.id}>
+            {branch.name}
+          </option>
+        ))}
+      </select>
+      <label htmlFor="filter-status">{t.statusColumn}</label>
+      <select
+        id="filter-status"
+        value={status}
+        onChange={(event) => setStatus(event.target.value)}
+      >
+        <option value="">{t.filterAll}</option>
+        <option value="ACTIVE">{t.statusActive}</option>
+        <option value="REVOKED">{t.statusRevoked}</option>
+      </select>
+      <div className="action-group">
+        <Button type="submit" variant="primary">
+          {t.filtersApply}
+        </Button>
+        <Button type="button" onClick={() => onApply({})}>
+          {t.filtersClear}
+        </Button>
+      </div>
+    </form>
   );
 }
 

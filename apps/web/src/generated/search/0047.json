@@ -4,6 +4,15 @@
     "title": "Teluni Media Library Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Permissions",
+    "anchor": "permissions",
+    "text": "Permissions\nFour capabilities are added to the organizations domain, which owns role presets and delegable profile capabilities:\nCapability\nCompany administrator\nBranch manager\nOperator\n`media.view`: list, search, preview and use assets\nCompany\nGranted branches and company assets\nGranted branches and company assets\n`media.upload`: upload, rename, tag, discard unusable uploads, download originals\nCompany\nGranted branches\nGranted branches\n`media.archive`: archive and restore\nCompany\nGranted branches\nNo (additional grant)\n`media.delete`: delete to trash, restore from trash\nCompany\nNo\nNo\n`media.view`, `media.upload` and `media.archive` are delegable in company-customized profiles; `media.delete` is not, because the matrix gives permanent deletion only to administrators. Company-scoped assets are viewable through any `media.view` grant in the company, but uploading, editing or archiving them needs the capability company-wide. Hidden assets answer `RESOURCE_NOT_FOUND`.\n"
+  },
+  {
+    "id": "repository/docs/project/media-library-design",
+    "title": "Teluni Media Library Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Abuse limits",
     "anchor": "abuse-limits",
     "text": "Abuse limits\nProposed initial values, each answering `RATE_LIMITED` with `Retry-After`:\nAt most 5 assets in `UPLOADING` per person and 20 per company.\nAt most 200 asset creations per company per day.\nAt most 20 assets in `PROCESSING` per company, so one company cannot monopolize the processor.\nThe upload `PUT` has no request-size limit beyond the declared size, a 2-hour request timeout and an idle timeout of 60 seconds without bytes.\nCommercial original-media quotas (2 GiB trial, 10 GiB paid) and their warnings arrive with PJ-27, which will count each original object once per company as the commercial policies require; the creation request is where admission will be checked.\n"
@@ -565,14 +574,5 @@
     "heading": "Policy inputs",
     "anchor": "policy-inputs",
     "text": "Policy inputs\nThe design applies these selected policies without changing them, except for the one refinement named in decision 5:\nA screen belongs to zero or one company-owned programming group, which may span authorized branches. A grouped screen follows its group unless an authorized person explicitly selects individual programming, which replaces the whole group programming and keeps the membership; returning to the group is explicit ([assignment](release-policies.md#assignment-and-publication)).\nEvery edit is a draft until deliberately published; confirming an assignment or source change requests the destination's latest published programming, and an intentionally unpublished destination needs a clear indication before confirmation.\nUse per-device local business time: the device's explicit time zone, otherwise its branch's. Never inherit the server's time zone. Starts are inclusive and ends exclusive; overlapping schedules for the same output are rejected without implicit priority; overnight windows are anchored to their starting weekday; a final date includes that whole local day and clips at the next local midnight; equal start and end times are rejected in favor of an explicit all-day option ([time and scheduling](release-policies.md#time-and-scheduling)).\nIn a DST gap, use the first valid instant; in a repeated hour, the earlier occurrence for a start and the later for an end; show the resolved result in preview and validate conflicts after resolving it. Backend preview and the player share fixtures.\nImage items last 1 to 3,600 seconds, 10 by default (AT-01); videos play their whole duration; a schedule boundary interrupts the current item (AT-13 for timing on the device). An output with no applicable schedule uses its optional default, otherwise neutral output; a group default is never borrowed while individual programming is selected.\nAuthoring playlists and schedules is allowed to administrators company-wide, branch managers in their branches and operators in their branches as drafts; publishing to managers and administrators ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)).\n"
-  },
-  {
-    "id": "repository/docs/project/programming-design",
-    "title": "Teluni Programming Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Concepts",
-    "anchor": "concepts",
-    "text": "Concepts\nA **playlist** is an ordered, looping list of media items owned by a company or one branch, like media. It is reusable: several programs may schedule the same playlist.\nA **programming group** belongs to a company and names the branches it may span: either the whole company or a fixed set of one or more branches.\nA **program** is the draft programming of one source: a group, or one screen. It has one output today, the full screen (`screen`); PJ-20 adds layout areas as further outputs with their own rules and defaults, evaluated by the same functions. Each output has a set of **schedule rules** and an optional **default playlist**.\nA screen's **programming source** is its group's program when it belongs to a group and individual programming is not selected; otherwise its own program. A screen without a group is always programmed individually.\n"
   }
 ]

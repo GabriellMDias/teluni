@@ -4,6 +4,15 @@
     "title": "Teluni Programming Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Concepts",
+    "anchor": "concepts",
+    "text": "Concepts\nA **playlist** is an ordered, looping list of media items owned by a company or one branch, like media. It is reusable: several programs may schedule the same playlist.\nA **programming group** belongs to a company and names the branches it may span: either the whole company or a fixed set of one or more branches.\nA **program** is the draft programming of one source: a group, or one screen. It has one output today, the full screen (`screen`); PJ-20 adds layout areas as further outputs with their own rules and defaults, evaluated by the same functions. Each output has a set of **schedule rules** and an optional **default playlist**.\nA screen's **programming source** is its group's program when it belongs to a group and individual programming is not selected; otherwise its own program. A screen without a group is always programmed individually.\n"
+  },
+  {
+    "id": "repository/docs/project/programming-design",
+    "title": "Teluni Programming Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Playlists",
     "anchor": "playlists",
     "text": "Playlists\nA playlist has a name (1 to 120 characters), an owning scope (company or one branch), a transition and 0 to 500 items.\nEach item references one media asset that is `READY`, not archived, and visible to the playlist's scope: a company playlist may use company media only; a branch playlist may use company media and that branch's media. An image item has a duration from 1 to 3,600 whole seconds, 10 by default; a video item has no duration and plays its whole display rendition. Items play in order and the playlist loops while its schedule window lasts; a boundary interrupts the current item. The same asset may appear more than once.\nThe transition is `CUT` (default) or `FADE` with a duration from 250 to 2,000 ms. A fade is stored and previewed, but publication (PJ-11) accepts it only for screens whose profile is qualified for fades and otherwise rejects it with an actionable reason instead of dropping it; at a schedule boundary that ends commercial content the player cuts.\nSaving items replaces the whole ordered list with an expected version, so reordering is one atomic change. An archived asset already in a playlist stays and keeps playing; it cannot be added again. The panel shows the playlist's total duration and its video count.\n"
@@ -637,23 +646,5 @@
     "heading": "Media and audit protections",
     "anchor": "media-and-audit-protections",
     "text": "Media and audit protections\nValidate type using trustworthy inspection as well as declared metadata; define size, dimensions, duration and supported codec/container bounds, safe names/paths and parser isolation. Arbitrary user uploads are not executable content. Malware/content inspection and processing tools are pending risk decisions; no unvalidated transcoding framework is selected. Download authorization must cover tenant/device/retained-publication access and prevent public object exposure.\nAudit relevant membership/role changes, device pair/revoke/reassignment, publication and important media lifecycle operations with attributable actor, scope, target, time and outcome. Do not use sampled debug logs as the sole durable audit mechanism. Decide integrity, retention, authorized audit access and failure handling before implementing the affected actions. Expected failures have safe explicit errors; unexpected failures remain observable under the inherited error contract.\n"
-  },
-  {
-    "id": "repository/docs/project/security-and-i18n",
-    "title": "Teluni Security and Internationalization Requirements",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Internationalization",
-    "anchor": "internationalization",
-    "text": "Internationalization\n**Decided:** engineering source/identifiers/docs remain English; interfaces must be designed for localization, initially `pt-BR` and `en-US`. Do not put user-interface copy inside domain rules or use translated labels as persisted identifiers. No i18n library is selected yet.\nSeparate message keys/parameters from display text, including validation, accessibility labels, device setup and operational states. Translate safely without permitting arbitrary executable markup.\nPresent dates, times and numeric values using the selected locale. User-facing server errors need stable codes and safe parameters rather than coupling business rules to localized sentences.\nExplicitly model timezone per branch/device. PH-09 selected [calendar/DST behavior](release-policies.md#time-and-scheduling), device override then deliberately selected branch timezone and per-target local business time. Never inherit host timezone. D-06/D-10 implement matching preview/player fixtures and qualify trusted-time behavior against AT-16; business policy is no longer an unanswered PH-09 choice.\nLocale is independent of timezone, currency and country. Monetary catalog fields use explicit currency and exact representation with scoped branch overrides; precision/rounding contracts must be reviewed before schema implementation. Formatting is not conversion; no automatic exchange service is selected. A generic catalog is not required to contain money fields.\nLocalize units and numeric presentation without changing persisted semantic meaning. Currency, decimal/grouping separators, longer translations and different date conventions must be tested.\nDefine the Android schedule/time interpretation with the same contract fixtures as backend preview. Changing UI language must not change actual publication timing or tenant permission.\nThe product workflows and product shell use typed pt-BR/en-US message catalogs, Portuguese by default unless the browser prefers English, without selecting a library (D-10 remains open). This includes the product navigation and appearance controls delivered in [PJ-41](implementation-plan.md#pj-41-interface-alignment). The separate developer documentation portal remains in English.\n"
-  },
-  {
-    "id": "repository/docs/project/tenant-data-design",
-    "title": "Teluni Tenant Data Ownership and Access Design",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Teluni Tenant Data Ownership and Access Design",
-    "anchor": "teluni-tenant-data-ownership-and-access-design",
-    "text": "Teluni Tenant Data Ownership and Access Design\n[Product architecture](architecture.md#pending-decisions) · [ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md) · [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) · [Identity and session design](identity-session-design.md) · [PH-20](human-actions.md#ph-20)\n"
   }
 ]

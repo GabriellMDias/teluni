@@ -1,5 +1,23 @@
 [
   {
+    "id": "repository/docs/project/security-and-i18n",
+    "title": "Teluni Security and Internationalization Requirements",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Internationalization",
+    "anchor": "internationalization",
+    "text": "Internationalization\n**Decided:** engineering source/identifiers/docs remain English; interfaces must be designed for localization, initially `pt-BR` and `en-US`. Do not put user-interface copy inside domain rules or use translated labels as persisted identifiers. No i18n library is selected yet.\nSeparate message keys/parameters from display text, including validation, accessibility labels, device setup and operational states. Translate safely without permitting arbitrary executable markup.\nPresent dates, times and numeric values using the selected locale. User-facing server errors need stable codes and safe parameters rather than coupling business rules to localized sentences.\nExplicitly model timezone per branch/device. PH-09 selected [calendar/DST behavior](release-policies.md#time-and-scheduling), device override then deliberately selected branch timezone and per-target local business time. Never inherit host timezone. D-06/D-10 implement matching preview/player fixtures and qualify trusted-time behavior against AT-16; business policy is no longer an unanswered PH-09 choice.\nLocale is independent of timezone, currency and country. Monetary catalog fields use explicit currency and exact representation with scoped branch overrides; precision/rounding contracts must be reviewed before schema implementation. Formatting is not conversion; no automatic exchange service is selected. A generic catalog is not required to contain money fields.\nLocalize units and numeric presentation without changing persisted semantic meaning. Currency, decimal/grouping separators, longer translations and different date conventions must be tested.\nDefine the Android schedule/time interpretation with the same contract fixtures as backend preview. Changing UI language must not change actual publication timing or tenant permission.\nThe product workflows and product shell use typed pt-BR/en-US message catalogs, Portuguese by default unless the browser prefers English, without selecting a library (D-10 remains open). This includes the product navigation and appearance controls delivered in [PJ-41](implementation-plan.md#pj-41-interface-alignment). The separate developer documentation portal remains in English.\n"
+  },
+  {
+    "id": "repository/docs/project/tenant-data-design",
+    "title": "Teluni Tenant Data Ownership and Access Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Teluni Tenant Data Ownership and Access Design",
+    "anchor": "teluni-tenant-data-ownership-and-access-design",
+    "text": "Teluni Tenant Data Ownership and Access Design\n[Product architecture](architecture.md#pending-decisions) · [ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md) · [ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md) · [Identity and session design](identity-session-design.md) · [PH-20](human-actions.md#ph-20)\n"
+  },
+  {
     "id": "repository/docs/project/tenant-data-design",
     "title": "Teluni Tenant Data Ownership and Access Design",
     "group": "Project guides",
@@ -736,23 +754,5 @@
     "heading": "Required procedure information",
     "anchor": "required-procedure-information",
     "text": "Required procedure information\nFollow the template with sections that justify their operational value:\nSection\nWhat the operator needs\nPurpose and trigger\nThe specific condition, request, alert, or error that makes the procedure applicable\nSymptoms and non-applicability\nObservable evidence and cases where the procedure should not be used\nImpact\nAffected capabilities, scope, urgency, and data/security risk\nPreconditions and access\nObservable checks, target environment, required capabilities, and safety conditions\nDiagnosis\nOrdered low-risk inspection, expected output, and evidence-based branches\nMitigation/procedure\nBounded actions, consequences, warnings, and temporary measures\nVerification\nEvidence of the intended service, security, or data state\nRollback/recovery\nReversal prerequisites or a real forward-recovery path\nEscalation\nStop conditions and an actual owner or escalation target when one exists\nPreconditions must be verifiable; assumptions describe environmental expectations and should be explicit when their violation changes safety. Check applicability, environment, access, current procedure state, and preconditions before execution. Do not skip safety conditions merely to work faster.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/authoring",
-    "title": "Authoring and Using Runbooks",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Diagnosis and command safety",
-    "anchor": "diagnosis-and-command-safety",
-    "text": "Diagnosis and command safety\nPrefer low-risk observability before invasive production access: metrics, alerts, logs, traces, error reports, safe read-only inspection, then privileged diagnostics where appropriate. Avoid premature mutation while the failure is poorly understood unless active harm requires immediate containment.\nCommands must be specific, bounded, copyable, and current when tooling exists. Do not invent provider-specific commands or placeholders and present them as executable procedure. Describe expected output and its meaning; include explicit branches when actions depend on evidence. Keep decision trees simple enough to use under pressure.\nPrefer read-only, timeout-limited, bounded database queries, using known indexes where applicable. Explain production impact. Avoid embedding secrets in commands, shell history, process arguments, or documentation. Use credential references and secret-management procedures. Do not reuse service credentials or shared administrator accounts to bypass access policy.\nMark destructive, irreversible, and high-risk actions before execution with the concrete affected scope and consequences, not a generic warning. Verify authorization, scope, reversibility, and the verification method, and use the appropriate approval mechanism. A runbook is guidance, not unconditional permission or additional delegated capability.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/authoring",
-    "title": "Authoring and Using Runbooks",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Mitigation, recovery, and verification",
-    "anchor": "mitigation-recovery-and-verification",
-    "text": "Mitigation, recovery, and verification\nMitigation reduces impact without necessarily correcting the cause. Explain what each important mitigation restores, disables, or puts at risk. Mark temporary measures and their follow-up/removal needs. Recovery restores safe normal operation; verify its prerequisites and restore progressively where risk warrants it.\nEvery state-changing procedure should define outcome verification. Command success or a cleared alert alone is not proof. Use relevant health, error-rate, latency, progress, data-integrity, or credential-revocation evidence. Where needed, prove that the previous unsafe behavior is no longer possible. Specify post-recovery observation signals and justified observation periods rather than arbitrary delays.\nDocument rollback only when real and safe; identify compatibility prerequisites. If rollback is unsafe or impossible, state that and provide the forward-recovery direction. Explicitly identify irreversible actions before execution.\nStop when evidence no longer matches the procedure, preconditions or required access cannot be verified, scope exceeds documented bounds, destructive effects are unknown, recovery fails, or corruption/security compromise is suspected. Preserve useful evidence and escalate rather than improvising outside the known safe scope. Identify actual escalation targets when organizational structure exists.\n"
   }
 ]

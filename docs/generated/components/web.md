@@ -350,6 +350,7 @@ Source: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (exp
 | `onDelete` | `(() => void) \| null (optional)` | Omit when the records cannot be deleted; null shows the action disabled. | See type | — |
 | `refreshing` | `boolean` | Marks the refresh action busy while the caller reloads data. | No | false |
 | `exportName` | `string` | Offers an Export menu in the toolbar with Excel (.xlsx), CSV and PDF files of the rows the grid shows, in their order and with its filters; the name titles the files. Omit it where records must not leave the screen. | See type | — |
+| `filters` | `{ active: number; render: (close) => ReactNode }` | Offers an icon-only Filter action right of Refresh that opens these filters in a modal dialog; active is the number of filters in effect, shown as a count on the action, and render returns the caller's fields and actions, which call close after applying or clearing. Omit it where the records have no filters. | See type | — |
 | `empty` | `ReactNode` | Grid content when there are no rows. | See type | — |
 | `children` | `ReactNode` | The current record's form, rendered only in form mode. | See type | — |
 
@@ -362,11 +363,12 @@ Source: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (exp
 - Form mode
 - Actions disabled
 - Refreshing
+- Filters open in a modal and active filters counted
 - Exporting
 
-Accessibility: The toolbar uses role=toolbar with labeled icon buttons and tooltips. The grid follows DataGrid: rows show selection only through color and aria-selected, are reached with the arrow keys, and Enter opens the form like a double-click. Links and buttons inside cells keep their own behavior. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert.
+Accessibility: The toolbar uses role=toolbar with labeled icon buttons and tooltips. The grid follows DataGrid: rows show selection only through color and aria-selected, are reached with the arrow keys, and Enter opens the form like a double-click. Links and buttons inside cells keep their own behavior. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert. The Filter action has an accessible name and tooltip that include the number of active filters; its modal is a native dialog labelled Filters that keeps focus inside, focuses the field marked data-autofocus, closes with Escape, the close button or a click outside its box, and returns focus to the action.
 
-Usage: Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold onSelect and navigation while a form has unsaved changes. Sorting, filters and column widths persist while the dataset switches modes; previous and next follow the order the grid shows. Enable multiple only where several records can be acted on together. Pass exportName to offer exports; columns without a value are left out, numbers stay numeric in Excel, and CSV uses the locale's separator and decimal mark.
+Usage: Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold onSelect and navigation while a form has unsaved changes. Sorting, filters and column widths persist while the dataset switches modes; previous and next follow the order the grid shows. Enable multiple only where several records can be acted on together. Pass exportName to offer exports; columns without a value are left out, numbers stay numeric in Excel, and CSV uses the locale's separator and decimal mark. Pass filters for criteria the caller applies when loading records, such as server-side filters kept in the URL; the grid's column filters still act only on the loaded rows.
 
 ### Examples
 

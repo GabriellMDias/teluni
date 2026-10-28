@@ -4,6 +4,15 @@
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "CI secrets",
+    "anchor": "ci-secrets",
+    "text": "CI secrets\nOrdinary validation should require as few secrets as possible.\nTests should use ephemeral test credentials and local container infrastructure instead of external production-like credentials where practical.\nCI secrets must:\nfollow least privilege;\nbe scoped narrowly;\nnot be printed;\nnot be copied into artifacts;\nnot be required for unrelated validation jobs.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "OIDC for future privileged workflows",
     "anchor": "oidc-for-future-privileged-workflows",
     "text": "OIDC for future privileged workflows\nFuture workflows that need to authenticate to supported cloud providers or publishing systems should prefer short-lived identity federation through OpenID Connect when practical.\nLong-lived cloud credentials stored as GitHub secrets should not be the preferred Orion pattern.\nThe intended model is:\nGitHub Actions identity\n    ↓\nOIDC\n    ↓\nshort-lived provider credential\n\nrather than:\nGitHub secret\n    ↓\nlong-lived cloud access key\n\nActual deployment authentication is outside the scope of this ADR and will be decided when deployment targets exist.\n"

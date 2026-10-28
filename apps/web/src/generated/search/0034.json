@@ -4,6 +4,24 @@
     "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "TypeScript Project References from the Beginning",
+    "anchor": "typescript-project-references-from-the-beginning",
+    "text": "TypeScript Project References from the Beginning\nTypeScript project references can model package relationships and improve build and type-check performance in large TypeScript repositories.\nThey were not made mandatory because Orion does not yet have a sufficiently large TypeScript project graph to demonstrate that the added configuration and build semantics provide meaningful value.\nThey may be introduced later when repository scale or performance justifies them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nHumans and AI agents have one canonical command for complete repository validation.\nLocal development and CI can rely on the same validation capabilities.\nValidation behavior is deterministic and does not intentionally rewrite tracked source files.\nTypeScript type correctness has a clear authority in `tsc`.\nStatic analysis can use TypeScript type information where it provides meaningful value.\nESLint provides a mature and extensible foundation for future backend, web, testing, and tooling rules.\nFormatting is separated cleanly from semantic static analysis.\nArchitectural dependency rules can become machine-enforced rather than remaining prose-only expectations.\nCircular dependencies and other dependency-graph violations can be detected automatically.\nIndividual validation responsibilities remain independently executable for faster development feedback and diagnosis.\nThe validation workflow can grow as tests, generated artifacts, security checks, and build validation are introduced.\nA stable `pnpm validate` interface reduces the amount of repository-specific procedural knowledge required by AI agents.\nFuture task orchestration can be introduced without necessarily changing contributor-facing commands.\nTools have focused responsibilities and can evolve independently when their architectural role remains unchanged.\n"
@@ -961,14 +979,5 @@
     "heading": "Routing",
     "anchor": "routing",
     "text": "Routing\nOrion will use **TanStack Router as its default client-side router**.\nRouting should be type-safe across:\nroute paths;\npath parameters;\nsearch parameters;\nnavigation;\nroute context;\nroute-level data dependencies where applicable.\nURL state should be treated as an explicit application-state category.\nState that should survive refresh, deep linking, bookmarks, browser navigation, or sharing should normally be represented in the URL where appropriate.\nExamples include:\npagination;\nfiltering;\nsorting;\nactive views;\nselected tabs when navigation-significant;\nsearch criteria;\nother shareable navigation state.\nTanStack Router's typed search-parameter model should be preferred over repeated manual parsing of `URLSearchParams`.\nThe exact choice between file-based and code-based route organization is an implementation decision.\nOrion may establish a default repository pattern once the initial web application provides enough concrete experience to do so.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Server state",
-    "anchor": "server-state",
-    "text": "Server state\nOrion will use **TanStack Query as its default server-state management mechanism for React applications**.\nServer state includes remote state obtained through application APIs whose ownership and lifecycle remain external to the React component tree.\nExamples include:\ncustomers;\norders;\ninvoices;\ninventory;\naccount data;\nbackend search results;\npaginated API collections.\nTanStack Query will be responsible for concerns such as:\nqueries;\nmutations;\ncaching;\nsynchronization;\nrefetching;\ninvalidation;\nrequest lifecycle state;\nstale-data behavior;\nbackground data refresh where appropriate.\nTanStack Query must consume the generated API client established by ADR-0007 rather than redefining transport contracts independently.\nThe intended dependency flow is:\nReact component\n    ↓\nTanStack Query\n    ↓\ngenerated API SDK\n    ↓\nopenapi-fetch\n    ↓\nHTTP / JSON\n    ↓\nFastify\n\n"
   }
 ]

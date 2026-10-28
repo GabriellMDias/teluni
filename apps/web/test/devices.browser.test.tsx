@@ -198,11 +198,21 @@ test("lists screens with filters kept in the URL and no pairing for viewers", as
   await expect
     .element(screen.getByRole("button", { name: t.pair }))
     .not.toBeInTheDocument();
-  await screen.getByLabelText(t.filterStatus).selectOptions(t.statusRevoked);
+  // The server-side filters live in the dataset's Filter modal.
+  const filterLabel = locale === "pt-BR" ? "Filtrar" : "Filter";
+  await screen.getByRole("button", { name: filterLabel, exact: true }).click();
+  const filters = screen.getByRole("form", { name: t.filtersTitle });
+  await filters.getByLabelText(t.statusColumn).selectOptions(t.statusRevoked);
+  await filters.getByRole("button", { name: t.filtersApply }).click();
   await expect
     .element(screen.getByRole("link", { name: "Antiga" }))
     .toBeVisible();
   expect(router.state.location.search).toEqual({ status: "REVOKED" });
+  await expect
+    .element(
+      screen.getByRole("button", { name: new RegExp(`^${filterLabel} \\(1 `) }),
+    )
+    .toBeVisible();
   await expect
     .element(screen.getByText(t.erasure.PENDING, { exact: false }))
     .toBeVisible();
