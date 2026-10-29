@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
-import { enrollAuthenticator, enterCredentials } from "../identity/provider.ts";
+import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
 // The media library through the real panel and API with real FFmpeg:
@@ -78,9 +78,6 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   await page.getByRole("button", { name: "Criar empresa" }).click();
   await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
   const companyUrl = page.url();
-  await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
-  await enrollAuthenticator(page);
-  await afterNavigation(page).toHaveURL(companyUrl);
 
   await page.getByRole("link", { name: "Mídia", exact: true }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/media`);

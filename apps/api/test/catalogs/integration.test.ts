@@ -46,14 +46,12 @@ const sessions: HumanSessionPort = {
       return Promise.reject(
         Object.assign(new Error("no session"), { code: "AUTH" }),
       );
-    const strong = headers["x-test-strong"] === "true";
     return Promise.resolve({
       principalId,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
+      assuranceLevel: "teluni-aal1",
       authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date() : null,
-      strongAuthenticationAgeSeconds: strong ? 1 : null,
+      authenticationAgeSeconds: 1,
       scopes: new Set(),
     });
   },
@@ -166,7 +164,6 @@ async function call(
   options: {
     body?: unknown;
     bytes?: Buffer;
-    strong?: boolean;
   } = {},
 ): Promise<Result> {
   const response = await app.inject({
@@ -176,11 +173,6 @@ async function call(
       ...(person
         ? {
             "x-test-principal": people[person],
-            // Administrator and manager grants need two-step verification.
-            "x-test-strong": String(
-              options.strong ??
-                (person !== "aOperator" && person !== "aPricer"),
-            ),
           }
         : {}),
       ...(options.bytes ? { "content-type": "application/octet-stream" } : {}),
@@ -227,7 +219,7 @@ async function createBranch(person: Person, companyId: string, name: string) {
     person,
     "POST",
     `/companies/${companyId}/branches`,
-    { strong: true, body: { name } },
+    { body: { name } },
   );
   expect(created.status).toBe(201);
   return created.body.id;
@@ -274,7 +266,6 @@ async function ready(
     "POST",
     `/companies/${companyId}/media`,
     {
-      strong: true,
       body: {
         name: file.split("/").pop(),
         branchId,
@@ -288,7 +279,7 @@ async function ready(
     "aAdmin",
     "PUT",
     `/companies/${companyId}/media/${created.body.id}/content`,
-    { strong: true, bytes },
+    { bytes },
   );
   expect(sent.status, JSON.stringify(sent.body)).toBe(200);
   while ((await media.runOnce()) > 0);
@@ -419,14 +410,6 @@ describe("catalogs: schemas, items, prices and promotions", () => {
         }),
       ),
     ).toBe("PERMISSION_DENIED");
-    expect(
-      code(
-        await call("aManager", "POST", base, {
-          body: { name: "Fraco", branchId: a1 },
-          strong: false,
-        }),
-      ),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
     // The manager sees company catalogs and their branch's, not others.
     const listed = await call("aManager", "GET", base);
     const names = (listed.body.items as { name: string }[]).map(
@@ -663,7 +646,7 @@ describe("catalogs: schemas, items, prices and promotions", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${image}/archive`,
-      { strong: true, body: { expectedVersion: 3 } },
+      { body: { expectedVersion: 3 } },
     );
     expect(archived.status, JSON.stringify(archived.body)).toBe(200);
     expect(
@@ -672,7 +655,7 @@ describe("catalogs: schemas, items, prices and promotions", () => {
           "aAdmin",
           "POST",
           `/companies/${companyA}/media/${image}/delete`,
-          { strong: true, body: { expectedVersion: archived.body.version } },
+          { body: { expectedVersion: archived.body.version } },
         ),
       ),
     ).toBe("MEDIA_IN_USE");
@@ -855,16 +838,12 @@ describe("catalogs: schemas, items, prices and promotions", () => {
     });
   });
 
-  it("saves prices with strong authentication, branch prices and promotions", async () => {
+  it("saves prices, branch prices and promotions", async () => {
     const name = field(products, "Nome");
     const burger = await item("aAdmin", products.id, { [name.id]: "X-Burger" });
     const url = `${base}/${products.id}/records/${burger.body.id}/prices/${price.id}`;
     let version = burger.body.version;
-    // Base prices need company-wide authority and strong authentication;
-    // administrators in a standard session are asked to verify first.
-    expect(code(await call("aAdmin", "GET", base, { strong: false }))).toBe(
-      "STRONG_AUTHENTICATION_REQUIRED",
-    );
+    // Base prices need company-wide authority.
     expect(
       code(
         await call("aManager", "PUT", url, {
@@ -913,16 +892,8 @@ describe("catalogs: schemas, items, prices and promotions", () => {
         }),
       ),
     ).toBe("PERMISSION_DENIED");
-    // A profile that grants prices needs strong authentication.
-    expect(
-      code(
-        await call("aPricer", "PUT", `${url}/branches/${a1}`, {
-          body: { expectedVersion: version, amount: 1690 },
-        }),
-      ),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
+    // A profile that grants prices works like the role's capability.
     const pricer = await call("aPricer", "PUT", `${url}/branches/${a1}`, {
-      strong: true,
       body: { expectedVersion: version, amount: 1690 },
     });
     expect(pricer.status, JSON.stringify(pricer.body)).toBe(200);

@@ -51,7 +51,7 @@ function media(overrides: Partial<Media> = {}): Media {
   };
 }
 
-function company(capabilities: string[], afterStrong: string[] = []) {
+function company(capabilities: string[]) {
   return {
     company: { id: companyId, displayName: "Synthetic company" },
     access: {
@@ -59,7 +59,6 @@ function company(capabilities: string[], afterStrong: string[] = []) {
       profiles: [],
       responsible: true,
       capabilities: ["company.view", "branches.view", ...capabilities],
-      capabilitiesAfterStrongAuthentication: afterStrong,
     },
     responsibilityTransfer: null,
   };
@@ -375,22 +374,6 @@ test("shows a failed upload with the server's explanation", async () => {
   await expect
     .element(screen.getByText(t.errors.MEDIA_STORAGE_FULL))
     .toBeVisible();
-});
-
-test("asks for step-up when media actions need strong authentication", async () => {
-  respond((url) => {
-    if (url.pathname.endsWith("/media"))
-      return { body: { items: [], nextCursor: null } };
-    if (url.pathname.endsWith("/branches")) return { body: branches };
-    return { body: company(["media.view"], ["media.upload"]) };
-  });
-  const { screen } = await open(mediaPath);
-  await expect
-    .element(screen.getByRole("link", { name: t.stepUpButton }))
-    .toHaveAttribute(
-      "href",
-      `/api/auth/login?returnTo=${encodeURIComponent(mediaPath)}&assurance=strong`,
-    );
 });
 
 test("renames with the current version and archives a ready item", async () => {

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { RowData } from "@tanstack/react-table";
 import {
   DataGridView,
@@ -26,6 +26,11 @@ const messages = {
     delete: "Excluir",
     duplicate: "Duplicar",
     refresh: "Atualizar",
+    filter: "Filtrar",
+    filters: "Filtros",
+    close: "Fechar",
+    activeFilters: (count: number) =>
+      count === 1 ? "1 filtro ativo" : `${count} filtros ativos`,
   },
   "en-US": {
     toolbar: "Record actions",
@@ -37,6 +42,11 @@ const messages = {
     delete: "Delete",
     duplicate: "Duplicate",
     refresh: "Refresh",
+    filter: "Filter",
+    filters: "Filters",
+    close: "Close",
+    activeFilters: (count: number) =>
+      count === 1 ? "1 active filter" : `${count} active filters`,
   },
 } as const;
 
@@ -69,6 +79,94 @@ function ToolbarButton({
   );
 }
 
+/** Filters a caller applies to the records it loads, edited in a modal. */
+export type DataSetFilters = {
+  /** How many filters are in effect; the Filter action shows the count. */
+  active: number;
+  /** The modal's fields and actions; call close after applying or clearing. */
+  render: (close: () => void) => ReactNode;
+};
+
+/**
+ * The Filter action and its modal dialog. The native dialog keeps focus
+ * inside, closes with Escape or a click outside its box and returns focus
+ * to the action.
+ */
+function FilterAction({
+  filters,
+  t,
+}: {
+  filters: DataSetFilters;
+  t: (typeof messages)[Locale];
+}) {
+  const [open, setOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  useEffect(() => {
+    const node = dialog.current;
+    if (!node) return;
+    if (open && !node.open) {
+      node.showModal();
+      // Like Popover, a field marked data-autofocus receives focus first.
+      node.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
+    if (!open && node.open) node.close();
+  }, [open]);
+  const close = () => setOpen(false);
+  const label =
+    filters.active > 0
+      ? `${t.filter} (${t.activeFilters(filters.active)})`
+      : t.filter;
+  return (
+    <>
+      <button
+        type="button"
+        className="ui-dataset-action ui-dataset-action-filter"
+        aria-label={label}
+        title={label}
+        aria-haspopup="dialog"
+        data-active={filters.active > 0 || undefined}
+        onClick={() => setOpen(true)}
+      >
+        <UiIcon name="filter" />
+        {filters.active > 0 && (
+          <span className="ui-dataset-count" aria-hidden="true">
+            {filters.active}
+          </span>
+        )}
+      </button>
+      <dialog
+        ref={dialog}
+        className="ui-dataset-dialog"
+        aria-labelledby={titleId}
+        onClose={close}
+        onClick={(event) => {
+          // A click on the backdrop lands on the dialog element itself.
+          if (event.target === event.currentTarget) close();
+        }}
+      >
+        <div className="ui-dataset-dialog-header">
+          <h2 id={titleId}>{t.filters}</h2>
+          <button
+            type="button"
+            className="ui-dataset-dialog-close"
+            aria-label={t.close}
+            title={t.close}
+            onClick={close}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="ui-icon">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <div className="ui-dataset-dialog-body">
+          {open && filters.render(close)}
+        </div>
+      </dialog>
+    </>
+  );
+}
+
 /**
  * Presentation for record-oriented CRUD: a toolbar, a DataGrid and a
  * caller-rendered form. The caller owns records, selection, mode, API calls
@@ -95,6 +193,7 @@ export function DataSet<Row extends RowData>({
   onRefresh,
   refreshing = false,
   exportName,
+  filters,
   empty,
   children,
 }: Omit<DataGridSelection, "onRowActivate"> & {
@@ -116,6 +215,11 @@ export function DataSet<Row extends RowData>({
    * file name and title; omit where records must not leave the screen.
    */
   exportName?: string;
+  /**
+   * Offers a Filter action, right of Refresh, that opens these filters in a
+   * modal; omit where the records have no filters.
+   */
+  filters?: DataSetFilters;
   /** Shown in grid mode when there are no rows. */
   empty?: ReactNode;
   /** The form for the current record, rendered in form mode. */
@@ -179,6 +283,11 @@ export function DataSet<Row extends RowData>({
             pending={refreshing}
           />
         </div>
+        {filters && (
+          <div className="ui-dataset-group">
+            <FilterAction filters={filters} t={t} />
+          </div>
+        )}
         {exportName && (
           <div className="ui-dataset-group">
             <ExportMenu

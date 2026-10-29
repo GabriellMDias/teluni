@@ -177,9 +177,6 @@ const ptBR = {
   assigned: "Escolha salva.",
   groupSchedules: "Editar os horários do grupo",
   screenLink: "Voltar para a tela",
-  stepUpNotice:
-    "Escolher a programação das telas exige verificação em duas etapas nesta empresa.",
-  stepUpButton: "Verificar em duas etapas",
   publishedDestination: (generation: number) =>
     `O destino escolhido tem a geração ${generation} publicada; a tela passa a exibi-la na próxima sincronização.`,
   publication: {
@@ -189,7 +186,6 @@ const ptBR = {
       "Nada foi publicado ainda: as telas desta programação mostram a tela neutra.",
     current: (generation: number, when: string, byYou: boolean) =>
       `Geração ${generation}, publicada em ${when} ${byYou ? "por você" : "por outro membro"}.`,
-    stepUp: "Publicar exige verificação em duas etapas.",
     review: "Revisar para publicar",
     reviewing: "Revisando…",
     reviewTitle: "Revisão da publicação",
@@ -513,8 +509,6 @@ const ptBR = {
     PERMISSION_DENIED: "Você não tem permissão para esta ação neste escopo.",
     COMPANY_SUSPENDED:
       "Esta empresa está suspensa. Fale com o suporte do Teluni.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "Esta ação exige verificação em duas etapas.",
     RESOURCE_VERSION_CONFLICT:
       "Isto mudou enquanto você editava. Recarregue antes de tentar de novo.",
     VALIDATION_FAILED: "Confira os campos e tente de novo.",
@@ -704,9 +698,6 @@ const enUS: Messages = {
   assigned: "Choice saved.",
   groupSchedules: "Edit the group's schedules",
   screenLink: "Back to the screen",
-  stepUpNotice:
-    "Choosing the screens' programming requires two-step verification in this company.",
-  stepUpButton: "Verify with two steps",
   publishedDestination: (generation: number) =>
     `The chosen destination has generation ${generation} published; the screen shows it at its next synchronization.`,
   publication: {
@@ -716,7 +707,6 @@ const enUS: Messages = {
       "Nothing is published yet: screens of this programming show a neutral screen.",
     current: (generation: number, when: string, byYou: boolean) =>
       `Generation ${generation}, published on ${when} ${byYou ? "by you" : "by another member"}.`,
-    stepUp: "Publishing requires two-step verification.",
     review: "Review to publish",
     reviewing: "Reviewing…",
     reviewTitle: "Publication review",
@@ -1034,8 +1024,6 @@ const enUS: Messages = {
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You are not allowed to do this in this scope.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "This action requires two-step verification.",
     RESOURCE_VERSION_CONFLICT:
       "This changed while you were editing. Reload before trying again.",
     VALIDATION_FAILED: "Check the fields and try again.",

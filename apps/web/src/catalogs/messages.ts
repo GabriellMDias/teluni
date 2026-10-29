@@ -133,7 +133,6 @@ const ptBR = {
   pricesTitle: "Preços",
   pricesLead:
     "O preço base vale para todas as filiais. Um preço de filial o substitui ali, e uma promoção substitui os dois no seu período.",
-  pricesStrongHint: "Alterar preços exige verificação em duas etapas.",
   pricePublications: {
     title: "Publicação nas telas",
     lead: "Cada mudança de preço publica uma nova geração das programações cuja publicação atual mostra este catálogo. Só os preços mudam; rascunhos não são publicados.",
@@ -216,9 +215,6 @@ const ptBR = {
     "Só é possível excluir um catálogo vazio que nenhum outro catálogo usa.",
   deleteCatalogConfirm: (name: string) => `Entendo que ${name} será excluído.`,
   deleteCatalog: "Excluir catálogo",
-  stepUpNotice:
-    "Seu papel nesta empresa exige verificação em duas etapas para ver e alterar catálogos.",
-  stepUpButton: "Verificar em duas etapas",
   issues: {
     LABEL_INVALID: "Rótulo vazio ou inválido.",
     LABEL_DUPLICATE: "Outro campo ativo já usa este rótulo.",
@@ -288,8 +284,6 @@ const ptBR = {
     PERMISSION_DENIED: "Você não tem permissão para esta ação neste escopo.",
     COMPANY_SUSPENDED:
       "Esta empresa está suspensa. Fale com o suporte do Teluni.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "Esta ação exige verificação em duas etapas.",
     RESOURCE_VERSION_CONFLICT:
       "Isto mudou enquanto você editava. Recarregue antes de tentar de novo.",
     VALIDATION_FAILED: "Confira os campos e tente de novo.",
@@ -435,7 +429,6 @@ const enUS: Messages = {
   pricesTitle: "Prices",
   pricesLead:
     "The base price applies to every branch. A branch price replaces it there, and a promotion replaces both during its period.",
-  pricesStrongHint: "Changing prices requires two-step verification.",
   pricePublications: {
     title: "Publishing to screens",
     lead: "Each price change publishes a new generation of the programs whose current publication shows this catalog. Only the prices change; drafts are not published.",
@@ -519,9 +512,6 @@ const enUS: Messages = {
   deleteCatalogConfirm: (name: string) =>
     `I understand ${name} will be deleted.`,
   deleteCatalog: "Delete catalog",
-  stepUpNotice:
-    "Your role in this company requires two-step verification to view and change catalogs.",
-  stepUpButton: "Verify in two steps",
   issues: {
     LABEL_INVALID: "Empty or invalid label.",
     LABEL_DUPLICATE: "Another active field already uses this label.",
@@ -590,8 +580,6 @@ const enUS: Messages = {
     AUTHENTICATION_REQUIRED: "Your session ended. Sign in again.",
     PERMISSION_DENIED: "You are not allowed to do this in this scope.",
     COMPANY_SUSPENDED: "This company is suspended. Contact Teluni support.",
-    STRONG_AUTHENTICATION_REQUIRED:
-      "This action requires two-step verification.",
     RESOURCE_VERSION_CONFLICT:
       "This changed while you were editing. Reload before trying again.",
     VALIDATION_FAILED: "Check the fields and try again.",

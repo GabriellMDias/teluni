@@ -3,7 +3,6 @@ import type { Prisma } from "../../generated/prisma/client.js";
 import type { HumanContext } from "../identity/public.js";
 import {
   auditVisibility,
-  reachableWithStrongAuthentication,
   branchReach,
   decide,
   isTimeZone,
@@ -291,13 +290,7 @@ export class DeviceService {
     if (!device || decide(access, "devices.view", device.branchId) !== "allow")
       throw new DeviceFailure("RESOURCE_NOT_FOUND");
     const visibility = auditVisibility(access);
-    if (!visibility)
-      throw new OrganizationFailure(
-        !access.strong &&
-          reachableWithStrongAuthentication(access, "audit.view")
-          ? "STRONG_AUTHENTICATION_REQUIRED"
-          : "PERMISSION_DENIED",
-      );
+    if (!visibility) throw new OrganizationFailure("PERMISSION_DENIED");
     const scope = `audit|${deviceId}|${createHash("sha256").update(JSON.stringify(visibility)).digest("base64url")}`;
     const cursor = decodeCursor(options.cursor, {
       company: companyId,

@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "updateCompany",
   "summary": "",
-  "description": "Change company settings with the observed version. Requires company administration and two-step verification.",
+  "description": "Change company settings with the observed version. Requires company administration.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

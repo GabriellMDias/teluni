@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  requireStrongAuthentication,
+  requireRecentAuthentication,
   SessionFailure,
 } from "../../src/features/identity/public.js";
 import {
@@ -77,7 +77,10 @@ describe("identity module against real Keycloak and PostgreSQL", () => {
       },
     ]);
     expect(finished.status).toBe(303);
-    expect(finished.headers.get("location")).toBe("/companies?view=all");
+    // A new person's first sign-in suggests two-step verification first.
+    expect(finished.headers.get("location")).toBe(
+      `/welcome/two-step?returnTo=${encodeURIComponent("/companies?view=all")}`,
+    );
     expect(finished.headers.get("cache-control")).toBe("no-store");
     const cookie = finished.headers
       .getSetCookie()
@@ -158,7 +161,9 @@ describe("identity module against real Keycloak and PostgreSQL", () => {
     const genuine = new PanelBrowser(stack);
     const genuineCallback = await genuine.beginLogin(person.credentials);
     const accepted = await genuine.finishLogin(genuineCallback);
-    expect(accepted.headers.get("location")).toBe("/");
+    expect(accepted.headers.get("location")).toBe(
+      "/welcome/two-step?returnTo=%2F",
+    );
     const replayed = await genuine.finishLogin(genuineCallback);
     expect(replayed.headers.get("location")).toBe(
       "/sign-in?error=login_expired",
@@ -458,59 +463,116 @@ describe("identity module against real Keycloak and PostgreSQL", () => {
     }
   });
 
-  it("marks only stepped-up sessions as strongly and recently authenticated", async () => {
+  it("asks for a recent authentication, not two-step verification, for sensitive operations", async () => {
     const person = await syntheticPerson(stack);
     const browser = new PanelBrowser(stack);
     await browser.login(person.credentials);
-    const standard = await summary(browser);
-    expect(standard.body).toMatchObject({ strongAuthenticatedAt: null });
+    const first = await summary(browser);
+    expect(first.body).not.toHaveProperty("strongAuthenticatedAt");
+    const status = await browser.request("/auth/two-step");
+    expect(await status.json()).toEqual({ enabled: false });
     const context = () =>
       stack.sessions.authenticate({
         method: "GET",
         headers: { cookie: browser.api.header() },
       });
-    const standardContext = await context();
-    expect(() => requireStrongAuthentication(standardContext)).toThrow(
-      expect.objectContaining({ code: "STRONG_AUTHENTICATION_REQUIRED" }),
-    );
+    const fresh = await context();
+    expect(() => requireRecentAuthentication(fresh)).not.toThrow();
 
-    // Step-up enrolls the synthetic authenticator and replaces the session.
-    const stepped = await browser.login(
-      person.credentials,
-      "/account/sessions",
-      "strong",
-    );
-    expect(stepped.headers.get("location")).toBe("/account/sessions");
-    expect(browser.authenticator.secret).toBeTruthy();
-    const strong = await summary(browser);
-    expect(strong.body.sessionId).not.toBe(standard.body.sessionId);
-    expect(strong.body.principalId).toBe(standard.body.principalId);
-    const strongContext = await context();
-    expect(() =>
-      requireStrongAuthentication(strongContext, { recent: true }),
-    ).not.toThrow();
-    const { rows } = await stack.sql.query<{ revocation_reason: string }>(
-      "SELECT revocation_reason FROM human_sessions WHERE id = $1",
-      [standard.body.sessionId],
-    );
-    expect(rows[0].revocation_reason).toBe("REPLACED");
-
-    // Six minutes later the session stays strong but is no longer recent.
+    // Six minutes later the session is no longer recent.
     await stack.sql.query(
-      "UPDATE human_sessions SET strong_authenticated_at = now() - interval '6 minutes' WHERE id = $1",
-      [strong.body.sessionId],
+      "UPDATE human_sessions SET authenticated_at = now() - interval '6 minutes' WHERE id = $1",
+      [first.body.sessionId],
     );
     const aged = await context();
-    expect(() => requireStrongAuthentication(aged)).not.toThrow();
-    expect(() => requireStrongAuthentication(aged, { recent: true })).toThrow(
+    expect(() => requireRecentAuthentication(aged)).toThrow(
       expect.objectContaining({ code: "RECENT_AUTHENTICATION_REQUIRED" }),
     );
 
-    // A recent step-up asks for the password and code again.
-    await browser.login(person.credentials, "/", "recent");
-    const renewed = await context();
-    expect(() =>
-      requireStrongAuthentication(renewed, { recent: true }),
-    ).not.toThrow();
-  }, 180_000);
+    // Reauthentication asks for the password again and replaces the session.
+    const renewed = await browser.login(person.credentials, "/members", {
+      reauthenticate: true,
+    });
+    expect(renewed.headers.get("location")).toBe("/members");
+    const current = await summary(browser);
+    expect(current.body.sessionId).not.toBe(first.body.sessionId);
+    expect(current.body.principalId).toBe(first.body.principalId);
+    const reauthenticated = await context();
+    expect(() => requireRecentAuthentication(reauthenticated)).not.toThrow();
+    const { rows } = await stack.sql.query<{ revocation_reason: string }>(
+      "SELECT revocation_reason FROM human_sessions WHERE id = $1",
+      [first.body.sessionId],
+    );
+    expect(rows[0].revocation_reason).toBe("REPLACED");
+  }, 120_000);
+
+  it("lets each person enable two-step verification, asks for the code at every sign-in and disables it with the code", async () => {
+    const person = await syntheticPerson(stack);
+    const browser = new PanelBrowser(stack);
+    await browser.login(person.credentials);
+    const enabled = async () =>
+      (
+        (await (await browser.request("/auth/two-step")).json()) as {
+          enabled: boolean;
+        }
+      ).enabled;
+    // Starting an action needs the current session.
+    const anonymous = new PanelBrowser(stack);
+    expect((await anonymous.request("/auth/login?twoStep=enable")).status).toBe(
+      401,
+    );
+    // Disabling with nothing enrolled returns at once, without a login.
+    const nothing = await browser.request(
+      "/auth/login?twoStep=disable&returnTo=%2Faccount%2Fsessions",
+    );
+    expect(nothing.status).toBe(303);
+    expect(nothing.headers.get("location")).toBe("/account/sessions");
+
+    // Cancelling enrollment keeps the account as it was, still signed in.
+    const cancelled = await browser.login(
+      person.credentials,
+      "/account/sessions",
+      { twoStep: "enable", decision: "cancel" },
+    );
+    expect(cancelled.headers.get("location")).toBe("/account/sessions");
+    expect(await enabled()).toBe(false);
+
+    const enrolled = await browser.login(
+      person.credentials,
+      "/account/sessions",
+      { twoStep: "enable" },
+    );
+    expect(enrolled.headers.get("location")).toBe("/account/sessions");
+    expect(browser.authenticator.secret).toBeTruthy();
+    expect(await enabled()).toBe(true);
+
+    // A new browser needs the password and the code.
+    const elsewhere = new PanelBrowser(stack);
+    // The provider asks for the code, which this browser cannot provide.
+    await expect(elsewhere.beginLogin(person.credentials)).rejects.toThrow(
+      "No OTP secret enrolled",
+    );
+    const withCode = new PanelBrowser(stack);
+    withCode.authenticator.secret = browser.authenticator.secret;
+    await withCode.login(person.credentials);
+    expect((await summary(withCode)).status).toBe(200);
+
+    // Disabling authenticates again with the code; cancelling keeps it.
+    await browser.login(person.credentials, "/account/sessions", {
+      twoStep: "disable",
+      decision: "cancel",
+    });
+    expect(await enabled()).toBe(true);
+    const removed = await browser.login(
+      person.credentials,
+      "/account/sessions",
+      { twoStep: "disable" },
+    );
+    expect(removed.headers.get("location")).toBe("/account/sessions");
+    expect(await enabled()).toBe(false);
+    // Afterwards the password alone signs in again.
+    const passwordOnly = new PanelBrowser(stack);
+    await passwordOnly.login(person.credentials);
+    expect((await summary(passwordOnly)).status).toBe(200);
+  }, 300_000);
 });

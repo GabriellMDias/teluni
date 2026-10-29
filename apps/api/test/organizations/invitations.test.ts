@@ -42,15 +42,13 @@ const emailOf = (person: Person) =>
 
 const sessions: HumanSessionPort = {
   authenticate: ({ headers }) => {
-    const strong = headers["x-test-strong"] === "true";
-    const age = Number(headers["x-test-strong-age"] ?? 1);
+    const age = Number(headers["x-test-auth-age"] ?? 1);
     return Promise.resolve({
       principalId: headers["x-test-principal"] as string,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
-      authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date(Date.now() - age * 1000) : null,
-      strongAuthenticationAgeSeconds: strong ? age : null,
+      assuranceLevel: "teluni-aal1",
+      authenticatedAt: new Date(Date.now() - age * 1000),
+      authenticationAgeSeconds: age,
       scopes: new Set(),
     });
   },
@@ -149,15 +147,14 @@ async function call(
   person: Person,
   method: "GET" | "POST" | "PATCH",
   url: string,
-  options: { body?: unknown; strong?: boolean; age?: number } = {},
+  options: { body?: unknown; age?: number } = {},
 ) {
   const response = await app.inject({
     method,
     url,
     headers: {
       "x-test-principal": people[person],
-      "x-test-strong": String(options.strong ?? true),
-      "x-test-strong-age": String(options.age ?? 1),
+      "x-test-auth-age": String(options.age ?? 1),
       ...(method === "POST" && url.endsWith("/companies")
         ? { "idempotency-key": `key-${randomUUID()}` }
         : {}),
@@ -238,7 +235,7 @@ const invite = (
   person: Person,
   companyId: string,
   body: Record<string, unknown>,
-  options: { strong?: boolean; age?: number } = {},
+  options: { age?: number } = {},
 ) =>
   call(person, "POST", `/companies/${companyId}/invitations`, {
     ...options,
@@ -262,12 +259,10 @@ async function credentialFor(recipient: string): Promise<string> {
 
 const preview = (person: Person, credential: string) =>
   call(person, "POST", "/invitations/preview", {
-    strong: false,
     body: { credential },
   });
 const accept = (person: Person, credential: string) =>
   call(person, "POST", "/invitations/accept", {
-    strong: false,
     body: { credential },
   });
 
@@ -340,9 +335,7 @@ describe("company invitations", () => {
     expect(code(await accept("other", credential))).toBe(
       "INVITATION_NO_LONGER_VALID",
     );
-    const view = await call("invitee", "GET", `/companies/${company}`, {
-      strong: false,
-    });
+    const view = await call("invitee", "GET", `/companies/${company}`, {});
     expect(view.body.access).toMatchObject({ roles: ["OPERATOR"] });
     expect(code(await accept("invitee", "A".repeat(43)))).toBe(
       "RESOURCE_NOT_FOUND",
@@ -397,12 +390,6 @@ describe("company invitations", () => {
         { email: "x@example.test", role: "OPERATOR", scope: "COMPANY" },
         "PERMISSION_DENIED",
         {},
-      ],
-      [
-        "manager",
-        operatorIn([north]),
-        "STRONG_AUTHENTICATION_REQUIRED",
-        { strong: false },
       ],
       ["operator", operatorIn([north]), "PERMISSION_DENIED", {}],
       ["outsider", operatorIn([north]), "RESOURCE_NOT_FOUND", {}],
@@ -710,9 +697,7 @@ describe("company invitations", () => {
       await credentialFor("operator@example.test"),
     );
     expect(extend.status).toBe(201);
-    const roles = await call("operator", "GET", `/companies/${company}`, {
-      strong: true,
-    });
+    const roles = await call("operator", "GET", `/companies/${company}`, {});
     expect(roles.body.access).toMatchObject({
       roles: ["BRANCH_MANAGER", "OPERATOR"],
     });

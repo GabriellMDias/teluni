@@ -1,8 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { createHash, randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { enrollAuthenticator, enterCredentials } from "../identity/provider.ts";
+import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
+import { chooseTheme } from "../theme.ts";
 
 // Screen pairing through the real panel, with the player simulated over HTTP
 // against the API: enroll, pair in the panel, check in, unlink and confirm
@@ -92,16 +93,15 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
   await page.getByRole("button", { name: "Criar empresa" }).click();
   await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
   const companyUrl = page.url();
-  await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
-  await enrollAuthenticator(page);
-  await afterNavigation(page).toHaveURL(companyUrl);
   await page.getByLabel("Nome da filial").fill("Centro");
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
 
   await page.getByRole("link", { name: "Telas", exact: true }).click();
-  await afterNavigation(page).toHaveURL(`${companyUrl}/screens`);
-  await expect(page.getByText("Nenhuma tela pareada ainda.")).toBeVisible();
+  // Without screens, the dataset starts on pairing.
+  await afterNavigation(page).toHaveURL(
+    `${companyUrl}/screens?mode=form&record=new`,
+  );
   await page.getByLabel("Código da TV").fill(enrollment.userCode.toLowerCase());
   await page.getByLabel("Nome da tela").fill("Caixa 1");
   await page.getByLabel("Rotação").selectOption("90°");
@@ -126,8 +126,9 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
     clearRequired: false,
   });
 
+  await page.getByRole("button", { name: "Modo grade", exact: true }).click();
   await page
-    .getByRole("listitem")
+    .getByRole("region", { name: "Registros de telas" })
     .getByRole("link", { name: "Caixa 1" })
     .click();
   await afterNavigation(
@@ -142,10 +143,8 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
   const history = page.getByTestId("screen-history");
   await afterNavigation(history).toContainText("Tela pareada");
   await expect(history).toContainText("Você");
-  for (const theme of ["dark", "light"]) {
-    await page
-      .getByRole("combobox", { name: "Tema", exact: true })
-      .selectOption(theme);
+  for (const theme of ["dark", "light"] as const) {
+    await chooseTheme(page, theme);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
   await page.getByRole("link", { name: "Detalhes", exact: true }).click();

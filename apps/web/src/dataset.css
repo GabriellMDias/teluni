@@ -88,3 +88,70 @@
   border: 0;
   border-radius: 0;
 }
+/* The Filter action names itself and counts the filters in effect. */
+.ui-dataset-action.ui-dataset-action-filter {
+  border-radius: var(--ui-radius, 0.4375rem);
+}
+.ui-dataset-action-filter[data-active] {
+  color: var(--ui-color-action, #185f9b);
+  border-color: var(--ui-color-action, #185f9b);
+}
+.ui-dataset-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  box-sizing: border-box;
+  font-size: 0.75rem;
+  color: var(--ui-color-on-action, #fff);
+  background: var(--ui-color-action, #185f9b);
+  border-radius: 999px;
+}
+.ui-dataset-dialog {
+  box-sizing: border-box;
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  font-family: var(--ui-font-family, inherit);
+  color: var(--ui-color-text, #182638);
+  background: var(--ui-color-surface, #fff);
+  border: 1px solid var(--ui-color-divider, #dbe3ea);
+  border-radius: var(--ui-radius, 0.4375rem);
+  box-shadow: var(--ui-shadow-overlay, 0 10px 30px rgb(15 23 42 / 18%));
+}
+.ui-dataset-dialog::backdrop {
+  background: rgb(15 23 42 / 45%);
+}
+.ui-dataset-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--ui-color-divider, #dbe3ea);
+}
+.ui-dataset-dialog-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.ui-dataset-dialog-close {
+  display: inline-flex;
+  padding: 0.35rem;
+  color: var(--ui-color-muted, #536677);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius, 0.4375rem);
+  cursor: pointer;
+}
+.ui-dataset-dialog-close:hover {
+  color: var(--ui-color-text, #182638);
+  background: var(--ui-color-surface-muted, #f3f6f9);
+}
+.ui-dataset-dialog-close:focus-visible {
+  outline: 3px solid var(--ui-color-focus, #256ec3);
+  outline-offset: 2px;
+}
+.ui-dataset-dialog-body {
+  padding: 1.1rem;
+}

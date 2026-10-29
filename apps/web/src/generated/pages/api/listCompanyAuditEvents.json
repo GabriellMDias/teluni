@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "listCompanyAuditEvents",
   "summary": "",
-  "description": "List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch. Requires two-step verification.",
+  "description": "List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

@@ -45,21 +45,6 @@ export function Failure({
   );
 }
 
-export function StepUpPrompt({ returnTo }: { returnTo: string }) {
-  const { t } = useProgrammingMessages();
-  return (
-    <div role="status" className="notice notice-error">
-      {t.stepUpNotice}
-      <a
-        className="button-link button-primary"
-        href={loginHref(returnTo, "strong")}
-      >
-        {t.stepUpButton}
-      </a>
-    </div>
-  );
-}
-
 /** A write whose outcome is unknown or stale needs a reload, not a retry. */
 export function mustReload(error: unknown): boolean {
   return (
@@ -75,7 +60,7 @@ export const can = (company: CompanyWithAccess, capability: string) =>
 
 /**
  * Loads the session and the company access every programming page needs,
- * and renders sign-in, step-up and denial states before the page itself.
+ * and renders sign-in and denial states before the page itself.
  */
 export function CompanyGate({
   companyId,
@@ -111,17 +96,13 @@ export function CompanyGate({
       </a>
     );
   else if (company.isError)
-    body =
-      company.error instanceof ApiFailure &&
-      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-        <StepUpPrompt returnTo={returnTo} />
-      ) : (
-        <Failure
-          error={company.error}
-          operation="read"
-          onReload={() => void company.refetch()}
-        />
-      );
+    body = (
+      <Failure
+        error={company.error}
+        operation="read"
+        onReload={() => void company.refetch()}
+      />
+    );
   else if (company.data && !can(company.data, "programming.view"))
     body = (
       <p role="alert" className="notice notice-error">

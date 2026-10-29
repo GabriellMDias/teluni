@@ -5,7 +5,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { ApiFailure } from "../api-client.js";
-import { loginHref } from "../identity/api.js";
 import { browserLocale, type Locale } from "../locale.js";
 import { describe, type CompanyWithAccess } from "../organizations/api.js";
 import { formatInstant } from "../organizations/members.js";
@@ -45,13 +44,10 @@ export function PublicationPanel({
   companyId,
   source,
   company,
-  returnTo,
 }: {
   companyId: string;
   source: ProgramSource;
   company: CompanyWithAccess;
-  /** Where two-step verification returns to. */
-  returnTo: string;
 }) {
   const locale = useMemo(browserLocale, []);
   const t = programmingMessages[locale];
@@ -61,11 +57,6 @@ export function PublicationPanel({
   const canPublish = company.access.capabilities.includes(
     "publications.publish",
   );
-  const stepUp =
-    !canPublish &&
-    company.access.capabilitiesAfterStrongAuthentication.includes(
-      "publications.publish",
-    );
   const history = useInfiniteQuery({
     queryKey: publicationsKey(companyId, source),
     queryFn: ({ pageParam }) =>
@@ -107,17 +98,6 @@ export function PublicationPanel({
               )
             : p.never}
         </p>
-      )}
-      {stepUp && (
-        <div role="status" className="notice notice-error">
-          {p.stepUp}
-          <a
-            className="button-link button-primary"
-            href={loginHref(returnTo, "strong")}
-          >
-            {t.stepUpButton}
-          </a>
-        </div>
       )}
       {canPublish && (
         <PublishReview

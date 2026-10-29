@@ -6,15 +6,15 @@ The Fastify API runtime provides configuration, structured logging and tracing, 
 
 ## Find the owning implementation
 
-| Concern | Source |
-| --- | --- |
-| Configuration and process composition | [`src/config.ts`](src/config.ts), [`src/main.ts`](src/main.ts) |
-| HTTP boundary, lifecycle, and failures | [`src/app.ts`](src/app.ts), [`src/lifecycle.ts`](src/lifecycle.ts), [`src/errors.ts`](src/errors.ts) |
-| Module contract and composition | [`src/module.ts`](src/module.ts), [`src/modules.ts`](src/modules.ts), [`src/error-registry.ts`](src/error-registry.ts) |
-| Database client and token verification | [`src/database.ts`](src/database.ts), [`src/authentication.ts`](src/authentication.ts) |
-| Prisma schema, schema meaning, and runtime grants | [`prisma/schema/`](prisma/schema/schema.prisma), `prisma/metadata/`, `prisma/runtime-grants/`, reviewed `prisma/migrations/` |
-| Generated references | [`generate-references.ts`](scripts/generate-references.ts), [`openapi.ts`](scripts/openapi.ts), [`database-reference.ts`](scripts/database-reference.ts) |
-| Process smokes | [`scripts/smoke.mjs`](scripts/smoke.mjs) and module smokes in `scripts/smoke/` |
+| Concern                                           | Source                                                                                                                                                   |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Configuration and process composition             | [`src/config.ts`](src/config.ts), [`src/main.ts`](src/main.ts)                                                                                           |
+| HTTP boundary, lifecycle, and failures            | [`src/app.ts`](src/app.ts), [`src/lifecycle.ts`](src/lifecycle.ts), [`src/errors.ts`](src/errors.ts)                                                     |
+| Module contract and composition                   | [`src/module.ts`](src/module.ts), [`src/modules.ts`](src/modules.ts), [`src/error-registry.ts`](src/error-registry.ts)                                   |
+| Database client and token verification            | [`src/database.ts`](src/database.ts), [`src/authentication.ts`](src/authentication.ts)                                                                   |
+| Prisma schema, schema meaning, and runtime grants | [`prisma/schema/`](prisma/schema/schema.prisma), `prisma/metadata/`, `prisma/runtime-grants/`, reviewed `prisma/migrations/`                             |
+| Generated references                              | [`generate-references.ts`](scripts/generate-references.ts), [`openapi.ts`](scripts/openapi.ts), [`database-reference.ts`](scripts/database-reference.ts) |
+| Process smokes                                    | [`scripts/smoke.mjs`](scripts/smoke.mjs) and module smokes in `scripts/smoke/`                                                                           |
 
 ## Modules
 
@@ -30,14 +30,14 @@ Use [setup](../../docs/setup.md) for the frozen install, generated Prisma client
 
 From the repository root:
 
-| Purpose | Command |
-| --- | --- |
-| Generate ignored Prisma client | `pnpm -C apps/api db:generate` |
-| Apply committed migrations to the configured database | `pnpm -C apps/api db:migrate:deploy` |
-| Check API behavior/types | `pnpm -C apps/api test` and `pnpm -C apps/api typecheck` |
-| Emit/start API | `pnpm -C apps/api build`, then `pnpm -C apps/api start` |
-| Intentionally regenerate tracked API/database/configuration/error references | `pnpm -C apps/api references:write` |
-| Check current API/database/SDK references without editing them | `pnpm references:check` |
+| Purpose                                                                      | Command                                                  |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Generate ignored Prisma client                                               | `pnpm -C apps/api db:generate`                           |
+| Apply committed migrations to the configured database                        | `pnpm -C apps/api db:migrate:deploy`                     |
+| Check API behavior/types                                                     | `pnpm -C apps/api test` and `pnpm -C apps/api typecheck` |
+| Emit/start API                                                               | `pnpm -C apps/api build`, then `pnpm -C apps/api start`  |
+| Intentionally regenerate tracked API/database/configuration/error references | `pnpm -C apps/api references:write`                      |
+| Check current API/database/SDK references without editing them               | `pnpm references:check`                                  |
 
 Tests and reference generation use fresh migrated Testcontainers PostgreSQL, and identity tests also start the pinned Keycloak image, so a compatible container runtime must be reachable. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md) for downstream SDK/portal generation after source changes. The root `pnpm validate` also checks emitted builds, real-process recovery, and browser behavior; a focused package check alone does not replace it.
 
@@ -59,7 +59,7 @@ The realm contract is provisioned by [`scripts/identity-realm.ts`](scripts/ident
 
 ## Organizations
 
-The [`organizations` module](src/features/organizations/AGENTS.md) depends on the identity session boundary. It owns companies, branches, creator memberships, responsibility, standard-role grants and branch scopes, and append-only organization audit under [D-01](../../docs/project/tenant-data-design.md#implementation-status). Every request resolves current tenant access; administrator and manager grants require strong authentication. Company creation is idempotent per principal/key and atomically creates the creator relationships and audit event. Company and branch changes use expected versions and write audit in the same transaction. Branch and audit pagination reject invalid or incorrectly bound cursors. Runtime grants exclude tenant-column changes, audit edits/deletion and membership/grant administration that has no implemented operation.
+The [`organizations` module](src/features/organizations/AGENTS.md) depends on the identity session boundary. It owns companies, branches, creator memberships, responsibility, standard-role grants and branch scopes, and append-only organization audit under [D-01](../../docs/project/tenant-data-design.md#implementation-status). Every request resolves current tenant access; no grant depends on two-step verification, which is optional for each person. Company creation is idempotent per principal/key and atomically creates the creator relationships and audit event. Company and branch changes use expected versions and write audit in the same transaction. Branch and audit pagination reject invalid or incorrectly bound cursors. Runtime grants exclude tenant-column changes, audit edits/deletion and membership/grant administration that has no implemented operation.
 
 The [`mail` module](src/features/mail/AGENTS.md) owns the transactional outbound-email outbox under [ADR-0026](../../docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md). It requires the database and the `TELUNI_MAIL_` settings (which also need `TELUNI_PUBLIC_ORIGIN`) and stays unmounted outside production until they are configured. Producers enqueue messages inside their own transactions through `src/features/mail/public.ts`; the dispatcher starts when the server is ready, claims due messages with expiring leases, submits them through SMTP at least once with bounded retries, and stops during shutdown drain.
 

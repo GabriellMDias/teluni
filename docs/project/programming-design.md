@@ -189,14 +189,14 @@ Copy is in `pt-BR` and `en-US`, times use the person's locale with the screen's 
 Implemented in [PJ-10](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-24](human-actions.md#ph-24):
 
 - The [`programming` API module](../../apps/api/src/features/programming/AGENTS.md), its reviewed migration (which also adds the devices' `time_zone` column and lets profiles delegate the programming capabilities), runtime grants, schema metadata and the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK.
-- `programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities; `programming.assign` requires strong authentication.
+- `programming.view`, `programming.edit` and `programming.assign` in the standard roles and as delegable profile capabilities.
 - The pure evaluator and conflict validation in [`schedule.ts`](../../apps/api/src/features/programming/schedule.ts) on `temporal-polyfill`, with the [canonical fixtures](../../apps/api/test/programming/schedule-fixtures.json) run by [the evaluator tests](../../apps/api/test/programming/schedule.test.ts).
 - The media reference guard, the branch archive guard for explicit spans and the devices move hook; the explicit device time zone in device detail, update and `GET /device/self`.
 - The [two-company integration suite](../../apps/api/test/programming/integration.test.ts) against PostgreSQL as the runtime role with the organizations, devices and media modules.
 
 Increment 2, the same day:
 
-- The panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation and step-up, and confirmed deletion; the screen page's time zone setting and programming link.
+- The panel's [Programação pages](../../apps/web/src/programming/pages.tsx): playlists with the media picker, item order and image seconds, transitions, groups and spans, schedule editing with API rule checks and per-schedule conflicts, seven-day previews, screen assignment with the unpublished confirmation, and confirmed deletion; the screen page's time zone setting and programming link.
 - [Browser component tests](../../apps/web/test/programming.browser.test.tsx) and the [programming journey](../../apps/web/test/e2e/programming/journey.spec.ts).
 
 Pending: increment 3 with PJ-11 and PJ-20.
@@ -210,7 +210,7 @@ Pending: increment 3 with PJ-11 and PJ-20.
 5. **DST handoff refinement.** Gaps resolve to the first valid instant and repeated hours to the earlier occurrence for starts and the later for ends, as selected; additionally, an end never extends past the next window's start on the same output. This refines P14 so that two close windows can never overlap in a repeated hour, which wall-clock validation cannot see, instead of rejecting otherwise valid schedules in zones with DST.
 6. **Evaluator and library (ADR-0029).** A pure TypeScript evaluator in the API on the Temporal API through the `temporal-polyfill` package until Node.js ships Temporal; canonical JSON fixtures owned by the API and run by the player in PJ-12; preview computed only by the API.
 7. **Items and transitions.** Images 1 to 3,600 s (10 s default), videos at full duration, playlists loop, boundaries interrupt; transitions `CUT` or `FADE` of 250 to 2,000 ms, with fades accepted at publication only on qualified profiles.
-8. **Permissions.** `programming.view`, `programming.edit` and `programming.assign` as in the table, all delegable; operators author drafts but do not assign; assigning needs strong authentication like managing screens.
+8. **Permissions.** `programming.view`, `programming.edit` and `programming.assign` as in the table, all delegable; operators author drafts but do not assign.
 9. **Assignment confirmation.** Assignments are separate from program edits, use the screen's settings version and require an explicit confirmation while the destination is unpublished, which is every destination until PJ-11.
 10. **Lifecycle.** Playlists and groups are deleted only when unused, with a confirmation; media used by playlists cannot be deleted; archived media stays in playlists but cannot be added.
 11. **Limits.** 1,000 playlists, 100 groups and 2,000 programs per company; 500 items per playlist; 200 rules per output; timelines of 31 days and 2,000 segments.

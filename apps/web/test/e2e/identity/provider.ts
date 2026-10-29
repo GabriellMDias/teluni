@@ -16,13 +16,31 @@ export function totp(secret: string): string {
     .padStart(6, "0");
 }
 
+/**
+ * A new person's first sign-in returns through the optional two-step
+ * suggestion; journeys that are not about it leave it with "Agora não".
+ */
+export async function skipTwoStepSuggestion(page: Page): Promise<void> {
+  await page.waitForURL((url) => !url.pathname.includes("/realms/"), {
+    timeout: 20_000,
+  });
+  if (new URL(page.url()).pathname === "/welcome/two-step")
+    await page.getByRole("link", { name: /^(Agora não|Not now)$/ }).click();
+}
+
+/**
+ * Signs in at the provider. `then: "skip-suggestion"` (the default) also
+ * leaves the first-sign-in suggestion; `"stay"` stops after submitting.
+ */
 export async function enterCredentials(
   page: Page,
   user: { email: string; password: string },
+  then: "skip-suggestion" | "stay" = "skip-suggestion",
 ): Promise<void> {
   await page.locator("#username").fill(user.email);
   await page.locator("#password").fill(user.password);
   await page.locator("#kc-login").click();
+  if (then === "skip-suggestion") await skipTwoStepSuggestion(page);
 }
 
 /**

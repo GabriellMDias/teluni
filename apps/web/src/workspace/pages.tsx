@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "@tanstack/react-router";
 import brandMark from "../assets/brand-mark.svg";
-import { loginHref, sessionQuery } from "../identity/api.js";
+import { sessionQuery, twoStepHref, twoStepQuery } from "../identity/api.js";
 import { browserLocale } from "../locale.js";
 import { listCompanies } from "../organizations/api.js";
 import { organizationMessages } from "../organizations/messages.js";
@@ -28,13 +28,14 @@ export function EntryPage() {
       </p>
     );
   if (!session.data) return <Navigate to="/sign-in" replace />;
-  return <HomePage strong={session.data.strongAuthenticatedAt !== null} />;
+  return <HomePage />;
 }
 
 const homeCompanyCount = 6;
 
-function HomePage({ strong }: { strong: boolean }) {
+function HomePage() {
   const { locale, t } = useWorkspaceMessages();
+  const twoStep = useQuery(twoStepQuery);
   const roles = organizationMessages[locale].roles;
   const companies = useQuery({
     queryKey: ["organizations", "companies", "home"],
@@ -102,16 +103,19 @@ function HomePage({ strong }: { strong: boolean }) {
         </section>
         <section className="panel" aria-labelledby="home-account-title">
           <h2 id="home-account-title">{t.accountTitle}</h2>
-          <p className={strong ? "hint" : "notice notice-info"}>
-            {strong ? t.twoStepDone : t.twoStepMissing}
-          </p>
-          {!strong && (
-            <a
-              className="button-link button-primary"
-              href={loginHref("/", "strong")}
-            >
-              {t.twoStepButton}
-            </a>
+          {twoStep.data?.enabled === true && (
+            <p className="hint">{t.twoStepEnabled}</p>
+          )}
+          {twoStep.data?.enabled === false && (
+            <>
+              <p className="notice notice-info">{t.twoStepDisabled}</p>
+              <a
+                className="button-link button-primary"
+                href={twoStepHref("enable", "/")}
+              >
+                {t.twoStepButton}
+              </a>
+            </>
           )}
           <p>
             <Link to="/account/sessions">{t.accountSessions}</Link>

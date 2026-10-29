@@ -40,20 +40,20 @@ On 2026-10-24 the owner requested autonomous development after the local product
 
 On 2026-10-22 the owner asked the agent to take every pending decision that is only a decision, so that development can continue, extending the delegation recorded with [PH-25](#ph-25). The agent reviewed every open action. The decision parts are now decided in the [deployment design](deployment-design.md) with [ADR-0033](../adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md), the [data handling policies](data-handling-policies.md) and the player's [hardware envelope](player-design.md#supported-hardware-envelope). What remains below needs the owner's accounts, devices, facts, legal identity or a qualified professional, which no decision can replace.
 
-| Action | Decided on 2026-10-22 | Still needs the owner |
-| --- | --- | --- |
-| [PH-07](#ph-07) | Nothing left to decide; the hostnames under `teluni.app` are set by the deployment design | Registering `teluni.app` and the trademark evidence |
-| [PH-08](#ph-08) | The hardware envelope devices are bought and qualified against | The pilot's confirmation, the physical devices and their measurements |
-| [PH-10](#ph-10) | How the host is reached, the proxy, backups, RPO and RTO, availability objective and maintenance window | The host and line facts, the relay and backup accounts, the real restore rehearsal |
-| [PH-13](#ph-13) | Completed: responsibilities, upload restrictions, retention, closure, deletion, export, requests and incidents | The legal review moves to [PH-28](#ph-28) |
-| [PH-14](#ph-14) | Nothing: the copyright holder is a legal fact, not a choice | The holder's name, when distribution needs it |
-| [PH-15](#ph-15) | The issuer address `https://auth.teluni.app/realms/teluni` and the production composition | Running Keycloak with the protected inputs |
-| [PH-16](#ph-16) | Client type, redirect URI and scopes | Registering the Google client |
-| [PH-17](#ph-17) | Resend over SMTP from `notify.teluni.app`, staged DMARC, Brevo as fallback | The account, DNS verification and the key |
-| [PH-18](#ph-18) | Nothing: customer acceptance, costs and support coverage are measured facts | Pilot evidence |
-| [PH-19](#ph-19) | Nothing: the billing issuer and fiscal process depend on the owner's legal situation and an accountant | The qualified fiscal setup |
-| [PH-26](#ph-26) | Nothing: environment settings | Allowing two hosts in the cloud environment |
-| [PH-27](#ph-27) | Nothing: the key must be created and kept outside agent sessions | Creating and keeping the key |
+| Action          | Decided on 2026-10-22                                                                                          | Still needs the owner                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [PH-07](#ph-07) | Nothing left to decide; the hostnames under `teluni.app` are set by the deployment design                      | Registering `teluni.app` and the trademark evidence                                |
+| [PH-08](#ph-08) | The hardware envelope devices are bought and qualified against                                                 | The pilot's confirmation, the physical devices and their measurements              |
+| [PH-10](#ph-10) | How the host is reached, the proxy, backups, RPO and RTO, availability objective and maintenance window        | The host and line facts, the relay and backup accounts, the real restore rehearsal |
+| [PH-13](#ph-13) | Completed: responsibilities, upload restrictions, retention, closure, deletion, export, requests and incidents | The legal review moves to [PH-28](#ph-28)                                          |
+| [PH-14](#ph-14) | Nothing: the copyright holder is a legal fact, not a choice                                                    | The holder's name, when distribution needs it                                      |
+| [PH-15](#ph-15) | The issuer address `https://auth.teluni.app/realms/teluni` and the production composition                      | Running Keycloak with the protected inputs                                         |
+| [PH-16](#ph-16) | Client type, redirect URI and scopes                                                                           | Registering the Google client                                                      |
+| [PH-17](#ph-17) | Resend over SMTP from `notify.teluni.app`, staged DMARC, Brevo as fallback                                     | The account, DNS verification and the key                                          |
+| [PH-18](#ph-18) | Nothing: customer acceptance, costs and support coverage are measured facts                                    | Pilot evidence                                                                     |
+| [PH-19](#ph-19) | Nothing: the billing issuer and fiscal process depend on the owner's legal situation and an accountant         | The qualified fiscal setup                                                         |
+| [PH-26](#ph-26) | Nothing: environment settings                                                                                  | Allowing two hosts in the cloud environment                                        |
+| [PH-27](#ph-27) | Nothing: the key must be created and kept outside agent sessions                                               | Creating and keeping the key                                                       |
 
 ## PH-01
 
@@ -267,6 +267,8 @@ The 2026-10-26 endpoint-preset build removes address entry from a fresh installa
 **Evidence / blocker:** 2026-10-18: P36=A approved professional preparation before charging; actual formalization, fiscal process and reviewed documents remain unknown. No charge, invoice, contract or registration action was performed.
 
 ## PH-20
+
+**Two-step verification revision, 2026-10-28:** In chat, the owner asked for two-step verification to be optional and chosen by each user, checked only at sign-in for now, and suggested right after signup without being required. Asked to decide the consequences, the owner selected: optional for every company user, administrators and branch managers included; sensitive operations ask for the password again (plus the code when enabled) within five minutes instead of a two-step step-up; disabling requires the password and the current code; a suggestion page after the first sign-in plus a reminder on the account pages. This revises P12/P14 in the [identity policies](identity-and-access.md#assurance-recovery-and-abuse); the [PJ-24 increment](implementation-plan.md#optional-two-step-verification) records the implementation. No new human blocker is introduced.
 
 **Local testing follow-up, 2026-10-24:** The owner explicitly requested optional two-step verification for the local development environment. The [development assurance exception](identity-session-design.md#local-development-assurance-exception) and [PJ-24 increment](implementation-plan.md#local-development-mfa-option) record the guarded implementation. This authorizes the machine-local setting only; production MFA and real-environment qualification gates remain required. No new human blocker is introduced.
 

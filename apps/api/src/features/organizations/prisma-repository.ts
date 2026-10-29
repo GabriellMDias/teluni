@@ -290,13 +290,13 @@ export async function lockAuthority(
   };
 }
 
+/** P14: the session's authentication is at most five minutes old at write time. */
 export async function requireRecent(
   tx: Prisma.TransactionClient,
-  strongAuthenticatedAt: Date | null,
+  authenticatedAt: Date,
 ): Promise<void> {
   const [assurance] = await tx.$queryRaw<{ recent: boolean }[]>`
-    SELECT (${strongAuthenticatedAt}::timestamptz IS NOT NULL AND
-      ${strongAuthenticatedAt}::timestamptz >= statement_timestamp() - interval '5 minutes') AS recent`;
+    SELECT ${authenticatedAt}::timestamptz >= statement_timestamp() - interval '5 minutes' AS recent`;
   if (!assurance?.recent)
     throw new OrganizationFailure("RECENT_AUTHENTICATION_REQUIRED");
 }
@@ -333,7 +333,6 @@ export async function accessOf(
   companyId: string,
   membershipId: string,
   principalId: string,
-  strong: boolean,
 ): Promise<CompanyAccess> {
   const rows = await tx.$queryRaw<
     ({ company_status: CompanyStatus; responsible: boolean } & GrantAccessRow)[]
@@ -355,7 +354,6 @@ export async function accessOf(
     principalId,
     responsible: rows[0]?.responsible ?? false,
     grants: grantsFromRows(rows),
-    strong,
   });
 }
 
@@ -416,7 +414,6 @@ export class PrismaOrganizationRepository {
   async lockForWrite(
     tx: Prisma.TransactionClient,
     principalId: string,
-    strong: boolean,
     companyId: string,
     branchIds: readonly string[],
   ): Promise<{ access: CompanyAccess; activeBranchIds: ReadonlySet<string> }> {
@@ -429,13 +426,7 @@ export class PrismaOrganizationRepository {
         AND status = 'ACTIVE'
       FOR SHARE`;
     if (!member) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
-    const access = await accessOf(
-      tx,
-      companyId,
-      member.id,
-      principalId,
-      strong,
-    );
+    const access = await accessOf(tx, companyId, member.id, principalId);
     return {
       access,
       activeBranchIds: await this.#lockBranches(tx, companyId, branchIds),
@@ -444,8 +435,7 @@ export class PrismaOrganizationRepository {
 
   /**
    * As `lockForWrite`, for a membership that authorized work earlier: null
-   * unless the company exists and the membership is active. Its access
-   * counts strong authentication as proven.
+   * unless the company exists and the membership is active.
    */
   async lockForMembership(
     tx: Prisma.TransactionClient,
@@ -466,13 +456,7 @@ export class PrismaOrganizationRepository {
       FOR SHARE`;
     if (!member) return null;
     return {
-      access: await accessOf(
-        tx,
-        companyId,
-        membershipId,
-        member.principal_id,
-        true,
-      ),
+      access: await accessOf(tx, companyId, membershipId, member.principal_id),
       activeBranchIds: await this.#lockBranches(tx, companyId, branchIds),
     };
   }
@@ -618,7 +602,7 @@ export class PrismaOrganizationRepository {
 
   /**
    * Adds a standard-role grant to a membership. Only the responsible
-   * administrator, recently strongly authenticated, may grant company
+   * administrator, recently authenticated, may grant company
    * administration (P10/P14). An identical effective grant is returned
    * instead of duplicated.
    */
@@ -634,7 +618,7 @@ export class PrismaOrganizationRepository {
       branchIds: string[];
       expiresAt: Date | null;
     },
-    strongAuthenticatedAt: Date | null,
+    authenticatedAt: Date,
   ): Promise<{ grant: GrantRecord; created: boolean }> {
     return this.#db.$transaction(async (tx) => {
       const authority = await lockAuthority(tx, actor, companyId, [memberId]);
@@ -645,7 +629,7 @@ export class PrismaOrganizationRepository {
       if (input.role === "COMPANY_ADMINISTRATOR") {
         if (authority.responsibleMembershipId !== actor.membershipId)
           throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
-        await requireRecent(tx, strongAuthenticatedAt);
+        await requireRecent(tx, authenticatedAt);
       }
       if (input.expiresAt) {
         const [future] = await tx.$queryRaw<{ valid: boolean }[]>`
@@ -837,14 +821,14 @@ export class PrismaOrganizationRepository {
 
   /**
    * Proposes handing responsibility to another active administrator. Only
-   * the responsible administrator, recently strongly authenticated, may
+   * the responsible administrator, recently authenticated, may
    * propose, and only one proposal per company can be pending.
    */
   async requestTransfer(
     actor: Actor,
     companyId: string,
     successorId: string,
-    strongAuthenticatedAt: Date | null,
+    authenticatedAt: Date,
   ): Promise<string> {
     return this.#db.$transaction(async (tx) => {
       const authority = await lockAuthority(tx, actor, companyId, [
@@ -852,7 +836,7 @@ export class PrismaOrganizationRepository {
       ]);
       if (authority.responsibleMembershipId !== actor.membershipId)
         throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
-      await requireRecent(tx, strongAuthenticatedAt);
+      await requireRecent(tx, authenticatedAt);
       const successor = authority.members.get(successorId);
       if (!successor) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
       if (successorId === actor.membershipId)
@@ -927,14 +911,14 @@ export class PrismaOrganizationRepository {
 
   /**
    * The successor accepts responsibility: they must still be an active
-   * administrator, recently strongly authenticated, and the proposer must
+   * administrator, recently authenticated, and the proposer must
    * still be responsible.
    */
   async acceptTransfer(
     actor: Actor,
     companyId: string,
     transferId: string,
-    strongAuthenticatedAt: Date | null,
+    authenticatedAt: Date,
   ): Promise<void> {
     await this.#db.$transaction(async (tx) => {
       const transfer = await this.#lockPendingTransfer(
@@ -948,7 +932,7 @@ export class PrismaOrganizationRepository {
       const authority = await lockAuthority(tx, actor, companyId, [
         transfer.from,
       ]);
-      await requireRecent(tx, strongAuthenticatedAt);
+      await requireRecent(tx, authenticatedAt);
       if (authority.responsibleMembershipId !== transfer.from)
         throw new OrganizationFailure("RESPONSIBILITY_TRANSFER_NOT_PENDING");
       await tx.$executeRaw`
@@ -1013,7 +997,7 @@ export class PrismaOrganizationRepository {
     memberId: string,
     expectedVersion: number,
     status: MembershipStatus,
-    strongAuthenticatedAt: Date | null,
+    authenticatedAt: Date,
   ): Promise<void> {
     await this.#db.$transaction(async (tx) => {
       const [company] = await tx.$queryRaw<{ status: CompanyStatus }[]>`
@@ -1074,11 +1058,7 @@ export class PrismaOrganizationRepository {
       if (status === "ACTIVE" && restoringAdministrator?.present) {
         if (responsibility?.membership_id !== actor.membershipId)
           throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
-        const [assurance] = await tx.$queryRaw<{ recent: boolean }[]>`
-          SELECT (${strongAuthenticatedAt}::timestamptz IS NOT NULL AND
-            ${strongAuthenticatedAt}::timestamptz >= statement_timestamp() - interval '5 minutes') AS recent`;
-        if (!assurance?.recent)
-          throw new OrganizationFailure("RECENT_AUTHENTICATION_REQUIRED");
+        await requireRecent(tx, authenticatedAt);
       }
       if (status !== "ACTIVE" && administrators.has(memberId)) {
         const [remaining] = await tx.$queryRaw<{ count: number }[]>`

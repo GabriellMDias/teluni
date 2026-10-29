@@ -5,14 +5,14 @@ import { expect, test, type Page } from "@playwright/test";
 import { actionLink, mailedLink } from "../identity/mail.ts";
 import {
   choosePassword,
-  enrollAuthenticator,
+  skipTwoStepSuggestion,
   enterCredentials,
   registerAccount,
 } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
-// Company and branch administration through the real sign-in, two-step
-// verification and session boundary. Copy is Portuguese.
+// Company and branch administration through the real sign-in and session
+// boundary. Copy is Portuguese.
 // Bounded actions fail at the missing element instead of consuming the whole
 // journey's budget.
 test.use({ locale: "pt-BR", actionTimeout: 20_000, navigationTimeout: 30_000 });
@@ -50,7 +50,7 @@ test.afterAll(async () => {
   await stack?.stop();
 });
 
-test("creates a company, verifies in two steps and manages branches, settings, members, responsibility and invitations", async ({
+test("creates a company and manages branches, settings, members, responsibility and invitations", async ({
   page,
   browser,
 }) => {
@@ -77,13 +77,7 @@ test("creates a company, verifies in two steps and manages branches, settings, m
   await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
   const companyUrl = page.url();
 
-  // Administration requires two-step verification (P12).
-  await expect(page.getByRole("status")).toContainText(
-    "verificação em duas etapas",
-  );
-  await page.getByRole("link", { name: "Verificar em duas etapas" }).click();
-  await enrollAuthenticator(page);
-  await afterNavigation(page).toHaveURL(companyUrl);
+  // Administration needs no two-step verification, which is optional.
   await afterNavigation(
     page.getByRole("heading", { name: "Lanchonete Central" }),
   ).toBeVisible();
@@ -91,23 +85,28 @@ test("creates a company, verifies in two steps and manages branches, settings, m
     page.getByText("Responsável pela empresa", { exact: false }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Filiais" })).toBeVisible();
-  await expect(page.getByText("Nenhuma filial ainda.")).toBeVisible();
 
+  // Without branches, the dataset starts on a new branch.
   await page.getByLabel("Nome da filial").fill("Centro");
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
   // A second active branch cannot reuse the name, whatever the case.
+  const branches = page.getByRole("region", { name: "Registros de filiais" });
+  await branches
+    .getByRole("button", { name: "Adicionar", exact: true })
+    .click();
   await page.getByLabel("Nome da filial").fill("centro");
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByRole("alert")).toHaveText(
     /Já existe uma filial ativa com esse nome\./,
   );
+  await page.getByRole("button", { name: "Cancelar" }).click();
 
-  await page.getByRole("button", { name: "Renomear: Centro" }).click();
-  await page.getByLabel("Nome da filial").first().fill("Centro Histórico");
+  await page.getByText("Centro", { exact: true }).dblclick();
+  await page.getByLabel("Nome da filial").fill("Centro Histórico");
   await page.getByRole("button", { name: "Salvar" }).click();
   await expect(
-    page.getByText("Centro Histórico", { exact: true }),
+    page.getByRole("heading", { name: "Centro Histórico" }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Arquivar: Centro Histórico" })
@@ -288,13 +287,6 @@ test("creates a company, verifies in two steps and manages branches, settings, m
     );
     const independentUrl = `${stack.webUrl}/companies/${independentId}`;
     await memberPage.goto(`${independentUrl}?view=members`);
-    await memberPage
-      .getByRole("link", { name: "Verificar em duas etapas" })
-      .click();
-    await enrollAuthenticator(memberPage);
-    await afterNavigation(memberPage).toHaveURL(
-      `${independentUrl}?view=members`,
-    );
     const userRow = memberPage
       .locator(".branch-list > li")
       .filter({ hasText: stack.user.email });
@@ -469,6 +461,7 @@ test("creates a company, verifies in two steps and manages branches, settings, m
         await mailedLink(stack.mailUrl, newcomer, actionLink, since),
       );
       await choosePassword(newcomerPage, `senha-${randomUUID()}`);
+      await skipTwoStepSuggestion(newcomerPage);
       await afterNavigation(
         newcomerPage.getByRole("button", { name: "Aceitar convite" }),
       ).toBeVisible();

@@ -46,14 +46,12 @@ const sessions: HumanSessionPort = {
       return Promise.reject(
         Object.assign(new Error("no session"), { code: "AUTH" }),
       );
-    const strong = headers["x-test-strong"] === "true";
     return Promise.resolve({
       principalId,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
+      assuranceLevel: "teluni-aal1",
       authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date() : null,
-      strongAuthenticationAgeSeconds: strong ? 1 : null,
+      authenticationAgeSeconds: 1,
       scopes: new Set(),
     });
   },
@@ -168,7 +166,6 @@ async function call(
   options: {
     body?: unknown;
     bytes?: Buffer;
-    strong?: boolean;
     headers?: Record<string, string>;
   } = {},
 ): Promise<Result> {
@@ -179,8 +176,6 @@ async function call(
       ...(person
         ? {
             "x-test-principal": people[person],
-            // Administrator and manager grants need two-step verification.
-            "x-test-strong": String(options.strong ?? person !== "aOperator"),
           }
         : {}),
       ...(options.bytes ? { "content-type": "application/octet-stream" } : {}),
@@ -223,7 +218,7 @@ async function createBranch(person: Person, companyId: string, name: string) {
     person,
     "POST",
     `/companies/${companyId}/branches`,
-    { strong: true, body: { name } },
+    { body: { name } },
   );
   expect(created.status).toBe(201);
   return created.body;
@@ -261,7 +256,6 @@ async function ready(
 ): Promise<string> {
   const bytes = await readFile(file);
   const created = await call(person, "POST", `/companies/${companyId}/media`, {
-    strong: true,
     body: {
       name: file.split("/").pop(),
       branchId,
@@ -274,7 +268,7 @@ async function ready(
     person,
     "PUT",
     `/companies/${companyId}/media/${created.body.id}/content`,
-    { strong: true, bytes },
+    { bytes },
   );
   expect(sent.status, JSON.stringify(sent.body)).toBe(200);
   while ((await media.runOnce()) > 0);
@@ -304,7 +298,6 @@ async function screen(companyId: string, branchId: string, name: string) {
     "POST",
     `/companies/${companyId}/devices`,
     {
-      strong: true,
       body: { userCode: started.body.userCode, name, branchId, rotation: 0 },
     },
   );
@@ -496,7 +489,7 @@ describe("programming: playlists, groups, schedules and assignments", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/media/${used}/archive`,
-      { strong: true, body: { expectedVersion: 3 } },
+      { body: { expectedVersion: 3 } },
     );
     expect(archived.status, JSON.stringify(archived.body)).toBe(200);
     expect(
@@ -506,7 +499,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
           "POST",
           `/companies/${companyA}/media/${used}/delete`,
           {
-            strong: true,
             body: { expectedVersion: archived.body.version },
           },
         ),
@@ -568,7 +560,7 @@ describe("programming: playlists, groups, schedules and assignments", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/branches/${a2.id}/archive`,
-      { strong: true, body: { expectedVersion: a2.version } },
+      { body: { expectedVersion: a2.version } },
     );
     expect(code(archive)).toBe("BRANCH_IN_USE");
     const narrowed = await call(
@@ -752,7 +744,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
     expect(
       code(
         await call("aAdmin", "PUT", `${programming}/assignment`, {
-          strong: true,
           body: assignment,
         }),
       ),
@@ -760,7 +751,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
     expect(
       code(
         await call("aOperator", "PUT", `${programming}/assignment`, {
-          strong: true,
           body: { ...assignment, confirmUnpublished: true },
         }),
       ),
@@ -770,7 +760,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
       "PUT",
       `${programming}/assignment`,
       {
-        strong: true,
         body: { ...assignment, confirmUnpublished: true },
       },
     );
@@ -816,7 +805,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
       "PATCH",
       `/companies/${companyA}/devices/${device.id}`,
       {
-        strong: true,
         body: {
           expectedVersion: current.body.version,
           timeZone: "Europe/Lisbon",
@@ -842,7 +830,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
           "PATCH",
           `/companies/${companyA}/devices/${device.id}`,
           {
-            strong: true,
             body: {
               expectedVersion: zoned.body.version,
               timeZone: "Mars/Olympus",
@@ -876,7 +863,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
       "PUT",
       `${programming}/assignment`,
       {
-        strong: true,
         body: {
           expectedVersion: 1,
           groupId: group.body.id,
@@ -920,7 +906,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
       "POST",
       `/companies/${companyA}/devices/${device.id}/move`,
       {
-        strong: true,
         body: { expectedVersion: latest.body.version, branchId: a2.id },
       },
     );
@@ -979,7 +964,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
     const member = await screen(companyA, a1.id, "Vitrine 1");
     const memberPath = `${base}/devices/${member.id}`;
     const joined = await call("aAdmin", "PUT", `${memberPath}/assignment`, {
-      strong: true,
       body: {
         expectedVersion: 0,
         groupId: network.body.id,
@@ -1042,7 +1026,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
       "POST",
       `/companies/${companyA}/devices/${mover.id}/move`,
       {
-        strong: true,
         body: { expectedVersion: device.body.version, branchId: a1.id },
       },
     );
@@ -1128,7 +1111,6 @@ describe("programming: playlists, groups, schedules and assignments", () => {
           "POST",
           `/companies/${companyA}/devices/${framed.id}/move`,
           {
-            strong: true,
             body: {
               expectedVersion: framedDevice.body.version,
               branchId: a1.id,

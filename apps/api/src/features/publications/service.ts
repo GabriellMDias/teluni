@@ -705,7 +705,7 @@ export class PublicationService {
 
   /**
    * Authorizes a blocked or failed price publication again: the caller
-   * must be able to publish the program now, with strong authentication.
+   * must be able to publish the program now.
    * The intent keeps its author and is due at once on the caller's
    * authority, unless a pending one of the same program and catalog
    * already covers it.

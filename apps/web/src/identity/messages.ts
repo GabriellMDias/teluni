@@ -54,7 +54,7 @@ const ptBR = {
     account_unavailable:
       "Esta conta não pode entrar no momento. Fale com o suporte se o problema continuar.",
     assurance_not_met:
-      "A verificação em duas etapas não foi concluída. Tente novamente para continuar.",
+      "Não foi possível confirmar sua identidade novamente. Tente outra vez para continuar.",
     provider_unavailable:
       "O serviço de acesso está indisponível. Tente novamente em instantes.",
   } satisfies Record<LoginErrorReason, string>,
@@ -75,14 +75,24 @@ const ptBR = {
   endAllHint:
     "Encerra também esta sessão e as sessões abertas em outros dispositivos.",
   twoStepTitle: "Verificação em duas etapas",
-  twoStepDevelopment:
-    "Verificação em duas etapas dispensada neste ambiente local de desenvolvimento.",
-  twoStepMissing:
-    "Esta sessão não usou verificação em duas etapas. Administradores, gerentes e quem publica conteúdo precisam dela.",
-  twoStepDone: "Esta sessão foi verificada em duas etapas em",
-  twoStepButton: "Verificar em duas etapas",
-  twoStepHint:
-    "Na primeira vez você cadastrará um aplicativo autenticador, como Google Authenticator ou Microsoft Authenticator.",
+  twoStepEnabled:
+    "Ativada. O Teluni pede o código do seu aplicativo autenticador sempre que você entra.",
+  twoStepDisabled:
+    "Desativada. Recomendamos ativar: além da senha, o Teluni pedirá um código do aplicativo autenticador do seu celular ao entrar.",
+  twoStepEnable: "Ativar verificação em duas etapas",
+  twoStepDisable: "Desativar verificação em duas etapas",
+  twoStepEnableHint:
+    "Você cadastrará um aplicativo autenticador, como Google Authenticator ou Microsoft Authenticator.",
+  twoStepDisableHint:
+    "Para desativar, confirme sua senha e o código atual do aplicativo.",
+  welcomeEyebrow: "Conta pronta",
+  welcomeTitle: "Proteja sua conta",
+  welcomeLead:
+    "Ative a verificação em duas etapas: além da senha, o Teluni pedirá um código do aplicativo autenticador do seu celular sempre que você entrar.",
+  welcomeOptional:
+    "É opcional. Você pode ativar ou desativar quando quiser na página Sessões.",
+  welcomeEnable: "Configurar agora",
+  welcomeSkip: "Agora não",
   loading: "Carregando…",
   reload: "Recarregar",
   errors: {
@@ -92,8 +102,7 @@ const ptBR = {
     signedOut: "Sua sessão terminou. Entre novamente.",
     csrf: "Não foi possível verificar a solicitação. Recarregue a página e tente de novo.",
     limit: "Encerre outra sessão para continuar nesta.",
-    strong: "Esta ação exige verificação em duas etapas.",
-    recent: "Esta ação exige uma verificação em duas etapas recente.",
+    recent: "Esta ação exige confirmar sua identidade novamente.",
     notFound: "Essa sessão não existe mais.",
     rateLimited: "Muitas solicitações. Aguarde um momento e tente de novo.",
     unknownWrite:
@@ -134,7 +143,7 @@ const enUS: IdentityMessages = {
     account_unavailable:
       "This account cannot sign in right now. Contact support if this continues.",
     assurance_not_met:
-      "Two-step verification was not completed. Try again to continue.",
+      "Your identity could not be confirmed again. Try again to continue.",
     provider_unavailable:
       "The sign-in service is unavailable. Try again in a moment.",
   },
@@ -154,14 +163,24 @@ const enUS: IdentityMessages = {
   endAllSessions: "End all sessions",
   endAllHint: "Also ends this session and sessions open on other devices.",
   twoStepTitle: "Two-step verification",
-  twoStepDevelopment:
-    "Two-step verification is waived in this local development environment.",
-  twoStepMissing:
-    "This session did not use two-step verification. Administrators, managers and people who publish content need it.",
-  twoStepDone: "This session was verified in two steps at",
-  twoStepButton: "Verify in two steps",
-  twoStepHint:
-    "The first time, you will register an authenticator app such as Google Authenticator or Microsoft Authenticator.",
+  twoStepEnabled:
+    "On. Teluni asks for the code from your authenticator app every time you sign in.",
+  twoStepDisabled:
+    "Off. We recommend turning it on: besides your password, Teluni will ask for a code from the authenticator app on your phone when you sign in.",
+  twoStepEnable: "Turn on two-step verification",
+  twoStepDisable: "Turn off two-step verification",
+  twoStepEnableHint:
+    "You will register an authenticator app such as Google Authenticator or Microsoft Authenticator.",
+  twoStepDisableHint:
+    "To turn it off, confirm your password and the app's current code.",
+  welcomeEyebrow: "Account ready",
+  welcomeTitle: "Protect your account",
+  welcomeLead:
+    "Turn on two-step verification: besides your password, Teluni will ask for a code from the authenticator app on your phone every time you sign in.",
+  welcomeOptional:
+    "It is optional. You can turn it on or off at any time on the Sessions page.",
+  welcomeEnable: "Set it up now",
+  welcomeSkip: "Not now",
   loading: "Loading…",
   reload: "Reload",
   errors: {
@@ -171,8 +190,7 @@ const enUS: IdentityMessages = {
     signedOut: "Your session ended. Sign in again.",
     csrf: "The request could not be verified. Reload the page and try again.",
     limit: "End another session to continue in this one.",
-    strong: "This action requires two-step verification.",
-    recent: "This action requires a recent two-step verification.",
+    recent: "This action requires you to confirm your identity again.",
     notFound: "That session no longer exists.",
     rateLimited: "Too many requests. Wait a moment and try again.",
     unknownWrite:

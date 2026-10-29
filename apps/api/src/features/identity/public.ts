@@ -4,7 +4,7 @@ import type { IncomingHttpHeaders } from "node:http";
 import type { HumanContext } from "./domain.js";
 
 export {
-  requireStrongAuthentication,
+  requireRecentAuthentication,
   SessionFailure,
   type HumanContext,
 } from "./domain.js";

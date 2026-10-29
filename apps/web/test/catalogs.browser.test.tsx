@@ -89,7 +89,7 @@ function record(overrides: Partial<CatalogRecord> = {}): CatalogRecord {
   };
 }
 
-function company(capabilities: string[], afterStrong: string[] = []) {
+function company(capabilities: string[]) {
   return {
     company: {
       id: companyId,
@@ -101,7 +101,6 @@ function company(capabilities: string[], afterStrong: string[] = []) {
       profiles: [],
       responsible: true,
       capabilities: ["company.view", "branches.view", ...capabilities],
-      capabilitiesAfterStrongAuthentication: afterStrong,
     },
     responsibilityTransfer: null,
   };
@@ -163,11 +162,7 @@ type Handler = (
 ) => { status?: number; body?: unknown } | undefined;
 
 /** Answers API calls; unanswered company calls get the given access. */
-function respond(
-  capabilities: string[],
-  handler: Handler = () => undefined,
-  afterStrong: string[] = [],
-) {
+function respond(capabilities: string[], handler: Handler = () => undefined) {
   const fetchOriginal = globalThis.fetch;
   vi.stubGlobal(
     "fetch",
@@ -183,7 +178,7 @@ function respond(
           : url.pathname.endsWith("/media")
             ? { body: { items: [], nextCursor: null } }
             : url.pathname.endsWith(`/companies/${companyId}`)
-              ? { body: company(capabilities, afterStrong) }
+              ? { body: company(capabilities) }
               : {
                   status: 404,
                   body: { error: { code: "RESOURCE_NOT_FOUND" } },
@@ -224,14 +219,6 @@ test("links to catalogs from the company page only with catalogs.view", async ()
   await expect
     .element(screen.getByRole("link", { name: organizations.catalogsTitle }))
     .toHaveAttribute("href", base);
-});
-
-test("asks for two-step verification when only a stronger session can view catalogs", async () => {
-  respond([], undefined, ["catalogs.view"]);
-  const { screen } = await open(base);
-  await expect
-    .element(screen.getByRole("status"))
-    .toMatchTextContent(t.stepUpNotice);
 });
 
 test("denies the page without catalogs.view", async () => {
