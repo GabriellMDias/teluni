@@ -68,7 +68,7 @@ On 2026-10-22 the owner asked the agent to take every pending decision that is o
 
 2026-11-15 development handoff: the owner requested GitHub synchronization before changing computers. The current implementation is published in [PR #40](https://github.com/GabriellMDias/teluni/pull/40), with its qualification follow-up recorded in the [implementation plan](implementation-plan.md#development-handoff-qualification). Recreate machine-local services through [setup](../setup.md#persistent-local-environment); credentials and local development data are not committed. This source handoff adds no production access or account requirement and does not complete the remaining environment actions.
 
-The owner subsequently authorized merging PR #40 and reviewing all other open pull requests. PR #40 is merged; [PR #32](https://github.com/GabriellMDias/teluni/pull/32) tracks the remaining combined dependency qualification, including the aligned development/test and pilot Keycloak digest. No additional human account, access or deployment action is required for this source synchronization.
+The owner subsequently authorized merging PR #40 and reviewing all other open pull requests. PR #40 is merged; [PR #43](https://github.com/GabriellMDias/teluni/pull/43) replaces the incomplete PR #32 and tracks the remaining combined dependency qualification, including the aligned development/test and pilot Keycloak digest. No additional human account, access or deployment action is required for this source synchronization.
 
 ## PH-02
 
