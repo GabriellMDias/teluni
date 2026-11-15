@@ -54,6 +54,7 @@ enum InvitationStatus {
 model Company {
   id                      String                         @id @db.Uuid
   displayName             String                         @map("display_name") @db.VarChar(120)
+  logoDataUrl             String?                        @map("logo_data_url")
   status                  CompanyStatus                  @default(ACTIVE)
   defaultLocale           String                         @map("default_locale") @db.VarChar(10)
   timeZone                String                         @map("time_zone") @db.VarChar(64)
@@ -106,6 +107,8 @@ model Branch {
   id                   String                         @id @db.Uuid
   companyId            String                         @map("company_id") @db.Uuid
   name                 String                         @db.VarChar(120)
+  location             Json?
+  address              String?                        @db.VarChar(300)
   timeZone             String                         @map("time_zone") @db.VarChar(64)
   status               BranchStatus                   @default(ACTIVE)
   version              Int                            @default(1)

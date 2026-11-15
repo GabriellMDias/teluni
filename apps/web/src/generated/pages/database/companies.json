@@ -52,7 +52,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Default IANA time zone for new branches; business time never uses the host time zone.",
+      "Meaning": "Legacy IANA default for branch API requests without a selected map location. New company requests default to UTC when omitted; product company forms do not expose it. Map-selected branches derive their own zone.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -115,6 +115,16 @@
       "Meaning": "PostgreSQL-clock instant of the latest settings change; not audit history.",
       "Null meaning": "—",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "logo_data_url",
+      "PostgreSQL type": "text",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Optional authenticated company branding: server-decoded and re-encoded PNG data URL, at most 256 by 256 pixels and 350000 characters. Never a remote URL or executable SVG.",
+      "Null meaning": "No company logo selected; presentation uses the company initials.",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -142,6 +152,11 @@
       "Object": "companies_display_name_nonblank",
       "Physical definition": "CHECK (((display_name)::text ~ '[^[:space:]]'::text))",
       "Purpose": "Company name cannot be blank."
+    },
+    {
+      "Object": "companies_logo_bounded_png",
+      "Physical definition": "CHECK (((logo_data_url IS NULL) OR ((length(logo_data_url) <= 350000) AND (logo_data_url ~~ 'data:image/png;base64,%'::text))))",
+      "Purpose": "Bounds optional raster logo metadata; the API validates and normalizes PNG content."
     },
     {
       "Object": "companies_pkey",

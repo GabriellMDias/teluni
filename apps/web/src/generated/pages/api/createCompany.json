@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "createCompany",
   "summary": "",
-  "description": "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
+  "description": "Create a company with an optional small PNG logo; timeZone is a legacy default and defaults to UTC when omitted. The creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -40,7 +40,7 @@
       "application/json": {
         "schema": {
           "type": "object",
-          "required": ["displayName", "defaultLocale", "timeZone"],
+          "required": ["displayName", "defaultLocale"],
           "properties": {
             "displayName": {
               "type": "string",
@@ -54,7 +54,17 @@
                 { "type": "string", "const": "en-US" }
               ]
             },
-            "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+            "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "logoDataUrl": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 350000,
+                  "pattern": "^data:image/png;base64,"
+                },
+                { "type": "null" }
+              ]
+            }
           },
           "additionalProperties": false
         }
@@ -62,7 +72,7 @@
     },
     "schema": {
       "type": "object",
-      "required": ["displayName", "defaultLocale", "timeZone"],
+      "required": ["displayName", "defaultLocale"],
       "properties": {
         "displayName": {
           "type": "string",
@@ -76,7 +86,17 @@
             { "type": "string", "const": "en-US" }
           ]
         },
-        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "logoDataUrl": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 350000,
+              "pattern": "^data:image/png;base64,"
+            },
+            { "type": "null" }
+          ]
+        }
       },
       "additionalProperties": false
     },
@@ -94,7 +114,12 @@
       {
         "name": "timeZone",
         "type": "string (min length 1, max length 64)",
-        "required": true
+        "required": false
+      },
+      {
+        "name": "logoDataUrl",
+        "type": "string (max length 350000, pattern ^data:image/png;base64,) | null",
+        "required": false
       }
     ]
   },
@@ -113,6 +138,7 @@
                 "required": [
                   "id",
                   "displayName",
+                  "logoDataUrl",
                   "status",
                   "defaultLocale",
                   "timeZone",
@@ -130,6 +156,16 @@
                     "minLength": 1,
                     "maxLength": 120,
                     "pattern": ".*\\S.*"
+                  },
+                  "logoDataUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 350000,
+                        "pattern": "^data:image/png;base64,"
+                      },
+                      { "type": "null" }
+                    ]
                   },
                   "status": {
                     "anyOf": [
@@ -278,6 +314,7 @@
             "required": [
               "id",
               "displayName",
+              "logoDataUrl",
               "status",
               "defaultLocale",
               "timeZone",
@@ -295,6 +332,16 @@
                 "minLength": 1,
                 "maxLength": 120,
                 "pattern": ".*\\S.*"
+              },
+              "logoDataUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 350000,
+                    "pattern": "^data:image/png;base64,"
+                  },
+                  { "type": "null" }
+                ]
               },
               "status": {
                 "anyOf": [
@@ -430,6 +477,11 @@
         {
           "name": "company.displayName",
           "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        {
+          "name": "company.logoDataUrl",
+          "type": "string (max length 350000, pattern ^data:image/png;base64,) | null",
           "required": true
         },
         {
@@ -500,6 +552,7 @@
                 "required": [
                   "id",
                   "displayName",
+                  "logoDataUrl",
                   "status",
                   "defaultLocale",
                   "timeZone",
@@ -517,6 +570,16 @@
                     "minLength": 1,
                     "maxLength": 120,
                     "pattern": ".*\\S.*"
+                  },
+                  "logoDataUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 350000,
+                        "pattern": "^data:image/png;base64,"
+                      },
+                      { "type": "null" }
+                    ]
                   },
                   "status": {
                     "anyOf": [
@@ -665,6 +728,7 @@
             "required": [
               "id",
               "displayName",
+              "logoDataUrl",
               "status",
               "defaultLocale",
               "timeZone",
@@ -682,6 +746,16 @@
                 "minLength": 1,
                 "maxLength": 120,
                 "pattern": ".*\\S.*"
+              },
+              "logoDataUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 350000,
+                    "pattern": "^data:image/png;base64,"
+                  },
+                  { "type": "null" }
+                ]
               },
               "status": {
                 "anyOf": [
@@ -817,6 +891,11 @@
         {
           "name": "company.displayName",
           "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        {
+          "name": "company.logoDataUrl",
+          "type": "string (max length 350000, pattern ^data:image/png;base64,) | null",
           "required": true
         },
         {

@@ -83,6 +83,8 @@
               "id",
               "companyId",
               "name",
+              "location",
+              "address",
               "timeZone",
               "status",
               "version",
@@ -103,6 +105,34 @@
                 "minLength": 1,
                 "maxLength": 120,
                 "pattern": ".*\\S.*"
+              },
+              "location": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["latitude", "longitude"],
+                    "properties": {
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "address": {
+                "anyOf": [
+                  { "type": "string", "maxLength": 300 },
+                  { "type": "null" }
+                ]
               },
               "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
               "status": {
@@ -125,6 +155,8 @@
           "id",
           "companyId",
           "name",
+          "location",
+          "address",
           "timeZone",
           "status",
           "version",
@@ -145,6 +177,34 @@
             "minLength": 1,
             "maxLength": 120,
             "pattern": ".*\\S.*"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["latitude", "longitude"],
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "address": {
+            "anyOf": [
+              { "type": "string", "maxLength": 300 },
+              { "type": "null" }
+            ]
           },
           "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
           "status": {
@@ -173,6 +233,12 @@
         {
           "name": "name",
           "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        { "name": "location", "type": "object | null", "required": true },
+        {
+          "name": "address",
+          "type": "string (max length 300) | null",
           "required": true
         },
         {

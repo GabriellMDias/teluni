@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   useIsFetching,
   useMutation,
@@ -30,7 +30,9 @@ import {
   type Company,
   type CompanyWithAccess,
 } from "./api.js";
-import { organizationMessages, timeZoneChoices } from "./messages.js";
+import { CompanyLogoField } from "./company-logo.js";
+import { BranchLocationField, locationLabel } from "./branch-location.js";
+import { organizationMessages } from "./messages.js";
 import { CompanyMembers, formatInstant } from "./members.js";
 import { CompanyInvitations } from "./invitations.js";
 import { CompanyProfiles } from "./profiles.js";
@@ -75,33 +77,26 @@ function SignInPrompt({ returnTo }: { returnTo: string }) {
   );
 }
 
-function zoneChoices(): string[] {
-  const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return timeZoneChoices.includes(own)
-    ? [...timeZoneChoices]
-    : [own, ...timeZoneChoices];
-}
-
 type CompanyValues = Pick<
   Company,
-  "displayName" | "defaultLocale" | "timeZone"
+  "displayName" | "defaultLocale" | "logoDataUrl"
 >;
 
 /** The company settings fields shared by creation and administration forms. */
 function CompanyFields({
   idPrefix,
   values,
-  zones,
   disabled = false,
   onChange,
 }: {
   idPrefix: string;
   values: CompanyValues;
-  zones: readonly string[];
   disabled?: boolean;
   onChange: (values: CompanyValues) => void;
 }) {
   const { t } = useOrganizationMessages();
+  const current = useRef(values);
+  current.current = values;
   return (
     <>
       <label htmlFor={`${idPrefix}-name`}>{t.fieldCompanyName}</label>
@@ -115,21 +110,14 @@ function CompanyFields({
           onChange({ ...values, displayName: event.target.value })
         }
       />
-      <label htmlFor={`${idPrefix}-time-zone`}>{t.fieldTimeZone}</label>
-      <select
-        id={`${idPrefix}-time-zone`}
-        value={values.timeZone}
+      <CompanyLogoField
+        id={`${idPrefix}-logo`}
+        value={values.logoDataUrl ?? null}
         disabled={disabled}
-        onChange={(event) =>
-          onChange({ ...values, timeZone: event.target.value })
+        onChange={(logoDataUrl) =>
+          onChange({ ...current.current, logoDataUrl })
         }
-      >
-        {[...new Set([values.timeZone, ...zones])].map((zone) => (
-          <option key={zone} value={zone}>
-            {zone}
-          </option>
-        ))}
-      </select>
+      />
       <label htmlFor={`${idPrefix}-locale`}>{t.fieldLocale}</label>
       <select
         id={`${idPrefix}-locale`}
@@ -159,11 +147,13 @@ function CreateCompanyForm({
   const { t } = useOrganizationMessages();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const zones = useMemo(zoneChoices, []);
   const [values, setValues] = useState(initial);
   // Kept until success so a retry after an unknown outcome replays safely.
   const [key, setKey] = useState(() => crypto.randomUUID());
-  const dirty = values.displayName !== initial.displayName;
+  const dirty =
+    values.displayName !== initial.displayName ||
+    values.defaultLocale !== initial.defaultLocale ||
+    values.logoDataUrl !== initial.logoDataUrl;
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
   const create = useMutation({
     mutationFn: () => createCompany(values, key),
@@ -193,7 +183,6 @@ function CreateCompanyForm({
       <CompanyFields
         idPrefix="company"
         values={values}
-        zones={zones}
         disabled={create.isPending}
         onChange={setValues}
       />
@@ -251,7 +240,6 @@ function EditCompanyForm({
   const { t } = useOrganizationMessages();
   const queryClient = useQueryClient();
   const { company, access } = record;
-  const zones = useMemo(zoneChoices, []);
   type Draft = CompanyValues & { expectedVersion: number };
   // Capture the version with the draft; background refetches cannot rebase it.
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -299,10 +287,9 @@ function EditCompanyForm({
         idPrefix="company"
         values={{
           displayName: values.displayName,
-          timeZone: values.timeZone,
+          logoDataUrl: values.logoDataUrl ?? null,
           defaultLocale: values.defaultLocale,
         }}
-        zones={zones}
         disabled={!canManage || save.isPending}
         onChange={(next) => {
           setSaved(false);
@@ -504,7 +491,7 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                           displayName: t
                             .copyName(company.displayName)
                             .slice(0, 120),
-                          timeZone: company.timeZone,
+                          logoDataUrl: company.logoDataUrl ?? null,
                           defaultLocale: company.defaultLocale,
                         }}
                         onDirtyChange={setDirty}
@@ -516,7 +503,7 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                     key="new"
                     initial={{
                       displayName: "",
-                      timeZone: zoneChoices()[0],
+                      logoDataUrl: null,
                       defaultLocale: locale,
                     }}
                     onDirtyChange={setDirty}
@@ -563,12 +550,20 @@ function BranchFields({
   disabled,
   onChange,
   branch,
+  location,
+  address,
+  onLocationChange,
+  onAddressChange,
 }: {
   id: string;
   name: string;
   disabled: boolean;
   onChange: (name: string) => void;
   branch?: Branch;
+  location: Branch["location"];
+  address: string;
+  onLocationChange: (value: NonNullable<Branch["location"]>) => void;
+  onAddressChange: (value: string) => void;
 }) {
   const { t } = useOrganizationMessages();
   return (
@@ -582,14 +577,29 @@ function BranchFields({
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
+      <label htmlFor={`${id}-address`}>{t.fieldAddress}</label>
+      <input
+        id={`${id}-address`}
+        autoComplete="street-address"
+        placeholder={t.addressPlaceholder}
+        required={!branch || location !== null}
+        maxLength={300}
+        value={address}
+        disabled={disabled}
+        onChange={(event) => onAddressChange(event.target.value)}
+      />
+      <BranchLocationField
+        value={location}
+        required={!branch}
+        disabled={disabled}
+        onChange={onLocationChange}
+      />
       {branch && (
         <dl className="company-settings">
           <dt>{t.branchStatus}</dt>
           <dd>
             {branch.status === "ACTIVE" ? t.statusActive : t.statusArchived}
           </dd>
-          <dt>{t.fieldTimeZone}</dt>
-          <dd>{branch.timeZone}</dd>
         </dl>
       )}
     </>
@@ -610,9 +620,14 @@ function CreateBranchForm({
   const { t } = useOrganizationMessages();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
-  useEffect(() => onDirtyChange(name !== ""), [name, onDirtyChange]);
+  const [location, setLocation] = useState<Branch["location"]>(null);
+  const [address, setAddress] = useState("");
+  useEffect(
+    () => onDirtyChange(name !== "" || location !== null || address !== ""),
+    [name, location, address, onDirtyChange],
+  );
   const add = useMutation({
-    mutationFn: () => createBranch(companyId, name),
+    mutationFn: () => createBranch(companyId, name, location!, address),
     onSuccess: async (branch) => {
       onDirtyChange(false);
       await Promise.all([
@@ -627,7 +642,7 @@ function CreateBranchForm({
       className="form-stack branch-create"
       onSubmit={(event) => {
         event.preventDefault();
-        add.mutate();
+        if (location) add.mutate();
       }}
     >
       <BranchFields
@@ -635,6 +650,10 @@ function CreateBranchForm({
         name={name}
         disabled={add.isPending}
         onChange={setName}
+        location={location}
+        address={address}
+        onLocationChange={setLocation}
+        onAddressChange={setAddress}
       />
       {add.error && (
         <Failure
@@ -651,7 +670,7 @@ function CreateBranchForm({
         <button
           type="submit"
           className="button-primary"
-          disabled={add.isPending}
+          disabled={add.isPending || !location}
         >
           {add.isPending ? t.adding : t.addBranch}
         </button>
@@ -660,6 +679,8 @@ function CreateBranchForm({
           disabled={add.isPending}
           onClick={() => {
             setName("");
+            setLocation(null);
+            setAddress("");
             add.reset();
             onCancel();
           }}
@@ -685,9 +706,12 @@ function EditBranchForm({
   const { t } = useOrganizationMessages();
   const queryClient = useQueryClient();
   // Capture the version with the draft; background refetches cannot rebase it.
-  const [draft, setDraft] = useState<{ name: string; version: number } | null>(
-    null,
-  );
+  const [draft, setDraft] = useState<{
+    name: string;
+    location: Branch["location"];
+    address: string;
+    version: number;
+  } | null>(null);
   useEffect(() => onDirtyChange(draft !== null), [draft, onDirtyChange]);
   const refresh = () =>
     Promise.all([
@@ -695,11 +719,18 @@ function EditBranchForm({
       queryClient.invalidateQueries({ queryKey: auditKey(companyId) }),
     ]);
   const rename = useMutation({
-    mutationFn: (input: { name: string; version: number }) =>
+    mutationFn: (input: {
+      name: string;
+      location: Branch["location"];
+      address: string;
+      version: number;
+    }) =>
       renameBranch(
         companyId,
         { ...branch, version: input.version },
         input.name,
+        input.location ?? undefined,
+        input.address,
       ),
     onSuccess: async () => {
       setDraft(null);
@@ -720,7 +751,8 @@ function EditBranchForm({
   }
   return (
     <form
-      className="form-stack"
+      className="form-stack branch-record-form"
+      tabIndex={0}
       aria-labelledby="branch-record-title"
       onSubmit={(event) => {
         event.preventDefault();
@@ -733,7 +765,30 @@ function EditBranchForm({
         name={draft?.name ?? branch.name}
         disabled={!editable || rename.isPending}
         onChange={(name) =>
-          setDraft({ name, version: draft?.version ?? branch.version })
+          setDraft({
+            name,
+            location: draft?.location ?? branch.location ?? null,
+            address: draft?.address ?? branch.address ?? "",
+            version: draft?.version ?? branch.version,
+          })
+        }
+        location={draft?.location ?? branch.location ?? null}
+        address={draft?.address ?? branch.address ?? ""}
+        onLocationChange={(location) =>
+          setDraft({
+            name: draft?.name ?? branch.name,
+            location,
+            address: draft?.address ?? branch.address ?? "",
+            version: draft?.version ?? branch.version,
+          })
+        }
+        onAddressChange={(address) =>
+          setDraft({
+            name: draft?.name ?? branch.name,
+            location: draft?.location ?? branch.location ?? null,
+            address,
+            version: draft?.version ?? branch.version,
+          })
         }
         branch={branch}
       />
@@ -865,9 +920,13 @@ function Branches({
               width: 160,
             },
             {
-              key: "timeZone",
-              header: t.fieldTimeZone,
-              value: (row) => row.timeZone,
+              key: "location",
+              header: t.fieldLocation,
+              value: (row) =>
+                row.address ??
+                (row.location
+                  ? locationLabel(row.location, locale)
+                  : t.locationMissing),
               width: 240,
             },
           ]}
@@ -987,7 +1046,6 @@ function CompanySettings({ company }: { company: Company }) {
           <CompanyFields
             idPrefix="settings"
             values={draft}
-            zones={zoneChoices()}
             disabled={save.isPending}
             onChange={(values) => setDraft({ ...draft, ...values })}
           />
@@ -1028,8 +1086,20 @@ function CompanySettings({ company }: { company: Company }) {
           <dl className="company-settings">
             <dt>{t.fieldCompanyName}</dt>
             <dd>{company.displayName}</dd>
-            <dt>{t.fieldTimeZone}</dt>
-            <dd>{company.timeZone}</dd>
+            {company.logoDataUrl && (
+              <>
+                <dt>{t.fieldLogo}</dt>
+                <dd>
+                  <img
+                    className="company-logo-preview"
+                    src={company.logoDataUrl}
+                    alt={t.logoPreview}
+                    width={88}
+                    height={88}
+                  />
+                </dd>
+              </>
+            )}
             <dt>{t.fieldLocale}</dt>
             <dd>{t.localeNames[company.defaultLocale]}</dd>
           </dl>
@@ -1041,7 +1111,7 @@ function CompanySettings({ company }: { company: Company }) {
               save.reset();
               setDraft({
                 displayName: company.displayName,
-                timeZone: company.timeZone,
+                logoDataUrl: company.logoDataUrl ?? null,
                 defaultLocale: company.defaultLocale,
                 expectedVersion: company.version,
               });

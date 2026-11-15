@@ -5,9 +5,9 @@
 -- transfer, invitation decisions, invitation address tombstones and access
 -- profile edits and archival.
 GRANT SELECT, INSERT ON companies TO orion_runtime;
-GRANT UPDATE (display_name, status, default_locale, time_zone, version, updated_at) ON companies TO orion_runtime;
+GRANT UPDATE (logo_data_url, display_name, status, default_locale, time_zone, version, updated_at) ON companies TO orion_runtime;
 GRANT SELECT, INSERT ON branches TO orion_runtime;
-GRANT UPDATE (name, time_zone, status, version, updated_at) ON branches TO orion_runtime;
+GRANT UPDATE (location, address, name, time_zone, status, version, updated_at) ON branches TO orion_runtime;
 GRANT SELECT, INSERT ON memberships TO orion_runtime;
 GRANT UPDATE (status, version, updated_at) ON memberships TO orion_runtime;
 GRANT SELECT, INSERT ON company_responsibilities TO orion_runtime;

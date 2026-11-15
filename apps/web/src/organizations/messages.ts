@@ -25,6 +25,47 @@ const ptBR = {
   settingsReadOnly:
     "Você pode ver esta empresa, mas não alterar as configurações dela.",
   fieldCompanyName: "Nome da empresa",
+  fieldLogo: "Logo da empresa",
+  chooseLogo: "Escolher imagem",
+  replaceLogo: "Substituir imagem",
+  removeLogo: "Remover imagem",
+  logoPreview: "Prévia da logo da empresa",
+  logoHelp:
+    "PNG, JPEG ou WebP, até 5 MB e 4096 × 4096 pixels. A imagem será ajustada para até 256 × 256, preservando a proporção.",
+  logoProcessing: "Preparando imagem…",
+  logoInvalid:
+    "Não foi possível usar a imagem. Escolha um PNG, JPEG ou WebP válido dentro dos limites indicados, ou remova a seleção.",
+  fieldLocation: "Localização da filial",
+  citySearch: "Encontrar cidade no mapa",
+  locationRequired:
+    "Informe o endereço completo e marque o ponto da filial no mapa.",
+  branchMap: "Mapa da localização da filial",
+  mapHelp:
+    "Clique no mapa ou arraste o marcador até a filial. Pelo teclado, use as setas para mover o mapa e Enter para marcar o centro. A programação seguirá o fuso desse ponto.",
+  mapFailed:
+    "O mapa não pôde carregar todas as imagens. Você pode tentar novamente ou confirmar as coordenadas abaixo.",
+  mapMarker: "Ponto da filial: arraste para ajustar",
+  mapZoomIn: "Aproximar mapa",
+  mapZoomOut: "Afastar mapa",
+  coordinatesAlternative: "Informar coordenadas manualmente",
+  latitude: "Latitude",
+  longitude: "Longitude",
+  confirmPoint: "Confirmar ponto",
+
+  fieldAddress: "Endereço completo",
+  addressPlaceholder: "Rua, número, bairro, cidade, estado, CEP e país",
+  selectedLocation: "Localização selecionada:",
+  locationMissing:
+    "Localização ainda não definida. Os horários atuais serão mantidos até você confirmar o ponto no mapa.",
+  locationHelp:
+    "Busque uma cidade para aproximar o mapa. Depois marque o endereço exato da filial.",
+  locationSelectResult: "Selecione uma cidade para aproximar o mapa.",
+  locationResults: "Cidades encontradas",
+  locationEmpty:
+    "Nenhuma cidade encontrada. Tente o nome da cidade e a sigla do país.",
+  locationFailed: "Não foi possível buscar cidades.",
+  locationAttribution: "Dados de localização:",
+
   fieldTimeZone: "Fuso horário",
   fieldLocale: "Idioma padrão",
   localeNames: {
@@ -265,6 +306,9 @@ const ptBR = {
     displayName: "Nome da empresa",
     defaultLocale: "Idioma padrão",
     timeZone: "Fuso horário",
+    logoDataUrl: "Logo",
+    location: "Localização",
+    address: "Endereço",
     name: "Nome da filial",
     profileName: "Nome do perfil",
     capabilities: "Permissões",
@@ -273,6 +317,8 @@ const ptBR = {
   reload: "Recarregar",
   backToCompanies: "Voltar para empresas",
   errors: {
+    LOCATION_TIME_ZONE_UNRESOLVED:
+      "Não foi possível definir um fuso único para esse ponto. Confira a localização no mapa ou entre em contato com o suporte.",
     MEMBERSHIP_REMOVED: "Este acesso foi removido e não pode ser reativado.",
     RESPONSIBLE_ADMINISTRATOR_PROTECTED:
       "Transfira a responsabilidade antes de suspender ou remover o responsável.",
@@ -352,6 +398,46 @@ const enUS: OrganizationMessages = {
   unsavedChanges: "Save or cancel the form changes to switch records.",
   settingsReadOnly: "You can view this company but not change its settings.",
   fieldCompanyName: "Company name",
+  fieldLogo: "Company logo",
+  chooseLogo: "Choose image",
+  replaceLogo: "Replace image",
+  removeLogo: "Remove image",
+  logoPreview: "Company logo preview",
+  logoHelp:
+    "PNG, JPEG or WebP, up to 5 MB and 4096 × 4096 pixels. The image will be resized to fit 256 × 256, preserving its proportions.",
+  logoProcessing: "Preparing image…",
+  logoInvalid:
+    "This image could not be used. Choose a valid PNG, JPEG or WebP within the stated limits, or remove the selection.",
+  fieldLocation: "Branch location",
+  citySearch: "Find city on map",
+  locationRequired: "Enter the full address and mark the branch on the map.",
+  branchMap: "Branch location map",
+  mapHelp:
+    "Click the map or drag the marker to the branch. With a keyboard, use the arrow keys to pan and Enter to mark the center. Programming will follow this point's time zone.",
+  mapFailed:
+    "Some map images could not load. You can try again or confirm the coordinates below.",
+  mapMarker: "Branch point: drag to adjust",
+  mapZoomIn: "Zoom in",
+  mapZoomOut: "Zoom out",
+  coordinatesAlternative: "Enter coordinates manually",
+  latitude: "Latitude",
+  longitude: "Longitude",
+  confirmPoint: "Confirm point",
+
+  fieldAddress: "Full address",
+  addressPlaceholder:
+    "Street, number, district, city, region, postal code and country",
+  selectedLocation: "Selected location:",
+  locationMissing:
+    "Location has not been selected. Current schedules keep their time zone until you confirm a point on the map.",
+  locationHelp:
+    "Search for a city to center the map, then mark the exact branch address.",
+  locationSelectResult: "Select a city to center the map.",
+  locationResults: "Matching cities",
+  locationEmpty: "No cities found. Try the city name and country code.",
+  locationFailed: "Cities could not be loaded.",
+  locationAttribution: "Location data:",
+
   fieldTimeZone: "Time zone",
   fieldLocale: "Default language",
   localeNames: {
@@ -587,6 +673,9 @@ const enUS: OrganizationMessages = {
     displayName: "Company name",
     defaultLocale: "Default language",
     timeZone: "Time zone",
+    logoDataUrl: "Logo",
+    location: "Location",
+    address: "Address",
     name: "Branch name",
     profileName: "Profile name",
     capabilities: "Permissions",
@@ -595,6 +684,8 @@ const enUS: OrganizationMessages = {
   reload: "Reload",
   backToCompanies: "Back to companies",
   errors: {
+    LOCATION_TIME_ZONE_UNRESOLVED:
+      "A unique time zone could not be determined for this point. Check the map location or contact support.",
     MEMBERSHIP_REMOVED:
       "This membership was removed and cannot be reactivated.",
     RESPONSIBLE_ADMINISTRATOR_PROTECTED:

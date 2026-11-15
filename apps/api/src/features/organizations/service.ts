@@ -1,3 +1,5 @@
+import { normalizeLogo } from "./logo.js";
+import { resolveLocation, type BranchLocation } from "./locations.js";
 import { createHash } from "node:crypto";
 import type { HumanContext, HumanProfilePort } from "../identity/public.js";
 import {
@@ -523,7 +525,12 @@ export class OrganizationService {
   async createCompany(
     context: HumanContext,
     creationKey: string,
-    input: { displayName: string; defaultLocale: Locale; timeZone: string },
+    input: {
+      displayName: string;
+      defaultLocale: Locale;
+      timeZone?: string;
+      logoDataUrl?: string | null;
+    },
   ): Promise<{
     company: CompanyRecord;
     access: AccessSummary;
@@ -535,7 +542,10 @@ export class OrganizationService {
       creationKey,
       displayName: validName(input.displayName),
       defaultLocale: input.defaultLocale,
-      timeZone: validTimeZone(input.timeZone),
+      timeZone: validTimeZone(input.timeZone ?? "UTC"),
+      ...(input.logoDataUrl !== undefined
+        ? { logoDataUrl: normalizeLogo(input.logoDataUrl) }
+        : {}),
     });
     const access = await this.access(context, created.company.id);
     return {
@@ -605,6 +615,7 @@ export class OrganizationService {
     expectedVersion: number,
     changes: {
       displayName?: string;
+      logoDataUrl?: string | null;
       defaultLocale?: Locale;
       timeZone?: string;
     },
@@ -612,6 +623,8 @@ export class OrganizationService {
     const access = await this.access(context, companyId);
     requireCapability(access, "company.settings.manage");
     const valid: typeof changes = {};
+    if (changes.logoDataUrl !== undefined)
+      valid.logoDataUrl = normalizeLogo(changes.logoDataUrl);
     if (changes.displayName !== undefined)
       valid.displayName = validName(changes.displayName);
     if (changes.timeZone !== undefined)
@@ -695,18 +708,39 @@ export class OrganizationService {
   async createBranch(
     context: HumanContext,
     companyId: string,
-    input: { name: string; timeZone?: string },
+    input: {
+      name: string;
+      timeZone?: string;
+      location?: BranchLocation;
+      address?: string | null;
+    },
   ): Promise<BranchRecord> {
     const access = await this.access(context, companyId);
     requireCapability(access, "branches.manage");
+    const selected =
+      input.location === undefined
+        ? undefined
+        : resolveLocation(input.location);
+    if (selected && input.timeZone !== undefined)
+      throw new OrganizationFailure("VALIDATION_FAILED");
+    if (selected && !validAddress(input.address ?? null))
+      throw new OrganizationFailure("VALIDATION_FAILED");
     const timeZone =
-      input.timeZone === undefined
+      selected?.timeZone ??
+      (input.timeZone === undefined
         ? (await this.#repository.findCompany(companyId))!.timeZone
-        : validTimeZone(input.timeZone);
+        : validTimeZone(input.timeZone));
     return this.#repository.createBranch(
       { principalId: context.principalId, membershipId: access.membershipId },
       companyId,
-      { name: validName(input.name), timeZone },
+      {
+        name: validName(input.name),
+        timeZone,
+        ...(selected ? { location: selected.location } : {}),
+        ...(input.address !== undefined
+          ? { address: validAddress(input.address) }
+          : {}),
+      },
     );
   }
 
@@ -715,11 +749,49 @@ export class OrganizationService {
     companyId: string,
     branchId: string,
     expectedVersion: number,
-    changes: { name?: string; timeZone?: string; archive?: true },
+    changes: {
+      name?: string;
+      timeZone?: string;
+      location?: BranchLocation;
+      address?: string | null;
+      archive?: true;
+    },
   ): Promise<BranchRecord> {
     const access = await this.access(context, companyId);
     requireCapability(access, "branches.manage", branchId);
-    const valid: typeof changes = {};
+    const valid: {
+      name?: string;
+      timeZone?: string;
+      location?: BranchLocation;
+      address?: string | null;
+      archive?: true;
+    } = {};
+    if (changes.location !== undefined) {
+      if (changes.timeZone !== undefined)
+        throw new OrganizationFailure("VALIDATION_FAILED");
+      if (
+        !validAddress(
+          changes.address ??
+            (await this.#repository.findBranch(companyId, branchId))?.address ??
+            null,
+        )
+      )
+        throw new OrganizationFailure("VALIDATION_FAILED");
+      Object.assign(valid, resolveLocation(changes.location));
+    }
+    if (changes.address !== undefined) {
+      valid.address = validAddress(changes.address);
+      if (
+        valid.address === null &&
+        (await this.#repository.findBranch(companyId, branchId))?.location
+      )
+        throw new OrganizationFailure("VALIDATION_FAILED");
+    }
+    if (
+      changes.timeZone !== undefined &&
+      (await this.#repository.findBranch(companyId, branchId))?.location
+    )
+      throw new OrganizationFailure("VALIDATION_FAILED");
     if (changes.name !== undefined) valid.name = validName(changes.name);
     if (changes.timeZone !== undefined)
       valid.timeZone = validTimeZone(changes.timeZone);
@@ -787,4 +859,17 @@ export class OrganizationService {
           : null,
     };
   }
+}
+
+function validAddress(value: string | null): string | null {
+  if (value === null || value.trim() === "") return null;
+  if (
+    value.trim().length > 300 ||
+    [...value].some(
+      (character) =>
+        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+    )
+  )
+    throw new OrganizationFailure("VALIDATION_FAILED");
+  return value.trim();
 }

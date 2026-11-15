@@ -198,6 +198,7 @@ test("keeps the edited version across refetch and reviews current data after a c
     throw new Error("The rename request was not sent");
   expect(await request.clone().json()).toEqual({
     name: "My change",
+    address: null,
     expectedVersion: 1,
   });
   await screen.getByRole("button", { name: t.reload }).click();
@@ -373,7 +374,7 @@ test("keeps the company draft and its version across refetch until a conflict is
   await screen.getByRole("button", { name: t.editSettings }).click();
   await expect
     .element(screen.getByLabelText(t.fieldTimeZone))
-    .toHaveValue("Asia/Kolkata");
+    .not.toBeInTheDocument();
   await screen.getByLabelText(t.fieldCompanyName).fill("My settings");
   version = 2;
   name = "Concurrent company";
@@ -394,7 +395,7 @@ test("keeps the company draft and its version across refetch until a conflict is
     throw new Error("The settings request was not sent");
   expect(await request.clone().json()).toEqual({
     displayName: "My settings",
-    timeZone: "Asia/Kolkata",
+    logoDataUrl: null,
     defaultLocale: "pt-BR",
     expectedVersion: 1,
   });
@@ -1704,5 +1705,159 @@ test("removes company navigation after a denied refetch even when cached access 
     .element(
       screen.getByRole("group", { name: memberCompany.company.displayName }),
     )
+    .not.toBeInTheDocument();
+});
+
+test("requires a confirmed map point and submits the full address without a client time zone", async () => {
+  const city = {
+    id: "3448439",
+    name: "São Paulo",
+    region: "São Paulo",
+    countryCode: "BR",
+    latitude: -23.55052,
+    longitude: -46.633308,
+  };
+  respond((url, request) => {
+    if (url.pathname.endsWith("/organization-locations"))
+      return { body: { items: [city] } };
+    if (url.pathname.endsWith("/branches")) {
+      if (request instanceof Request && request.method === "POST")
+        return {
+          status: 201,
+          body: {
+            id: "new-branch",
+            companyId,
+            name: "Map branch",
+            location: { latitude: -23.55, longitude: -46.63 },
+            address: "Avenida de teste, 100, São Paulo, SP, Brasil",
+            timeZone: "America/Sao_Paulo",
+            status: "ACTIVE",
+            version: 1,
+          },
+        };
+      return { body: { items: [], nextCursor: null } };
+    }
+    return {
+      body: {
+        company: { id: companyId, displayName: "Map company" },
+        access: {
+          ...administratorAccess,
+          capabilities: [
+            ...administratorAccess.capabilities,
+            "branches.manage",
+          ],
+        },
+      },
+    };
+  });
+  const { screen } = await open(`${companyPath}?mode=form&record=new`);
+  await screen
+    .getByRole("textbox", { name: t.fieldBranchName, exact: true })
+    .fill("Map branch");
+  await screen
+    .getByLabelText(t.fieldAddress, { exact: true })
+    .fill("Avenida de teste, 100, São Paulo, SP, Brasil");
+  await expect
+    .element(screen.getByRole("button", { name: t.addBranch, exact: true }))
+    .toBeDisabled();
+  await screen.getByLabelText(t.citySearch, { exact: true }).fill("sao paulo");
+  const cityLabel = `São Paulo, São Paulo, ${new Intl.DisplayNames([locale], { type: "region" }).of("BR")}`;
+  await screen.getByRole("button", { name: cityLabel, exact: true }).click();
+  await expect
+    .element(screen.getByRole("button", { name: t.addBranch, exact: true }))
+    .toBeDisabled();
+  await screen.getByText(t.coordinatesAlternative, { exact: true }).click();
+  await screen.getByLabelText(t.latitude, { exact: true }).fill("-23.55");
+  await screen.getByLabelText(t.longitude, { exact: true }).fill("-46.63");
+  await screen
+    .getByRole("button", { name: t.confirmPoint, exact: true })
+    .click();
+  await expect
+    .element(screen.getByRole("button", { name: t.addBranch, exact: true }))
+    .toBeEnabled();
+  await expect
+    .element(screen.getByLabelText(t.fieldTimeZone))
+    .not.toBeInTheDocument();
+  await screen.getByRole("button", { name: t.addBranch, exact: true }).click();
+  await expect
+    .poll(() =>
+      vi
+        .mocked(fetch)
+        .mock.calls.some(
+          ([input]) =>
+            input instanceof Request &&
+            input.method === "POST" &&
+            input.url.endsWith("/branches"),
+        ),
+    )
+    .toBe(true);
+  const request = vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => input)
+    .find(
+      (input) =>
+        input instanceof Request &&
+        input.method === "POST" &&
+        input.url.endsWith("/branches"),
+    );
+  expect(request).toBeInstanceOf(Request);
+  expect(await (request as Request).clone().json()).toEqual({
+    name: "Map branch",
+    location: { latitude: -23.55, longitude: -46.63 },
+    address: "Avenida de teste, 100, São Paulo, SP, Brasil",
+  });
+});
+
+test("discards the entire new branch draft so an existing branch can be opened", async () => {
+  const branch = {
+    id: "00000000-0000-4000-8000-000000000002",
+    name: "Existing branch",
+    location: null,
+    address: null,
+    version: 1,
+    status: "ACTIVE",
+    timeZone: "UTC",
+  };
+  respond((url) =>
+    url.pathname.endsWith("/branches")
+      ? { body: { items: [branch], nextCursor: null } }
+      : {
+          body: {
+            company: { id: companyId, displayName: "Draft company" },
+            access: {
+              ...administratorAccess,
+              capabilities: [
+                ...administratorAccess.capabilities,
+                "branches.manage",
+              ],
+            },
+          },
+        },
+  );
+  const { screen } = await open(`${companyPath}?mode=form&record=new`);
+  await screen
+    .getByRole("textbox", { name: t.fieldBranchName, exact: true })
+    .fill("Discarded branch");
+  await screen
+    .getByLabelText(t.fieldAddress, { exact: true })
+    .fill("Discarded full address");
+  await screen.getByText(t.coordinatesAlternative, { exact: true }).click();
+  await screen.getByLabelText(t.latitude, { exact: true }).fill("-23.55");
+  await screen.getByLabelText(t.longitude, { exact: true }).fill("-46.63");
+  await screen
+    .getByRole("button", { name: t.confirmPoint, exact: true })
+    .click();
+  await screen.getByRole("button", { name: t.cancel, exact: true }).click();
+  await screen.getByText("Existing branch", { exact: true }).dblClick();
+  await expect
+    .element(
+      screen.getByRole("textbox", { name: t.fieldBranchName, exact: true }),
+    )
+    .toHaveValue("Existing branch");
+  await expect
+    .element(screen.getByLabelText(t.fieldAddress, { exact: true }))
+    .toHaveValue("");
+  await expect
+    .element(screen.getByText(t.unsavedChanges, { exact: true }))
     .not.toBeInTheDocument();
 });

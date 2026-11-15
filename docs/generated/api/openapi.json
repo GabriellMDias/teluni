@@ -8411,10 +8411,630 @@
         ]
       }
     },
+    "/organization-locations": {
+      "get": {
+        "operationId": "searchOrganizationLocations",
+        "description": "Search the bundled GeoNames city catalog with accent-insensitive city, region and ISO country-code terms. Returns at most 20 population-ranked results. Use a city to center the map before selecting a branch point; no address or location query is sent to an external provider. Data by GeoNames, CC BY 4.0.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 120
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["items"],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name",
+                          "region",
+                          "countryCode",
+                          "latitude",
+                          "longitude"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9]{1,12}$"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "region": {
+                            "type": "string"
+                          },
+                          "countryCode": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 2
+                          },
+                          "latitude": {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          "longitude": {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "maxItems": 20
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "VALIDATION_FAILED"
+        ]
+      }
+    },
     "/companies": {
       "post": {
         "operationId": "createCompany",
-        "description": "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
+        "description": "Create a company with an optional small PNG logo; timeZone is a legacy default and defaults to UTC when omitted. The creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -8440,7 +9060,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["displayName", "defaultLocale", "timeZone"],
+                "required": ["displayName", "defaultLocale"],
                 "properties": {
                   "displayName": {
                     "type": "string",
@@ -8464,6 +9084,18 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 64
+                  },
+                  "logoDataUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 350000,
+                        "pattern": "^data:image/png;base64,"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -8485,6 +9117,7 @@
                       "required": [
                         "id",
                         "displayName",
+                        "logoDataUrl",
                         "status",
                         "defaultLocale",
                         "timeZone",
@@ -8502,6 +9135,18 @@
                           "minLength": 1,
                           "maxLength": 120,
                           "pattern": ".*\\S.*"
+                        },
+                        "logoDataUrl": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 350000,
+                              "pattern": "^data:image/png;base64,"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "status": {
                           "anyOf": [
@@ -8775,6 +9420,7 @@
                       "required": [
                         "id",
                         "displayName",
+                        "logoDataUrl",
                         "status",
                         "defaultLocale",
                         "timeZone",
@@ -8792,6 +9438,18 @@
                           "minLength": 1,
                           "maxLength": 120,
                           "pattern": ".*\\S.*"
+                        },
+                        "logoDataUrl": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 350000,
+                              "pattern": "^data:image/png;base64,"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "status": {
                           "anyOf": [
@@ -10273,6 +10931,7 @@
                       "required": [
                         "id",
                         "displayName",
+                        "logoDataUrl",
                         "status",
                         "defaultLocale",
                         "timeZone",
@@ -10290,6 +10949,18 @@
                           "minLength": 1,
                           "maxLength": 120,
                           "pattern": ".*\\S.*"
+                        },
+                        "logoDataUrl": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "maxLength": 350000,
+                              "pattern": "^data:image/png;base64,"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         },
                         "status": {
                           "anyOf": [
@@ -11141,6 +11812,18 @@
                       }
                     ]
                   },
+                  "logoDataUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 350000,
+                        "pattern": "^data:image/png;base64,"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "timeZone": {
                     "type": "string",
                     "minLength": 1,
@@ -11162,6 +11845,7 @@
                   "required": [
                     "id",
                     "displayName",
+                    "logoDataUrl",
                     "status",
                     "defaultLocale",
                     "timeZone",
@@ -11179,6 +11863,18 @@
                       "minLength": 1,
                       "maxLength": 120,
                       "pattern": ".*\\S.*"
+                    },
+                    "logoDataUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 350000,
+                          "pattern": "^data:image/png;base64,"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "status": {
                       "anyOf": [
@@ -11829,6 +12525,8 @@
                           "id",
                           "companyId",
                           "name",
+                          "location",
+                          "address",
                           "timeZone",
                           "status",
                           "version",
@@ -11849,6 +12547,41 @@
                             "minLength": 1,
                             "maxLength": 120,
                             "pattern": ".*\\S.*"
+                          },
+                          "location": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": ["latitude", "longitude"],
+                                "properties": {
+                                  "latitude": {
+                                    "type": "number",
+                                    "minimum": -90,
+                                    "maximum": 90
+                                  },
+                                  "longitude": {
+                                    "type": "number",
+                                    "minimum": -180,
+                                    "maximum": 180
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "address": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           },
                           "timeZone": {
                             "type": "string",
@@ -12442,7 +13175,7 @@
       },
       "post": {
         "operationId": "createBranch",
-        "description": "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
+        "description": "Create a branch with a confirmed map location (latitude/longitude) and full address. The server derives its IANA time zone using geographic boundaries. Legacy clients without location retain the company default; do not supply both location and timeZone. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -12478,6 +13211,34 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 64
+                  },
+                  "location": {
+                    "type": "object",
+                    "required": ["latitude", "longitude"],
+                    "properties": {
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "address": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -12496,6 +13257,8 @@
                     "id",
                     "companyId",
                     "name",
+                    "location",
+                    "address",
                     "timeZone",
                     "status",
                     "version",
@@ -12517,1312 +13280,40 @@
                       "maxLength": 120,
                       "pattern": ".*\\S.*"
                     },
-                    "timeZone": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 64
-                    },
-                    "status": {
+                    "location": {
                       "anyOf": [
                         {
-                          "type": "string",
-                          "const": "ACTIVE"
+                          "type": "object",
+                          "required": ["latitude", "longitude"],
+                          "properties": {
+                            "latitude": {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            }
+                          },
+                          "additionalProperties": false
                         },
                         {
-                          "type": "string",
-                          "const": "ARCHIVED"
+                          "type": "null"
                         }
                       ]
                     },
-                    "version": {
-                      "type": "integer",
-                      "minimum": 1
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Response",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until a bounded retry is allowed.",
-                "schema": {
-                  "type": "integer",
-                  "minimum": 1
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "x-expected-error-codes": [
-          "AUTHENTICATION_REQUIRED",
-          "SESSION_LIMIT_REACHED",
-          "RATE_LIMITED",
-          "SERVICE_UNAVAILABLE",
-          "VALIDATION_FAILED",
-          "RESOURCE_NOT_FOUND",
-          "COMPANY_SUSPENDED",
-          "CSRF_VALIDATION_FAILED",
-          "PERMISSION_DENIED",
-          "RESOURCE_VERSION_CONFLICT",
-          "BRANCH_NAME_IN_USE"
-        ]
-      }
-    },
-    "/companies/{companyId}/branches/{branchId}": {
-      "get": {
-        "operationId": "getBranch",
-        "description": "Read a branch the caller may see; any other branch is reported as not found.",
-        "tags": ["Organizations"],
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "companyId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-            }
-          },
-          {
-            "name": "branchId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "id",
-                    "companyId",
-                    "name",
-                    "timeZone",
-                    "status",
-                    "version",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-                    },
-                    "companyId": {
-                      "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 120,
-                      "pattern": ".*\\S.*"
-                    },
-                    "timeZone": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 64
-                    },
-                    "status": {
+                    "address": {
                       "anyOf": [
                         {
                           "type": "string",
-                          "const": "ACTIVE"
+                          "maxLength": 300
                         },
                         {
-                          "type": "string",
-                          "const": "ARCHIVED"
+                          "type": "null"
                         }
                       ]
-                    },
-                    "version": {
-                      "type": "integer",
-                      "minimum": 1
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Response",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until a bounded retry is allowed.",
-                "schema": {
-                  "type": "integer",
-                  "minimum": 1
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": ["error"],
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "required": ["code", "message", "requestId"],
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "pattern": "^[A-Z][A-Z0-9_]*$"
-                        },
-                        "message": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "traceId": {
-                          "type": "string"
-                        },
-                        "errorId": {
-                          "type": "string"
-                        },
-                        "issues": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "required": ["path", "reason"],
-                            "properties": {
-                              "path": {
-                                "type": "string",
-                                "maxLength": 200
-                              },
-                              "reason": {
-                                "type": "string",
-                                "pattern": "^[A-Z][A-Z0-9_]*$",
-                                "maxLength": 64
-                              },
-                              "fieldId": {
-                                "type": "string",
-                                "maxLength": 64
-                              },
-                              "count": {
-                                "type": "integer",
-                                "minimum": 0
-                              }
-                            },
-                            "additionalProperties": false
-                          },
-                          "maxItems": 50
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              }
-            }
-          }
-        },
-        "x-expected-error-codes": [
-          "AUTHENTICATION_REQUIRED",
-          "SESSION_LIMIT_REACHED",
-          "RATE_LIMITED",
-          "SERVICE_UNAVAILABLE",
-          "VALIDATION_FAILED",
-          "RESOURCE_NOT_FOUND",
-          "COMPANY_SUSPENDED"
-        ]
-      },
-      "patch": {
-        "operationId": "updateBranch",
-        "description": "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration.",
-        "tags": ["Organizations"],
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "companyId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-            }
-          },
-          {
-            "name": "branchId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["expectedVersion"],
-                "properties": {
-                  "expectedVersion": {
-                    "type": "integer",
-                    "minimum": 1
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120,
-                    "pattern": ".*\\S.*"
-                  },
-                  "timeZone": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                  }
-                },
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "required": [
-                    "id",
-                    "companyId",
-                    "name",
-                    "timeZone",
-                    "status",
-                    "version",
-                    "createdAt",
-                    "updatedAt"
-                  ],
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-                    },
-                    "companyId": {
-                      "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1,
-                      "maxLength": 120,
-                      "pattern": ".*\\S.*"
                     },
                     "timeZone": {
                       "type": "string",
@@ -14401,7 +13892,1418 @@
           "PERMISSION_DENIED",
           "RESOURCE_VERSION_CONFLICT",
           "BRANCH_NAME_IN_USE",
-          "BRANCH_ARCHIVED"
+          "LOCATION_TIME_ZONE_UNRESOLVED"
+        ]
+      }
+    },
+    "/companies/{companyId}/branches/{branchId}": {
+      "get": {
+        "operationId": "getBranch",
+        "description": "Read a branch the caller may see; any other branch is reported as not found.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "companyId",
+                    "name",
+                    "location",
+                    "address",
+                    "timeZone",
+                    "status",
+                    "version",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "companyId": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": ".*\\S.*"
+                    },
+                    "location": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["latitude", "longitude"],
+                          "properties": {
+                            "latitude": {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "address": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "timeZone": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "ACTIVE"
+                        },
+                        {
+                          "type": "string",
+                          "const": "ARCHIVED"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED"
+        ]
+      },
+      "patch": {
+        "operationId": "updateBranch",
+        "description": "Change a branch name, selected location or address with the observed version. A selected map point sets its time zone atomically; clients cannot override that derived zone. Legacy timeZone writes are accepted only before a location is selected. Archived branches cannot change. Requires company administration.",
+        "tags": ["Organizations"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          },
+          {
+            "name": "branchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expectedVersion"],
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": ".*\\S.*"
+                  },
+                  "timeZone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "location": {
+                    "type": "object",
+                    "required": ["latitude", "longitude"],
+                    "properties": {
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "address": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "companyId",
+                    "name",
+                    "location",
+                    "address",
+                    "timeZone",
+                    "status",
+                    "version",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "companyId": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": ".*\\S.*"
+                    },
+                    "location": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["latitude", "longitude"],
+                          "properties": {
+                            "latitude": {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "address": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "timeZone": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "ACTIVE"
+                        },
+                        {
+                          "type": "string",
+                          "const": "ARCHIVED"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "SESSION_LIMIT_REACHED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE",
+          "VALIDATION_FAILED",
+          "RESOURCE_NOT_FOUND",
+          "COMPANY_SUSPENDED",
+          "CSRF_VALIDATION_FAILED",
+          "PERMISSION_DENIED",
+          "RESOURCE_VERSION_CONFLICT",
+          "BRANCH_NAME_IN_USE",
+          "BRANCH_ARCHIVED",
+          "LOCATION_TIME_ZONE_UNRESOLVED"
         ]
       }
     },
@@ -14464,6 +15366,8 @@
                     "id",
                     "companyId",
                     "name",
+                    "location",
+                    "address",
                     "timeZone",
                     "status",
                     "version",
@@ -14484,6 +15388,41 @@
                       "minLength": 1,
                       "maxLength": 120,
                       "pattern": ".*\\S.*"
+                    },
+                    "location": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["latitude", "longitude"],
+                          "properties": {
+                            "latitude": {
+                              "type": "number",
+                              "minimum": -90,
+                              "maximum": 90
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "minimum": -180,
+                              "maximum": 180
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "address": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 300
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "timeZone": {
                       "type": "string",

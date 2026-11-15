@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "createBranch",
   "summary": "",
-  "description": "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
+  "description": "Create a branch with a confirmed map location (latitude/longitude) and full address. The server derives its IANA time zone using geographic boundaries. Legacy clients without location retain the company default; do not supply both location and timeZone. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -46,7 +46,26 @@
               "maxLength": 120,
               "pattern": ".*\\S.*"
             },
-            "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+            "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "location": {
+              "type": "object",
+              "required": ["latitude", "longitude"],
+              "properties": {
+                "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                }
+              },
+              "additionalProperties": false
+            },
+            "address": {
+              "anyOf": [
+                { "type": "string", "maxLength": 300 },
+                { "type": "null" }
+              ]
+            }
           },
           "additionalProperties": false
         }
@@ -62,7 +81,19 @@
           "maxLength": 120,
           "pattern": ".*\\S.*"
         },
-        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "location": {
+          "type": "object",
+          "required": ["latitude", "longitude"],
+          "properties": {
+            "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+            "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+          },
+          "additionalProperties": false
+        },
+        "address": {
+          "anyOf": [{ "type": "string", "maxLength": 300 }, { "type": "null" }]
+        }
       },
       "additionalProperties": false
     },
@@ -75,6 +106,22 @@
       {
         "name": "timeZone",
         "type": "string (min length 1, max length 64)",
+        "required": false
+      },
+      { "name": "location", "type": "object", "required": false },
+      {
+        "name": "location.latitude",
+        "type": "number (minimum -90, maximum 90)",
+        "required": true
+      },
+      {
+        "name": "location.longitude",
+        "type": "number (minimum -180, maximum 180)",
+        "required": true
+      },
+      {
+        "name": "address",
+        "type": "string (max length 300) | null",
         "required": false
       }
     ]
@@ -91,6 +138,8 @@
               "id",
               "companyId",
               "name",
+              "location",
+              "address",
               "timeZone",
               "status",
               "version",
@@ -111,6 +160,34 @@
                 "minLength": 1,
                 "maxLength": 120,
                 "pattern": ".*\\S.*"
+              },
+              "location": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["latitude", "longitude"],
+                    "properties": {
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "address": {
+                "anyOf": [
+                  { "type": "string", "maxLength": 300 },
+                  { "type": "null" }
+                ]
               },
               "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
               "status": {
@@ -133,6 +210,8 @@
           "id",
           "companyId",
           "name",
+          "location",
+          "address",
           "timeZone",
           "status",
           "version",
@@ -153,6 +232,34 @@
             "minLength": 1,
             "maxLength": 120,
             "pattern": ".*\\S.*"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["latitude", "longitude"],
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "address": {
+            "anyOf": [
+              { "type": "string", "maxLength": 300 },
+              { "type": "null" }
+            ]
           },
           "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
           "status": {
@@ -181,6 +288,12 @@
         {
           "name": "name",
           "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        { "name": "location", "type": "object | null", "required": true },
+        {
+          "name": "address",
+          "type": "string (max length 300) | null",
           "required": true
         },
         {

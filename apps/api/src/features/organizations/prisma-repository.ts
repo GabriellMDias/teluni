@@ -1,3 +1,4 @@
+import type { BranchLocation } from "./locations.js";
 import { createHash, randomUUID } from "node:crypto";
 import type { Database } from "../../database.js";
 import { Prisma } from "../../generated/prisma/client.js";
@@ -22,6 +23,7 @@ import {
 export type CompanyRecord = Readonly<{
   id: string;
   displayName: string;
+  logoDataUrl: string | null;
   status: CompanyStatus;
   defaultLocale: Locale;
   timeZone: string;
@@ -34,6 +36,8 @@ export type BranchRecord = Readonly<{
   id: string;
   companyId: string;
   name: string;
+  location: BranchLocation | null;
+  address: string | null;
   timeZone: string;
   status: BranchStatus;
   version: number;
@@ -186,6 +190,7 @@ export function grantsFromRows(rows: readonly GrantAccessRow[]): Grant[] {
 type CompanyRow = {
   id: string;
   display_name: string;
+  logo_data_url: string | null;
   status: CompanyStatus;
   default_locale: Locale;
   time_zone: string;
@@ -197,6 +202,8 @@ type BranchRow = {
   id: string;
   company_id: string;
   name: string;
+  location: BranchLocation | null;
+  address: string | null;
   time_zone: string;
   status: BranchStatus;
   version: number;
@@ -207,6 +214,7 @@ type BranchRow = {
 const company = (row: CompanyRow): CompanyRecord => ({
   id: row.id,
   displayName: row.display_name,
+  logoDataUrl: row.logo_data_url,
   status: row.status,
   defaultLocale: row.default_locale,
   timeZone: row.time_zone,
@@ -218,6 +226,8 @@ const branch = (row: BranchRow): BranchRecord => ({
   id: row.id,
   companyId: row.company_id,
   name: row.name,
+  location: row.location,
+  address: row.address,
   timeZone: row.time_zone,
   status: row.status,
   version: row.version,
@@ -234,9 +244,9 @@ export function violates(error: unknown, constraint: string): boolean {
   return evidence.includes(constraint);
 }
 
-const companyColumns = Prisma.sql`id, display_name, status::text AS status, default_locale,
+const companyColumns = Prisma.sql`id, display_name, logo_data_url, status::text AS status, default_locale,
   time_zone, version, created_at, updated_at`;
-const branchColumns = Prisma.sql`id, company_id, name, time_zone, status::text AS status,
+const branchColumns = Prisma.sql`id, company_id, name, location, address, time_zone, status::text AS status,
   version, created_at, updated_at`;
 
 /**
@@ -1121,15 +1131,20 @@ export class PrismaOrganizationRepository {
   async listCompanies(
     principalId: string,
     options: { limit: number; before?: { createdAt: Date; id: string } },
-  ): Promise<(CompanyRecord & { roles: AccessRole[] })[]> {
+  ): Promise<
+    (Pick<CompanyRecord, "id" | "displayName" | "status" | "createdAt"> & {
+      roles: AccessRole[];
+    })[]
+  > {
     const before = options.before
       ? Prisma.sql`AND (c.created_at, c.id) < (${options.before.createdAt}, ${options.before.id}::uuid)`
       : Prisma.empty;
     const rows = await this.#db.$queryRaw<
-      (CompanyRow & { roles: AccessRole[] })[]
+      (Pick<CompanyRow, "id" | "display_name" | "status" | "created_at"> & {
+        roles: AccessRole[];
+      })[]
     >`
-      SELECT c.id, c.display_name, c.status::text AS status, c.default_locale, c.time_zone,
-        c.version, c.created_at, c.updated_at,
+      SELECT c.id, c.display_name, c.status::text AS status, c.created_at,
         COALESCE(array_agg(DISTINCT g.role::text) FILTER (WHERE g.role IS NOT NULL), '{}') AS roles
       FROM memberships m
       JOIN companies c ON c.id = m.company_id
@@ -1142,7 +1157,10 @@ export class PrismaOrganizationRepository {
       ORDER BY c.created_at DESC, c.id DESC
       LIMIT ${options.limit}`;
     return rows.map((row) => ({
-      ...company(row),
+      id: row.id,
+      displayName: row.display_name,
+      status: row.status,
+      createdAt: row.created_at,
       roles: [...row.roles].sort(),
     }));
   }
@@ -1156,6 +1174,7 @@ export class PrismaOrganizationRepository {
   async createCompany(input: {
     principalId: string;
     creationKey: string;
+    logoDataUrl?: string | null;
     displayName: string;
     defaultLocale: Locale;
     timeZone: string;
@@ -1167,15 +1186,16 @@ export class PrismaOrganizationRepository {
           input.displayName,
           input.defaultLocale,
           input.timeZone,
+          ...(input.logoDataUrl ? [input.logoDataUrl] : []),
         ]),
       )
       .digest("hex");
     return this.#db.$transaction(async (tx) => {
       const id = randomUUID();
       const inserted = await tx.$queryRaw<CompanyRow[]>`
-        INSERT INTO companies (id, display_name, default_locale, time_zone,
+        INSERT INTO companies (id, display_name, default_locale, time_zone, logo_data_url,
           created_by_principal_id, creation_key, creation_fingerprint)
-        VALUES (${id}::uuid, ${input.displayName}, ${input.defaultLocale}, ${input.timeZone},
+        VALUES (${id}::uuid, ${input.displayName}, ${input.defaultLocale}, ${input.timeZone}, ${input.logoDataUrl ?? null},
           ${input.principalId}::uuid, ${input.creationKey}, ${fingerprint})
         ON CONFLICT (created_by_principal_id, creation_key) DO NOTHING
         RETURNING ${companyColumns}`;
@@ -1229,6 +1249,7 @@ export class PrismaOrganizationRepository {
     expectedVersion: number,
     changes: {
       displayName?: string;
+      logoDataUrl?: string | null;
       defaultLocale?: Locale;
       timeZone?: string;
     },
@@ -1236,6 +1257,7 @@ export class PrismaOrganizationRepository {
     return this.#db.$transaction(async (tx) => {
       const [row] = await tx.$queryRaw<CompanyRow[]>`
         UPDATE companies SET
+          logo_data_url = CASE WHEN ${changes.logoDataUrl !== undefined} THEN ${changes.logoDataUrl ?? null} ELSE logo_data_url END,
           display_name = COALESCE(${changes.displayName ?? null}, display_name),
           default_locale = COALESCE(${changes.defaultLocale ?? null}, default_locale),
           time_zone = COALESCE(${changes.timeZone ?? null}, time_zone),
@@ -1292,14 +1314,20 @@ export class PrismaOrganizationRepository {
   async createBranch(
     actor: Actor,
     companyId: string,
-    input: { name: string; timeZone: string },
+    input: {
+      name: string;
+      timeZone: string;
+      location?: BranchLocation;
+      address?: string | null;
+    },
   ): Promise<BranchRecord> {
     try {
       return await this.#db.$transaction(async (tx) => {
         const id = randomUUID();
         const [row] = await tx.$queryRaw<BranchRow[]>`
-          INSERT INTO branches (id, company_id, name, time_zone)
-          VALUES (${id}::uuid, ${companyId}::uuid, ${input.name}, ${input.timeZone})
+          INSERT INTO branches (id, company_id, name, time_zone, location, address)
+          VALUES (${id}::uuid, ${companyId}::uuid, ${input.name}, ${input.timeZone},
+            ${input.location ? JSON.stringify(input.location) : null}::jsonb, ${input.address ?? null})
           RETURNING ${branchColumns}`;
         await writeAudit(tx, companyId, actor, {
           action: "branch.created",
@@ -1322,12 +1350,20 @@ export class PrismaOrganizationRepository {
     companyId: string,
     branchId: string,
     expectedVersion: number,
-    changes: { name?: string; timeZone?: string; archive?: true },
+    changes: {
+      name?: string;
+      timeZone?: string;
+      location?: BranchLocation;
+      address?: string | null;
+      archive?: true;
+    },
   ): Promise<BranchRecord> {
     try {
       return await this.#db.$transaction(async (tx) => {
         const [row] = await tx.$queryRaw<BranchRow[]>`
           UPDATE branches SET
+            location = COALESCE(${changes.location ? JSON.stringify(changes.location) : null}::jsonb, location),
+            address = CASE WHEN ${changes.address !== undefined} THEN ${changes.address ?? null} ELSE address END,
             name = COALESCE(${changes.name ?? null}, name),
             time_zone = COALESCE(${changes.timeZone ?? null}, time_zone),
             status = CASE WHEN ${changes.archive === true} THEN 'ARCHIVED'::"BranchStatus" ELSE status END,

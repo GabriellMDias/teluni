@@ -41,6 +41,8 @@ export function CompanyCard({
     (details.isSuccess && details.data.company.status === "SUSPENDED");
   // A failed refetch can retain data from before an access revocation.
   const access = details.isSuccess && !suspended ? details.data.access : null;
+  const logo =
+    details.isSuccess && !suspended ? details.data.company.logoDataUrl : null;
   const initials = company.displayName
     .trim()
     .split(/\s+/u)
@@ -81,7 +83,7 @@ export function CompanyCard({
     <li className="workspace-company">
       <div className="workspace-company-heading">
         <span className="workspace-company-avatar" aria-hidden="true">
-          {initials}
+          {logo ? <img src={logo} alt="" width={48} height={48} /> : initials}
         </span>
         <div className="workspace-company-identity">
           <h3>

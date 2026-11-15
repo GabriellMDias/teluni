@@ -7,6 +7,7 @@ import type { Locale } from "../locale.js";
 export const organizationErrorCodes: ReadonlySet<string> = new Set([
   ...identityErrorCodes,
   "PERMISSION_DENIED",
+  "LOCATION_TIME_ZONE_UNRESOLVED",
   "COMPANY_SUSPENDED",
   "RESOURCE_VERSION_CONFLICT",
   "IDEMPOTENCY_KEY_REUSED",
@@ -40,6 +41,21 @@ export type Capability = Access["capabilities"][number];
 export type Role = Access["roles"][number];
 export type Branch =
   paths["/companies/{companyId}/branches"]["post"]["responses"][201]["content"]["application/json"];
+export type BranchLocation = NonNullable<Branch["location"]>;
+
+export type CityLocation =
+  paths["/organization-locations"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
+export async function searchOrganizationLocations(
+  query: string,
+): Promise<CityLocation[]> {
+  return unwrap(
+    await client().GET("/organization-locations", {
+      params: { query: { query } },
+    }),
+    organizationErrorCodes,
+  ).items;
+}
+
 export type AuditEvent =
   paths["/companies/{companyId}/audit-events"]["get"]["responses"][200]["content"]["application/json"]["items"][number];
 export type Member =
@@ -334,7 +350,11 @@ export async function listCompanies(cursor?: string) {
 }
 
 export async function createCompany(
-  input: { displayName: string; defaultLocale: Locale; timeZone: string },
+  input: {
+    displayName: string;
+    defaultLocale: Locale;
+    logoDataUrl: string | null;
+  },
   idempotencyKey: string,
 ): Promise<{ company: Company; access: Access }> {
   return unwrap(
@@ -359,7 +379,7 @@ export async function getCompany(
 
 export async function updateCompany(
   companyId: string,
-  input: Pick<Company, "displayName" | "defaultLocale" | "timeZone"> & {
+  input: Pick<Company, "displayName" | "defaultLocale" | "logoDataUrl"> & {
     expectedVersion: number;
   },
 ): Promise<Company> {
@@ -412,11 +432,13 @@ export async function listBranchChoices(
 export async function createBranch(
   companyId: string,
   name: string,
+  location: BranchLocation,
+  address: string,
 ): Promise<Branch> {
   return unwrap(
     await client().POST("/companies/{companyId}/branches", {
       params: { path: { companyId } },
-      body: { name },
+      body: { name, location, address: address.trim() || null },
     }),
     organizationErrorCodes,
   );
@@ -426,11 +448,18 @@ export async function renameBranch(
   companyId: string,
   branch: Branch,
   name: string,
+  location?: BranchLocation,
+  address?: string,
 ): Promise<Branch> {
   return unwrap(
     await client().PATCH("/companies/{companyId}/branches/{branchId}", {
       params: { path: { companyId, branchId: branch.id } },
-      body: { expectedVersion: branch.version, name },
+      body: {
+        expectedVersion: branch.version,
+        name,
+        ...(location ? { location } : {}),
+        ...(address !== undefined ? { address: address.trim() || null } : {}),
+      },
     }),
     organizationErrorCodes,
   );

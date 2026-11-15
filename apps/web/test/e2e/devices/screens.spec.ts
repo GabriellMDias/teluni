@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { createHash, randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { waitForCreatedCompany } from "../company.ts";
+import { waitForCreatedCompany, selectBranchLocation } from "../company.ts";
 import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 import { chooseTheme } from "../theme.ts";
@@ -94,6 +94,7 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
   await page.getByRole("button", { name: "Criar empresa" }).click();
   const companyUrl = await waitForCreatedCompany(page);
   await page.getByLabel("Nome da filial").fill("Centro");
+  await selectBranchLocation(page);
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
 
