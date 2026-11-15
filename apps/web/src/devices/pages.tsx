@@ -1228,7 +1228,7 @@ function ScreenDetail({
         <ScreenStatus
           tone={screen.status === "ACTIVE" ? "positive" : "neutral"}
         >
-          {screen.status === "ACTIVE" ? t.statusActive : t.statusRevoked}
+          {deviceState(screen, t)}
         </ScreenStatus>
         {programming && (
           <Link

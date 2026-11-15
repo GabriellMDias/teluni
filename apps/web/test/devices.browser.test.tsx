@@ -413,6 +413,13 @@ test("unlinks only after confirmation and then offers a reset record", async () 
   await screen.getByLabelText(t.unlinkConfirm("Caixa 1")).click();
   await unlink.click();
   await expect.element(screen.getByText(t.unlinked)).toBeVisible();
+  await expect
+    .element(
+      screen.getByText(`${t.statusRevoked} · ${t.erasure.PENDING}`, {
+        exact: true,
+      }),
+    )
+    .toBeVisible();
   expect(await sent("POST", "/unlink")).toEqual({ expectedVersion: 1 });
   await expect
     .element(screen.getByRole("button", { name: t.save }))
