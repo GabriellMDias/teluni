@@ -47,6 +47,7 @@
                 "required": [
                   "id",
                   "displayName",
+                  "logoDataUrl",
                   "status",
                   "defaultLocale",
                   "timeZone",
@@ -64,6 +65,16 @@
                     "minLength": 1,
                     "maxLength": 120,
                     "pattern": ".*\\S.*"
+                  },
+                  "logoDataUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 350000,
+                        "pattern": "^data:image/png;base64,"
+                      },
+                      { "type": "null" }
+                    ]
                   },
                   "status": {
                     "anyOf": [
@@ -212,6 +223,7 @@
             "required": [
               "id",
               "displayName",
+              "logoDataUrl",
               "status",
               "defaultLocale",
               "timeZone",
@@ -229,6 +241,16 @@
                 "minLength": 1,
                 "maxLength": 120,
                 "pattern": ".*\\S.*"
+              },
+              "logoDataUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 350000,
+                    "pattern": "^data:image/png;base64,"
+                  },
+                  { "type": "null" }
+                ]
               },
               "status": {
                 "anyOf": [
@@ -364,6 +386,11 @@
         {
           "name": "company.displayName",
           "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        {
+          "name": "company.logoDataUrl",
+          "type": "string (max length 350000, pattern ^data:image/png;base64,) | null",
           "required": true
         },
         {

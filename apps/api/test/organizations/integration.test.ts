@@ -1,3 +1,4 @@
+import { PNG } from "pngjs";
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -312,6 +313,241 @@ describe("organizations: two-company isolation", () => {
       body: { ...body, timeZone: "Mars/Olympus" },
     });
     expect(code(invalid)).toBe("VALIDATION_FAILED");
+  });
+
+  it("persists and removes a normalized company logo with version and tenant checks", async () => {
+    const png = new PNG({ width: 12, height: 8 });
+    png.data.fill(200);
+    const logoDataUrl = `data:image/png;base64,${PNG.sync.write(png).toString("base64")}`;
+    const body = {
+      displayName: "Branded company",
+      defaultLocale: "pt-BR",
+      logoDataUrl,
+    };
+    const key = `logo-${randomUUID()}`;
+    const created = await call("outsider", "POST", "/companies", {
+      headers: { "idempotency-key": key },
+      body,
+    });
+    expect(created.status).toBe(201);
+    const company = created.body.company as {
+      id: string;
+      version: number;
+      logoDataUrl: string;
+      timeZone: string;
+    };
+    expect(company.logoDataUrl).toMatch(/^data:image\/png;base64,/);
+    expect(company.timeZone).toBe("UTC");
+    expect(
+      (
+        await call("outsider", "POST", "/companies", {
+          headers: { "idempotency-key": key },
+          body,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      code(
+        await call("bAdmin", "PATCH", `/companies/${company.id}`, {
+          body: { expectedVersion: 1, logoDataUrl: null },
+        }),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(
+      code(
+        await call("outsider", "PATCH", `/companies/${company.id}`, {
+          body: {
+            expectedVersion: 1,
+            logoDataUrl: "data:image/png;base64,bm90LXBuZw==",
+          },
+        }),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    const removed = await call(
+      "outsider",
+      "PATCH",
+      `/companies/${company.id}`,
+      { body: { expectedVersion: 1, logoDataUrl: null } },
+    );
+    expect(removed.status).toBe(200);
+    expect(removed.body).toMatchObject({ logoDataUrl: null, version: 2 });
+    expect(
+      code(
+        await call("outsider", "PATCH", `/companies/${company.id}`, {
+          body: { expectedVersion: 1, logoDataUrl },
+        }),
+      ),
+    ).toBe("RESOURCE_VERSION_CONFLICT");
+    const audit = await call(
+      "outsider",
+      "GET",
+      `/companies/${company.id}/audit-events`,
+    );
+    expect(JSON.stringify(audit.body)).not.toContain("data:image");
+  });
+
+  it("derives a branch zone from its confirmed map point and preserves legacy branches", async () => {
+    const companyId = await createCompany("outsider", "Location company");
+    const legacy = await createBranch("outsider", companyId, "Legacy");
+    const before = await call(
+      "outsider",
+      "GET",
+      `/companies/${companyId}/branches/${legacy.id}`,
+    );
+    expect(before.body).toMatchObject({
+      location: null,
+      address: null,
+      timeZone: "America/Sao_Paulo",
+    });
+    const created = await call(
+      "outsider",
+      "POST",
+      `/companies/${companyId}/branches`,
+      {
+        body: {
+          name: "Located",
+          location: { latitude: -3.119028, longitude: -60.021731 },
+          address: "  Rua de teste, 10  ",
+        },
+      },
+    );
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({
+      location: { latitude: -3.119028, longitude: -60.021731 },
+      address: "Rua de teste, 10",
+      timeZone: "America/Manaus",
+    });
+    const id = created.body.id as string;
+    await expect(
+      runtime.query(
+        "UPDATE branches SET location = $3::jsonb WHERE company_id = $1 AND id = $2",
+        [companyId, id, JSON.stringify({ latitude: 91, longitude: 0 })],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+    await expect(
+      runtime.query(
+        "UPDATE branches SET address = NULL WHERE company_id = $1 AND id = $2",
+        [companyId, id],
+      ),
+    ).rejects.toMatchObject({ code: "23514" });
+
+    expect(
+      code(
+        await call("bAdmin", "GET", `/companies/${companyId}/branches/${id}`),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(
+      code(
+        await call(
+          "outsider",
+          "PATCH",
+          `/companies/${companyId}/branches/${id}`,
+          { body: { expectedVersion: 1, timeZone: "UTC" } },
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    expect(
+      code(
+        await call(
+          "outsider",
+          "PATCH",
+          `/companies/${companyId}/branches/${id}`,
+          {
+            body: {
+              expectedVersion: 1,
+              location: { latitude: 91, longitude: 0 },
+            },
+          },
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    expect(
+      code(
+        await call(
+          "outsider",
+          "PATCH",
+          `/companies/${companyId}/branches/${id}`,
+          {
+            body: {
+              expectedVersion: 1,
+              location: { latitude: -23.55052, longitude: -46.633308 },
+              timeZone: "UTC",
+            },
+          },
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    expect(
+      code(
+        await call(
+          "outsider",
+          "PATCH",
+          `/companies/${companyId}/branches/${id}`,
+          { body: { expectedVersion: 1, address: null } },
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    expect(
+      code(
+        await call("outsider", "POST", `/companies/${companyId}/branches`, {
+          body: {
+            name: "Missing address",
+            location: { latitude: -3.119028, longitude: -60.021731 },
+          },
+        }),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    const changed = await call(
+      "outsider",
+      "PATCH",
+      `/companies/${companyId}/branches/${id}`,
+      {
+        body: {
+          expectedVersion: 1,
+          location: { latitude: -23.55052, longitude: -46.633308 },
+          address: "Av. Paulista, 1000, São Paulo, SP, Brasil",
+        },
+      },
+    );
+    expect(changed.body).toMatchObject({
+      location: { latitude: -23.55052, longitude: -46.633308 },
+      timeZone: "America/Sao_Paulo",
+      address: "Av. Paulista, 1000, São Paulo, SP, Brasil",
+      version: 2,
+    });
+    expect(
+      code(
+        await call(
+          "outsider",
+          "PATCH",
+          `/companies/${companyId}/branches/${id}`,
+          {
+            body: {
+              expectedVersion: 1,
+              location: { latitude: -3.119028, longitude: -60.021731 },
+            },
+          },
+        ),
+      ),
+    ).toBe("RESOURCE_VERSION_CONFLICT");
+    const page = await call(
+      "outsider",
+      "GET",
+      "/organization-locations?query=Manaus",
+    );
+    expect(page.status).toBe(200);
+    expect(page.body.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "3663517" })]),
+    );
+    expect(
+      (
+        await call(
+          "outsider",
+          "GET",
+          `/companies/${companyId}/branches/${legacy.id}`,
+        )
+      ).body,
+    ).toEqual(before.body);
   });
 
   it("replays the original creation intent after company settings change", async () => {

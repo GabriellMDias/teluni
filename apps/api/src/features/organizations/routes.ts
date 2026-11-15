@@ -1,3 +1,5 @@
+import type { BranchLocation } from "./locations.js";
+import { searchLocations } from "./locations.js";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import type { AppInstance } from "../../module.js";
@@ -114,6 +116,7 @@ export function registerOrganizationRoutes(
           };
           const body = (request.body ?? {}) as Record<string, unknown>;
           const query = (request.query ?? {}) as {
+            query?: string;
             limit?: number;
             cursor?: string;
             includeArchived?: boolean;
@@ -122,6 +125,10 @@ export function registerOrganizationRoutes(
           const branchId = params.branchId ?? "";
           try {
             switch (operation.operationId) {
+              case "searchOrganizationLocations":
+                return reply.send({
+                  items: searchLocations(query.query ?? ""),
+                });
               case "listCompanyMembers":
                 return reply.send(
                   await service.listMembers(context, companyId, {
@@ -194,7 +201,12 @@ export function registerOrganizationRoutes(
                   {
                     displayName: body.displayName as string,
                     defaultLocale: body.defaultLocale as Locale,
-                    timeZone: body.timeZone as string,
+                    ...(body.timeZone === undefined
+                      ? {}
+                      : { timeZone: body.timeZone as string }),
+                    ...(body.logoDataUrl === undefined
+                      ? {}
+                      : { logoDataUrl: body.logoDataUrl as string | null }),
                   },
                 );
                 return reply.code(created.replayed ? 200 : 201).send({
@@ -234,6 +246,7 @@ export function registerOrganizationRoutes(
                 const { expectedVersion, ...changes } = body as {
                   expectedVersion: number;
                   displayName?: string;
+                  logoDataUrl?: string | null;
                   defaultLocale?: Locale;
                   timeZone?: string;
                 };
@@ -263,6 +276,12 @@ export function registerOrganizationRoutes(
                   branchWire(
                     await service.createBranch(context, companyId, {
                       name: body.name as string,
+                      ...(body.location === undefined
+                        ? {}
+                        : { location: body.location as BranchLocation }),
+                      ...(body.address === undefined
+                        ? {}
+                        : { address: body.address as string | null }),
                       ...(body.timeZone === undefined
                         ? {}
                         : { timeZone: body.timeZone as string }),
@@ -279,6 +298,8 @@ export function registerOrganizationRoutes(
                 const { expectedVersion, ...changes } = body as {
                   expectedVersion: number;
                   name?: string;
+                  location?: BranchLocation;
+                  address?: string | null;
                   timeZone?: string;
                 };
                 return reply.send(

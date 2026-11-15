@@ -5,6 +5,13 @@ import { identityErrors } from "../identity/public.js";
 // the shared denial for tenant-scoped capabilities; modules that use the
 // organizations capability answer with it through their own responders.
 export const organizationErrors = defineErrors({
+  LOCATION_TIME_ZONE_UNRESOLVED: {
+    status: 400,
+    message:
+      "The selected point does not have a unique supported time zone. Choose a different point or contact support.",
+    category: "validation",
+    retryable: false,
+  },
   MEMBERSHIP_REMOVED: {
     status: 409,
     message: "This membership was removed and cannot be reactivated.",

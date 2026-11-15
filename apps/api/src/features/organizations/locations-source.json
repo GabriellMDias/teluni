@@ -1,0 +1,11 @@
+{
+  "source": "https://download.geonames.org/export/dump/",
+  "license": "CC-BY-4.0",
+  "attribution": "GeoNames",
+  "inputs": {
+    "cities500.txt": "653c8891039b281d6b2071a8496d26e80d7939ccd9f2509552015d0532d6277e",
+    "admin1CodesASCII.txt": "2e4867f5397acb056ea26377601b57af37cb4c81399770225018e9e439e91ad3"
+  },
+  "count": 237174,
+  "sha256": "5da571f18ca17969c631a4ab6d5b7e4eb2582f9acb39eae354663ed41081020d"
+}

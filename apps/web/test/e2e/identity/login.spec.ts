@@ -192,7 +192,7 @@ test("creates an account, confirms the email, chooses a password and creates a c
     }),
   ).toBeVisible();
   await page.getByLabel("Nome da empresa").fill("Empresa da Nova Pessoa");
-  await page.getByLabel("Fuso horário").selectOption("America/Sao_Paulo");
+  await expect(page.getByLabel("Fuso horário")).toHaveCount(0);
   await page.getByRole("button", { name: "Criar empresa" }).click();
   await waitForCreatedCompany(page);
   await afterNavigation(

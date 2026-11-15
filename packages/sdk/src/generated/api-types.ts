@@ -327,6 +327,23 @@ export interface paths {
         patch: operations["updateCompanyMemberStatus"];
         trace?: never;
     };
+    "/organization-locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Search the bundled GeoNames city catalog with accent-insensitive city, region and ISO country-code terms. Returns at most 20 population-ranked results. Use a city to center the map before selecting a branch point; no address or location query is sent to an external provider. Data by GeoNames, CC BY 4.0. */
+        get: operations["searchOrganizationLocations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/companies": {
         parameters: {
             query?: never;
@@ -337,7 +354,7 @@ export interface paths {
         /** @description List companies with a current active membership, newest first by immutable creation time and ID, with the caller's effective roles. Cursors are bound to the caller and collection; membership is checked again on every page. The default page has 50 entries, with a maximum of 100. Other members' companies are never visible. */
         get: operations["listCompanies"];
         put?: never;
-        /** @description Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. */
+        /** @description Create a company with an optional small PNG logo; timeZone is a legacy default and defaults to UTC when omitted. The creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. */
         post: operations["createCompany"];
         delete?: never;
         options?: never;
@@ -373,7 +390,7 @@ export interface paths {
         /** @description List the branches the caller may see, active first and by name. Branch-scoped members see only their branches. Cursors are bound to the company and caller. */
         get: operations["listBranches"];
         put?: never;
-        /** @description Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration. */
+        /** @description Create a branch with a confirmed map location (latitude/longitude) and full address. The server derives its IANA time zone using geographic boundaries. Legacy clients without location retain the company default; do not supply both location and timeZone. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration. */
         post: operations["createBranch"];
         delete?: never;
         options?: never;
@@ -395,7 +412,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration. */
+        /** @description Change a branch name, selected location or address with the observed version. A selected map point sets its time zone atomically; clients cannot override that derived zone. Legacy timeZone writes are accepted only before a location is selected. Archived branches cannot change. Requires company administration. */
         patch: operations["updateBranch"];
         trace?: never;
     };
@@ -4625,6 +4642,223 @@ export interface operations {
             };
         };
     };
+    searchOrganizationLocations: {
+        parameters: {
+            query: {
+                query: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            region: string;
+                            countryCode: string;
+                            latitude: number;
+                            longitude: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
     listCompanies: {
         parameters: {
             query?: {
@@ -4856,7 +5090,8 @@ export interface operations {
                 "application/json": {
                     displayName: string;
                     defaultLocale: "pt-BR" | "en-US";
-                    timeZone: string;
+                    timeZone?: string;
+                    logoDataUrl?: string | null;
                 };
             };
         };
@@ -4871,6 +5106,7 @@ export interface operations {
                         company: {
                             id: string;
                             displayName: string;
+                            logoDataUrl: string | null;
                             status: "ACTIVE" | "SUSPENDED";
                             defaultLocale: "pt-BR" | "en-US";
                             timeZone: string;
@@ -4911,6 +5147,7 @@ export interface operations {
                         company: {
                             id: string;
                             displayName: string;
+                            logoDataUrl: string | null;
                             status: "ACTIVE" | "SUSPENDED";
                             defaultLocale: "pt-BR" | "en-US";
                             timeZone: string;
@@ -5150,6 +5387,7 @@ export interface operations {
                         company: {
                             id: string;
                             displayName: string;
+                            logoDataUrl: string | null;
                             status: "ACTIVE" | "SUSPENDED";
                             defaultLocale: "pt-BR" | "en-US";
                             timeZone: string;
@@ -5383,6 +5621,7 @@ export interface operations {
                     expectedVersion: number;
                     displayName?: string;
                     defaultLocale?: "pt-BR" | "en-US";
+                    logoDataUrl?: string | null;
                     timeZone?: string;
                 };
             };
@@ -5397,6 +5636,7 @@ export interface operations {
                     "application/json": {
                         id: string;
                         displayName: string;
+                        logoDataUrl: string | null;
                         status: "ACTIVE" | "SUSPENDED";
                         defaultLocale: "pt-BR" | "en-US";
                         timeZone: string;
@@ -5621,6 +5861,11 @@ export interface operations {
                             id: string;
                             companyId: string;
                             name: string;
+                            location: {
+                                latitude: number;
+                                longitude: number;
+                            } | null;
+                            address: string | null;
                             timeZone: string;
                             status: "ACTIVE" | "ARCHIVED";
                             version: number;
@@ -5835,6 +6080,11 @@ export interface operations {
                 "application/json": {
                     name: string;
                     timeZone?: string;
+                    location?: {
+                        latitude: number;
+                        longitude: number;
+                    };
+                    address?: string | null;
                 };
             };
         };
@@ -5849,6 +6099,11 @@ export interface operations {
                         id: string;
                         companyId: string;
                         name: string;
+                        location: {
+                            latitude: number;
+                            longitude: number;
+                        } | null;
+                        address: string | null;
                         timeZone: string;
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
@@ -6069,6 +6324,11 @@ export interface operations {
                         id: string;
                         companyId: string;
                         name: string;
+                        location: {
+                            latitude: number;
+                            longitude: number;
+                        } | null;
+                        address: string | null;
                         timeZone: string;
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
@@ -6283,6 +6543,11 @@ export interface operations {
                     expectedVersion: number;
                     name?: string;
                     timeZone?: string;
+                    location?: {
+                        latitude: number;
+                        longitude: number;
+                    };
+                    address?: string | null;
                 };
             };
         };
@@ -6297,6 +6562,11 @@ export interface operations {
                         id: string;
                         companyId: string;
                         name: string;
+                        location: {
+                            latitude: number;
+                            longitude: number;
+                        } | null;
+                        address: string | null;
                         timeZone: string;
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;
@@ -6523,6 +6793,11 @@ export interface operations {
                         id: string;
                         companyId: string;
                         name: string;
+                        location: {
+                            latitude: number;
+                            longitude: number;
+                        } | null;
+                        address: string | null;
                         timeZone: string;
                         status: "ACTIVE" | "ARCHIVED";
                         version: number;

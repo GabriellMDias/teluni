@@ -1,3 +1,4 @@
+import { logoMaxLength } from "./logo.js";
 import { Type } from "typebox";
 import { errorEnvelopeSchema } from "../../errors.js";
 
@@ -9,6 +10,31 @@ const instant = Type.String({ format: "date-time" });
 const version = Type.Integer({ minimum: 1 });
 const name = Type.String({ minLength: 1, maxLength: 120, pattern: ".*\\S.*" });
 const timeZone = Type.String({ minLength: 1, maxLength: 64 });
+const logoDataUrl = Type.Union([
+  Type.String({ maxLength: logoMaxLength, pattern: "^data:image/png;base64," }),
+  Type.Null(),
+]);
+const locationId = Type.String({ pattern: "^[0-9]{1,12}$" });
+const address = Type.Union([Type.String({ maxLength: 300 }), Type.Null()]);
+const cityLocation = Type.Object(
+  {
+    id: locationId,
+    name: Type.String(),
+    region: Type.String(),
+    countryCode: Type.String({ minLength: 2, maxLength: 2 }),
+    latitude: Type.Number({ minimum: -90, maximum: 90 }),
+    longitude: Type.Number({ minimum: -180, maximum: 180 }),
+  },
+  { additionalProperties: false },
+);
+const location = Type.Object(
+  {
+    latitude: Type.Number({ minimum: -90, maximum: 90 }),
+    longitude: Type.Number({ minimum: -180, maximum: 180 }),
+  },
+  { additionalProperties: false },
+);
+
 const locale = Type.Union([Type.Literal("pt-BR"), Type.Literal("en-US")]);
 const role = Type.Union([
   Type.Literal("COMPANY_ADMINISTRATOR"),
@@ -195,6 +221,7 @@ export const companySchema = Type.Object(
   {
     id: uuid,
     displayName: name,
+    logoDataUrl,
     status: Type.Union([Type.Literal("ACTIVE"), Type.Literal("SUSPENDED")]),
     defaultLocale: locale,
     timeZone,
@@ -241,6 +268,8 @@ export const branchSchema = Type.Object(
     id: uuid,
     companyId: uuid,
     name,
+    location: Type.Union([location, Type.Null()]),
+    address,
     timeZone,
     status: Type.Union([Type.Literal("ACTIVE"), Type.Literal("ARCHIVED")]),
     version,
@@ -468,16 +497,43 @@ export const organizationOperations = [
     ],
   },
   {
+    method: "GET",
+    url: "/organization-locations",
+    operationId: "searchOrganizationLocations",
+    access: "session",
+    description:
+      "Search the bundled GeoNames city catalog with accent-insensitive city, region and ISO country-code terms. Returns at most 20 population-ranked results. Use a city to center the map before selecting a branch point; no address or location query is sent to an external provider. Data by GeoNames, CC BY 4.0.",
+    schema: {
+      querystring: Type.Object(
+        { query: Type.String({ minLength: 2, maxLength: 120 }) },
+        { additionalProperties: false },
+      ),
+      response: {
+        200: Type.Object(
+          { items: Type.Array(cityLocation, { maxItems: 20 }) },
+          { additionalProperties: false },
+        ),
+        ...common,
+      },
+    },
+    expectedErrors: [...session, "VALIDATION_FAILED"],
+  },
+  {
     method: "POST",
     url: "/companies",
     operationId: "createCompany",
     access: "session",
     description:
-      "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
+      "Create a company with an optional small PNG logo; timeZone is a legacy default and defaults to UTC when omitted. The creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
     schema: {
       headers: creationKey,
       body: Type.Object(
-        { displayName: name, defaultLocale: locale, timeZone },
+        {
+          displayName: name,
+          defaultLocale: locale,
+          timeZone: Type.Optional(timeZone),
+          logoDataUrl: Type.Optional(logoDataUrl),
+        },
         { additionalProperties: false },
       ),
       response: {
@@ -535,6 +591,7 @@ export const organizationOperations = [
           expectedVersion: version,
           displayName: Type.Optional(name),
           defaultLocale: Type.Optional(locale),
+          logoDataUrl: Type.Optional(logoDataUrl),
           timeZone: Type.Optional(timeZone),
         },
         { additionalProperties: false },
@@ -566,16 +623,25 @@ export const organizationOperations = [
     operationId: "createBranch",
     access: "session",
     description:
-      "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
+      "Create a branch with a confirmed map location (latitude/longitude) and full address. The server derives its IANA time zone using geographic boundaries. Legacy clients without location retain the company default; do not supply both location and timeZone. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
     schema: {
       params: companyParams,
       body: Type.Object(
-        { name, timeZone: Type.Optional(timeZone) },
+        {
+          name,
+          timeZone: Type.Optional(timeZone),
+          location: Type.Optional(location),
+          address: Type.Optional(address),
+        },
         { additionalProperties: false },
       ),
       response: { 201: branchSchema, ...common },
     },
-    expectedErrors: [...mutation, "BRANCH_NAME_IN_USE"],
+    expectedErrors: [
+      ...mutation,
+      "BRANCH_NAME_IN_USE",
+      "LOCATION_TIME_ZONE_UNRESOLVED",
+    ],
   },
   {
     method: "GET",
@@ -596,7 +662,7 @@ export const organizationOperations = [
     operationId: "updateBranch",
     access: "session",
     description:
-      "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration.",
+      "Change a branch name, selected location or address with the observed version. A selected map point sets its time zone atomically; clients cannot override that derived zone. Legacy timeZone writes are accepted only before a location is selected. Archived branches cannot change. Requires company administration.",
     schema: {
       params: branchParams,
       body: Type.Object(
@@ -604,12 +670,19 @@ export const organizationOperations = [
           expectedVersion: version,
           name: Type.Optional(name),
           timeZone: Type.Optional(timeZone),
+          location: Type.Optional(location),
+          address: Type.Optional(address),
         },
         { additionalProperties: false },
       ),
       response: { 200: branchSchema, ...common },
     },
-    expectedErrors: [...mutation, "BRANCH_NAME_IN_USE", "BRANCH_ARCHIVED"],
+    expectedErrors: [
+      ...mutation,
+      "BRANCH_NAME_IN_USE",
+      "BRANCH_ARCHIVED",
+      "LOCATION_TIME_ZONE_UNRESOLVED",
+    ],
   },
   {
     method: "POST",

@@ -784,13 +784,14 @@ Lifecycle: Created ACTIVE by its first responsible administrator; suspension is 
 | `display_name` | `character varying(120)` | no | — | CONFIDENTIAL | Company name shown to its members. | — | — |
 | `status` | `"CompanyStatus"` | no | `'ACTIVE'::"CompanyStatus"` | INTERNAL | ACTIVE companies allow protected operations; SUSPENDED denies them to members. | — | — |
 | `default_locale` | `character varying(10)` | no | — | INTERNAL | Default interface locale for the company: pt-BR or en-US. | — | — |
-| `time_zone` | `character varying(64)` | no | — | INTERNAL | Default IANA time zone for new branches; business time never uses the host time zone. | — | — |
+| `time_zone` | `character varying(64)` | no | — | INTERNAL | Legacy IANA default for branch API requests without a selected map location. New company requests default to UTC when omitted; product company forms do not expose it. Map-selected branches derive their own zone. | — | — |
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful settings change. | — | successful writes |
 | `created_by_principal_id` | `uuid` | no | — | CONFIDENTIAL | Principal who created the company and became its first responsible administrator. | — | — |
 | `creation_key` | `character varying(200)` | no | — | INTERNAL | Creator-supplied idempotency key, unique per creator, that makes company creation safely repeatable. | — | — |
 | `creation_fingerprint` | `character(64)` | no | — | CONFIDENTIAL | Immutable SHA-256 fingerprint of the normalized original creation inputs; retries compare it rather than mutable company settings. Not exposed in the API. | — | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
 | `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest settings change; not audit history. | — | UTC instant, millisecond precision |
+| `logo_data_url` | `text` | yes | — | CONFIDENTIAL | Optional authenticated company branding: server-decoded and re-encoded PNG data URL, at most 256 by 256 pixels and 350000 characters. Never a remote URL or executable SVG. | No company logo selected; presentation uses the company initials. | — |
 
 ### Constraints and indexes
 
@@ -801,6 +802,7 @@ Lifecycle: Created ACTIVE by its first responsible administrator; suspension is 
 | `companies_creation_key_format` | `CHECK (((creation_key)::text ~ '^[A-Za-z0-9._~-]+$'::text))` | Creation keys use the documented opaque ASCII alphabet. |
 | `companies_default_locale_supported` | `CHECK (((default_locale)::text = ANY ((ARRAY['pt-BR'::character varying, 'en-US'::character varying])::text[])))` | Only the supported interface locales. |
 | `companies_display_name_nonblank` | `CHECK (((display_name)::text ~ '[^[:space:]]'::text))` | Company name cannot be blank. |
+| `companies_logo_bounded_png` | `CHECK (((logo_data_url IS NULL) OR ((length(logo_data_url) <= 350000) AND (logo_data_url ~~ 'data:image/png;base64,%'::text))))` | Bounds optional raster logo metadata; the API validates and normalizes PNG content. |
 | `companies_pkey` | `PRIMARY KEY (id)` | Unique immutable company identity. |
 | `companies_time_zone_nonblank` | `CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))` | Time zone has the IANA identifier shape; the API validates it against the runtime's zone database. |
 | `companies_version_positive` | `CHECK ((version > 0))` | Rejects invalid concurrency versions. |
@@ -819,17 +821,23 @@ Lifecycle: Created ACTIVE; archived rather than deleted so references remain val
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable branch UUID; public resource ID. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Owning company; immutable (tenant key). | — | — |
 | `name` | `character varying(120)` | no | — | CONFIDENTIAL | Branch name, unique among the company's active branches regardless of case. | — | — |
-| `time_zone` | `character varying(64)` | no | — | INTERNAL | IANA time zone for the branch's local business time. | — | — |
+| `time_zone` | `character varying(64)` | no | — | INTERNAL | IANA scheduling zone derived atomically from a confirmed map point. Legacy branches retain their existing zone until location selection; an explicit device zone can override this branch zone. | — | — |
 | `status` | `"BranchStatus"` | no | `'ACTIVE'::"BranchStatus"` | INTERNAL | ACTIVE branches are usable; ARCHIVED branches are retained for references. | — | — |
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful change. | — | successful writes |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
 | `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change; not audit history. | — | UTC instant, millisecond precision |
+| `location` | `jsonb` | yes | — | CONFIDENTIAL | Confirmed branch map point, storing latitude and longitude rounded to six decimals. The API derives time_zone from geographic boundaries; clients cannot override the zone of a selected location. | No map point confirmed; preserve the existing legacy time zone until selection. | — |
+| `address` | `character varying(300)` | yes | — | CONFIDENTIAL | Full branch address entered by an authorized company administrator. Required when a map point is selected; never sent to a geocoding service or treated as independently verified. | No optional street address supplied. | — |
 
 ### Constraints and indexes
 
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
+| `branches_address_nonblank` | `CHECK (((address IS NULL) OR (length(btrim((address)::text)) > 0)))` | An optional address cannot be blank. |
 | `branches_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | A branch belongs to an existing company. |
+| `branches_located_address_required` | `CHECK (((location IS NULL) OR ((address IS NOT NULL) AND (length(btrim((address)::text)) > 0))))` | A branch with a confirmed map point also has a full address. |
+| `branches_location_coordinates` | `CHECK (((location IS NULL) OR ((location ?& ARRAY['latitude'::text, 'longitude'::text]) AND (jsonb_typeof((location -> 'latitude'::text)) = 'number'::text) AND (jsonb_typeof((location -> 'longitude'::text)) = 'number'::text) AND ((((location ->> 'latitude'::text))::numeric >= ('-90'::integer)::numeric) AND (((location ->> 'latitude'::text))::numeric <= (90)::numeric)) AND ((((location ->> 'longitude'::text))::numeric >= ('-180'::integer)::numeric) AND (((location ->> 'longitude'::text))::numeric <= (180)::numeric)))))` | Selected map points carry numeric latitude and longitude within geographic bounds. |
+| `branches_location_object` | `CHECK (((location IS NULL) OR (jsonb_typeof(location) = 'object'::text)))` | A selected location is a structured map point. |
 | `branches_name_nonblank` | `CHECK (((name)::text ~ '[^[:space:]]'::text))` | Branch name cannot be blank. |
 | `branches_pkey` | `PRIMARY KEY (id)` | Unique branch identity. |
 | `branches_time_zone_nonblank` | `CHECK (((time_zone)::text ~ '^[A-Za-z][A-Za-z0-9_+/-]*$'::text))` | Time zone has the IANA identifier shape. |

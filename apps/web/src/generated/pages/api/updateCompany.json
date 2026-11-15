@@ -53,6 +53,16 @@
                 { "type": "string", "const": "en-US" }
               ]
             },
+            "logoDataUrl": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 350000,
+                  "pattern": "^data:image/png;base64,"
+                },
+                { "type": "null" }
+              ]
+            },
             "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
           },
           "additionalProperties": false
@@ -76,6 +86,16 @@
             { "type": "string", "const": "en-US" }
           ]
         },
+        "logoDataUrl": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 350000,
+              "pattern": "^data:image/png;base64,"
+            },
+            { "type": "null" }
+          ]
+        },
         "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
       },
       "additionalProperties": false
@@ -97,6 +117,11 @@
         "required": false
       },
       {
+        "name": "logoDataUrl",
+        "type": "string (max length 350000, pattern ^data:image/png;base64,) | null",
+        "required": false
+      },
+      {
         "name": "timeZone",
         "type": "string (min length 1, max length 64)",
         "required": false
@@ -114,6 +139,7 @@
             "required": [
               "id",
               "displayName",
+              "logoDataUrl",
               "status",
               "defaultLocale",
               "timeZone",
@@ -131,6 +157,16 @@
                 "minLength": 1,
                 "maxLength": 120,
                 "pattern": ".*\\S.*"
+              },
+              "logoDataUrl": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 350000,
+                    "pattern": "^data:image/png;base64,"
+                  },
+                  { "type": "null" }
+                ]
               },
               "status": {
                 "anyOf": [
@@ -158,6 +194,7 @@
         "required": [
           "id",
           "displayName",
+          "logoDataUrl",
           "status",
           "defaultLocale",
           "timeZone",
@@ -175,6 +212,16 @@
             "minLength": 1,
             "maxLength": 120,
             "pattern": ".*\\S.*"
+          },
+          "logoDataUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 350000,
+                "pattern": "^data:image/png;base64,"
+              },
+              { "type": "null" }
+            ]
           },
           "status": {
             "anyOf": [
@@ -204,6 +251,11 @@
         {
           "name": "displayName",
           "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        {
+          "name": "logoDataUrl",
+          "type": "string (max length 350000, pattern ^data:image/png;base64,) | null",
           "required": true
         },
         {

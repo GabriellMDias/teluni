@@ -42,7 +42,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "IANA time zone for the branch's local business time.",
+      "Meaning": "IANA scheduling zone derived atomically from a confirmed map point. Legacy branches retain their existing zone until location selection; an explicit device zone can override this branch zone.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -85,13 +85,53 @@
       "Meaning": "PostgreSQL-clock instant of the latest change; not audit history.",
       "Null meaning": "—",
       "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "location",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Confirmed branch map point, storing latitude and longitude rounded to six decimals. The API derives time_zone from geographic boundaries; clients cannot override the zone of a selected location.",
+      "Null meaning": "No map point confirmed; preserve the existing legacy time zone until selection.",
+      "Unit": "—"
+    },
+    {
+      "Column": "address",
+      "PostgreSQL type": "character varying(300)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Full branch address entered by an authorized company administrator. Required when a map point is selected; never sent to a geocoding service or treated as independently verified.",
+      "Null meaning": "No optional street address supplied.",
+      "Unit": "—"
     }
   ],
   "constraints": [
     {
+      "Object": "branches_address_nonblank",
+      "Physical definition": "CHECK (((address IS NULL) OR (length(btrim((address)::text)) > 0)))",
+      "Purpose": "An optional address cannot be blank."
+    },
+    {
       "Object": "branches_company_id_fkey",
       "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
       "Purpose": "A branch belongs to an existing company."
+    },
+    {
+      "Object": "branches_located_address_required",
+      "Physical definition": "CHECK (((location IS NULL) OR ((address IS NOT NULL) AND (length(btrim((address)::text)) > 0))))",
+      "Purpose": "A branch with a confirmed map point also has a full address."
+    },
+    {
+      "Object": "branches_location_coordinates",
+      "Physical definition": "CHECK (((location IS NULL) OR ((location ?& ARRAY['latitude'::text, 'longitude'::text]) AND (jsonb_typeof((location -> 'latitude'::text)) = 'number'::text) AND (jsonb_typeof((location -> 'longitude'::text)) = 'number'::text) AND ((((location ->> 'latitude'::text))::numeric >= ('-90'::integer)::numeric) AND (((location ->> 'latitude'::text))::numeric <= (90)::numeric)) AND ((((location ->> 'longitude'::text))::numeric >= ('-180'::integer)::numeric) AND (((location ->> 'longitude'::text))::numeric <= (180)::numeric)))))",
+      "Purpose": "Selected map points carry numeric latitude and longitude within geographic bounds."
+    },
+    {
+      "Object": "branches_location_object",
+      "Physical definition": "CHECK (((location IS NULL) OR (jsonb_typeof(location) = 'object'::text)))",
+      "Purpose": "A selected location is a structured map point."
     },
     {
       "Object": "branches_name_nonblank",

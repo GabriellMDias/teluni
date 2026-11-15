@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
-import { waitForCreatedCompany } from "../company.ts";
+import { waitForCreatedCompany, selectBranchLocation } from "../company.ts";
 import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
@@ -164,6 +164,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   await page.getByRole("button", { name: "Criar empresa" }).click();
   const companyUrl = await waitForCreatedCompany(page);
   await page.getByLabel("Nome da filial").fill("Centro");
+  await selectBranchLocation(page);
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
 

@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "updateBranch",
   "summary": "",
-  "description": "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration.",
+  "description": "Change a branch name, selected location or address with the observed version. A selected map point sets its time zone atomically; clients cannot override that derived zone. Legacy timeZone writes are accepted only before a location is selected. Archived branches cannot change. Requires company administration.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -58,7 +58,26 @@
               "maxLength": 120,
               "pattern": ".*\\S.*"
             },
-            "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+            "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+            "location": {
+              "type": "object",
+              "required": ["latitude", "longitude"],
+              "properties": {
+                "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                }
+              },
+              "additionalProperties": false
+            },
+            "address": {
+              "anyOf": [
+                { "type": "string", "maxLength": 300 },
+                { "type": "null" }
+              ]
+            }
           },
           "additionalProperties": false
         }
@@ -75,7 +94,19 @@
           "maxLength": 120,
           "pattern": ".*\\S.*"
         },
-        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 }
+        "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "location": {
+          "type": "object",
+          "required": ["latitude", "longitude"],
+          "properties": {
+            "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+            "longitude": { "type": "number", "minimum": -180, "maximum": 180 }
+          },
+          "additionalProperties": false
+        },
+        "address": {
+          "anyOf": [{ "type": "string", "maxLength": 300 }, { "type": "null" }]
+        }
       },
       "additionalProperties": false
     },
@@ -94,6 +125,22 @@
         "name": "timeZone",
         "type": "string (min length 1, max length 64)",
         "required": false
+      },
+      { "name": "location", "type": "object", "required": false },
+      {
+        "name": "location.latitude",
+        "type": "number (minimum -90, maximum 90)",
+        "required": true
+      },
+      {
+        "name": "location.longitude",
+        "type": "number (minimum -180, maximum 180)",
+        "required": true
+      },
+      {
+        "name": "address",
+        "type": "string (max length 300) | null",
+        "required": false
       }
     ]
   },
@@ -109,6 +156,8 @@
               "id",
               "companyId",
               "name",
+              "location",
+              "address",
               "timeZone",
               "status",
               "version",
@@ -129,6 +178,34 @@
                 "minLength": 1,
                 "maxLength": 120,
                 "pattern": ".*\\S.*"
+              },
+              "location": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["latitude", "longitude"],
+                    "properties": {
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "address": {
+                "anyOf": [
+                  { "type": "string", "maxLength": 300 },
+                  { "type": "null" }
+                ]
               },
               "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
               "status": {
@@ -151,6 +228,8 @@
           "id",
           "companyId",
           "name",
+          "location",
+          "address",
           "timeZone",
           "status",
           "version",
@@ -171,6 +250,34 @@
             "minLength": 1,
             "maxLength": 120,
             "pattern": ".*\\S.*"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": ["latitude", "longitude"],
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "address": {
+            "anyOf": [
+              { "type": "string", "maxLength": 300 },
+              { "type": "null" }
+            ]
           },
           "timeZone": { "type": "string", "minLength": 1, "maxLength": 64 },
           "status": {
@@ -199,6 +306,12 @@
         {
           "name": "name",
           "type": "string (min length 1, max length 120, pattern .*\\S.*)",
+          "required": true
+        },
+        { "name": "location", "type": "object | null", "required": true },
+        {
+          "name": "address",
+          "type": "string (max length 300) | null",
           "required": true
         },
         {

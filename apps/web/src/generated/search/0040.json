@@ -1,5 +1,293 @@
 [
   {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Feature Organization",
+    "anchor": "feature-organization",
+    "text": "Feature Organization\nKeep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.\nTests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Documentation and Generated Artifacts",
+    "anchor": "documentation-and-generated-artifacts",
+    "text": "Documentation and Generated Artifacts\n[Contributing](../contributing.md#documentation-ownership) owns documentation placement and canonical-source rules. Repository policy lives under `docs/`; application/package knowledge belongs near its owner. Documentation may reference implementation, but ordinary application behavior must not depend on parsing human-authored policy. If behavior needs machine-readable rules, give those rules a canonical machine-readable source. Documentation-as-product content, such as the portal, is an intentional exception.\nGenerated code and references must be distinguishable from authored files, reproducible, and linked to their source/generator. Current locations and handling are defined by [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage) and [living documentation](living-documentation.md). Generated clients are consumers of contracts, never their authority. Reviewed SQL migrations follow their separate release-history rules.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Local Agent Instructions",
+    "anchor": "local-agent-instructions",
+    "text": "Local Agent Instructions\nRead root [AGENTS.md](../../AGENTS.md), then each applicable nested file before editing an area. Nested instructions add local conventions, important files, commands, or prohibited patterns; they do not remove global requirements or copy repository-wide policy. Current scopes include [API](../../apps/api/AGENTS.md), [web](../../apps/web/AGENTS.md), [player](../../apps/player/AGENTS.md), [SDK](../../packages/sdk/AGENTS.md), [documentation](../AGENTS.md), [ADRs](../adr/AGENTS.md), and [runbooks](../runbooks/AGENTS.md).\nEvery tool reads the same files; [agent instructions](agent-instructions.md) owns tool compatibility and forbids instruction copies. Add a local instruction file only when the area needs additional guidance. Keep commands near the owner and link canonical policy so agents receive useful context without independently maintained copies.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Enforcement",
+    "anchor": "enforcement",
+    "text": "Enforcement\n[Dependency rules](dependency-rules.md#mechanical-enforcement) identify the implemented import checks and their limits. Runtime code must not depend on repository tooling; tooling may inspect application/package sources. Public package boundaries, domain/data ownership, and shared meaning still require review where no mechanical rule exists. Extend enforcement with real new boundaries rather than describing future checks as available.\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Technology Decision Map",
+    "anchor": "technology-decision-map",
+    "text": "Technology Decision Map\nThis is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. Every record listed below currently states `accepted`, with ADR-0014 partly superseded by ADR-0017; workspace tooling, the API runtime with composable modules and PostgreSQL support, generated SDK, web shell, documentation portal, and project-derivation tooling exist. Consult [validation availability](../validation.md) before running commands.\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Selected directions",
+    "anchor": "selected-directions",
+    "text": "Selected directions\nGoverning decision\nDirection\nImportant scope\nCurrent policy\n[ADR-0001](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nTypeScript 6.x; Node.js 24 LTS initial baseline; ESM\nPrimary, not exclusive; exact compatible versions belong in tooling.\n[Policy](principles.md)\n[ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md)\npnpm and pnpm workspaces\nShared lockfile, workspace protocol, catalogs when useful; no dedicated task runner initially.\n[Policy](repository-structure.md)\n[ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md)\ntsc, ESLint/typescript-eslint, Prettier, dependency-cruiser\nNon-mutating canonical validation and separate formatting command are implemented for current tooling.\n[Policy](../validation.md)\n[ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md)\nFastify; Pino for HTTP runtime logging\nTransport/infrastructure adapters do not define business-domain boundaries.\n[Policy](application-boundaries.md)\n[ADR-0005](../adr/0005-select-postgresql-as-the-primary-database.md)\nPostgreSQL\npgvector is preferred when a suitable vector workload requires it, not enabled by default; AI access remains authorized through application capabilities.\n[Policy](../database/principles.md)\n[ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md)\nPrisma ORM 7, Prisma Client, Prisma Migrate\nParameterized SQL/TypedSQL and custom migrations remain available; complete physical schema comes from migrated PostgreSQL.\n[Policy](../database/migrations.md)\n[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nHTTP/JSON, TypeBox 1.x, generated OpenAPI 3.1.x initially, openapi-typescript and openapi-fetch\nWire contracts, stable operation IDs, and TypeBox bootstrap configuration; client response revalidation is not automatic.\n[Policy](../api/principles.md)\n[ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md)\nReact 19.x, React Compiler when compatible, Vite 8.x, TanStack Router and Query\nClient-first SPA; URL, server, and local UI state have distinct owners; server rendering is requirement-driven.\n[Policy](application-boundaries.md)\n[ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md)\nVitest, Testcontainers, Vitest Browser Mode with Playwright, Playwright Test\nReal migrated PostgreSQL; browser fidelity where relevant; no initial global coverage threshold.\n[Policy](testing-strategy.md)\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nOpenTelemetry traces/metrics, Pino logs, W3C Trace Context, OTLP\nCollector preferred when justified, not mandatory; no global backend/vendor or baseline browser instrumentation.\n[Policy](../reliability/observability.md)\n[ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nGitHub Actions and Renovate; available GitHub security capabilities\nSame validation as local development; immutable action pins; automerge off initially; CI does not select CD.\n[Policy](continuous-integration.md)\n[ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nLocally verified JWT bearer access tokens for the first API\nProvider-independent issuer/audience/JWKS verification and stable application principal mapping; the foundation record does not select a concrete provider; accepted Teluni ADR-0024 does.\n[Policy](../security/authentication.md)\n[ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\n`AGENTS.md` hierarchy as the only agent instruction source\nTool-specific files are thin discovery adapters only; currently a Gemini CLI setting.\n[Policy](agent-instructions.md)\n[ADR-0014](../adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nProjects derived from Orion by Git ancestry with `.orion/project.json` provenance\nFetch-only `orion-upstream`, reviewed upgrade merges, immutable commits instead of a release scheme.\n[Policy](../project-derivation.md)\n[ADR-0017](../adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nDerived projects start from a clean baseline\n`.orion/derivation.json` separates shared, foundation-only, and project-owned content; initialization removes the reference implementation and foundation history and applies the project identity.\n[Policy](../project-derivation.md)\n[ADR-0018](../adr/orion/0018-isolate-internal-documentation-from-product-distribution.md)\nInternal documentation excluded from default production artifacts\nComplete local engineering knowledge; explicit protected internal builds; independent approved sources and UI for product/public documentation. Complements ADR-0017's source retention.\n[Policy](living-documentation.md)\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Accepted Teluni product directions",
+    "anchor": "accepted-teluni-product-directions",
+    "text": "Accepted Teluni product directions\nThe owner explicitly accepted the seven pending product ADRs on 2026-10-18, and ADR-0026 the same day under PH-21. ADR-0027 was accepted on 2026-10-19 under PH-22 and ADR-0028 the same day under PH-23; ADR-0029 the same day under PH-24; ADR-0030 on 2026-10-20 under PH-25. ADR-0031 and ADR-0032 were accepted on 2026-10-20 by the agent under the owner's delegation of every pending decision the same day. ADR-0033 was accepted on 2026-10-22 by the agent under the owner's request of that day to take every pending decision that is only a decision. ADR-0034 was accepted on 2026-10-27 by the agent when the owner asked for the best technology for a grid that sorts, filters and handles very many rows, and ADR-0035 the same day when the owner asked for Excel and PDF exports and left other formats to the agent. These rows describe architectural choices, not installed dependencies, implemented product modules or qualified production capability. Concrete design and delivery evidence remain in the [product plan](../project/implementation-plan.md).\nGoverning decision\nAccepted direction\nCurrent policy / remaining gate\n[ADR-0018](../adr/0018-propose-tenant-owned-data-in-the-modular-backend.md)\nShared PostgreSQL database/schema with explicit tenant ownership, scoped references and modular backend\n[Architecture](../project/architecture.md); concrete constraints, additional RLS evaluation and cross-tenant tests pending\n[ADR-0019](../adr/0019-propose-immutable-publications-and-atomic-player-activation.md)\nImmutable versioned publications and complete durable player activation/recovery\n[Playback/sync](../project/playback-and-sync.md); protocol and failure/power qualification pending\n[ADR-0020](../adr/0020-propose-a-native-android-tv-player.md)\nIndependent native Kotlin/Media3 Android TV player with durable local state\n[Architecture](../project/architecture.md); supported hardware, packaging, persistence and recovery tests pending\n[ADR-0021](../adr/0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)\nInitial Debian/Compose host, HTTPS, private PostgreSQL and portable persistent media\n[Operations](../project/operations.md); host/network/backup/restore and real-customer readiness pending\n[ADR-0023](../adr/0023-propose-versioned-catalog-and-composition-publications.md)\nVersioned declarative composition and typed catalogs in immutable publications\n[Release policies](../project/release-policies.md); concrete schemas, rendering/storage and qualified interoperability pending\n[ADR-0024](../adr/0024-propose-keycloak-and-server-managed-human-sessions.md)\nSelf-hosted Keycloak and server-managed human browser sessions, preserving ADR-0012\n[Identity/access](../project/identity-and-access.md); pinned-source assessment supports selection, actual provider/session integration pending\n[ADR-0025](../adr/0025-propose-application-owned-scoped-access-profiles.md)\nApplication-owned scoped standard/custom profiles and attributable consent-based support\n[Identity/access](../project/identity-and-access.md); concrete authorization/session contracts and all IA cases pending\n[ADR-0026](../adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email.md)\nTransactional email through a PostgreSQL outbox, an in-process dispatcher and a provider-neutral SMTP relay (`nodemailer`), at least once\n[Invitation and email delivery design](../project/invitation-delivery-design.md); accepted 2026-10-18 under PH-21; real sender/provider PH-17 and retention PH-13 pending\n[ADR-0027](../adr/0027-propose-device-generated-credentials-and-code-based-enrollment.md)\nCode-based device enrollment shaped like RFC 8628 and device-generated bearer credentials stored only as hashes, separate from human sessions\n[Device enrollment design](../project/device-enrollment-design.md); accepted 2026-10-19 under PH-22; Android player PJ-12 and hardware PH-08 pending\n[ADR-0028](../adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing.md)\nImmutable per-company content-addressed media objects on the media volume, parsed and converted only by FFmpeg in isolated child processes under a PostgreSQL-leased processor\n[Media library design](../project/media-library-design.md); accepted 2026-10-19 under PH-23; device profiles PH-08, production image PJ-13 and malware scanning PH-13 pending\n[ADR-0029](../adr/0029-propose-temporal-based-schedule-evaluation-with-shared-fixtures.md)\nSchedules evaluated per screen zone by a pure API evaluator over the Temporal API (`temporal-polyfill` until Node.js ships it), verified with canonical JSON fixtures that the player also runs\n[Programming design](../project/programming-design.md); accepted 2026-10-19 under PH-24; player implementation PJ-12 pending\n[ADR-0030](../adr/0030-propose-pull-based-screen-synchronization-with-signed-authorization-statements.md)\nScreens poll `POST /device/sync` every 30 seconds for a desired publication computed from current rows, download exact-byte manifests and SHA-256-identified renditions of that publication only, and receive ES256 JWS authorization statements with a seven-day expiry and signed server time\n[Publication and synchronization design](../project/publication-sync-design.md); accepted 2026-10-20 under PH-25; player conformance PJ-12 and key provisioning PJ-13 pending\n[ADR-0031](../adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation.md)\nThe Android TV player is one Gradle build with a pure-JVM `core` (rules, protocol, evaluator, trusted time, store, synchronization) and an Android `app`; local state is write-once files plus one atomically replaced record; business time uses zone offsets from the sync response; managed devices run the player as device owner with server-distributed, roll-forward-only updates\n[Player design](../project/player-design.md); accepted 2026-10-20 under the owner's delegation; Android build access PH-26, signing key PH-27 and hardware PH-08 pending\n[ADR-0032](../adr/0032-represent-money-as-integer-minor-units-with-a-currency-per-field.md)\nAmounts are integer minor units of one ISO 4217 currency fixed per money field, never floats and never converted; non-monetary decimals are canonical strings; locale only formats\n[Catalog and composition design](../project/catalog-composition-design.md); accepted 2026-10-20 under the owner's delegation; catalogs PJ-21 in progress\n[ADR-0033](../adr/0033-expose-the-pilot-host-with-end-to-end-tls-and-back-it-up-with-encrypted-off-host-snapshots.md)\nThe pilot host ends TLS itself in Caddy with Let's Encrypt certificates, reached directly or through a TCP relay over WireGuard, never through a TLS-terminating tunnel or CDN; restic snapshots (database dumps, then media objects) go every 6 hours to an off-host S3-compatible bucket, initially Backblaze B2, kept about 35 days\n[Deployment design](../project/deployment-design.md); accepted 2026-10-22 under the owner's delegation; host facts and accounts PH-10, PH-07, PH-15 to PH-17 pending\n[ADR-0034](../adr/0034-build-data-grids-on-tanstack-table-and-tanstack-virtual.md)\nWeb grids use headless TanStack Table v9 for sorting, value filters, faceting and column sizing, and TanStack Virtual v3 to render only rows and filter options in view; Teluni owns markup, styling and caller-owned selection\n[Component practices](web-components.md); accepted 2026-10-27 under the owner's request and the PH-25 delegation; sorting and filtering cover loaded rows only, server-side processing is not provided\n[ADR-0035](../adr/0035-export-grid-data-in-the-browser-to-xlsx-csv-and-pdf.md)\nGrids opt in to browser-side exports of the rows shown: XLSX through write-excel-file, CSV generated by the product (locale separators, formula-injection guard), PDF through jsPDF with jspdf-autotable, all loaded on demand\n[Component practices](web-components.md); accepted 2026-10-27 under the owner's request and the PH-25 delegation; no server-side exports\n[ADR-0036](../adr/0036-resolve-branch-time-zones-locally-from-confirmed-map-coordinates.md)\nBranch addresses and confirmed map coordinates are company metadata; `geo-tz` resolves a unique IANA zone locally, Leaflet displays attributed OpenStreetMap tiles, and a bundled GeoNames catalog helps center the map without remote address geocoding\n[Organizations](../../apps/api/README.md#organizations); accepted 2026-11-15 under the owner's map request and PH-25 delegation; implementation qualification is recorded in PJ-03/PJ-41\n"
+  },
+  {
+    "id": "repository/docs/architecture/technology-decisions",
+    "title": "Technology Decision Map",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Deliberately unresolved or conditional choices",
+    "anchor": "deliberately-unresolved-or-conditional-choices",
+    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\n[Component reuse/catalog practices](web-components.md) and a small native reference set are implemented. Grids use the headless libraries of ADR-0034 and the export libraries of ADR-0035. Product visual identities and any broader design system, styling library, accessibility toolkit, charts or form engine remain requirement-driven. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012; Teluni accepts Keycloak and server-managed sessions through ADR-0024, while concrete session/refresh/revocation implementation and qualification remain pending. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements. Teluni's transactional email uses the PostgreSQL outbox, in-process dispatcher and SMTP relay accepted in ADR-0026; that does not make them a general job or messaging platform.\nMobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery are product/deployment decisions. Teluni has accepted its Android and initial Compose directions above; detailed tooling and operational readiness are not thereby supplied. Testcontainers does not select an application deployment platform.\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Testing Strategy",
+    "anchor": "testing-strategy",
+    "text": "Testing Strategy\n[Documentation index](../README.md) · [Validation commands](../validation.md) · [Local setup](../setup.md)\nTests protect behavior, contracts, invariants, security, and architectural boundaries. Ask which important defect a test would detect, then choose the cheapest reliable boundary. [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) owns the accepted tools and rationale; [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) owns CI policy. These tools and the suites below are implemented.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Test Categories",
+    "anchor": "test-categories",
+    "text": "Test Categories\nBoundary/risk\nExecution and existing location\nPure domain, parser, client logic\nVitest in Node; API tests under `apps/api/test/`, web API tests under `apps/web/test/`.\nAPI transport/application\nFastify request injection with real owned behavior; real sockets when listener, network, or process lifecycle is the subject.\nPostgreSQL persistence/transactions\nVitest with Testcontainers and committed migrations; API integration/failure tests use the migrated-database helper.\nBrowser components\nVitest Browser Mode with Playwright, `apps/web/test/*.browser.test.tsx`; Windows uses installed Edge, other environments use Chromium.\nFull user journeys\nPlaywright Test, `apps/web/test/e2e/`; the real built API and web app for the shell and portal, plus migrated PostgreSQL and synthetic signed identities in module journeys under `test/e2e/<module>/`.\nEmitted runtime\nAPI process and feature smoke scripts verify startup/lifecycle and the real feature flow.\nStructure and generation\nType/lint/import checks, documentation links/metadata, environment example, release-history checks, API/SDK/portal freshness.\nCoverage, performance/load/stress, mutation testing, additional browser matrices, external provider sandboxes, and deployment smoke/monitoring are introduced only when their risk or product requirement exists. Performance tests need measurable targets; stable microbenchmarks can inform critical algorithms but do not replace realistic system measurements. Chromium is the routine E2E baseline; browser support must not be guessed globally. V8 is the selected Vitest coverage provider when coverage becomes useful, with no initial global coverage threshold.\nBrowser component files run sequentially in the [browser configuration](../../apps/web/vitest.browser.config.ts), using [Vitest's `fileParallelism` option](https://vitest.dev/config/fileparallelism). Concurrent startup intermittently failed dynamic module imports before test collection in CI, across different files. Sequential file loading limits that startup contention while retaining per-file isolation, every assertion and the existing test timeouts. It does not add retries or change API/Node test scheduling. Verify startup changes with a fresh Vitest optimizer cache as well as the normal suite.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Test Selection",
+    "anchor": "test-selection",
+    "text": "Test Selection\nPrefer focused tests for local rules, real integration for infrastructure semantics, browser component tests for browser behavior, and a small set of representative critical E2E success/failure journeys. A rigid numerical pyramid is not required. Do not use a browser for a pure calculation, a mock for a database constraint, or a full stack for a component interaction a smaller test can prove.\nA unit is a cohesive responsibility, not necessarily one function/class/file. Test stable public behavior; avoid private-helper choreography, framework-dependent domain code, test-only production APIs, and interfaces created only to make everything mockable. Explicit dependencies improve testability when they reflect real architecture.\nBefore changing behavior, inspect existing tests and contracts, identify failure risks and missing coverage, and select meaningful layers. Fixes should reproduce the defect with a test that fails before and passes after where practical; otherwise document the reason and verification. Low-impact prose/formatting changes need appropriate checks, not ceremonial behavior tests. Security, data loss, financial impact, irreversibility, compatibility, and rollout complexity warrant stronger complementary evidence.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Real Database Tests",
+    "anchor": "real-database-tests",
+    "text": "Real Database Tests\nUse PostgreSQL when correctness depends on constraints, SQL/types, indexes, ORM mapping, locking, transactions, or custom migrations. SQLite, mocked Prisma, or an in-memory repository cannot prove those semantics. Create isolated disposable infrastructure using committed migrations; never rely on a manually maintained shared database or silently skip core checks when the container runtime is unavailable.\nCurrent helpers own disposable PostgreSQL and separate migration/runtime roles. Preserve reliable isolation when reordering, selecting, or parallelizing tests. Rollback wrappers can hide commits, multiple connections, background work, and transaction boundaries; use them only when suitable. Choose reset/schema/database/unique-data strategies by correctness first, then measured cost.\nMigration validation covers fresh creation and, when an actual supported release exists, upgrade from that exact baseline with representative permitted data and supported old/new application combinations. A fresh database is not upgrade proof. [Migration policy](../database/migrations.md) governs verified unreleased history versus immutable released history; [release evolution](../database/release-evolution.md) owns the procedure.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Contracts and Failure Behavior",
+    "anchor": "contracts-and-failure-behavior",
+    "text": "Contracts and Failure Behavior\nValidate requests/responses/errors/serialization against canonical contracts rather than independently copied expectations. Exercise the actual API transport for routing, validation, identity, headers, status, and safe serialization; reserve network-level execution for behavior that needs it. Contract compatibility must reflect real independently evolving consumers.\nImportant tests include atomic rollback, concurrent writes/stale versions, repeat idempotency, duplicate/reordered delivery, transient/permanent retry classification, attempt bounds, timeout/unknown outcomes, final failure, partial effects, and failed compensation where applicable. Use controlled time to avoid waiting production timeout durations. Follow [delivery](delivery-and-side-effects.md), [error](error-handling.md), [configuration](configuration.md), and [transaction](../database/transactions-and-concurrency.md) policies for their detailed guarantees.\nGenerated artifacts need deterministic generation, freshness, and consumer compatibility checks at their source/generation boundaries. Never hand-edit outputs or blindly accept changed golden files. Small meaningful snapshots can help; large DOM/response snapshots should not replace focused assertions. Visual screenshot checks are useful only when visual stability matters and fonts/platform/animation/timing are controlled.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Security Tests",
+    "anchor": "security-tests",
+    "text": "Security Tests\nTest denied behavior, not just successful access: anonymous/invalid/expired/wrong-signature or audience credentials, insufficient capability, wrong owner/tenant, forbidden fields, revoked access, and webhook signatures where those models exist. Tests must follow the actual [authentication](../security/authentication.md) and [authorization](../security/authorization.md) contracts, without inventing unimplemented revocation or tenancy behavior.\nVerify that secrets/restricted fields do not reach responses, logs, traces, reports, or client builds. Missing credentials and insecure defaults must fail safely. Redaction tests need positive correlation assertions and negative sensitive-data assertions. Current source/generation checks and bundle markers are useful controls, not proofs of all security semantics.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Client and Observability Tests",
+    "anchor": "client-and-observability-tests",
+    "text": "Client and Observability Tests\nClient tests own presentation, interaction, navigation/state, API failures, and accessibility rather than repeating every backend invariant. Prefer real browsers when semantics matter; jsdom is not the browser-fidelity default. Use locators, readiness signals, and automatic waiting instead of arbitrary sleeps. Automated accessibility tests supplement human review.\nTest telemetry when it protects production behavior: request/trace propagation, safe unexpected-error reporting, bounded labels, release context where available, and redaction. Mobile device/offline/permission/storage tests, desktop OS/update tests, and worker delivery tests become relevant only when those capabilities exist.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Determinism, Doubles, and Data",
+    "anchor": "determinism-doubles-and-data",
+    "text": "Determinism, Doubles, and Data\nTests establish their own minimal synthetic state and must not depend on order, unrelated machine environment, locale/timezone, current wall clock, unseeded relevant randomness, uncontrolled internet, or shared mutable rows/files/caches. Control or make irrelevant time/randomness and use collision-safe identifiers. State cleanup must work under failure and parallel execution; all tests have appropriate bounded timeouts.\nFactories should expose the fields that explain the behavior, especially ownership/permissions, and must not become a hidden application layer. Large shared development seeds are not test fixtures. Never use production database dumps or credentials as ordinary fixtures. Use clearly synthetic static secrets unless testing credential detection itself; ephemeral signed test identities remain isolated. Production-derived data needs explicit classification handling and meaningful protection against re-identification; synthetic data remains preferred.\nMocks/fakes isolate external responsibilities such as clocks/providers when the integration itself is outside scope. They must respect the real capability contract and should not make impossible states appear valid except for deliberate failure injection. Mocking every internal class tests choreography. Official provider sandbox suites, when needed, must be isolated, credential-safe, clearly categorized, and separated from uncontrolled dependencies in the ordinary loop; document emulator fidelity limits.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Test Maintenance and Diagnostics",
+    "anchor": "test-maintenance-and-diagnostics",
+    "text": "Test Maintenance and Diagnostics\nName tests for behavior, arrange clear inputs/action/outcomes, and assert the actual result/effect/error code. One coherent behavior can need several assertions. A test should fail for a meaningful defect, remain understandable, and add distinct confidence; some cross-layer overlap is justified for critical guarantees.\nFlakiness is a defect. Retries may diagnose environmental instability but must not conceal it. A temporary quarantine needs owner, reason, tracking issue, and removal condition. Skips must be explicit; core correctness cannot disappear because infrastructure is missing. Remove tests only when the protected behavior deliberately changes/disappears, stronger coverage replaces them, or they test obsolete implementation details. Never weaken valid tests to make a change pass.\nTreat a failure as evidence: investigate implementation, expectation, intentional contract change, or environment, and reproduce CI locally when possible. Diagnostics should show behavior, expected/actual result, and safe identifiers without noisy dumps. Reports, screenshots, traces, source maps, and logs follow classification/access/retention rules. Current CI does not upload diagnostic artifacts; future uploads need bounded retention.\nKeep tests near the owning feature/application; system journeys may have dedicated suites. Shared test infrastructure must have genuine reuse. Document complex suite prerequisites, commands, debugging, and limitations; avoid a speculative taxonomy or orchestrator. Measure/optimize slow suites when feedback cost becomes material, without sacrificing isolation or correctness. Any future affected-test selection must preserve complete dependency coverage rather than trading correctness for speed.\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Canonical Test Commands",
+    "anchor": "canonical-test-commands",
+    "text": "Canonical Test Commands\n[Validation](../validation.md) owns the available script list and prerequisites; [setup](../setup.md) owns reproducible installation/browser/container preparation. Iterate with the relevant owning package command, then run the repository-required `pnpm validate` gate before substantial completion. CI calls the same gate. Runtime tests do not replace TypeScript, architectural checks, or generated-source validation.\nThe repository gate includes API tests, web Node/browser tests, emitted builds/smokes, and full E2E. Release-history tests intentionally use Node's built-in runner for isolated tooling. No generic root `test:integration` or coverage command should be assumed. Report missing prerequisites, failed checks, and unrun remote checks honestly.\nCoverage percentages and branch coverage can reveal missing paths but cannot prove assertions, authorization, or concurrency correct. Use risk-based review instead of arbitrary targets. A complete change preserves meaningful tests, contracts, architecture, and the broader [completion criteria](../contributing.md#change-workflow).\n"
+  },
+  {
+    "id": "repository/docs/architecture/testing-strategy",
+    "title": "Testing Strategy",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Initial Testing Policy",
+    "anchor": "initial-testing-policy",
+    "text": "Initial Testing Policy\nThe implemented baseline above remains the default for new features. Additional suites must serve actual risk; load/stress tests run only in isolated authorized environments, never as accidental production traffic. Never run destructive integration suites against production data. Any production test must be narrowly scoped and safe, such as an authorized synthetic health check. Production synthetic monitoring and deployment validation require separate operational design and authority; this testing strategy does not start deployment work.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Versioning and Compatibility",
+    "anchor": "versioning-and-compatibility",
+    "text": "Versioning and Compatibility\n[Documentation index](../README.md) · [API versioning](../api/versioning.md) · [Database release evolution](../database/release-evolution.md)\nCompatibility protects consumers that cannot change atomically. This page owns cross-boundary evolution; API, database, configuration, and security policies own their specific contracts. Prefer compatible evolution over reflexively adding versions or preserving obsolete internal interfaces forever. Significant support/versioning strategies require an ADR; ordinary compatible changes do not.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Compatibility Boundary",
+    "anchor": "compatibility-boundary",
+    "text": "Compatibility Boundary\nIdentify the producer, consumer, canonical contract, independent deployment/distribution, persisted-state lifetime, release status, support window, and rollback requirements. Internal monorepo code can often change atomically; installed clients, queued jobs, durable database state, published SDKs, external automation, and independently managed configuration cannot necessarily do so.\nCompatibility includes structure, meaning, behavior, wire serialization, source compilation, security, and operational assumptions such as capacity or startup requirements. An additive field can still break a strict consumer; an unchanged string type can conceal changed meaning. Binary compatibility becomes relevant only if compiled/native artifacts are distributed.\nDefine the required combinations explicitly: new provider with old consumer, old reader with new data, and both directions during overlap where necessary. No universal compatibility matrix or global system version is required. Application release, API version, database migration state, SDK/package version, and configuration schema version serve different purposes; a release can identify a compatible set without changing all their versions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Released vs Unreleased Behavior",
+    "anchor": "released-vs-unreleased-behavior",
+    "text": "Released vs Unreleased Behavior\n“Released” includes behavior deployed, persisted, published, installed, queued, or consumed independently, not only public release. Verified unreleased contracts may be refined when no durable consumer depends on them. Git preserves development history; ADRs preserve decisions; migration history preserves durable database transitions. Released contracts may evolve compatibly, but released migrations retain their distinct immutability requirements.\nCurrent API, SDK, and web code evolve together. The [release registry](../../apps/api/prisma/release-history.json) records durable database releases; absence of an entry is not proof that no persistent environment exists. Verify release status before editing migration history. [Release evolution](../database/release-evolution.md) owns the evidence and upgrade procedure. No published SDK versioning scheme, released API baseline, client-support period, or production rollback window is implied by current scripts.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Expand–Migrate–Contract",
+    "anchor": "expandmigratecontract",
+    "text": "Expand–Migrate–Contract\nFor changes that cannot occur atomically:\n**Expand:** introduce compatible fields, schema capabilities, accepted payloads, configuration, or infrastructure while existing consumers still work.\n**Migrate:** update readers/writers/consumers, backfill durable data, and switch traffic or activation in a safe order.\n**Contract:** remove old behavior only after supported consumers, retained data, and rollback obligations no longer need it.\nSpecify the application/schema/configuration/infrastructure state at each step. Rolling/canary deployment creates mixed versions; blue-green can shorten but does not eliminate compatibility during shared data use, traffic switches, or rollback. Feature flags may separate activation from deployment but do not solve incompatible data formats.\nTemporary adapters, dual reads/writes, legacy config fallbacks, and feature flags need identifiable ownership, purpose, tests, tracking, and removal conditions. Define the canonical representation, failure handling, and reconciliation for dual writes. Fallback reads must not conceal an incomplete migration indefinitely. Preserve durable meaning; compatibility is never a justification for silent data loss.\nChoose and document rollback or forward recovery for a significant transition. Application rollback does not undo a schema migration or recover dropped data. Do not contract schema/configuration while a supported rollback application still needs it. Before activating a new writer, ask whether old readers can understand its output; delaying new writes may be necessary even when new readers understand old data.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Persisted Data Compatibility",
+    "anchor": "persisted-data-compatibility",
+    "text": "Persisted Data Compatibility\nDatabase enums/JSON, cached documents, events, job payloads, sessions, stored files, and encrypted serialization can outlive the code that wrote them. Determine which old shapes actually exist, where they live, their retention/replay lifetime, which versions read them, whether they can be migrated/rebuilt, and how both read/write directions are tested.\nExplicit payload versions are useful when incompatible shapes coexist and parsing needs identification; do not add them to every record preemptively. Shape detection may suffice for simple transitions. Defaults must accurately represent historical meaning, not merely make deserialization succeed. Preserve unknown values or reject unsupported shapes explicitly instead of mapping them to an incorrect known state.\nEvents need an owned type, schema, meaning, producer, and consumers. Prefer compatible evolution when consumers permit it; a different business fact deserves a semantic new event type rather than a misleading version of the old one. Queues, logs, dead letters, archives, and replay extend compatibility obligations; long-lived retries may span several releases. Consumers may ignore additive unknown fields only where the contract permits, never required semantics.\nCaches may be migrated, safely invalidated, or assigned new key namespaces; old namespaces must expire/be removed. Search indexes are derived state and may use reindexing, dual indexes, or alias switches instead of indefinite legacy support. Prefer mature standard serialization formats; custom binary formats need a concrete benefit and explicit compatibility design.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Other Compatibility Surfaces",
+    "anchor": "other-compatibility-surfaces",
+    "text": "Other Compatibility Surfaces\nSurface\nRequired considerations\nPackages and SDK\nInternal atomic changes usually need no compatibility layer. Independently published packages need a deliberate distribution/version policy and intentional exports. SDK programming API compatibility and SDK-to-server compatibility are distinct; generated public interfaces can become commitments even though output is rebuildable.\nAPIs and public errors\nFollow [API versioning](../api/versioning.md). Consumer-visible errors, ordering, defaults, authorization, pagination, idempotency, and side effects can break without a schema diff.\nConfiguration\nNew required keys may need provisioning before code. Renames need deterministic old/new precedence; removal must preserve rollback. Follow [configuration policy](configuration.md).\nCredentials and identity\nIssuer, audience, claim, algorithm, key, token-lifetime, and session-format changes affect existing clients/sessions. Rotation may sign with new keys while accepting previous keys temporarily under security policy. Mass logout must be deliberate.\nAuthorization/classification\nPersisted permission identifiers may need migration. Review both tighter and looser access; apply stricter current data classification to telemetry, exports, analytics, access, and retention. Required security corrections can override compatibility, with impact managed explicitly.\nCLIs and scripts\nPublic command names, arguments, output, and exit codes can be contracts. Internal scripts within one revision may evolve atomically; external CI/operations consumers may not.\nInfrastructure/providers\nCoordinate resources and permissions before dependent consumers and remove them after migration. Provider API versions are dependencies, not this API's versions; test upgrades and track deprecation deadlines near the integration.\nToolchain/dependencies\nRuntime/compiler upgrades can affect output, library compatibility, and behavior. Use repository pins, lockfile, and frozen installation; assess actual breaking impact rather than trusting labels or allowing uncontrolled upgrades.\nGenerated references\nCanonical contract semantics govern compatibility, not incidental formatting. If external automation consumes a machine-readable artifact, its intended schema becomes explicit.\nSecurity takes priority over retaining vulnerable behavior. Safe release metadata should support correlation without conflating release identity with API/schema versions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Deprecation and Removal",
+    "anchor": "deprecation-and-removal",
+    "text": "Deprecation and Removal\nDeprecation needs a replacement, migration path, support/removal condition, and owner. Remove compatibility complexity once the real consumer is gone, not just because current source no longer uses it. Check installed clients, external users, queued/persisted historical shapes, and rollback; source search alone may be insufficient.\nUse safe runtime usage evidence when available. Telemetry can correlate release, operation, bounded contract/error category, migration, and configuration changes; it must not create unbounded labels for arbitrary consumer/payload identities. Alerts should reflect impact from unsupported clients or deployment ordering failures. Document supported versions only where support exists; metadata such as introduced/deprecated/replacement belongs in canonical contracts only when useful, never a parallel manually duplicated manifest.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Compatibility Testing",
+    "anchor": "compatibility-testing",
+    "text": "Compatibility Testing\nTest actual supported combinations at their boundary: old request/new server, new application/transitional schema, old reader/new message, new worker/retained old job, active/deprecated configuration, or rollback application/current schema. Do not maintain arbitrary historical combinations. Use the real release baseline for migrations; fresh-install checks alone do not prove upgrade safety.\nReleased fixtures/baselines are immutable evidence, not snapshots to silently rewrite when tests fail. Add distinct historical shapes when necessary. Structural API comparisons, canonical event/schema checks, and property-based serializer tests can help where justified; semantic review remains required.\n`pnpm release:check` and its tests protect recorded migration/release history. Current API/SDK/reference freshness checks detect drift from current sources, not released-consumer compatibility. Dedicated historical API diffing, event versioning, and package-publication compatibility tooling are not selected merely by this policy.\nFail before unsafe work when a dependency/schema is unsupported and expose stable safe diagnostics. Prefer capability detection when the real dependency is a capability; numeric comparisons are appropriate only with precise version semantics. Accept supported old forms during transition, then reject removed forms explicitly rather than failing later with unrelated SQL/property errors.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Breaking Change Checklist",
+    "anchor": "breaking-change-checklist",
+    "text": "Breaking Change Checklist\nBefore completing a compatibility-sensitive change, establish:\nConsumers, release evidence, independence, persistence/replay lifetime, and required direction/window.\nStructural, semantic, behavioral, operational, and security impact; whether atomic or additive evolution is possible.\nOrdered application, schema, configuration, infrastructure, credential, and message states, including new-writer/old-reader safety.\nRollback or forward-recovery expectations and any urgent security override.\nCanonical transition state, tests for supported combinations, safe usage evidence, and completion criteria.\nOwnership and removal conditions for every temporary compatibility path.\nDo not introduce `v2`, a package major, or a payload schema version merely to avoid this analysis. Compatibility exists to protect real consumers while keeping the foundation maintainable.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "React Components and Design Practices",
+    "anchor": "react-components-and-design-practices",
+    "text": "React Components and Design Practices\n[Web application](../../apps/web/README.md) · [Living Documentation](living-documentation.md) · [Component reference](../generated/components/web.md)\nThis policy owns component reuse, classification, documentation and styling in the existing React application. It extends the application-owned UI direction in [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) and the source/distribution separation in [ADR-0018](../adr/orion/0018-isolate-internal-documentation-from-product-distribution.md). No separate UI package, framework, component vendor or theme provider is selected.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Inspect before implementing",
+    "anchor": "inspect-before-implementing",
+    "text": "Inspect before implementing\nBefore implementing equivalent UI, contributors and AI agents must inspect the shared [component entry point](../../apps/web/src/components.tsx), its [metadata](../../apps/web/src/components.docs.json), applicable feature-owned `components.docs.json` files, and the generated reference or local `/docs/components` catalog. Use `rg --files apps/web/src` and targeted searches for the responsibility and existing controls, then read candidate implementation and tests. The catalog is curated; absence from it is not proof that equivalent private UI does not exist.\nCompare responsibility, native semantics, props, states, accessibility, styling hooks and ownership before choosing reuse. Reuse when these genuinely match. Extend an existing component compatibly when the responsibility remains the same. Similar appearance alone does not justify sharing; keep business validation, permissions, credential handling, API calls and workflow state in their feature.\nIf no suitable component exists, start with native HTML or a local feature component. Extract shared presentation only for demonstrated reuse or a concrete stable primitive, with a narrow contract and an owner. Do not create a wrapper for every element, a speculative component for every category, a large configurable component for unrelated workflows, or a second implementation of equivalent behavior. Explain meaningful reuse or extraction decisions in the change; static checks cannot prove that an agent inspected existing UI.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Responsibility and placement",
+    "anchor": "responsibility-and-placement",
+    "text": "Responsibility and placement\nReuse scope\nResponsibility\nPlacement and documentation\n`shared`\nSmall reusable UI primitives with native semantics and no domain behavior, such as Button.\nThe web application's explicit `components.tsx` public entry point; every named uppercase runtime export needs owned metadata. Extract files only when it improves local reasoning.\n`composed`\nCohesive reusable presentation built from primitives/native controls, such as a labeled TextField or ErrorNotice.\nThe same public entry point when shared across features; document the composition's own responsibility and states rather than duplicating every native prop.\n`feature-specific`\nA component tied to one workflow's terminology, state, permissions or side effects.\nIts feature directory. Catalog notable reusable-within-feature components through local metadata when useful; private helpers and every React export elsewhere do not require catalog entries.\n`owner` names the maintaining boundary or module, not an invented team. Source ownership and reuse scope do not grant new dependency edges: features may consume shared UI; reusable UI and generic portal modules must not depend on feature workflows. Explicit application-specific example registrations follow the preview boundary below. A feature-specific component is not promoted by adding it to the catalog. Keep hooks, domain utilities and type exports outside the curated component export inventory. Type-only exports are exempt; prefer explicit named exports so humans and tools can discover the public surface. The existing generator uses the installed TypeScript parser to verify functions, component values and local re-exports, without executing source modules. Full type checking remains the compiler's responsibility.\n"
+  },
+  {
+    "id": "repository/docs/architecture/web-components",
+    "title": "React Components and Design Practices",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Categories and discovery",
+    "anchor": "categories-and-discovery",
+    "text": "Categories and discovery\nThe default categories are **Actions, Inputs, Forms, Data Display, Feedback, Navigation, Overlays and Layout**. They describe UI responsibility rather than require implementations. A metadata file may add categories through its `categories` string array; additions should represent a useful discovery distinction. Unknown explicit categories fail validation, helping catch typos. Legacy entries without a category use `Uncategorized` until their owner classifies them.\nThe internal catalog offers category links with URL-owned selection, searchable ownership/scope/usage, props, states, accessibility, code examples, optional live previews, and source/metadata links. Existing `/docs/components/<name>` URLs remain stable; optional `id` supports namespaced identifiers when features use the same component name. Changing a name need not change an explicitly recorded ID. The generated manifest indexes category, scope, owner and source; its per-component JSON pages contain the normalized metadata. These files and the generated Markdown reference remain machine-readable for agents even when production builds exclude the portal.\n"
+  },
+  {
     "id": "repository/docs/architecture/web-components",
     "title": "React Components and Design Practices",
     "group": "Architecture",
@@ -403,464 +691,5 @@
     "heading": "Transactions",
     "anchor": "transactions",
     "text": "Transactions\nAssume concurrent requests, processes, retries, workers, and deployment overlap unless the architecture proves exclusive ownership. Sequential code does not imply sequential execution across the system. Identify the durable invariant, which changes must become visible together, relevant competing actors, and failure/recovery semantics before choosing a mechanism.\nTransactions protect all-or-nothing state within their actual database boundary. They must remain as short as practical and should not automatically surround every HTTP request or every repository method. Splitting dependent writes into independently committed methods can destroy atomicity; wrapping remote work in a transaction can hold locks without providing distributed rollback.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Application-Level Transaction Ownership",
-    "anchor": "application-level-transaction-ownership",
-    "text": "Application-Level Transaction Ownership\nThe application operation owns the complete consistency requirement; domain logic stays independent of SQL/Prisma transaction APIs. Persistence infrastructure must make scope and participating connection/context discoverable. Repositories in one atomic operation must use the same transaction rather than silently opening independent connections or escaping context.\nNested transaction calls may mean savepoints rather than independent transactions; understand actual library/database semantics. Use savepoints, Unit of Work, implicit async-local context, or transaction hooks only when they add concrete value and remain predictable/testable. Hooks need explicit retry, rollback, and crash semantics. An after-commit callback is best effort unless required work is durably recorded under [delivery policy](../architecture/delivery-and-side-effects.md#after-commit-work).\nExternal calls generally stay outside database transactions. Rollback cannot unsend mail, reverse an accepted provider mutation, remove an uploaded file reliably, or retract a published message. Never place unsafe non-idempotent external effects in transparently retried blocks. A payment provider's “transaction” is not a shared database transaction.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Isolation Levels",
-    "anchor": "isolation-levels",
-    "text": "Isolation Levels\nChoose isolation and conflict mechanisms for actual invariants, not framework defaults or labels. PostgreSQL's real behavior matters; names shared with other databases need not imply identical guarantees. Consider relevant anomalies: dirty/non-repeatable reads, phantoms, lost updates, and write skew. The default is not a universal guarantee; serializable execution can still abort and require bounded safe retry.\nA read/snapshot may become stale immediately after commit. Read-committed work still needs constraints or conditional updates where read-then-write would race; stronger isolation carries contention, resource, and throughput costs. Do not weaken correctness because of speculative performance concerns, or select the strongest isolation without considering its actual benefit.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Check-Then-Act Race",
-    "anchor": "check-then-act-race",
-    "text": "Check-Then-Act Race\nApplication checks can become stale before a write. Protect uniqueness with database constraints even when a precheck improves feedback. Prefer atomic counter updates, conditional decrements/state transitions, reservations, or other native atomic operations to unprotected read–calculate–write sequences.\nFor example, updating only where ID, expected version, valid source state, and protected ownership still match lets PostgreSQL arbitrate competing writes. Inspect affected-row count and safely classify failure; zero rows alone does not prove which precondition failed. Authorization checks must not leak hidden state while classifying a conflict.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Optimistic concurrency",
-    "anchor": "optimistic-concurrency",
-    "text": "Optimistic concurrency\nUse a deliberate expected version/state when stale writes must be rejected. Increment a dedicated version exactly once per successful mutation and return meaningful conflict semantics. Reload/reconciliation versus safe retry depends on the domain; do not silently rebase a user's stale intent onto a newer version.\nTimestamps are concurrency tokens only with proven precision and update semantics; explicit versions are often clearer. Wall-clock timestamps across machines do not guarantee total order. Use database time, sequences, or logical versions when correctness requires ordering.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Locks and reservations",
-    "anchor": "locks-and-reservations",
-    "text": "Locks and reservations\nPessimistic row locks can serialize high-conflict short work. Cover the smallest meaningful resource, bound waits, and use deterministic multi-resource lock ordering to reduce deadlocks. Locks consume connections and can cause blocking/latency; measure their cost. Advisory locks require explicit ownership, timeout, and failure semantics.\nDistributed locks are not a default. First consider constraints, conditional writes, versions, row locks, queue ownership, or a single logical writer. Expiring leases can leave a stale worker running after another acquires the lease; high-risk protocols may need fencing tokens or equivalent enforcement. A lease alone does not prove exclusivity.\nBusiness reservations such as seat holds are durable domain state with expiry/renewal/release/claim races; do not implement minutes-long business holds as long-lived database locks. Concurrent numbering needs safe allocation, never `MAX(number) + 1`. Sequences may contain gaps; a gapless requirement is a stronger business decision with concurrency cost.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Deadlock Retry",
-    "anchor": "deadlock-retry",
-    "text": "Deadlock Retry\nDeadlocks and serialization failures are recognized conflict modes, not evidence of corruption. Repeated deadlocks or lock timeouts may indicate poor access ordering, contention, or defects and must remain observable. Distinguish lock contention from database unavailability and domain/constraint failures.\nRetry only classified transient failures for an operation safe to repeat, with bounded attempts/time and appropriate backoff/jitter based on evidence. Do not retry permanent constraint/query/schema failures blindly. Expected transient retries need useful telemetry without becoming duplicate incident reports.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Database Retry Boundary",
-    "anchor": "database-retry-boundary",
-    "text": "Database Retry Boundary\nRetry the complete logical transaction, including its reads and business assumptions, not only the last failed statement. Everything in that boundary can execute again. Inspect driver, repository, service, SDK, proxy, and caller policies to avoid multiplying retries; normally one layer owns retries for a failure.\nA timeout/cancellation or lost connection during commit may mean the operation committed and the response was lost. Propagate cancellation where supported and safe, clean up transactions reliably, and preserve unknown outcomes when relevant. Idempotency, state lookup, or reconciliation must resolve retry safety; a transient connection failure does not prove a write did not occur. Follow the owning module's recovery conventions for current behavior and [delivery retry rules](../architecture/delivery-and-side-effects.md) for broader workflows.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Authorization, audit, and derived reads",
-    "anchor": "authorization-audit-and-derived-reads",
-    "text": "Authorization, audit, and derived reads\nFor database-dependent authorization, define the consistency point between permission/ownership checks and the protected write. Immediate revocation requirements may affect transaction, token, and cache design; a distant precheck is insufficient when those semantics require freshness. Do not invent immediate revocation guarantees from short-lived tokens alone.\nWhen a required audit record and business change share a database boundary, they may need to commit atomically. External audit/event delivery requires durable intent and recovery; diagnostic logs are not authoritative business audit. Publish no event implying durable state before commit, and do not rely on unrecorded post-commit publication where delivery is required.\nRead replicas, caches, projections, and materialized views introduce staleness. Define whether an operation requires read-your-writes, its acceptable delay, canonical source, update/invalidation, repair, and failure behavior. “Eventually consistent” requires a process that actually repairs divergence. Cache stampede mitigations or single-writer/partitioned processing are optional responses to real load, not defaults; partition order does not imply global order.\nDatabase plus object storage needs partial-failure design such as temporary upload/finalization, orphan cleanup, and reconciliation. Distributed workflows must define convergence, compensation, or safe manual intervention rather than pretend to share one atomic commit. Do not claim exactly-once effects without end-to-end evidence.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Performance, observability, and repair",
-    "anchor": "performance-observability-and-repair",
-    "text": "Performance, observability, and repair\nBatch sizes affect transaction duration, lock scope, failure granularity, and memory. Large updates may need batching under [migration policy](migrations.md#backfills). Investigate hot rows/indexes, contention, and retry patterns with evidence before redesigning consistency.\nUse stable semantic operation names and bounded safe telemetry for latency, conflict/retry counts, lock waits, deadlocks, attempts, and final outcomes where useful. Trace meaningful latency/failure boundaries rather than every trivial query. Never dump rows or sensitive query values during conflict diagnostics; follow [redaction](../security/telemetry-redaction.md).\nRepair by retry, reconciliation, or intervention must be part of the design. Rare states requiring manual action must be detectable, diagnosable, and safe to repair through a concrete runbook. Separate high-risk audit requirements from diagnostic logging. Production signals can reveal duplicates, stuck work, and failed reconciliation that tests cannot exhaustively predict.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Testing and verification",
-    "anchor": "testing-and-verification",
-    "text": "Testing and verification\nUse real PostgreSQL for guarantees involving rollback, constraints, isolation, and locks. Sequential mocks cannot prove concurrent safety. Coordinate competing operations explicitly where practical rather than sleeping and hoping they overlap; avoid deadlock tests tied to undocumented scheduler timing.\nVerify relevant cases: mid-operation failure leaves no partial state; concurrent uniqueness/create claims produce one consistent result; stale versions conflict; competing transitions cannot both win; retry limits and complete-transaction restart behave safely; process interruption and response loss preserve documented recovery. The [delivery test requirements](../architecture/delivery-and-side-effects.md#verification) cover duplicate delivery, idempotency, external failure, and reconciliation when introduced. Testing and review remain necessary even where static checks can help.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "New Transaction Checklist",
-    "anchor": "new-transaction-checklist",
-    "text": "New Transaction Checklist\nBefore implementing or changing a state-changing operation:\nIdentify the invariant, owner, participating writes, concurrency sources, duplicate possibility, and applicable authorization/audit consistency.\nChoose constraints, atomic writes, versioning, isolation, locks, or explicit reservations proportionally; explain scope and maximum duration.\nDetermine conflict/error semantics, full retry boundary and owner, transient categories, attempt/time bounds, and safety of every repeated action.\nResolve halfway failure, external-success/database-failure, commit ambiguity, lost response, and crash windows without unsupported rollback or exactly-once claims.\nAdd deterministic integration evidence, safe operational signals, and recovery/repair guidance. Update the owning domain and generated contract/metadata when behavior changes.\n"
-  },
-  {
-    "id": "repository/docs/generated/api/errors",
-    "title": "API Error Registry",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "API Error Registry",
-    "anchor": "api-error-registry",
-    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`CSRF_VALIDATION_FAILED`\n403\nauthentication\nno\nThe request could not be verified as coming from the Teluni panel. Reload the page and try again.\n`RECENT_AUTHENTICATION_REQUIRED`\n403\nauthentication\nno\nThis action requires you to confirm your identity again. Sign in again and retry.\n`SESSION_LIMIT_REACHED`\n409\nconflict\nno\nYou already have the maximum number of active sessions. End one of them to continue.\n`MEMBERSHIP_REMOVED`\n409\nconflict\nno\nThis membership was removed and cannot be reactivated.\n`RESPONSIBLE_ADMINISTRATOR_PROTECTED`\n409\nconflict\nno\nTransfer responsibility before suspending or removing the responsible administrator.\n`LAST_ADMINISTRATOR_REQUIRED`\n409\nconflict\nno\nThe company must retain an active administrator.\n`RESPONSIBLE_APPROVAL_REQUIRED`\n403\nauthorization\nno\nOnly the company's responsible administrator can approve this administrator change.\n`SUCCESSOR_NOT_ELIGIBLE`\n409\nconflict\nno\nResponsibility can only pass to another active company administrator.\n`RESPONSIBILITY_TRANSFER_PENDING`\n409\nconflict\nno\nA responsibility transfer is already waiting for acceptance. Cancel it first.\n`RESPONSIBILITY_TRANSFER_NOT_PENDING`\n409\nconflict\nno\nThis responsibility transfer was already decided or has expired.\n`PERMISSION_DENIED`\n403\nauthorization\nno\nYou do not have permission to perform this action.\n`COMPANY_SUSPENDED`\n403\nauthorization\nno\nThis company is suspended. Contact Teluni support.\n`RESOURCE_VERSION_CONFLICT`\n409\nconflict\nno\nThe resource changed; reload it before trying again.\n`IDEMPOTENCY_KEY_REUSED`\n409\nconflict\nno\nThe creation key was used for different content.\n`BRANCH_NAME_IN_USE`\n409\nconflict\nno\nAnother active branch of this company already uses that name.\n`BRANCH_ARCHIVED`\n409\nconflict\nno\nThe branch is archived and cannot be changed.\n`PROFILE_NAME_IN_USE`\n409\nconflict\nno\nAnother active access profile of this company already uses that name.\n`PROFILE_ARCHIVED`\n409\nconflict\nno\nThe access profile is archived and cannot be changed.\n`PROFILE_IN_USE`\n409\nconflict\nno\nMembers still hold this access profile. Revoke their grants before archiving it.\n`PROFILE_LIMIT_REACHED`\n409\nconflict\nno\nThe company already has the maximum number of active access profiles.\n`BRANCH_IN_USE`\n409\nconflict\nno\nThe branch still has active resources, such as paired screens. Move or unlink them before archiving it.\n`INVITATION_PENDING`\n409\nconflict\nno\nA pending invitation for this address already exists. Resend it instead.\n`INVITATION_NO_LONGER_VALID`\n409\nconflict\nno\nThis invitation is no longer valid. Ask for a new one.\n`INVITATION_RECIPIENT_MISMATCH`\n403\nauthorization\nno\nThis invitation was sent to another email address. Sign in with that address to accept it.\n`MEMBERSHIP_SUSPENDED`\n409\nconflict\nno\nYour access to this company is suspended. Contact a company administrator.\n`PAIRING_CODE_INVALID`\n409\nconflict\nno\nThis code is not valid. Check the code shown on the screen, or restart pairing on the screen to get a new one.\n`ENROLLMENT_REJECTED`\n409\nconflict\nno\nThis credential cannot be used. Generate a new credential on the device.\n`ROTATION_UNSUPPORTED`\n409\nconflict\nno\nThe screen did not report support for this rotation.\n`DEVICE_UNAUTHORIZED`\n401\nauthentication\nno\nThe device credential is not valid for this operation.\n`DEVICE_UNLINKED`\n409\nconflict\nno\nThis screen was unlinked and can no longer change.\n`DEVICE_ERASURE_NOT_PENDING`\n409\nconflict\nno\nThis screen has no pending erasure to record.\n`MEDIA_TYPE_UNSUPPORTED`\n400\nvalidation\nno\nThis file type is not supported. Use a JPEG, PNG or WebP image, or an MP4, MOV, WebM or MKV video.\n`MEDIA_TOO_LARGE`\n400\nvalidation\nno\nThis file is too large. Images may have up to 20 MiB and videos up to 1 GiB.\n`MEDIA_UPLOAD_INCOMPLETE`\n400\nvalidation\nyes\nThe upload did not deliver exactly the declared file. Send the whole file again.\n`MEDIA_NOT_UPLOADING`\n409\nconflict\nno\nThis media item already received its file.\n`MEDIA_NOT_READY`\n409\nconflict\nyes\nThis media item is not ready to be shown yet.\n`MEDIA_IN_USE`\n409\nconflict\nno\nThis media item is still used by programming or a publication and cannot be deleted.\n`MEDIA_STORAGE_FULL`\n503\navailability\nyes\nThe media storage is nearly full, so new uploads are paused. Contact support.\n`MEDIA_INVALID_STATE`\n409\nconflict\nno\nThis media item cannot do that in its current state.\n`CATALOG_SCHEMA_INVALID`\n409\nconflict\nno\nThe fields cannot be saved this way. Each issue names the field and the reason, with how many items cause it when stored data does.\n`CATALOG_RECORD_INVALID`\n409\nconflict\nno\nThe item's values do not match the catalog's fields. Each issue names the field and the reason.\n`CATALOG_RECORD_REFERENCED`\n409\nconflict\nno\nOther items refer to this item, so it cannot be deleted. Change those items first.\n`CATALOG_PROMOTION_CONFLICT`\n409\nconflict\nno\nAnother promotion of this price overlaps this period for the same branches.\n`CATALOG_LIMIT_REACHED`\n409\nconflict\nno\nA catalog limit was reached: 200 catalogs per company, 60 fields or 5,000 items per catalog, or 100 promotions per price.\n`CATALOG_ARCHIVED`\n409\nconflict\nno\nThis catalog is archived. Restore it before changing it.\n`CATALOG_NOT_EMPTY`\n409\nconflict\nno\nOnly an empty catalog can be deleted. Delete its items first.\n`CATALOG_IN_USE`\n409\nconflict\nno\nA field of another catalog or a layout uses this catalog, so it cannot be deleted.\n`PRICE_TARGET_FORBIDDEN`\n403\nauthorization\nno\nScreens show this catalog through programs you cannot publish, so its prices cannot change from your account. Ask someone who can publish them.\n`PROGRAMMING_LIMIT_REACHED`\n409\nconflict\nno\nThis company reached a programming limit: 1,000 playlists, 500 layouts, 100 groups, 2,000 programs, 500 items per playlist or 200 schedules per output.\n`PLAYLIST_IN_USE`\n409\nconflict\nno\nThis playlist is still used by a schedule or a default and cannot be deleted.\n`PLAYLIST_SCOPE_MISMATCH`\n409\nconflict\nno\nThis playlist or media item belongs to a branch the programming does not cover. Use company content or content of that single branch.\n`GROUP_NAME_IN_USE`\n409\nconflict\nno\nAnother programming group of this company already has this name.\n`GROUP_HAS_MEMBERS`\n409\nconflict\nno\nRemove the screens from this group before deleting it.\n`GROUP_SPAN_EXCLUDES_DEVICE`\n409\nconflict\nno\nThe group does not cover the screen's branch. Change the group's branches or choose another group.\n`SCHEDULE_TIMES_EQUAL`\n400\nvalidation\nno\nA schedule cannot start and end at the same time. Use the all-day option for a whole day.\n`SCHEDULE_CONFLICT`\n409\nconflict\nno\nTwo schedules of the same screen output overlap. Check the schedules to find them.\n`ASSIGNMENT_CONFIRMATION_REQUIRED`\n409\nconflict\nno\nThe chosen programming is not published yet, so the screen will show neutral output. Confirm to continue.\n`LAYOUT_INVALID`\n409\nconflict\nno\nThe layout cannot be saved this way. Each issue names the area, view or page and the reason.\n`LAYOUT_IN_USE`\n409\nconflict\nno\nPrograms use this layout. Choose another layout for them before deleting it.\n`LAYOUT_SCOPE_MISMATCH`\n409\nconflict\nno\nThis layout belongs to a branch the programming does not cover. Use a company layout or a layout of that single branch.\n`LAYOUT_CHANGE_CONFIRMATION_REQUIRED`\n409\nconflict\nno\nThis change removes schedules or defaults of areas that no longer exist or no longer take a default playlist. Each issue names the output; confirm to remove them.\n`TIMELINE_TOO_LARGE`\n400\nvalidation\nno\nThis period has too many schedule changes to show at once. Choose a shorter period.\n`PUBLICATION_INVALID`\n409\nconflict\nno\nThis programming cannot be published as it is. Check it to see what must change first.\n`PUBLICATION_NOT_RESTORABLE`\n409\nconflict\nno\nThis publication is no longer kept and cannot be restored. Publish the current programming instead.\n`PROTOCOL_UNSUPPORTED`\n409\nconflict\nno\nThis player supports no synchronization protocol the server offers. Update the player.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Web Component Reference",
-    "anchor": "web-component-reference",
-    "text": "Web Component Reference\n[Component architecture](../../architecture/web-components.md) · [Living documentation](../../architecture/living-documentation.md)\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Button",
-    "anchor": "button",
-    "text": "Button\nA native action button with explicit variants and safe pending behavior.\nCategory: Actions. Scope: shared. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Button`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`children`\n`ReactNode`\nVisible action name or content with an equivalent accessible name.\nYes\n—\n`type`\n`button | submit | reset`\nNative form behavior; the safe default does not submit a form.\nNo\nbutton\n`variant`\n`primary | secondary`\nSemantic action emphasis, styled through product-owned tokens.\nNo\nsecondary\n`pending`\n`boolean`\nDisables activation and exposes aria-busy while the caller owns pending work.\nNo\nfalse\n`…buttonProps`\n`ComponentPropsWithRef<\"button\">`\nNative props such as disabled, onClick, className, ref and ARIA attributes are forwarded.\nSee type\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states",
-    "text": "States\nDefault and primary\nHover and keyboard focus\nDisabled\nPending\nProduct token override\nAccessibility: Uses a native button and visible focus. Pending disables activation and sets aria-busy; preserve meaningful button text while work is pending.\nUsage: Use for actions. Use a link for navigation. Keep a visible accessible name; choose type=submit explicitly inside forms. Native button props and refs are forwarded.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples",
-    "text": "Examples\n**Action states and product styling** (`button-states`): Local actions, disabled and pending states, and a scoped token override.\n<Button variant=\"primary\" onClick={save}>Save</Button>\n<Button pending>Saving…</Button>\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "TextField",
-    "anchor": "textfield",
-    "text": "TextField\nA labeled native input with linked hints and validation messages.\nCategory: Inputs. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `TextField`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-1",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`type`\n`Text-entry native input types`\nSupports text, email, password, search, tel, url, number and native date/time inputs. Use separate native controls for checkbox, radio, file, range or other selection behavior.\nNo\ntext\n`label`\n`string`\nPersistent accessible label; a placeholder cannot replace it.\nYes\n—\n`id`\n`string`\nOptional DOM id; a stable useId value is generated when absent.\nNo\nGenerated with useId\n`hint`\n`string`\nOptional help linked to the input through aria-describedby.\nNo\n—\n`error`\n`string`\nCaller-owned validation message linked to the input; also marks it invalid.\nNo\n—\n`…inputProps`\n`ComponentPropsWithRef<\"input\">`\nNative value/defaultValue, onChange, type, required, disabled, className, ref and ARIA props are forwarded. Existing aria-describedby references are retained.\nSee type\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-1",
-    "text": "States\nEmpty and populated\nHint\nValidation error\nRequired\nDisabled\nKeyboard focus\nAccessibility: Associates label and input through a stable id; links hint and error descriptions and sets aria-invalid for errors. Native required, disabled, ref and keyboard behavior are preserved. The feature owns dynamic error summaries or announcements.\nUsage: Use for a single native input with a persistent label. The caller owns value, validation and submission. Keep domain-specific validation and credentials in the feature; use other native controls for multiline text or selection.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-1",
-    "text": "Examples\n**Labeled input and validation** (`text-field-states`): Synthetic form input with a hint, validation message and disabled state.\n<TextField label=\"Name\" hint=\"Shown to your colleagues.\" required />\n<TextField label=\"Email\" type=\"email\" error=\"Enter an email address.\" />\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Checkbox",
-    "anchor": "checkbox",
-    "text": "Checkbox\nA native checkbox with a persistent label and an optional mixed state.\nCategory: Inputs. Scope: shared. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Checkbox`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-2",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`ReactNode`\nVisible label that names the checkbox.\nYes\n—\n`indeterminate`\n`boolean`\nShows the mixed state, for example when only some options are chosen.\nNo\nfalse\n`…inputProps`\n`ComponentPropsWithRef<\"input\">`\nNative props such as checked, onChange, disabled, name and ref are forwarded.\nSee type\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-2",
-    "text": "States\nUnchecked\nChecked\nMixed\nKeyboard focus\nDisabled\nAccessibility: The native input stays focusable and announced while a drawn box shows checked, mixed, focus and disabled states; the whole label toggles it. indeterminate sets the native mixed state that assistive technology reports.\nUsage: Use for independent on/off choices and for select-all controls whose options are partly chosen. The checked value stays caller-owned. Native input props and refs are forwarded.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-2",
-    "text": "Examples\n**Checkbox states** (`checkbox-states`): Checked, mixed and disabled examples held locally.\n<Checkbox label=\"Select all\" checked={all} indeterminate={some} onChange={toggleAll} />\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "ErrorNotice",
-    "anchor": "errornotice",
-    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\nCategory: Feedback. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `ErrorNotice`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-3",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\nSee type\n—\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\nSee type\n—\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\nSee type\n—\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\nSee type\n—\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\nSee type\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-3",
-    "text": "States\nFailure message\nFailure message with reload action\nAccessibility: Uses role=alert so the failure is announced; the optional reload control is a native button.\nUsage: Pass the original error to preserve stable-code mapping. Offer reload only when the current data can be refreshed, and never imply that an unknown write outcome failed.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-3",
-    "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Popover",
-    "anchor": "popover",
-    "text": "Popover\nA non-modal surface in the browser's top layer, placed next to an anchor element.\nCategory: Overlays. Scope: shared. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Popover`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-4",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`anchor`\n`HTMLElement | null`\nElement the popover is placed below, or above when only that fits.\nYes\n—\n`open / onClose`\n`boolean / () => void`\nCaller-owned visibility; onClose reports Escape, outside clicks and other popovers.\nYes\n—\n`label`\n`string`\nAccessible name of the popover.\nYes\n—\n`returnFocus`\n`HTMLElement | null`\nReceives focus when the popover closes with focus inside it.\nNo\nanchor\n`role`\n`dialog | menu`\nSemantic role of the surface.\nNo\ndialog\n`align`\n`start | end`\nAligns the popover with the anchor's start or end edge.\nNo\nstart\n`children`\n`ReactNode`\nContent rendered while open.\nYes\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-4",
-    "text": "States\nClosed\nOpen below the anchor\nOpen above when only that fits\nDismissed by Escape or an outside click\nAccessibility: Uses the native popover attribute with role=dialog (or menu) and an aria-label. Opening focuses the element marked data-autofocus, or the popover itself. Escape, an outside click or another popover closes it; focus that would otherwise be lost returns to returnFocus or the anchor.\nUsage: Use for small panels tied to a control, such as filters or details, that should not be clipped by scrolling containers. The caller owns open and closes it from onClose. Content renders only while open, so its local state starts fresh each time. Use a page or form for long workflows.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-4",
-    "text": "Examples\n**Anchored details** (`popover-anchored`): A button toggles synthetic details; no request is made.\n<Button ref={setAnchor} onClick={() => setOpen(!open)}>Details</Button>\n<Popover anchor={anchor} open={open} onClose={() => setOpen(false)} label=\"Details\">…</Popover>\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Menu",
-    "anchor": "menu",
-    "text": "Menu\nA button that opens a list of actions in a Popover.\nCategory: Actions. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Menu`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-5",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`string`\nNames the trigger and the menu; also the trigger's tooltip.\nYes\n—\n`items`\n`MenuItem[]`\nItems with a stable key, label and onSelect, plus optional icon, checked and disabled.\nYes\n—\n`children`\n`ReactNode`\nTrigger content, usually an icon.\nYes\n—\n`align`\n`start | end`\nAligns the menu with the trigger's start or end edge.\nNo\nstart\n`…buttonProps`\n`ComponentPropsWithRef<\"button\">`\nNative trigger props such as className, ref and data attributes are forwarded.\nSee type\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-5",
-    "text": "States\nClosed\nOpen\nChecked item\nDisabled item\nKeyboard focus\nAccessibility: The trigger is a labeled button with aria-haspopup=menu and aria-expanded. Items use menuitem or menuitemcheckbox roles. Enter, Space or ArrowDown opens on the first item and ArrowUp on the last; arrow keys, Home and End move between enabled items; Escape returns focus to the trigger and Tab closes the menu.\nUsage: Use for a few secondary actions attached to a control, such as column options. Each item's onSelect runs as the menu closes; pass checked for items with an on/off state and disabled for unavailable ones. Trigger props such as className, ref and data attributes are forwarded.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-5",
-    "text": "Examples\n**Secondary actions** (`menu-actions`): One available and one disabled synthetic action; no request is made.\n<Menu label=\"Store actions\" items={[{ key: \"rename\", label: \"Rename\", onSelect: rename }]}>\n  <MoreIcon />\n</Menu>\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "MultiSelectList",
-    "anchor": "multiselectlist",
-    "text": "MultiSelectList\nA searchable list for choosing several options, with select-all, that renders only the options in view.\nCategory: Inputs. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `MultiSelectList`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-6",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`string`\nAccessible name of the option list.\nYes\n—\n`locale`\n`pt-BR | en-US`\nLanguage of the search and select-all labels, and of search matching.\nYes\n—\n`options`\n`readonly MultiSelectOption[]`\nOptions with a stable value and a label, in display order. Keep the array stable between renders.\nYes\n—\n`selected / onChange`\n`ReadonlySet<string> / (selected: Set<string>) => void`\nCaller-owned chosen values.\nYes\n—\n`query / onQueryChange`\n`string / (query) => void`\nOptional controlled search text.\nSee type\n—\n`height`\n`number`\nMaximum height of the scrolling list in pixels.\nNo\n240\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-6",
-    "text": "States\nAll chosen\nSome chosen (mixed select-all)\nSearching\nNo results\nKeyboard focus on the active option\nAccessibility: Composes TextField for the search and Checkbox for select-all, which shows a mixed state when only some options are chosen. The options form a listbox with aria-multiselectable, aria-activedescendant and aria-setsize/aria-posinset, so arrow keys, Page Up/Down, Home and End reach every option while only those in view are rendered; Space toggles the active option, and ArrowDown moves from the search into the list.\nUsage: Use when people choose several values from a long list, such as a column filter. Options keep their display order and a stable value; the selection set stays caller-owned. Search ignores case and accents; pass query and onQueryChange when the caller needs the search, and use searchOptions to find the same matches. Select all applies to the options the search found.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-6",
-    "text": "Examples\n**Searchable choices** (`multi-select-list-search`): Synthetic cities chosen locally; no request is made.\n<MultiSelectList label=\"Cities\" locale=\"en-US\" options={options} selected={selected} onChange={setSelected} />\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "DataGrid",
-    "anchor": "datagrid",
-    "text": "DataGrid\nA virtualized grid that sorts, filters and resizes columns over the rows it receives, with single or multiple selection.\nCategory: Data Display. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `DataGrid`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-7",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`string`\nAccessible name of the grid.\nYes\n—\n`locale`\n`pt-BR | en-US`\nLanguage of the grid labels, sorting and number formatting.\nYes\n—\n`rows`\n`readonly Row[]`\nAll rows to show. Keep the array stable between renders.\nYes\n—\n`columns`\n`DataGridColumn<Row>[]`\nStable key and header; value enables sorting and filtering, render overrides the formatted value, format names values, and width, minWidth, align, sortable, filterable and resizable tune the column. Keep the array stable between renders.\nYes\n—\n`rowId`\n`(row) => string`\nStable row identity.\nYes\n—\n`selectedId / onSelect`\n`string / (id) => void`\nThe current row. With single selection it is the highlighted row; clicking a row or moving with the arrow keys calls onSelect.\nSee type\n—\n`multiple`\n`boolean`\nAllows choosing several rows: Ctrl/⌘ toggles a row, Shift selects a range, Space toggles the focused row and Ctrl/⌘+A selects every shown row.\nNo\nfalse\n`selectedIds / onSelectedIdsChange`\n`readonly string[] / (ids) => void`\nCaller-owned multiple selection; used only with multiple.\nSee type\n—\n`onRowActivate`\n`(id) => void`\nDouble-click or Enter on a row.\nSee type\n—\n`exportName`\n`string`\nOffers an Export menu in the footer with Excel (.xlsx), CSV and PDF files of the rows the grid shows, in their order and with its filters; the name titles the files. Omit it where records must not leave the screen.\nSee type\n—\n`empty`\n`ReactNode`\nShown instead of the grid when there are no rows.\nSee type\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-7",
-    "text": "States\nSorted ascending or descending\nFiltered, with the filter shown on the header\nNo rows match the filters\nSingle selection\nMultiple selection\nResizing a column\nMany rows (only those in view rendered)\nExporting\nAccessibility: Uses role=grid with aria-rowcount and aria-rowindex, so assistive technology knows the full size while only the rows in view are rendered. Rows expose aria-selected (aria-multiselectable with multiple) and form one tab stop: arrow keys, Page Up/Down, Home and End move between rows, Enter activates and Space selects. Column headers expose aria-sort; their sort button, options Menu and a separator that Left/Right arrows resize are keyboard reachable, and the options appear on hover or focus. A live status reports the shown, total and selected counts. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert.\nUsage: Use for lists of records that people scan, sort and filter in the browser; DataSet adds the CRUD toolbar and form. Give each column a value to sort and filter by. Sorting and filtering apply to the rows passed in, so a paginated caller sorts and filters only the loaded page; server-side sorting and filtering are not provided. Keep rows and columns stable between renders. Selection stays caller-owned. Pass exportName to offer Excel, CSV and PDF exports of the rows shown.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-7",
-    "text": "Examples\n**Ten thousand rows** (`data-grid-large`): Synthetic screens generated locally; the example passes multiple, so Ctrl/⌘ and Shift choose several rows, and exportName, so the footer exports them. Sorting, filtering, resizing and exports make no request.\n<DataGrid label=\"Screens\" locale=\"en-US\" rows={screens} columns={columns} rowId={(row) => row.id}\n  multiple selectedIds={selected} onSelectedIdsChange={setSelected} exportName=\"Screens\" />\n\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "DataSet",
-    "anchor": "dataset",
-    "text": "DataSet\nRecord-oriented CRUD presentation: a toolbar, a DataGrid and a caller-rendered form.\nCategory: Data Display. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `DataSet`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-8",
-    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`string`\nAccessible name of the dataset region and its grid.\nYes\n—\n`locale`\n`pt-BR | en-US`\nLanguage of the toolbar and grid labels.\nYes\n—\n`mode`\n`grid | form`\nCaller-owned view; keep it in the URL when it identifies the page state.\nYes\n—\n`rows`\n`readonly Row[]`\nRecords of the current page, already authorized by the API. Keep the array stable between renders.\nYes\n—\n`columns`\n`DataGridColumn<Row>[]`\nStable key and header; value enables sorting and filtering, render overrides the formatted value, format names values, and width, minWidth, align, sortable, filterable and resizable tune the column. Keep the array stable between renders.\nYes\n—\n`rowId`\n`(row) => string`\nStable record identity.\nYes\n—\n`selectedId / onSelect`\n`string / (id) => void`\nThe current row. With single selection it is the highlighted row; clicking a row or moving with the arrow keys calls onSelect.\nSee type\n—\n`multiple`\n`boolean`\nAllows choosing several rows: Ctrl/⌘ toggles a row, Shift selects a range, Space toggles the focused row and Ctrl/⌘+A selects every shown row.\nNo\nfalse\n`selectedIds / onSelectedIdsChange`\n`readonly string[] / (ids) => void`\nCaller-owned multiple selection; used only with multiple.\nSee type\n—\n`onModeChange, onAdd, onDuplicate, onRefresh`\n`() => void (optional)`\nToolbar actions; an omitted handler disables its button, for example while a draft is unsaved. Double-click or Enter on a row selects it and requests form mode.\nSee type\n—\n`onDelete`\n`(() => void) | null (optional)`\nOmit when the records cannot be deleted; null shows the action disabled.\nSee type\n—\n`refreshing`\n`boolean`\nMarks the refresh action busy while the caller reloads data.\nNo\nfalse\n`exportName`\n`string`\nOffers an Export menu in the toolbar with Excel (.xlsx), CSV and PDF files of the rows the grid shows, in their order and with its filters; the name titles the files. Omit it where records must not leave the screen.\nSee type\n—\n`filters`\n`{ active: number; render: (close) => ReactNode }`\nOffers an icon-only Filter action right of Refresh that opens these filters in a modal dialog; active is the number of filters in effect, shown as a count on the action, and render returns the caller's fields and actions, which call close after applying or clearing. Omit it where the records have no filters.\nSee type\n—\n`empty`\n`ReactNode`\nGrid content when there are no rows.\nSee type\n—\n`children`\n`ReactNode`\nThe current record's form, rendered only in form mode.\nSee type\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-8",
-    "text": "States\nGrid with single selection\nGrid with multiple selection\nSorted and filtered grid\nEmpty grid\nForm mode\nActions disabled\nRefreshing\nFilters open in a modal and active filters counted\nExporting\nAccessibility: The toolbar uses role=toolbar with labeled icon buttons and tooltips. The grid follows DataGrid: rows show selection only through color and aria-selected, are reached with the arrow keys, and Enter opens the form like a double-click. Links and buttons inside cells keep their own behavior. The Export menu is a labeled Menu; it is busy while a file is prepared, and a failure is announced as an alert. The Filter action has an accessible name and tooltip that include the number of active filters; its modal is a native dialog labelled Filters that keeps focus inside, focuses the field marked data-autofocus, closes with Escape, the close button or a click outside its box, and returns focus to the action.\nUsage: Keep records, selection, mode, API calls, permissions and draft handling in the feature. Pass handlers only for actions the API supports and the person may perform, and withhold onSelect and navigation while a form has unsaved changes. Sorting, filters and column widths persist while the dataset switches modes; previous and next follow the order the grid shows. Enable multiple only where several records can be acted on together. Pass exportName to offer exports; columns without a value are left out, numbers stay numeric in Excel, and CSV uses the locale's separator and decimal mark. Pass filters for criteria the caller applies when loading records, such as server-side filters kept in the URL; the grid's column filters still act only on the loaded rows.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-8",
-    "text": "Examples\n**Grid and form modes** (`dataset-modes`): Synthetic local records with single selection, as on the companies page; selection and mode are held by the example and no request is made. A screen that acts on several records at once passes multiple; DataGrid's example shows it.\n<DataSet label=\"Stores\" locale=\"en-US\" mode={mode} rows={stores} columns={columns}\n  rowId={(row) => row.id} selectedId={selected} onSelect={setSelected} onModeChange={setMode}\n  exportName=\"Stores\">\n  <StoreForm id={selected} />\n</DataSet>\n\n// Only where a screen acts on several records at once:\n<DataSet multiple selectedIds={chosen} onSelectedIdsChange={setChosen} {...props} />\n\n"
-  },
-  {
-    "id": "repository/docs/generated/configuration/api",
-    "title": "API Configuration Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "API Configuration Reference",
-    "anchor": "api-configuration-reference",
-    "text": "API Configuration Reference\n[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)\nNo values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. The six `TELUNI_` human identity settings are also configured together and additionally require the token settings, whose issuer they reuse. The devices module additionally requires `TELUNI_DEVICE_CODE_KEYS`, the media module `TELUNI_MEDIA_STORAGE_PATH` and the publications module `TELUNI_SYNC_SIGNING_KEYS`. API modules that require the database, bearer authentication, human identity, mail, device code keys, media storage or signing keys stay unmounted until those settings exist, and production startup fails instead.\nEnvironment variable\nType\nRequired\nDefault\nVisibility\nClassification\nSecret\nPurpose\n`ORION_ENV`\ndevelopment | test | production\nyes\n—\nserver\nINTERNAL\nno\nRuntime environment.\n`ORION_RELEASE_ID`\nartifact identifier, 1..128 ASCII letters/digits/._-\nno\n`local`\nserver\nINTERNAL\nno\nActual artifact revision for correlated logs and traces; local for unversioned development.\n`ORION_API_HOST`\nnonempty string\nno\n`127.0.0.1`\nserver\nINTERNAL\nno\nListen address; loopback by default.\n`ORION_API_PORT`\ninteger 0..65535\nno\n`3000`\nserver\nINTERNAL\nno\nListen port; zero selects an ephemeral port.\n`TELUNI_TRUSTED_PROXIES`\ncomma-separated IP addresses or CIDR ranges, at most 16\nno\n—\nserver\nINTERNAL\nno\nReverse proxies whose X-Forwarded-For and X-Forwarded-Proto headers are trusted, so request limits count the real client address; none by default.\n`ORION_LOG_LEVEL`\nPino level\nno\n`info`\nserver\nINTERNAL\nno\nStructured log threshold.\n`ORION_SHUTDOWN_TIMEOUT_MS`\ninteger 100..30000\nno\n`5000`\nserver\nINTERNAL\nno\nTotal graceful shutdown deadline.\n`ORION_OTLP_ENDPOINT`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nOptional OTLP HTTP collector base URL.\n`ORION_TRACE_SAMPLE_RATIO`\nnumber 0..1\nno\n`1`\nserver\nINTERNAL\nno\nTrace sampling probability.\n`ORION_DATABASE_URL`\nPostgreSQL URL\nno\n—\nserver\nRESTRICTED\nyes\nRuntime PostgreSQL credential; enables the database for modules that require it and adds it to readiness.\n`ORION_TOKEN_ISSUER`\nissuer URL\nno\n—\nserver\nINTERNAL\nno\nExpected access-token issuer; configure with audience and JWKS URL to enable bearer authentication.\n`ORION_TOKEN_AUDIENCE`\nnonempty string\nno\n—\nserver\nINTERNAL\nno\nExpected API access-token audience.\n`ORION_TOKEN_JWKS_URL`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nTrusted issuer public-key endpoint.\n`TELUNI_PUBLIC_ORIGIN`\norigin URL (scheme, host, optional port)\nno\n—\nserver\nINTERNAL\nno\nBrowser-visible panel origin for OIDC callbacks, cookie security and CSRF origin checks; HTTPS outside loopback development.\n`TELUNI_OIDC_CLIENT_ID`\nclient identifier\nno\n—\nserver\nINTERNAL\nno\nConfidential human-login OIDC client used by the server-managed session boundary.\n`TELUNI_OIDC_CLIENT_SECRET`\nsecret string, at least 16 characters\nno\n—\nserver\nRESTRICTED\nyes\nCredential of the human-login OIDC client.\n`TELUNI_IDENTITY_PROVISIONER_CLIENT_ID`\nclient identifier\nno\n—\nserver\nINTERNAL\nno\nService-account client that writes the administrator-only application principal attribute.\n`TELUNI_IDENTITY_PROVISIONER_CLIENT_SECRET`\nsecret string, at least 16 characters\nno\n—\nserver\nRESTRICTED\nyes\nCredential of the principal provisioner service account.\n`TELUNI_KEYCLOAK_ADMIN_URL`\nHTTP(S) base URL, optional context path, no trailing slash\nno\n—\nserver\nINTERNAL\nno\nOptional private Keycloak base URL for principal provisioning and administrative session termination; defaults to the public issuer's base. HTTP is only for a trusted private host/container network. Does not change OIDC discovery, token issuer or TLS verification. Requires complete human identity settings and an API restart.\n`TELUNI_SESSION_KEYS`\ncomma-separated id:base64url 32-byte keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring for provider-token encryption and CSRF tokens; the first key protects new values, all keys remain readable during rotation.\n`TELUNI_MAIL_SMTP_HOST`\nhost name or address\nno\n—\nserver\nINTERNAL\nno\nSMTP submission relay for transactional email; configure with the sender and mail key ring to enable the mail module.\n`TELUNI_MAIL_SMTP_PORT`\ninteger 1..65535\nno\n`587`\nserver\nINTERNAL\nno\nSMTP submission relay port.\n`TELUNI_MAIL_SMTP_SECURITY`\ntls | starttls | none\nno\n`starttls`\nserver\nINTERNAL\nno\nImplicit TLS or mandatory STARTTLS with certificate verification; none only for a loopback test sink outside production.\n`TELUNI_MAIL_SMTP_USERNAME`\nstring, 1..256 characters\nno\n—\nserver\nINTERNAL\nno\nSMTP authentication user; configured together with the password, or both omitted for an unauthenticated test sink.\n`TELUNI_MAIL_SMTP_PASSWORD`\nsecret string, 1..512 characters\nno\n—\nserver\nRESTRICTED\nyes\nSMTP authentication credential of the mail relay.\n`TELUNI_MAIL_FROM`\nemail address\nno\n—\nserver\nINTERNAL\nno\nSender address of transactional email; its domain must be authorized for the relay.\n`TELUNI_MAIL_KEYS`\ncomma-separated id:base64url 32-byte keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring sealing secret message parameters, such as invitation credentials, until delivery ends; the first key protects new values.\n`TELUNI_DEVICE_CODE_KEYS`\ncomma-separated id:base64url 32-byte keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring for the HMAC that stores screen pairing codes; the first key protects new codes, all keys remain readable during rotation. Enables the devices module.\n`TELUNI_MEDIA_STORAGE_PATH`\nabsolute directory path\nno\n—\nserver\nINTERNAL\nno\nDirectory on durable storage that holds media objects and work files on one filesystem; enables the media module.\n`TELUNI_MEDIA_FFMPEG_PATH`\nexecutable name or path\nno\n`ffmpeg`\nserver\nINTERNAL\nno\nFFmpeg 6.1 or later executable that converts media in isolated child processes.\n`TELUNI_MEDIA_FFPROBE_PATH`\nexecutable name or path\nno\n`ffprobe`\nserver\nINTERNAL\nno\nffprobe 6.1 or later executable that inspects uploaded media in isolated child processes.\n`TELUNI_MEDIA_PROCESSING_CONCURRENCY`\ninteger 1..4\nno\n`1`\nserver\nINTERNAL\nno\nMedia processing jobs this API process runs at once.\n`TELUNI_SYNC_SIGNING_KEYS`\ncomma-separated id:base64url PKCS#8 DER EC P-256 private keys, newest first\nno\n—\nserver\nRESTRICTED\nyes\nKey ring that signs screen authorization statements (ADR-0030); the first key signs, and every key's public half stays available to screens during rotation. Enables the publications module.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Database Reference",
-    "anchor": "database-reference",
-    "text": "Database Reference\n[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)\n"
   }
 ]

@@ -209,3 +209,94 @@
 .ui-dataset-form .form-stack h2 {
   margin-top: 0;
 }
+.company-logo-field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.company-logo-preview {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-muted);
+}
+
+.branch-location-field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.branch-location-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.branch-location-results button {
+  width: 100%;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.branch-location-selected {
+  overflow-wrap: anywhere;
+}
+
+.branch-map {
+  height: 320px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  z-index: 0;
+}
+
+.branch-map-pin span {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border: 3px solid white;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: #2563eb;
+  box-shadow: 0 2px 5px #0005;
+}
+
+.branch-map :is(.leaflet-bar a, .leaflet-control-attribution) {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.branch-map .leaflet-control-attribution a {
+  color: var(--color-link);
+}
+
+.branch-coordinates summary {
+  cursor: pointer;
+  color: var(--color-link);
+  padding-block: 0.5rem;
+}
+
+.branch-coordinates[open] {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.branch-record-form:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}

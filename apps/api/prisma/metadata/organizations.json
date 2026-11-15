@@ -23,7 +23,7 @@
           "classification": "INTERNAL"
         },
         "time_zone": {
-          "description": "Default IANA time zone for new branches; business time never uses the host time zone.",
+          "description": "Legacy IANA default for branch API requests without a selected map location. New company requests default to UTC when omitted; product company forms do not expose it. Map-selected branches derive their own zone.",
           "classification": "INTERNAL"
         },
         "version": {
@@ -52,6 +52,11 @@
           "description": "PostgreSQL-clock instant of the latest settings change; not audit history.",
           "classification": "INTERNAL",
           "unit": "UTC instant, millisecond precision"
+        },
+        "logo_data_url": {
+          "description": "Optional authenticated company branding: server-decoded and re-encoded PNG data URL, at most 256 by 256 pixels and 350000 characters. Never a remote URL or executable SVG.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No company logo selected; presentation uses the company initials."
         }
       },
       "objects": {
@@ -63,7 +68,8 @@
         "companies_time_zone_nonblank": "Time zone has the IANA identifier shape; the API validates it against the runtime's zone database.",
         "companies_version_positive": "Rejects invalid concurrency versions.",
         "companies_creation_key_format": "Creation keys use the documented opaque ASCII alphabet.",
-        "companies_creation_fingerprint_format": "Creation fingerprints are lowercase SHA-256 hex values."
+        "companies_creation_fingerprint_format": "Creation fingerprints are lowercase SHA-256 hex values.",
+        "companies_logo_bounded_png": "Bounds optional raster logo metadata; the API validates and normalizes PNG content."
       }
     },
     "branches": {
@@ -85,7 +91,7 @@
           "classification": "CONFIDENTIAL"
         },
         "time_zone": {
-          "description": "IANA time zone for the branch's local business time.",
+          "description": "IANA scheduling zone derived atomically from a confirmed map point. Legacy branches retain their existing zone until location selection; an explicit device zone can override this branch zone.",
           "classification": "INTERNAL"
         },
         "status": {
@@ -106,6 +112,16 @@
           "description": "PostgreSQL-clock instant of the latest change; not audit history.",
           "classification": "INTERNAL",
           "unit": "UTC instant, millisecond precision"
+        },
+        "location": {
+          "description": "Confirmed branch map point, storing latitude and longitude rounded to six decimals. The API derives time_zone from geographic boundaries; clients cannot override the zone of a selected location.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No map point confirmed; preserve the existing legacy time zone until selection."
+        },
+        "address": {
+          "description": "Full branch address entered by an authorized company administrator. Required when a map point is selected; never sent to a geocoding service or treated as independently verified.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No optional street address supplied."
         }
       },
       "objects": {
@@ -116,7 +132,11 @@
         "branches_company_active_name_unique": "Active branch names are unique within a company, ignoring case, including racing creations.",
         "branches_name_nonblank": "Branch name cannot be blank.",
         "branches_time_zone_nonblank": "Time zone has the IANA identifier shape.",
-        "branches_version_positive": "Rejects invalid concurrency versions."
+        "branches_version_positive": "Rejects invalid concurrency versions.",
+        "branches_location_object": "A selected location is a structured map point.",
+        "branches_address_nonblank": "An optional address cannot be blank.",
+        "branches_location_coordinates": "Selected map points carry numeric latitude and longitude within geographic bounds.",
+        "branches_located_address_required": "A branch with a confirmed map point also has a full address."
       }
     },
     "memberships": {

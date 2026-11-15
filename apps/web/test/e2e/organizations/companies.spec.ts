@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import { waitForCreatedCompany } from "../company.ts";
+import { waitForCreatedCompany, selectBranchLocation } from "../company.ts";
 import { actionLink, mailedLink } from "../identity/mail.ts";
 import {
   choosePassword,
@@ -73,7 +73,24 @@ test("creates a company and manages branches, settings, members, responsibility 
   ).toBeVisible();
 
   await page.getByLabel("Nome da empresa").fill("Lanchonete Central");
-  await page.getByLabel("Fuso horário").selectOption("America/Sao_Paulo");
+  await expect(page.getByLabel("Fuso horário")).toHaveCount(0);
+  const logo = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 480;
+    canvas.height = 240;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#2563eb";
+    context.fillRect(0, 0, 480, 240);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.getByLabel("Escolher imagem", { exact: true }).setInputFiles({
+    name: "company.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(logo, "base64"),
+  });
+  await expect(
+    page.getByRole("img", { name: "Prévia da logo da empresa" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Criar empresa" }).click();
   const companyUrl = await waitForCreatedCompany(page);
 
@@ -87,7 +104,10 @@ test("creates a company and manages branches, settings, members, responsibility 
   await expect(page.getByRole("heading", { name: "Filiais" })).toBeVisible();
 
   // Without branches, the dataset starts on a new branch.
-  await page.getByLabel("Nome da filial").fill("Centro");
+  await page
+    .getByRole("textbox", { name: "Nome da filial", exact: true })
+    .fill("Centro");
+  await selectBranchLocation(page);
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();
   // A second active branch cannot reuse the name, whatever the case.
@@ -95,7 +115,10 @@ test("creates a company and manages branches, settings, members, responsibility 
   await branches
     .getByRole("button", { name: "Adicionar", exact: true })
     .click();
-  await page.getByLabel("Nome da filial").fill("centro");
+  await page
+    .getByRole("textbox", { name: "Nome da filial", exact: true })
+    .fill("centro");
+  await selectBranchLocation(page);
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByRole("alert")).toHaveText(
     /Já existe uma filial ativa com esse nome\./,
@@ -103,7 +126,11 @@ test("creates a company and manages branches, settings, members, responsibility 
   await page.getByRole("button", { name: "Cancelar" }).click();
 
   await page.getByText("Centro", { exact: true }).dblclick();
-  await page.getByLabel("Nome da filial").fill("Centro Histórico");
+  await page
+    .getByRole("textbox", { name: "Nome da filial", exact: true })
+    .fill("Centro Histórico");
+  await selectBranchLocation(page, "Manaus BR", "Manaus, Amazonas, Brasil");
+  await page.getByLabel("Endereço completo").fill("Rua de teste, 10");
   await page.getByRole("button", { name: "Salvar" }).click();
   await expect(
     page.getByRole("heading", { name: "Centro Histórico" }),
@@ -117,7 +144,10 @@ test("creates a company and manages branches, settings, members, responsibility 
   await openCompanySection(page, "Configurações da empresa");
   await page.getByRole("button", { name: "Editar configurações" }).click();
   await page.getByLabel("Nome da empresa").fill("Lanchonete Central Renovada");
-  await page.getByLabel("Fuso horário").selectOption("America/Manaus");
+  await expect(page.getByLabel("Fuso horário")).toHaveCount(0);
+  await expect(
+    page.getByRole("img", { name: "Prévia da logo da empresa" }),
+  ).toBeVisible();
   await page.getByLabel("Idioma padrão").selectOption("en-US");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Salvar", exact: true }).click();
@@ -129,7 +159,9 @@ test("creates a company and manages branches, settings, members, responsibility 
   await afterNavigation(
     page.getByRole("button", { name: "Editar configurações" }),
   ).toBeVisible();
-  await expect(page.getByText("America/Manaus", { exact: true })).toBeVisible();
+  await expect(page.getByText("America/Manaus", { exact: true })).toHaveCount(
+    0,
+  );
   await expect(
     page.getByText("English (United States)", { exact: true }),
   ).toBeVisible();
@@ -505,7 +537,7 @@ test("creates a company and manages branches, settings, members, responsibility 
   await expect(page.getByLabel("Nome da empresa")).toHaveValue(
     "Lanchonete Central Renovada",
   );
-  await expect(page.getByLabel("Fuso horário")).toHaveValue("America/Manaus");
+  await expect(page.getByLabel("Fuso horário")).toHaveCount(0);
   await page.getByLabel("Nome da empresa").fill("Rascunho descartado");
   await expect(
     toolbar.getByRole("button", { name: "Duplicar" }),
@@ -518,7 +550,7 @@ test("creates a company and manages branches, settings, members, responsibility 
   await expect(page.getByLabel("Nome da empresa")).toHaveValue(
     "Lanchonete Central Renovada (cópia)",
   );
-  await expect(page.getByLabel("Fuso horário")).toHaveValue("America/Manaus");
+  await expect(page.getByLabel("Fuso horário")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Criar empresa" }),
   ).toBeVisible();
