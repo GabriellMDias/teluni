@@ -32,9 +32,30 @@ async function signedInHome(page: Page) {
       },
     }),
   );
+  await page.route(`**/api/companies/${companyId}`, (route) =>
+    route.fulfill({
+      json: {
+        company: {
+          id: companyId,
+          displayName: "Loja Aurora",
+          status: "ACTIVE",
+        },
+        access: {
+          roles: ["OPERATOR"],
+          profiles: [],
+          responsible: false,
+          capabilities: ["media.view", "programming.view"],
+        },
+        responsibilityTransfer: null,
+      },
+    }),
+  );
+  await page.route("**/api/auth/two-step", (route) =>
+    route.fulfill({ json: { enabled: true } }),
+  );
   await page.goto(webUrl());
   await expect(
-    page.getByRole("heading", { name: "Boas-vindas ao Teluni" }),
+    page.getByRole("heading", { name: "Seu espaço de trabalho" }),
   ).toBeVisible();
 }
 
@@ -294,4 +315,30 @@ test("keeps denied company access explicit in the dark shell", async ({
     "rgb(60, 27, 42)",
   );
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("opens scoped workflows and the new-company form directly from Home", async ({
+  page,
+}) => {
+  await signedInHome(page);
+  const shortcuts = page.getByRole("navigation", {
+    name: "Atalhos de Loja Aurora",
+  });
+  await expect(
+    shortcuts.getByRole("link", { name: "Mídia", exact: true }),
+  ).toHaveAttribute("href", `/companies/${companyId}/media`);
+  await expect(
+    shortcuts.getByRole("link", { name: "Programação", exact: true }),
+  ).toHaveAttribute("href", `/companies/${companyId}/programming`);
+  await expect(
+    shortcuts.getByRole("link", { name: "Telas", exact: true }),
+  ).toHaveCount(0);
+  const create = page.getByRole("link", { name: "Nova empresa", exact: true });
+  await create.focus();
+  await expect(create).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(`${webUrl()}/companies?mode=form&record=new`);
+  await expect(
+    page.getByRole("textbox", { name: "Nome da empresa" }),
+  ).toBeVisible();
 });
