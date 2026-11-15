@@ -4,6 +4,15 @@
     "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Dedicated Monorepo Task Runner",
+    "anchor": "dedicated-monorepo-task-runner",
+    "text": "Dedicated Monorepo Task Runner\nA tool such as Turborepo or Nx could orchestrate all repository validation tasks and provide caching, dependency-aware execution, and affected-project analysis.\nADR-0002 already defers this decision because Orion does not yet have sufficient repository scale or CI cost to justify an additional orchestration layer.\nThe validation contract established by this ADR is deliberately compatible with adopting such a tool later without changing the contributor-facing canonical command.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "TypeScript Project References from the Beginning",
     "anchor": "typescript-project-references-from-the-beginning",
     "text": "TypeScript Project References from the Beginning\nTypeScript project references can model package relationships and improve build and type-check performance in large TypeScript repositories.\nThey were not made mandatory because Orion does not yet have a sufficiently large TypeScript project graph to demonstrate that the added configuration and build semantics provide meaningful value.\nThey may be introduced later when repository scale or performance justifies them.\n"

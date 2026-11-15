@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate } from "@tanstack/react-router";
-import brandMark from "../assets/brand-mark.svg";
+import { Button } from "../components.js";
 import { sessionQuery, twoStepHref, twoStepQuery } from "../identity/api.js";
 import { browserLocale } from "../locale.js";
+import { NavigationIcon } from "../navigation-icon.js";
 import { listCompanies } from "../organizations/api.js";
-import { organizationMessages } from "../organizations/messages.js";
+import { CompanyCard } from "./company-card.js";
 import { workspaceMessages } from "./messages.js";
 
 export function useWorkspaceMessages() {
@@ -13,19 +14,22 @@ export function useWorkspaceMessages() {
   return { locale, t: workspaceMessages[locale] };
 }
 
-/**
- * The application entry: a visitor goes to sign-in, a signed-in person sees
- * the home page. An unavailable session service also leads to sign-in,
- * which explains provider failures when the person tries to enter.
- */
+/** The entry requires a currently available human session. */
 export function EntryPage() {
   const { locale, t } = useWorkspaceMessages();
   const session = useQuery(sessionQuery);
   if (session.isPending)
     return (
-      <p className="workspace-loading" lang={locale}>
+      <p className="workspace-loading" lang={locale} role="status">
         {t.loading}
       </p>
+    );
+  if (session.isError && session.data)
+    return (
+      <div className="workspace-loading" lang={locale} role="alert">
+        <p>{t.sessionFailed}</p>
+        <Button onClick={() => void session.refetch()}>{t.reload}</Button>
+      </div>
     );
   if (!session.data) return <Navigate to="/sign-in" replace />;
   return <HomePage />;
@@ -35,93 +39,176 @@ const homeCompanyCount = 6;
 
 function HomePage() {
   const { locale, t } = useWorkspaceMessages();
-  const twoStep = useQuery(twoStepQuery);
-  const roles = organizationMessages[locale].roles;
   const companies = useQuery({
     queryKey: ["organizations", "companies", "home"],
     queryFn: () => listCompanies(),
   });
-  const items = companies.data?.items ?? [];
+  const items = companies.isSuccess ? companies.data.items : [];
+  const hasMore =
+    items.length > homeCompanyCount || Boolean(companies.data?.nextCursor);
   return (
     <div className="workspace-home" lang={locale}>
-      <header className="workspace-hero">
+      <header className="workspace-heading">
         <div>
           <p className="eyebrow">{t.homeEyebrow}</p>
           <h1>{t.homeTitle}</h1>
-          <p>{t.homeLead}</p>
+          <p className="workspace-lead">{t.homeLead}</p>
         </div>
-        <img
-          className="workspace-hero-mark"
-          src={brandMark}
-          alt=""
-          width="180"
-          height="180"
-        />
+        <Link
+          to="/companies"
+          search={{ mode: "form", record: "new" }}
+          className="button-link button-primary workspace-create"
+        >
+          <span aria-hidden="true">+</span>
+          {t.createAnother}
+        </Link>
       </header>
       <div className="workspace-grid">
-        <section className="panel" aria-labelledby="home-companies-title">
-          <div className="section-heading">
-            <h2 id="home-companies-title">{t.companiesTitle}</h2>
-            {items.length > 0 && <Link to="/companies">{t.allCompanies}</Link>}
+        <section
+          className="workspace-company-section"
+          aria-labelledby="home-companies-title"
+        >
+          <div className="workspace-section-heading">
+            <div>
+              <h2 id="home-companies-title">{t.companiesTitle}</h2>
+              <p>{t.companiesLead}</p>
+            </div>
+            {companies.isSuccess && items.length > 0 && (
+              <Link to="/companies">
+                {t.allCompanies}
+                <span aria-hidden="true"> →</span>
+              </Link>
+            )}
           </div>
           {companies.isPending ? (
-            <p>{t.loading}</p>
+            <div className="workspace-placeholder" role="status">
+              <NavigationIcon name="companies" />
+              <p>{t.loading}</p>
+            </div>
           ) : companies.isError ? (
-            <div role="alert" className="notice notice-error">
-              {t.companiesFailed}
-              <button type="button" onClick={() => void companies.refetch()}>
+            <div role="alert" className="workspace-placeholder workspace-error">
+              <p>{t.companiesFailed}</p>
+              <Button onClick={() => void companies.refetch()}>
                 {t.reload}
-              </button>
+              </Button>
             </div>
           ) : items.length === 0 ? (
             <div className="workspace-empty">
+              <span className="workspace-empty-icon" aria-hidden="true">
+                <NavigationIcon name="companies" />
+              </span>
+              <h3>{t.emptyTitle}</h3>
               <p>{t.companiesEmpty}</p>
-              <Link to="/companies" className="button-link button-primary">
+              <Link
+                to="/companies"
+                search={{ mode: "form", record: "new" }}
+                className="button-link button-primary"
+              >
                 {t.createFirst}
+                <span aria-hidden="true"> →</span>
               </Link>
             </div>
           ) : (
             <>
               <ul className="workspace-companies">
                 {items.slice(0, homeCompanyCount).map((company) => (
-                  <li key={company.id}>
-                    <Link
-                      to="/companies/$companyId"
-                      params={{ companyId: company.id }}
-                    >
-                      {company.displayName}
-                    </Link>
-                    <span className="hint">
-                      {company.roles.map((role) => roles[role]).join(", ")}
-                    </span>
-                  </li>
+                  <CompanyCard
+                    key={company.id}
+                    company={company}
+                    locale={locale}
+                    t={t}
+                  />
                 ))}
               </ul>
-              <Link to="/companies">{t.createAnother}</Link>
+              {hasMore && (
+                <p className="workspace-more">
+                  {t.companiesPartial(Math.min(items.length, homeCompanyCount))}{" "}
+                  <Link to="/companies">{t.allCompanies}</Link>
+                </p>
+              )}
             </>
           )}
         </section>
-        <section className="panel" aria-labelledby="home-account-title">
-          <h2 id="home-account-title">{t.accountTitle}</h2>
-          {twoStep.data?.enabled === true && (
-            <p className="hint">{t.twoStepEnabled}</p>
-          )}
-          {twoStep.data?.enabled === false && (
-            <>
-              <p className="notice notice-info">{t.twoStepDisabled}</p>
-              <a
-                className="button-link button-primary"
-                href={twoStepHref("enable", "/")}
-              >
-                {t.twoStepButton}
-              </a>
-            </>
-          )}
-          <p>
-            <Link to="/account/sessions">{t.accountSessions}</Link>
-          </p>
-        </section>
+        <aside className="workspace-aside" aria-label={t.helpAndAccount}>
+          <section
+            className="workspace-guide"
+            aria-labelledby="home-guide-title"
+          >
+            <p className="eyebrow">{t.guideEyebrow}</p>
+            <h2 id="home-guide-title">{t.guideTitle}</h2>
+            <p className="workspace-guide-lead">{t.guideLead}</p>
+            <ol>
+              {[
+                {
+                  title: t.guideMedia,
+                  description: t.guideMediaLead,
+                  icon: "media",
+                },
+                {
+                  title: t.guideProgramming,
+                  description: t.guideProgrammingLead,
+                  icon: "programming",
+                },
+                {
+                  title: t.guideScreens,
+                  description: t.guideScreensLead,
+                  icon: "sessions",
+                },
+              ].map((step, index) => (
+                <li key={step.icon}>
+                  <span className="workspace-guide-number" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+          <AccountSummary />
+        </aside>
       </div>
     </div>
+  );
+}
+
+function AccountSummary() {
+  const { t } = useWorkspaceMessages();
+  const twoStep = useQuery(twoStepQuery);
+  return (
+    <section className="workspace-account" aria-labelledby="home-account-title">
+      <div className="workspace-account-heading">
+        <NavigationIcon name="profiles" />
+        <h2 id="home-account-title">{t.accountTitle}</h2>
+      </div>
+      {twoStep.isPending ? (
+        <p role="status">{t.accountLoading}</p>
+      ) : twoStep.isError ? (
+        <div role="alert">
+          <p>{t.accountFailed}</p>
+          <Button onClick={() => void twoStep.refetch()}>{t.reload}</Button>
+        </div>
+      ) : twoStep.data.enabled ? (
+        <p className="workspace-security-enabled">{t.twoStepEnabled}</p>
+      ) : (
+        <>
+          <p>{t.twoStepDisabled}</p>
+          <a
+            className="workspace-security-link"
+            href={twoStepHref("enable", "/")}
+          >
+            {t.twoStepButton}
+            <span aria-hidden="true"> →</span>
+          </a>
+        </>
+      )}
+      <Link className="workspace-session-link" to="/account/sessions">
+        <NavigationIcon name="sessions" />
+        {t.accountSessions}
+        <span aria-hidden="true">→</span>
+      </Link>
+    </section>
   );
 }

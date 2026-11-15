@@ -29,6 +29,8 @@ The owner subsequently requested correction of PR #26's CI failure. The [CI qual
 
 ## Safe configuration handoff
 
+2026-11-15: the owner requested a comprehensive local Home-page improvement. The [Home workspace refinement](implementation-plan.md#home-workspace-refinement) continues PJ-41 using existing API capabilities and the approved product identity. This work requires no new credentials, external account action or human blocker; existing pilot and production prerequisites retain their original triggers.
+
 On 2026-10-24 the owner requested autonomous development after the local product test. The Orion upgrade is merged under PJ-42. The [device workflow interface increment](implementation-plan.md#device-workflow-interface-increment) continues PJ-41 using existing components and approved behavior. It requires no new human action, provider access or product decision. Device qualification and production prerequisites remain open at their original triggers.
 
 - Record configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.

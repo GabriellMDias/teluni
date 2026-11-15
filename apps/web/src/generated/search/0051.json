@@ -1,5 +1,23 @@
 [
   {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Destinations, access, and leakage",
+    "anchor": "destinations-access-and-leakage",
+    "text": "Destinations, access, and leakage\nExport only to approved destinations. Each additional provider/copy creates independent access, retention, residency, and deletion responsibilities; significant changes may need an ADR and security/privacy review. Do not duplicate telemetry across vendors without concrete value. [Retention](data-retention.md) and [production access](production-access.md) govern storage and readers, including AI agents.\nProvide AI/support tooling with structured, sanitized, task-relevant evidence, never raw environment dumps, credential-bearing logs, or full customer/request objects by default. A future diagnostic bundle must exclude restricted data by construction and be introduced only for real need.\nFor leakage, follow [incident response](incident-response.md): stop further collection, identify data/classification/destinations/exposure, restrict access, remove data where possible, revoke/rotate exposed credentials, review usage, fix instrumentation, and add regression protection. Historical logs, traces, errors, exports, provider retention, and backups may still contain leaked values. Deleting an entry does not restore credential secrecy.\n"
+  },
+  {
+    "id": "repository/docs/security/telemetry-redaction",
+    "title": "Telemetry Redaction",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New telemetry checklist",
+    "anchor": "new-telemetry-checklist",
+    "text": "New telemetry checklist\nBefore adding telemetry, identify the question answered, required fields and classifications, safer representations, untrusted/credential-bearing inputs, size/cardinality bounds, approved destination, retention/access, and redaction tests. Do not ship unexplained collection. Derive structural redaction references from canonical sources where practical; provider deployment, retention durations, session replay, and a cross-application metadata engine remain separate decisions, not implied capabilities.\n"
+  },
+  {
     "id": "repository/docs/setup",
     "title": "Development Setup",
     "group": "Project guides",
