@@ -1,0 +1,58 @@
+{
+  "name": "MediaDialog",
+  "category": "Feedback",
+  "scope": "feature-specific",
+  "owner": "Media",
+  "summary": "Native modal shell for bounded media management tasks.",
+  "usage": "Supply a localized title and close callback. Set busy during writes/uploads to prevent dismissal; wide is reserved for previews. The caller owns form state and write recovery.",
+  "accessibility": "Uses dialog.showModal, a labelled heading, autofocus target, native focus containment and Escape, with opener restoration when still connected. Close controls are unavailable while busy.",
+  "props": [
+    {
+      "name": "title",
+      "type": "string",
+      "meaning": "Dialog heading and accessible name.",
+      "required": true
+    },
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "Task content.",
+      "required": true
+    },
+    {
+      "name": "onClose",
+      "type": "function",
+      "meaning": "Dismisses caller-owned state.",
+      "required": true
+    },
+    {
+      "name": "busy",
+      "type": "boolean",
+      "meaning": "Prevents dismissal during an operation.",
+      "default": "false"
+    },
+    {
+      "name": "wide",
+      "type": "boolean",
+      "meaning": "Larger preview width.",
+      "default": "false"
+    }
+  ],
+  "states": ["Open", "Busy", "Preview width"],
+  "examples": [
+    {
+      "id": "media-dialog-task",
+      "label": "Rename task",
+      "description": "Feature modal with caller-owned fields.",
+      "code": "<MediaDialog title=\"Rename\" onClose={close}><form>…</form></MediaDialog>",
+      "live": false
+    }
+  ],
+  "source": "apps/web/src/media/dialogs.tsx",
+  "id": "MediaDialog",
+  "exportName": "MediaDialog",
+  "metadataSource": "apps/web/src/media/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/media/dialogs.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/media/components.docs.json"
+}

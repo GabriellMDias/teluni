@@ -55,6 +55,10 @@ export const mediaPolicy = Object.freeze({
   reserveMinimumBytes: 2 * 1024 * 1024 * 1024,
   reserveFraction: 0.1,
   maxTags: 10,
+  maxFolders: 2000,
+  maxFolderDepth: 12,
+  maxLibraryItems: 100,
+  maxFolderCreationsPerDay: 200,
 });
 
 export type MediaFailureCode =
@@ -69,7 +73,12 @@ export type MediaFailureCode =
   | "MEDIA_NOT_READY"
   | "MEDIA_IN_USE"
   | "MEDIA_STORAGE_FULL"
-  | "MEDIA_INVALID_STATE";
+  | "MEDIA_INVALID_STATE"
+  | "IDEMPOTENCY_KEY_REUSED"
+  | "MEDIA_FOLDER_NOT_EMPTY"
+  | "MEDIA_INVALID_DESTINATION"
+  | "MEDIA_FOLDER_LIMIT"
+  | "MEDIA_SCOPE_MISMATCH";
 
 export class MediaFailure extends Error {
   readonly code: MediaFailureCode;

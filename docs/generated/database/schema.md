@@ -703,6 +703,7 @@ Lifecycle: Created UPLOADING; a complete upload makes it PROCESSING; the process
 | `purged_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant the item's files were removed. | Not purged. | UTC instant, millisecond precision |
 | `version` | `integer` | no | `1` | INTERNAL | Optimistic concurrency token incremented once per successful member change. | — | successful writes |
 | `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest change. | — | UTC instant, millisecond precision |
+| `folder_id` | `uuid` | yes | — | INTERNAL | Organizational folder within the same company and owning scope; changing it preserves asset identity, content and every programming reference. | The item is unfiled at the library root. | — |
 
 ### Constraints and indexes
 
@@ -718,6 +719,7 @@ Lifecycle: Created UPLOADING; a complete upload makes it PROCESSING; the process
 | `media_assets_created_by_principal_id_fkey` | `FOREIGN KEY (created_by_principal_id) REFERENCES principals(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The creator is a known principal. |
 | `media_assets_declared_size_positive` | `CHECK ((declared_size > 0))` | A declared size is positive. |
 | `media_assets_dimensions_positive` | `CHECK ((((width IS NULL) OR (width > 0)) AND ((height IS NULL) OR (height > 0))))` | Dimensions are positive. |
+| `media_assets_folder_fkey` | `FOREIGN KEY (company_id, folder_id) REFERENCES media_folders(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The folder belongs to the same company as the asset. The application enforces equal owning scopes under library locks. |
 | `media_assets_hash_lengths` | `CHECK ((((original_sha256 IS NULL) OR (octet_length(original_sha256) = 32)) AND ((display_sha256 IS NULL) OR (octet_length(display_sha256) = 32)) AND ((thumbnail_sha256 IS NULL) OR (octet_length(thumbnail_sha256) = 32))))` | Object references are SHA-256 digests. |
 | `media_assets_name_trimmed` | `CHECK ((((name)::text = btrim((name)::text)) AND (char_length((name)::text) >= 1)))` | Names are stored trimmed and nonempty. |
 | `media_assets_pkey` | `PRIMARY KEY (id)` | Unique media item identity. |
@@ -734,13 +736,14 @@ Lifecycle: Created UPLOADING; a complete upload makes it PROCESSING; the process
 | `media_assets_company_id_id_key` | `CREATE UNIQUE INDEX media_assets_company_id_id_key ON public.media_assets USING btree (company_id, id)` | Tenant key for references to media items. |
 | `media_assets_company_status_idx` | `CREATE INDEX media_assets_company_status_idx ON public.media_assets USING btree (company_id, status)` | Counts a company's open uploads and processing items for abuse limits. |
 | `media_assets_display_idx` | `CREATE INDEX media_assets_display_idx ON public.media_assets USING btree (company_id, display_sha256)` | Finds whether another item still references an object before it is deleted. |
+| `media_assets_folder_created_idx` | `CREATE INDEX media_assets_folder_created_idx ON public.media_assets USING btree (company_id, folder_id, created_at DESC, id DESC)` | Lists direct folder contents newest first without scanning unrelated assets. |
 | `media_assets_original_idx` | `CREATE INDEX media_assets_original_idx ON public.media_assets USING btree (company_id, original_sha256)` | Finds whether another item still references an object before it is deleted. |
 | `media_assets_processing_idx` | `CREATE INDEX media_assets_processing_idx ON public.media_assets USING btree (status, next_attempt_at)` | Finds items due for processing and expired uploads and trash. |
 | `media_assets_thumbnail_idx` | `CREATE INDEX media_assets_thumbnail_idx ON public.media_assets USING btree (company_id, thumbnail_sha256)` | Finds whether another item still references an object before it is deleted. |
 
 ## media_audit_events
 
-Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.
+An append-only media event targeting one asset or one organizational folder, with an actor and allowlisted facts; never names, paths or content.
 
 Owner: Media. Classification: CONFIDENTIAL.
 
@@ -750,12 +753,13 @@ Lifecycle: Inserted in the same transaction as the change it records; never upda
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `id` | `uuid` | no | — | INTERNAL | Backend-generated event UUID. | — | — |
 | `company_id` | `uuid` | no | — | INTERNAL | Company that owns the item. | — | — |
-| `asset_id` | `uuid` | no | — | INTERNAL | Media item the event concerns. | — | — |
+| `asset_id` | `uuid` | yes | — | INTERNAL | Media item the event concerns. | This event targets a folder instead. | — |
 | `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the change. | — | UTC instant, millisecond precision |
 | `actor_principal_id` | `uuid` | yes | — | INTERNAL | Principal that made the change. | The processor or maintenance made the change. | — |
 | `actor_membership_id` | `uuid` | yes | — | INTERNAL | Membership through which the change was made. | The processor or maintenance made the change. | — |
 | `action` | `character varying(64)` | no | — | INTERNAL | Event name such as media.uploaded, media.ready, media.archived or media.purged. | — | — |
 | `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Allowlisted IDs, kinds, sizes, states and reason codes; never names of other items, hashes or paths. | — | — |
+| `folder_id` | `uuid` | yes | — | INTERNAL | Folder targeted by this event; a deleted folder remains as a hidden audit tombstone. | This event targets an asset instead. | — |
 
 ### Constraints and indexes
 
@@ -766,9 +770,76 @@ Lifecycle: Inserted in the same transaction as the change it records; never upda
 | `media_audit_events_company_id_asset_id_fkey` | `FOREIGN KEY (company_id, asset_id) REFERENCES media_assets(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The item belongs to the same company. |
 | `media_audit_events_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An event belongs to an existing company. |
 | `media_audit_events_details_object` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
+| `media_audit_events_folder_fkey` | `FOREIGN KEY (company_id, folder_id) REFERENCES media_folders(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | Folder audit targets belong to the same company. |
+| `media_audit_events_one_target` | `CHECK ((num_nonnulls(asset_id, folder_id) = 1))` | Every event targets exactly one asset or folder. |
 | `media_audit_events_pkey` | `PRIMARY KEY (id)` | Unique event identity. |
 | `media_audit_events_asset_time_idx` | `CREATE INDEX media_audit_events_asset_time_idx ON public.media_audit_events USING btree (company_id, asset_id, occurred_at DESC, id DESC)` | Reads an item's history newest first. |
 | `media_audit_events_company_id_id_key` | `CREATE UNIQUE INDEX media_audit_events_company_id_id_key ON public.media_audit_events USING btree (company_id, id)` | Tenant key for events. |
+
+## media_folders
+
+An organizational media folder with a stable ID, display name, immutable company/branch ownership and optional parent. It never names a filesystem directory or changes media object storage.
+
+Owner: Media. Classification: CONFIDENTIAL.
+
+Lifecycle: Created with owning-scope upload authority. Renamed or moved with an observed version; parent and child have the same scope, with acyclic trees limited to 12 levels. Only an empty folder can be removed; its hidden row remains for audit. Non-purged assets, including archived and trashed items, prevent removal. Parent versions advance when direct contents change.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Backend-generated immutable folder UUID. | — | — |
+| `company_id` | `uuid` | no | — | INTERNAL | Immutable company owner and tenant key. | — | — |
+| `branch_id` | `uuid` | yes | — | INTERNAL | Immutable branch owner, also inherited by child folders and uploaded assets. | Company-owned metadata shared with members who can view company media. | — |
+| `parent_id` | `uuid` | yes | — | INTERNAL | Parent folder of the same company and scope; changed by an atomic library move. | A root folder in this owning scope. | — |
+| `name` | `character varying(120)` | no | — | CONFIDENTIAL | Member-chosen display label, never used as a storage path. Duplicate labels are allowed and stable IDs distinguish folders. | — | — |
+| `created_by_membership_id` | `uuid` | no | — | INTERNAL | Membership that created this folder or independent copied folder. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock creation instant. | — | UTC instant, millisecond precision |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock last metadata or direct-content change; version is the concurrency token. | — | UTC instant, millisecond precision |
+| `deleted_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | PostgreSQL-clock removal instant of an empty folder; the audit row remains. | The folder is active and may be browsed. | UTC instant, millisecond precision |
+| `version` | `integer` | no | `1` | INTERNAL | Positive optimistic concurrency token, incremented for metadata and direct-content changes. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `media_folders_company_id_branch_id_fkey` | `FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | An optional owning branch belongs to the same company. |
+| `media_folders_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The folder belongs to an existing company. |
+| `media_folders_company_id_id_key` | `UNIQUE (company_id, id)` | Tenant key used by folder, asset and audit references. |
+| `media_folders_company_id_parent_id_fkey` | `FOREIGN KEY (company_id, parent_id) REFERENCES media_folders(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The parent belongs to the same company; application tree locks enforce scope equality, cycles and depth. |
+| `media_folders_creator_fkey` | `FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The creating membership belongs to this company. |
+| `media_folders_name_valid` | `CHECK ((((char_length(btrim((name)::text)) >= 1) AND (char_length(btrim((name)::text)) <= 120)) AND ((name)::text !~ '[[:cntrl:]]'::text)))` | Display labels contain visible text within the name bound and exclude controls. |
+| `media_folders_parent_not_self` | `CHECK ((parent_id IS DISTINCT FROM id))` | A folder cannot directly parent itself. |
+| `media_folders_pkey` | `PRIMARY KEY (id)` | Stable folder identity. |
+| `media_folders_version_positive` | `CHECK ((version > 0))` | Versions are positive concurrency tokens. |
+| `media_folders_company_created_idx` | `CREATE INDEX media_folders_company_created_idx ON public.media_folders USING btree (company_id, created_at)` | Counts active folders and per-UTC-day creations behind admission limits. |
+| `media_folders_parent_name_idx` | `CREATE INDEX media_folders_parent_name_idx ON public.media_folders USING btree (company_id, parent_id, name, id)` | Browses folder children in stable name/ID order. |
+
+## media_library_operations
+
+Operational idempotency receipt for folder creation and atomic copy/move commands, scoped to a company, acting membership and normalized request hash. Authoritative business events remain in media_audit_events.
+
+Owner: Media. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted with the command result in the same transaction as its changes. Immutable during a 30-day replay window. Maintenance deletes up to 1000 expired receipts per pass; repeating an expired operation ID is a new command.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `company_id` | `uuid` | no | — | INTERNAL | Company owning the command and result; part of the receipt key. | — | — |
+| `id` | `uuid` | no | — | INTERNAL | Caller-generated UUID for one command intent, reused for safe replay within the retention window. | — | — |
+| `actor_membership_id` | `uuid` | no | — | INTERNAL | Membership that submitted the command; another membership cannot replay it. | — | — |
+| `request_hash` | `bytea` | no | — | CONFIDENTIAL | SHA-256 of the normalized command and operation category, compared to refuse key reuse with different intent. Never exposed. | — | — |
+| `result` | `jsonb` | no | — | CONFIDENTIAL | Bounded result containing root item IDs/kinds and affected-item count, with no file content, names, paths or credentials. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock receipt creation instant; controls the replay retention window. | — | UTC instant, millisecond precision |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `media_library_operations_actor_fkey` | `FOREIGN KEY (company_id, actor_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The submitting membership belongs to the same company. |
+| `media_library_operations_company_id_fkey` | `FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT` | The command belongs to an existing company. |
+| `media_library_operations_hash_length` | `CHECK ((octet_length(request_hash) = 32))` | Request hashes are full SHA-256 digests. |
+| `media_library_operations_pkey` | `PRIMARY KEY (company_id, id)` | One receipt per command UUID within a company. |
+| `media_library_operations_result_valid` | `CHECK ((jsonb_typeof(result) = 'object'::text))` | Stored command results are JSON objects. |
+| `media_library_operations_created_idx` | `CREATE INDEX media_library_operations_created_idx ON public.media_library_operations USING btree (created_at)` | Finds expired operational receipts without scanning live results. |
 
 ## companies
 

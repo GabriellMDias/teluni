@@ -39,6 +39,7 @@ model MediaAsset {
   companyId             String               @map("company_id") @db.Uuid
   branchId              String?              @map("branch_id") @db.Uuid
   name                  String               @db.VarChar(120)
+  folderId              String?              @map("folder_id") @db.Uuid
   tags                  String[]             @default([])
   kind                  MediaKind
   status                MediaStatus          @default(UPLOADING)
@@ -75,6 +76,7 @@ model MediaAsset {
   original              MediaObject?         @relation("MediaOriginal", fields: [companyId, originalSha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
   display               MediaObject?         @relation("MediaDisplay", fields: [companyId, displaySha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
   thumbnail             MediaObject?         @relation("MediaThumbnail", fields: [companyId, thumbnailSha256], references: [companyId, sha256], onDelete: Restrict, onUpdate: Restrict)
+  folder                MediaFolder?         @relation(fields: [companyId, folderId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict, map: "media_assets_folder_fkey")
   auditEvents           MediaAuditEvent[]
   // Back-relations of the programming, publications and catalogs modules;
   // never traversed across modules.
@@ -86,6 +88,7 @@ model MediaAsset {
   @@unique([companyId, id], map: "media_assets_company_id_id_key")
   @@index([companyId, createdAt(sort: Desc), id(sort: Desc)], map: "media_assets_company_created_idx")
   @@index([companyId, status], map: "media_assets_company_status_idx")
+  @@index([companyId, folderId, createdAt(sort: Desc), id(sort: Desc)], map: "media_assets_folder_created_idx")
   @@index([status, nextAttemptAt], map: "media_assets_processing_idx")
   @@index([companyId, originalSha256], map: "media_assets_original_idx")
   @@index([companyId, displaySha256], map: "media_assets_display_idx")
@@ -94,20 +97,64 @@ model MediaAsset {
 }
 
 model MediaAuditEvent {
-  id                String      @id @db.Uuid
-  companyId         String      @map("company_id") @db.Uuid
-  assetId           String      @map("asset_id") @db.Uuid
-  occurredAt        DateTime    @default(now()) @map("occurred_at") @db.Timestamptz(3)
-  actorPrincipalId  String?     @map("actor_principal_id") @db.Uuid
-  actorMembershipId String?     @map("actor_membership_id") @db.Uuid
-  action            String      @db.VarChar(64)
-  details           Json        @default("{}")
-  company           Company     @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  asset             MediaAsset  @relation(fields: [companyId, assetId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
-  actor             Principal?  @relation("MediaAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  actorMembership   Membership? @relation("MediaAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  id                String       @id @db.Uuid
+  companyId         String       @map("company_id") @db.Uuid
+  assetId           String?      @map("asset_id") @db.Uuid
+  folderId          String?      @map("folder_id") @db.Uuid
+  occurredAt        DateTime     @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  actorPrincipalId  String?      @map("actor_principal_id") @db.Uuid
+  actorMembershipId String?      @map("actor_membership_id") @db.Uuid
+  action            String       @db.VarChar(64)
+  details           Json         @default("{}")
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asset             MediaAsset?  @relation(fields: [companyId, assetId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  folder            MediaFolder? @relation(fields: [companyId, folderId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict, map: "media_audit_events_folder_fkey")
+  actor             Principal?   @relation("MediaAuditActor", fields: [actorPrincipalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actorMembership   Membership?  @relation("MediaAuditActorMembership", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([companyId, id], map: "media_audit_events_company_id_id_key")
   @@index([companyId, assetId, occurredAt(sort: Desc), id(sort: Desc)], map: "media_audit_events_asset_time_idx")
   @@map("media_audit_events")
+}
+
+// Folders organize metadata only; they never become filesystem paths.
+model MediaFolder {
+  id                    String            @id @db.Uuid
+  companyId             String            @map("company_id") @db.Uuid
+  branchId              String?           @map("branch_id") @db.Uuid
+  parentId              String?           @map("parent_id") @db.Uuid
+  name                  String            @db.VarChar(120)
+  createdByMembershipId String            @map("created_by_membership_id") @db.Uuid
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime          @default(now()) @map("updated_at") @db.Timestamptz(3)
+  deletedAt             DateTime?         @map("deleted_at") @db.Timestamptz(3)
+  version               Int               @default(1)
+  company               Company           @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  branch                Branch?           @relation(fields: [companyId, branchId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  parent                MediaFolder?      @relation("MediaFolderTree", fields: [companyId, parentId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict)
+  children              MediaFolder[]     @relation("MediaFolderTree")
+  createdBy             Membership        @relation("MediaFolderCreator", fields: [companyId, createdByMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict, map: "media_folders_creator_fkey")
+  assets                MediaAsset[]
+  auditEvents           MediaAuditEvent[]
+
+  @@unique([companyId, id], map: "media_folders_company_id_id_key")
+  @@index([companyId, parentId, name, id], map: "media_folders_parent_name_idx")
+  @@index([companyId, createdAt], map: "media_folders_company_created_idx")
+  @@map("media_folders")
+}
+
+// Request/result ledger for atomic, idempotent library organization commands.
+model MediaLibraryOperation {
+  companyId         String     @map("company_id") @db.Uuid
+  id                String     @db.Uuid
+  actorMembershipId String     @map("actor_membership_id") @db.Uuid
+  requestHash       Bytes      @map("request_hash")
+  result            Json
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  company           Company    @relation(fields: [companyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor             Membership @relation("MediaLibraryOperationActor", fields: [companyId, actorMembershipId], references: [companyId, id], onDelete: Restrict, onUpdate: Restrict, map: "media_library_operations_actor_fkey")
+
+  @@id([companyId, id], map: "media_library_operations_pkey")
+  @@index([createdAt], map: "media_library_operations_created_idx")
+  @@map("media_library_operations")
 }

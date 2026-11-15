@@ -250,6 +250,7 @@ async function upload(
   file: string,
   options: {
     branchId?: string | null;
+    folderId?: string;
     contentType?: string;
     name?: string;
   } = {},
@@ -260,6 +261,7 @@ async function upload(
     body: {
       name: options.name ?? file.split("/").pop(),
       branchId: options.branchId ?? null,
+      ...(options.folderId ? { folderId: options.folderId } : {}),
       contentType: options.contentType ?? contentTypes[extension],
       size: bytes.length,
     },
@@ -920,4 +922,624 @@ describe("media: upload, processing, scope and lifecycle", () => {
     expect(await repository.removeUnrecorded(companyA, hash)).toBe(true);
     await expect(stat(path)).rejects.toThrow();
   });
+  async function folder(
+    name: string,
+    branchId: string | null = null,
+    parentId: string | null = null,
+    person: Person = "aAdmin",
+    companyId = companyA,
+  ) {
+    const response = await call(
+      person,
+      "POST",
+      `/companies/${companyId}/media-folders`,
+      { body: { operationId: randomUUID(), name, branchId, parentId } },
+    );
+    expect(response.status, JSON.stringify(response.body)).toBe(201);
+    return response.body as {
+      id: string;
+      version: number;
+      name: string;
+      parentId: string | null;
+    };
+  }
+  async function folderVersion(id: string) {
+    const response = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/media-folders/${id}`,
+    );
+    expect(response.status).toBe(200);
+    return (response.body.folder as { version: number }).version;
+  }
+  async function organize(
+    body: unknown,
+    person: Person = "aAdmin",
+    companyId = companyA,
+  ) {
+    return call(person, "POST", `/companies/${companyId}/media-operations`, {
+      body,
+    });
+  }
+
+  it("creates scoped nested folders, safe breadcrumbs and membership/filter-bound pages", async () => {
+    const shared = await folder("Library shared"),
+      local = await folder("Library local", a1.id),
+      hidden = await folder("Library private", a2.id);
+    const child = await folder("Child", a1.id, local.id, "aOperator");
+    const list = await call(
+      "aOperator",
+      "GET",
+      `/companies/${companyA}/media-folders?limit=100`,
+    );
+    expect(list.status, JSON.stringify(list.body)).toBe(200);
+    const ids = (list.body.items as { id: string }[]).map((item) => item.id);
+    expect(ids).toContain(shared.id);
+    expect(ids).toContain(local.id);
+    expect(ids).not.toContain(hidden.id);
+    expect(ids).not.toContain(child.id);
+    const detail = await call(
+      "aOperator",
+      "GET",
+      `/companies/${companyA}/media-folders/${child.id}`,
+    );
+    expect(detail.status).toBe(200);
+    expect(
+      (detail.body.ancestors as { id: string }[]).map((item) => item.id),
+    ).toEqual([local.id]);
+    expect(
+      code(
+        await call(
+          "aOperator",
+          "GET",
+          `/companies/${companyA}/media-folders/${hidden.id}`,
+        ),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(
+      code(
+        await call(
+          "bAdmin",
+          "GET",
+          `/companies/${companyA}/media-folders/${shared.id}`,
+        ),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+    expect(
+      code(
+        await call(
+          "aOperator",
+          "POST",
+          `/companies/${companyA}/media-folders`,
+          {
+            body: {
+              operationId: randomUUID(),
+              name: "No company upload",
+              branchId: null,
+              parentId: null,
+            },
+          },
+        ),
+      ),
+    ).toBe("PERMISSION_DENIED");
+    expect(
+      code(
+        await call("aAdmin", "POST", `/companies/${companyA}/media-folders`, {
+          body: {
+            operationId: randomUUID(),
+            name: "Mismatched",
+            branchId: null,
+            parentId: local.id,
+          },
+        }),
+      ),
+    ).toBe("MEDIA_SCOPE_MISMATCH");
+    const first = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/media-folders?limit=1`,
+    );
+    expect(first.body.nextCursor).toBeTruthy();
+    const cursor = encodeURIComponent(String(first.body.nextCursor));
+    expect(
+      code(
+        await call(
+          "aOperator",
+          "GET",
+          `/companies/${companyA}/media-folders?cursor=${cursor}`,
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "GET",
+          `/companies/${companyA}/media-folders?text=Child&cursor=${cursor}`,
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+    const next = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/media-folders?limit=1&cursor=${cursor}`,
+    );
+    expect(next.status).toBe(200);
+    expect((next.body.items as { id: string }[])[0]?.id).not.toBe(
+      (first.body.items as { id: string }[])[0]?.id,
+    );
+    const command = {
+      operationId: randomUUID(),
+      name: "Idempotent folder",
+      branchId: null,
+      parentId: null,
+    };
+    const repeated = await Promise.all([
+      call("aAdmin", "POST", `/companies/${companyA}/media-folders`, {
+        body: command,
+      }),
+      call("aAdmin", "POST", `/companies/${companyA}/media-folders`, {
+        body: command,
+      }),
+    ]);
+    expect(repeated.map((item) => item.status)).toEqual([201, 201]);
+    expect(repeated[0].body.id).toBe(repeated[1].body.id);
+    expect(
+      code(
+        await call("aAdmin", "POST", `/companies/${companyA}/media-folders`, {
+          body: { ...command, name: "Changed request" },
+        }),
+      ),
+    ).toBe("IDEMPOTENCY_KEY_REUSED");
+  });
+
+  it("moves an in-use file without changing scope, bytes, selection or protected references", async () => {
+    const target = await folder("Move target", a1.id);
+    const uploaded = await upload("aOperator", companyA, fixtures.pngAlpha, {
+      branchId: a1.id,
+    });
+    await processAll();
+    const original = (await get("aOperator", companyA, uploaded.id)).body;
+    protectedAssets.set(uploaded.id, [{ kind: "playlist", branchId: a1.id }]);
+    const before = (
+      await sql.query<{ original_sha256: Buffer; display_sha256: Buffer }>(
+        "SELECT original_sha256, display_sha256 FROM media_assets WHERE id = $1",
+        [uploaded.id],
+      )
+    ).rows[0];
+    const moved = await organize(
+      {
+        operationId: randomUUID(),
+        action: "MOVE",
+        destinationFolderId: target.id,
+        items: [
+          { kind: "asset", id: uploaded.id, expectedVersion: original.version },
+        ],
+      },
+      "aOperator",
+    );
+    expect(moved.status, JSON.stringify(moved.body)).toBe(200);
+    const current = (await get("aOperator", companyA, uploaded.id)).body;
+    expect(current.folderId).toBe(target.id);
+    expect(current.branch).toEqual(original.branch);
+    expect(current.version).toBe(Number(original.version) + 1);
+    expect(
+      (
+        await sql.query(
+          "SELECT original_sha256, display_sha256 FROM media_assets WHERE id = $1",
+          [uploaded.id],
+        )
+      ).rows[0],
+    ).toEqual(before);
+    const listed = await call(
+      "aOperator",
+      "GET",
+      `/companies/${companyA}/media?folderId=${target.id}`,
+    );
+    expect(
+      (listed.body.items as { id: string }[]).map((item) => item.id),
+    ).toEqual([uploaded.id]);
+    const flat = await call(
+      "aOperator",
+      "GET",
+      `/companies/${companyA}/media?view=selectable&limit=100`,
+    );
+    expect(
+      (flat.body.items as { id: string }[]).some(
+        (item) => item.id === uploaded.id,
+      ),
+    ).toBe(true);
+    const rootItems = await call(
+      "aOperator",
+      "GET",
+      `/companies/${companyA}/media?folderId=root&limit=100`,
+    );
+    expect(
+      (rootItems.body.items as { id: string }[]).some(
+        (item) => item.id === uploaded.id,
+      ),
+    ).toBe(false);
+    const otherScope = await folder("Other scope", a2.id);
+    expect(
+      code(
+        await organize({
+          operationId: randomUUID(),
+          action: "MOVE",
+          destinationFolderId: otherScope.id,
+          items: [
+            {
+              kind: "asset",
+              id: uploaded.id,
+              expectedVersion: current.version,
+            },
+          ],
+        }),
+      ),
+    ).toBe("MEDIA_SCOPE_MISMATCH");
+    protectedAssets.delete(uploaded.id);
+  }, 120_000);
+
+  it("copies independently and idempotently with destination authority, reusing objects safely through purge", async () => {
+    const target = await folder("Copy branch destination", a1.id);
+    const uploaded = await upload("aAdmin", companyA, fixtures.pngAlpha);
+    await processAll();
+    const original = (await get("aAdmin", companyA, uploaded.id)).body;
+    const objectsBefore = await sql.query(
+      "SELECT sha256 FROM media_objects WHERE company_id = $1 ORDER BY sha256",
+      [companyA],
+    );
+    const command = {
+      operationId: randomUUID(),
+      action: "COPY",
+      destinationFolderId: target.id,
+      items: [
+        {
+          kind: "asset",
+          id: uploaded.id,
+          expectedVersion: original.version,
+          name: "Independent copy",
+        },
+      ],
+    };
+    const [first, again] = await Promise.all([
+      organize(command, "aOperator"),
+      organize(command, "aOperator"),
+    ]);
+    expect(first.status, JSON.stringify(first.body)).toBe(200);
+    expect(again.body).toEqual(first.body);
+    const copiedId = (first.body.items as { id: string }[])[0].id;
+    expect(copiedId).not.toBe(uploaded.id);
+    const copied = (await get("aOperator", companyA, copiedId)).body;
+    expect(copied).toMatchObject({
+      name: "Independent copy",
+      folderId: target.id,
+      branch: { id: a1.id },
+      status: "READY",
+      version: 1,
+    });
+    expect(
+      (
+        await sql.query(
+          "SELECT sha256 FROM media_objects WHERE company_id = $1 ORDER BY sha256",
+          [companyA],
+        )
+      ).rows,
+    ).toEqual(objectsBefore.rows);
+    expect(
+      code(
+        await organize(
+          {
+            ...command,
+            items: [{ ...command.items[0], name: "Different intent" }],
+          },
+          "aOperator",
+        ),
+      ),
+    ).toBe("IDEMPOTENCY_KEY_REUSED");
+    expect(
+      code(
+        await organize(
+          {
+            ...command,
+            operationId: randomUUID(),
+            destinationFolderId: null,
+            destinationBranchId: null,
+          },
+          "aOperator",
+        ),
+      ),
+    ).toBe("PERMISSION_DENIED");
+    const archived = await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/media/${copiedId}/archive`,
+      { body: { expectedVersion: 1 } },
+    );
+    expect(archived.status).toBe(200);
+    const trashed = await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/media/${copiedId}/delete`,
+      { body: { expectedVersion: archived.body.version } },
+    );
+    expect(trashed.status).toBe(200);
+    await sql.query(
+      "UPDATE media_assets SET purge_after = now() - interval '1 second' WHERE id = $1",
+      [copiedId],
+    );
+    await media.maintain();
+    expect((await get("aAdmin", companyA, copiedId)).status).toBe(404);
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "GET",
+          `/companies/${companyA}/media/${uploaded.id}/content?variant=original`,
+        )
+      ).status,
+    ).toBe(200);
+  }, 120_000);
+
+  it("copies nested folders atomically and refuses overlapping, stale, cyclic or unprepared commands", async () => {
+    const source = await folder("Nested copy source"),
+      child = await folder("Nested child", null, source.id),
+      destination = await folder("Nested copy destination");
+    const uploaded = await upload("aAdmin", companyA, fixtures.pngAlpha, {
+      folderId: child.id,
+    });
+    await processAll();
+    const command = {
+      operationId: randomUUID(),
+      action: "COPY",
+      destinationFolderId: destination.id,
+      items: [
+        {
+          kind: "folder",
+          id: source.id,
+          expectedVersion: await folderVersion(source.id),
+          name: "Copied tree",
+        },
+      ],
+    };
+    const copied = await organize(command);
+    expect(copied.status, JSON.stringify(copied.body)).toBe(200);
+    expect(copied.body.affected).toBe(3);
+    const copyId = (copied.body.items as { id: string }[])[0].id;
+    const children = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/media-folders?parentId=${copyId}`,
+    );
+    const childId = (children.body.items as { id: string }[])[0].id;
+    const contents = await call(
+      "aAdmin",
+      "GET",
+      `/companies/${companyA}/media?folderId=${childId}`,
+    );
+    expect(contents.body.items as { id: string }[]).toHaveLength(1);
+    expect((contents.body.items as { id: string }[])[0].id).not.toBe(
+      uploaded.id,
+    );
+    const attemptedCycle = await organize({
+      operationId: randomUUID(),
+      action: "MOVE",
+      destinationFolderId: child.id,
+      items: [
+        {
+          kind: "folder",
+          id: source.id,
+          expectedVersion: await folderVersion(source.id),
+        },
+      ],
+    });
+    expect(code(attemptedCycle)).toBe("MEDIA_INVALID_DESTINATION");
+    const overlap = await organize({
+      ...command,
+      operationId: randomUUID(),
+      items: [
+        {
+          kind: "folder",
+          id: source.id,
+          expectedVersion: await folderVersion(source.id),
+        },
+        {
+          kind: "asset",
+          id: uploaded.id,
+          expectedVersion: (await get("aAdmin", companyA, uploaded.id)).body
+            .version,
+        },
+      ],
+    });
+    expect(code(overlap)).toBe("VALIDATION_FAILED");
+    const pending = await call(
+      "aAdmin",
+      "POST",
+      `/companies/${companyA}/media`,
+      {
+        body: {
+          name: "Still uploading",
+          folderId: child.id,
+          branchId: null,
+          contentType: "image/png",
+          size: 10,
+        },
+      },
+    );
+    expect(pending.status).toBe(201);
+    const countBefore = await sql.query(
+      "SELECT count(*) FROM media_folders WHERE company_id = $1",
+      [companyA],
+    );
+    const refused = await organize({
+      ...command,
+      operationId: randomUUID(),
+      items: [
+        {
+          kind: "folder",
+          id: source.id,
+          expectedVersion: await folderVersion(source.id),
+        },
+      ],
+    });
+    expect(code(refused)).toBe("MEDIA_NOT_READY");
+    expect(
+      (
+        await sql.query(
+          "SELECT count(*) FROM media_folders WHERE company_id = $1",
+          [companyA],
+        )
+      ).rows,
+    ).toEqual(countBefore.rows);
+    const mediaBefore = (await get("aAdmin", companyA, uploaded.id)).body;
+    const stale = await organize({
+      operationId: randomUUID(),
+      action: "MOVE",
+      destinationFolderId: destination.id,
+      items: [
+        {
+          kind: "asset",
+          id: uploaded.id,
+          expectedVersion: Number(mediaBefore.version) - 1,
+        },
+        {
+          kind: "folder",
+          id: child.id,
+          expectedVersion: await folderVersion(child.id),
+        },
+      ],
+    });
+    expect(code(stale)).toBe("RESOURCE_VERSION_CONFLICT");
+    expect((await get("aAdmin", companyA, uploaded.id)).body.folderId).toBe(
+      child.id,
+    );
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "DELETE",
+          `/companies/${companyA}/media-folders/${child.id}`,
+          { body: { expectedVersion: await folderVersion(child.id) } },
+        ),
+      ),
+    ).toBe("MEDIA_FOLDER_NOT_EMPTY");
+  }, 120_000);
+
+  it("serializes competing folder moves and removes only empty versioned folders", async () => {
+    const left = await folder("Concurrent left"),
+      right = await folder("Concurrent right");
+    const results = await Promise.all([
+      organize({
+        operationId: randomUUID(),
+        action: "MOVE",
+        destinationFolderId: right.id,
+        items: [{ kind: "folder", id: left.id, expectedVersion: left.version }],
+      }),
+      organize({
+        operationId: randomUUID(),
+        action: "MOVE",
+        destinationFolderId: left.id,
+        items: [
+          { kind: "folder", id: right.id, expectedVersion: right.version },
+        ],
+      }),
+    ]);
+    expect(results.map((result) => result.status).sort()).toEqual([200, 409]);
+    const empty = await folder("Empty remove");
+    const renamed = await call(
+      "aAdmin",
+      "PATCH",
+      `/companies/${companyA}/media-folders/${empty.id}`,
+      { body: { expectedVersion: 1, name: "Renamed empty folder" } },
+    );
+    expect(renamed.status).toBe(200);
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "DELETE",
+          `/companies/${companyA}/media-folders/${empty.id}`,
+          { body: { expectedVersion: 1 } },
+        ),
+      ),
+    ).toBe("RESOURCE_VERSION_CONFLICT");
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "DELETE",
+          `/companies/${companyA}/media-folders/${empty.id}`,
+          { body: { expectedVersion: 2 } },
+        )
+      ).status,
+    ).toBe(204);
+    expect(
+      (
+        await call(
+          "aAdmin",
+          "GET",
+          `/companies/${companyA}/media-folders/${empty.id}`,
+        )
+      ).status,
+    ).toBe(404);
+    const audit = await sql.query<{ action: string; details: unknown }>(
+      "SELECT action, details FROM media_audit_events WHERE folder_id = $1 ORDER BY occurred_at",
+      [empty.id],
+    );
+    expect(audit.rows.map((row) => row.action)).toEqual([
+      "media.folder_created",
+      "media.folder_renamed",
+      "media.folder_deleted",
+    ]);
+    expect(JSON.stringify(audit.rows)).not.toContain("Renamed empty folder");
+  });
+
+  it("bounds folder depth and enforces tenant references at the database boundary", async () => {
+    let parent: string | null = null;
+    for (let depth = 1; depth <= 12; depth++)
+      parent = (await folder(`Depth ${depth}`, null, parent)).id;
+    expect(
+      code(
+        await call("aAdmin", "POST", `/companies/${companyA}/media-folders`, {
+          body: {
+            operationId: randomUUID(),
+            parentId: parent,
+            branchId: null,
+            name: "Too deep",
+          },
+        }),
+      ),
+    ).toBe("MEDIA_FOLDER_LIMIT");
+    const foreign = await folder(
+      "Foreign folder",
+      null,
+      null,
+      "bAdmin",
+      companyB,
+    );
+    const uploaded = await upload("aAdmin", companyA, fixtures.pngAlpha);
+    await processAll();
+    await expect(
+      sql.query("UPDATE media_assets SET folder_id = $1 WHERE id = $2", [
+        foreign.id,
+        uploaded.id,
+      ]),
+    ).rejects.toMatchObject({ code: "23503" });
+    expect(
+      code(
+        await organize({
+          operationId: randomUUID(),
+          action: "MOVE",
+          destinationFolderId: foreign.id,
+          items: [
+            {
+              kind: "asset",
+              id: uploaded.id,
+              expectedVersion: (await get("aAdmin", companyA, uploaded.id)).body
+                .version,
+            },
+          ],
+        }),
+      ),
+    ).toBe("RESOURCE_NOT_FOUND");
+  }, 120_000);
 });

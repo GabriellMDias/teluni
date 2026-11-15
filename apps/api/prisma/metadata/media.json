@@ -210,6 +210,11 @@
           "description": "PostgreSQL-clock instant of the latest change.",
           "classification": "INTERNAL",
           "unit": "UTC instant, millisecond precision"
+        },
+        "folder_id": {
+          "description": "Organizational folder within the same company and owning scope; changing it preserves asset identity, content and every programming reference.",
+          "classification": "INTERNAL",
+          "nullMeaning": "The item is unfiled at the library root."
         }
       },
       "objects": {
@@ -241,13 +246,15 @@
         "media_assets_dimensions_positive": "Dimensions are positive.",
         "media_assets_progress_range": "Progress is a percentage.",
         "media_assets_attempts_nonnegative": "Attempt counts never go below zero.",
-        "media_assets_version_positive": "Versions start at one."
+        "media_assets_version_positive": "Versions start at one.",
+        "media_assets_folder_fkey": "The folder belongs to the same company as the asset. The application enforces equal owning scopes under library locks.",
+        "media_assets_folder_created_idx": "Lists direct folder contents newest first without scanning unrelated assets."
       }
     },
     "media_audit_events": {
       "owner": "Media",
       "classification": "CONFIDENTIAL",
-      "description": "Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.",
+      "description": "An append-only media event targeting one asset or one organizational folder, with an actor and allowlisted facts; never names, paths or content.",
       "lifecycle": "Inserted in the same transaction as the change it records; never updated or deleted at runtime. Retention follows the company (provisional until PH-13).",
       "columns": {
         "id": {
@@ -260,7 +267,8 @@
         },
         "asset_id": {
           "description": "Media item the event concerns.",
-          "classification": "INTERNAL"
+          "classification": "INTERNAL",
+          "nullMeaning": "This event targets a folder instead."
         },
         "occurred_at": {
           "description": "PostgreSQL-clock instant of the change.",
@@ -284,6 +292,11 @@
         "details": {
           "description": "Allowlisted IDs, kinds, sizes, states and reason codes; never names of other items, hashes or paths.",
           "classification": "CONFIDENTIAL"
+        },
+        "folder_id": {
+          "description": "Folder targeted by this event; a deleted folder remains as a hidden audit tombstone.",
+          "classification": "INTERNAL",
+          "nullMeaning": "This event targets an asset instead."
         }
       },
       "objects": {
@@ -294,7 +307,117 @@
         "media_audit_events_actor_principal_id_fkey": "The actor is a known principal.",
         "media_audit_events_company_id_actor_membership_id_fkey": "The acting membership belongs to the same company.",
         "media_audit_events_asset_time_idx": "Reads an item's history newest first.",
-        "media_audit_events_details_object": "Details are a JSON object."
+        "media_audit_events_details_object": "Details are a JSON object.",
+        "media_audit_events_folder_fkey": "Folder audit targets belong to the same company.",
+        "media_audit_events_one_target": "Every event targets exactly one asset or folder."
+      }
+    },
+    "media_folders": {
+      "owner": "Media",
+      "classification": "CONFIDENTIAL",
+      "description": "An organizational media folder with a stable ID, display name, immutable company/branch ownership and optional parent. It never names a filesystem directory or changes media object storage.",
+      "lifecycle": "Created with owning-scope upload authority. Renamed or moved with an observed version; parent and child have the same scope, with acyclic trees limited to 12 levels. Only an empty folder can be removed; its hidden row remains for audit. Non-purged assets, including archived and trashed items, prevent removal. Parent versions advance when direct contents change.",
+      "columns": {
+        "id": {
+          "description": "Backend-generated immutable folder UUID.",
+          "classification": "INTERNAL"
+        },
+        "company_id": {
+          "description": "Immutable company owner and tenant key.",
+          "classification": "INTERNAL"
+        },
+        "branch_id": {
+          "description": "Immutable branch owner, also inherited by child folders and uploaded assets.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Company-owned metadata shared with members who can view company media."
+        },
+        "parent_id": {
+          "description": "Parent folder of the same company and scope; changed by an atomic library move.",
+          "classification": "INTERNAL",
+          "nullMeaning": "A root folder in this owning scope."
+        },
+        "name": {
+          "description": "Member-chosen display label, never used as a storage path. Duplicate labels are allowed and stable IDs distinguish folders.",
+          "classification": "CONFIDENTIAL"
+        },
+        "created_by_membership_id": {
+          "description": "Membership that created this folder or independent copied folder.",
+          "classification": "INTERNAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock creation instant.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "updated_at": {
+          "description": "PostgreSQL-clock last metadata or direct-content change; version is the concurrency token.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        },
+        "deleted_at": {
+          "description": "PostgreSQL-clock removal instant of an empty folder; the audit row remains.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision",
+          "nullMeaning": "The folder is active and may be browsed."
+        },
+        "version": {
+          "description": "Positive optimistic concurrency token, incremented for metadata and direct-content changes.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "media_folders_pkey": "Stable folder identity.",
+        "media_folders_company_id_fkey": "The folder belongs to an existing company.",
+        "media_folders_company_id_id_key": "Tenant key used by folder, asset and audit references.",
+        "media_folders_company_id_branch_id_fkey": "An optional owning branch belongs to the same company.",
+        "media_folders_company_id_parent_id_fkey": "The parent belongs to the same company; application tree locks enforce scope equality, cycles and depth.",
+        "media_folders_creator_fkey": "The creating membership belongs to this company.",
+        "media_folders_name_valid": "Display labels contain visible text within the name bound and exclude controls.",
+        "media_folders_parent_not_self": "A folder cannot directly parent itself.",
+        "media_folders_version_positive": "Versions are positive concurrency tokens.",
+        "media_folders_parent_name_idx": "Browses folder children in stable name/ID order.",
+        "media_folders_company_created_idx": "Counts active folders and per-UTC-day creations behind admission limits."
+      }
+    },
+    "media_library_operations": {
+      "owner": "Media",
+      "classification": "CONFIDENTIAL",
+      "description": "Operational idempotency receipt for folder creation and atomic copy/move commands, scoped to a company, acting membership and normalized request hash. Authoritative business events remain in media_audit_events.",
+      "lifecycle": "Inserted with the command result in the same transaction as its changes. Immutable during a 30-day replay window. Maintenance deletes up to 1000 expired receipts per pass; repeating an expired operation ID is a new command.",
+      "columns": {
+        "company_id": {
+          "description": "Company owning the command and result; part of the receipt key.",
+          "classification": "INTERNAL"
+        },
+        "id": {
+          "description": "Caller-generated UUID for one command intent, reused for safe replay within the retention window.",
+          "classification": "INTERNAL"
+        },
+        "actor_membership_id": {
+          "description": "Membership that submitted the command; another membership cannot replay it.",
+          "classification": "INTERNAL"
+        },
+        "request_hash": {
+          "description": "SHA-256 of the normalized command and operation category, compared to refuse key reuse with different intent. Never exposed.",
+          "classification": "CONFIDENTIAL"
+        },
+        "result": {
+          "description": "Bounded result containing root item IDs/kinds and affected-item count, with no file content, names, paths or credentials.",
+          "classification": "CONFIDENTIAL"
+        },
+        "created_at": {
+          "description": "PostgreSQL-clock receipt creation instant; controls the replay retention window.",
+          "classification": "INTERNAL",
+          "unit": "UTC instant, millisecond precision"
+        }
+      },
+      "objects": {
+        "media_library_operations_pkey": "One receipt per command UUID within a company.",
+        "media_library_operations_company_id_fkey": "The command belongs to an existing company.",
+        "media_library_operations_actor_fkey": "The submitting membership belongs to the same company.",
+        "media_library_operations_hash_length": "Request hashes are full SHA-256 digests.",
+        "media_library_operations_result_valid": "Stored command results are JSON objects.",
+        "media_library_operations_created_idx": "Finds expired operational receipts without scanning live results."
       }
     }
   },

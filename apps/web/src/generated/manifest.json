@@ -405,6 +405,24 @@
       "file": "pages/api/createMedia.json"
     },
     {
+      "id": "api/createMediaFolder",
+      "kind": "api",
+      "title": "createMediaFolder",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/media-folders",
+      "method": "POST",
+      "path": "/companies/{companyId}/media-folders",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createMediaFolder.json"
+    },
+    {
       "id": "api/createPlaylist",
       "kind": "api",
       "title": "createPlaylist",
@@ -528,6 +546,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/deleteMedia.json"
+    },
+    {
+      "id": "api/deleteMediaFolder",
+      "kind": "api",
+      "title": "deleteMediaFolder",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /companies/{companyId}/media-folders/{folderId}",
+      "method": "DELETE",
+      "path": "/companies/{companyId}/media-folders/{folderId}",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteMediaFolder.json"
     },
     {
       "id": "api/deletePlaylist",
@@ -975,6 +1011,23 @@
       "file": "pages/api/getMediaContent.json"
     },
     {
+      "id": "api/getMediaFolder",
+      "kind": "api",
+      "title": "getMediaFolder",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/media-folders/{folderId}",
+      "method": "GET",
+      "path": "/companies/{companyId}/media-folders/{folderId}",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getMediaFolder.json"
+    },
+    {
       "id": "api/getPlaylist",
       "kind": "api",
       "title": "getPlaylist",
@@ -1367,6 +1420,23 @@
       "file": "pages/api/listMedia.json"
     },
     {
+      "id": "api/listMediaFolders",
+      "kind": "api",
+      "title": "listMediaFolders",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /companies/{companyId}/media-folders",
+      "method": "GET",
+      "path": "/companies/{companyId}/media-folders",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listMediaFolders.json"
+    },
+    {
       "id": "api/listPlaylists",
       "kind": "api",
       "title": "listPlaylists",
@@ -1488,6 +1558,24 @@
       "file": "pages/api/moveDevice.json"
     },
     {
+      "id": "api/organizeMedia",
+      "kind": "api",
+      "title": "organizeMedia",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /companies/{companyId}/media-operations",
+      "method": "POST",
+      "path": "/companies/{companyId}/media-operations",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/organizeMedia.json"
+    },
+    {
       "id": "api/pairDevice",
       "kind": "api",
       "title": "pairDevice",
@@ -1594,6 +1682,24 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/recordDeviceReset.json"
+    },
+    {
+      "id": "api/renameMediaFolder",
+      "kind": "api",
+      "title": "renameMediaFolder",
+      "group": "Media",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /companies/{companyId}/media-folders/{folderId}",
+      "method": "PATCH",
+      "path": "/companies/{companyId}/media-folders/{folderId}",
+      "tags": ["Media"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/renameMediaFolder.json"
     },
     {
       "id": "api/replaceCatalogSchema",
@@ -2555,9 +2661,29 @@
       "title": "media_audit_events",
       "group": "Media",
       "source": "docs/generated/database/schema.md",
-      "summary": "Append-only record of a media item's lifecycle changes, with the acting member or none for the processor and maintenance.",
+      "summary": "An append-only media event targeting one asset or one organizational folder, with an actor and allowlisted facts; never names, paths or content.",
       "headings": [],
       "file": "pages/database/media_audit_events.json"
+    },
+    {
+      "id": "database/media_folders",
+      "kind": "database",
+      "title": "media_folders",
+      "group": "Media",
+      "source": "docs/generated/database/schema.md",
+      "summary": "An organizational media folder with a stable ID, display name, immutable company/branch ownership and optional parent. It never names a filesystem directory or changes media object storage.",
+      "headings": [],
+      "file": "pages/database/media_folders.json"
+    },
+    {
+      "id": "database/media_library_operations",
+      "kind": "database",
+      "title": "media_library_operations",
+      "group": "Media",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Operational idempotency receipt for folder creation and atomic copy/move commands, scoped to a company, acting membership and normalized request hash. Authoritative business events remain in media_audit_events.",
+      "headings": [],
+      "file": "pages/database/media_library_operations.json"
     },
     {
       "id": "database/media_objects",
@@ -2898,6 +3024,48 @@
       "summary": "Displays a public API failure message and an optional reload action.",
       "headings": [],
       "file": "pages/components/ErrorNotice.json"
+    },
+    {
+      "id": "components/MediaBrowser",
+      "kind": "component",
+      "title": "MediaBrowser",
+      "group": "Data Display",
+      "category": "Data Display",
+      "scope": "feature-specific",
+      "owner": "Media",
+      "metadataSource": "apps/web/src/media/components.docs.json",
+      "source": "apps/web/src/media/manager.tsx",
+      "summary": "Company media file manager with URL-owned navigation and an in-memory selection and clipboard.",
+      "headings": [],
+      "file": "pages/components/MediaBrowser.json"
+    },
+    {
+      "id": "components/MediaDialog",
+      "kind": "component",
+      "title": "MediaDialog",
+      "group": "Feedback",
+      "category": "Feedback",
+      "scope": "feature-specific",
+      "owner": "Media",
+      "metadataSource": "apps/web/src/media/components.docs.json",
+      "source": "apps/web/src/media/dialogs.tsx",
+      "summary": "Native modal shell for bounded media management tasks.",
+      "headings": [],
+      "file": "pages/components/MediaDialog.json"
+    },
+    {
+      "id": "components/MediaFolderPicker",
+      "kind": "component",
+      "title": "MediaFolderPicker",
+      "group": "Forms",
+      "category": "Forms",
+      "scope": "feature-specific",
+      "owner": "Media",
+      "metadataSource": "apps/web/src/media/components.docs.json",
+      "source": "apps/web/src/media/dialogs.tsx",
+      "summary": "On-demand destination browsing for atomic move/copy commands.",
+      "headings": [],
+      "file": "pages/components/MediaFolderPicker.json"
     },
     {
       "id": "components/Menu",
@@ -4423,61 +4591,58 @@
       { "file": "search/0004.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0005.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0006.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0007.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0007.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0008.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0009.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0010.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0011.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0009.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0010.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0011.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0012.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0013.json", "count": 14, "kinds": ["api"] },
-      { "file": "search/0014.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0013.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0014.json", "count": 15, "kinds": ["api"] },
       { "file": "search/0015.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0016.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0016.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0017.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0018.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0019.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0020.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0018.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0019.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0020.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0021.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0022.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0023.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0024.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0022.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0023.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0024.json", "count": 10, "kinds": ["api"] },
       { "file": "search/0025.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0026.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0027.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0028.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0027.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0028.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0029.json", "count": 10, "kinds": ["api"] },
-      { "file": "search/0030.json", "count": 18, "kinds": ["api", "database"] },
-      { "file": "search/0031.json", "count": 24, "kinds": ["database"] },
+      { "file": "search/0030.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0031.json", "count": 14, "kinds": ["api", "database"] },
+      { "file": "search/0032.json", "count": 24, "kinds": ["database"] },
+      { "file": "search/0033.json", "count": 26, "kinds": ["database"] },
       {
-        "file": "search/0032.json",
-        "count": 28,
-        "kinds": ["component", "database"]
+        "file": "search/0034.json",
+        "count": 45,
+        "kinds": ["component", "database", "repository"]
       },
-      {
-        "file": "search/0033.json",
-        "count": 54,
-        "kinds": ["component", "repository"]
-      },
-      { "file": "search/0034.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0035.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 146, "kinds": ["repository"] },
-      { "file": "search/0037.json", "count": 174, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 141, "kinds": ["repository"] },
-      { "file": "search/0039.json", "count": 129, "kinds": ["repository"] },
-      { "file": "search/0040.json", "count": 77, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 95, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 59, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 64, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 51, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 38, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0035.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0037.json", "count": 129, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 172, "kinds": ["repository"] },
+      { "file": "search/0039.json", "count": 166, "kinds": ["repository"] },
+      { "file": "search/0040.json", "count": 111, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 110, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 111, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 64, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 48, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 74, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 51, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 38, "kinds": ["repository"] },
       { "file": "search/0049.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0050.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0051.json", "count": 89, "kinds": ["repository"] },
-      { "file": "search/0052.json", "count": 5, "kinds": ["repository"] }
+      { "file": "search/0050.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0051.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0052.json", "count": 105, "kinds": ["repository"] },
+      { "file": "search/0053.json", "count": 65, "kinds": ["repository"] }
     ],
-    "count": 2116
+    "count": 2155
   }
 }

@@ -14,6 +14,10 @@ export const mediaErrorCodes: ReadonlySet<string> = new Set([
   "MEDIA_IN_USE",
   "MEDIA_STORAGE_FULL",
   "MEDIA_INVALID_STATE",
+  "MEDIA_FOLDER_NOT_EMPTY",
+  "MEDIA_FOLDER_LIMIT",
+  "MEDIA_INVALID_DESTINATION",
+  "MEDIA_SCOPE_MISMATCH",
 ]);
 
 export type Media =
@@ -32,6 +36,9 @@ export type MediaFilter = Readonly<{
   kind?: MediaKind;
   scope?: string;
   text?: string;
+  folderId?: string;
+  folderCursor?: string;
+  layout?: "grid" | "list";
 }>;
 
 /** Content types the server admits, mapped to their kind. */
@@ -59,9 +66,17 @@ export const mediaKey = (companyId: string, assetId: string) =>
 const client = sessionApiClient;
 
 export async function listMedia(companyId: string, filter: MediaFilter) {
+  const query = {
+    ...(filter.cursor ? { cursor: filter.cursor } : {}),
+    ...(filter.view ? { view: filter.view } : {}),
+    ...(filter.kind ? { kind: filter.kind } : {}),
+    ...(filter.scope ? { scope: filter.scope } : {}),
+    ...(filter.text ? { text: filter.text } : {}),
+    ...(filter.folderId ? { folderId: filter.folderId } : {}),
+  };
   return unwrap(
     await client().GET("/companies/{companyId}/media", {
-      params: { path: { companyId }, query: { limit: 48, ...filter } },
+      params: { path: { companyId }, query: { limit: 48, ...query } },
     }),
     mediaErrorCodes,
   );
@@ -84,6 +99,7 @@ export async function createMedia(
   input: {
     name: string;
     branchId: string | null;
+    folderId?: string | null;
     contentType: MediaContentType;
     size: number;
   },
@@ -240,4 +256,91 @@ export function contentUrl(
 /** Whether an item is still changing on the server and worth polling. */
 export function isPending(item: Media): boolean {
   return item.status === "UPLOADING" || item.status === "PROCESSING";
+}
+
+export type MediaFolder =
+  paths["/companies/{companyId}/media-folders/{folderId}"]["get"]["responses"][200]["content"]["application/json"]["folder"];
+export type MediaOrganizationCommand = NonNullable<
+  paths["/companies/{companyId}/media-operations"]["post"]["requestBody"]
+>["content"]["application/json"];
+export const mediaFoldersKey = (companyId: string) =>
+  ["media", "folders", companyId] as const;
+export const mediaFolderKey = (companyId: string, id: string) =>
+  [...mediaFoldersKey(companyId), "item", id] as const;
+export type FolderFilter = {
+  parentId?: string;
+  scope?: string;
+  text?: string;
+  cursor?: string;
+};
+export async function listMediaFolders(companyId: string, query: FolderFilter) {
+  return unwrap(
+    await client().GET("/companies/{companyId}/media-folders", {
+      params: { path: { companyId }, query: { limit: 100, ...query } },
+    }),
+    mediaErrorCodes,
+  );
+}
+export async function getMediaFolder(companyId: string, folderId: string) {
+  return unwrap(
+    await client().GET("/companies/{companyId}/media-folders/{folderId}", {
+      params: { path: { companyId, folderId } },
+    }),
+    mediaErrorCodes,
+  );
+}
+export async function createMediaFolder(
+  companyId: string,
+  body: {
+    operationId: string;
+    parentId: string | null;
+    branchId: string | null;
+    name: string;
+  },
+) {
+  return unwrap(
+    await client().POST("/companies/{companyId}/media-folders", {
+      params: { path: { companyId } },
+      body,
+    }),
+    mediaErrorCodes,
+  );
+}
+export async function renameMediaFolder(
+  companyId: string,
+  folder: MediaFolder,
+  name: string,
+) {
+  return unwrap(
+    await client().PATCH("/companies/{companyId}/media-folders/{folderId}", {
+      params: { path: { companyId, folderId: folder.id } },
+      body: { expectedVersion: folder.version, name },
+    }),
+    mediaErrorCodes,
+  );
+}
+export async function removeMediaFolder(
+  companyId: string,
+  folder: MediaFolder,
+) {
+  const result = await client().DELETE(
+    "/companies/{companyId}/media-folders/{folderId}",
+    {
+      params: { path: { companyId, folderId: folder.id } },
+      body: { expectedVersion: folder.version },
+    },
+  );
+  if (result.response.status !== 204) unwrap(result, mediaErrorCodes);
+}
+export async function organizeMedia(
+  companyId: string,
+  body: MediaOrganizationCommand,
+) {
+  return unwrap(
+    await client().POST("/companies/{companyId}/media-operations", {
+      params: { path: { companyId } },
+      body,
+    }),
+    mediaErrorCodes,
+  );
 }

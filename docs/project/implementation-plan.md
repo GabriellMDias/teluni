@@ -252,3 +252,12 @@ All items here are **future** and require separate scope review. The approved in
 ## Progress and plan changes
 
 Current task statuses own progress. Git preserves detailed editing history. Do not remove unresolved tasks or activation conditions when consolidating completed work.
+
+
+## Media file manager
+
+2026-11-15, owner-requested continuation of PJ-09/PJ-41 after the Screens increment. Status: implemented. Integrated repository/CI qualification is recorded with the pull request checks.
+
+The [media design](media-library-design.md#folders-and-file-operations) owns folder scope, bounded hierarchy, safe moves, independent copies over shared immutable objects, version conflicts and idempotent reconciliation. The additive migration retains existing unfiled media and references. The panel reuses Menu, Checkbox, DataGrid and semantic theme tokens for breadcrumbs, grid/list layouts, selection, keyboard clipboard, destination dialogs, drop upload and preview. Feature components are documented beside source and generated into the internal catalog.
+
+Evidence: focused PostgreSQL/FFmpeg integration covers nested folders, scope and tenant isolation, moving protected media, recursive copy, byte reuse, concurrent/idempotent commands and cycle/depth/version/deletion refusals. The 16 PostgreSQL/FFmpeg media integration tests, 12 media browser tests and the real-identity upload/copy/move/lifecycle journey passed locally. Responsive light/dark accessibility checks and the full repository gate complete integrated qualification. Dependencies: existing organization authority and content-addressed media storage. No new provider, credential or human blocker is introduced; existing pilot/deployment actions retain their original triggers.

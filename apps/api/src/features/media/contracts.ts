@@ -76,6 +76,7 @@ const mutation = [
 export const mediaSchema = Type.Object(
   {
     id: uuid,
+    folderId: Type.Optional(Type.Union([uuid, Type.Null()])),
     name: mediaName,
     tags,
     kind,
@@ -122,6 +123,50 @@ export const mediaSchema = Type.Object(
   { additionalProperties: false },
 );
 
+export const mediaFolderSchema = Type.Object(
+  {
+    id: uuid,
+    name: mediaName,
+    parentId: Type.Union([uuid, Type.Null()]),
+    branch: Type.Union([
+      Type.Object(
+        { id: uuid, name: Type.String() },
+        { additionalProperties: false },
+      ),
+      Type.Null(),
+    ]),
+    createdAt: instant,
+    updatedAt: instant,
+    version,
+  },
+  { additionalProperties: false },
+);
+const libraryItemKind = Type.Union([
+  Type.Literal("asset"),
+  Type.Literal("folder"),
+]);
+const libraryResult = Type.Object(
+  {
+    items: Type.Array(
+      Type.Object(
+        { kind: libraryItemKind, id: uuid },
+        { additionalProperties: false },
+      ),
+      { maxItems: 100 },
+    ),
+    affected: Type.Integer({ minimum: 0, maximum: 100 }),
+  },
+  { additionalProperties: false },
+);
+const scope = Type.String({
+  pattern:
+    "^(company|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+});
+const folderParams = Type.Object(
+  { companyId: uuid, folderId: uuid },
+  { additionalProperties: false },
+);
+
 const companyParams = Type.Object(
   { companyId: uuid },
   { additionalProperties: false },
@@ -142,7 +187,7 @@ export const mediaOperations = [
     operationId: "listMedia",
     access: "session",
     description:
-      "The company's media items the caller may view, newest first: company-wide items and items of granted branches. The library view shows uploads in progress, ready, rejected and failed items; archived shows archived items; trash (company deletion authority only) shows deleted items until their purge; selectable shows ready items only. Filter by kind, scope (company or a branch), tag and name text. Cursors are bound to the company, caller, visible scope and filters.",
+      "The company's media items the caller may view, newest first: company-wide items and items of granted branches. The library view shows uploads in progress, ready, rejected and failed items; archived shows archived items; trash (company deletion authority only) shows deleted items until their purge; selectable shows ready items only. Filter by kind, scope (company or a branch), tag and name text. Omitting folderId retains the complete flat library; root selects unfiled items and a folder UUID selects its direct contents, without changing asset access. Cursors are bound to the company, caller, visible scope and filters.",
     schema: {
       params: companyParams,
       querystring: Type.Object(
@@ -165,6 +210,7 @@ export const mediaOperations = [
                 "^(company|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             }),
           ),
+          folderId: Type.Optional(Type.Union([Type.Literal("root"), uuid])),
           tag: Type.Optional(tag),
           text: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
         },
@@ -196,6 +242,7 @@ export const mediaOperations = [
         {
           name: mediaName,
           branchId: Type.Union([uuid, Type.Null()]),
+          folderId: Type.Optional(Type.Union([uuid, Type.Null()])),
           contentType,
           size: Type.Integer({ minimum: 1 }),
           tags: Type.Optional(tags),
@@ -209,6 +256,7 @@ export const mediaOperations = [
       "MEDIA_TYPE_UNSUPPORTED",
       "MEDIA_TOO_LARGE",
       "MEDIA_STORAGE_FULL",
+      "MEDIA_SCOPE_MISMATCH",
     ],
   },
   {
@@ -363,5 +411,158 @@ export const mediaOperations = [
       response: { 204: Type.Null(), ...common },
     },
     expectedErrors: [...mutation, "MEDIA_INVALID_STATE"],
+  },
+  {
+    method: "GET",
+    url: "/companies/:companyId/media-folders",
+    operationId: "listMediaFolders",
+    access: "session",
+    description:
+      "Visible media folders, ordered by name and ID. Company folders are shared with members who may view media; branch folders require that branch's media.view. Omit parentId or use root for root folders. Text searches folders throughout the visible library. Cursors are bound to current membership, branch visibility, parent, scope and search.",
+    schema: {
+      params: companyParams,
+      querystring: Type.Object(
+        {
+          parentId: Type.Optional(Type.Union([Type.Literal("root"), uuid])),
+          scope: Type.Optional(scope),
+          text: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
+          cursor: Type.Optional(Type.String({ minLength: 1, maxLength: 2048 })),
+          limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+        },
+        { additionalProperties: false },
+      ),
+      response: {
+        200: Type.Object(
+          {
+            items: Type.Array(mediaFolderSchema),
+            nextCursor: Type.Union([Type.String(), Type.Null()]),
+          },
+          { additionalProperties: false },
+        ),
+        ...common,
+      },
+    },
+    expectedErrors: [...scoped],
+  },
+  {
+    method: "GET",
+    url: "/companies/:companyId/media-folders/:folderId",
+    operationId: "getMediaFolder",
+    access: "session",
+    description:
+      "A visible media folder and its root-to-parent breadcrumb, within one owning scope. Hidden, deleted or foreign-company folders answer RESOURCE_NOT_FOUND.",
+    schema: {
+      params: folderParams,
+      response: {
+        200: Type.Object(
+          {
+            folder: mediaFolderSchema,
+            ancestors: Type.Array(mediaFolderSchema, { maxItems: 12 }),
+          },
+          { additionalProperties: false },
+        ),
+        ...common,
+      },
+    },
+    expectedErrors: [...scoped, "MEDIA_FOLDER_LIMIT"],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/media-folders",
+    operationId: "createMediaFolder",
+    access: "session",
+    description:
+      "Create a media folder with media.upload in its owning scope. A parent and child must have the same company/branch scope. At most 12 levels and 2000 active folders per company, with 200 folder creations per UTC day. operationId is a caller-generated UUID, bound to this membership and exact request for 30-day idempotent replay; reusing it for another command fails. Names are metadata, never filesystem paths.",
+    schema: {
+      params: companyParams,
+      body: Type.Object(
+        {
+          operationId: uuid,
+          parentId: Type.Union([uuid, Type.Null()]),
+          branchId: Type.Union([uuid, Type.Null()]),
+          name: mediaName,
+        },
+        { additionalProperties: false },
+      ),
+      response: { 201: mediaFolderSchema, ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "IDEMPOTENCY_KEY_REUSED",
+      "MEDIA_SCOPE_MISMATCH",
+      "MEDIA_FOLDER_LIMIT",
+    ],
+  },
+  {
+    method: "PATCH",
+    url: "/companies/:companyId/media-folders/:folderId",
+    operationId: "renameMediaFolder",
+    access: "session",
+    description:
+      "Rename a visible media folder with owning-scope media.upload and its observed version. The folder's scope, identity, content and existing asset references stay intact.",
+    schema: {
+      params: folderParams,
+      body: Type.Object(
+        { expectedVersion: version, name: mediaName },
+        { additionalProperties: false },
+      ),
+      response: { 200: mediaFolderSchema, ...common },
+    },
+    expectedErrors: [...mutation],
+  },
+  {
+    method: "DELETE",
+    url: "/companies/:companyId/media-folders/:folderId",
+    operationId: "deleteMediaFolder",
+    access: "session",
+    description:
+      "Remove an empty folder with owning-scope media.upload and its observed version. Active child folders and non-purged assets, including archived and trashed assets, block removal. A hidden audit tombstone remains; no media bytes or references are deleted.",
+    schema: {
+      params: folderParams,
+      body: versionBody,
+      response: { 204: Type.Null(), ...common },
+    },
+    expectedErrors: [...mutation, "MEDIA_FOLDER_NOT_EMPTY"],
+  },
+  {
+    method: "POST",
+    url: "/companies/:companyId/media-operations",
+    operationId: "organizeMedia",
+    access: "session",
+    description:
+      "Atomically MOVE or COPY up to 100 observed files/folders into a visible destination (null for the root). MOVE requires owning-scope media.upload, preserves scope, IDs and all references, and cannot move into another scope. COPY requires source media.view and destination media.upload; copies inherit the destination folder scope, or an explicit root destinationBranchId, otherwise each source's scope. Validated READY/ARCHIVED assets reuse their immutable objects with independent metadata and no copied playlist references. Folder copies include active subfolders and ready/archived contents; unprepared contents refuse the whole copy. Expanded copies are bounded to 100 items; folder depth and creation limits apply. Self/descendant destinations and overlapping ancestor/child selections are refused. Optional per-source name applies only to COPY. operationId is a membership/request-bound UUID with 30-day idempotent replay; all changes and allowlisted audits commit together.",
+    schema: {
+      params: companyParams,
+      body: Type.Object(
+        {
+          operationId: uuid,
+          action: Type.Union([Type.Literal("MOVE"), Type.Literal("COPY")]),
+          destinationFolderId: Type.Union([uuid, Type.Null()]),
+          destinationBranchId: Type.Optional(Type.Union([uuid, Type.Null()])),
+          items: Type.Array(
+            Type.Object(
+              {
+                kind: libraryItemKind,
+                id: uuid,
+                expectedVersion: version,
+                name: Type.Optional(mediaName),
+              },
+              { additionalProperties: false },
+            ),
+            { minItems: 1, maxItems: 100 },
+          ),
+        },
+        { additionalProperties: false },
+      ),
+      response: { 200: libraryResult, ...common },
+    },
+    expectedErrors: [
+      ...mutation,
+      "IDEMPOTENCY_KEY_REUSED",
+      "MEDIA_SCOPE_MISMATCH",
+      "MEDIA_INVALID_DESTINATION",
+      "MEDIA_FOLDER_LIMIT",
+      "MEDIA_NOT_READY",
+    ],
   },
 ] as const satisfies readonly ApiOperation[];

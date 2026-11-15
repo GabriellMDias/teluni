@@ -16,6 +16,7 @@ export type MediaRecord = Readonly<{
   id: string;
   companyId: string;
   branchId: string | null;
+  folderId: string | null;
   name: string;
   tags: readonly string[];
   kind: MediaKind;
@@ -67,6 +68,7 @@ type Row = {
   id: string;
   company_id: string;
   branch_id: string | null;
+  folder_id: string | null;
   name: string;
   tags: string[];
   kind: MediaKind;
@@ -92,7 +94,7 @@ type Row = {
   version: number;
 };
 
-const columns = Prisma.sql`id, company_id, branch_id, name, tags,
+const columns = Prisma.sql`id, company_id, branch_id, folder_id, name, tags,
   kind::text AS kind, status::text AS status, rejection_reason,
   declared_content_type, declared_size, original_sha256, display_sha256,
   thumbnail_sha256, width, height, duration_ms, has_audio, processing_stage,
@@ -108,6 +110,7 @@ const record = (row: Row): MediaRecord => ({
   id: row.id,
   companyId: row.company_id,
   branchId: row.branch_id,
+  folderId: row.folder_id,
   name: row.name,
   tags: row.tags ?? [],
   kind: row.kind,
@@ -168,6 +171,7 @@ export type ListFilter = Readonly<{
   kind?: MediaKind;
   /** "company" for company-owned items, or one branch ID. */
   scope?: string;
+  folderId?: string;
   tag?: string;
   text?: string;
   limit: number;
@@ -251,6 +255,7 @@ export class PrismaMediaRepository {
     input: {
       companyId: string;
       branchId: string | null;
+      folderId?: string | null;
       name: string;
       tags: readonly string[];
       kind: MediaKind;
@@ -260,10 +265,10 @@ export class PrismaMediaRepository {
   ): Promise<MediaRecord> {
     const id = randomUUID();
     const [row] = await tx.$queryRaw<Row[]>`
-      INSERT INTO media_assets (id, company_id, branch_id, name, tags, kind,
+      INSERT INTO media_assets (id, company_id, branch_id, folder_id, name, tags, kind,
         declared_content_type, declared_size, created_by_membership_id,
         created_by_principal_id)
-      VALUES (${id}::uuid, ${input.companyId}::uuid, ${input.branchId}::uuid,
+      VALUES (${id}::uuid, ${input.companyId}::uuid, ${input.branchId}::uuid, ${input.folderId ?? null}::uuid,
         ${input.name}, ${input.tags as string[]}::text[],
         ${input.kind}::"MediaKind", ${input.declaredContentType},
         ${input.declaredSize}, ${actor.membershipId}::uuid,
@@ -275,6 +280,17 @@ export class PrismaMediaRepository {
       declaredSize: input.declaredSize,
     });
     return record(row);
+  }
+
+  async read(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    id: string,
+  ): Promise<MediaRecord | null> {
+    const [row] = await tx.$queryRaw<
+      Row[]
+    >`SELECT ${columns} FROM media_assets WHERE company_id = ${companyId}::uuid AND id = ${id}::uuid`;
+    return row ? record(row) : null;
   }
 
   async find(companyId: string, id: string): Promise<MediaRecord | null> {
@@ -346,6 +362,10 @@ export class PrismaMediaRepository {
       conditions.push(Prisma.sql`branch_id IS NULL`);
     else if (filter.scope)
       conditions.push(Prisma.sql`branch_id = ${filter.scope}::uuid`);
+    if (filter.folderId === "root")
+      conditions.push(Prisma.sql`folder_id IS NULL`);
+    else if (filter.folderId)
+      conditions.push(Prisma.sql`folder_id = ${filter.folderId}::uuid`);
     if (filter.tag) conditions.push(Prisma.sql`${filter.tag} = ANY(tags)`);
     if (filter.text)
       conditions.push(
@@ -708,6 +728,83 @@ export class PrismaMediaRepository {
       released.push(hash);
     }
     return released;
+  }
+
+  /** A bounded snapshot of copyable folder contents; locks are taken by sorted ID afterwards. */
+  async inFolders(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    folderIds: readonly string[],
+  ) {
+    if (folderIds.length === 0) return [];
+    const rows = await tx.$queryRaw<Row[]>`SELECT ${columns} FROM media_assets
+      WHERE company_id = ${companyId}::uuid AND folder_id = ANY(${[...folderIds]}::uuid[])
+        AND status NOT IN ('PURGED', 'DELETED') ORDER BY id LIMIT 101`;
+    return rows.map(record);
+  }
+
+  async move(
+    tx: Prisma.TransactionClient,
+    actor: NonNullable<MediaActor>,
+    current: MediaRecord,
+    folderId: string | null,
+  ) {
+    if (current.folderId === folderId) return current;
+    const [row] = await tx.$queryRaw<
+      Row[]
+    >`UPDATE media_assets SET folder_id = ${folderId}::uuid,
+      version = version + 1, updated_at = statement_timestamp()
+      WHERE company_id = ${current.companyId}::uuid AND id = ${current.id}::uuid RETURNING ${columns}`;
+    await writeAudit(tx, current.companyId, current.id, actor, "media.moved", {
+      fromFolderId: current.folderId,
+      folderId,
+    });
+    return record(row);
+  }
+
+  /** Copy validated metadata and retain the same immutable objects under their locks. */
+  async copy(
+    tx: Prisma.TransactionClient,
+    actor: NonNullable<MediaActor>,
+    current: MediaRecord,
+    input: { folderId: string | null; branchId: string | null; name: string },
+  ) {
+    const hashes = [
+      ...new Map(
+        [current.originalSha256, current.displaySha256, current.thumbnailSha256]
+          .filter((hash): hash is Buffer => hash !== null)
+          .map((hash) => [hash.toString("hex"), hash]),
+      ).values(),
+    ].sort((a, b) => Buffer.compare(a, b));
+    for (const hash of hashes) await lockObject(tx, current.companyId, hash);
+    const id = randomUUID();
+    const [row] = await tx.$queryRaw<Row[]>`INSERT INTO media_assets (
+      id, company_id, branch_id, folder_id, name, tags, kind, status,
+      declared_content_type, declared_size, original_sha256, display_sha256, thumbnail_sha256,
+      width, height, duration_ms, has_audio, created_by_membership_id, created_by_principal_id,
+      uploaded_at, ready_at, archived_at)
+      VALUES (${id}::uuid, ${current.companyId}::uuid, ${input.branchId}::uuid, ${input.folderId}::uuid,
+        ${input.name}, ${[...current.tags]}::text[], ${current.kind}::"MediaKind", ${current.status}::"MediaStatus",
+        ${current.declaredContentType}, ${current.declaredSize}, ${current.originalSha256}, ${current.displaySha256}, ${current.thumbnailSha256},
+        ${current.width}, ${current.height}, ${current.durationMs}, ${current.hasAudio}, ${actor.membershipId}::uuid, ${actor.principalId}::uuid,
+        statement_timestamp(), statement_timestamp(), CASE WHEN ${current.status === "ARCHIVED"} THEN statement_timestamp() ELSE NULL END)
+      RETURNING ${columns}`;
+    await writeAudit(tx, current.companyId, id, actor, "media.copied", {
+      sourceAssetId: current.id,
+      folderId: input.folderId,
+      branchId: input.branchId,
+      kind: current.kind,
+      declaredSize: current.declaredSize,
+    });
+    return record(row);
+  }
+
+  /** Command receipts have a 30-day replay window; the business audit is separate. */
+  async pruneLibraryOperations() {
+    await this.#db
+      .$executeRaw`DELETE FROM media_library_operations WHERE (company_id, id) IN (
+      SELECT company_id, id FROM media_library_operations WHERE created_at < statement_timestamp() - interval '30 days'
+      ORDER BY created_at LIMIT 1000)`;
   }
 
   /** Items in the trash past their purge instant, oldest first. */

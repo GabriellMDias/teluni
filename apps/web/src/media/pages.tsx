@@ -1,12 +1,9 @@
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ApiFailure } from "../api-client.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
-import { browserLocale } from "../locale.js";
 import {
   companyKey,
-  describe,
   getCompany,
   listBranchChoices,
   type CompanyWithAccess,
@@ -21,7 +18,6 @@ import {
   getMedia,
   isAccepted,
   isPending,
-  listMedia,
   maxBytes,
   mediaKey,
   mediaListKey,
@@ -31,62 +27,19 @@ import {
   type Media,
   type MediaFilter,
   type MediaKind,
-  type MediaView,
 } from "./api.js";
-import { mediaMessages } from "./messages.js";
+import { MediaBrowser } from "./manager.js";
+import type { MediaFolder } from "./api.js";
+import {
+  Failure,
+  explain,
+  mustReload,
+  useMediaMessages,
+  type Messages,
+} from "./feedback.js";
 
 /** How often pages refresh while an item is uploading or being prepared. */
 const pollMs = 3000;
-
-export function useMediaMessages() {
-  const locale = useMemo(browserLocale, []);
-  return { locale, t: mediaMessages[locale] };
-}
-
-type Messages = ReturnType<typeof useMediaMessages>["t"];
-
-/**
- * Like the shared description, except that a full media volume is a known
- * refusal: nothing was written, so it is explained rather than reported as
- * an unknown outcome.
- */
-function explain(error: unknown, t: Messages, operation: "read" | "write") {
-  if (error instanceof ApiFailure && error.code === "MEDIA_STORAGE_FULL")
-    return t.errors.MEDIA_STORAGE_FULL;
-  return describe(error, t, operation);
-}
-
-function Failure({
-  error,
-  operation,
-  onReload,
-}: {
-  error: unknown;
-  operation: "read" | "write";
-  onReload?: () => void;
-}) {
-  const { t } = useMediaMessages();
-  return (
-    <div role="alert" className="notice notice-error">
-      {explain(error, t, operation)}
-      {onReload && (
-        <button type="button" onClick={onReload}>
-          {t.reload}
-        </button>
-      )}
-    </div>
-  );
-}
-
-/** A write whose outcome is unknown or stale needs a reload, not a retry. */
-function mustReload(error: unknown): boolean {
-  return (
-    Boolean(error) &&
-    (!(error instanceof ApiFailure) ||
-      error.status >= 500 ||
-      error.code === "RESOURCE_VERSION_CONFLICT")
-  );
-}
 
 /**
  * Loads the session and the company access every media page needs, and
@@ -95,10 +48,12 @@ function mustReload(error: unknown): boolean {
 function CompanyGate({
   companyId,
   returnTo,
+  wide = false,
   children,
 }: {
   companyId: string;
   returnTo: string;
+  wide?: boolean;
   children: (company: CompanyWithAccess) => React.ReactNode;
 }) {
   const { locale, t } = useMediaMessages();
@@ -145,7 +100,7 @@ function CompanyGate({
   else if (company.data) body = children(company.data);
   return (
     <section
-      className="panel organization-panel media-panel"
+      className={`panel organization-panel media-panel${wide ? " media-manager-panel" : ""}`}
       aria-labelledby="media-title"
       lang={locale}
     >
@@ -184,15 +139,6 @@ function stateLine(item: Media, t: Messages) {
   return status;
 }
 
-function facts(item: Media, t: Messages) {
-  const parts: string[] = [t.kinds[item.kind]];
-  if (item.width && item.height)
-    parts.push(t.dimensions(item.width, item.height));
-  if (item.durationMs !== null)
-    parts.push(t.duration(Math.round(item.durationMs / 1000)));
-  return parts.join(" · ");
-}
-
 const hasRenditions = (item: Media) =>
   item.status === "READY" ||
   item.status === "ARCHIVED" ||
@@ -210,15 +156,21 @@ type UploadRow = {
 function UploadForm({
   companyId,
   branches,
+  folder = null,
+  initialFiles = [],
+  onBusyChange,
 }: {
   companyId: string;
   branches: { id: string; name: string }[];
+  folder?: MediaFolder | null;
+  initialFiles?: File[];
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const { t } = useMediaMessages();
   const queryClient = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
-  const [scope, setScope] = useState("company");
-  const [files, setFiles] = useState<File[]>([]);
+  const [scope, setScope] = useState(folder?.branch?.id ?? "company");
+  const [files, setFiles] = useState<File[]>(initialFiles);
   const [rows, setRows] = useState<UploadRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -243,6 +195,7 @@ function UploadForm({
       })),
     );
     setBusy(true);
+    onBusyChange?.(true);
     // One at a time keeps within the open-upload limit and the bandwidth.
     for (const { file, key } of batch) {
       const type = file.type;
@@ -260,6 +213,7 @@ function UploadForm({
         const created = await createMedia(companyId, {
           name: nameFromFile(file.name),
           branchId: scope === "company" ? null : scope,
+          ...(folder ? { folderId: folder.id } : {}),
           contentType: type,
           size: file.size,
         });
@@ -275,6 +229,7 @@ function UploadForm({
       });
     }
     setBusy(false);
+    onBusyChange?.(false);
     setFiles([]);
     if (input.current) input.current.value = "";
   }
@@ -319,7 +274,7 @@ function UploadForm({
       <select
         id="upload-scope"
         value={scope}
-        disabled={busy}
+        disabled={busy || Boolean(folder)}
         onChange={(event) => setScope(event.target.value)}
       >
         <option value="company">{t.companyScope}</option>
@@ -365,174 +320,6 @@ function UploadForm({
   );
 }
 
-function MediaGrid({
-  companyId,
-  filter,
-  branches,
-  canSeeTrash,
-}: {
-  companyId: string;
-  filter: MediaFilter;
-  branches: { id: string; name: string }[];
-  canSeeTrash: boolean;
-}) {
-  const { t } = useMediaMessages();
-  const navigate = useNavigate();
-  const [text, setText] = useState(filter.text ?? "");
-  const media = useQuery({
-    queryKey: [...mediaListKey(companyId), filter],
-    queryFn: () => listMedia(companyId, filter),
-    refetchInterval: (query) =>
-      query.state.data?.items.some(isPending) ? pollMs : false,
-  });
-  const setFilter = (next: MediaFilter) =>
-    void navigate({
-      to: "/companies/$companyId/media",
-      params: { companyId },
-      search: {
-        ...(next.view && next.view !== "library" ? { view: next.view } : {}),
-        ...(next.kind ? { kind: next.kind } : {}),
-        ...(next.scope ? { scope: next.scope } : {}),
-        ...(next.text ? { text: next.text } : {}),
-      },
-    });
-  const views: MediaView[] = canSeeTrash
-    ? ["library", "archived", "trash"]
-    : ["library", "archived"];
-  const current = filter.view ?? "library";
-  return (
-    <div className="media-list-section">
-      <nav className="company-navigation" aria-label={t.viewsLabel}>
-        {views.map((view) => (
-          <Link
-            key={view}
-            to="/companies/$companyId/media"
-            params={{ companyId }}
-            search={view === "library" ? {} : { view }}
-            aria-current={view === current ? "page" : undefined}
-          >
-            {t.views[view]}
-          </Link>
-        ))}
-      </nav>
-      <div className="media-filters">
-        <label htmlFor="filter-kind">{t.filterKind}</label>
-        <select
-          id="filter-kind"
-          value={filter.kind ?? ""}
-          onChange={(event) =>
-            setFilter({
-              ...filter,
-              kind:
-                event.target.value === "IMAGE" || event.target.value === "VIDEO"
-                  ? event.target.value
-                  : undefined,
-            })
-          }
-        >
-          <option value="">{t.filterAll}</option>
-          <option value="IMAGE">{t.kinds.IMAGE}</option>
-          <option value="VIDEO">{t.kinds.VIDEO}</option>
-        </select>
-        <label htmlFor="filter-scope">{t.filterScope}</label>
-        <select
-          id="filter-scope"
-          value={filter.scope ?? ""}
-          onChange={(event) =>
-            setFilter({ ...filter, scope: event.target.value || undefined })
-          }
-        >
-          <option value="">{t.filterAll}</option>
-          <option value="company">{t.companyScope}</option>
-          {branches.map((branch) => (
-            <option key={branch.id} value={branch.id}>
-              {branch.name}
-            </option>
-          ))}
-        </select>
-        <form
-          role="search"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setFilter({ ...filter, text: text.trim() || undefined });
-          }}
-        >
-          <label htmlFor="filter-text">{t.filterText}</label>{" "}
-          <input
-            id="filter-text"
-            type="search"
-            maxLength={120}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-          />{" "}
-          <button type="submit">{t.search}</button>
-        </form>
-      </div>
-      {media.isPending ? (
-        <p>{t.loading}</p>
-      ) : media.isError ? (
-        <Failure
-          error={media.error}
-          operation="read"
-          onReload={() => void media.refetch()}
-        />
-      ) : media.data.items.length === 0 ? (
-        <p className="empty-state">{filter.cursor ? t.pageEmpty : t.empty}</p>
-      ) : (
-        <ul className="media-grid">
-          {media.data.items.map((item) => (
-            <li key={item.id}>
-              <Link
-                to="/companies/$companyId/media/$assetId"
-                params={{ companyId, assetId: item.id }}
-              >
-                <span className="media-thumb">
-                  {hasRenditions(item) ? (
-                    <img
-                      src={contentUrl(companyId, item, "thumbnail")}
-                      alt=""
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span className="media-thumb-placeholder">
-                      {t.kinds[item.kind]}
-                    </span>
-                  )}
-                </span>
-                <span className="media-name">{item.name}</span>
-              </Link>
-              <span className="hint">
-                {facts(item, t)} · {scopeName(item, t)}
-              </span>
-              <span className="hint">{stateLine(item, t)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <nav className="pagination" aria-label={t.title}>
-        {filter.cursor && (
-          <Link
-            to="/companies/$companyId/media"
-            params={{ companyId }}
-            search={{ ...filter, cursor: undefined }}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {media.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId/media"
-            params={{ companyId }}
-            search={{ ...filter, cursor: media.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
-    </div>
-  );
-}
-
 function LibraryContent({
   companyId,
   filter,
@@ -542,24 +329,24 @@ function LibraryContent({
   filter: MediaFilter;
   company: CompanyWithAccess;
 }) {
-  const { t } = useMediaMessages();
   const branches = useBranchChoices(companyId);
-  const upload = company.access.capabilities.includes("media.upload");
-  const choices = branches.data?.items ?? [];
   return (
-    <>
-      <h1 id="media-title">{t.title}</h1>
-      <p>{t.lead}</p>
-      {upload && (filter.view ?? "library") === "library" && (
-        <UploadForm companyId={companyId} branches={choices} />
+    <MediaBrowser
+      companyId={companyId}
+      filter={filter}
+      company={company}
+      branches={branches.data?.items ?? []}
+      renderUpload={({ folder, files, onBusyChange }) => (
+        <UploadForm
+          companyId={companyId}
+          branches={branches.data?.items ?? []}
+          folder={folder}
+          initialFiles={files}
+          onBusyChange={onBusyChange}
+        />
       )}
-      <MediaGrid
-        companyId={companyId}
-        filter={filter}
-        branches={choices}
-        canSeeTrash={company.access.capabilities.includes("media.delete")}
-      />
-    </>
+      renderPreview={(item) => <Preview companyId={companyId} item={item} />}
+    />
   );
 }
 
@@ -577,7 +364,7 @@ export function MediaLibraryPage({
   );
   const returnTo = `/companies/${companyId}/media${search.size ? `?${search}` : ""}`;
   return (
-    <CompanyGate companyId={companyId} returnTo={returnTo}>
+    <CompanyGate companyId={companyId} returnTo={returnTo} wide>
       {(company) => (
         <LibraryContent
           companyId={companyId}

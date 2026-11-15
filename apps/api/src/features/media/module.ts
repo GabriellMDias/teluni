@@ -1,6 +1,8 @@
 import type { ApiModule } from "../../module.js";
 import type { HumanSessionPort } from "../identity/public.js";
 import type { CompanyAccessPort } from "../organizations/public.js";
+import { MediaLibraryService } from "./library.js";
+import { PrismaMediaLibraryRepository } from "./library-repository.js";
 import { mediaOperations } from "./contracts.js";
 import { mediaErrors } from "./errors.js";
 import { PrismaMediaRepository } from "./prisma-repository.js";
@@ -72,7 +74,13 @@ export function createMediaModule(options: {
       const settings = mediaStorage!;
       const store = new MediaObjectStore(settings.root);
       const repository = new PrismaMediaRepository(database!, store);
+      const library = new MediaLibraryService({
+        folders: new PrismaMediaLibraryRepository(database!),
+        assets: repository,
+        companies: options.companies,
+      });
       const service = new MediaService({
+        library,
         repository,
         companies: options.companies,
         store,
@@ -98,7 +106,13 @@ export function createMediaModule(options: {
         name: "media",
         requestTimeoutMs: uploadTimeoutMs,
         register: (app) => {
-          registerMediaRoutes(app, service, options.sessions, options.limits);
+          registerMediaRoutes(
+            app,
+            service,
+            library,
+            options.sessions,
+            options.limits,
+          );
           app.addHook("onReady", async () => {
             await processor.prepare(app.log);
             if (!options.manual) processor.start(app.log);

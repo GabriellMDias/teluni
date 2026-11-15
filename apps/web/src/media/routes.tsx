@@ -16,6 +16,18 @@ const libraryRoute = createRoute({
     search.cursor.length <= 1024
       ? { cursor: search.cursor }
       : {}),
+    ...(search.folderId === "root" ||
+    (typeof search.folderId === "string" && uuidPattern.test(search.folderId))
+      ? { folderId: search.folderId }
+      : {}),
+    ...(typeof search.folderCursor === "string" &&
+    search.folderCursor.length > 0 &&
+    search.folderCursor.length <= 2048
+      ? { folderCursor: search.folderCursor }
+      : {}),
+    ...(search.layout === "grid" || search.layout === "list"
+      ? { layout: search.layout }
+      : {}),
     ...(search.view === "archived" || search.view === "trash"
       ? { view: search.view }
       : {}),

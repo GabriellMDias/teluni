@@ -1,0 +1,167 @@
+{
+  "kind": "database",
+  "name": "media_folders",
+  "description": "An organizational media folder with a stable ID, display name, immutable company/branch ownership and optional parent. It never names a filesystem directory or changes media object storage.",
+  "owner": "Media",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created with owning-scope upload authority. Renamed or moved with an observed version; parent and child have the same scope, with acyclic trees limited to 12 levels. Only an empty folder can be removed; its hidden row remains for audit. Non-purged assets, including archived and trashed items, prevent removal. Parent versions advance when direct contents change.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Backend-generated immutable folder UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "company_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Immutable company owner and tenant key.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "branch_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Immutable branch owner, also inherited by child folders and uploaded assets.",
+      "Null meaning": "Company-owned metadata shared with members who can view company media.",
+      "Unit": "—"
+    },
+    {
+      "Column": "parent_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Parent folder of the same company and scope; changed by an atomic library move.",
+      "Null meaning": "A root folder in this owning scope.",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Member-chosen display label, never used as a storage path. Duplicate labels are allowed and stable IDs distinguish folders.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_by_membership_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Membership that created this folder or independent copied folder.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock last metadata or direct-content change; version is the concurrency token.",
+      "Null meaning": "—",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "deleted_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "PostgreSQL-clock removal instant of an empty folder; the audit row remains.",
+      "Null meaning": "The folder is active and may be browsed.",
+      "Unit": "UTC instant, millisecond precision"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Positive optimistic concurrency token, incremented for metadata and direct-content changes.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "media_folders_company_id_branch_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, branch_id) REFERENCES branches(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "An optional owning branch belongs to the same company."
+    },
+    {
+      "Object": "media_folders_company_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The folder belongs to an existing company."
+    },
+    {
+      "Object": "media_folders_company_id_id_key",
+      "Physical definition": "UNIQUE (company_id, id)",
+      "Purpose": "Tenant key used by folder, asset and audit references."
+    },
+    {
+      "Object": "media_folders_company_id_parent_id_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, parent_id) REFERENCES media_folders(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The parent belongs to the same company; application tree locks enforce scope equality, cycles and depth."
+    },
+    {
+      "Object": "media_folders_creator_fkey",
+      "Physical definition": "FOREIGN KEY (company_id, created_by_membership_id) REFERENCES memberships(company_id, id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+      "Purpose": "The creating membership belongs to this company."
+    },
+    {
+      "Object": "media_folders_name_valid",
+      "Physical definition": "CHECK ((((char_length(btrim((name)::text)) >= 1) AND (char_length(btrim((name)::text)) <= 120)) AND ((name)::text !~ '[[:cntrl:]]'::text)))",
+      "Purpose": "Display labels contain visible text within the name bound and exclude controls."
+    },
+    {
+      "Object": "media_folders_parent_not_self",
+      "Physical definition": "CHECK ((parent_id IS DISTINCT FROM id))",
+      "Purpose": "A folder cannot directly parent itself."
+    },
+    {
+      "Object": "media_folders_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Stable folder identity."
+    },
+    {
+      "Object": "media_folders_version_positive",
+      "Physical definition": "CHECK ((version > 0))",
+      "Purpose": "Versions are positive concurrency tokens."
+    },
+    {
+      "Object": "media_folders_company_created_idx",
+      "Physical definition": "CREATE INDEX media_folders_company_created_idx ON public.media_folders USING btree (company_id, created_at)",
+      "Purpose": "Counts active folders and per-UTC-day creations behind admission limits."
+    },
+    {
+      "Object": "media_folders_parent_name_idx",
+      "Physical definition": "CREATE INDEX media_folders_parent_name_idx ON public.media_folders USING btree (company_id, parent_id, name, id)",
+      "Purpose": "Browses folder children in stable name/ID order."
+    }
+  ]
+}

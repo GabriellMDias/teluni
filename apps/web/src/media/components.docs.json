@@ -1,0 +1,206 @@
+{
+  "source": "apps/web/src/media/manager.tsx",
+  "components": [
+    {
+      "name": "MediaBrowser",
+      "category": "Data Display",
+      "scope": "feature-specific",
+      "owner": "Media",
+      "summary": "Company media file manager with URL-owned navigation and an in-memory selection and clipboard.",
+      "usage": "Use as the company library inside its existing session/company gate. Composes shared Menu, Checkbox and DataGrid. Folder/filter/layout/page state belongs to the router, remote resources to Query, and temporary selection, clipboard and dialogs to React. Server permissions, scope, lifecycle, depth and reference checks remain authoritative. Upload and full media rendering are supplied by the owning workflow. Keep this authenticated composition out of static live catalog examples.",
+      "accessibility": "Native breadcrumbs and links preserve navigation. Grid tiles have named selection checkboxes and Enter/double-click activation; list view uses DataGrid keyboard semantics. Ctrl/Command+A/C/X/V and F2 skip editable inputs and modal tasks. Menus and native dialogs manage keyboard/focus; visible status and failures accompany semantic colors. Responsive layouts and semantic tokens support narrow screens and both themes.",
+      "props": [
+        {
+          "name": "companyId",
+          "type": "string",
+          "meaning": "Authorized company identifier.",
+          "required": true
+        },
+        {
+          "name": "company",
+          "type": "CompanyWithAccess",
+          "meaning": "Current company and capability snapshot; the API enforces owning scope.",
+          "required": true
+        },
+        {
+          "name": "filter",
+          "type": "MediaFilter",
+          "meaning": "Validated router-owned view, folder, filters, layout and cursors.",
+          "required": true
+        },
+        {
+          "name": "branches",
+          "type": "BranchChoice[]",
+          "meaning": "Visible branch labels for scope selection.",
+          "required": true
+        },
+        {
+          "name": "renderUpload",
+          "type": "function",
+          "meaning": "Existing upload workflow with destination, initial files and busy-state callback.",
+          "required": true
+        },
+        {
+          "name": "renderPreview",
+          "type": "function",
+          "meaning": "Existing authorized rendition renderer for one asset.",
+          "required": true
+        }
+      ],
+      "states": [
+        "Root or nested folder",
+        "Global name search",
+        "Grid/list",
+        "Multiple selection and cut/copy clipboard",
+        "Upload/rename/destination/preview dialogs",
+        "Read denial or stale write",
+        "Unknown outcome with same-command reconciliation",
+        "Archived and trash views"
+      ],
+      "examples": [
+        {
+          "id": "media-browser-composition",
+          "label": "Authenticated library composition",
+          "description": "Feature composition is documented without making live requests in the catalog.",
+          "code": "<MediaBrowser companyId={companyId} company={company} filter={search} branches={branches} renderUpload={renderUpload} renderPreview={renderPreview} />",
+          "live": false
+        }
+      ]
+    },
+    {
+      "name": "MediaDialog",
+      "category": "Feedback",
+      "scope": "feature-specific",
+      "owner": "Media",
+      "summary": "Native modal shell for bounded media management tasks.",
+      "usage": "Supply a localized title and close callback. Set busy during writes/uploads to prevent dismissal; wide is reserved for previews. The caller owns form state and write recovery.",
+      "accessibility": "Uses dialog.showModal, a labelled heading, autofocus target, native focus containment and Escape, with opener restoration when still connected. Close controls are unavailable while busy.",
+      "props": [
+        {
+          "name": "title",
+          "type": "string",
+          "meaning": "Dialog heading and accessible name.",
+          "required": true
+        },
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "meaning": "Task content.",
+          "required": true
+        },
+        {
+          "name": "onClose",
+          "type": "function",
+          "meaning": "Dismisses caller-owned state.",
+          "required": true
+        },
+        {
+          "name": "busy",
+          "type": "boolean",
+          "meaning": "Prevents dismissal during an operation.",
+          "default": "false"
+        },
+        {
+          "name": "wide",
+          "type": "boolean",
+          "meaning": "Larger preview width.",
+          "default": "false"
+        }
+      ],
+      "states": ["Open", "Busy", "Preview width"],
+      "examples": [
+        {
+          "id": "media-dialog-task",
+          "label": "Rename task",
+          "description": "Feature modal with caller-owned fields.",
+          "code": "<MediaDialog title=\"Rename\" onClose={close}><form>\u2026</form></MediaDialog>",
+          "live": false
+        }
+      ],
+      "source": "apps/web/src/media/dialogs.tsx"
+    },
+    {
+      "name": "MediaFolderPicker",
+      "category": "Forms",
+      "scope": "feature-specific",
+      "owner": "Media",
+      "summary": "On-demand destination browsing for atomic move/copy commands.",
+      "usage": "Use within MediaDialog, with source identities/scopes and the action. Loads paginated visible folders rather than the entire tree. Scope and descendant hints improve choice; server validation remains authoritative.",
+      "accessibility": "Named native breadcrumb and folder buttons, visible scope hints, loading/error feedback and a disabled confirmation for incompatible or unresolved destinations.",
+      "props": [
+        {
+          "name": "companyId",
+          "type": "string",
+          "meaning": "Authorized company.",
+          "required": true
+        },
+        {
+          "name": "initialId",
+          "type": "string | null",
+          "meaning": "Starting folder or root.",
+          "required": true
+        },
+        {
+          "name": "action",
+          "type": "MOVE | COPY",
+          "meaning": "Controls scope guidance.",
+          "required": true
+        },
+        {
+          "name": "sourceFolderIds",
+          "type": "readonly string[]",
+          "meaning": "Selected folders to exclude as destinations.",
+          "required": true
+        },
+        {
+          "name": "sourceScopes",
+          "type": "readonly (string | null)[]",
+          "meaning": "Owning scopes for move compatibility.",
+          "required": true
+        },
+        {
+          "name": "onChoose",
+          "type": "function",
+          "meaning": "Submits the chosen destination identity.",
+          "required": true
+        },
+        {
+          "name": "pending",
+          "type": "boolean",
+          "meaning": "Write in progress.",
+          "required": true
+        },
+        {
+          "name": "error",
+          "type": "unknown",
+          "meaning": "Authoritative command failure.",
+          "required": true
+        },
+        {
+          "name": "onReload",
+          "type": "function",
+          "meaning": "Reconciles unknown outcomes or refreshes stale selection.",
+          "required": true
+        }
+      ],
+      "states": [
+        "Root",
+        "Nested folder",
+        "Pagination",
+        "Scope/descendant refusal",
+        "Read failure",
+        "Unknown write outcome"
+      ],
+      "examples": [
+        {
+          "id": "media-folder-picker-task",
+          "label": "Move destination",
+          "description": "Documented composition requires authenticated data.",
+          "code": "<MediaFolderPicker companyId={companyId} initialId={null} action=\"MOVE\" sourceFolderIds={ids} sourceScopes={scopes} pending={pending} error={error} onReload={reload} onChoose={move} />",
+          "live": false
+        }
+      ],
+      "source": "apps/web/src/media/dialogs.tsx"
+    }
+  ]
+}

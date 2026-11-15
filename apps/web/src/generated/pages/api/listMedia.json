@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "listMedia",
   "summary": "",
-  "description": "The company's media items the caller may view, newest first: company-wide items and items of granted branches. The library view shows uploads in progress, ready, rejected and failed items; archived shows archived items; trash (company deletion authority only) shows deleted items until their purge; selectable shows ready items only. Filter by kind, scope (company or a branch), tag and name text. Cursors are bound to the company, caller, visible scope and filters.",
+  "description": "The company's media items the caller may view, newest first: company-wide items and items of granted branches. The library view shows uploads in progress, ready, rejected and failed items; archived shows archived items; trash (company deletion authority only) shows deleted items until their purge; selectable shows ready items only. Filter by kind, scope (company or a branch), tag and name text. Omitting folderId retains the complete flat library; root selects unfiled items and a folder UUID selects its direct contents, without changing asset access. Cursors are bound to the company, caller, visible scope and filters.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
@@ -86,6 +86,22 @@
       "description": ""
     },
     {
+      "name": "folderId",
+      "in": "query",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          { "type": "string", "const": "root" },
+          {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+          }
+        ]
+      },
+      "type": "\"root\" | string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    },
+    {
       "name": "tag",
       "in": "query",
       "required": false,
@@ -148,6 +164,15 @@
                     "id": {
                       "type": "string",
                       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "folderId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                        },
+                        { "type": "null" }
+                      ]
                     },
                     "name": {
                       "type": "string",
@@ -367,6 +392,15 @@
                   "type": "string",
                   "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
                 },
+                "folderId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    { "type": "null" }
+                  ]
+                },
                 "name": {
                   "type": "string",
                   "minLength": 1,
@@ -539,6 +573,11 @@
           "name": "items[].id",
           "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
           "required": true
+        },
+        {
+          "name": "items[].folderId",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$) | null",
+          "required": false
         },
         {
           "name": "items[].name",

@@ -17,6 +17,11 @@ import {
   type MediaVariant,
 } from "./domain.js";
 import { respond } from "./errors.js";
+import type {
+  MediaLibraryService,
+  FolderView,
+  LibraryCommand,
+} from "./library.js";
 import type { ListFilter } from "./prisma-repository.js";
 import type { MediaService, MediaView } from "./service.js";
 
@@ -34,6 +39,7 @@ export const uploadTimeoutMs = 2 * 60 * 60_000;
 
 const mediaWire = (item: MediaView) => ({
   id: item.id,
+  folderId: item.folderId,
   name: item.name,
   tags: [...item.tags],
   kind: item.kind,
@@ -61,6 +67,18 @@ const mediaWire = (item: MediaView) => ({
   deletedAt: item.deletedAt?.toISOString() ?? null,
   purgeAfter: item.purgeAfter?.toISOString() ?? null,
   version: item.version,
+});
+
+const folderWire = (folder: FolderView) => ({
+  id: folder.id,
+  name: folder.name,
+  parentId: folder.parentId,
+  branch: folder.branchId
+    ? { id: folder.branchId, name: folder.branchName ?? "" }
+    : null,
+  createdAt: folder.createdAt.toISOString(),
+  updatedAt: folder.updatedAt.toISOString(),
+  version: folder.version,
 });
 
 const quietHeaders = {
@@ -91,6 +109,7 @@ const extensions: Readonly<Record<string, string>> = {
 export function registerMediaRoutes(
   app: AppInstance,
   service: MediaService,
+  library: MediaLibraryService,
   sessions: HumanSessionPort,
   limits: MediaRouteLimits = defaultLimits,
 ): void {
@@ -168,6 +187,7 @@ export function registerMediaRoutes(
           const params = request.params as {
             companyId: string;
             assetId?: string;
+            folderId?: string;
           };
           const companyId = params.companyId;
           const assetId = params.assetId ?? "";
@@ -175,6 +195,72 @@ export function registerMediaRoutes(
           const expectedVersion = body.expectedVersion as number;
           try {
             switch (operation.operationId) {
+              case "listMediaFolders": {
+                const page = await library.list(context, companyId, {
+                  ...(request.query as {
+                    parentId?: string;
+                    scope?: string;
+                    text?: string;
+                    cursor?: string;
+                  }),
+                  limit: (request.query as { limit?: number }).limit ?? 50,
+                });
+                return reply.send({
+                  items: page.items.map(folderWire),
+                  nextCursor: page.nextCursor,
+                });
+              }
+              case "getMediaFolder": {
+                const result = await library.get(
+                  context,
+                  companyId,
+                  params.folderId!,
+                );
+                return reply.send({
+                  folder: folderWire(result.folder),
+                  ancestors: result.ancestors.map(folderWire),
+                });
+              }
+              case "createMediaFolder":
+                return reply.code(201).send(
+                  folderWire(
+                    await library.create(
+                      context,
+                      companyId,
+                      body as {
+                        operationId: string;
+                        parentId: string | null;
+                        branchId: string | null;
+                        name: string;
+                      },
+                    ),
+                  ),
+                );
+              case "renameMediaFolder":
+                return reply.send(
+                  folderWire(
+                    await library.update(
+                      context,
+                      companyId,
+                      params.folderId!,
+                      body as { expectedVersion: number; name: string },
+                    ),
+                  ),
+                );
+              case "deleteMediaFolder":
+                await library.update(context, companyId, params.folderId!, {
+                  expectedVersion,
+                  deleted: true,
+                });
+                return reply.code(204).send();
+              case "organizeMedia":
+                return reply.send(
+                  await library.execute(
+                    context,
+                    companyId,
+                    body as LibraryCommand,
+                  ),
+                );
               case "listMedia": {
                 const query = request.query as {
                   limit?: number;
@@ -182,6 +268,7 @@ export function registerMediaRoutes(
                   view?: ListFilter["view"];
                   kind?: MediaKind;
                   scope?: string;
+                  folderId?: string;
                   tag?: string;
                   text?: string;
                 };

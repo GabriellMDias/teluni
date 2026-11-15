@@ -1,0 +1,1332 @@
+{
+  "kind": "api",
+  "operationId": "getMediaFolder",
+  "summary": "",
+  "description": "A visible media folder and its root-to-parent breadcrumb, within one owning scope. Hidden, deleted or foreign-company folders answer RESOURCE_NOT_FOUND.",
+  "security": [{ "sessionCookie": [] }],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-teluni_session",
+        "description": "Opaque server-managed human session. Loopback development uses teluni_session. Unsafe methods also require the session CSRF token in X-CSRF-Token and a matching Origin."
+      }
+    }
+  },
+  "method": "GET",
+  "path": "/companies/{companyId}/media-folders/{folderId}",
+  "tags": ["Media"],
+  "authentication": "Session cookie",
+  "parameters": [
+    {
+      "name": "companyId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    },
+    {
+      "name": "folderId",
+      "in": "path",
+      "required": true,
+      "schema": {
+        "type": "string",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+      },
+      "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+      "description": ""
+    }
+  ],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["folder", "ancestors"],
+            "properties": {
+              "folder": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "parentId",
+                  "branch",
+                  "createdAt",
+                  "updatedAt",
+                  "version"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+                  },
+                  "parentId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "branch": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": ["id", "name"],
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                          },
+                          "name": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "updatedAt": { "type": "string", "format": "date-time" },
+                  "version": { "type": "integer", "minimum": 1 }
+                },
+                "additionalProperties": false
+              },
+              "ancestors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "parentId",
+                    "branch",
+                    "createdAt",
+                    "updatedAt",
+                    "version"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+                    },
+                    "parentId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "branch": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "name"],
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                            },
+                            "name": { "type": "string" }
+                          },
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" },
+                    "version": { "type": "integer", "minimum": 1 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 12
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["folder", "ancestors"],
+        "properties": {
+          "folder": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "parentId",
+              "branch",
+              "createdAt",
+              "updatedAt",
+              "version"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+              },
+              "parentId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "branch": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["id", "name"],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                      },
+                      "name": { "type": "string" }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" },
+              "version": { "type": "integer", "minimum": 1 }
+            },
+            "additionalProperties": false
+          },
+          "ancestors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "parentId",
+                "branch",
+                "createdAt",
+                "updatedAt",
+                "version"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": "^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$"
+                },
+                "parentId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "branch": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": ["id", "name"],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+                        },
+                        "name": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "updatedAt": { "type": "string", "format": "date-time" },
+                "version": { "type": "integer", "minimum": 1 }
+              },
+              "additionalProperties": false
+            },
+            "maxItems": 12
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "folder", "type": "object", "required": true },
+        {
+          "name": "folder.id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "folder.name",
+          "type": "string (min length 1, max length 120, pattern ^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$)",
+          "required": true
+        },
+        {
+          "name": "folder.parentId",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$) | null",
+          "required": true
+        },
+        { "name": "folder.branch", "type": "object | null", "required": true },
+        {
+          "name": "folder.createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "folder.updatedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "folder.version",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        { "name": "ancestors", "type": "array of object", "required": true },
+        {
+          "name": "ancestors[].id",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$)",
+          "required": true
+        },
+        {
+          "name": "ancestors[].name",
+          "type": "string (min length 1, max length 120, pattern ^[^\\u0000-\\u001f\\u007f]*\\S[^\\u0000-\\u001f\\u007f]*$)",
+          "required": true
+        },
+        {
+          "name": "ancestors[].parentId",
+          "type": "string (pattern ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$) | null",
+          "required": true
+        },
+        {
+          "name": "ancestors[].branch",
+          "type": "object | null",
+          "required": true
+        },
+        {
+          "name": "ancestors[].createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "ancestors[].updatedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "ancestors[].version",
+          "type": "integer (minimum 1)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" },
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["path", "reason"],
+                      "properties": {
+                        "path": { "type": "string", "maxLength": 200 },
+                        "reason": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$",
+                          "maxLength": 64
+                        },
+                        "fieldId": { "type": "string", "maxLength": 64 },
+                        "count": { "type": "integer", "minimum": 0 }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "reason"],
+                  "properties": {
+                    "path": { "type": "string", "maxLength": 200 },
+                    "reason": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]*$",
+                      "maxLength": 64
+                    },
+                    "fieldId": { "type": "string", "maxLength": 64 },
+                    "count": { "type": "integer", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false },
+        {
+          "name": "error.issues",
+          "type": "array of object",
+          "required": false
+        },
+        {
+          "name": "error.issues[].path",
+          "type": "string (max length 200)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].reason",
+          "type": "string (max length 64, pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        {
+          "name": "error.issues[].fieldId",
+          "type": "string (max length 64)",
+          "required": false
+        },
+        {
+          "name": "error.issues[].count",
+          "type": "integer (minimum 0)",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

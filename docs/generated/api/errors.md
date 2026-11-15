@@ -44,6 +44,10 @@
 | `DEVICE_UNAUTHORIZED` | 401 | authentication | no | The device credential is not valid for this operation. |
 | `DEVICE_UNLINKED` | 409 | conflict | no | This screen was unlinked and can no longer change. |
 | `DEVICE_ERASURE_NOT_PENDING` | 409 | conflict | no | This screen has no pending erasure to record. |
+| `MEDIA_FOLDER_NOT_EMPTY` | 409 | conflict | no | Move the folder's contents elsewhere before removing it. Archived and trashed items also keep their folder. |
+| `MEDIA_INVALID_DESTINATION` | 409 | conflict | no | A folder cannot be moved or copied into itself or one of its descendants. |
+| `MEDIA_FOLDER_LIMIT` | 409 | conflict | no | The folder or operation exceeds the library's folder, depth or batch limits. |
+| `MEDIA_SCOPE_MISMATCH` | 409 | conflict | no | Moving an item must preserve its owning scope. Choose a folder of the same scope, or copy it with the required destination upload permission. |
 | `MEDIA_TYPE_UNSUPPORTED` | 400 | validation | no | This file type is not supported. Use a JPEG, PNG or WebP image, or an MP4, MOV, WebM or MKV video. |
 | `MEDIA_TOO_LARGE` | 400 | validation | no | This file is too large. Images may have up to 20 MiB and videos up to 1 GiB. |
 | `MEDIA_UPLOAD_INCOMPLETE` | 400 | validation | yes | The upload did not deliver exactly the declared file. Send the whole file again. |

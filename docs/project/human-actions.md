@@ -31,6 +31,8 @@ The owner subsequently requested correction of PR #26's CI failure. The [CI qual
 
 2026-11-15: the owner requested the [screen information architecture increment](implementation-plan.md#screen-information-architecture), including organized details and improved list usability. This local feature-owned presentation change requires no new account, credential or human decision. Existing pilot and production prerequisites are unchanged.
 
+2026-11-15: the owner requested the [media file manager](implementation-plan.md#media-file-manager), including folders, move and clipboard operations. It uses existing organization permissions, PostgreSQL and private media storage; no new provider account, credential or human decision is required. Existing production prerequisites remain in force.
+
 ## Safe configuration handoff
 
 2026-11-15: the owner requested a comprehensive local Home-page improvement. The [Home workspace refinement](implementation-plan.md#home-workspace-refinement) continues PJ-41 using existing API capabilities and the approved product identity. This work requires no new credentials, external account action or human blocker; existing pilot and production prerequisites retain their original triggers.
