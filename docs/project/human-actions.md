@@ -66,6 +66,8 @@ On 2026-10-22 the owner asked the agent to take every pending decision that is o
 **Verification:** `git ls-remote origin main` returns the local `main` commit, and `pnpm orion:check` passes in a fresh clone.
 **Evidence / blocker:** 2026-10-17: the owner supplied successful fresh-clone output for `pnpm install --frozen-lockfile` (pnpm 11.25.0) and `pnpm orion:check`, confirming the recorded Orion baseline and `@teluni` scope. Independently verified that `git ls-remote origin refs/heads/main` and local `git rev-parse refs/heads/main` both return `c9193734d5f5de22883af433d48006805fb86604`. Repository creation/publication and fresh-clone provenance verification are complete. Remote CI and branch protection remain separate PH-02 / PJ-01 obligations.
 
+2026-11-15 development handoff: the owner requested GitHub synchronization before changing computers. The current implementation is published in [PR #40](https://github.com/GabriellMDias/teluni/pull/40), with its qualification follow-up recorded in the [implementation plan](implementation-plan.md#development-handoff-qualification). Recreate machine-local services through [setup](../setup.md#persistent-local-environment); credentials and local development data are not committed. This source handoff adds no production access or account requirement and does not complete the remaining environment actions.
+
 ## PH-02
 
 - [x] **Require pull requests and the CI gate on this repository's default branch, and keep merge commits available.**

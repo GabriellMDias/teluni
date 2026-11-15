@@ -65,6 +65,15 @@ async function request(path: string, init: RequestInit = {}) {
 }
 
 try {
+  const beforeLogin = await admin.request(
+    "GET",
+    `/realms/${realm}/users/${userId}`,
+  );
+  assert.equal(beforeLogin.status, 200);
+  const previousUser = (await beforeLogin.json()) as {
+    attributes?: Record<string, string[]>;
+  };
+  const previousPrincipalId = previousUser.attributes?.orion_principal_id?.[0];
   const start = await request("/auth/login?returnTo=%2Fcompanies");
   assert.equal(start.status, 303, "Login must start through the public proxy");
   const authorization = start.headers.get("location")!;
@@ -89,8 +98,10 @@ try {
   assert.equal(finished.status, 303);
   assert.equal(
     finished.headers.get("location"),
-    "/companies",
-    "First login must finish principal provisioning",
+    previousPrincipalId
+      ? "/companies"
+      : "/welcome/two-step?returnTo=%2Fcompanies",
+    "Login must preserve its destination and suggest two-step verification only for a new principal",
   );
   assert(
     finished.headers
@@ -110,6 +121,8 @@ try {
     csrfToken: string;
   };
   assert.equal(session.state, "ACTIVE");
+  if (previousPrincipalId)
+    assert.equal(session.principalId, previousPrincipalId);
   const user = await admin.request("GET", `/realms/${realm}/users/${userId}`);
   assert.equal(user.status, 200);
   const representation = (await user.json()) as {
