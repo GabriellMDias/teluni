@@ -4,6 +4,33 @@
     "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Log correlation",
+    "anchor": "log-correlation",
+    "text": "Log correlation\nPino logs emitted while an OpenTelemetry span is active should include trace correlation metadata.\nThe standard correlation fields will be:\ntrace_id\nspan_id\n\nand, when useful:\ntrace_flags\n\nThis allows an operator to navigate conceptually from:\nlog\n    ↓\ntrace_id\n    ↓\ndistributed trace\n    ↓\nrequest\n    ↓\napplication operation\n    ↓\ndatabase / integration\n\nTrace correlation should be provided through instrumentation or centralized logging configuration rather than manually added at every call site.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Request correlation",
+    "anchor": "request-correlation",
+    "text": "Request correlation\nOrion will retain an independent **`request_id`** for HTTP request correlation.\n`request_id`, `trace_id`, and `span_id` serve different purposes:\nrequest_id\n    → identifies one HTTP request\n\ntrace_id\n    → identifies one distributed trace\n\nspan_id\n    → identifies one specific traced operation\n\nOrion will not require `request_id` and `trace_id` to contain the same value.\nRequest IDs remain useful even when tracing is unavailable, disabled, sampled differently, or incomplete across an external boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Log export",
+    "anchor": "log-export",
+    "text": "Log export\nPino logs will be emitted through the application's normal process output by default.\nProduction deployments should normally emit structured logs through:\nstdout / stderr\n    ↓\ndeployment log collection\n    ↓\nconfigured log backend\n\nApplication code must not require direct integration with a specific logging vendor merely to emit ordinary logs.\nThis preserves compatibility with containers, process supervisors, cloud platforms, orchestration systems, and local execution.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "OpenTelemetry Logs",
     "anchor": "opentelemetry-logs",
     "text": "OpenTelemetry Logs\nThe OpenTelemetry Logs SDK will **not be part of Orion's initial default logging path**.\nPino remains authoritative for application logging.\nOpenTelemetry instrumentation may be used to enrich Pino records with active tracing context.\nA future OpenTelemetry Logs integration may be introduced when its JavaScript implementation, deployment requirements, and operational value justify doing so.\nSuch an addition does not require replacing Pino unless the fundamental logging responsibilities established here change.\n"
@@ -1285,41 +1312,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion source has a clear, standard distribution license.\nDerived projects can identify the terms of inherited Orion material without changing SHA-based provenance or upgrade mechanics.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nRedistributors must satisfy applicable Apache-2.0 conditions for Orion material; choosing a different license for their own code does not remove those obligations.\nThe root license does not settle separate rights or obligations for package dependencies or independently created project code.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo manifest, package publication, application, or deployment change is required. The licensing change is a compatible PATCH candidate after PR review, merge, and CI verification. No `NOTICE` or copyright holder statement is added without supporting repository evidence.\n"
-  },
-  {
-    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
-    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[Foundation versioning](../versioning.md) and [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\n[Project derivation](../project-derivation.md)\n"
   }
 ]

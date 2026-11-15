@@ -23,7 +23,7 @@ export type DeviceFilter = Readonly<{
 }>;
 
 export type DeviceHistoryFilter = Readonly<{
-  view?: "history";
+  view?: "sync" | "settings" | "history";
   cursor?: string;
 }>;
 export const deviceAuditKey = (companyId: string, deviceId: string) =>

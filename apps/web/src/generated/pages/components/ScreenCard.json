@@ -1,0 +1,55 @@
+{
+  "name": "ScreenCard",
+  "category": "Layout",
+  "scope": "feature-specific",
+  "owner": "Devices",
+  "summary": "Groups one screen-related topic or task with a heading and optional explanation.",
+  "usage": "Use within the screen detail sections for display settings, hardware, synchronization, diagnostics and management. This feature-owned composition uses native section/header markup; it does not load data, enforce permissions or own form state. Prefer the existing native link navigation for URL-owned sections rather than introducing a tab widget.",
+  "accessibility": "The section has the supplied title as its accessible name and an h2 heading. Consumers own meaningful heading order, form labels, errors and status announcements. Uses inherited product colors for light and dark themes and collapses through the surrounding feature grid on narrow screens.",
+  "props": [
+    {
+      "name": "title",
+      "type": "string",
+      "meaning": "Visible heading and accessible section name.",
+      "required": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "meaning": "Optional contextual guidance below the heading."
+    },
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "Topic-specific facts, status or caller-owned form.",
+      "required": true
+    },
+    {
+      "name": "className",
+      "type": "string",
+      "meaning": "Optional feature styling, such as the danger section."
+    }
+  ],
+  "states": [
+    "Facts populated",
+    "Loading or unavailable information supplied by the caller",
+    "Management form",
+    "Danger section with a native disclosure"
+  ],
+  "examples": [
+    {
+      "id": "screen-card-hardware",
+      "label": "Device information",
+      "description": "Groups reported device facts without inferring support or connection state.",
+      "code": "<ScreenCard title=\"Device and application\" description=\"Reported by the screen.\"><dl><dt>App version</dt><dd>1.0.0</dd></dl></ScreenCard>",
+      "live": false
+    }
+  ],
+  "id": "ScreenCard",
+  "exportName": "ScreenCard",
+  "source": "apps/web/src/devices/components.tsx",
+  "metadataSource": "apps/web/src/devices/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/devices/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/devices/components.docs.json"
+}

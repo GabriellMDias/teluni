@@ -4,6 +4,42 @@
     "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Device or bundled time zone data",
+    "anchor": "device-or-bundled-time-zone-data",
+    "text": "Device or bundled time zone data\nDevice data can be years out of date on unmanaged boxes. A bundled library (ThreeTenBP or Joda-Time) is updated only with player releases and can still disagree with the server preview.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Basic installation with Google Play updates",
+    "anchor": "basic-installation-with-google-play-updates",
+    "text": "Basic installation with Google Play updates\nStore distribution needs accounts, review and Play on every device. It does not install updates unattended inside a business window, and many commercial boxes lack Play. A basic sideloaded profile stays possible where PH-08 shows that it boots and recovers reliably.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A single Android module",
+    "anchor": "a-single-android-module",
+    "text": "A single Android module\nSimpler build files, but every rule test would need Robolectric or an emulator, and no part could be built without the Android SDK.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
+    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Positive",
     "anchor": "positive",
     "text": "Positive\nRules, protocol conformance and crash recovery are tested on every pull request with the shared fixtures and the API's conformance fixtures.\nSchedules agree with the preview regardless of the device's time zone data.\nManaged devices boot into content, recover from crashes and update unattended.\n"
@@ -1231,23 +1267,5 @@
     "heading": "Types of Boundaries",
     "anchor": "types-of-boundaries",
     "text": "Types of Boundaries\nBoundary\nRequired reasoning\nRuntime/process\nSeparate processes are distributed participants even when deployed together. Use explicit protocols and account for network failure, timeouts, partial results, retries, and duplicate requests. Remote operations are not local function calls.\nDeployment/distribution\nVersions may coexist. Define supported old/new combinations and migration requirements under [compatibility policy](versioning-and-compatibility.md).\nTrust\nValidate data crossing security contexts, including external-provider responses. Client applications remain untrusted regardless of repository proximity.\nPersistence\nAccess follows explicit application/domain ownership. A shared database client does not authorize every module to access every table.\nApplications must not import another application's internal implementation. Share genuinely common capabilities through public package APIs and communicate through deliberate runtime contracts. A package must not become an indirect way to bypass another application's boundary.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend API Application",
-    "anchor": "backend-api-application",
-    "text": "Backend API Application\nThe implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validation, authentication integration, authorization enforcement, correlation, transport error mapping, application orchestration, dependency composition, telemetry, and health endpoints. Plugins organize runtime integration; they do not define business domains.\nKeep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.\nThe API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Web Application",
-    "anchor": "web-application",
-    "text": "Web Application\nThe implemented `apps/web` is a React/Vite client-first SPA. TanStack Router owns URLs/navigation, TanStack Query owns server state through the generated SDK, and React state/context owns local UI state. The accepted direction includes React Compiler when compatible. No general global-state library or full-stack web framework is selected by default; server rendering requires product justification. Fastify retains authoritative backend responsibilities.\nThe web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.\nThe browser can be inspected, modified, bypassed, replayed, or automated. Client validation and hidden/disabled controls improve experience; trusted backend boundaries still enforce validation, identity, permissions, and business invariants. Clients receive neither database credentials nor privileged server secrets. See [authentication](../security/authentication.md) and [authorization](../security/authorization.md).\n"
   }
 ]

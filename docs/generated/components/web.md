@@ -384,3 +384,75 @@ Usage: Keep records, selection, mode, API calls, permissions and draft handling 
 // Only where a screen acts on several records at once:
 <DataSet multiple selectedIds={chosen} onSelectedIdsChange={setChosen} {...props} />
 ```
+
+
+## ScreenCard
+
+Groups one screen-related topic or task with a heading and optional explanation.
+
+Category: Layout. Scope: feature-specific. Owner: Devices.
+
+Source: [apps/web/src/devices/components.tsx](../../../apps/web/src/devices/components.tsx) (export `ScreenCard`). Metadata: [apps/web/src/devices/components.docs.json](../../../apps/web/src/devices/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `title` | `string` | Visible heading and accessible section name. | Yes | — |
+| `description` | `string` | Optional contextual guidance below the heading. | See type | — |
+| `children` | `ReactNode` | Topic-specific facts, status or caller-owned form. | Yes | — |
+| `className` | `string` | Optional feature styling, such as the danger section. | See type | — |
+
+### States
+
+- Facts populated
+- Loading or unavailable information supplied by the caller
+- Management form
+- Danger section with a native disclosure
+
+Accessibility: The section has the supplied title as its accessible name and an h2 heading. Consumers own meaningful heading order, form labels, errors and status announcements. Uses inherited product colors for light and dark themes and collapses through the surrounding feature grid on narrow screens.
+
+Usage: Use within the screen detail sections for display settings, hardware, synchronization, diagnostics and management. This feature-owned composition uses native section/header markup; it does not load data, enforce permissions or own form state. Prefer the existing native link navigation for URL-owned sections rather than introducing a tab widget.
+
+### Examples
+
+- **Device information** (`screen-card-hardware`): Groups reported device facts without inferring support or connection state.
+
+```tsx
+<ScreenCard title="Device and application" description="Reported by the screen."><dl><dt>App version</dt><dd>1.0.0</dd></dl></ScreenCard>
+```
+
+
+## ScreenStatus
+
+Compact, noninteractive screen status with a decorative dot and semantic tone.
+
+Category: Data Display. Scope: feature-specific. Owner: Devices.
+
+Source: [apps/web/src/devices/components.tsx](../../../apps/web/src/devices/components.tsx) (export `ScreenStatus`). Metadata: [apps/web/src/devices/components.docs.json](../../../apps/web/src/devices/components.docs.json).
+
+### Props
+
+| Name | Type | Meaning | Required | Default |
+| --- | --- | --- | --- | --- |
+| `children` | `ReactNode` | Localized visible status text. | Yes | — |
+| `tone` | `positive \| danger \| info \| neutral` | Semantic visual emphasis; does not infer business state. | See type | neutral |
+
+### States
+
+- Positive
+- Danger
+- Informational
+- Neutral or unknown
+
+Accessibility: Always includes readable status text. Color and the decorative CSS dot are supplementary. Does not add a live region, avoiding repeated announcements from five-second polling.
+
+Usage: Use in the screen list and details for pairing, connection and publication states. Keep those concepts distinct: a paired screen is not necessarily connected. The caller supplies the authorized API value and localized text; missing data stays unknown rather than appearing healthy.
+
+### Examples
+
+- **Publication failure** (`screen-status-publication`): The visible text explains the status independently of color.
+
+```tsx
+<ScreenStatus tone="danger">Update failed</ScreenStatus>
+```

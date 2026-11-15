@@ -361,7 +361,7 @@ test("limits rotation to reported values and sends the edited version", async ()
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["devices.view", "devices.manage"]) };
   });
-  const { screen } = await open(`${screensPath}/${deviceId}`);
+  const { screen } = await open(`${screensPath}/${deviceId}?view=settings`);
   const rotation = screen.getByLabelText(t.rotationLabel);
   await expect.element(rotation).toBeVisible();
   expect(
@@ -404,6 +404,10 @@ test("unlinks only after confirmation and then offers a reset record", async () 
   });
   const { screen } = await open(`${screensPath}/${deviceId}`);
   await expect.element(screen.getByText(t.authorizedUntil)).toBeVisible();
+  await screen
+    .getByRole("link", { name: t.settingsTitle, exact: true })
+    .click();
+  await screen.getByText(t.unlinkTitle, { exact: true }).click();
   const unlink = screen.getByRole("button", { name: t.unlink });
   await expect.element(unlink).toBeDisabled();
   await screen.getByLabelText(t.unlinkConfirm("Caixa 1")).click();
@@ -439,7 +443,7 @@ test("asks to reload after a version conflict", async () => {
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["devices.view", "devices.manage"]) };
   });
-  const { screen } = await open(`${screensPath}/${deviceId}`);
+  const { screen } = await open(`${screensPath}/${deviceId}?view=settings`);
   await screen.getByRole("button", { name: t.move }).click();
   await expect
     .element(screen.getByRole("alert"))
@@ -481,7 +485,9 @@ test("shows and recovers a failed destination lookup before offering a move", as
       };
     return { body: company(["devices.view", "devices.manage"]) };
   });
-  const { screen, client } = await open(`${screensPath}/${deviceId}`);
+  const { screen, client } = await open(
+    `${screensPath}/${deviceId}?view=settings`,
+  );
   await expect
     .element(
       screen.getByRole("region", { name: t.moveTitle }).getByRole("alert"),
@@ -561,7 +567,7 @@ test("shows a screen's synchronization as the screen reported it", async () => {
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["devices.view"]) };
   });
-  const { screen } = await open(`${screensPath}/${deviceId}`);
+  const { screen } = await open(`${screensPath}/${deviceId}?view=sync`);
   const sync = screen.getByTestId("screen-sync");
   await expect.element(sync).toBeVisible();
   await expect
@@ -578,11 +584,10 @@ test("shows a screen's synchronization as the screen reported it", async () => {
   // The list shows each screen's connection and publication.
   const { screen: list } = await open(screensPath);
   await expect
-    .element(
-      list.getByText(
-        `${t.sync.connection.online} · ${t.sync.publication.failed}`,
-      ),
-    )
+    .element(list.getByText(t.sync.connection.online, { exact: true }))
+    .toBeVisible();
+  await expect
+    .element(list.getByText(t.sync.publication.failed, { exact: true }))
     .toBeVisible();
 });
 
@@ -624,7 +629,7 @@ test.each([
       if (url.pathname.endsWith("/branches")) return { body: branches };
       return { body: company(["devices.view"]) };
     });
-    const { screen } = await open(`${screensPath}/${deviceId}`);
+    const { screen } = await open(`${screensPath}/${deviceId}?view=sync`);
     const sync = screen.getByTestId("screen-sync");
     await expect.element(sync.getByText(t.sync.clockLabel)).toBeVisible();
     await expect
@@ -817,4 +822,99 @@ test("reloads a failed history read without showing private errors and supports 
   await expect
     .element(history.getByRole("link", { name: t.firstPage }))
     .toBeVisible();
+});
+
+test("organizes screen tasks in URL sections and preserves an unsaved configuration across navigation", async () => {
+  let auditReads = 0;
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      auditReads++;
+      return { body: { items: [], nextCursor: null } };
+    }
+    if (url.pathname.endsWith("/sync-state"))
+      return {
+        body: {
+          deviceId,
+          connection: "never",
+          lastContactAt: null,
+          source: "none",
+          desired: null,
+          publication: "unknown",
+          reported: null,
+        },
+      };
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["devices.view", "devices.manage", "audit.view"]) };
+  });
+  const { screen, router } = await open(`${screensPath}/${deviceId}`);
+  const navigation = screen.getByRole("navigation", { name: t.screenViews });
+  await expect
+    .element(screen.getByRole("region", { name: t.hardwareTitle }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByLabelText(t.fieldName))
+    .not.toBeInTheDocument();
+  expect(auditReads).toBe(0);
+  // These are native navigation links; keyboard activation keeps section state in the URL.
+  const settings = navigation.getByRole("link", {
+    name: t.settingsTitle,
+    exact: true,
+  });
+  (settings.element() as HTMLElement).focus();
+  await settings.click();
+  await screen.getByLabelText(t.fieldName).fill("Unsaved screen name");
+  await navigation
+    .getByRole("link", { name: t.sync.title, exact: true })
+    .click();
+  expect(router.state.location.search).toEqual({ view: "sync" });
+  await expect.element(screen.getByTestId("screen-sync")).toBeVisible();
+  await expect.element(screen.getByLabelText(t.fieldName)).not.toBeVisible();
+  router.history.back();
+  await expect
+    .element(screen.getByLabelText(t.fieldName))
+    .toHaveValue("Unsaved screen name");
+  await navigation
+    .getByRole("link", { name: t.historyTitle, exact: true })
+    .click();
+  await expect.element(screen.getByText(t.historyEmpty)).toBeVisible();
+  expect(auditReads).toBe(1);
+  await navigation
+    .getByRole("link", { name: t.detailsTitle, exact: true })
+    .click();
+  expect(router.state.location.search).toEqual({});
+  expect(
+    vi
+      .mocked(fetch)
+      .mock.calls.some(
+        ([input]) => input instanceof Request && input.method !== "GET",
+      ),
+  ).toBe(false);
+});
+
+test("denies a direct settings URL to viewers without loading management forms", async () => {
+  let branchReads = 0;
+  respond((url) => {
+    if (url.pathname.endsWith("/branches")) {
+      branchReads++;
+      return { body: branches };
+    }
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    return { body: company(["devices.view"]) };
+  });
+  const { screen } = await open(
+    `${screensPath}/${deviceId}?view=settings&cursor=history-only`,
+  );
+  await expect
+    .element(screen.getByRole("alert"))
+    .toMatchTextContent(t.errors.PERMISSION_DENIED);
+  await expect
+    .element(screen.getByRole("link", { name: t.settingsTitle, exact: true }))
+    .not.toBeInTheDocument();
+  await expect
+    .element(screen.getByLabelText(t.fieldName))
+    .not.toBeInTheDocument();
+  expect(branchReads).toBe(0);
 });

@@ -1,5 +1,41 @@
 [
   {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion source has a clear, standard distribution license.\nDerived projects can identify the terms of inherited Orion material without changing SHA-based provenance or upgrade mechanics.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nRedistributors must satisfy applicable Apache-2.0 conditions for Orion material; choosing a different license for their own code does not remove those obligations.\nThe root license does not settle separate rights or obligations for package dependencies or independently created project code.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo manifest, package publication, application, or deployment change is required. The licensing change is a compatible PATCH candidate after PR review, merge, and CI verification. No `NOTICE` or copyright holder statement is added without supporting repository evidence.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[Foundation versioning](../versioning.md) and [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\n[Project derivation](../project-derivation.md)\n"
+  },
+  {
     "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
     "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
     "group": "Decisions",
@@ -1528,41 +1564,5 @@
     "heading": "Room or another embedded database",
     "anchor": "room-or-another-embedded-database",
     "text": "Room or another embedded database\nOffers queries and transactional updates, but adds migrations, a larger failure surface and the same need for power-cut evidence. Nothing in the state needs relational queries.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Device or bundled time zone data",
-    "anchor": "device-or-bundled-time-zone-data",
-    "text": "Device or bundled time zone data\nDevice data can be years out of date on unmanaged boxes. A bundled library (ThreeTenBP or Joda-Time) is updated only with player releases and can still disagree with the server preview.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Basic installation with Google Play updates",
-    "anchor": "basic-installation-with-google-play-updates",
-    "text": "Basic installation with Google Play updates\nStore distribution needs accounts, review and Play on every device. It does not install updates unattended inside a business window, and many commercial boxes lack Play. A basic sideloaded profile stays possible where PH-08 shows that it boots and recovers reliably.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "A single Android module",
-    "anchor": "a-single-android-module",
-    "text": "A single Android module\nSimpler build files, but every rule test would need Robolectric or an emulator, and no part could be built without the Android SDK.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-build-the-player-on-a-portable-core-with-file-based-atomic-state-and-managed-installation",
-    "title": "ADR-0031: Build the Player on a Portable Core with File-Based Atomic State and Managed Installation",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
   }
 ]

@@ -1,0 +1,40 @@
+{
+  "name": "ScreenStatus",
+  "category": "Data Display",
+  "scope": "feature-specific",
+  "owner": "Devices",
+  "summary": "Compact, noninteractive screen status with a decorative dot and semantic tone.",
+  "usage": "Use in the screen list and details for pairing, connection and publication states. Keep those concepts distinct: a paired screen is not necessarily connected. The caller supplies the authorized API value and localized text; missing data stays unknown rather than appearing healthy.",
+  "accessibility": "Always includes readable status text. Color and the decorative CSS dot are supplementary. Does not add a live region, avoiding repeated announcements from five-second polling.",
+  "props": [
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "Localized visible status text.",
+      "required": true
+    },
+    {
+      "name": "tone",
+      "type": "positive | danger | info | neutral",
+      "meaning": "Semantic visual emphasis; does not infer business state.",
+      "default": "neutral"
+    }
+  ],
+  "states": ["Positive", "Danger", "Informational", "Neutral or unknown"],
+  "examples": [
+    {
+      "id": "screen-status-publication",
+      "label": "Publication failure",
+      "description": "The visible text explains the status independently of color.",
+      "code": "<ScreenStatus tone=\"danger\">Update failed</ScreenStatus>",
+      "live": false
+    }
+  ],
+  "id": "ScreenStatus",
+  "exportName": "ScreenStatus",
+  "source": "apps/web/src/devices/components.tsx",
+  "metadataSource": "apps/web/src/devices/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/devices/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/teluni/blob/main/apps/web/src/devices/components.docs.json"
+}

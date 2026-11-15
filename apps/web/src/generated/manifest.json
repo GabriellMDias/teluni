@@ -2942,6 +2942,34 @@
       "file": "pages/components/Popover.json"
     },
     {
+      "id": "components/ScreenCard",
+      "kind": "component",
+      "title": "ScreenCard",
+      "group": "Layout",
+      "category": "Layout",
+      "scope": "feature-specific",
+      "owner": "Devices",
+      "metadataSource": "apps/web/src/devices/components.docs.json",
+      "source": "apps/web/src/devices/components.tsx",
+      "summary": "Groups one screen-related topic or task with a heading and optional explanation.",
+      "headings": [],
+      "file": "pages/components/ScreenCard.json"
+    },
+    {
+      "id": "components/ScreenStatus",
+      "kind": "component",
+      "title": "ScreenStatus",
+      "group": "Data Display",
+      "category": "Data Display",
+      "scope": "feature-specific",
+      "owner": "Devices",
+      "metadataSource": "apps/web/src/devices/components.docs.json",
+      "source": "apps/web/src/devices/components.tsx",
+      "summary": "Compact, noninteractive screen status with a decorative dot and semantic tone.",
+      "headings": [],
+      "file": "pages/components/ScreenStatus.json"
+    },
+    {
       "id": "components/TextField",
       "kind": "component",
       "title": "TextField",
@@ -4427,28 +4455,29 @@
       },
       {
         "file": "search/0033.json",
-        "count": 53,
+        "count": 54,
         "kinds": ["component", "repository"]
       },
-      { "file": "search/0034.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0034.json", "count": 105, "kinds": ["repository"] },
       { "file": "search/0035.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0036.json", "count": 147, "kinds": ["repository"] },
+      { "file": "search/0036.json", "count": 146, "kinds": ["repository"] },
       { "file": "search/0037.json", "count": 174, "kinds": ["repository"] },
-      { "file": "search/0038.json", "count": 139, "kinds": ["repository"] },
+      { "file": "search/0038.json", "count": 141, "kinds": ["repository"] },
       { "file": "search/0039.json", "count": 129, "kinds": ["repository"] },
       { "file": "search/0040.json", "count": 77, "kinds": ["repository"] },
-      { "file": "search/0041.json", "count": 89, "kinds": ["repository"] },
-      { "file": "search/0042.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0043.json", "count": 57, "kinds": ["repository"] },
-      { "file": "search/0044.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0045.json", "count": 53, "kinds": ["repository"] },
-      { "file": "search/0046.json", "count": 39, "kinds": ["repository"] },
-      { "file": "search/0047.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0048.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0041.json", "count": 95, "kinds": ["repository"] },
+      { "file": "search/0042.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0043.json", "count": 59, "kinds": ["repository"] },
+      { "file": "search/0044.json", "count": 64, "kinds": ["repository"] },
+      { "file": "search/0045.json", "count": 51, "kinds": ["repository"] },
+      { "file": "search/0046.json", "count": 38, "kinds": ["repository"] },
+      { "file": "search/0047.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0048.json", "count": 67, "kinds": ["repository"] },
       { "file": "search/0049.json", "count": 66, "kinds": ["repository"] },
-      { "file": "search/0050.json", "count": 104, "kinds": ["repository"] },
-      { "file": "search/0051.json", "count": 82, "kinds": ["repository"] }
+      { "file": "search/0050.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0051.json", "count": 89, "kinds": ["repository"] },
+      { "file": "search/0052.json", "count": 5, "kinds": ["repository"] }
     ],
-    "count": 2105
+    "count": 2116
   }
 }

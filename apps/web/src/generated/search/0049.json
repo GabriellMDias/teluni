@@ -4,6 +4,105 @@
     "title": "Teluni Publication and Synchronization Design",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "The authorization statement",
+    "anchor": "the-authorization-statement",
+    "text": "The authorization statement\nEach sync response for an active screen carries a statement signed by the server as a compact JWS with `ES256` (ECDSA P-256 with SHA-256), a `kid` naming the key and `typ` `teluni-authorization+jws`. Its claims:\nClaim\nMeaning\n`sub`, `company`\nThe screen and its company\n`iat`\nThe server's time when it was issued: a signed time reference for the player's trusted clock (D-07, AT-16)\n`exp`\n`iat` plus seven days (AT-15), the latest moment the player may show protected content without a newer statement; capped by commercial validity in PJ-27\n`publications`\nThe publications the player may activate or keep active until `exp`: each ID with its manifest SHA-256\n`publications` holds the desired publication and, while the screen has not activated it, the active and recovery generations the screen reported, when they are unpruned publications of the screen's company. An unpublished source yields an empty list, so the screen shows neutral output after applying an assignment, as the policies require; a failed staging keeps the previous generation authorized. Revoking a specific publication (incident response) would remove it from every list; no revocation operation is part of this design.\nThe player obligations that follow, for PJ-12: verify every statement with a pinned key before trusting it; activate only a complete generation whose manifest SHA-256 a valid statement lists; show neutral output when the latest valid statement has expired by trusted time; never extend a statement's validity locally; keep the latest statement with the active generation.\nKeys: `TELUNI_SYNC_SIGNING_KEYS` is a key ring of P-256 private keys, newest first. The first key signs; the public halves of all keys are served at `GET /device/keys` as a JSON Web Key Set. The player fetches the set after pairing over TLS and refreshes it at each sync when a statement names an unknown `kid`. Rotation adds a new key at the front and keeps the old one for at least seven days, the longest validity of a statement it signed. Without the key ring the publications module stays unmounted.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "State reports and monitoring",
+    "anchor": "state-reports-and-monitoring",
+    "text": "State reports and monitoring\nThe sync request is the screen's report: the protocols it supports and its application version; the `active` publication with its activation time and the `recovery` publication; the `staging` attempt with its publication, state (`DOWNLOADING`, `VERIFYING`, `READY` or `FAILED`), bytes done and total and a failure code (`STORAGE_FULL`, `DOWNLOAD_FAILED`, `INTEGRITY_FAILED`, `INVALID_MANIFEST`, `INCOMPATIBLE`); the playback condition (`PLAYING`, `NEUTRAL`, `AUTHORIZATION_EXPIRED`, `CLOCK_UNTRUSTED`, `DEGRADED` or `SETUP`); free and total storage; and the device's clock reading. All values are bounded and validated; unknown publication IDs are kept as reported but never trusted. Compatible players may also send `diagnostics`: their clock reference (`ANCHORED`, `ESTIMATED`, `UNTRUSTED`), signed `systemSkewMillis` against an anchor and recorded `crashCount`. Unknown skew/count values remain `null`; older players omit the object. Skew is bounded to JSON-safe integer milliseconds and requires an anchored reference; counts are nonnegative 32-bit integers, saturated by the player. These are untrusted monitoring facts, never authorization or scheduling inputs; no crash message, frame or content is accepted into persisted diagnostics. See the [player privacy and rollout rules](player-design.md#diagnostics-and-privacy).\nThe server keeps the latest report per screen with the time it was received and the desired publication it answered, and appends an event when the active publication, the staging state or failure, or the playback condition changes, or when a newly desired publication is delivered. Events are kept for 30 days (AT-20). Diagnostic-only changes overwrite the latest state without adding transition events or introducing an alerting service.\nThe panel derives, never stores, what it shows:\n**Connection:** online while the last sync is at most 90 seconds old, without recent contact after 90 seconds and offline after 120 seconds (AT-24), always with the time of the last contact.\n**Publication:** up to date when the reported active publication is the desired one; updating while staging the desired one, with progress; failed with the reported reason; neutral when the source is unpublished; unknown when the screen has never reported.\n**Playback:** the reported condition, labeled as reported by the screen.\n**Player health:** reported clock reference, signed clock difference and recorded crashes, with explicit unknown values; a difference above 60 seconds explains that the player uses anchored time. Counts cover only locally recorded crashes during this pairing and cannot reconstruct earlier versions' missing history.\nThe panel polls a screen's state every 5 seconds while its page is open, so an acknowledgement appears within AT-14's 10 seconds of the server receiving it.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "History, restore and retention",
+    "anchor": "history-restore-and-retention",
+    "text": "History, restore and retention\nA program's history lists its publications, newest first, with generation, publisher, time, counts and whether it restores an earlier generation. **Restore** publishes an earlier generation's content again as a new generation, after checking that its playlists still fit the program's current reach and its media are still publishable; it never changes the drafts. A protocol 2 publication is also restored only while the program's reach stays within the branches it was published for, because its prices cover only those. Restore needs the same capability as publishing. Since automatic price publication ([catalog and composition design](catalog-composition-design.md#automatic-price-publication)), the catalogs' current prices follow a restored protocol 2 generation at once as a price publication, and history marks each generation's origin: a person's publication, a restore or a price publication.\nA publication is **retained** while it is the latest of its program, while an active screen reported it as active, recovery or staging within the last seven days, or until 90 days after the next generation superseded it (AT-18). Hourly maintenance prunes the others: it deletes their manifest bytes and media references and keeps the row, so history still shows them as no longer restorable.\nThe publications module registers a `publication` media reference guard: media referenced by a retained publication cannot be deleted or purged, and the refusal discloses only references the caller may see. Deleting a group, which requires that it has no members, deletes its program and with it the program's publications; their audit events remain.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Permissions",
+    "anchor": "permissions",
+    "text": "Permissions\nCapability\nCompany administrator\nBranch manager\nOperator\nDelegable\n`publications.publish`: publish and restore programs\nCompany\nBranches\nNo (additional grant)\nYes, with `programming.view`\nScope follows the programming design: a group's program needs the capability on every branch of its span (company scope for a whole-company group), a screen's program on the screen's branch. `publications.publish` works in the normal session, also through a profile, without a recent re-authentication. A program's history and check need `programming.view` on the same scope; a screen's synchronization state needs `devices.view` on its branch.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Abuse limits",
+    "anchor": "abuse-limits",
+    "text": "Abuse limits\nAt most 30 publications per program per hour and 300 per company per day (`RATE_LIMITED`; an unchanged publication counts for neither). Snapshots of at most 2,000 items and 1,000 distinct media. Sync requests share the device request limit, which counts each presented credential, not each client address, under a ceiling of 6,000 requests per address per minute, because screens behind one router or the ingress proxy share an address; at most two concurrent media downloads per screen. Reports are bounded by request validation.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Audit",
+    "anchor": "audit",
+    "text": "Audit\n`publication.published` and `publication.restored` events record the actor's membership, the program, its source kind and branches, the generation and counts, in the same transaction. Automatic price publication adds `publication.price_published` (the authority's membership, with the catalog, its price sequence, the intent and its author) and `publication.price_reauthorized` (who authorized a blocked or failed intent again). Pruning is maintenance and is not attributed to a person. Device reports are operational records with 30-day retention, not audit.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Data",
+    "anchor": "data",
+    "text": "Data\nTable\nPurpose\n`publications`\nCompany, program (composite reference, deleted with the program), generation (unique per program), protocol, content digest, manifest bytes (null once pruned), manifest SHA-256 and size, item and media counts and bytes, restored-from publication, origin (manual, restore or price), publisher membership, published, superseded and pruned times\n`publication_playlists`\nEach playlist copied into a publication with the branch that owned it then, for restore checks\n`publication_media`\nEach media item of a retained publication with its rendition SHA-256, size and type (composite reference to the media item); deleted when pruned\n`publication_device_states`\nOne row per screen: last report fields, time received and the desired publication answered\n`publication_device_events`\nReport transitions per screen, kept 30 days\n`publication_audit_events`\nAppend-only audit rows with the branches they concern\nEvery table carries `company_id` with composite tenant references, as the [tenant data design](tenant-data-design.md) requires; reported publication IDs are stored as reported, without references, because they are untrusted. Manifests are `CONFIDENTIAL` like the schedules they contain.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contracts",
+    "anchor": "contracts",
+    "text": "Contracts\nHuman operations under `/companies/{companyId}/programming/groups/{groupId}/publications` and `/companies/{companyId}/programming/devices/{deviceId}/publications`: list (cursor-paginated), `check`, publish with the content digest, and `{publicationId}/restore`. `GET /companies/{companyId}/devices/{deviceId}/sync-state` returns one screen's state and `GET /companies/{companyId}/publications/screen-states?deviceId=…` up to 100 for lists. Device operations as in the exchange table. New errors: `PUBLICATION_INVALID`, `PUBLICATION_NOT_RESTORABLE` and `PROTOCOL_UNSUPPORTED`, with the existing access, `RESOURCE_NOT_FOUND`, `RESOURCE_VERSION_CONFLICT`, `RATE_LIMITED` and `VALIDATION_FAILED`. The SDK and OpenAPI document are regenerated.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Panel",
+    "anchor": "panel",
+    "text": "Panel\n**Programs** (group page and a screen's programming): the latest generation with its time and publisher, \"changes not published\" when the check reports a different digest, and **Publicar** for people who may publish: a dialog with the summary, the number of screens that follow the destination and every problem, then confirmation. A history list with **Restaurar** on retained generations.\n**Screens** (Telas): a synchronization section with connection and last contact, desired and active generation, staging progress or failure, reported playback and free storage; the list shows connection and publication state per screen; a group page summarizes its members.\nCopy is in `pt-BR` and `en-US`; reported states are labeled as reported by the screen.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nDomain tests: manifest serialization is stable byte for byte and matches the fixture rule format; content digest independence from generation and time; statement signing and verification with rotated keys; desired-state selection; authorization lists for desired, active, recovery, unpublished and foreign publications; connection thresholds; retention decisions.\nIntegration tests against PostgreSQL with two companies and differently scoped members: check and publish allowed and denied by role, profile and span; operators denied; digest conflict; unchanged publication; fades, deleted media, out-of-scope playlists and size limits refused; generations; media guard; restore; desired state across publication, assignment, individual programming and moves; the unpublished-destination confirmation; sync for active, suspended and unlinked screens; manifest and media access only for the current desired publication and the screen's company; ranges; reports, events and states; pruning after 90 days with retention exceptions; limits and audit rows.\nBrowser component tests for the publish dialog, history and restore and the screen's synchronization section, and one end-to-end journey in which a simulated player pairs, synchronizes, downloads and verifies the manifest, media and statement, and reports activation while the panel shows the screen up to date.\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Delivery increments",
+    "anchor": "delivery-increments",
+    "text": "Delivery increments\nAPI module, schema and migration, check, publish, history, restore, desired state, the sync exchange, manifest and media delivery, signed statements and keys, reports and events, guards, maintenance, the assignment change, audit, contracts and SDK.\nPanel pages: publish dialog, history and restore, the screen's synchronization section, list and group summaries, with browser tests and the end-to-end journey with a simulated player.\nHardening with PJ-12 (player conformance against the manifest and statement), PJ-20/PJ-21 (layout and catalog content in the manifest, price publication), PJ-27 (commercial expiry and transfer accounting) and optional approvals (PJ-24).\n"
+  },
+  {
+    "id": "repository/docs/project/publication-sync-design",
+    "title": "Teluni Publication and Synchronization Design",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Implementation status",
     "anchor": "implementation-status",
     "text": "Implementation status\nImplemented in [PJ-11](implementation-plan.md#current-work) on 2026-10-19, increment 1, on the recommended options, which the owner then approved under [PH-25](human-actions.md#ph-25):\nThe [`publications` API module](../../apps/api/src/features/publications/AGENTS.md), its reviewed migration (which also lets profiles delegate `publications.publish`), runtime grants, schema metadata, the operations in the [OpenAPI document](../generated/api/openapi.json) and SDK, and the `TELUNI_SYNC_SIGNING_KEYS` setting; without it the module stays unmounted.\n`publications.publish` for administrators and branch managers and as a delegable profile capability with `programming.view`.\nCheck, publish with the reviewed content digest, history and restore over the programming port's locked snapshot; the protocol 1 manifest and content digest in [`domain.ts`](../../apps/api/src/features/publications/domain.ts); ES256 statements and the key set with `jose`.\nThe sync exchange, delivery of the desired publication's manifest and renditions with ranges and at most two downloads per screen, screen states and 30-day transitions, the `publication` media guard, hourly pruning, and the programming assignment that asks for confirmation only for unpublished destinations.\n[Domain tests](../../apps/api/test/publications/domain.test.ts) for exact manifest bytes, fixture-format rules, digests, statements with rotated keys, authorization lists, AT-24 thresholds and protocol agreement, and the [two-company integration suite](../../apps/api/test/publications/integration.test.ts) with simulated screens against PostgreSQL as the runtime role.\nIncrement 2, the same day:\nThe panel's Publicação section on group pages and on the programming of screens with individual programming ([`publications.tsx`](../../apps/web/src/programming/publications.tsx)), the assignment form that asks for confirmation only for unpublished destinations, member screen states on group pages, and the screen's synchronization section and list states in Telas ([`sync.tsx`](../../apps/web/src/devices/sync.tsx)).\nBrowser component tests for the review, problems, a draft changed after review, restore, the published-destination assignment and the synchronization section, and the [publication journey](../../apps/web/test/e2e/publications/journey.spec.ts) with a simulated player that verifies its statement, manifest and media.\nBoth increments were merged through [pull request #12](https://github.com/GabriellMDias/teluni/pull/12) on 2026-10-20 after its CI passed.\nFollow-up on 2026-10-20: the screen routes of this module and of `devices` count their pre-authentication limit (120 requests per minute) per presented credential under a ceiling of 6,000 per client address. Counted per address, it let about 60 screens behind one address, below the reference load of 100, exhaust it and appear offline.\nIncrement 3, started 2026-10-20 with the [player design](player-design.md): `zoneOffsets` and `rotation` in the sync response and the player [conformance fixtures](../../apps/api/test/publications/conformance.json), which [`scripts/conformance.ts`](../../apps/api/scripts/conformance.ts) writes from the API's own serializer, signer and zone rules, checked by a [conformance test](../../apps/api/test/publications/conformance.test.ts). The same day, [protocol 2](catalog-composition-design.md#implementation-status) for programs with a layout: the manifest and digest, the sync answer's `branchId` and `desired.protocol`, restore within the reach a publication was made for, and its conformance fixtures. The player `core` parses and plans protocol 2 the same day. On 2026-10-21, [automatic price publication](catalog-composition-design.md#implementation-status): price changes queue intents under the shared publication lock, publications record the catalogs they copy and settle intents, and the price processor publishes generations with `origin: \"price\"`. Pending: player conformance on devices (PJ-12), commercial capping (PJ-27) and optional approvals (PJ-24).\n"
@@ -493,104 +592,5 @@
     "heading": "Symptom-based alerting",
     "anchor": "symptom-based-alerting",
     "text": "Symptom-based alerting\nPrefer evidence of user/service impact: valid requests failing, latency objectives violated, work missing deadlines, or a critical operation unavailable. Cause metrics support investigation. Preventive cause alerts are appropriate when a known risk, meaningful response window, and effective action can prevent impact, such as full storage, expiring certificates, recovery-threatening replication lag, or an undrainable queue.\nAn alert must answer what action follows. If none is required, use a dashboard, metric, log, periodic review, or ticket as appropriate. Before adding a signal, inspect existing symptom alerts for the same incident. Do not page separately on every error, restart, unready replica, retry, short circuit-breaker transition, or arbitrary resource percentage.\nPrefer safe, understood, verifiable automatic recovery; notify when it fails, repeats excessively, threatens capacity/redundancy, or leaves meaningful impact. Unique/stateful instances and data-risk failures may justify instance-level alerts even when stateless replicated services use service-level aggregation.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Alert ownership and context",
-    "anchor": "alert-ownership-and-context",
-    "text": "Alert ownership and context\nEvery alert must identify an owner able and authorized to act. Ownership can follow service, domain, application, or infrastructure responsibility. Shared dependency failures need coordinated response across infrastructure and affected application owners, not independent competing investigations.\nUse stable semantic names describing the condition; keep volatile thresholds in configuration. Names, ownership, severity, service, environment, and signal type should be machine-readable where tooling supports it. Do not group alerts primarily by arbitrary message text or use high-cardinality personal data in queries.\nA concise notification should explain impact, duration, current value versus threshold/objective, release when relevant, owner, and first investigation step. Link directly to useful dashboards/runbooks and safe trace/error references where available. Investigators should be able to connect the condition to affected service/release, metrics, error groups, traces, and recovery guidance.\nNotifications must contain only safe operational context. Chat/paging access may be broader than production telemetry: keep detailed evidence in authorized systems, and never include credentials, raw payloads, personal data, or restricted identifiers. Follow [telemetry redaction](../security/telemetry-redaction.md) and [production access](../security/production-access.md), including for AI investigation.\nAcknowledgement assigns response ownership; it does not resolve the condition. Alert resolution means the triggering condition cleared, not that the root cause is permanently fixed or the incident is closed. [Incident response](../security/incident-response.md) determines proportional coordination and closure based on impact, duration, data/security risk, and involved owners. Incidents may arise without an automated alert, and not every alert becomes an incident.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Thresholds, windows, and missing data",
-    "anchor": "thresholds-windows-and-missing-data",
-    "text": "Thresholds, windows, and missing data\nThresholds require evidence: real service expectations/SLOs, capacity/safe limits, deadlines, known operational requirements, or an appropriate historical baseline. Never invent arbitrary availability percentages or round resource thresholds. Dynamic/anomaly rules add false-positive risk; use them when simpler rules cannot express the condition effectively.\nPersistence windows, hysteresis, and aggregation can reduce flapping. Choose duration from time-to-impact; corruption, all replicas unavailable, or security breach indicators may require immediate action. Slow risks should allow useful remediation lead time. A pending period is a deliberate delay, not a universal requirement. Recovery thresholds/notifications should represent actual improvement.\nDefine missing-data semantics explicitly: no traffic, dead service, failed exporter, and renamed metric are different states. Absence must not silently equal healthy zero. Observability pipeline impairment can justify an alert when diagnostic capability is materially lost; avoid one page per backend hiccup. Telemetry failure should not normally break business operations, but prolonged blindness can require intervention.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "SLO-based alerting",
-    "anchor": "slo-based-alerting",
-    "text": "SLO-based alerting\nWhen meaningful SLOs exist, prefer user-impact measurements from accurate SLIs. Define eligible/successful requests or events and distinguish technical failures from expected client/business outcomes. An incorrect denominator makes the alert misleading.\nAn error budget is the permitted failure allowance over the objective window. Burn rate describes consumption relative to the rate that would exhaust that allowance over the window: a rate of one follows that planned rate. Fast burn over short windows may require paging; slower sustained burn may justify less urgent work. Short and longer confirmation windows can reduce transient false positives. Select formulas, thresholds, windows, and slow-burn coverage only against actual objectives and validate behavior.\nInfrastructure alerts can coexist with SLO alerts when they detect distinct preventive risks. A service objective should not be fabricated to justify an existing metric threshold.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Choosing the signal",
-    "anchor": "choosing-the-signal",
-    "text": "Choosing the signal\nSurface\nDecision rule\nError rate\nUse a meaningful denominator and enough traffic. Low-volume services may need minimum counts, longer windows, or absolute failure conditions. Expected business declines are not availability failures.\nLatency\nPrefer distributions or objective thresholds to averages alone; tail percentiles such as p99 can be unstable at low volume.\nQueue\nCombine age, arrival/processing throughput, drain capacity, deadlines, and backlog. Depth alone does not establish impact. Dead letters matter when important work has exhausted recovery; one malformed noncritical item may not page.\nDependency\nMeasure the application's observed impact; a provider status page is supporting context. Coordinate shared-provider incidents.\nDatabase\nConsider sustained latency, deadlock surges, unavailability, recovery-threatening lag, or pool saturation causing waits/timeouts/failures. Do not alert on every slow-query fingerprint prematurely.\nCPU/memory\nUse demonstrated saturation, latency, lost headroom, unexpected growth, eviction/restart, or known failure limits. High healthy utilization alone is insufficient.\nStorage, certificates, expiring secrets\nGive enough preventive lead time. Prefer automated renewal/rotation where safe rather than relying only on notifications.\nBackups/restore\nDistinguish one retryable attempt from recovery objectives at risk. Successful backup creation does not establish recoverability; restore verification can have separate signals.\nMigration\nProduction failure must immediately become visible to deployment systems. Human paging depends on release state, impact, and safe recovery.\nReadiness/liveness\nAssess ready capacity, redundancy, duration, traffic, and restart loops. A healthy pool should usually recover one stateless replica automatically.\nError tracker\nNew actionable issues, regressions, fatal crashes, or frequency changes may matter. Unsupported client-extension noise does not deserve the same response as a critical backend workflow failure.\nSecurity/audit\nSecurity-specific detection/escalation follows incident policy. Recording a privileged action does not automatically require notification; suspicious or policy-significant conditions may.\nQuota/cost\nFor quotas consider consumption, growth, and time until reset. Reliable trends can support preventive work; budget notifications are not automatically reliability incidents.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Deduplication, maintenance, and deployment",
-    "anchor": "deduplication-maintenance-and-deployment",
-    "text": "Deduplication, maintenance, and deployment\nAggregate identical replica failures into the service condition. A primary symptom can page while related dependency signals remain supporting context. Parent-condition suppression must not hide unrelated independent failures.\nMaintenance suppression must be explicit, owned, scoped, and time-bounded. Do not permanently mute alerts or disable all alerting during every deployment; releases are when regressions often appear. Suppress only known expected behavior for its actual window, and correlate alerts with recent deployment/release annotations where practical.\nCanary comparison and automated rollback remain deployment capabilities, not foundation defaults. Any automation needs high-confidence signals, clear rollback safety, bounded execution, and auditability. Never attach noisy alerts to destructive automated actions. Canary error/latency/critical-success comparisons must follow an actual release policy.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Rule lifecycle and noisy alert review",
-    "anchor": "rule-lifecycle-and-noisy-alert-review",
-    "text": "Rule lifecycle and noisy alert review\nPrefer version-controlled, reviewed, reproducible rules where tooling supports them. Provider-side manual rules may be acceptable during early experimentation; long-term critical detection should be reproducible from repository-controlled configuration. Review critical changes like production code.\nValidate query syntax, metric/label existence, expressions, metadata, and runbook links with available tools. Critical rules need meaningful healthy/unhealthy/recovery evidence through query fixtures, rule tests, or safe staging simulation. Document unavailable checks rather than claiming verification.\nHigh-severity alerts should have useful runbooks when practical. Prioritize recurring high-impact gaps. A runbook should identify actual signals/queries, common causes, safe mitigation, verification, and escalation rather than merely saying \"check logs\". Follow [runbook authoring](../runbooks/authoring.md); a runbook does not grant operational authority.\nTreat chronic noise as a defect. Review signal, threshold, duration, flapping, expected behavior, ownership, automatic recovery, duplicate coverage, severity/channel, and whether automation or a root-cause fix removes recurring manual work. Raising thresholds, permanent muting, or deletion without understanding the signal is not a fix. Before removing an established alert, identify its original purpose, replacement coverage, and dependent runbooks.\nAs operational needs grow, assess pages per incident, false positives, alerts with no action, acknowledgement time, and repeated noise. Measurements should guide improvements rather than create another alert stream.\n"
-  },
-  {
-    "id": "repository/docs/reliability/alerting",
-    "title": "Alerting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "New alert checklist",
-    "anchor": "new-alert-checklist",
-    "text": "New alert checklist\nBefore creating or changing an alert, establish:\nThe condition, actual impact/risk, required action, urgency, and authorized owner.\nA stable reliable signal, meaningful denominator/missing-data semantics, justified threshold, persistence/recovery behavior, and representative tests.\nWhether safe recovery, an existing symptom alert, aggregation, or a work item better addresses the condition.\nSafe concise context, correct environment/channel/escalation, and useful investigation/runbook links.\nFor paging: why action cannot wait, whether the recipient can mitigate it, and how duplicate pages and unacknowledged incidents are handled.\nFor SLO/resource alerts: real objective/eligible population or safe capacity/deadline, expected impact, and sufficient lead time for the response.\nAn alert is not ready if its impact, action, ownership, or threshold justification cannot be explained. Available repository checks are listed in [validation](../validation.md); deployment-specific alert tooling remains conditional.\n"
-  },
-  {
-    "id": "repository/docs/reliability/error-reporting",
-    "title": "Error Reporting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Error Reporting",
-    "anchor": "error-reporting",
-    "text": "Error Reporting\nThis policy owns unexpected-failure capture, diagnostic context, grouping, and issue triage. [Error handling](../architecture/error-handling.md) owns application failure semantics; the [public error contract](../api/error-contract.md) owns responses. Error tracking complements logs, traces, and metrics; it is neither an audit ledger nor a business analytics store.\n"
-  },
-  {
-    "id": "repository/docs/reliability/error-reporting",
-    "title": "Error Reporting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Current implementation and accepted direction",
-    "anchor": "current-implementation-and-accepted-direction",
-    "text": "Current implementation and accepted direction\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) establishes central error handling, Pino logs, and OpenTelemetry correlation as the foundation. A dedicated error-reporting provider is optional and deployment-specific. No global tracker, provider SDK, source-map upload pipeline, browser crash integration, or issue-routing service is implemented. These capabilities must follow real application needs; do not add a generic provider abstraction without an application responsibility.\nThe API [error boundary](../../apps/api/src/app.ts) reports one `unhandled_request_error` with a stable error ID and [bounded safe diagnostics](../../apps/api/src/error-diagnostics.ts), then returns a safe [`INTERNAL_ERROR` envelope](../../apps/api/src/errors.ts). Only allowlisted error types/codes and repository-owned frame locations are retained; raw messages, arbitrary stacks, and cause objects are excluded. Authentication infrastructure failure receives a safe 503 and `authentication_unavailable` diagnostic. [Startup](../../apps/api/src/main.ts) catches configuration, initialization, connection, and listen failures, attempts bounded cleanup, and emits a fixed safe fallback record if the logger does not yet exist. [Observability](observability.md) owns current correlation and release context.\n"
-  },
-  {
-    "id": "repository/docs/reliability/error-reporting",
-    "title": "Error Reporting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Expected vs unexpected",
-    "anchor": "expected-vs-unexpected",
-    "text": "Expected vs unexpected\nClassification is semantic, not determined by an exception type or HTTP status.\nFailure\nReporting treatment\nModeled validation, invalid credentials, permission denial, not-found, rate limit, domain rejection, or optimistic concurrency conflict\nNormal error contract; useful aggregate metrics, safe operational/security logs, and required audit events. Do not create tracker issues by default.\nMissing required internal state, broken invariant, programming defect, unexpected provider shape, or authentication subsystem crash\nUnexpected: surface safe diagnostic evidence at the owning boundary.\nProvider business decline\nExpected provider/domain outcome; distinguish it from provider availability failure.\nDependency outage or exhausted retries\nOperational failure; report the logical failed operation where appropriate, not an issue per retry.\nTransient failure/deadlock recovered by retry\nPrefer attempt/outcome metrics, traces, and bounded warnings. Repeated or unrecoverable failures must remain visible.\nClient offline state, cancelled navigation, unsupported extension, or external script failure\nClassify against product behavior and ownership; use deliberate noise filters rather than treating every event as an application defect.\nA specific security or operational requirement may justify capturing an otherwise expected outcome; document the reason and bounded scope. Sampling does not replace correct classification.\n"
-  },
-  {
-    "id": "repository/docs/reliability/error-reporting",
-    "title": "Error Reporting",
-    "group": "Reliability",
-    "kind": "repository",
-    "heading": "Report once",
-    "anchor": "report-once",
-    "text": "Report once\nEach execution model needs an authoritative final boundary: HTTP handler, job runner, consumer wrapper, scheduler, CLI entry point, or client error boundary. Capture an unexpected failure once there. Intermediate layers may translate, wrap, enrich, and preserve cause without duplicate capture. If a catch intentionally consumes an unexpected failure, that layer owns reporting or another explicit way to surface it. Never silently lose it.\nPrefer the actual exception or an equivalent safe structured representation over a generic string. Preserve meaningful type, internal-safe message, stack, cause chain, stable code, and diagnostic metadata where supported and permitted. Sanitization must precede export; preserving a cause never authorizes recursively serializing arbitrary exception attachments. SDK/ORM/database errors can contain credentials, request/response bodies, query values, or connection details.\nFatal startup/process failures should produce a safe diagnostic where possible even if the tracker cannot initialize. Uncaught failures that leave process state unsafe require safe termination; capture does not make continued execution safe. Fatal and short-lived processes may need a bounded best-effort flush, never indefinite shutdown waiting. Follow [lifecycle and error handling](../architecture/error-handling.md).\nClient error boundaries, when introduced, should capture unexpected rendering/runtime errors, show safe fallback UI, and preserve useful correlation. Recovery must be intentional and must not conceal persistent broken state. Framework boundaries do not capture every browser rejection, resource failure, native crash, or hang; choose platform-specific coverage only where required.\n"
   }
 ]
