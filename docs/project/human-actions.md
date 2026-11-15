@@ -29,6 +29,8 @@ The owner subsequently requested correction of PR #26's CI failure. The [CI qual
 
 2026-11-15: the owner requested optional company logos and location-derived branch time zones, with company time zones removed from registration forms. The [company branding and branch location increment](implementation-plan.md#company-branding-and-branch-location) uses full-address entry, an interactive attributed map, offline city navigation/time-zone lookup and existing authenticated company administration; no provider account, API key or new human blocker is required. The owner also authorized filling existing local test companies and branches: all four company logos and ten full-address/map locations were populated and read back, preserving scheduling zones. This local test data requires no additional human action. Existing deployment, retention and pilot prerequisites retain their original triggers.
 
+2026-11-15: the owner requested the [screen information architecture increment](implementation-plan.md#screen-information-architecture), including organized details and improved list usability. This local feature-owned presentation change requires no new account, credential or human decision. Existing pilot and production prerequisites are unchanged.
+
 ## Safe configuration handoff
 
 2026-11-15: the owner requested a comprehensive local Home-page improvement. The [Home workspace refinement](implementation-plan.md#home-workspace-refinement) continues PJ-41 using existing API capabilities and the approved product identity. This work requires no new credentials, external account action or human blocker; existing pilot and production prerequisites retain their original triggers.

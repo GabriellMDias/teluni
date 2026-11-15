@@ -42,6 +42,8 @@ import {
   type DeviceHistoryFilter,
   type Rotation,
 } from "./api.js";
+import { NavigationIcon } from "../navigation-icon.js";
+import { ScreenCard, ScreenStatus } from "./components.js";
 import { deviceMessages } from "./messages.js";
 import { ScreenSync, syncSummary } from "./sync.js";
 
@@ -86,12 +88,14 @@ function CompanyGate({
   companyId,
   returnTo,
   wide = false,
+  detail = false,
   children,
 }: {
   companyId: string;
   returnTo: string;
   /** A dataset page that uses the whole workspace. */
   wide?: boolean;
+  detail?: boolean;
   children: (company: CompanyWithAccess) => React.ReactNode;
 }) {
   const { locale, t } = useDeviceMessages();
@@ -138,7 +142,7 @@ function CompanyGate({
   else if (company.data) body = children(company.data);
   return (
     <section
-      className={`panel organization-panel devices-panel${wide ? " dataset-panel" : ""}`}
+      className={`panel organization-panel devices-panel${wide ? " dataset-panel" : ""}${detail ? " screen-detail-panel" : ""}`}
       aria-labelledby="devices-title"
       lang={locale}
     >
@@ -387,8 +391,35 @@ function ScreensContent({
   }, [firstScreen, search.mode, navigate, filter]);
   return (
     <>
-      <h1 id="devices-title">{t.title}</h1>
-      <p>{t.lead}</p>
+      <header className="screens-heading">
+        <span className="screen-heading-icon">
+          <NavigationIcon name="sessions" />
+        </span>
+        <div>
+          <h1 id="devices-title">{t.title}</h1>
+          <p className="hint">{t.lead}</p>
+        </div>
+      </header>
+      {devices.isSuccess && mode === "grid" && (
+        <section className="screens-page-summary" aria-label={t.pageSummary}>
+          <div>
+            <span>{t.screensCount}</span>
+            <strong>{rows.length}</strong>
+          </div>
+          <div>
+            <span>{t.activeCount}</span>
+            <strong>{active.length}</strong>
+          </div>
+          <div>
+            <span>{t.revokedCount}</span>
+            <strong>{rows.length - active.length}</strong>
+          </div>
+          <p className="hint">
+            {t.pageSummary}
+            <span>{t.pageSummaryHint}</span>
+          </p>
+        </section>
+      )}
       <div className="dataset-region devices-list-section">
         {devices.isPending ? (
           <p>{t.loading}</p>
@@ -430,7 +461,21 @@ function ScreensContent({
                 key: "status",
                 header: t.statusColumn,
                 value: (row) => deviceState(row, t),
-                width: 200,
+                width: 230,
+                render: (row) => (
+                  <div className="screen-cell-stack">
+                    <ScreenStatus
+                      tone={row.status === "ACTIVE" ? "positive" : "neutral"}
+                    >
+                      {row.status === "ACTIVE"
+                        ? t.statusActive
+                        : t.statusRevoked}
+                    </ScreenStatus>
+                    {row.erasure !== "NONE" && (
+                      <span className="hint">{t.erasure[row.erasure]}</span>
+                    )}
+                  </div>
+                ),
               },
               {
                 key: "lastSeen",
@@ -445,9 +490,39 @@ function ScreensContent({
               {
                 key: "sync",
                 header: t.sync.title,
-                value: syncOf,
-                width: 320,
+                value: (row) =>
+                  row.status === "REVOKED"
+                    ? "—"
+                    : states.isError
+                      ? t.syncUnavailable
+                      : syncOf(row),
+                width: 340,
                 filterable: false,
+                render: (row) => {
+                  if (row.status === "REVOKED")
+                    return <span className="hint">—</span>;
+                  const state = states.isError
+                    ? undefined
+                    : states.data?.get(row.id);
+                  if (!state)
+                    return (
+                      <span className="hint">
+                        {states.isError ? t.syncUnavailable : t.loading}
+                      </span>
+                    );
+                  return (
+                    <div className="screen-cell-stack">
+                      <ScreenStatus
+                        tone={
+                          state.connection === "online" ? "positive" : "neutral"
+                        }
+                      >
+                        {t.sync.connection[state.connection]}
+                      </ScreenStatus>
+                      <span>{t.sync.publication[state.publication]}</span>
+                    </div>
+                  );
+                },
               },
             ]}
             selectedId={record}
@@ -458,11 +533,12 @@ function ScreensContent({
             onAdd={
               manage ? () => go({ mode: "form", record: "new" }) : undefined
             }
-            onRefresh={() =>
+            onRefresh={() => {
               void queryClient.invalidateQueries({
                 queryKey: devicesKey(companyId),
-              })
-            }
+              });
+              void states.refetch();
+            }}
             refreshing={refreshing}
             exportName={t.screensExport}
             filters={{
@@ -517,6 +593,14 @@ function ScreensContent({
               )
             )}
           </DataSet>
+        )}
+        {mode === "grid" && states.isError && active.length > 0 && (
+          <div className="notice" role="status">
+            {t.syncUnavailable}{" "}
+            <Button onClick={() => void states.refetch()}>
+              {t.syncReload}
+            </Button>
+          </div>
         )}
         {mode === "grid" && (
           <nav className="pagination" aria-label={t.title}>
@@ -621,34 +705,41 @@ function ScreenSummary({
 }) {
   const { locale, t } = useDeviceMessages();
   return (
-    <section aria-labelledby="screen-summary-title">
-      <h2 id="screen-summary-title">{device.name}</h2>
-      <dl className="company-settings">
-        <dt>{t.fieldBranch}</dt>
-        <dd>{device.branch.name}</dd>
-        <dt>{t.statusColumn}</dt>
-        <dd>{deviceState(device, t)}</dd>
-        <dt>{t.lastSeen}</dt>
-        <dd>
-          {device.lastSeenAt
-            ? formatInstant(locale, device.lastSeenAt)
-            : t.neverSeen}
-        </dd>
+    <ScreenCard title={device.name}>
+      <dl className="screen-facts">
+        <div>
+          <dt>{t.fieldBranch}</dt>
+          <dd>{device.branch.name}</dd>
+        </div>
+        <div>
+          <dt>{t.statusColumn}</dt>
+          <dd>{deviceState(device, t)}</dd>
+        </div>
+        <div>
+          <dt>{t.lastSeen}</dt>
+          <dd>
+            {device.lastSeenAt
+              ? formatInstant(locale, device.lastSeenAt)
+              : t.neverSeen}
+          </dd>
+        </div>
         {sync && (
-          <>
+          <div>
             <dt>{t.sync.title}</dt>
             <dd>{sync}</dd>
-          </>
+          </div>
         )}
       </dl>
-      <Link
-        className="button-link button-primary"
-        to="/companies/$companyId/screens/$deviceId"
-        params={{ companyId, deviceId: device.id }}
-      >
-        {t.openScreen}
-      </Link>
-    </section>
+      <p>
+        <Link
+          className="button-link button-primary"
+          to="/companies/$companyId/screens/$deviceId"
+          params={{ companyId, deviceId: device.id }}
+        >
+          {t.openScreen}
+        </Link>
+      </p>
+    </ScreenCard>
   );
 }
 
@@ -716,7 +807,9 @@ function ConfigureForm({
         save.mutate();
       }}
     >
-      <h2 id="configure-title">{t.editTitle}</h2>
+      <span id="configure-title" className="screen-sr-only">
+        {t.editTitle}
+      </span>
       <TextField
         label={t.fieldName}
         id="device-name"
@@ -792,16 +885,17 @@ function MoveForm({
   });
   if (branches.isError)
     return (
-      <section aria-labelledby="move-title">
-        <h2 id="move-title">{t.moveTitle}</h2>
+      <div>
         <Failure
           error={branches.error}
           operation="read"
           onReload={() => void branches.refetch()}
         />
-      </section>
+      </div>
     );
-  if (branches.isPending || destinations.length === 0) return null;
+  if (branches.isPending) return <p>{t.loading}</p>;
+  if (destinations.length === 0)
+    return <p className="hint">{t.noDestinations}</p>;
   return (
     <form
       className="form-stack"
@@ -811,7 +905,9 @@ function MoveForm({
         move.mutate();
       }}
     >
-      <h2 id="move-title">{t.moveTitle}</h2>
+      <span id="move-title" className="screen-sr-only">
+        {t.moveTitle}
+      </span>
       {branches.data.truncated && <p className="hint">{t.branchesTruncated}</p>}
       <label htmlFor="move-branch">{t.moveTo}</label>
       <select
@@ -864,13 +960,12 @@ function UnlinkForm({
   return (
     <form
       className="form-stack devices-danger"
-      aria-labelledby="unlink-title"
+      aria-label={t.unlinkTitle}
       onSubmit={(event) => {
         event.preventDefault();
         if (confirmed) unlink.mutate();
       }}
     >
-      <h2 id="unlink-title">{t.unlinkTitle}</h2>
       <p>{t.unlinkLead}</p>
       <label className="checkbox-row">
         <input
@@ -917,8 +1012,7 @@ function ResetForm({
     onSuccess: (changed) => onChanged(changed, t.resetRecorded),
   });
   return (
-    <section aria-labelledby="reset-title" className="form-stack">
-      <h2 id="reset-title">{t.resetTitle}</h2>
+    <div className="form-stack">
       <p>{t.resetLead}</p>
       {reset.error && (
         <Failure
@@ -937,7 +1031,7 @@ function ResetForm({
       >
         {t.reset}
       </Button>
-    </section>
+    </div>
   );
 }
 
@@ -1044,6 +1138,12 @@ function ScreenDetail({
   const manage = company.access.capabilities.includes("devices.manage");
   // Every change refetches the screen and the list so versions stay current.
   const [notice, setNotice] = useState<string | null>(null);
+  const [settingsVisited, setSettingsVisited] = useState(
+    filter.view === "settings",
+  );
+  useEffect(() => {
+    if (filter.view === "settings") setSettingsVisited(true);
+  }, [filter.view]);
   const onChanged = async (changed: Device, done?: string) => {
     setNotice(done ?? null);
     queryClient.setQueryData(deviceKey(companyId, deviceId), changed);
@@ -1073,152 +1173,274 @@ function ScreenDetail({
     );
   const screen = device.data;
   const deadline = latestAuthorization(screen);
+  const view = filter.view;
+  const audit = company.access.capabilities.includes("audit.view");
+  const programming =
+    screen.status === "ACTIVE" &&
+    company.access.capabilities.includes("programming.view");
+  const views = [
+    { view: undefined, label: t.detailsTitle, icon: "sessions" as const },
+    ...(screen.status === "ACTIVE"
+      ? [
+          {
+            view: "sync" as const,
+            label: t.sync.title,
+            icon: "programming" as const,
+          },
+        ]
+      : []),
+    ...(manage
+      ? [
+          {
+            view: "settings" as const,
+            label: t.settingsTitle,
+            icon: "settings" as const,
+          },
+        ]
+      : []),
+    ...(audit
+      ? [
+          {
+            view: "history" as const,
+            label: t.historyTitle,
+            icon: "history" as const,
+          },
+        ]
+      : []),
+  ] as const;
   return (
     <>
-      <p className="hint">
-        <Link to="/companies/$companyId/screens" params={{ companyId }}>
-          {t.backToScreens}
-        </Link>
-      </p>
-      <h1 id="devices-title">{screen.name}</h1>
-      <p className="hint">
-        {screen.branch.name} · {deviceState(screen, t)}
-      </p>
-      <nav className="pagination" aria-label={t.screenViews}>
-        <Link
-          to="/companies/$companyId/screens/$deviceId"
-          params={{ companyId, deviceId }}
-          search={{}}
-          activeOptions={{ exact: true }}
-          aria-current={!filter.view ? "page" : false}
+      <Link
+        className="screen-back"
+        to="/companies/$companyId/screens"
+        params={{ companyId }}
+      >
+        <span aria-hidden="true">←</span> {t.backToScreens}
+      </Link>
+      <header className="screen-detail-heading">
+        <span className="screen-heading-icon">
+          <NavigationIcon name="sessions" />
+        </span>
+        <div className="screen-heading-copy">
+          <h1 id="devices-title">{screen.name}</h1>
+          <p className="hint">{screen.branch.name}</p>
+        </div>
+        <ScreenStatus
+          tone={screen.status === "ACTIVE" ? "positive" : "neutral"}
         >
-          {t.detailsTitle}
-        </Link>
-        {company.access.capabilities.includes("audit.view") && (
+          {deviceState(screen, t)}
+        </ScreenStatus>
+        {programming && (
           <Link
-            to="/companies/$companyId/screens/$deviceId"
+            className="button-link screen-programming-link"
+            to="/companies/$companyId/programming/screens/$deviceId"
             params={{ companyId, deviceId }}
-            search={{ view: "history" }}
-            activeOptions={{ exact: true }}
-            aria-current={filter.view === "history" ? "page" : false}
           >
-            {t.historyTitle}
+            <NavigationIcon name="programming" />
+            {t.programmingLink}
           </Link>
         )}
+      </header>
+      <nav className="screen-tabs" aria-label={t.screenViews}>
+        {views.map((item) => (
+          <Link
+            key={item.view ?? "overview"}
+            to="/companies/$companyId/screens/$deviceId"
+            params={{ companyId, deviceId }}
+            search={item.view ? { view: item.view } : {}}
+            activeOptions={{ exact: true }}
+            aria-current={view === item.view ? "page" : false}
+          >
+            <NavigationIcon name={item.icon} />
+            {item.label}
+          </Link>
+        ))}
       </nav>
-      {filter.view === "history" ? (
-        company.access.capabilities.includes("audit.view") ? (
-          <ScreenHistory
-            companyId={companyId}
-            deviceId={deviceId}
-            cursor={filter.cursor}
-            accessScope={JSON.stringify([company.access, screen.branch.id])}
-          />
+      {notice && (
+        <p className="notice notice-success" role="status">
+          {notice}
+        </p>
+      )}
+      {screen.status === "REVOKED" && (
+        <p role="status" className="notice">
+          {screen.erasure === "PENDING"
+            ? t.unlinked
+            : t.erasure[screen.erasure]}
+        </p>
+      )}
+      {!view && (
+        <div className="screen-section-content">
+          <p className="screen-section-lead hint">{t.overviewLead}</p>
+          {screen.status === "ACTIVE" && (
+            <ScreenSync companyId={companyId} deviceId={deviceId} compact />
+          )}
+          <div className="screen-card-grid">
+            <ScreenCard title={t.displayTitle}>
+              <dl className="screen-facts">
+                <div>
+                  <dt>{t.fieldBranch}</dt>
+                  <dd>{screen.branch.name}</dd>
+                </div>
+                <div>
+                  <dt>{t.rotationLabel}</dt>
+                  <dd>{t.rotations[screen.rotation]}</dd>
+                </div>
+                <div>
+                  <dt>{t.timeZoneLabel}</dt>
+                  <dd>
+                    {screen.timeZone ??
+                      t.branchTimeZone(screen.branch.timeZone)}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t.pairedAt}</dt>
+                  <dd>{formatInstant(locale, screen.pairedAt)}</dd>
+                </div>
+                {screen.revokedAt && (
+                  <div>
+                    <dt>{t.revokedAt}</dt>
+                    <dd>{formatInstant(locale, screen.revokedAt)}</dd>
+                  </div>
+                )}
+              </dl>
+            </ScreenCard>
+            <ScreenCard title={t.hardwareTitle} description={t.reportNote}>
+              <dl className="screen-facts">
+                <div>
+                  <dt>{t.reportedModel}</dt>
+                  <dd>
+                    {screen.report.manufacturer} {screen.report.model}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Android</dt>
+                  <dd>{screen.report.osVersion}</dd>
+                </div>
+                <div>
+                  <dt>{t.reportedDisplay}</dt>
+                  <dd>
+                    {screen.report.display.width} ×{" "}
+                    {screen.report.display.height}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t.reportedApp}</dt>
+                  <dd>{screen.report.appVersion}</dd>
+                </div>
+              </dl>
+            </ScreenCard>
+            <ScreenCard title={t.connectionTitle}>
+              <dl className="screen-facts">
+                <div>
+                  <dt>{t.lastSeen}</dt>
+                  <dd>
+                    {screen.lastSeenAt
+                      ? formatInstant(locale, screen.lastSeenAt)
+                      : t.neverSeen}
+                  </dd>
+                </div>
+              </dl>
+            </ScreenCard>
+            <ScreenCard title={t.offlineTitle} description={t.offlineLead}>
+              <dl className="screen-facts">
+                <div>
+                  <dt>{t.authorizedUntil}</dt>
+                  <dd>
+                    {deadline
+                      ? formatInstant(locale, deadline.toISOString())
+                      : t.noAuthorization}
+                  </dd>
+                </div>
+              </dl>
+            </ScreenCard>
+            {screen.status === "REVOKED" && (
+              <ScreenCard title={t.erasureTitle}>
+                <p>{t.erasure[screen.erasure]}</p>
+              </ScreenCard>
+            )}
+          </div>
+        </div>
+      )}
+      {view === "sync" &&
+        (screen.status === "ACTIVE" ? (
+          <div className="screen-section-content">
+            <p className="screen-section-lead hint">{t.syncLead}</p>
+            <ScreenSync companyId={companyId} deviceId={deviceId} />
+          </div>
+        ) : (
+          <p className="empty-state">{t.statusRevoked}</p>
+        ))}
+      {view === "history" &&
+        (audit ? (
+          <div className="screen-card">
+            <ScreenHistory
+              companyId={companyId}
+              deviceId={deviceId}
+              cursor={filter.cursor}
+              accessScope={JSON.stringify([company.access, screen.branch.id])}
+            />
+          </div>
         ) : (
           <p role="alert" className="notice notice-error">
             {t.errors.PERMISSION_DENIED}
           </p>
-        )
-      ) : (
-        <>
-          {notice && <p role="status">{notice}</p>}
-          <section aria-labelledby="details-title">
-            <h2 id="details-title">{t.detailsTitle}</h2>
-            <dl className="company-settings">
-              <dt>{t.rotationLabel}</dt>
-              <dd>{t.rotations[screen.rotation]}</dd>
-              <dt>{t.timeZoneLabel}</dt>
-              <dd>
-                {screen.timeZone ?? t.branchTimeZone(screen.branch.timeZone)}
-              </dd>
-              <dt>{t.lastSeen}</dt>
-              <dd>
-                {screen.lastSeenAt
-                  ? formatInstant(locale, screen.lastSeenAt)
-                  : t.neverSeen}
-              </dd>
-              {deadline && (
-                <>
-                  <dt>{t.authorizedUntil}</dt>
-                  <dd>{formatInstant(locale, deadline.toISOString())}</dd>
-                </>
-              )}
-              <dt>{t.reportedModel}</dt>
-              <dd>
-                {screen.report.manufacturer} {screen.report.model} (Android{" "}
-                {screen.report.osVersion})
-              </dd>
-              <dt>{t.reportedDisplay}</dt>
-              <dd>
-                {screen.report.display.width}×{screen.report.display.height}
-              </dd>
-              <dt>{t.reportedApp}</dt>
-              <dd>{screen.report.appVersion}</dd>
-              <dt>{t.pairedAt}</dt>
-              <dd>{formatInstant(locale, screen.pairedAt)}</dd>
-              {screen.revokedAt && (
-                <>
-                  <dt>{t.revokedAt}</dt>
-                  <dd>{formatInstant(locale, screen.revokedAt)}</dd>
-                </>
-              )}
-            </dl>
-            <p className="hint">{t.reportNote}</p>
-            {screen.status === "ACTIVE" &&
-              company.access.capabilities.includes("programming.view") && (
-                <p>
-                  <Link
-                    to="/companies/$companyId/programming/screens/$deviceId"
-                    params={{ companyId, deviceId }}
-                  >
-                    {t.programmingLink}
-                  </Link>
-                </p>
-              )}
-          </section>
-          {screen.status === "ACTIVE" && (
-            <ScreenSync companyId={companyId} deviceId={deviceId} />
-          )}
-          {manage && screen.status === "ACTIVE" && (
-            <>
-              <ConfigureForm
-                key={`configure-${screen.version}`}
-                companyId={companyId}
-                device={screen}
-                onChanged={onChanged}
-              />
-              <MoveForm
-                key={`move-${screen.version}`}
-                companyId={companyId}
-                device={screen}
-                onChanged={onChanged}
-              />
-              <UnlinkForm
-                key={`unlink-${screen.version}`}
-                companyId={companyId}
-                device={screen}
-                onChanged={onChanged}
-              />
-            </>
-          )}
-          {manage &&
-            screen.status === "REVOKED" &&
-            screen.erasure === "PENDING" && (
+        ))}
+      {view === "settings" && !manage && (
+        <p role="alert" className="notice notice-error">
+          {t.errors.PERMISSION_DENIED}
+        </p>
+      )}
+      {manage && (settingsVisited || view === "settings") && (
+        <div hidden={view !== "settings"}>
+          {screen.status === "ACTIVE" ? (
+            <div className="screen-settings-grid">
+              <ScreenCard title={t.editTitle} description={t.configureLead}>
+                <ConfigureForm
+                  key={`configure-${screen.version}`}
+                  companyId={companyId}
+                  device={screen}
+                  onChanged={onChanged}
+                />
+              </ScreenCard>
+              <ScreenCard title={t.moveTitle} description={t.moveLead}>
+                <MoveForm
+                  key={`move-${screen.version}`}
+                  companyId={companyId}
+                  device={screen}
+                  onChanged={onChanged}
+                />
+              </ScreenCard>
+              <ScreenCard
+                title={t.dangerTitle}
+                description={t.dangerLead}
+                className="screen-danger-card"
+              >
+                <details className="screen-danger-disclosure">
+                  <summary>{t.unlinkTitle}</summary>
+                  <UnlinkForm
+                    key={`unlink-${screen.version}`}
+                    companyId={companyId}
+                    device={screen}
+                    onChanged={onChanged}
+                  />
+                </details>
+              </ScreenCard>
+            </div>
+          ) : screen.erasure === "PENDING" ? (
+            <ScreenCard title={t.resetTitle}>
               <ResetForm
                 key={`reset-${screen.version}`}
                 companyId={companyId}
                 device={screen}
                 onChanged={onChanged}
               />
-            )}
-          {screen.status === "REVOKED" && (
-            <p role="status" className="hint">
-              {screen.erasure === "PENDING"
-                ? t.unlinked
-                : t.erasure[screen.erasure]}
-            </p>
+            </ScreenCard>
+          ) : (
+            <ScreenCard title={t.erasureTitle}>
+              <p>{t.erasure[screen.erasure]}</p>
+            </ScreenCard>
           )}
-        </>
+        </div>
       )}
     </>
   );
@@ -1240,6 +1462,7 @@ export function ScreenPage({
   );
   return (
     <CompanyGate
+      detail
       companyId={companyId}
       returnTo={`/companies/${companyId}/screens/${deviceId}${search.size ? `?${search}` : ""}`}
     >

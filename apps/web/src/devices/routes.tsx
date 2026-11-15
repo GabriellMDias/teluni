@@ -43,7 +43,11 @@ const screenRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/screens/$deviceId",
   validateSearch: (search: Record<string, unknown>): DeviceHistoryFilter => ({
-    ...(search.view === "history" ? { view: "history" } : {}),
+    ...(search.view === "history" ||
+    search.view === "sync" ||
+    search.view === "settings"
+      ? { view: search.view }
+      : {}),
     ...(search.view === "history" &&
     typeof search.cursor === "string" &&
     search.cursor.length > 0 &&

@@ -297,7 +297,7 @@ test("publishes a group, synchronizes a simulated screen and shows it up to date
   });
 
   // The panel shows the screen's own acknowledgement.
-  await page.goto(screenUrl);
+  await page.goto(`${screenUrl}?view=sync`);
   const sync = page.getByTestId("screen-sync");
   await afterNavigation(sync).toContainText("Atualizada");
   await expect(sync).toContainText("Geração 1");

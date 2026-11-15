@@ -4,6 +4,33 @@
     "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "db push as the Normal Development Workflow",
+    "anchor": "db-push-as-the-normal-development-workflow",
+    "text": "`db push` as the Normal Development Workflow\nPrisma can synchronize schema changes directly to a database without maintaining normal migration history.\nThis can make early prototyping fast.\nIt was not selected as Orion's canonical workflow because Orion requires database transitions to become explicit, reviewable, reproducible migration artifacts.\nUsing versioned migrations from ordinary development onward also reduces differences between development and durable deployment workflows.\n`db push` remains available only for intentionally disposable contexts.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion receives a strongly typed persistence API aligned with TypeScript.\nPrisma Schema Language provides a concise, machine-readable representation of ordinary persistence structures.\nHumans and AI agents can inspect models and relationships without reconstructing them from database-access code.\nPrisma Client reduces repetitive persistence code for common relational operations.\nPrisma Migrate provides an integrated schema-evolution workflow.\nSQL migration files remain visible, version-controlled, reviewable, and customizable.\nOrion's released-versus-unreleased migration policy remains fully applicable.\nPostgreSQL-native capabilities are not prohibited merely because Prisma cannot represent them completely.\nTypedSQL and explicit SQL provide an escape path for advanced and performance-sensitive queries.\npgvector can coexist with Prisma through custom migrations and specialized queries.\nPersistence models remain separated from domain, application, API, and UI models.\nThe complete migrated PostgreSQL schema can drive accurate generated database documentation.\nExisting Prisma familiarity reduces implementation and operational learning cost.\nThe architecture remains appropriate for both simple CRUD applications and large SQL-intensive business systems.\n"
+  },
+  {
+    "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+    "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nPrisma introduces an additional abstraction over PostgreSQL whose behavior must be understood.\nGenerated Prisma types can create accidental architectural coupling if imported outside persistence boundaries.\nSome PostgreSQL capabilities may require manually customized SQL migrations.\nSpecialized queries may require TypedSQL or explicit SQL in addition to Prisma Client.\nThe Prisma schema may not describe the complete physical database by itself.\nDatabase documentation requires introspection of a migrated PostgreSQL instance to represent custom migration behavior completely.\nORM-generated queries still require performance monitoring and query-plan analysis in large systems.\nMajor Prisma upgrades may require significant compatibility evaluation.\nApplications using unsupported PostgreSQL types may lose some Prisma Client ergonomics for those fields.\nMaintaining both Prisma abstractions and explicit SQL requires contributors to understand when each approach is appropriate.\n"
@@ -1024,32 +1051,5 @@
     "heading": "Structured logging",
     "anchor": "structured-logging",
     "text": "Structured logging\nPino will remain Orion's default structured application logger.\nProduction-oriented logs must use structured JSON.\nHuman-readable pretty output may be enabled for local development where useful.\nApplication logs should prefer structured fields over encoding all machine-relevant context exclusively inside message strings.\nFor example, a record may contain:\nevent\nrequest_id\ntrace_id\nspan_id\nentity identifiers when permitted\nerror metadata\nstructured operation attributes\nmessage\n\nThe textual message is intended primarily for human readability.\nStructured fields provide machine-queryable context.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Log correlation",
-    "anchor": "log-correlation",
-    "text": "Log correlation\nPino logs emitted while an OpenTelemetry span is active should include trace correlation metadata.\nThe standard correlation fields will be:\ntrace_id\nspan_id\n\nand, when useful:\ntrace_flags\n\nThis allows an operator to navigate conceptually from:\nlog\n    ↓\ntrace_id\n    ↓\ndistributed trace\n    ↓\nrequest\n    ↓\napplication operation\n    ↓\ndatabase / integration\n\nTrace correlation should be provided through instrumentation or centralized logging configuration rather than manually added at every call site.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Request correlation",
-    "anchor": "request-correlation",
-    "text": "Request correlation\nOrion will retain an independent **`request_id`** for HTTP request correlation.\n`request_id`, `trace_id`, and `span_id` serve different purposes:\nrequest_id\n    → identifies one HTTP request\n\ntrace_id\n    → identifies one distributed trace\n\nspan_id\n    → identifies one specific traced operation\n\nOrion will not require `request_id` and `trace_id` to contain the same value.\nRequest IDs remain useful even when tracing is unavailable, disabled, sampled differently, or incomplete across an external boundary.\n"
-  },
-  {
-    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
-    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Log export",
-    "anchor": "log-export",
-    "text": "Log export\nPino logs will be emitted through the application's normal process output by default.\nProduction deployments should normally emit structured logs through:\nstdout / stderr\n    ↓\ndeployment log collection\n    ↓\nconfigured log backend\n\nApplication code must not require direct integration with a specific logging vendor merely to emit ordinary logs.\nThis preserves compatibility with containers, process supervisors, cloud platforms, orchestration systems, and local execution.\n"
   }
 ]

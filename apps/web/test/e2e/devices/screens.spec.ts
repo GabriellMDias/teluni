@@ -148,7 +148,8 @@ test("pairs a simulated screen, checks it in, unlinks it and confirms erasure", 
     await chooseTheme(page, theme);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
-  await page.getByRole("link", { name: "Detalhes", exact: true }).click();
+  await page.getByRole("link", { name: "Configurações", exact: true }).click();
+  await page.locator("summary").filter({ hasText: "Desvincular" }).click();
   const unlink = page.getByRole("button", { name: "Desvincular tela" });
   await expect(unlink).toBeDisabled();
   await page

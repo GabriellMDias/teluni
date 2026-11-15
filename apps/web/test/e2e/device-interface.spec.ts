@@ -199,9 +199,20 @@ for (const theme of ["light", "dark"] as const) {
       await expect(
         page.getByRole("heading", { name, exact: true }),
       ).toBeVisible();
+      await expect(page.getByTestId("screen-sync-summary")).toContainText(
+        "Ainda não sincronizou",
+      );
+      await accessibleLayout(page);
+      await page
+        .getByRole("link", { name: "Sincronização", exact: true })
+        .click();
       await expect(page.getByTestId("screen-sync")).toContainText(
         "Ainda não sincronizou",
       );
+      await accessibleLayout(page);
+      await page
+        .getByRole("link", { name: "Configurações", exact: true })
+        .click();
       const configuration = page.getByRole("form", {
         name: "Configurar",
         exact: true,
@@ -212,6 +223,7 @@ for (const theme of ["light", "dark"] as const) {
       await expect(
         configuration.getByRole("button", { name: "Salvar", exact: true }),
       ).toBeDisabled();
+      await page.locator("summary").filter({ hasText: "Desvincular" }).click();
       const unlink = page.getByRole("form", {
         name: "Desvincular",
         exact: true,

@@ -4,6 +4,24 @@
     "title": "Transactions and Concurrency",
     "group": "Database guides",
     "kind": "repository",
+    "heading": "Transactions and Concurrency",
+    "anchor": "transactions-and-concurrency",
+    "text": "Transactions and Concurrency\n[Task index](../README.md) · [Database principles](principles.md) · [Delivery and side effects](../architecture/delivery-and-side-effects.md) · [Testing](../architecture/testing-strategy.md)\nThis policy owns database atomicity, isolation, conditional writes, locks, and transaction retries. Cross-system delivery, idempotency, message claiming, retry ownership, and reconciliation belong to [delivery policy](../architecture/delivery-and-side-effects.md). [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) permits appropriate Prisma or explicit SQL transaction mechanisms; [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) requires real-database verification where its semantics matter.\nEach module's implementation conventions record its concrete transaction choices, such as atomic PostgreSQL creation/conditional writes, durable create replay, and integer version preconditions. The shared runtime does not automatically retry writes. Do not infer that outboxes, distributed locks, or generic transaction infrastructure already exist.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Transactions",
+    "anchor": "transactions",
+    "text": "Transactions\nAssume concurrent requests, processes, retries, workers, and deployment overlap unless the architecture proves exclusive ownership. Sequential code does not imply sequential execution across the system. Identify the durable invariant, which changes must become visible together, relevant competing actors, and failure/recovery semantics before choosing a mechanism.\nTransactions protect all-or-nothing state within their actual database boundary. They must remain as short as practical and should not automatically surround every HTTP request or every repository method. Splitting dependent writes into independently committed methods can destroy atomicity; wrapping remote work in a transaction can hold locks without providing distributed rollback.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
     "heading": "Application-Level Transaction Ownership",
     "anchor": "application-level-transaction-ownership",
     "text": "Application-Level Transaction Ownership\nThe application operation owns the complete consistency requirement; domain logic stays independent of SQL/Prisma transaction APIs. Persistence infrastructure must make scope and participating connection/context discoverable. Repositories in one atomic operation must use the same transaction rather than silently opening independent connections or escaping context.\nNested transaction calls may mean savepoints rather than independent transactions; understand actual library/database semantics. Use savepoints, Unit of Work, implicit async-local context, or transaction hooks only when they add concrete value and remain predictable/testable. Hooks need explicit retry, rollback, and crash semantics. An after-commit callback is best effort unless required work is durably recorded under [delivery policy](../architecture/delivery-and-side-effects.md#after-commit-work).\nExternal calls generally stay outside database transactions. Rollback cannot unsend mail, reverse an accepted provider mutation, remove an uploaded file reliably, or retract a published message. Never place unsafe non-idempotent external effects in transparently retried blocks. A payment provider's “transaction” is not a shared database transaction.\n"
@@ -441,6 +459,78 @@
     "text": "Examples\n**Grid and form modes** (`dataset-modes`): Synthetic local records with single selection, as on the companies page; selection and mode are held by the example and no request is made. A screen that acts on several records at once passes multiple; DataGrid's example shows it.\n<DataSet label=\"Stores\" locale=\"en-US\" mode={mode} rows={stores} columns={columns}\n  rowId={(row) => row.id} selectedId={selected} onSelect={setSelected} onModeChange={setMode}\n  exportName=\"Stores\">\n  <StoreForm id={selected} />\n</DataSet>\n\n// Only where a screen acts on several records at once:\n<DataSet multiple selectedIds={chosen} onSelectedIdsChange={setChosen} {...props} />\n\n"
   },
   {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "ScreenCard",
+    "anchor": "screencard",
+    "text": "ScreenCard\nGroups one screen-related topic or task with a heading and optional explanation.\nCategory: Layout. Scope: feature-specific. Owner: Devices.\nSource: [apps/web/src/devices/components.tsx](../../../apps/web/src/devices/components.tsx) (export `ScreenCard`). Metadata: [apps/web/src/devices/components.docs.json](../../../apps/web/src/devices/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-9",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`title`\n`string`\nVisible heading and accessible section name.\nYes\n—\n`description`\n`string`\nOptional contextual guidance below the heading.\nSee type\n—\n`children`\n`ReactNode`\nTopic-specific facts, status or caller-owned form.\nYes\n—\n`className`\n`string`\nOptional feature styling, such as the danger section.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-9",
+    "text": "States\nFacts populated\nLoading or unavailable information supplied by the caller\nManagement form\nDanger section with a native disclosure\nAccessibility: The section has the supplied title as its accessible name and an h2 heading. Consumers own meaningful heading order, form labels, errors and status announcements. Uses inherited product colors for light and dark themes and collapses through the surrounding feature grid on narrow screens.\nUsage: Use within the screen detail sections for display settings, hardware, synchronization, diagnostics and management. This feature-owned composition uses native section/header markup; it does not load data, enforce permissions or own form state. Prefer the existing native link navigation for URL-owned sections rather than introducing a tab widget.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-9",
+    "text": "Examples\n**Device information** (`screen-card-hardware`): Groups reported device facts without inferring support or connection state.\n<ScreenCard title=\"Device and application\" description=\"Reported by the screen.\"><dl><dt>App version</dt><dd>1.0.0</dd></dl></ScreenCard>\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "ScreenStatus",
+    "anchor": "screenstatus",
+    "text": "ScreenStatus\nCompact, noninteractive screen status with a decorative dot and semantic tone.\nCategory: Data Display. Scope: feature-specific. Owner: Devices.\nSource: [apps/web/src/devices/components.tsx](../../../apps/web/src/devices/components.tsx) (export `ScreenStatus`). Metadata: [apps/web/src/devices/components.docs.json](../../../apps/web/src/devices/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-10",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`children`\n`ReactNode`\nLocalized visible status text.\nYes\n—\n`tone`\n`positive | danger | info | neutral`\nSemantic visual emphasis; does not infer business state.\nSee type\nneutral\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-10",
+    "text": "States\nPositive\nDanger\nInformational\nNeutral or unknown\nAccessibility: Always includes readable status text. Color and the decorative CSS dot are supplementary. Does not add a live region, avoiding repeated announcements from five-second polling.\nUsage: Use in the screen list and details for pairing, connection and publication states. Keep those concepts distinct: a paired screen is not necessarily connected. The caller supplies the authorized API value and localized text; missing data stays unknown rather than appearing healthy.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-10",
+    "text": "Examples\n**Publication failure** (`screen-status-publication`): The visible text explains the status independently of color.\n<ScreenStatus tone=\"danger\">Update failed</ScreenStatus>\n\n"
+  },
+  {
     "id": "repository/docs/generated/configuration/api",
     "title": "API Configuration Reference",
     "group": "Generated references",
@@ -763,41 +853,5 @@
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-16",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`oidc_login_attempts_expiry_bounds`\n`CHECK (((expires_at > created_at) AND (expires_at <= (created_at + '00:10:00'::interval))))`\nAn attempt expires after creation and within 10 minutes.\n`oidc_login_attempts_handle_sha256`\n`CHECK ((octet_length(handle_hash) = 32))`\nHandle hash is exactly one SHA-256 digest.\n`oidc_login_attempts_max_age_bounds`\n`CHECK (((max_age_seconds IS NULL) OR (max_age_seconds >= 0)))`\nRequested maximum authentication age cannot be negative.\n`oidc_login_attempts_pkey`\n`PRIMARY KEY (id)`\nUnique attempt identity.\n`oidc_login_attempts_return_relative`\n`CHECK (((return_to)::text ~ '^/'::text))`\nReturn path is relative to the panel origin.\n`oidc_login_attempts_state_nonblank`\n`CHECK (((state)::text ~ '^[A-Za-z0-9_-]+$'::text))`\nState uses the base64url alphabet and cannot be blank.\n`oidc_login_attempts_handle_hash_key`\n`CREATE UNIQUE INDEX oidc_login_attempts_handle_hash_key ON public.oidc_login_attempts USING btree (handle_hash)`\nOne attempt per browser handle; supports consumption by handle.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "backchannel_logout_replays",
-    "anchor": "backchannel_logout_replays",
-    "text": "backchannel_logout_replays\nIdentifiers of accepted provider logout tokens, kept to reject a replayed token.\nOwner: Identity. Classification: INTERNAL.\nLifecycle: Inserted when a logout token is accepted; rows past expires_at may be deleted because the token is then too old to be accepted.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti`\n`character varying(255)`\nno\n—\nINTERNAL\nUnique identifier (jti) of an accepted logout token.\n—\n—\n`received_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the token was accepted.\n—\nUTC instant, millisecond precision\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nInstant after which the token would fail the five-minute age check, so its record is no longer needed.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-17",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`backchannel_logout_replays_expiry_after_receipt`\n`CHECK ((expires_at > received_at))`\nA replay record expires after it was received.\n`backchannel_logout_replays_pkey`\n`PRIMARY KEY (jti)`\nEach logout token is accepted at most once.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "outbound_emails",
-    "anchor": "outbound_emails",
-    "text": "outbound_emails\nTransactional outbox of email messages: a producer records the intent in its own transaction and the dispatcher delivers it through the SMTP relay at least once.\nOwner: Mail. Classification: CONFIDENTIAL.\nLifecycle: Created PENDING by a producer; becomes SENT when the relay accepts it, FAILED after a permanent rejection or the last attempt, or CANCELLED by its producer. The sealed secret is erased at the final state, and the row is deleted 30 days later (provisional until PH-13).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated message UUID; also the stable source of the email Message-ID across retries.\n—\n—\n`producer`\n`character varying(64)`\nno\n—\nINTERNAL\nCapability that enqueued the message and owns its meaning, for example organizations.invitation.\n—\n—\n`producer_reference`\n`uuid`\nno\n—\nINTERNAL\nIdentifier of the producer's record the message reports, such as an invitation ID.\n—\n—\n`template`\n`character varying(64)`\nno\n—\nINTERNAL\nProducer-registered template rendered when the message is sent.\n—\n—\n`locale`\n`character varying(16)`\nno\n—\nINTERNAL\nTemplate locale: pt-BR or en-US.\n—\n—\n`recipient`\n`character varying(254)`\nno\n—\nCONFIDENTIAL\nNormalized recipient address.\n—\n—\n`parameters`\n`jsonb`\nno\n—\nCONFIDENTIAL\nAllowlisted, non-secret template parameters as a JSON object of strings.\n—\n—\n`sealed_secret`\n`bytea`\nyes\n—\nRESTRICTED\nAES-256-GCM sealed secret parameter (such as an invitation credential) under the mail key ring, bound to the message ID.\nThe message has no secret parameter, or it reached a final state and the secret was erased.\n—\n`status`\n`\"OutboundEmailStatus\"`\nno\n`'PENDING'::\"OutboundEmailStatus\"`\nINTERNAL\nPENDING until sent, failed or cancelled.\n—\n—\n`attempts`\n`integer`\nno\n`0`\nINTERNAL\nDelivery attempts claimed so far, including an attempt interrupted by a crash.\n—\nattempts\n`next_attempt_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nEarliest instant the dispatcher may claim the pending message again.\n—\nUTC instant, millisecond precision\n`lease_expires_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nEnd of the current dispatcher's claim; also its ownership token when recording the outcome.\nNo dispatcher has claimed the message yet.\nUTC instant, millisecond precision\n`last_failure`\n`character varying(32)`\nyes\n—\nINTERNAL\nClass of the latest failed attempt: connection, timeout, tls, authentication, rejected or unexpected. Never raw provider text.\nNo attempt has failed.\n—\n`last_reply_code`\n`integer`\nyes\n—\nINTERNAL\nSMTP reply code of the latest failed attempt.\nNo failure, or the failure carried no SMTP reply.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock instant the producer enqueued the message.\n—\nUTC instant, millisecond precision\n`finalized_at`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nPostgreSQL-clock instant the message reached SENT, FAILED or CANCELLED; starts the retention period.\nThe message is still pending.\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-18",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`outbound_emails_attempts_nonnegative`\n`CHECK ((attempts >= 0))`\nAttempt counts never go negative.\n`outbound_emails_final_state`\n`CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") = (finalized_at IS NULL)))`\nA final instant exists exactly for messages that are no longer pending.\n`outbound_emails_parameters_object`\n`CHECK ((jsonb_typeof(parameters) = 'object'::text))`\nTemplate parameters are a JSON object.\n`outbound_emails_pkey`\n`PRIMARY KEY (id)`\nUnique message identity.\n`outbound_emails_secret_only_pending`\n`CHECK (((status = 'PENDING'::\"OutboundEmailStatus\") OR (sealed_secret IS NULL)))`\nA sealed secret survives only while the message is pending.\n`outbound_emails_due_idx`\n`CREATE INDEX outbound_emails_due_idx ON public.outbound_emails USING btree (next_attempt_at) WHERE (status = 'PENDING'::\"OutboundEmailStatus\")`\nClaims due pending messages in order without scanning final ones.\n`outbound_emails_finalized_idx`\n`CREATE INDEX outbound_emails_finalized_idx ON public.outbound_emails USING btree (finalized_at) WHERE (status <> 'PENDING'::\"OutboundEmailStatus\")`\nFinds final messages whose retention period has ended.\n`outbound_emails_producer_idx`\n`CREATE INDEX outbound_emails_producer_idx ON public.outbound_emails USING btree (producer, producer_reference)`\nFinds a producer's messages to report delivery state or cancel them.\n"
   }
 ]
