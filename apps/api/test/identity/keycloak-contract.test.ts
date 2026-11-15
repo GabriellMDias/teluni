@@ -124,6 +124,36 @@ async function provisionerToken(): Promise<string> {
 }
 
 describe("pinned Keycloak realm contract", () => {
+  it("explicitly requests fresh authentication while preserving ordinary login and signup", async () => {
+    const provider = createKeycloakProvider({
+      environment: "test",
+      issuer,
+      publicOrigin,
+      clientId: webClientId,
+      clientSecret: webSecret,
+      provisionerClientId,
+      provisionerClientSecret: provisionerSecret,
+      sessionKeys: [{ id: "k1", key: randomBytes(32) }],
+    });
+    const challenge = await provider.newChallenge();
+    const fresh = await provider.authorizationUrl(challenge, {
+      maxAgeSeconds: 0,
+      action: "delete_credential:synthetic-credential",
+    });
+    expect(fresh.searchParams.get("max_age")).toBe("0");
+    expect(fresh.searchParams.get("prompt")).toBe("login");
+    expect(fresh.searchParams.get("kc_action")).toBe(
+      "delete_credential:synthetic-credential",
+    );
+    const ordinary = await provider.authorizationUrl(challenge);
+    expect(ordinary.searchParams.has("max_age")).toBe(false);
+    expect(ordinary.searchParams.has("prompt")).toBe(false);
+    const signup = await provider.authorizationUrl(challenge, {
+      prompt: "create",
+    });
+    expect(signup.searchParams.get("prompt")).toBe("create");
+  });
+
   it("uses the private administrative base and realm for provisioning and logout without following redirects", async () => {
     const calls: string[] = [];
     let redirect = false;
