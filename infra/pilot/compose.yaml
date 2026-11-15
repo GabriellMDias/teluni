@@ -11,7 +11,7 @@ x-build: &build
 
 services:
   postgres:
-    image: docker.io/library/postgres:16.15-trixie@sha256:9e2cf6287f25c3151f4c9421ccce2b17f3e60061c111a29165e0d2cdd9ff0a97
+    image: docker.io/library/postgres:16.15-trixie@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
     env_file: ${TELUNI_CONFIG_DIR:?set TELUNI_CONFIG_DIR}/postgres.env
     volumes:
       - postgres:/var/lib/postgresql/data
