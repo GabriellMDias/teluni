@@ -3,9 +3,11 @@ import { errorEnvelopeSchema } from "../../errors.js";
 import type { ApiOperation } from "../../module.js";
 import { declaredTypes } from "./domain.js";
 
-const uuid = Type.String({
-  pattern:
-    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+const uuidPattern =
+  "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$";
+const uuid = Type.String({ pattern: uuidPattern });
+const folderLocation = Type.String({
+  pattern: `^(?:root|${uuidPattern.slice(1, -1)})$`,
 });
 const instant = Type.String({ format: "date-time" });
 const version = Type.Integer({ minimum: 1 });
@@ -210,7 +212,7 @@ export const mediaOperations = [
                 "^(company|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
             }),
           ),
-          folderId: Type.Optional(Type.Union([Type.Literal("root"), uuid])),
+          folderId: Type.Optional(folderLocation),
           tag: Type.Optional(tag),
           text: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
         },
@@ -423,7 +425,7 @@ export const mediaOperations = [
       params: companyParams,
       querystring: Type.Object(
         {
-          parentId: Type.Optional(Type.Union([Type.Literal("root"), uuid])),
+          parentId: Type.Optional(folderLocation),
           scope: Type.Optional(scope),
           text: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })),
           cursor: Type.Optional(Type.String({ minLength: 1, maxLength: 2048 })),

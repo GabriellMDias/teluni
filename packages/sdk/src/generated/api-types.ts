@@ -13013,7 +13013,7 @@ export interface operations {
                 view?: "library" | "archived" | "trash" | "selectable";
                 kind?: "IMAGE" | "VIDEO";
                 scope?: string;
-                folderId?: "root" | string;
+                folderId?: string;
                 tag?: string;
                 text?: string;
             };
@@ -15672,7 +15672,7 @@ export interface operations {
     listMediaFolders: {
         parameters: {
             query?: {
-                parentId?: "root" | string;
+                parentId?: string;
                 scope?: string;
                 text?: string;
                 cursor?: string;
