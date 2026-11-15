@@ -81,31 +81,6 @@ function respond(
   );
 }
 
-test("offers step-up when the company detail requires strong authentication", async () => {
-  respond(() => ({
-    status: 403,
-    body: {
-      error: {
-        code: "STRONG_AUTHENTICATION_REQUIRED",
-        message: "Strong authentication required",
-      },
-    },
-  }));
-  const { screen } = await open(companyPath);
-  await expect
-    .element(screen.getByRole("status"))
-    .toMatchTextContent(t.stepUpNotice);
-  await expect
-    .element(screen.getByRole("link", { name: t.stepUpButton }))
-    .toHaveAttribute(
-      "href",
-      `/api/auth/login?returnTo=${encodeURIComponent(companyPath)}&assurance=strong`,
-    );
-  await expect
-    .element(screen.getByRole("button", { name: t.addBranch }))
-    .not.toBeInTheDocument();
-});
-
 test("shows session infrastructure failure with reload guidance", async () => {
   respond(() => ({
     status: 503,
@@ -150,7 +125,6 @@ test("preserves branch pagination in the URL and browser history", async () => {
               profiles: [],
               responsible: false,
               capabilities: ["company.view", "branches.view"],
-              capabilitiesAfterStrongAuthentication: [],
             },
           },
         },
@@ -200,16 +174,15 @@ test("keeps the edited version across refetch and reviews current data after a c
           profiles: [],
           responsible: true,
           capabilities: ["company.view", "branches.view", "branches.manage"],
-          capabilitiesAfterStrongAuthentication: [],
         },
       },
     };
   });
-  const { screen, client } = await open(companyPath);
-  await screen
-    .getByRole("button", { name: `${t.rename}: Original branch` })
-    .click();
-  await screen.getByLabelText(t.fieldBranchName).nth(0).fill("My change");
+  // The branches dataset opens the branch in form mode from the URL.
+  const { screen, client } = await open(
+    `${companyPath}?mode=form&record=${branchId}`,
+  );
+  await screen.getByLabelText(t.fieldBranchName).fill("My change");
   version = 2;
   name = "Concurrent change";
   await client.invalidateQueries({ queryKey: branchesKey(companyId) });
@@ -229,13 +202,10 @@ test("keeps the edited version across refetch and reviews current data after a c
   });
   await screen.getByRole("button", { name: t.reload }).click();
   await expect
-    .element(screen.getByText("Concurrent change", { exact: true }))
+    .element(screen.getByRole("heading", { name: "Concurrent change" }))
     .toBeVisible();
-  await screen
-    .getByRole("button", { name: `${t.rename}: Concurrent change` })
-    .click();
   await expect
-    .element(screen.getByLabelText(t.fieldBranchName).nth(0))
+    .element(screen.getByLabelText(t.fieldBranchName))
     .toHaveValue("Concurrent change");
 });
 
@@ -297,7 +267,6 @@ function respondWithCompanies(
           profiles: [],
           responsible: false,
           capabilities: ["company.view"],
-          capabilitiesAfterStrongAuthentication: [],
         },
       },
     };
@@ -374,7 +343,6 @@ const administratorAccess = {
     "branches.view",
     "audit.view",
   ],
-  capabilitiesAfterStrongAuthentication: [],
 };
 
 test("keeps the company draft and its version across refetch until a conflict is reviewed", async () => {
@@ -559,7 +527,6 @@ test.each(["settings", "history", "members"])(
           profiles: [],
           responsible: false,
           capabilities: ["company.view", "branches.view"],
-          capabilitiesAfterStrongAuthentication: [],
         },
       },
     }));
@@ -737,7 +704,7 @@ test("offers recent step-up when restoring an administrator", async () => {
     .element(screen.getByRole("link", { name: t.memberReauthenticate }))
     .toHaveAttribute(
       "href",
-      `/api/auth/login?returnTo=${encodeURIComponent(`${companyPath}?view=members`)}&assurance=recent`,
+      `/api/auth/login?returnTo=${encodeURIComponent(`${companyPath}?view=members`)}&reauthenticate=true`,
     );
 });
 
@@ -1346,7 +1313,7 @@ test("asks the successor for recent verification before accepting responsibility
     .element(screen.getByRole("link", { name: t.memberReauthenticate }))
     .toHaveAttribute(
       "href",
-      `/api/auth/login?returnTo=${encodeURIComponent(companyPath)}&assurance=recent`,
+      `/api/auth/login?returnTo=${encodeURIComponent(companyPath)}&reauthenticate=true`,
     );
   expect(
     posted(`/responsibility-transfers/${transferId}/accept`),
@@ -1413,7 +1380,6 @@ test("offers branch managers the history of their own branches", async () => {
                 "invitations.manage",
                 "audit.view",
               ],
-              capabilitiesAfterStrongAuthentication: [],
             },
           },
         },
@@ -1584,7 +1550,6 @@ test("lets a branch manager invite operators only to managed branches", async ()
           profiles: [],
           responsible: false,
           capabilities: ["company.view", "branches.view", "invitations.manage"],
-          capabilitiesAfterStrongAuthentication: [],
         },
       },
     };

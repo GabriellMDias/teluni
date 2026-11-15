@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "setCatalogBranchPrice",
   "summary": "",
-  "description": "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
+  "description": "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

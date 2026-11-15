@@ -244,6 +244,10 @@ test("a dataset selects rows by color only, switches modes and disables omitted 
     .element(screen.getByRole("grid", { name: "Example records" }))
     .not.toHaveAttribute("aria-multiselectable");
   await expect.element(screen.getByRole("radio")).not.toBeInTheDocument();
+  // Filters are offered only where a screen passes them.
+  await expect
+    .element(toolbar.getByRole("button", { name: "Filter" }))
+    .not.toBeInTheDocument();
   // Exports are offered only where a screen passes exportName.
   await expect
     .element(toolbar.getByRole("button", { name: "Export" }))
@@ -281,6 +285,74 @@ test("a dataset selects rows by color only, switches modes and disables omitted 
     .toBeDisabled();
   await toolbar.getByRole("button", { name: "Grid mode" }).click();
   expect(changeMode).toHaveBeenLastCalledWith("grid");
+});
+
+test("a dataset opens its filters in a modal right of Refresh and counts the active ones", async () => {
+  function Filtered() {
+    const [region, setRegion] = useState("");
+    return (
+      <DataSet
+        label="Stores"
+        locale="en-US"
+        mode="grid"
+        rows={stores}
+        columns={storeColumns}
+        rowId={(row) => row.id}
+        onRefresh={() => undefined}
+        filters={{
+          active: region ? 1 : 0,
+          render: (close) => (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const value = data.get("region");
+                setRegion(typeof value === "string" ? value : "");
+                close();
+              }}
+            >
+              <label>
+                Region
+                <input name="region" defaultValue={region} data-autofocus />
+              </label>
+              <button type="submit">Apply</button>
+            </form>
+          ),
+        }}
+      />
+    );
+  }
+  const screen = await render(<Filtered />);
+  const toolbar = screen.getByRole("toolbar", { name: "Record actions" });
+  const buttons = [...toolbar.element().querySelectorAll("button")].map(
+    (button) => button.getAttribute("aria-label"),
+  );
+  expect(buttons.indexOf("Filter")).toBe(buttons.indexOf("Refresh") + 1);
+  const action = toolbar.getByRole("button", { name: "Filter" });
+  // Only the icon is shown; the name stays in the label and tooltip.
+  await expect.element(action).toHaveTextContent("");
+  await action.click();
+  const dialog = screen.getByRole("dialog", { name: "Filters" });
+  await expect.element(dialog).toBeVisible();
+  const opened = () =>
+    document.querySelector<HTMLDialogElement>(".ui-dataset-dialog")!.open;
+  await expect.element(dialog.getByLabelText("Region")).toHaveFocus();
+  // Escape closes without applying anything.
+  await userEvent.keyboard("{Escape}");
+  await expect.poll(opened).toBe(false);
+  await expect.element(action).toHaveFocus();
+  await action.click();
+  await dialog.getByLabelText("Region").fill("North");
+  await dialog.getByRole("button", { name: "Apply" }).click();
+  await expect.poll(opened).toBe(false);
+  await expect
+    .element(toolbar.getByRole("button", { name: "Filter (1 active filter)" }))
+    .toBeVisible();
+  // A click on the backdrop also closes the modal.
+  await toolbar.getByRole("button", { name: /^Filter/ }).click();
+  await expect.element(dialog).toBeVisible();
+  document.querySelector<HTMLDialogElement>(".ui-dataset-dialog")!.click();
+  await expect.poll(opened).toBe(false);
 });
 
 function StoreDataSet() {

@@ -515,8 +515,7 @@ Lifecycle: Created at login as ACTIVE, or PENDING_LIMIT when the principal alrea
 | `state` | `"HumanSessionState"` | no | — | INTERNAL | PENDING_LIMIT may only list and end sessions; ACTIVE may call protected operations; REVOKED is terminal. | — | — |
 | `provider_session_id` | `character varying(255)` | yes | — | CONFIDENTIAL | Provider session identifier (OIDC sid) used to apply back-channel logout. | The provider did not report a session identifier. | — |
 | `assurance_level` | `character varying(64)` | no | — | INTERNAL | Authentication context class (acr) asserted by the ID token verified at login. | — | — |
-| `authenticated_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Provider-reported instant of the user's authentication (auth_time) for this session. | — | UTC instant, millisecond precision |
-| `strong_authenticated_at` | `timestamp(3) with time zone` | yes | — | INTERNAL | Instant of the latest strong authentication verified for this session, used for recent-authentication checks. | No strong authentication has been verified for this session. | UTC instant, millisecond precision |
+| `authenticated_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Provider-reported instant of the user's authentication (auth_time) for this session, used for recent-authentication checks (at most five minutes old for sensitive operations). | — | UTC instant, millisecond precision |
 | `idle_timeout_seconds` | `integer` | no | — | INTERNAL | Inactivity bound applied to this session: 1800 for administrative contexts or principals without memberships, 7200 for operator-only access. | — | seconds |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the session was created. | — | UTC instant, millisecond precision |
 | `last_activity_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant of the latest recorded human activity; background requests do not advance it, and writes are throttled to 15 seconds. | — | UTC instant, millisecond precision |
@@ -558,7 +557,6 @@ Lifecycle: Created when a login starts, consumed once by the callback and expire
 | `state` | `character varying(128)` | no | — | INTERNAL | OIDC state value expected back at the callback. | — | — |
 | `secrets` | `bytea` | no | — | RESTRICTED | PKCE code verifier and OIDC nonce sealed with AES-256-GCM and bound to the attempt ID. | — | — |
 | `return_to` | `character varying(2048)` | no | — | INTERNAL | Validated same-origin relative path to open after a successful login. | — | — |
-| `requested_assurance` | `character varying(64)` | yes | — | INTERNAL | Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up. | A standard login without a requested level. | — |
 | `max_age_seconds` | `integer` | yes | — | INTERNAL | Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks. | No maximum age was requested. | seconds |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | PostgreSQL-clock instant the login started. | — | UTC instant, millisecond precision |
 | `expires_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Instant after which the callback can no longer consume the attempt. | — | UTC instant, millisecond precision |

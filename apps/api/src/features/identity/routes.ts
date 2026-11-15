@@ -108,18 +108,26 @@ export function registerIdentityRoutes(
       url: login.url,
       schema: login.schema,
       handler: async (request, reply) => {
-        const { returnTo, assurance, intent } = request.query as {
+        const { returnTo, reauthenticate, intent, twoStep } = request.query as {
           returnTo?: string;
-          assurance?: "strong" | "recent";
+          reauthenticate?: "true";
           intent?: "signup";
+          twoStep?: "enable" | "disable";
         };
         try {
-          const started = await service.startLogin(returnTo, assurance, intent);
-          reply.setCookie(names.login, started.loginHandle, {
-            ...loginCookie,
-            maxAge: 600,
+          const started = await service.startLogin({
+            returnTo,
+            reauthenticate: reauthenticate === "true",
+            intent,
+            twoStep,
+            ...(twoStep ? { session: sessionRequestFrom(request, names) } : {}),
           });
-          return reply.redirect(started.redirectTo.href, 303);
+          if (started.loginHandle)
+            reply.setCookie(names.login, started.loginHandle, {
+              ...loginCookie,
+              maxAge: 600,
+            });
+          return reply.redirect(started.redirectTo, 303);
         } catch (error) {
           return fail(reply, error, request.id);
         }
@@ -143,7 +151,12 @@ export function registerIdentityRoutes(
             previousSessionToken: request.cookies[names.session],
           });
           reply.setCookie(names.session, completed.sessionToken, sessionCookie);
-          return reply.redirect(completed.returnTo, 303);
+          return reply.redirect(
+            completed.firstLogin
+              ? `/welcome/two-step?returnTo=${encodeURIComponent(completed.returnTo)}`
+              : completed.returnTo,
+            303,
+          );
         } catch (error) {
           if (error instanceof LoginFailure)
             return reply.redirect(`/sign-in?error=${error.reason}`, 303);
@@ -166,9 +179,23 @@ export function registerIdentityRoutes(
             ...summary,
             expiresAt: summary.expiresAt.toISOString(),
             authenticatedAt: summary.authenticatedAt.toISOString(),
-            strongAuthenticatedAt:
-              summary.strongAuthenticatedAt?.toISOString() ?? null,
           });
+        } catch (error) {
+          return fail(reply, error, request.id);
+        }
+      },
+    });
+
+    const twoStep = operation("getTwoStepStatus");
+    feature.route({
+      method: twoStep.method,
+      url: twoStep.url,
+      schema: twoStep.schema,
+      handler: async (request, reply) => {
+        try {
+          return reply.send(
+            await service.twoStepStatus(sessionRequestFrom(request, names)),
+          );
         } catch (error) {
           return fail(reply, error, request.id);
         }

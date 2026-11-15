@@ -71,7 +71,6 @@ export type HumanIdentitySettings = Readonly<{
   /** Private Keycloak base for administrative calls; public issuer is unchanged. */
   keycloakAdminUrl?: string;
   sessionKeys: readonly Readonly<{ id: string; key: Buffer }>[];
-  developmentMfaMode?: "required" | "optional";
 }>;
 
 /** Validated settings of the transactional-email relay (ADR-0026). */

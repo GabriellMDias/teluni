@@ -82,7 +82,6 @@ const scoped = [
   "RESOURCE_NOT_FOUND",
   "COMPANY_SUSPENDED",
   "PERMISSION_DENIED",
-  "STRONG_AUTHENTICATION_REQUIRED",
 ] as const;
 const mutation = [
   ...scoped,
@@ -362,7 +361,7 @@ export const deviceOperations = [
     operationId: "pairDevice",
     access: "session",
     description:
-      "Pair the screen showing a code to an active branch the caller manages, with a name and one of the rotations the screen reported. Expired, used, unknown and concurrently claimed codes all answer PAIRING_CODE_INVALID; repeated failures answer RATE_LIMITED. Requires screen management and two-step verification.",
+      "Pair the screen showing a code to an active branch the caller manages, with a name and one of the rotations the screen reported. Expired, used, unknown and concurrently claimed codes all answer PAIRING_CODE_INVALID; repeated failures answer RATE_LIMITED. Requires screen management.",
     schema: {
       params: companyParams,
       body: Type.Object(

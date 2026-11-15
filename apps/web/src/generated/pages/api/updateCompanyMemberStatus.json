@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "updateCompanyMemberStatus",
   "summary": "",
-  "description": "Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with strong authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change.",
+  "description": "Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with an authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

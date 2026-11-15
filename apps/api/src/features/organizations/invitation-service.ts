@@ -6,7 +6,6 @@ import {
   invitationDecision,
   invitationVisibility,
   OrganizationFailure,
-  reachableWithStrongAuthentication,
   type AccessRole,
   type CompanyAccess,
   type GrantScopeName,
@@ -31,8 +30,7 @@ function actorOf(context: HumanContext, access: CompanyAccess): InvitingActor {
   return {
     principalId: context.principalId,
     membershipId: access.membershipId,
-    strong: access.strong,
-    strongAuthenticatedAt: context.strongAuthenticatedAt,
+    authenticatedAt: context.authenticatedAt,
   };
 }
 
@@ -210,8 +208,6 @@ export class InvitationService {
     request: { role: AccessRole; scope: GrantScopeName; branchIds: string[] },
   ): void {
     const decision = invitationDecision(access, request);
-    if (decision === "strong_required")
-      throw new OrganizationFailure("STRONG_AUTHENTICATION_REQUIRED");
     if (decision === "responsible_required")
       throw new OrganizationFailure("RESPONSIBLE_APPROVAL_REQUIRED");
     if (decision === "deny") throw new OrganizationFailure("PERMISSION_DENIED");
@@ -220,12 +216,7 @@ export class InvitationService {
   #visibility(access: CompanyAccess): InvitationVisibility {
     const visibility = invitationVisibility(access);
     if (visibility) return visibility;
-    throw new OrganizationFailure(
-      !access.strong &&
-        reachableWithStrongAuthentication(access, "invitations.manage")
-        ? "STRONG_AUTHENTICATION_REQUIRED"
-        : "PERMISSION_DENIED",
-    );
+    throw new OrganizationFailure("PERMISSION_DENIED");
   }
 
   async #nameOf(context: HumanContext): Promise<string | null> {

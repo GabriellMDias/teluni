@@ -9,23 +9,38 @@ import { rootRoute } from "../shell.js";
 import { NavigationIcon } from "../navigation-icon.js";
 import { logout, sessionQuery } from "./api.js";
 import { loginErrorReasons, type LoginErrorReason } from "./messages.js";
-import { SessionsPage, SignInPage, useIdentityMessages } from "./pages.js";
+import {
+  SessionsPage,
+  SignInPage,
+  useIdentityMessages,
+  WelcomeTwoStepPage,
+} from "./pages.js";
 import "./identity.css";
+
+/** A same-origin panel path, or nothing. */
+function panelPath(value: unknown): string | undefined {
+  return typeof value === "string" &&
+    /^\/(?![/\\])/.test(value) &&
+    value.length <= 2048
+    ? value
+    : undefined;
+}
 
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in",
   validateSearch: (
     search: Record<string, unknown>,
-  ): { error?: LoginErrorReason; returnTo?: string } => ({
-    ...(loginErrorReasons.includes(search.error as LoginErrorReason)
-      ? { error: search.error as LoginErrorReason }
-      : {}),
-    ...(typeof search.returnTo === "string" &&
-    /^\/(?![/\\])/.test(search.returnTo) &&
-    search.returnTo.length <= 2048
-      ? { returnTo: search.returnTo }
-      : {}),
+  ): {
+    error?: LoginErrorReason | undefined;
+    returnTo?: string | undefined;
+  } => ({
+    // Explicit undefined values replace invalid raw search parameters, which
+    // the router would otherwise keep.
+    error: loginErrorReasons.includes(search.error as LoginErrorReason)
+      ? (search.error as LoginErrorReason)
+      : undefined,
+    returnTo: panelPath(search.returnTo),
   }),
   component: function SignInRoute() {
     const search = signInRoute.useSearch();
@@ -39,7 +54,26 @@ const sessionsRoute = createRoute({
   component: SessionsPage,
 });
 
-export const identityRoutes = [signInRoute, sessionsRoute] as const;
+// The API sends a new person here after their first sign-in.
+const welcomeTwoStepRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/welcome/two-step",
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { returnTo?: string | undefined } => ({
+    returnTo: panelPath(search.returnTo),
+  }),
+  component: function WelcomeTwoStepRoute() {
+    const { returnTo } = welcomeTwoStepRoute.useSearch();
+    return <WelcomeTwoStepPage returnTo={returnTo ?? "/"} />;
+  },
+});
+
+export const identityRoutes = [
+  signInRoute,
+  sessionsRoute,
+  welcomeTwoStepRoute,
+] as const;
 
 /** Header and home-page entry: sign in, or reach sessions and sign out. */
 export function IdentityNavigation() {

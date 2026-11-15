@@ -34,7 +34,6 @@ export function createOrganizationsModule(options: {
       return repository.lockForWrite(
         tx,
         context.principalId,
-        context.strongAuthenticationAgeSeconds !== null,
         companyId,
         branchIds,
       );

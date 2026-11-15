@@ -94,8 +94,7 @@
                   "roles",
                   "profiles",
                   "responsible",
-                  "capabilities",
-                  "capabilitiesAfterStrongAuthentication"
+                  "capabilities"
                 ],
                 "properties": {
                   "roles": {
@@ -119,37 +118,6 @@
                   },
                   "responsible": { "type": "boolean" },
                   "capabilities": {
-                    "type": "array",
-                    "items": {
-                      "anyOf": [
-                        { "type": "string", "const": "company.view" },
-                        {
-                          "type": "string",
-                          "const": "company.settings.manage"
-                        },
-                        { "type": "string", "const": "branches.view" },
-                        { "type": "string", "const": "branches.manage" },
-                        { "type": "string", "const": "members.manage" },
-                        { "type": "string", "const": "invitations.manage" },
-                        { "type": "string", "const": "audit.view" },
-                        { "type": "string", "const": "devices.view" },
-                        { "type": "string", "const": "devices.manage" },
-                        { "type": "string", "const": "media.view" },
-                        { "type": "string", "const": "media.upload" },
-                        { "type": "string", "const": "media.archive" },
-                        { "type": "string", "const": "media.delete" },
-                        { "type": "string", "const": "programming.view" },
-                        { "type": "string", "const": "programming.edit" },
-                        { "type": "string", "const": "programming.assign" },
-                        { "type": "string", "const": "publications.publish" },
-                        { "type": "string", "const": "catalogs.view" },
-                        { "type": "string", "const": "catalogs.edit" },
-                        { "type": "string", "const": "catalogs.manage" },
-                        { "type": "string", "const": "prices.edit" }
-                      ]
-                    }
-                  },
-                  "capabilitiesAfterStrongAuthentication": {
                     "type": "array",
                     "items": {
                       "anyOf": [
@@ -283,13 +251,7 @@
           },
           "access": {
             "type": "object",
-            "required": [
-              "roles",
-              "profiles",
-              "responsible",
-              "capabilities",
-              "capabilitiesAfterStrongAuthentication"
-            ],
+            "required": ["roles", "profiles", "responsible", "capabilities"],
             "properties": {
               "roles": {
                 "type": "array",
@@ -312,34 +274,6 @@
               },
               "responsible": { "type": "boolean" },
               "capabilities": {
-                "type": "array",
-                "items": {
-                  "anyOf": [
-                    { "type": "string", "const": "company.view" },
-                    { "type": "string", "const": "company.settings.manage" },
-                    { "type": "string", "const": "branches.view" },
-                    { "type": "string", "const": "branches.manage" },
-                    { "type": "string", "const": "members.manage" },
-                    { "type": "string", "const": "invitations.manage" },
-                    { "type": "string", "const": "audit.view" },
-                    { "type": "string", "const": "devices.view" },
-                    { "type": "string", "const": "devices.manage" },
-                    { "type": "string", "const": "media.view" },
-                    { "type": "string", "const": "media.upload" },
-                    { "type": "string", "const": "media.archive" },
-                    { "type": "string", "const": "media.delete" },
-                    { "type": "string", "const": "programming.view" },
-                    { "type": "string", "const": "programming.edit" },
-                    { "type": "string", "const": "programming.assign" },
-                    { "type": "string", "const": "publications.publish" },
-                    { "type": "string", "const": "catalogs.view" },
-                    { "type": "string", "const": "catalogs.edit" },
-                    { "type": "string", "const": "catalogs.manage" },
-                    { "type": "string", "const": "prices.edit" }
-                  ]
-                }
-              },
-              "capabilitiesAfterStrongAuthentication": {
                 "type": "array",
                 "items": {
                   "anyOf": [
@@ -476,11 +410,6 @@
         { "name": "access.responsible", "type": "boolean", "required": true },
         {
           "name": "access.capabilities",
-          "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\" | \"publications.publish\" | \"catalogs.view\" | \"catalogs.edit\" | \"catalogs.manage\" | \"prices.edit\"",
-          "required": true
-        },
-        {
-          "name": "access.capabilitiesAfterStrongAuthentication",
           "type": "array of \"company.view\" | \"company.settings.manage\" | \"branches.view\" | \"branches.manage\" | \"members.manage\" | \"invitations.manage\" | \"audit.view\" | \"devices.view\" | \"devices.manage\" | \"media.view\" | \"media.upload\" | \"media.archive\" | \"media.delete\" | \"programming.view\" | \"programming.edit\" | \"programming.assign\" | \"publications.publish\" | \"catalogs.view\" | \"catalogs.edit\" | \"catalogs.manage\" | \"prices.edit\"",
           "required": true
         },

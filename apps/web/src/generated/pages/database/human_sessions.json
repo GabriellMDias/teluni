@@ -72,18 +72,8 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "INTERNAL",
-      "Meaning": "Provider-reported instant of the user's authentication (auth_time) for this session.",
+      "Meaning": "Provider-reported instant of the user's authentication (auth_time) for this session, used for recent-authentication checks (at most five minutes old for sensitive operations).",
       "Null meaning": "—",
-      "Unit": "UTC instant, millisecond precision"
-    },
-    {
-      "Column": "strong_authenticated_at",
-      "PostgreSQL type": "timestamp(3) with time zone",
-      "Nullable": "yes",
-      "Default": "—",
-      "Classification": "INTERNAL",
-      "Meaning": "Instant of the latest strong authentication verified for this session, used for recent-authentication checks.",
-      "Null meaning": "No strong authentication has been verified for this session.",
       "Unit": "UTC instant, millisecond precision"
     },
     {
