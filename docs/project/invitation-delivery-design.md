@@ -14,7 +14,7 @@ The design applies these selected policies without changing them:
 
 - Company invitations are recipient-bound, single-use, revocable and valid for seven days; a resend invalidates the previous pending invitation; acceptance requires the matching authenticated identity and explicit membership confirmation; changing the recipient requires a new invitation ([identity and access](identity-and-access.md#enrollment-and-account-continuity)).
 - Email verification establishes mailbox control, not legal identity or company ownership, and accounts are never merged solely by equal email.
-- Company administrators invite with company scope; branch managers invite operators to their own branches without granting authority beyond their own ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)). New administrators require the responsible administrator's approval (P10) with strong authentication no older than five minutes (P14). Temporary access expires explicitly and is never renewed automatically (P30).
+- Company administrators invite with company scope; branch managers invite operators to their own branches without granting authority beyond their own ([permission matrix](identity-and-access.md#permission-model-and-default-matrix)). New administrators require the responsible administrator's approval (P10) with an authentication no older than five minutes (P14). Temporary access expires explicitly and is never renewed automatically (P30).
 - Credentials in URLs are allowed only as short-lived, high-entropy, single-purpose values whose exposure is understood; reset and invitation links are `RESTRICTED` ([authentication policy](../security/authentication.md)). Retry, duplicate request, delivery failure and expiry must stay safe for email-based flows.
 - A durable required side effect records its intent in the same transaction as the change, and consumers tolerate duplicates ([delivery policy](../architecture/delivery-and-side-effects.md)).
 
@@ -22,12 +22,12 @@ The design applies these selected policies without changing them:
 
 An invitation carries exactly one grant request with the same shape as a direct grant: a standard role, either the whole company or one to 100 explicit active branches of the company, and an optional grant expiry. The rules mirror direct grants:
 
-| Inviter | May invite | Conditions |
-| --- | --- | --- |
-| Company administrator (strongly authenticated) | Operator or branch manager, company-wide or for any active branches | Company active |
-| Responsible administrator | Additionally company administrator, always company-wide | Strong authentication no older than five minutes; the invitation is the P10 approval |
-| Branch manager (strongly authenticated) | Operator only, for a subset of the branches the manager currently manages | Never company-wide, never another role |
-| Operator | Nobody | — |
+| Inviter                   | May invite                                                                | Conditions                                                                       |
+| ------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Company administrator     | Operator or branch manager, company-wide or for any active branches       | Company active                                                                   |
+| Responsible administrator | Additionally company administrator, always company-wide                   | An authentication no older than five minutes; the invitation is the P10 approval |
+| Branch manager            | Operator only, for a subset of the branches the manager currently manages | Never company-wide, never another role                                           |
+| Operator                  | Nobody                                                                    | —                                                                                |
 
 A new capability, `invitations.manage`, is company-wide for administrators and branch-scoped for managers. Administrators see and manage every invitation of the company; a branch manager sees and manages only invitations whose whole branch scope lies inside the branches they currently manage. Invitation lists are paginated and cursor-bound like other company lists.
 
@@ -68,14 +68,14 @@ Authority-changing writes follow tenant data design rule 5: the company row is l
    3. revalidates the invitation against current state: the company is active; the inviter is still an active member who could grant this role and scope now (for an administrator invitation, still the responsible administrator; for a manager's invitation, still managing every branch); every branch is still active. If anything fails, the invitation becomes invalid with `INVITATION_NO_LONGER_VALID` rather than being narrowed silently, and the inviter can issue a new one;
    4. applies the membership rule below, inserts the grant with the inviter as grantor, marks the invitation `ACCEPTED`, and writes one `invitation.accepted` audit event.
 
-| Invitee's membership in the company | Result |
-| --- | --- |
-| None | A new active membership with the invited grant |
-| Active | The invited grant is added to the existing membership (an identical effective grant is not duplicated) |
-| Suspended | Refused with `MEMBERSHIP_SUSPENDED`; suspension is lifted only by an administrator, never by an invitation |
-| Removed | A new active membership; the removed membership stays as history. The membership uniqueness rule becomes `UNIQUE (company_id, principal_id) WHERE status <> 'REMOVED'` |
+| Invitee's membership in the company | Result                                                                                                                                                                 |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| None                                | A new active membership with the invited grant                                                                                                                         |
+| Active                              | The invited grant is added to the existing membership (an identical effective grant is not duplicated)                                                                 |
+| Suspended                           | Refused with `MEMBERSHIP_SUSPENDED`; suspension is lifted only by an administrator, never by an invitation                                                             |
+| Removed                             | A new active membership; the removed membership stays as history. The membership uniqueness rule becomes `UNIQUE (company_id, principal_id) WHERE status <> 'REMOVED'` |
 
-The invited role's assurance requirement still applies at use: an accepted administrator or branch-manager grant counts only in a strongly authenticated session, so the panel then offers step-up as it does today.
+Since the 2026-10-28 revision, no invited role requires two-step verification at use.
 
 ## Abuse limits and content
 
@@ -99,10 +99,10 @@ Exceeding a limit answers `RATE_LIMITED` without saying which limit applied. The
 
 **Outcomes and retries.**
 
-| SMTP outcome | Result |
-| --- | --- |
-| Accepted (2xx after `DATA`) | `SENT`, secret erased |
-| Permanent rejection (5xx) | `FAILED` immediately, secret erased |
+| SMTP outcome                                        | Result                                                                                                                                                                |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accepted (2xx after `DATA`)                         | `SENT`, secret erased                                                                                                                                                 |
+| Permanent rejection (5xx)                           | `FAILED` immediately, secret erased                                                                                                                                   |
 | Transient failure (4xx, connection, TLS or timeout) | Retry after about 1, 5, 15 and 60 minutes, then 3, 6 and 12 hours, with jitter; `FAILED` after the 8th attempt (about 22 hours, well inside the seven-day invitation) |
 
 Retries use the same `Message-ID`, derived from the message ID, so mail clients can recognize repeats. Delivery is at least once: a crash after the relay accepted a message but before `SENT` was recorded sends it again when the lease expires. A duplicate invitation email carries the same still-valid link, so the duplicate is harmless. Bounces after acceptance by the relay and provider webhooks are not handled in this version; the panel shows "sent" as "handed to the mail service", not as delivered.
@@ -123,12 +123,12 @@ Keycloak sends its own verification and recovery email synchronously, through th
 
 ## Data and retention
 
-| Data | Classification | Proposed lifecycle (provisional until PH-13) |
-| --- | --- | --- |
-| Invitation credential | `RESTRICTED` | Never stored in plaintext; the hash lives with the invitation; the encrypted delivery copy is erased at the message's final state |
-| Recipient address on the invitation | `CONFIDENTIAL` (personal data) | Kept while pending and for 90 days after the invitation becomes final, then replaced by a tombstone; the invitation row and its audit events remain |
-| Outbound message row (recipient, parameters, status) | `CONFIDENTIAL` | Deleted 30 days after reaching a final state |
-| Audit events | `CONFIDENTIAL` | Append-only, without recipient addresses, under the existing audit rules |
+| Data                                                 | Classification                 | Proposed lifecycle (provisional until PH-13)                                                                                                        |
+| ---------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Invitation credential                                | `RESTRICTED`                   | Never stored in plaintext; the hash lives with the invitation; the encrypted delivery copy is erased at the message's final state                   |
+| Recipient address on the invitation                  | `CONFIDENTIAL` (personal data) | Kept while pending and for 90 days after the invitation becomes final, then replaced by a tombstone; the invitation row and its audit events remain |
+| Outbound message row (recipient, parameters, status) | `CONFIDENTIAL`                 | Deleted 30 days after reaching a final state                                                                                                        |
+| Audit events                                         | `CONFIDENTIAL`                 | Append-only, without recipient addresses, under the existing audit rules                                                                            |
 
 Cleanup runs in the dispatcher's loop as bounded batches, with the same claiming rules. Backups keep copies until their own expiry under PH-10/PH-13. Real customer addresses are not processed before PH-13's notices and PH-17's approved sender exist; local and CI environments use synthetic addresses and Mailpit only.
 
@@ -136,14 +136,14 @@ Cleanup runs in the dispatcher's loop as bounded batches, with the same claiming
 
 Proposed operations, finalized with the implementation and generated into OpenAPI and the SDK:
 
-| Operation | Purpose |
-| --- | --- |
-| `POST /companies/{companyId}/invitations` | Create an invitation (recipient, role, scope, branches, optional grant expiry) |
-| `GET /companies/{companyId}/invitations` | Paginated invitations visible to the caller, with delivery state |
-| `POST /companies/{companyId}/invitations/{invitationId}/resend` | Replace a pending invitation with a new one |
-| `POST /companies/{companyId}/invitations/{invitationId}/revoke` | Revoke a pending invitation |
-| `POST /invitations/preview` | Describe the invitation a credential refers to (session required, credential in the body) |
-| `POST /invitations/accept` | Accept it (session required, credential in the body) |
+| Operation                                                       | Purpose                                                                                   |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `POST /companies/{companyId}/invitations`                       | Create an invitation (recipient, role, scope, branches, optional grant expiry)            |
+| `GET /companies/{companyId}/invitations`                        | Paginated invitations visible to the caller, with delivery state                          |
+| `POST /companies/{companyId}/invitations/{invitationId}/resend` | Replace a pending invitation with a new one                                               |
+| `POST /companies/{companyId}/invitations/{invitationId}/revoke` | Revoke a pending invitation                                                               |
+| `POST /invitations/preview`                                     | Describe the invitation a credential refers to (session required, credential in the body) |
+| `POST /invitations/accept`                                      | Accept it (session required, credential in the body)                                      |
 
 New public error codes: `INVITATION_PENDING` and `INVITATION_NO_LONGER_VALID` (409), `INVITATION_RECIPIENT_MISMATCH` (403) and `MEMBERSHIP_SUSPENDED` (409), in addition to the existing access, validation, assurance and rate-limit codes. The panel adds an invite form and an invitation list to the members view and an acceptance page.
 
@@ -174,11 +174,11 @@ Real invitations to real people additionally require PH-17 (sender, domain authe
 
 **Implemented and verified locally on 2026-10-18** (increments 1–4 above), with synthetic addresses and Mailpit only; no real provider, sender domain or recipient is involved.
 
-| Capability | Location | Verification |
-| --- | --- | --- |
-| `mail` API module: `outbound_emails` outbox, sealed secret parameters under the `TELUNI_MAIL_KEYS` ring, `SKIP LOCKED` leases, retry schedule, final-state erasure, 30-day purge, metrics and allowlisted logs | [`src/features/mail/`](../../apps/api/src/features/mail/module.ts), [migration](../../apps/api/prisma/migrations/20261018040000_mail_outbox/migration.sql), [grants](../../apps/api/prisma/runtime-grants/mail.sql), `TELUNI_MAIL_*` in the [configuration reference](../generated/configuration/api.md) | [Mail suite](../../apps/api/test/mail/integration.test.ts) against migrated PostgreSQL and a disposable Mailpit: real SMTP delivery, rollback, retries to the eighth attempt, permanent rejection, cancellation during an attempt, stale claims, competing dispatchers, purge, no address or secret in logs, runtime-role limits; [unit tests](../../apps/api/test/mail/domain.test.ts) for retry timing and failure classes |
-| `invitations` API module (in the organizations feature, so organizations works without mail): create, list, resend, revoke, preview and accept, abuse limits, revalidation, membership cases, address tombstones and the fixed `pt-BR`/`en-US` template | [`invitations-module.ts`](../../apps/api/src/features/organizations/invitations-module.ts), [migration](../../apps/api/prisma/migrations/20261018050000_company_invitations/migration.sql) | [Invitation suite](../../apps/api/test/organizations/invitations.test.ts): IA-02 recipient binding, replay, inviter scopes, stale assurance, resend/revoke, revalidation after suspension, archive and expiry, active/suspended/removed members, limits, atomicity with the audit insert, retention and runtime-role limits |
-| Panel: a company Invitations view (invite form, list with delivery state, resend and revoke) for administrators and branch managers, and the `/invitations/accept` page | [`invitations.tsx`](../../apps/web/src/organizations/invitations.tsx) | [Browser component tests](../../apps/web/test/organizations.browser.test.tsx) and the [company journey](../../apps/web/test/e2e/organizations/companies.spec.ts): an administrator invites through the panel, the link is read from Mailpit, another signed-in person is refused, and the invitee signs in and accepts |
+| Capability                                                                                                                                                                                                                                              | Location                                                                                                                                                                                                                                                                                                 | Verification                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mail` API module: `outbound_emails` outbox, sealed secret parameters under the `TELUNI_MAIL_KEYS` ring, `SKIP LOCKED` leases, retry schedule, final-state erasure, 30-day purge, metrics and allowlisted logs                                          | [`src/features/mail/`](../../apps/api/src/features/mail/module.ts), [migration](../../apps/api/prisma/migrations/20261018040000_mail_outbox/migration.sql), [grants](../../apps/api/prisma/runtime-grants/mail.sql), `TELUNI_MAIL_*` in the [configuration reference](../generated/configuration/api.md) | [Mail suite](../../apps/api/test/mail/integration.test.ts) against migrated PostgreSQL and a disposable Mailpit: real SMTP delivery, rollback, retries to the eighth attempt, permanent rejection, cancellation during an attempt, stale claims, competing dispatchers, purge, no address or secret in logs, runtime-role limits; [unit tests](../../apps/api/test/mail/domain.test.ts) for retry timing and failure classes |
+| `invitations` API module (in the organizations feature, so organizations works without mail): create, list, resend, revoke, preview and accept, abuse limits, revalidation, membership cases, address tombstones and the fixed `pt-BR`/`en-US` template | [`invitations-module.ts`](../../apps/api/src/features/organizations/invitations-module.ts), [migration](../../apps/api/prisma/migrations/20261018050000_company_invitations/migration.sql)                                                                                                               | [Invitation suite](../../apps/api/test/organizations/invitations.test.ts): IA-02 recipient binding, replay, inviter scopes, stale assurance, resend/revoke, revalidation after suspension, archive and expiry, active/suspended/removed members, limits, atomicity with the audit insert, retention and runtime-role limits                                                                                                  |
+| Panel: a company Invitations view (invite form, list with delivery state, resend and revoke) for administrators and branch managers, and the `/invitations/accept` page                                                                                 | [`invitations.tsx`](../../apps/web/src/organizations/invitations.tsx)                                                                                                                                                                                                                                    | [Browser component tests](../../apps/web/test/organizations.browser.test.tsx) and the [company journey](../../apps/web/test/e2e/organizations/companies.spec.ts): an administrator invites through the panel, the link is read from Mailpit, another signed-in person is refused, and the invitee signs in and accepts                                                                                                       |
 
 Implementation refinements within the approved decisions: the per-address limit counts the invitation rows instead of keeping separate keyed counters, which keeps fewer copies of the address; an acceptance that fails revalidation leaves the invitation pending but unusable rather than recording a new state, and the inviter can revoke or resend it; producer upkeep (expiry marking and address tombstones) runs inside the mail dispatcher's maintenance pass. Not yet done: real sending (PH-17 sender, domain authentication and provider terms; PH-28 notices) and bounce handling. Since 2026-10-22 an invited person without an account creates one from the invitation page and accepts in the same tab, and Keycloak's own mail can use the authenticated relay ([identity status](identity-session-design.md#implementation-status)).
 
@@ -192,7 +192,7 @@ The owner approved each item as proposed on 2026-10-18 under [PH-21](human-actio
 4. **Acceptance identity.** The session principal's verified email must equal the recipient address case-insensitively, with explicit confirmation; principals are never looked up by email at invitation time; until D-02 signup exists, only people with an existing verified account can accept.
 5. **Membership cases.** An active member gains the invited grant; a suspended member is refused; a removed person returns as a new membership, which changes membership uniqueness to exclude removed memberships.
 6. **Revalidation at acceptance.** The inviter must still be able to grant the invited role and scope, the company and every branch must be active; otherwise the invitation becomes invalid rather than narrowed. A responsibility transfer therefore invalidates the former responsible administrator's pending administrator invitations.
-7. **Who invites.** Administrators invite operators and branch managers; only the responsible administrator, with five-minute strong authentication, invites administrators; branch managers invite operators within their own branches; invitations can carry a grant expiry; one pending invitation per company and address, and resend replaces it.
+7. **Who invites.** Administrators invite operators and branch managers; only the responsible administrator, with a five-minute recent authentication, invites administrators; branch managers invite operators within their own branches; invitations can carry a grant expiry; one pending invitation per company and address, and resend replaces it.
 8. **Abuse limits and content.** 50 invitations per company per 24 hours, 100 pending per company, 3 invitation emails per address per 24 hours across Teluni; no free-text message; fixed `pt-BR`/`en-US` templates in the company's default locale.
 9. **Retention (provisional until PH-13).** Encrypted credential erased at final state; outbound message rows deleted 30 days after their final state; invitation recipient addresses replaced by a tombstone 90 days after the invitation becomes final; audit events never store the address.
 10. **Keycloak mail.** Keycloak keeps sending its own verification and recovery mail synchronously through the same relay, outside the outbox.
@@ -201,12 +201,12 @@ Approving these items authorizes implementation in local and CI environments wit
 
 ## Alternatives considered
 
-| Alternative | Reason not proposed |
-| --- | --- |
-| Sending email directly in the request, after commit | A crash or relay outage after commit loses the email silently; the delivery policy requires recorded intent for required side effects |
-| An existing PostgreSQL job library (for example pg-boss) | It owns its schema and migrations, which would need adapting to the reviewed-migration, metadata and least-privilege grant rules, for a need a small owned table covers |
-| A broker or Redis-backed queue | New stateful infrastructure on the single residential host for low volume; PostgreSQL already provides transactional claiming |
-| A provider HTTP API with webhooks | Couples the code to one provider before PH-17 selects one and contradicts the no-recurring-procurement constraint; SMTP keeps providers interchangeable |
-| Keycloak sending invitations | Keycloak sends only its own account flows; invitations, grants and memberships are application-owned (ADR-0025), and Keycloak Organizations was rejected |
+| Alternative                                                   | Reason not proposed                                                                                                                                                                                     |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sending email directly in the request, after commit           | A crash or relay outage after commit loses the email silently; the delivery policy requires recorded intent for required side effects                                                                   |
+| An existing PostgreSQL job library (for example pg-boss)      | It owns its schema and migrations, which would need adapting to the reviewed-migration, metadata and least-privilege grant rules, for a need a small owned table covers                                 |
+| A broker or Redis-backed queue                                | New stateful infrastructure on the single residential host for low volume; PostgreSQL already provides transactional claiming                                                                           |
+| A provider HTTP API with webhooks                             | Couples the code to one provider before PH-17 selects one and contradicts the no-recurring-procurement constraint; SMTP keeps providers interchangeable                                                 |
+| Keycloak sending invitations                                  | Keycloak sends only its own account flows; invitations, grants and memberships are application-owned (ADR-0025), and Keycloak Organizations was rejected                                                |
 | A credential derived from the invitation ID with a server key | Avoids storing the encrypted copy, but keeps every pending link recomputable from the database plus one key for the whole validity; the erased encrypted copy limits that window to the delivery period |
-| Narrowing an invitation when a branch is archived | Silent narrowing grants something different from what the inviter chose; failing and re-inviting keeps the grant explicit |
+| Narrowing an invitation when a branch is archived             | Silent narrowing grants something different from what the inviter chose; failing and re-inviting keeps the grant explicit                                                                               |

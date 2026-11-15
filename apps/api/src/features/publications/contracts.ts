@@ -57,7 +57,6 @@ const scoped = [
   "RESOURCE_NOT_FOUND",
   "COMPANY_SUSPENDED",
   "PERMISSION_DENIED",
-  "STRONG_AUTHENTICATION_REQUIRED",
   "DEVICE_UNLINKED",
 ] as const;
 const mutation = [...scoped, "CSRF_VALIDATION_FAILED"] as const;
@@ -593,7 +592,7 @@ export const publicationOperations: readonly ApiOperation[] = [
     operationId: "retryPricePublication",
     access: "session",
     description:
-      "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program, with strong authentication.",
+      "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program,.",
     schema: {
       params: Type.Object(
         { companyId: uuid, intentId: uuid },

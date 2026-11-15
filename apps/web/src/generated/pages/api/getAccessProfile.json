@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "getAccessProfile",
   "summary": "",
-  "description": "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration and two-step verification.",
+  "description": "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

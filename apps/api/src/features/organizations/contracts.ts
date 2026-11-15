@@ -187,7 +187,6 @@ export const accessSchema = Type.Object(
     profiles: Type.Array(name),
     responsible: Type.Boolean(),
     capabilities: Type.Array(capability),
-    capabilitiesAfterStrongAuthentication: Type.Array(capability),
   },
   { additionalProperties: false },
 );
@@ -302,7 +301,6 @@ const mutation = [
   ...scoped,
   "CSRF_VALIDATION_FAILED",
   "PERMISSION_DENIED",
-  "STRONG_AUTHENTICATION_REQUIRED",
   "RESOURCE_VERSION_CONFLICT",
 ] as const;
 const creationKey = Type.Object({
@@ -333,7 +331,7 @@ export const organizationOperations = [
     operationId: "addMemberGrant",
     access: "session",
     description:
-      "Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
+      "Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration. Only the responsible administrator, with an authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
     schema: {
       params: memberParams,
       body: Type.Object(
@@ -363,7 +361,7 @@ export const organizationOperations = [
     operationId: "revokeMemberGrant",
     access: "session",
     description:
-      "Revoke one of a membership's grants; revocation is terminal and an already revoked or expired grant is a no-op. Requires company administration and two-step verification. The responsible administrator and the last active administrator keep company administration.",
+      "Revoke one of a membership's grants; revocation is terminal and an already revoked or expired grant is a no-op. Requires company administration. The responsible administrator and the last active administrator keep company administration.",
     schema: {
       params: grantParams,
       response: { 204: Type.Null(), ...common },
@@ -380,7 +378,7 @@ export const organizationOperations = [
     operationId: "requestResponsibilityTransfer",
     access: "session",
     description:
-      "Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with strong authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts.",
+      "Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with an authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts.",
     schema: {
       params: companyParams,
       body: Type.Object(
@@ -403,7 +401,7 @@ export const organizationOperations = [
     operationId: "acceptResponsibilityTransfer",
     access: "session",
     description:
-      "The proposed successor accepts responsibility. They must still be an active company administrator with strong authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
+      "The proposed successor accepts responsibility. They must still be an active company administrator with an authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
     schema: {
       params: transferParams,
       response: { 204: Type.Null(), ...common },
@@ -434,7 +432,7 @@ export const organizationOperations = [
     operationId: "listCompanyMembers",
     access: "session",
     description:
-      "List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration and two-step verification. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page.",
+      "List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page.",
     schema: {
       params: companyParams,
       querystring: Type.Object(
@@ -443,11 +441,7 @@ export const organizationOperations = [
       ),
       response: { 200: memberPageSchema, ...common },
     },
-    expectedErrors: [
-      ...scoped,
-      "PERMISSION_DENIED",
-      "STRONG_AUTHENTICATION_REQUIRED",
-    ],
+    expectedErrors: [...scoped, "PERMISSION_DENIED"],
   },
   {
     method: "PATCH",
@@ -455,7 +449,7 @@ export const organizationOperations = [
     operationId: "updateCompanyMemberStatus",
     access: "session",
     description:
-      "Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with strong authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change.",
+      "Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with an authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change.",
     schema: {
       params: memberParams,
       body: Type.Object(
@@ -479,7 +473,7 @@ export const organizationOperations = [
     operationId: "createCompany",
     access: "session",
     description:
-      "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. Further administration requires two-step verification.",
+      "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
     schema: {
       headers: creationKey,
       body: Type.Object(
@@ -525,11 +519,7 @@ export const organizationOperations = [
       params: companyParams,
       response: { 200: companyWithAccessSchema, ...common },
     },
-    expectedErrors: [
-      ...scoped,
-      "PERMISSION_DENIED",
-      "STRONG_AUTHENTICATION_REQUIRED",
-    ],
+    expectedErrors: [...scoped, "PERMISSION_DENIED"],
   },
   {
     method: "PATCH",
@@ -537,7 +527,7 @@ export const organizationOperations = [
     operationId: "updateCompany",
     access: "session",
     description:
-      "Change company settings with the observed version. Requires company administration and two-step verification.",
+      "Change company settings with the observed version. Requires company administration.",
     schema: {
       params: companyParams,
       body: Type.Object(
@@ -568,11 +558,7 @@ export const organizationOperations = [
       ),
       response: { 200: branchPageSchema, ...common },
     },
-    expectedErrors: [
-      ...scoped,
-      "PERMISSION_DENIED",
-      "STRONG_AUTHENTICATION_REQUIRED",
-    ],
+    expectedErrors: [...scoped, "PERMISSION_DENIED"],
   },
   {
     method: "POST",
@@ -580,7 +566,7 @@ export const organizationOperations = [
     operationId: "createBranch",
     access: "session",
     description:
-      "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration and two-step verification.",
+      "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
     schema: {
       params: companyParams,
       body: Type.Object(
@@ -602,7 +588,7 @@ export const organizationOperations = [
       params: branchParams,
       response: { 200: branchSchema, ...common },
     },
-    expectedErrors: [...scoped, "STRONG_AUTHENTICATION_REQUIRED"],
+    expectedErrors: [...scoped],
   },
   {
     method: "PATCH",
@@ -610,7 +596,7 @@ export const organizationOperations = [
     operationId: "updateBranch",
     access: "session",
     description:
-      "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration and two-step verification.",
+      "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration.",
     schema: {
       params: branchParams,
       body: Type.Object(
@@ -631,7 +617,7 @@ export const organizationOperations = [
     operationId: "archiveBranch",
     access: "session",
     description:
-      "Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration and two-step verification.",
+      "Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration.",
     schema: {
       params: branchParams,
       body: Type.Object(
@@ -648,7 +634,7 @@ export const organizationOperations = [
     operationId: "listCompanyAuditEvents",
     access: "session",
     description:
-      "List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch. Requires two-step verification.",
+      "List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch.",
     schema: {
       params: companyParams,
       querystring: Type.Object(
@@ -657,11 +643,7 @@ export const organizationOperations = [
       ),
       response: { 200: auditPageSchema, ...common },
     },
-    expectedErrors: [
-      ...scoped,
-      "PERMISSION_DENIED",
-      "STRONG_AUTHENTICATION_REQUIRED",
-    ],
+    expectedErrors: [...scoped, "PERMISSION_DENIED"],
   },
   {
     method: "GET",
@@ -669,7 +651,7 @@ export const organizationOperations = [
     operationId: "listAccessProfiles",
     access: "session",
     description:
-      "List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification.",
+      "List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration.",
     schema: {
       params: companyParams,
       querystring: Type.Object(
@@ -684,11 +666,7 @@ export const organizationOperations = [
         ...common,
       },
     },
-    expectedErrors: [
-      ...scoped,
-      "PERMISSION_DENIED",
-      "STRONG_AUTHENTICATION_REQUIRED",
-    ],
+    expectedErrors: [...scoped, "PERMISSION_DENIED"],
   },
   {
     method: "POST",
@@ -696,7 +674,7 @@ export const organizationOperations = [
     operationId: "createAccessProfile",
     access: "session",
     description:
-      "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); devices.manage needs devices.view, media.upload and media.archive need media.view, programming.edit, programming.assign and publications.publish need programming.view, and catalogs.edit, catalogs.manage and prices.edit need catalogs.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
+      "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); devices.manage needs devices.view, media.upload and media.archive need media.view, programming.edit, programming.assign and publications.publish need programming.view, and catalogs.edit, catalogs.manage and prices.edit need catalogs.view. Company administration is never delegable through a profile. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration.",
     schema: {
       params: companyParams,
       body: Type.Object(
@@ -717,16 +695,12 @@ export const organizationOperations = [
     operationId: "getAccessProfile",
     access: "session",
     description:
-      "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration and two-step verification.",
+      "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration.",
     schema: {
       params: profileParams,
       response: { 200: profileDetailSchema, ...common },
     },
-    expectedErrors: [
-      ...scoped,
-      "PERMISSION_DENIED",
-      "STRONG_AUTHENTICATION_REQUIRED",
-    ],
+    expectedErrors: [...scoped, "PERMISSION_DENIED"],
   },
   {
     method: "PATCH",
@@ -734,7 +708,7 @@ export const organizationOperations = [
     operationId: "updateAccessProfile",
     access: "session",
     description:
-      "Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration and two-step verification.",
+      "Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration.",
     schema: {
       params: profileParams,
       body: Type.Object(
@@ -755,7 +729,7 @@ export const organizationOperations = [
     operationId: "archiveAccessProfile",
     access: "session",
     description:
-      "Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration and two-step verification.",
+      "Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration.",
     schema: {
       params: profileParams,
       body: Type.Object(

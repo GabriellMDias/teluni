@@ -17,7 +17,7 @@
   --sidebar-width: 236px;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
   min-height: 100dvh;
   color: var(--color-ink);
   background: var(--color-page);
@@ -39,7 +39,7 @@
 }
 .product-sidebar {
   grid-column: 1;
-  grid-row: 1 / span 2;
+  grid-row: 1;
   position: sticky;
   top: 0;
   display: flex;
@@ -116,11 +116,69 @@
   font-size: 0.75rem;
   line-height: 1.7;
 }
+.product-sidebar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+}
+/* A light/dark switch: the knob slides from the sun to the moon. */
+.product-theme-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  width: 3.5rem;
+  height: 1.9rem;
+  padding: 0 0.4rem;
+  color: var(--color-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.product-theme-switch svg {
+  position: relative;
+  z-index: 1;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.product-theme-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.9rem - 6px);
+  height: calc(1.9rem - 6px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
+}
+.product-theme-switch[aria-checked="true"] .product-theme-knob {
+  left: calc(100% - 1.9rem + 4px);
+}
+.product-theme-switch[aria-checked="false"] svg:first-of-type,
+.product-theme-switch[aria-checked="true"] svg:last-of-type {
+  color: var(--color-link);
+}
+.product-theme-switch:hover {
+  color: var(--color-ink);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .product-theme-knob {
+    transition: left 160ms ease;
+  }
+}
 .product-collapse {
   display: flex;
   align-items: center;
-  align-self: flex-start;
-  margin: 1rem 0 0;
   padding: 0.75rem;
   color: var(--color-muted);
   background: none;
@@ -173,8 +231,8 @@
   .product-shell[data-sidebar="collapsed"] .product-tagline {
     display: none;
   }
-  .product-shell[data-sidebar="collapsed"] .product-collapse {
-    align-self: center;
+  .product-shell[data-sidebar="collapsed"] .product-sidebar-footer {
+    flex-direction: column;
     margin-top: auto;
   }
   .product-shell[data-sidebar="collapsed"] .product-collapse svg {
@@ -188,44 +246,18 @@
 }
 .product-workspace {
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1;
   min-width: 0;
 }
+/* Only narrow screens show a top bar, which holds the menu button. */
 .product-topbar {
-  grid-column: 2;
-  grid-row: 1;
-  min-height: 84px;
-  padding: 1rem var(--space-page);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-.product-workspace-label {
-  color: var(--color-muted);
-  font-size: 0.85rem;
-  margin: 0;
-}
-.product-theme {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-  font-size: 0.8rem;
-  color: var(--color-muted);
-}
-.product-theme select {
-  font: inherit;
-  color: var(--color-ink);
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  padding: 0.55rem 0.7rem;
+  display: none;
 }
 .product-shell .main-content {
   width: 100%;
   max-width: 1280px;
+  /* Never centered vertically when narrow screens make it a flex item. */
+  margin-block: 0;
   padding: var(--space-page) var(--space-page) 4rem;
   overflow-wrap: anywhere;
 }
@@ -271,18 +303,23 @@
   .product-collapse {
     display: none;
   }
+  .product-sidebar-footer {
+    margin-inline: 0.85rem;
+  }
   .product-workspace {
     display: contents;
   }
   .product-topbar {
     order: 0;
-    min-height: 72px;
+    display: flex;
+    align-items: center;
+    min-height: 64px;
+    padding: 0.75rem var(--space-page);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
   }
   .product-shell .main-content {
     order: 2;
-  }
-  .product-workspace-label {
-    display: none;
   }
   .product-menu {
     display: inline-flex;

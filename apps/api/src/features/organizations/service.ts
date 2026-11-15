@@ -11,7 +11,6 @@ import {
   normalizeName,
   OrganizationFailure,
   profileCapabilities,
-  reachableWithStrongAuthentication,
   requireCapability,
   type AccessRole,
   type BranchStatus,
@@ -75,10 +74,8 @@ export type AccessSummary = Readonly<{
   /** Names of the access profiles the caller holds. */
   profiles: string[];
   responsible: boolean;
-  /** Capabilities usable in the current session. */
+  /** Capabilities the caller holds. */
   capabilities: Capability[];
-  /** Capabilities that two-step verification would make usable. */
-  capabilitiesAfterStrongAuthentication: Capability[];
 }>;
 
 type Cursor = Record<string, string>;
@@ -244,7 +241,7 @@ export class OrganizationService {
       memberId,
       expectedVersion,
       status,
-      context.strongAuthenticatedAt,
+      context.authenticatedAt,
     );
   }
 
@@ -283,7 +280,7 @@ export class OrganizationService {
         branchIds,
         expiresAt,
       },
-      context.strongAuthenticatedAt,
+      context.authenticatedAt,
     );
     return { grant: grantWire(result.grant), created: result.created };
   }
@@ -430,7 +427,7 @@ export class OrganizationService {
       { principalId: context.principalId, membershipId: access.membershipId },
       companyId,
       successorMembershipId,
-      context.strongAuthenticatedAt,
+      context.authenticatedAt,
     );
     const view = await this.transferView(access);
     if (!view) throw new Error("Requested transfer is not readable");
@@ -446,10 +443,7 @@ export class OrganizationService {
     if (access.companyStatus === "SUSPENDED")
       throw new OrganizationFailure("COMPANY_SUSPENDED");
     // Only a current administrator can become responsible (P10).
-    const decision = decide(access, "members.manage");
-    if (decision === "strong_required")
-      throw new OrganizationFailure("STRONG_AUTHENTICATION_REQUIRED");
-    if (decision === "deny") {
+    if (decide(access, "members.manage") === "deny") {
       const transfer = await this.#repository.currentTransfer(
         companyId,
         access.membershipId,
@@ -465,7 +459,7 @@ export class OrganizationService {
       { principalId: context.principalId, membershipId: access.membershipId },
       companyId,
       transferId,
-      context.strongAuthenticatedAt,
+      context.authenticatedAt,
     );
   }
 
@@ -498,7 +492,6 @@ export class OrganizationService {
     return companyAccess({
       ...membership,
       principalId: context.principalId,
-      strong: context.strongAuthenticationAgeSeconds !== null,
     });
   }
 
@@ -524,11 +517,6 @@ export class OrganizationService {
       ].sort(),
       responsible: access.responsible,
       capabilities: capabilities.filter(usable),
-      capabilitiesAfterStrongAuthentication: capabilities.filter(
-        (capability) =>
-          !usable(capability) &&
-          reachableWithStrongAuthentication(access, capability),
-      ),
     };
   }
 
@@ -649,11 +637,8 @@ export class OrganizationService {
     if (access.companyStatus === "SUSPENDED")
       throw new OrganizationFailure("COMPANY_SUSPENDED");
     const reach = branchReach(access, "branches.view");
-    if (reach !== "all" && reach.size === 0) {
-      if (reachableWithStrongAuthentication(access, "branches.view"))
-        throw new OrganizationFailure("STRONG_AUTHENTICATION_REQUIRED");
+    if (reach !== "all" && reach.size === 0)
       throw new OrganizationFailure("PERMISSION_DENIED");
-    }
     const cursor = decodeCursor(options.cursor, {
       company: companyId,
       principal: context.principalId,
@@ -699,11 +684,8 @@ export class OrganizationService {
     const access = await this.access(context, companyId);
     if (access.companyStatus === "SUSPENDED")
       throw new OrganizationFailure("COMPANY_SUSPENDED");
-    const decision = decide(access, "branches.view", branchId);
     // A branch outside the caller's scope is indistinguishable from an absent one.
-    if (decision === "strong_required")
-      throw new OrganizationFailure("STRONG_AUTHENTICATION_REQUIRED");
-    if (decision === "deny")
+    if (decide(access, "branches.view", branchId) === "deny")
       throw new OrganizationFailure("RESOURCE_NOT_FOUND");
     const found = await this.#repository.findBranch(companyId, branchId);
     if (!found) throw new OrganizationFailure("RESOURCE_NOT_FOUND");
@@ -762,13 +744,7 @@ export class OrganizationService {
     if (access.companyStatus === "SUSPENDED")
       throw new OrganizationFailure("COMPANY_SUSPENDED");
     const visibility = auditVisibility(access);
-    if (!visibility)
-      throw new OrganizationFailure(
-        !access.strong &&
-          reachableWithStrongAuthentication(access, "audit.view")
-          ? "STRONG_AUTHENTICATION_REQUIRED"
-          : "PERMISSION_DENIED",
-      );
+    if (!visibility) throw new OrganizationFailure("PERMISSION_DENIED");
     // A cursor is valid only for the scope that produced it.
     const scope =
       visibility.kind === "all"

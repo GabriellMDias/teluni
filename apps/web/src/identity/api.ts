@@ -7,7 +7,6 @@ import { loadClientConfig } from "../config.js";
 export const identityErrorCodes: ReadonlySet<string> = new Set([
   "CSRF_VALIDATION_FAILED",
   "SESSION_LIMIT_REACHED",
-  "STRONG_AUTHENTICATION_REQUIRED",
   "RECENT_AUTHENTICATION_REQUIRED",
 ]);
 
@@ -36,7 +35,6 @@ export type CurrentSession = Readonly<{
   expiresAt: string;
   assuranceLevel: string;
   authenticatedAt: string;
-  strongAuthenticatedAt: string | null;
 }>;
 
 export type SessionItem = Readonly<{
@@ -66,11 +64,19 @@ export async function fetchSession(
 
 export const sessionKey = ["identity", "session"] as const;
 export const sessionsKey = ["identity", "sessions"] as const;
+export const twoStepKey = ["identity", "two-step"] as const;
 
 export const sessionQuery = queryOptions({
   queryKey: sessionKey,
   queryFn: () => fetchSession(),
   staleTime: 30_000,
+});
+
+/** Whether the account has two-step verification enabled (optional per person). */
+export const twoStepQuery = queryOptions({
+  queryKey: twoStepKey,
+  queryFn: async () =>
+    unwrap(await sessionApiClient().GET("/auth/two-step"), identityErrorCodes),
 });
 
 export async function listSessions(): Promise<readonly SessionItem[]> {
@@ -111,15 +117,27 @@ export async function terminateAllSessions(): Promise<void> {
 }
 
 /**
- * Login is a full browser navigation to the API, never a fetch. `strong`
- * requests two-step verification; `recent` also forces a new authentication
- * for operations that need one within five minutes.
+ * Login is a full browser navigation to the API, never a fetch.
+ * `reauthenticate` forces a new authentication (the password, plus the code
+ * when two-step verification is enabled) for operations that need one within
+ * five minutes.
  */
 export function loginHref(
   returnTo: string,
-  assurance?: "strong" | "recent",
+  options: { reauthenticate?: boolean } = {},
 ): string {
-  return `${loadClientConfig().apiBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}${assurance ? `&assurance=${assurance}` : ""}`;
+  return `${loadClientConfig().apiBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}${options.reauthenticate ? "&reauthenticate=true" : ""}`;
+}
+
+/**
+ * Enables (enrolls an authenticator app) or disables (asks for the password
+ * and current code) two-step verification at the provider, then returns.
+ */
+export function twoStepHref(
+  action: "enable" | "disable",
+  returnTo: string,
+): string {
+  return `${loadClientConfig().apiBaseUrl}/auth/login?returnTo=${encodeURIComponent(returnTo)}&twoStep=${action}`;
 }
 
 /** Account creation at the provider, returning to `returnTo` once signed in. */

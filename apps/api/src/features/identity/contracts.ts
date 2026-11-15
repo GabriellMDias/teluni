@@ -20,9 +20,13 @@ export const sessionSummarySchema = Type.Object(
     expiresAt: instant,
     assuranceLevel: Type.String({ maxLength: 64 }),
     authenticatedAt: instant,
-    strongAuthenticatedAt: Type.Union([instant, Type.Null()]),
     csrfToken: Type.String({ minLength: 1 }),
   },
+  { additionalProperties: false },
+);
+
+export const twoStepStatusSchema = Type.Object(
+  { enabled: Type.Boolean() },
   { additionalProperties: false },
 );
 
@@ -77,22 +81,29 @@ export const identityOperations = [
     operationId: "startLogin",
     access: "public",
     description:
-      "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. With the explicitly enabled local-development optional-MFA mode, login uses ordinary provider assurance and the authenticated session exposes teluni-development effective assurance without persisting it as provider authentication.",
+      "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. Two-step verification is optional for each person; the provider asks for the authenticator code at every sign-in of a person who enabled it. reauthenticate=true forces a new authentication (the password, plus the code when enabled) for operations that need one within five minutes; an older authentication redirects to /sign-in?error=assurance_not_met. twoStep=enable (enroll an authenticator) and twoStep=disable (a new authentication with the password and current code, then a confirmation at the provider) need the current session cookie; when there is nothing to change they redirect straight to returnTo. A person who cancels the provider action keeps two-step verification unchanged and still returns signed in. The first sign-in of a new person redirects to /welcome/two-step?returnTo=, which suggests enabling it.",
     schema: {
       querystring: Type.Object(
         {
           returnTo: Type.Optional(Type.String({ maxLength: 2048 })),
-          assurance: Type.Optional(
-            Type.Union([Type.Literal("strong"), Type.Literal("recent")]),
-          ),
+          reauthenticate: Type.Optional(Type.Literal("true")),
           intent: Type.Optional(Type.Literal("signup")),
+          twoStep: Type.Optional(
+            Type.Union([Type.Literal("enable"), Type.Literal("disable")]),
+          ),
         },
         { additionalProperties: false },
       ),
-      response: { 303: Type.Null(), 400: errorEnvelopeSchema, ...failures },
+      response: {
+        303: Type.Null(),
+        400: errorEnvelopeSchema,
+        401: errorEnvelopeSchema,
+        ...failures,
+      },
     },
     expectedErrors: [
       "VALIDATION_FAILED",
+      "AUTHENTICATION_REQUIRED",
       "RATE_LIMITED",
       "SERVICE_UNAVAILABLE",
     ],
@@ -103,7 +114,7 @@ export const identityOperations = [
     operationId: "completeLogin",
     access: "public",
     description:
-      "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
+      "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path (or, on a new person's first sign-in, to /welcome/two-step?returnTo=). Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
     schema: {
       querystring: Type.Object(
         {
@@ -113,6 +124,8 @@ export const identityOperations = [
           iss: Type.Optional(protocolValue),
           error: Type.Optional(protocolValue),
           error_description: Type.Optional(protocolValue),
+          kc_action: Type.Optional(protocolValue),
+          kc_action_status: Type.Optional(protocolValue),
         },
         { additionalProperties: false },
       ),
@@ -132,6 +145,16 @@ export const identityOperations = [
     description:
       "Describe the current session and return its CSRF token for unsafe requests. A PENDING_LIMIT session must end another session before protected operations. Send x-teluni-activity: background from automatic polling so it does not extend the idle limit.",
     schema: { response: { 200: sessionSummarySchema, ...sessionFailures } },
+    expectedErrors: [...sessionErrors],
+  },
+  {
+    method: "GET",
+    url: "/auth/two-step",
+    operationId: "getTwoStepStatus",
+    access: "session",
+    description:
+      "Whether the caller's account has two-step verification (an authenticator app) enabled. It is optional for each person; enable or disable it through startLogin with twoStep.",
+    schema: { response: { 200: twoStepStatusSchema, ...sessionFailures } },
     expectedErrors: [...sessionErrors],
   },
   {

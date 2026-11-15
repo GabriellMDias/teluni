@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Navigate, useNavigate } from "@tanstack/react-router";
+import { Link, Navigate, useNavigate } from "@tanstack/react-router";
 import brandMark from "../assets/brand-mark.svg";
 import {
   listSessions,
@@ -10,6 +10,8 @@ import {
   sessionsKey,
   terminateAllSessions,
   terminateSession,
+  twoStepHref,
+  twoStepQuery,
   type SessionItem,
 } from "./api.js";
 import { describeFailure } from "./failures.js";
@@ -116,6 +118,86 @@ function SessionRow({
   );
 }
 
+/** Two-step verification is optional for each person; this is where they change it. */
+function TwoStepSection() {
+  const { t } = useIdentityMessages();
+  const status = useQuery(twoStepQuery);
+  const returnTo = "/account/sessions";
+  return (
+    <section className="two-step" aria-labelledby="two-step-title">
+      <h2 id="two-step-title">{t.twoStepTitle}</h2>
+      {status.isPending ? (
+        <p>{t.loading}</p>
+      ) : status.isError ? (
+        <div role="alert" className="notice notice-error">
+          {describeFailure(status.error, t, "read")}
+          <button type="button" onClick={() => void status.refetch()}>
+            {t.reload}
+          </button>
+        </div>
+      ) : status.data.enabled ? (
+        <>
+          <p>{t.twoStepEnabled}</p>
+          <a className="button-link" href={twoStepHref("disable", returnTo)}>
+            {t.twoStepDisable}
+          </a>
+          <p className="hint">{t.twoStepDisableHint}</p>
+        </>
+      ) : (
+        <>
+          <p className="notice notice-info">{t.twoStepDisabled}</p>
+          <a
+            className="button-link button-primary"
+            href={twoStepHref("enable", returnTo)}
+          >
+            {t.twoStepEnable}
+          </a>
+          <p className="hint">{t.twoStepEnableHint}</p>
+        </>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Shown once after a person's first sign-in: suggests enabling two-step
+ * verification, which stays optional.
+ */
+export function WelcomeTwoStepPage({ returnTo }: { returnTo: string }) {
+  const { locale, t } = useIdentityMessages();
+  const session = useQuery(sessionQuery);
+  const status = useQuery({ ...twoStepQuery, enabled: Boolean(session.data) });
+  if (session.isPending) return <p lang={locale}>{t.loading}</p>;
+  if (!session.data)
+    return <Navigate to="/sign-in" search={{ returnTo }} replace />;
+  // Nothing to suggest to someone who already enabled it.
+  if (status.data?.enabled) return <Navigate to={returnTo} replace />;
+  return (
+    <section
+      className="panel identity-panel welcome-two-step"
+      aria-labelledby="welcome-two-step-title"
+      lang={locale}
+    >
+      <p className="eyebrow">{t.welcomeEyebrow}</p>
+      <h1 id="welcome-two-step-title">{t.welcomeTitle}</h1>
+      <p>{t.welcomeLead}</p>
+      <p className="hint">{t.welcomeOptional}</p>
+      <div className="action-group">
+        <a
+          className="button-link button-primary"
+          href={twoStepHref("enable", returnTo)}
+        >
+          {t.welcomeEnable}
+        </a>
+        <Link to={returnTo} className="button-link">
+          {t.welcomeSkip}
+        </Link>
+      </div>
+      <p className="hint">{t.twoStepEnableHint}</p>
+    </section>
+  );
+}
+
 export function SessionsPage() {
   const { locale, t } = useIdentityMessages();
   const queryClient = useQueryClient();
@@ -190,28 +272,7 @@ export function SessionsPage() {
       <p className="eyebrow">{t.sessionsEyebrow}</p>
       <h1 id="sessions-title">{t.sessionsTitle}</h1>
       <p>{t.sessionsLead}</p>
-      <section className="two-step" aria-labelledby="two-step-title">
-        <h2 id="two-step-title">{t.twoStepTitle}</h2>
-        {session.data.assuranceLevel === "teluni-development" ? (
-          <p role="status">{t.twoStepDevelopment}</p>
-        ) : session.data.strongAuthenticatedAt ? (
-          <p>
-            {t.twoStepDone}{" "}
-            {format.format(new Date(session.data.strongAuthenticatedAt))}.
-          </p>
-        ) : (
-          <>
-            <p>{t.twoStepMissing}</p>
-            <a
-              className="button-link button-primary"
-              href={loginHref("/account/sessions", "strong")}
-            >
-              {t.twoStepButton}
-            </a>
-            <p className="hint">{t.twoStepHint}</p>
-          </>
-        )}
-      </section>
+      <TwoStepSection />
       {session.data.state === "PENDING_LIMIT" && (
         <div role="status" className="notice notice-error">
           {t.sessionsPending}

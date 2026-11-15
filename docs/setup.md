@@ -4,13 +4,13 @@
 
 This is the canonical local setup and execution path. Tests use disposable PostgreSQL and synthetic identities; no production database, identity provider, telemetry vendor, or deployment account is needed. Commands address workspace packages by path (`pnpm -C apps/api …`), so they work unchanged whatever a project names its packages.
 
-| Goal | Prerequisites after installing pinned Node.js/pnpm | Start here |
-| --- | --- | --- |
-| Browse the documentation portal | Frozen dependency install; no container, API, or test browser needed | [Portal](#living-documentation-portal) |
-| Run the API and web application locally | Frozen dependency install, generated Prisma client, and local configuration | [Configuration](#load-local-configuration) |
-| Use a local PostgreSQL or access-token issuer | A database or issuer you control for development | [Local database and authentication](#local-database-and-authentication) |
-| Run the complete validation gate | All clean-checkout prerequisites, including containers and test browsers | [Prepare a clean checkout](#prepare-a-clean-checkout), then [validate](#validate-regenerate-and-build) |
-| Start a new project from Orion or upgrade a project's Orion baseline | A fresh full clone and frozen dependency install | [Project derivation](project-derivation.md) |
+| Goal                                                                 | Prerequisites after installing pinned Node.js/pnpm                          | Start here                                                                                             |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Browse the documentation portal                                      | Frozen dependency install; no container, API, or test browser needed        | [Portal](#living-documentation-portal)                                                                 |
+| Run the API and web application locally                              | Frozen dependency install, generated Prisma client, and local configuration | [Configuration](#load-local-configuration)                                                             |
+| Use a local PostgreSQL or access-token issuer                        | A database or issuer you control for development                            | [Local database and authentication](#local-database-and-authentication)                                |
+| Run the complete validation gate                                     | All clean-checkout prerequisites, including containers and test browsers    | [Prepare a clean checkout](#prepare-a-clean-checkout), then [validate](#validate-regenerate-and-build) |
+| Start a new project from Orion or upgrade a project's Orion baseline | A fresh full clone and frozen dependency install                            | [Project derivation](project-derivation.md)                                                            |
 
 ## Prepare a clean checkout
 
@@ -82,15 +82,9 @@ pnpm -C apps/web dev
 
 `dev:services up` creates or starts named containers (PostgreSQL on `127.0.0.1:55433`, Keycloak on `localhost:8180` with its management port on `9180`, Mailpit with SMTP on `127.0.0.1:1025` and its inbox on `http://127.0.0.1:8025`) with named volumes, applies the committed migrations and runtime grants, provisions the `teluni` realm with the Teluni sign-in theme, creates the synthetic developer account `dev@teluni.test`, creates the ignored `.dev-media/` media volume, and writes the root `.env.local` the API loads (the media module also needs FFmpeg on `PATH`). Machine-local credentials (database, Keycloak bootstrap administrator, client secrets, key rings and the developer password) are generated once and kept in the ignored `.env.dev-services`; a previous `.env.local` is copied to `.env.local.before-dev-services`. Open `http://127.0.0.1:5173`; invitation and verification emails arrive in the Mailpit inbox. Rerun `up` after pulling new migrations or realm changes. `pnpm -C apps/api dev:services down` stops the containers and keeps their data; `reset` removes containers, volumes, network and `.dev-media/` so the next `up` starts empty. Keycloak's back-channel logout cannot reach an API listening on loopback, so in this environment provider-side sign-outs end panel sessions through the 30-second revalidation instead. These are development services only; never point the script or its credentials at shared or production systems.
 
-### Optional two-step verification during local development
+### Two-step verification
 
-MFA is required by default. To test local administrative workflows with password sign-in alone, add this server-only setting to the ignored root `.env.local` and restart the API:
-
-```dotenv
-TELUNI_DEV_MFA_MODE=optional
-```
-
-This mode requires `ORION_ENV=development`, a loopback API listener and loopback panel and identity-provider URLs; startup rejects it elsewhere, including `test` and `production`. It waives both strong and recent assurance requirements after the ordinary verified login/session boundary, while preserving tenant permissions, CSRF, expiry and revocation. The session page labels the local exception explicitly. Nothing is stored as a provider MFA event, and no authenticator is removed. Change the value to `required` (or remove the setting) and restart the API to restore enforcement immediately, including for existing sessions. `dev:services up` preserves an existing explicit choice in `.env.local`. Automated qualification keeps the required default, except for the focused local-mode test. See the [identity design](project/identity-session-design.md#local-development-assurance-exception) for the boundary.
+Two-step verification is optional for each person. Sign in with the password alone, or enable an authenticator app from the **Sessões** page (Google Authenticator, Microsoft Authenticator or any TOTP app); from then on Keycloak asks for its code at every sign-in. Disabling it asks for the password and the current code. A new account is offered it right after its first sign-in. The former `TELUNI_DEV_MFA_MODE` setting no longer exists; remove it from `.env.local` if present (it is ignored). See the [identity design](project/identity-session-design.md#assurance-reauthentication-and-two-step-verification).
 
 ## Try sign-in locally
 

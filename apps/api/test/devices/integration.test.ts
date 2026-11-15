@@ -41,14 +41,12 @@ const sessions: HumanSessionPort = {
     const principalId = headers["x-test-principal"] as string | undefined;
     if (!principalId)
       return Promise.reject(new SessionFailure("AUTHENTICATION_REQUIRED"));
-    const strong = headers["x-test-strong"] === "true";
     return Promise.resolve({
       principalId,
       sessionId: randomUUID(),
-      assuranceLevel: strong ? "teluni-aal2" : "teluni-aal1",
+      assuranceLevel: "teluni-aal1",
       authenticatedAt: new Date(),
-      strongAuthenticatedAt: strong ? new Date() : null,
-      strongAuthenticationAgeSeconds: strong ? 1 : null,
+      authenticationAgeSeconds: 1,
       scopes: new Set(),
     });
   },
@@ -131,7 +129,6 @@ async function call(
   url: string,
   options: {
     body?: unknown;
-    strong?: boolean;
     credential?: string;
   } = {},
 ): Promise<Result> {
@@ -142,7 +139,6 @@ async function call(
       ...(person
         ? {
             "x-test-principal": people[person],
-            "x-test-strong": String(options.strong ?? false),
           }
         : {}),
       ...(options.credential
@@ -203,7 +199,6 @@ async function pair(
   overrides: Record<string, unknown> = {},
 ) {
   return call(person, "POST", `/companies/${companyId}/devices`, {
-    strong: true,
     body: { userCode, name: "Caixa 1", branchId, rotation: 0, ...overrides },
   });
 }
@@ -231,7 +226,7 @@ async function createBranch(person: Person, companyId: string, name: string) {
     person,
     "POST",
     `/companies/${companyId}/branches`,
-    { strong: true, body: { name } },
+    { body: { name } },
   );
   expect(created.status).toBe(201);
   return created.body as { id: string; version: number };
@@ -301,15 +296,12 @@ describe("devices: enrollment, scope and lifecycle", () => {
     const paired = await pair("aAdmin", companyA, a2.id, tv.userCode);
     const id = paired.body.id;
     await call("aAdmin", "PATCH", `/companies/${companyA}/devices/${id}`, {
-      strong: true,
       body: { expectedVersion: 1, name: "Before move" },
     });
     await call("aAdmin", "POST", `/companies/${companyA}/devices/${id}/move`, {
-      strong: true,
       body: { expectedVersion: 2, branchId: a1.id },
     });
     await call("aAdmin", "PATCH", `/companies/${companyA}/devices/${id}`, {
-      strong: true,
       body: {
         expectedVersion: 3,
         name: "After move",
@@ -317,9 +309,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
         timeZone: "UTC",
       },
     });
-    const own = await call("aManager", "GET", historyPath(id), {
-      strong: true,
-    });
+    const own = await call("aManager", "GET", historyPath(id), {});
     expect(own.status).toBe(200);
     expect(
       events(own)
@@ -330,9 +320,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
       "device.rotation_changed",
       "device.time_zone_changed",
     ]);
-    const wider = await call("aAuditor", "GET", historyPath(id), {
-      strong: true,
-    });
+    const wider = await call("aAuditor", "GET", historyPath(id), {});
     expect(events(wider)).toHaveLength(6);
     expect(events(wider).some((event) => event.action === "device.moved")).toBe(
       true,
@@ -341,13 +329,13 @@ describe("devices: enrollment, scope and lifecycle", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/devices/${id}/unlink`,
-      { strong: true, body: { expectedVersion: 4 } },
+      { body: { expectedVersion: 4 } },
     );
     await call(
       "aAdmin",
       "POST",
       `/companies/${companyA}/devices/${id}/reset-record`,
-      { strong: true, body: { expectedVersion: 5 } },
+      { body: { expectedVersion: 5 } },
     );
     expect(
       (
@@ -356,9 +344,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
         })
       ).status,
     ).toBe(204);
-    const final = await call("aManager", "GET", historyPath(id), {
-      strong: true,
-    });
+    const final = await call("aManager", "GET", historyPath(id), {});
     expect(events(final)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -394,10 +380,9 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(code(await call("aOperator", "GET", path))).toBe(
       "PERMISSION_DENIED",
     );
-    expect(code(await call("aManager", "GET", path))).toBe(
-      "RESOURCE_NOT_FOUND",
-    );
-    expect(code(await call("bAdmin", "GET", path, { strong: true }))).toBe(
+    // The branch's manager reads it in any session (two-step verification is optional).
+    expect((await call("aManager", "GET", path)).status).toBe(200);
+    expect(code(await call("bAdmin", "GET", path, {}))).toBe(
       "RESOURCE_NOT_FOUND",
     );
     expect(
@@ -406,7 +391,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
           "bAdmin",
           "GET",
           `/companies/${companyB}/devices/${paired.body.id}/audit-events`,
-          { strong: true },
+          {},
         ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
@@ -416,15 +401,11 @@ describe("devices: enrollment, scope and lifecycle", () => {
     const other = await enroll();
     const hidden = await pair("aAdmin", companyA, a2.id, other.userCode);
     expect(
-      code(
-        await call("aManager", "GET", historyPath(hidden.body.id), {
-          strong: true,
-        }),
-      ),
+      code(await call("aManager", "GET", historyPath(hidden.body.id), {})),
     ).toBe("RESOURCE_NOT_FOUND");
-    expect(
-      code(await call("aAdmin", "GET", path + "?cursor=bad", { strong: true })),
-    ).toBe("VALIDATION_FAILED");
+    expect(code(await call("aAdmin", "GET", path + "?cursor=bad", {}))).toBe(
+      "VALIDATION_FAILED",
+    );
   });
 
   it("filters before pagination with equal-time ties and binds cursors to current device, person and scope", async () => {
@@ -448,9 +429,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
     }
     visible.sort().reverse();
     const path = historyPath(id);
-    const first = await call("aManager", "GET", path + "?limit=100", {
-      strong: true,
-    });
+    const first = await call("aManager", "GET", path + "?limit=100", {});
     expect(events(first).map((event) => event.id)).toEqual(
       visible.slice(0, 100),
     );
@@ -460,7 +439,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
       "aManager",
       "GET",
       path + `?limit=100&cursor=${cursor}`,
-      { strong: true },
+      {},
     );
     expect(events(next).map((event) => event.id)).toEqual([
       ...visible.slice(100),
@@ -469,11 +448,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(next.body.nextCursor).toBeNull();
     expect(JSON.stringify(next.body)).not.toContain("SYNTHETIC_SECRET");
     expect(
-      code(
-        await call("aAdmin", "GET", path + `?cursor=${cursor}`, {
-          strong: true,
-        }),
-      ),
+      code(await call("aAdmin", "GET", path + `?cursor=${cursor}`, {})),
     ).toBe("VALIDATION_FAILED");
     const other = await enroll();
     const otherDevice = await pair("aAdmin", companyA, a1.id, other.userCode);
@@ -483,13 +458,11 @@ describe("devices: enrollment, scope and lifecycle", () => {
           "aManager",
           "GET",
           historyPath(otherDevice.body.id) + `?cursor=${cursor}`,
-          { strong: true },
+          {},
         ),
       ),
     ).toBe("VALIDATION_FAILED");
-    const broad = await call("aAuditor", "GET", path + "?limit=1", {
-      strong: true,
-    });
+    const broad = await call("aAuditor", "GET", path + "?limit=1", {});
     // Remove a branch while keeping the current device visible.
     const removed = await sql.query<{ grant_id: string }>(
       "DELETE FROM membership_grant_branches WHERE company_id = $1 AND branch_id = $2 AND grant_id IN (SELECT g.id FROM membership_grants g JOIN memberships m ON m.company_id = g.company_id AND m.id = g.membership_id WHERE m.principal_id = $3) RETURNING grant_id",
@@ -502,7 +475,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
             "aAuditor",
             "GET",
             path + `?cursor=${broad.body.nextCursor as string}`,
-            { strong: true },
+            {},
           ),
         ),
       ).toBe("VALIDATION_FAILED");
@@ -513,9 +486,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
           [companyA, row.grant_id, a2.id],
         );
     }
-    const all = await call("aAdmin", "GET", path + "?limit=100", {
-      strong: true,
-    });
+    const all = await call("aAdmin", "GET", path + "?limit=100", {});
     expect(events(all)).toHaveLength(100);
   });
 
@@ -710,21 +681,8 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(rows[0].count).toBe(1);
   });
 
-  it("enforces scope, assurance and destination checks when pairing", async () => {
+  it("enforces scope and destination checks when pairing", async () => {
     const screen = await enroll([0, 180]);
-    expect(
-      code(
-        await call("aManager", "POST", `/companies/${companyA}/devices`, {
-          strong: false,
-          body: {
-            userCode: screen.userCode,
-            name: "X",
-            branchId: a1.id,
-            rotation: 0,
-          },
-        }),
-      ),
-    ).toBe("STRONG_AUTHENTICATION_REQUIRED");
     expect(code(await pair("aManager", companyA, a2.id, screen.userCode))).toBe(
       "PERMISSION_DENIED",
     );
@@ -783,23 +741,19 @@ describe("devices: enrollment, scope and lifecycle", () => {
           "bAdmin",
           "GET",
           `/companies/${companyB}/devices/${hidden.body.id}`,
-          { strong: true },
+          {},
         ),
       ),
     ).toBe("RESOURCE_NOT_FOUND");
     expect(
-      code(
-        await call("bAdmin", "GET", `/companies/${companyA}/devices`, {
-          strong: true,
-        }),
-      ),
+      code(await call("bAdmin", "GET", `/companies/${companyA}/devices`, {})),
     ).toBe("RESOURCE_NOT_FOUND");
 
     const first = await call(
       "aAdmin",
       "GET",
       `/companies/${companyA}/devices?limit=1`,
-      { strong: true },
+      {},
     );
     expect(first.body.items).toHaveLength(1);
     const cursor = first.body.nextCursor as string;
@@ -808,7 +762,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/devices?limit=1&cursor=${cursor}`,
-      { strong: true },
+      {},
     );
     expect(second.status).toBe(200);
     expect((second.body.items as { id: string }[])[0].id).not.toBe(
@@ -824,7 +778,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
       "aAdmin",
       "GET",
       `/companies/${companyA}/devices?branchId=${a2.id}`,
-      { strong: true },
+      {},
     );
     expect(
       (filtered.body.items as { branch: { id: string } }[]).every(
@@ -839,7 +793,6 @@ describe("devices: enrollment, scope and lifecycle", () => {
     const id = paired.body.id;
     const url = `/companies/${companyA}/devices/${id}`;
     const renamed = await call("aManager", "PATCH", url, {
-      strong: true,
       body: { expectedVersion: 1, name: "Vitrine", rotation: 90 },
     });
     expect(renamed.body).toMatchObject({
@@ -850,7 +803,6 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(
       code(
         await call("aManager", "PATCH", url, {
-          strong: true,
           body: { expectedVersion: 1, name: "Outro" },
         }),
       ),
@@ -858,7 +810,6 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(
       code(
         await call("aManager", "PATCH", url, {
-          strong: true,
           body: { expectedVersion: 2, rotation: 270 },
         }),
       ),
@@ -873,13 +824,11 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(
       code(
         await call("aManager", "POST", `${url}/move`, {
-          strong: true,
           body: { expectedVersion: 2, branchId: a2.id },
         }),
       ),
     ).toBe("PERMISSION_DENIED");
     const moved = await call("aAdmin", "POST", `${url}/move`, {
-      strong: true,
       body: { expectedVersion: 2, branchId: a2.id },
     });
     expect(moved.body).toMatchObject({
@@ -890,7 +839,6 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(
       code(
         await call("aManager", "PATCH", url, {
-          strong: true,
           body: { expectedVersion: 3, name: "Volta" },
         }),
       ),
@@ -988,13 +936,11 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(
       code(
         await call("aAdmin", "POST", `${url}/reset-record`, {
-          strong: true,
           body: { expectedVersion: 1 },
         }),
       ),
     ).toBe("DEVICE_ERASURE_NOT_PENDING");
     const unlinked = await call("aAdmin", "POST", `${url}/unlink`, {
-      strong: true,
       body: { expectedVersion: 1 },
     });
     expect(unlinked.body).toMatchObject({
@@ -1005,7 +951,6 @@ describe("devices: enrollment, scope and lifecycle", () => {
     expect(
       code(
         await call("aAdmin", "PATCH", url, {
-          strong: true,
           body: { expectedVersion: 2, name: "Depois" },
         }),
       ),
@@ -1050,7 +995,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
         }),
       ),
     ).toBe("DEVICE_UNAUTHORIZED");
-    const after = await call("aAdmin", "GET", url, { strong: true });
+    const after = await call("aAdmin", "GET", url, {});
     expect(after.body).toMatchObject({ erasure: "CONFIRMED" });
     const { rows } = await sql.query<{
       credential_hash: Buffer | null;
@@ -1074,11 +1019,9 @@ describe("devices: enrollment, scope and lifecycle", () => {
     const paired = await pair("aAdmin", companyA, a1.id, screen.userCode);
     const url = `/companies/${companyA}/devices/${paired.body.id}`;
     await call("aAdmin", "POST", `${url}/unlink`, {
-      strong: true,
       body: { expectedVersion: 1 },
     });
     const reset = await call("aAdmin", "POST", `${url}/reset-record`, {
-      strong: true,
       body: { expectedVersion: 2 },
     });
     expect(reset.body).toMatchObject({ erasure: "RESET_RECORDED", version: 3 });
@@ -1102,7 +1045,6 @@ describe("devices: enrollment, scope and lifecycle", () => {
         "POST",
         `/companies/${companyA}/branches/${branch.id}/archive`,
         {
-          strong: true,
           body: { expectedVersion: version },
         },
       );
@@ -1111,7 +1053,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
       "aAdmin",
       "POST",
       `/companies/${companyA}/devices/${paired.body.id}/unlink`,
-      { strong: true, body: { expectedVersion: 1 } },
+      { body: { expectedVersion: 1 } },
     );
     expect((await archive(branch.version)).status).toBe(200);
     const late = await enroll();
@@ -1140,7 +1082,7 @@ describe("devices: enrollment, scope and lifecycle", () => {
             "bAdmin",
             "GET",
             `/companies/${companyB}/devices/${paired.body.id}/audit-events`,
-            { strong: true },
+            {},
           ),
         ),
       ).toBe("COMPANY_SUSPENDED");

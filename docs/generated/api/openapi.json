@@ -193,7 +193,7 @@
     "/auth/login": {
       "get": {
         "operationId": "startLogin",
-        "description": "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. With the explicitly enabled local-development optional-MFA mode, login uses ordinary provider assurance and the authenticated session exposes teluni-development effective assurance without persisting it as provider authentication.",
+        "description": "Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. Two-step verification is optional for each person; the provider asks for the authenticator code at every sign-in of a person who enabled it. reauthenticate=true forces a new authentication (the password, plus the code when enabled) for operations that need one within five minutes; an older authentication redirects to /sign-in?error=assurance_not_met. twoStep=enable (enroll an authenticator) and twoStep=disable (a new authentication with the password and current code, then a confirmation at the provider) need the current session cookie; when there is nothing to change they redirect straight to returnTo. A person who cancels the provider action keeps two-step verification unchanged and still returns signed in. The first sign-in of a new person redirects to /welcome/two-step?returnTo=, which suggests enabling it.",
         "tags": ["Identity"],
         "parameters": [
           {
@@ -206,20 +206,12 @@
             }
           },
           {
-            "name": "assurance",
+            "name": "reauthenticate",
             "in": "query",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "const": "strong"
-                },
-                {
-                  "type": "string",
-                  "const": "recent"
-                }
-              ]
+              "type": "string",
+              "const": "true"
             }
           },
           {
@@ -229,6 +221,23 @@
             "schema": {
               "type": "string",
               "const": "signup"
+            }
+          },
+          {
+            "name": "twoStep",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "enable"
+                },
+                {
+                  "type": "string",
+                  "const": "disable"
+                }
+              ]
             }
           }
         ],
@@ -245,6 +254,71 @@
             }
           },
           "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
             "description": "Response",
             "content": {
               "application/json": {
@@ -516,6 +590,7 @@
         },
         "x-expected-error-codes": [
           "VALIDATION_FAILED",
+          "AUTHENTICATION_REQUIRED",
           "RATE_LIMITED",
           "SERVICE_UNAVAILABLE"
         ]
@@ -524,7 +599,7 @@
     "/auth/callback": {
       "get": {
         "operationId": "completeLogin",
-        "description": "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
+        "description": "Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path (or, on a new person's first sign-in, to /welcome/two-step?returnTo=). Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable.",
         "tags": ["Identity"],
         "parameters": [
           {
@@ -579,6 +654,26 @@
           },
           {
             "name": "error_description",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "kc_action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          {
+            "name": "kc_action_status",
             "in": "query",
             "required": false,
             "schema": {
@@ -768,7 +863,6 @@
                     "expiresAt",
                     "assuranceLevel",
                     "authenticatedAt",
-                    "strongAuthenticatedAt",
                     "csrfToken"
                   ],
                   "properties": {
@@ -804,20 +898,380 @@
                       "type": "string",
                       "format": "date-time"
                     },
-                    "strongAuthenticatedAt": {
-                      "anyOf": [
-                        {
-                          "type": "string",
-                          "format": "date-time"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
                     "csrfToken": {
                       "type": "string",
                       "minLength": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        },
+                        "issues": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["path", "reason"],
+                            "properties": {
+                              "path": {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              "reason": {
+                                "type": "string",
+                                "pattern": "^[A-Z][A-Z0-9_]*$",
+                                "maxLength": 64
+                              },
+                              "fieldId": {
+                                "type": "string",
+                                "maxLength": 64
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "maxItems": 50
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-expected-error-codes": [
+          "AUTHENTICATION_REQUIRED",
+          "RATE_LIMITED",
+          "SERVICE_UNAVAILABLE"
+        ]
+      }
+    },
+    "/auth/two-step": {
+      "get": {
+        "operationId": "getTwoStepStatus",
+        "description": "Whether the caller's account has two-step verification (an authenticator app) enabled. It is optional for each person; enable or disable it through startLogin with twoStep.",
+        "tags": ["Identity"],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["enabled"],
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
                     }
                   },
                   "additionalProperties": false
@@ -3240,7 +3694,7 @@
     "/companies/{companyId}/members/{membershipId}/grants": {
       "post": {
         "operationId": "addMemberGrant",
-        "description": "Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
+        "description": "Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration. Only the responsible administrator, with an authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -4107,7 +4561,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "MEMBERSHIP_REMOVED",
           "RESPONSIBLE_APPROVAL_REQUIRED",
@@ -4118,7 +4571,7 @@
     "/companies/{companyId}/members/{membershipId}/grants/{grantId}/revoke": {
       "post": {
         "operationId": "revokeMemberGrant",
-        "description": "Revoke one of a membership's grants; revocation is terminal and an already revoked or expired grant is a no-op. Requires company administration and two-step verification. The responsible administrator and the last active administrator keep company administration.",
+        "description": "Revoke one of a membership's grants; revocation is terminal and an already revoked or expired grant is a no-op. Requires company administration. The responsible administrator and the last active administrator keep company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -4698,7 +5151,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
           "LAST_ADMINISTRATOR_REQUIRED"
@@ -4708,7 +5160,7 @@
     "/companies/{companyId}/responsibility-transfers": {
       "post": {
         "operationId": "requestResponsibilityTransfer",
-        "description": "Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with strong authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts.",
+        "description": "Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with an authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -5360,7 +5812,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "RESPONSIBLE_APPROVAL_REQUIRED",
           "RECENT_AUTHENTICATION_REQUIRED",
@@ -5372,7 +5823,7 @@
     "/companies/{companyId}/responsibility-transfers/{transferId}/accept": {
       "post": {
         "operationId": "acceptResponsibilityTransfer",
-        "description": "The proposed successor accepts responsibility. They must still be an active company administrator with strong authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
+        "description": "The proposed successor accepts responsibility. They must still be an active company administrator with an authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -5943,7 +6394,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "RECENT_AUTHENTICATION_REQUIRED",
           "SUCCESSOR_NOT_ELIGIBLE",
@@ -6525,7 +6975,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "RESPONSIBILITY_TRANSFER_NOT_PENDING"
         ]
@@ -6534,7 +6983,7 @@
     "/companies/{companyId}/members": {
       "get": {
         "operationId": "listCompanyMembers",
-        "description": "List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration and two-step verification. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page.",
+        "description": "List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -7341,15 +7790,14 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       }
     },
     "/companies/{companyId}/members/{membershipId}": {
       "patch": {
         "operationId": "updateCompanyMemberStatus",
-        "description": "Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with strong authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change.",
+        "description": "Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with an authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -7954,7 +8402,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "MEMBERSHIP_REMOVED",
           "RESPONSIBLE_ADMINISTRATOR_PROTECTED",
@@ -7967,7 +8414,7 @@
     "/companies": {
       "post": {
         "operationId": "createCompany",
-        "description": "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. Further administration requires two-step verification.",
+        "description": "Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -8106,8 +8553,7 @@
                         "roles",
                         "profiles",
                         "responsible",
-                        "capabilities",
-                        "capabilitiesAfterStrongAuthentication"
+                        "capabilities"
                       ],
                       "properties": {
                         "roles": {
@@ -8142,97 +8588,6 @@
                           "type": "boolean"
                         },
                         "capabilities": {
-                          "type": "array",
-                          "items": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "const": "company.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "company.settings.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "branches.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "branches.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "members.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "invitations.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "audit.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "devices.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "devices.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.upload"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.archive"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.delete"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.edit"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.assign"
-                              },
-                              {
-                                "type": "string",
-                                "const": "publications.publish"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.edit"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "prices.edit"
-                              }
-                            ]
-                          }
-                        },
-                        "capabilitiesAfterStrongAuthentication": {
                           "type": "array",
                           "items": {
                             "anyOf": [
@@ -8488,8 +8843,7 @@
                         "roles",
                         "profiles",
                         "responsible",
-                        "capabilities",
-                        "capabilitiesAfterStrongAuthentication"
+                        "capabilities"
                       ],
                       "properties": {
                         "roles": {
@@ -8524,97 +8878,6 @@
                           "type": "boolean"
                         },
                         "capabilities": {
-                          "type": "array",
-                          "items": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "const": "company.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "company.settings.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "branches.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "branches.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "members.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "invitations.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "audit.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "devices.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "devices.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.upload"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.archive"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.delete"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.edit"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.assign"
-                              },
-                              {
-                                "type": "string",
-                                "const": "publications.publish"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.edit"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "prices.edit"
-                              }
-                            ]
-                          }
-                        },
-                        "capabilitiesAfterStrongAuthentication": {
                           "type": "array",
                           "items": {
                             "anyOf": [
@@ -10078,8 +10341,7 @@
                         "roles",
                         "profiles",
                         "responsible",
-                        "capabilities",
-                        "capabilitiesAfterStrongAuthentication"
+                        "capabilities"
                       ],
                       "properties": {
                         "roles": {
@@ -10114,97 +10376,6 @@
                           "type": "boolean"
                         },
                         "capabilities": {
-                          "type": "array",
-                          "items": {
-                            "anyOf": [
-                              {
-                                "type": "string",
-                                "const": "company.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "company.settings.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "branches.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "branches.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "members.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "invitations.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "audit.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "devices.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "devices.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.upload"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.archive"
-                              },
-                              {
-                                "type": "string",
-                                "const": "media.delete"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.edit"
-                              },
-                              {
-                                "type": "string",
-                                "const": "programming.assign"
-                              },
-                              {
-                                "type": "string",
-                                "const": "publications.publish"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.view"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.edit"
-                              },
-                              {
-                                "type": "string",
-                                "const": "catalogs.manage"
-                              },
-                              {
-                                "type": "string",
-                                "const": "prices.edit"
-                              }
-                            ]
-                          }
-                        },
-                        "capabilitiesAfterStrongAuthentication": {
                           "type": "array",
                           "items": {
                             "anyOf": [
@@ -10917,13 +11088,12 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
         "operationId": "updateCompany",
-        "description": "Change company settings with the observed version. Requires company administration and two-step verification.",
+        "description": "Change company settings with the observed version. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -11597,7 +11767,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT"
         ]
       }
@@ -12268,13 +12437,12 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
         "operationId": "createBranch",
-        "description": "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration and two-step verification.",
+        "description": "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -12924,7 +13092,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "BRANCH_NAME_IN_USE"
         ]
@@ -13564,13 +13731,12 @@
           "SERVICE_UNAVAILABLE",
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
-          "COMPANY_SUSPENDED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "COMPANY_SUSPENDED"
         ]
       },
       "patch": {
         "operationId": "updateBranch",
-        "description": "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration and two-step verification.",
+        "description": "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -14233,7 +14399,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "BRANCH_NAME_IN_USE",
           "BRANCH_ARCHIVED"
@@ -14243,7 +14408,7 @@
     "/companies/{companyId}/branches/{branchId}/archive": {
       "post": {
         "operationId": "archiveBranch",
-        "description": "Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration and two-step verification.",
+        "description": "Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -14895,7 +15060,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "BRANCH_ARCHIVED",
           "BRANCH_IN_USE"
@@ -14905,7 +15069,7 @@
     "/companies/{companyId}/audit-events": {
       "get": {
         "operationId": "listCompanyAuditEvents",
-        "description": "List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch. Requires two-step verification.",
+        "description": "List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -15552,15 +15716,14 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       }
     },
     "/companies/{companyId}/access-profiles": {
       "get": {
         "operationId": "listAccessProfiles",
-        "description": "List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification.",
+        "description": "List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -16272,13 +16435,12 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
         "operationId": "createAccessProfile",
-        "description": "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); devices.manage needs devices.view, media.upload and media.archive need media.view, programming.edit, programming.assign and publications.publish need programming.view, and catalogs.edit, catalogs.manage and prices.edit need catalogs.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification.",
+        "description": "Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); devices.manage needs devices.view, media.upload and media.archive need media.view, programming.edit, programming.assign and publications.publish need programming.view, and catalogs.edit, catalogs.manage and prices.edit need catalogs.view. Company administration is never delegable through a profile. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -17068,7 +17230,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "PROFILE_NAME_IN_USE",
           "PROFILE_LIMIT_REACHED"
@@ -17078,7 +17239,7 @@
     "/companies/{companyId}/access-profiles/{profileId}": {
       "get": {
         "operationId": "getAccessProfile",
-        "description": "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration and two-step verification.",
+        "description": "Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -17897,13 +18058,12 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
         "operationId": "updateAccessProfile",
-        "description": "Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration and two-step verification.",
+        "description": "Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -18706,7 +18866,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "PROFILE_NAME_IN_USE",
           "PROFILE_ARCHIVED"
@@ -18716,7 +18875,7 @@
     "/companies/{companyId}/access-profiles/{profileId}/archive": {
       "post": {
         "operationId": "archiveAccessProfile",
-        "description": "Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration and two-step verification.",
+        "description": "Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration.",
         "tags": ["Organizations"],
         "security": [
           {
@@ -19439,7 +19598,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "PROFILE_IN_USE",
           "PROFILE_ARCHIVED"
@@ -19449,7 +19607,7 @@
     "/companies/{companyId}/invitations": {
       "post": {
         "operationId": "createInvitation",
-        "description": "Invite a recipient address to the company with one grant: a role over the whole company or explicit active branches, optionally until an expiry instant. Company administrators invite operators and branch managers; only the responsible administrator, with strong authentication no older than five minutes, invites administrators (always company-wide); branch managers invite operators to branches they manage. The invitation is valid for seven days and its email is delivered at least once after commit. One pending invitation per address and company; abuse limits answer RATE_LIMITED.",
+        "description": "Invite a recipient address to the company with one grant: a role over the whole company or explicit active branches, optionally until an expiry instant. Company administrators invite operators and branch managers; only the responsible administrator, with an authentication no older than five minutes, invites administrators (always company-wide); branch managers invite operators to branches they manage. The invitation is valid for seven days and its email is delivered at least once after commit. One pending invitation per address and company; abuse limits answer RATE_LIMITED.",
         "tags": ["Invitations"],
         "security": [
           {
@@ -20232,7 +20390,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "RESPONSIBLE_APPROVAL_REQUIRED",
           "RECENT_AUTHENTICATION_REQUIRED",
@@ -20241,7 +20398,7 @@
       },
       "get": {
         "operationId": "listInvitations",
-        "description": "The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Requires two-step verification. Cursors are bound to the company, caller and visible scope.",
+        "description": "The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Cursors are bound to the company, caller and visible scope.",
         "tags": ["Invitations"],
         "security": [
           {
@@ -21002,8 +21159,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       }
     },
@@ -21742,7 +21898,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT",
           "RESPONSIBLE_APPROVAL_REQUIRED",
           "RECENT_AUTHENTICATION_REQUIRED",
@@ -22324,7 +22479,6 @@
           "COMPANY_SUSPENDED",
           "CSRF_VALIDATION_FAILED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "RESOURCE_VERSION_CONFLICT"
         ]
       }
@@ -28255,13 +28409,12 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
         "operationId": "pairDevice",
-        "description": "Pair the screen showing a code to an active branch the caller manages, with a name and one of the rotations the screen reported. Expired, used, unknown and concurrently claimed codes all answer PAIRING_CODE_INVALID; repeated failures answer RATE_LIMITED. Requires screen management and two-step verification.",
+        "description": "Pair the screen showing a code to an active branch the caller manages, with a name and one of the rotations the screen reported. Expired, used, unknown and concurrently claimed codes all answer PAIRING_CODE_INVALID; repeated failures answer RATE_LIMITED. Requires screen management.",
         "tags": ["Devices"],
         "security": [
           {
@@ -29115,7 +29268,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "PAIRING_CODE_INVALID",
@@ -29939,8 +30091,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
@@ -30816,7 +30967,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "ROTATION_UNSUPPORTED",
@@ -31475,8 +31625,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       }
     },
@@ -32319,7 +32468,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "DEVICE_UNLINKED"
@@ -33161,7 +33309,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "DEVICE_UNLINKED"
@@ -34003,7 +34150,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "DEVICE_ERASURE_NOT_PENDING"
@@ -35022,8 +35168,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
@@ -36007,7 +36152,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_TYPE_UNSUPPORTED",
@@ -36937,7 +37081,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_UPLOAD_INCOMPLETE",
@@ -37633,7 +37776,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "MEDIA_NOT_READY"
         ]
       }
@@ -38547,8 +38689,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
@@ -39494,7 +39635,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_INVALID_STATE"
@@ -40090,7 +40230,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_INVALID_STATE"
@@ -41025,7 +41164,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_INVALID_STATE"
@@ -41960,7 +42098,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_INVALID_STATE"
@@ -42895,7 +43032,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_INVALID_STATE",
@@ -43831,7 +43967,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "MEDIA_INVALID_STATE"
@@ -44709,8 +44844,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
@@ -45682,7 +45816,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_LIMIT_REACHED",
@@ -46494,8 +46627,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
@@ -47329,7 +47461,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED"
@@ -47925,7 +48056,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_NOT_EMPTY",
@@ -48899,7 +49029,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -49712,8 +49841,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
@@ -50509,7 +50637,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -51281,8 +51408,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
@@ -52091,7 +52217,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -52697,7 +52822,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -53498,7 +53622,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED"
@@ -53508,7 +53631,7 @@
     "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}": {
       "put": {
         "operationId": "setCatalogBasePrice",
-        "description": "Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
+        "description": "Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope; the change is audited with the old and new amounts. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
         "tags": ["Catalogs"],
         "security": [
           {
@@ -54301,7 +54424,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -54312,7 +54434,7 @@
     "/companies/{companyId}/catalogs/{catalogId}/records/{recordId}/prices/{fieldId}/branches/{branchId}": {
       "put": {
         "operationId": "setCatalogBranchPrice",
-        "description": "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
+        "description": "Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
         "tags": ["Catalogs"],
         "security": [
           {
@@ -55114,7 +55236,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -55787,13 +55908,12 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
         "operationId": "createCatalogPromotion",
-        "description": "Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
+        "description": "Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects. At most 100 promotions per price. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved.",
         "tags": ["Catalogs"],
         "security": [
           {
@@ -56484,7 +56604,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -57094,7 +57213,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "CATALOG_ARCHIVED",
@@ -57852,8 +57970,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       }
     },
@@ -58659,8 +58776,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
@@ -59461,7 +59577,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "PROGRAMMING_LIMIT_REACHED"
@@ -60220,8 +60335,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
@@ -61024,7 +61138,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT"
         ]
@@ -61619,7 +61732,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "PLAYLIST_IN_USE"
@@ -62424,7 +62536,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "PLAYLIST_SCOPE_MISMATCH",
@@ -63101,8 +63212,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
@@ -63795,7 +63905,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "PROGRAMMING_LIMIT_REACHED",
@@ -64471,8 +64580,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
@@ -65178,7 +65286,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "GROUP_NAME_IN_USE",
@@ -65777,7 +65884,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "GROUP_HAS_MEMBERS"
@@ -66613,8 +66719,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       }
     },
@@ -67557,7 +67662,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "SCHEDULE_TIMES_EQUAL",
@@ -68429,7 +68533,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "LAYOUT_SCOPE_MISMATCH",
@@ -69108,7 +69211,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED"
         ]
       }
@@ -69824,7 +69926,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "ASSIGNMENT_CONFIRMATION_REQUIRED",
@@ -70663,7 +70764,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED"
         ]
       }
@@ -71607,7 +71707,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "SCHEDULE_TIMES_EQUAL",
@@ -72481,7 +72580,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "LAYOUT_SCOPE_MISMATCH",
@@ -73191,7 +73289,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED"
         ]
       }
@@ -74085,7 +74182,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "TIMELINE_TOO_LARGE"
         ]
@@ -74990,7 +75086,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "TIMELINE_TOO_LARGE"
         ]
       }
@@ -75701,8 +75796,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "post": {
@@ -77102,7 +77196,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "LAYOUT_INVALID",
@@ -78523,7 +78616,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "LAYOUT_INVALID",
@@ -79616,8 +79708,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       },
       "patch": {
@@ -81022,7 +81113,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "LAYOUT_INVALID",
@@ -81619,7 +81709,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
           "LAYOUT_IN_USE"
@@ -82512,8 +82601,7 @@
           "VALIDATION_FAILED",
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
-          "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED"
+          "PERMISSION_DENIED"
         ]
       }
     },
@@ -83276,7 +83364,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED"
         ]
       },
@@ -84185,7 +84272,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
@@ -85056,7 +85142,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "CSRF_VALIDATION_FAILED"
         ]
@@ -85959,7 +86044,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "CSRF_VALIDATION_FAILED",
           "PUBLICATION_INVALID",
@@ -86726,7 +86810,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED"
         ]
       },
@@ -87635,7 +87718,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT",
@@ -88506,7 +88588,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "CSRF_VALIDATION_FAILED"
         ]
@@ -89409,7 +89490,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "CSRF_VALIDATION_FAILED",
           "PUBLICATION_INVALID",
@@ -90203,7 +90283,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED"
         ]
       }
@@ -90211,7 +90290,7 @@
     "/companies/{companyId}/price-publications/{intentId}/retry": {
       "post": {
         "operationId": "retryPricePublication",
-        "description": "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program, with strong authentication.",
+        "description": "Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program,.",
         "tags": ["Publications"],
         "security": [
           {
@@ -90983,7 +91062,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED",
           "CSRF_VALIDATION_FAILED",
           "RESOURCE_VERSION_CONFLICT"
@@ -91950,7 +92028,6 @@
           "RESOURCE_NOT_FOUND",
           "COMPANY_SUSPENDED",
           "PERMISSION_DENIED",
-          "STRONG_AUTHENTICATION_REQUIRED",
           "DEVICE_UNLINKED"
         ]
       }

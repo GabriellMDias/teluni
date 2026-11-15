@@ -57,16 +57,6 @@
       "Unit": "—"
     },
     {
-      "Column": "requested_assurance",
-      "PostgreSQL type": "character varying(64)",
-      "Nullable": "yes",
-      "Default": "—",
-      "Classification": "INTERNAL",
-      "Meaning": "Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.",
-      "Null meaning": "A standard login without a requested level.",
-      "Unit": "—"
-    },
-    {
       "Column": "max_age_seconds",
       "PostgreSQL type": "integer",
       "Nullable": "yes",

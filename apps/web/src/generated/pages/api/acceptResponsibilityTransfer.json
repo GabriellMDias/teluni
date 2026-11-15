@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "acceptResponsibilityTransfer",
   "summary": "",
-  "description": "The proposed successor accepts responsibility. They must still be an active company administrator with strong authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
+  "description": "The proposed successor accepts responsibility. They must still be an active company administrator with an authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

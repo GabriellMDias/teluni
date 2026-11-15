@@ -12,7 +12,6 @@ export type StoredLoginAttempt = Readonly<{
   state: string;
   secrets: Uint8Array;
   returnTo: string;
-  requestedAssurance: string | null;
   maxAgeSeconds: number | null;
 }>;
 
@@ -26,8 +25,8 @@ export type StoredSession = Readonly<{
   providerSessionId: string | null;
   assuranceLevel: string;
   authenticatedAt: Date;
-  strongAuthenticatedAt: Date | null;
-  strongAuthenticationAgeSeconds: number | null;
+  /** Database-clock age of the provider authentication. */
+  authenticationAgeSeconds: number;
   providerTokens: Uint8Array;
   createdAt: Date;
   lastActivityAt: Date;
@@ -46,7 +45,6 @@ export type NewSession = Readonly<{
   providerSessionId: string | null;
   assuranceLevel: string;
   authenticatedAt: Date;
-  strongAuthenticatedAt: Date | null;
   idleTimeoutSeconds: number;
   providerTokens: Buffer;
   accessTokenLifetimeSeconds: number;
@@ -63,8 +61,7 @@ type SessionRow = {
   provider_session_id: string | null;
   assurance_level: string;
   authenticated_at: Date;
-  strong_authenticated_at: Date | null;
-  strong_age_seconds: number | null;
+  authentication_age_seconds: number;
   provider_tokens: Uint8Array;
   created_at: Date;
   last_activity_at: Date;
@@ -86,9 +83,7 @@ function session(row: SessionRow): StoredSession {
     providerSessionId: row.provider_session_id,
     assuranceLevel: row.assurance_level,
     authenticatedAt: row.authenticated_at,
-    strongAuthenticatedAt: row.strong_authenticated_at,
-    strongAuthenticationAgeSeconds:
-      row.strong_age_seconds === null ? null : Number(row.strong_age_seconds),
+    authenticationAgeSeconds: Number(row.authentication_age_seconds),
     providerTokens: row.provider_tokens,
     createdAt: row.created_at,
     lastActivityAt: row.last_activity_at,
@@ -114,14 +109,13 @@ export class PrismaIdentityRepository {
     state: string;
     secrets: Buffer;
     returnTo: string;
-    requestedAssurance: string | null;
     maxAgeSeconds: number | null;
   }): Promise<void> {
     await this.#db.$executeRaw`
       INSERT INTO oidc_login_attempts (id, handle_hash, state, secrets, return_to,
-        requested_assurance, max_age_seconds, expires_at)
+        max_age_seconds, expires_at)
       VALUES (${input.id}::uuid, ${input.handleHash}, ${input.state}, ${input.secrets},
-        ${input.returnTo}, ${input.requestedAssurance}, ${input.maxAgeSeconds}::integer,
+        ${input.returnTo}, ${input.maxAgeSeconds}::integer,
         now() + make_interval(secs => ${sessionPolicy.loginAttemptSeconds}::double precision))`;
   }
 
@@ -158,14 +152,13 @@ export class PrismaIdentityRepository {
         state: string;
         secrets: Uint8Array;
         return_to: string;
-        requested_assurance: string | null;
         max_age_seconds: number | null;
       }[]
     >`
       UPDATE oidc_login_attempts SET consumed_at = now()
       WHERE handle_hash = ${handleHash} AND state = ${state}
         AND consumed_at IS NULL AND expires_at > now()
-      RETURNING id, state, secrets, return_to, requested_assurance, max_age_seconds`;
+      RETURNING id, state, secrets, return_to, max_age_seconds`;
     const row = rows[0];
     return row
       ? {
@@ -173,7 +166,6 @@ export class PrismaIdentityRepository {
           state: row.state,
           secrets: row.secrets,
           returnTo: row.return_to,
-          requestedAssurance: row.requested_assurance,
           maxAgeSeconds: row.max_age_seconds,
         }
       : null;
@@ -184,15 +176,19 @@ export class PrismaIdentityRepository {
     issuer: string,
     subject: string,
     candidateId: string,
-  ): Promise<{ id: string; active: boolean }> {
-    await this.#db.$executeRaw`
+  ): Promise<{ id: string; active: boolean; created: boolean }> {
+    const inserted = await this.#db.$executeRaw`
       INSERT INTO principals (id, issuer, subject) VALUES (${candidateId}::uuid, ${issuer}, ${subject})
       ON CONFLICT (issuer, subject) DO NOTHING`;
     const rows = await this.#db.$queryRaw<{ id: string; status: string }[]>`
       SELECT id, status::text FROM principals WHERE issuer = ${issuer} AND subject = ${subject}`;
     const row = rows[0];
     if (!row) throw new Error("Principal provisioning did not converge");
-    return { id: row.id, active: row.status === "ACTIVE" };
+    return {
+      id: row.id,
+      active: row.status === "ACTIVE",
+      created: inserted === 1,
+    };
   }
 
   /**
@@ -214,11 +210,11 @@ export class PrismaIdentityRepository {
         count >= sessionPolicy.maxActiveSessions ? "PENDING_LIMIT" : "ACTIVE";
       await tx.$executeRaw`
         INSERT INTO human_sessions (id, principal_id, token_hash, state, provider_session_id,
-          assurance_level, authenticated_at, strong_authenticated_at, idle_timeout_seconds,
+          assurance_level, authenticated_at, idle_timeout_seconds,
           absolute_expires_at, provider_tokens, access_token_expires_at)
         VALUES (${input.id}::uuid, ${input.principalId}::uuid, ${input.tokenHash},
           ${state}::"HumanSessionState", ${input.providerSessionId}, ${input.assuranceLevel},
-          ${input.authenticatedAt}, ${input.strongAuthenticatedAt}, ${input.idleTimeoutSeconds},
+          ${input.authenticatedAt}, ${input.idleTimeoutSeconds},
           now() + make_interval(secs => ${sessionPolicy.absoluteLifetimeSeconds}::double precision),
           ${input.providerTokens},
           now() + make_interval(secs => ${Math.max(input.accessTokenLifetimeSeconds - 5, 0)}::double precision))`;
@@ -256,8 +252,7 @@ export class PrismaIdentityRepository {
     const rows = await this.#db.$queryRaw<SessionRow[]>`
       SELECT s.id, s.principal_id, p.status::text AS principal_status, p.subject, p.issuer,
         s.state::text AS state, s.provider_session_id, s.assurance_level, s.authenticated_at,
-        s.strong_authenticated_at,
-        EXTRACT(EPOCH FROM now() - s.strong_authenticated_at)::double precision AS strong_age_seconds,
+        EXTRACT(EPOCH FROM now() - s.authenticated_at)::double precision AS authentication_age_seconds,
         s.provider_tokens, s.created_at, s.last_activity_at,
         LEAST(s.absolute_expires_at,
           s.last_activity_at + make_interval(secs => s.idle_timeout_seconds)) AS expires_at,

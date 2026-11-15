@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "requestResponsibilityTransfer",
   "summary": "",
-  "description": "Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with strong authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts.",
+  "description": "Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with an authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

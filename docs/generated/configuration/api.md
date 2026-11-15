@@ -8,7 +8,6 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 
 | Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `TELUNI_DEV_MFA_MODE` | required \| optional | no | `required` | server | INTERNAL | no | Optional MFA for local development only: simulates strong and recent assurance after normal authenticated-session checks, without persisting it. Requires development and loopback API, panel and issuer; rejected elsewhere. Restart the API after changing it. |
 | `ORION_ENV` | development \| test \| production | yes | — | server | INTERNAL | no | Runtime environment. |
 | `ORION_RELEASE_ID` | artifact identifier, 1..128 ASCII letters/digits/._- | no | `local` | server | INTERNAL | no | Actual artifact revision for correlated logs and traces; local for unversioned development. |
 | `ORION_API_HOST` | nonempty string | no | `127.0.0.1` | server | INTERNAL | no | Listen address; loopback by default. |

@@ -26,6 +26,9 @@ export default defineConfig({
   },
   test: {
     include: ["test/**/*.browser.test.tsx"],
+    // Concurrent file startup intermittently fails module imports before collection.
+    // Keep every browser assertion while loading one test file at a time.
+    fileParallelism: false,
     browser: {
       enabled: true,
       provider: playwright({

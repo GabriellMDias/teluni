@@ -19,10 +19,10 @@ const ptBR = {
   responsible: "Responsável",
   accountTitle: "Sua conta",
   accountSessions: "Sessões e dispositivos conectados",
-  twoStepDone: "Verificação em duas etapas concluída nesta sessão.",
-  twoStepMissing:
-    "Esta sessão não usou verificação em duas etapas, necessária para administrar empresas.",
-  twoStepButton: "Verificar em duas etapas",
+  twoStepEnabled: "Verificação em duas etapas ativada.",
+  twoStepDisabled:
+    "A verificação em duas etapas está desativada. Recomendamos ativá-la para proteger sua conta.",
+  twoStepButton: "Ativar verificação em duas etapas",
   companiesFailed: "Não foi possível carregar suas empresas.",
   reload: "Recarregar",
 };
@@ -46,10 +46,10 @@ const enUS: WorkspaceMessages = {
   responsible: "Responsible",
   accountTitle: "Your account",
   accountSessions: "Sessions and connected devices",
-  twoStepDone: "Two-step verification completed in this session.",
-  twoStepMissing:
-    "This session did not use two-step verification, which administering companies requires.",
-  twoStepButton: "Verify in two steps",
+  twoStepEnabled: "Two-step verification is on.",
+  twoStepDisabled:
+    "Two-step verification is off. We recommend turning it on to protect your account.",
+  twoStepButton: "Turn on two-step verification",
   companiesFailed: "Your companies could not be loaded.",
   reload: "Reload",
 };

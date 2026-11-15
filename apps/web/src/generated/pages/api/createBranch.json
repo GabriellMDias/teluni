@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "createBranch",
   "summary": "",
-  "description": "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration and two-step verification.",
+  "description": "Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {
