@@ -4,7 +4,7 @@ import { GenericContainer, Wait, type StartedNetwork } from "testcontainers";
 
 // Pinned by digest: the identity design qualifies this exact Keycloak build.
 export const keycloakImage =
-  "quay.io/keycloak/keycloak:26.8.1@sha256:79c623a22abacf3fe6c00a5fb30f5b7843d717b234033b80995891c06116d244";
+  "quay.io/keycloak/keycloak:26.8.1@sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332";
 export const mailpitImage =
   "axllent/mailpit:v1.31.3@sha256:ed9b00c609e77e99c79b93f1178255ebc271868920f2c69a8d166bd5634ed10d";
 

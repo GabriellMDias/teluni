@@ -247,11 +247,15 @@ export function createKeycloakProvider(
       };
     },
     async authorizationUrl(challenge, request = {}) {
+      // Keycloak compares max_age in whole seconds. Explicitly request login
+      // so a session authenticated in this same second is not reused.
+      const prompt =
+        request.prompt ?? (request.maxAgeSeconds === 0 ? "login" : undefined);
       return oidc.buildAuthorizationUrl(await webConfig(), {
         // Keycloak application-initiated actions run after authentication.
         ...(request.action ? { kc_action: request.action } : {}),
         // OpenID Connect prompt=create opens the provider's account creation.
-        ...(request.prompt ? { prompt: request.prompt } : {}),
+        ...(prompt ? { prompt } : {}),
         ...(request.maxAgeSeconds === undefined
           ? {}
           : { max_age: String(request.maxAgeSeconds) }),
