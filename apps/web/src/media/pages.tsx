@@ -21,6 +21,7 @@ import {
   maxBytes,
   mediaKey,
   mediaListKey,
+  mediaFoldersKey,
   nameFromFile,
   updateMedia,
   uploadMediaContent,
@@ -224,9 +225,11 @@ function UploadForm({
       } catch (error) {
         update(key, { state: "failed", error });
       }
-      await queryClient.invalidateQueries({
-        queryKey: mediaListKey(companyId),
-      });
+      // Admission touches the destination folder even if byte transfer fails.
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: mediaListKey(companyId) }),
+        queryClient.invalidateQueries({ queryKey: mediaFoldersKey(companyId) }),
+      ]);
     }
     setBusy(false);
     onBusyChange?.(false);

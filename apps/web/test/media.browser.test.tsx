@@ -14,6 +14,7 @@ import { mediaMessages } from "../src/media/messages.js";
 import { ModuleNavigation } from "../src/module-navigation.js";
 import { moduleNavigation, routeTree } from "../src/modules.js";
 import { shellMessages } from "../src/shell-messages.js";
+import { companyKey } from "../src/organizations/api.js";
 import { organizationMessages } from "../src/organizations/messages.js";
 
 const companyId = "00000000-0000-4000-8000-000000000001";
@@ -594,6 +595,7 @@ test("creates folders and renames them with the current version, then navigates 
   await expect
     .element(screen.getByRole("button", { name: "Campanhas", exact: true }))
     .toBeVisible();
+  await expect.element(screen.getByText(t.manager.folderCreated)).toBeVisible();
   expect(await sent("POST", "/media-folders")).toEqual({
     operationId: expect.any(String) as unknown,
     name: "Campanhas",
@@ -613,6 +615,7 @@ test("creates folders and renames them with the current version, then navigates 
       screen.getByRole("button", { name: "Campanhas 2027", exact: true }),
     )
     .toBeVisible();
+  await expect.element(screen.getByText(t.manager.renamed)).toBeVisible();
   expect(await sent("PATCH", `/media-folders/${folderId}`)).toEqual({
     expectedVersion: 1,
     name: "Campanhas 2027",
@@ -776,4 +779,111 @@ test("moves files with the destination picker, and preserves server scope refusa
   allow = true;
   await dialog.getByRole("button", { name: t.manager.useFolder }).click();
   await expect.element(screen.getByText(t.manager.done)).toBeVisible();
+});
+
+test("clears the clipboard and selection when switching company libraries", async () => {
+  respond((url) => {
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/media"))
+      return { body: { items: [media()], nextCursor: null } };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["media.view", "media.upload"]) };
+  });
+  const { screen, router, client } = await open(mediaPath);
+  const secondId = "00000000-0000-4000-8000-000000000002";
+  // A cached company gate must not allow React to retain another library's temporary state.
+  client.setQueryData(
+    companyKey(secondId),
+    company(["media.view", "media.upload"]),
+  );
+  await screen.getByRole("button", { name: media().name, exact: true }).click();
+  await screen
+    .getByRole("button", { name: t.manager.copy, exact: true })
+    .click();
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.paste, exact: true }))
+    .toBeEnabled();
+  await router.navigate({
+    to: "/companies/$companyId/media",
+    params: { companyId: secondId },
+  });
+  await expect
+    .element(screen.getByRole("button", { name: media().name, exact: true }))
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.paste, exact: true }))
+    .toBeDisabled();
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.clearClipboard }))
+    .not.toBeInTheDocument();
+});
+
+test("refreshes folder versions after admitted uploads even when transferring bytes fails", async () => {
+  let version = 1;
+  respond((url, request) => {
+    if (url.pathname.endsWith("/media") && request.method === "POST") {
+      version = 2;
+      return {
+        status: 201,
+        body: media({ status: "UPLOADING", version: 1, folderId }),
+      };
+    }
+    if (url.pathname.endsWith("/media"))
+      return { body: { items: [], nextCursor: null } };
+    if (url.pathname.endsWith("/media-folders"))
+      return { body: { items: [folder({ version })], nextCursor: null } };
+    if (url.pathname.endsWith(`/media-folders/${folderId}`))
+      return { body: folder({ name: "Updated folder", version: 3 }) };
+    if (url.pathname.endsWith("/branches")) return { body: branches };
+    return { body: company(["media.view", "media.upload"]) };
+  });
+  stubUploads(() => ({
+    status: 400,
+    body: { error: { code: "MEDIA_UPLOAD_INCOMPLETE", message: "Incomplete" } },
+  }));
+  const { screen } = await open(mediaPath);
+  const target = screen.getByRole("button", { name: "Campanhas", exact: true });
+  await expect.element(target).toBeVisible();
+  const data = new DataTransfer();
+  data.items.add(
+    new File([new Uint8Array(10)], "a.png", { type: "image/png" }),
+  );
+  target
+    .element()
+    .closest("li")!
+    .dispatchEvent(
+      new DragEvent("drop", {
+        dataTransfer: data,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  await screen.getByRole("button", { name: t.upload, exact: true }).click();
+  await expect
+    .element(screen.getByText(t.errors.MEDIA_UPLOAD_INCOMPLETE))
+    .toBeVisible();
+  expect(await sent("POST", "/media")).toMatchObject({
+    folderId,
+    branchId: null,
+  });
+  await expect
+    .element(screen.getByRole("button", { name: t.manager.close, exact: true }))
+    .toBeEnabled();
+  await screen
+    .getByRole("button", { name: t.manager.close, exact: true })
+    .click();
+  await screen
+    .getByRole("button", { name: t.manager.more("Campanhas") })
+    .click();
+  await screen
+    .getByRole("menuitem", { name: t.manager.rename, exact: true })
+    .click();
+  await screen.getByLabelText(t.fieldName).fill("Updated folder");
+  await screen.getByRole("button", { name: t.save, exact: true }).click();
+  await expect.element(screen.getByText(t.manager.renamed)).toBeVisible();
+  expect(await sent("PATCH", `/media-folders/${folderId}`)).toEqual({
+    expectedVersion: 2,
+    name: "Updated folder",
+  });
 });

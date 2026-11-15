@@ -211,7 +211,11 @@
 .media-action-bar > .ui-checkbox .ui-checkbox-label {
   font-size: 0.75rem;
 }
+.media-clear-selection-inactive {
+  visibility: hidden;
+}
 .media-selection-count {
+  min-inline-size: 9rem;
   white-space: nowrap;
   font-size: 0.75rem;
   color: var(--color-muted);

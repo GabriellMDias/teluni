@@ -917,15 +917,15 @@ export function MediaBrowser({
             </Button>
           </>
         )}
-        {chosen.length > 0 && (
-          <Button
-            aria-label={m.clearSelection}
-            title={m.clearSelection}
-            onClick={() => setSelected([])}
-          >
-            <UiIcon name="close" />
-          </Button>
-        )}
+        <Button
+          className={chosen.length ? "" : "media-clear-selection-inactive"}
+          disabled={!chosen.length}
+          aria-label={m.clearSelection}
+          title={m.clearSelection}
+          onClick={() => setSelected([])}
+        >
+          <UiIcon name="close" />
+        </Button>
         <label className="media-sort">
           {m.sort}
           <select

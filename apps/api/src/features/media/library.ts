@@ -144,7 +144,9 @@ export class MediaLibraryService {
           typeof value[1] !== "string" ||
           value[1].length > 120 ||
           typeof value[2] !== "string" ||
-          !/^[0-9a-f-]{36}$/i.test(value[2])
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            value[2],
+          )
         )
           throw new Error("cursor");
         cursor = { name: value[1], id: value[2] };

@@ -1041,6 +1041,23 @@ describe("media: upload, processing, scope and lifecycle", () => {
     );
     expect(first.body.nextCursor).toBeTruthy();
     const cursor = encodeURIComponent(String(first.body.nextCursor));
+    const malformed = JSON.parse(
+      Buffer.from(String(first.body.nextCursor), "base64url").toString("utf8"),
+    ) as unknown[];
+    malformed[2] = "f".repeat(36);
+    const invalidCursor = encodeURIComponent(
+      Buffer.from(JSON.stringify(malformed)).toString("base64url"),
+    );
+    expect(
+      code(
+        await call(
+          "aAdmin",
+          "GET",
+          `/companies/${companyA}/media-folders?cursor=${invalidCursor}`,
+        ),
+      ),
+    ).toBe("VALIDATION_FAILED");
+
     expect(
       code(
         await call(
