@@ -66,7 +66,6 @@ const scoped = [
   "RESOURCE_NOT_FOUND",
   "COMPANY_SUSPENDED",
   "PERMISSION_DENIED",
-  "STRONG_AUTHENTICATION_REQUIRED",
 ] as const;
 const mutation = [
   ...scoped,

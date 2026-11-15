@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "updateBranch",
   "summary": "",
-  "description": "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration and two-step verification.",
+  "description": "Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration.",
   "security": [{ "sessionCookie": [] }],
   "components": {
     "securitySchemes": {

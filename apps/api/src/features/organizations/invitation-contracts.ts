@@ -81,7 +81,7 @@ export const invitationOperations = [
     operationId: "createInvitation",
     access: "session",
     description:
-      "Invite a recipient address to the company with one grant: a role over the whole company or explicit active branches, optionally until an expiry instant. Company administrators invite operators and branch managers; only the responsible administrator, with strong authentication no older than five minutes, invites administrators (always company-wide); branch managers invite operators to branches they manage. The invitation is valid for seven days and its email is delivered at least once after commit. One pending invitation per address and company; abuse limits answer RATE_LIMITED.",
+      "Invite a recipient address to the company with one grant: a role over the whole company or explicit active branches, optionally until an expiry instant. Company administrators invite operators and branch managers; only the responsible administrator, with an authentication no older than five minutes, invites administrators (always company-wide); branch managers invite operators to branches they manage. The invitation is valid for seven days and its email is delivered at least once after commit. One pending invitation per address and company; abuse limits answer RATE_LIMITED.",
     schema: {
       params: companyParams,
       body: Type.Object(
@@ -111,7 +111,7 @@ export const invitationOperations = [
     operationId: "listInvitations",
     access: "session",
     description:
-      "The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Requires two-step verification. Cursors are bound to the company, caller and visible scope.",
+      "The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Cursors are bound to the company, caller and visible scope.",
     schema: {
       params: companyParams,
       querystring: Type.Object(
@@ -129,11 +129,7 @@ export const invitationOperations = [
         ...common,
       },
     },
-    expectedErrors: [
-      ...scoped,
-      "PERMISSION_DENIED",
-      "STRONG_AUTHENTICATION_REQUIRED",
-    ],
+    expectedErrors: [...scoped, "PERMISSION_DENIED"],
   },
   {
     method: "POST",

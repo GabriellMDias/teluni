@@ -130,7 +130,6 @@ function company(capabilities: string[]) {
       profiles: [],
       responsible: true,
       capabilities: ["company.view", "branches.view", ...capabilities],
-      capabilitiesAfterStrongAuthentication: [],
     },
     responsibilityTransfer: null,
   };

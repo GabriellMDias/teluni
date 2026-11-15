@@ -111,7 +111,7 @@ const timeline = {
   notes: [],
 };
 
-function company(capabilities: string[], afterStrong: string[] = []) {
+function company(capabilities: string[]) {
   return {
     company: {
       id: companyId,
@@ -123,7 +123,6 @@ function company(capabilities: string[], afterStrong: string[] = []) {
       profiles: [],
       responsible: true,
       capabilities: ["company.view", "branches.view", ...capabilities],
-      capabilitiesAfterStrongAuthentication: afterStrong,
     },
     responsibilityTransfer: null,
   };
@@ -657,10 +656,10 @@ test("assigns a screen to a group only after confirming the neutral screen", asy
   });
 });
 
-test("asks for step-up before assigning screens", async () => {
+test("hides assignment without programming.assign", async () => {
   respond([], (url) => {
     if (url.pathname.endsWith(`/companies/${companyId}`))
-      return { body: company(["programming.view"], ["programming.assign"]) };
+      return { body: company(["programming.view"]) };
     if (url.pathname.endsWith(`/devices/${deviceId}/program`))
       return { body: emptyProgram };
     if (url.pathname.endsWith(`/devices/${deviceId}`))
@@ -684,7 +683,7 @@ test("asks for step-up before assigning screens", async () => {
   });
   const { screen } = await open(`${base}/screens/${deviceId}`);
   await expect
-    .element(screen.getByRole("link", { name: t.stepUpButton }))
+    .element(screen.getByRole("heading", { name: "Entrada" }))
     .toBeVisible();
   await expect
     .element(screen.getByRole("heading", { name: t.assignmentTitle }))
@@ -1065,10 +1064,10 @@ test("assigns a screen to a published group without the neutral-screen confirmat
   });
 });
 
-test("offers two-step verification to members who may publish only after it", async () => {
+test("hides publishing from members without publications.publish", async () => {
   respond([], (url) => {
     if (url.pathname.endsWith(`/companies/${companyId}`))
-      return { body: company(editor, ["publications.publish"]) };
+      return { body: company(editor) };
     if (url.pathname.endsWith(`/groups/${groupId}/publications`))
       return { body: { items: [], nextCursor: null } };
     if (url.pathname.endsWith(`/groups/${groupId}/program`))
@@ -1080,16 +1079,8 @@ test("offers two-step verification to members who may publish only after it", as
   });
   const { screen } = await open(`${base}/groups/${groupId}`);
   await expect
-    .element(screen.getByText(t.publication.stepUp, { exact: false }))
+    .element(screen.getByRole("heading", { name: t.publication.title }))
     .toBeVisible();
-  await expect
-    .element(screen.getByRole("link", { name: t.stepUpButton }))
-    .toHaveAttribute(
-      "href",
-      expect.stringContaining(
-        encodeURIComponent(`${base}/groups/${groupId}`),
-      ) as string,
-    );
   await expect
     .element(screen.getByRole("button", { name: t.publication.review }))
     .not.toBeInTheDocument();

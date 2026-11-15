@@ -18,6 +18,8 @@ Tests protect behavior, contracts, invariants, security, and architectural bound
 
 Coverage, performance/load/stress, mutation testing, additional browser matrices, external provider sandboxes, and deployment smoke/monitoring are introduced only when their risk or product requirement exists. Performance tests need measurable targets; stable microbenchmarks can inform critical algorithms but do not replace realistic system measurements. Chromium is the routine E2E baseline; browser support must not be guessed globally. V8 is the selected Vitest coverage provider when coverage becomes useful, with no initial global coverage threshold.
 
+Browser component files run sequentially in the [browser configuration](../../apps/web/vitest.browser.config.ts), using [Vitest's `fileParallelism` option](https://vitest.dev/config/fileparallelism). Concurrent startup intermittently failed dynamic module imports before test collection in CI, across different files. Sequential file loading limits that startup contention while retaining per-file isolation, every assertion and the existing test timeouts. It does not add retries or change API/Node test scheduling. Verify startup changes with a fresh Vitest optimizer cache as well as the normal suite.
+
 ## Test Selection
 
 Prefer focused tests for local rules, real integration for infrastructure semantics, browser component tests for browser behavior, and a small set of representative critical E2E success/failure journeys. A rigid numerical pyramid is not required. Do not use a browser for a pure calculation, a mock for a database constraint, or a full stack for a component interaction a smaller test can prove.

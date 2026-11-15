@@ -27,17 +27,21 @@ export const sessionPolicy = Object.freeze({
   purgeBatchSize: 100,
 });
 
-/** Authentication context classes the realm maps to levels of authentication. */
+/** Authentication context class the realm reports for a browser login. */
 export const assuranceLevels = Object.freeze({
   standard: "teluni-aal1",
-  strong: "teluni-aal2",
 });
 
-/** P14: sensitive operations need strong authentication this recent. */
-export const recentStrongAuthenticationSeconds = 5 * 60;
+/** P14: sensitive operations need an authentication this recent. */
+export const recentAuthenticationSeconds = 5 * 60;
 
-/** What a login asks the provider for: a strong level, optionally recent. */
-export type RequestedAssurance = "strong" | "recent";
+/**
+ * Account actions a login may carry out at the provider. Two-step
+ * verification is optional for each person: enabling enrolls an
+ * authenticator; disabling re-authenticates with the password and the
+ * current code before the provider removes it.
+ */
+export type TwoStepAction = "enable" | "disable";
 
 export type SessionState = "PENDING_LIMIT" | "ACTIVE" | "REVOKED";
 
@@ -76,7 +80,6 @@ export type SessionFailureCode =
   | "AUTHENTICATION_REQUIRED"
   | "CSRF_VALIDATION_FAILED"
   | "SESSION_LIMIT_REACHED"
-  | "STRONG_AUTHENTICATION_REQUIRED"
   | "RECENT_AUTHENTICATION_REQUIRED"
   | "RESOURCE_NOT_FOUND"
   | "SERVICE_UNAVAILABLE";
@@ -96,27 +99,19 @@ export type HumanContext = Readonly<{
   sessionId: string;
   assuranceLevel: string;
   authenticatedAt: Date;
-  strongAuthenticatedAt: Date | null;
-  /** Database-clock age of the latest strong authentication. */
-  strongAuthenticationAgeSeconds: number | null;
+  /** Database-clock age of the session's provider authentication. */
+  authenticationAgeSeconds: number;
   scopes: ReadonlySet<string>;
 }>;
 
 /**
- * Requires a strongly authenticated session (P12) and, for sensitive
- * operations, one no older than five minutes (P14). Throws a SessionFailure
- * the API answers with 403 and no state change.
+ * Requires, for sensitive operations, an authentication no older than five
+ * minutes (P14): the password again, plus the code for people who enabled
+ * two-step verification. Throws a SessionFailure the API answers with 403
+ * and no state change.
  */
-export function requireStrongAuthentication(
-  context: HumanContext,
-  options: { recent?: boolean } = {},
-): void {
-  if (context.strongAuthenticationAgeSeconds === null)
-    throw new SessionFailure("STRONG_AUTHENTICATION_REQUIRED");
-  if (
-    options.recent &&
-    context.strongAuthenticationAgeSeconds > recentStrongAuthenticationSeconds
-  )
+export function requireRecentAuthentication(context: HumanContext): void {
+  if (context.authenticationAgeSeconds > recentAuthenticationSeconds)
     throw new SessionFailure("RECENT_AUTHENTICATION_REQUIRED");
 }
 

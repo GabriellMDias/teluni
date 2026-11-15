@@ -146,6 +146,13 @@ export async function withIdentityStack<T>(
 }
 
 /** A scripted browser holding the panel's cookies for one person. */
+/** What a panel login asks for, and how the provider's account action is answered. */
+export type LoginOptions = Readonly<{
+  reauthenticate?: boolean;
+  twoStep?: "enable" | "disable";
+  decision?: "accept" | "cancel";
+}>;
+
 export class PanelBrowser {
   readonly api = new CookieJar();
   readonly provider = new CookieJar();
@@ -191,11 +198,12 @@ export class PanelBrowser {
   async beginLogin(
     credentials: { username: string; password: string },
     returnTo = "/",
-    assurance?: "strong" | "recent",
+    options: LoginOptions = {},
   ): Promise<URL> {
-    const start = await this.request(
-      `/auth/login?returnTo=${encodeURIComponent(returnTo)}${assurance ? `&assurance=${assurance}` : ""}`,
-    );
+    const query = new URLSearchParams({ returnTo });
+    if (options.reauthenticate) query.set("reauthenticate", "true");
+    if (options.twoStep) query.set("twoStep", options.twoStep);
+    const start = await this.request(`/auth/login?${query.toString()}`);
     if (start.status !== 303)
       throw new Error(`Login start returned ${start.status}`);
     return signInAtProvider(
@@ -203,6 +211,7 @@ export class PanelBrowser {
       credentials,
       this.provider,
       this.authenticator,
+      options.decision,
     );
   }
 
@@ -213,10 +222,10 @@ export class PanelBrowser {
   async login(
     credentials: { username: string; password: string },
     returnTo = "/",
-    assurance?: "strong" | "recent",
+    options: LoginOptions = {},
   ): Promise<Response> {
     const finished = await this.finishLogin(
-      await this.beginLogin(credentials, returnTo, assurance),
+      await this.beginLogin(credentials, returnTo, options),
     );
     const summary = await this.request("/auth/session");
     if (summary.status === 200)

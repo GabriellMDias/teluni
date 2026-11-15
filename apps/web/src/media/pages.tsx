@@ -78,21 +78,6 @@ function Failure({
   );
 }
 
-function StepUpPrompt({ returnTo }: { returnTo: string }) {
-  const { t } = useMediaMessages();
-  return (
-    <div role="status" className="notice notice-error">
-      {t.stepUpNotice}
-      <a
-        className="button-link button-primary"
-        href={loginHref(returnTo, "strong")}
-      >
-        {t.stepUpButton}
-      </a>
-    </div>
-  );
-}
-
 /** A write whose outcome is unknown or stale needs a reload, not a retry. */
 function mustReload(error: unknown): boolean {
   return (
@@ -141,17 +126,13 @@ function CompanyGate({
       </a>
     );
   else if (company.isError)
-    body =
-      company.error instanceof ApiFailure &&
-      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-        <StepUpPrompt returnTo={returnTo} />
-      ) : (
-        <Failure
-          error={company.error}
-          operation="read"
-          onReload={() => void company.refetch()}
-        />
-      );
+    body = (
+      <Failure
+        error={company.error}
+        operation="read"
+        onReload={() => void company.refetch()}
+      />
+    );
   else if (
     company.data &&
     !company.data.access.capabilities.includes("media.view")
@@ -556,28 +537,19 @@ function LibraryContent({
   companyId,
   filter,
   company,
-  returnTo,
 }: {
   companyId: string;
   filter: MediaFilter;
   company: CompanyWithAccess;
-  returnTo: string;
 }) {
   const { t } = useMediaMessages();
   const branches = useBranchChoices(companyId);
-  const { capabilities, capabilitiesAfterStrongAuthentication } =
-    company.access;
-  const upload = capabilities.includes("media.upload");
-  const stepUp = capabilitiesAfterStrongAuthentication.some(
-    (capability) =>
-      capability.startsWith("media.") && !capabilities.includes(capability),
-  );
+  const upload = company.access.capabilities.includes("media.upload");
   const choices = branches.data?.items ?? [];
   return (
     <>
       <h1 id="media-title">{t.title}</h1>
       <p>{t.lead}</p>
-      {stepUp && <StepUpPrompt returnTo={returnTo} />}
       {upload && (filter.view ?? "library") === "library" && (
         <UploadForm companyId={companyId} branches={choices} />
       )}
@@ -585,7 +557,7 @@ function LibraryContent({
         companyId={companyId}
         filter={filter}
         branches={choices}
-        canSeeTrash={capabilities.includes("media.delete")}
+        canSeeTrash={company.access.capabilities.includes("media.delete")}
       />
     </>
   );
@@ -611,7 +583,6 @@ export function MediaLibraryPage({
           companyId={companyId}
           filter={filter}
           company={company}
-          returnTo={returnTo}
         />
       )}
     </CompanyGate>

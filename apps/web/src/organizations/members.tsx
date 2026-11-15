@@ -46,17 +46,9 @@ export function WriteFailure({
       {code === "RECENT_AUTHENTICATION_REQUIRED" && (
         <a
           className="button-link button-primary"
-          href={loginHref(returnTo, "recent")}
+          href={loginHref(returnTo, { reauthenticate: true })}
         >
           {t.memberReauthenticate}
-        </a>
-      )}
-      {code === "STRONG_AUTHENTICATION_REQUIRED" && (
-        <a
-          className="button-link button-primary"
-          href={loginHref(returnTo, "strong")}
-        >
-          {t.stepUpButton}
         </a>
       )}
       {onReload && (

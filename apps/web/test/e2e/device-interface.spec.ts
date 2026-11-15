@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import type { Device, ScreenState } from "../../src/devices/api.js";
+import { chooseTheme } from "./theme.ts";
 
 test.use({ locale: "pt-BR", colorScheme: "light" });
 const companyId = "00000000-0000-4000-8000-000000000001";
@@ -59,9 +60,8 @@ async function arrange(page: Page) {
           sessionId: "synthetic-session",
           state: "ACTIVE",
           expiresAt: "2099-10-24T12:00:00.000Z",
-          assuranceLevel: "teluni-aal2",
+          assuranceLevel: "teluni-aal1",
           authenticatedAt: "2026-10-24T12:00:00.000Z",
-          strongAuthenticatedAt: "2026-10-24T12:00:00.000Z",
           csrfToken: "synthetic-csrf",
         },
       });
@@ -79,7 +79,6 @@ async function arrange(page: Page) {
               "devices.view",
               "devices.manage",
             ],
-            capabilitiesAfterStrongAuthentication: [],
           },
           responsibilityTransfer: null,
         },
@@ -166,14 +165,18 @@ for (const theme of ["light", "dark"] as const) {
       const writes = await arrange(page);
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${webUrl()}${path}`);
-      await page
-        .getByRole("combobox", { name: "Tema", exact: true })
-        .selectOption(theme);
+      await chooseTheme(page, theme);
+      const screens = page.getByRole("region", { name: "Registros de telas" });
+      await expect(
+        screens.getByRole("link", { name, exact: true }),
+      ).toBeVisible();
+      await accessibleLayout(page);
+      // Adding a record opens the pairing form in the dataset.
+      await screens
+        .getByRole("button", { name: "Adicionar", exact: true })
+        .click();
       const pair = page.getByRole("form", { name: "Parear uma tela" });
       await expect(pair).toBeVisible();
-      await expect(
-        page.locator(".devices-list").getByRole("link", { name, exact: true }),
-      ).toBeVisible();
       await pair.getByLabel("Código da TV").fill("bcdf-ghjk");
       await expect(pair.getByLabel("Código da TV")).toHaveValue("BCDF-GHJK");
       await pair.getByLabel("Código da TV").press("Tab");
@@ -191,10 +194,8 @@ for (const theme of ["light", "dark"] as const) {
         path: test.info().outputPath(`screens-${theme}-${width}.png`),
         fullPage: true,
       });
-      await page
-        .locator(".devices-list")
-        .getByRole("link", { name, exact: true })
-        .click();
+      await pair.getByRole("button", { name: "Cancelar", exact: true }).click();
+      await screens.getByRole("link", { name, exact: true }).click();
       await expect(
         page.getByRole("heading", { name, exact: true }),
       ).toBeVisible();

@@ -62,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. assurance=strong requests two-step verification (teluni-aal2), enrolling an authenticator when needed; assurance=recent also forces a new authentication for operations that need it within five minutes. A lower achieved level redirects to /sign-in?error=assurance_not_met. With the explicitly enabled local-development optional-MFA mode, login uses ordinary provider assurance and the authenticated session exposes teluni-development effective assurance without persisting it as provider authentication. */
+        /** @description Browser navigation that starts an OIDC authorization-code login with PKCE at the identity provider and redirects there. returnTo is a same-origin relative path opened after login; anything else becomes /. intent=signup opens the provider's account creation instead of its sign-in page; the new person verifies their email and sets a password there before returning. Two-step verification is optional for each person; the provider asks for the authenticator code at every sign-in of a person who enabled it. reauthenticate=true forces a new authentication (the password, plus the code when enabled) for operations that need one within five minutes; an older authentication redirects to /sign-in?error=assurance_not_met. twoStep=enable (enroll an authenticator) and twoStep=disable (a new authentication with the password and current code, then a confirmation at the provider) need the current session cookie; when there is nothing to change they redirect straight to returnTo. A person who cancels the provider action keeps two-step verification unchanged and still returns signed in. The first sign-in of a new person redirects to /welcome/two-step?returnTo=, which suggests enabling it. */
         get: operations["startLogin"];
         put?: never;
         post?: never;
@@ -79,7 +79,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path. Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable. */
+        /** @description Provider redirect target. Validates the single-use login attempt, state, nonce and PKCE, provisions the application principal, sets the session cookie and redirects to the return path (or, on a new person's first sign-in, to /welcome/two-step?returnTo=). Failures redirect to /sign-in?error= with login_failed, login_expired, email_unverified, account_unavailable, assurance_not_met or provider_unavailable. */
         get: operations["completeLogin"];
         put?: never;
         post?: never;
@@ -98,6 +98,23 @@ export interface paths {
         };
         /** @description Describe the current session and return its CSRF token for unsafe requests. A PENDING_LIMIT session must end another session before protected operations. Send x-teluni-activity: background from automatic polling so it does not extend the idle limit. */
         get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/two-step": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Whether the caller's account has two-step verification (an authenticator app) enabled. It is optional for each person; enable or disable it through startLogin with twoStep. */
+        get: operations["getTwoStepStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -200,7 +217,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration and two-step verification. Only the responsible administrator, with strong authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated. */
+        /** @description Grant a standard role or one of the company's active access profiles (exactly one of role and profileId) to a membership, over the whole company or explicit active branches, optionally until an expiry instant (no automatic renewal). Requires company administration. Only the responsible administrator, with an authentication no older than five minutes, may grant company administration, which is always company-wide. Unknown, archived and other companies' branches and profiles are rejected alike. An identical effective grant is returned with 200 instead of duplicated. */
         post: operations["addMemberGrant"];
         delete?: never;
         options?: never;
@@ -217,7 +234,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Revoke one of a membership's grants; revocation is terminal and an already revoked or expired grant is a no-op. Requires company administration and two-step verification. The responsible administrator and the last active administrator keep company administration. */
+        /** @description Revoke one of a membership's grants; revocation is terminal and an already revoked or expired grant is a no-op. Requires company administration. The responsible administrator and the last active administrator keep company administration. */
         post: operations["revokeMemberGrant"];
         delete?: never;
         options?: never;
@@ -234,7 +251,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with strong authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts. */
+        /** @description Propose handing company responsibility to another active company administrator, who must accept it within seven days. Only the responsible administrator, with an authentication no older than five minutes, may propose; one proposal per company can be pending. Responsibility does not move until the successor accepts. */
         post: operations["requestResponsibilityTransfer"];
         delete?: never;
         options?: never;
@@ -251,7 +268,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description The proposed successor accepts responsibility. They must still be an active company administrator with strong authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer. */
+        /** @description The proposed successor accepts responsibility. They must still be an active company administrator with an authentication no older than five minutes, and the proposer must still be responsible. Other members learn nothing about the transfer. */
         post: operations["acceptResponsibilityTransfer"];
         delete?: never;
         options?: never;
@@ -283,7 +300,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration and two-step verification. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page. */
+        /** @description List this company's memberships, including suspended and removed records, by immutable ID. Requires company administration. Presentation names and emails come from the last verified sign-in and never authorize access. Cursors bind the caller, company and collection; access is checked on every page. */
         get: operations["listCompanyMembers"];
         put?: never;
         post?: never;
@@ -306,7 +323,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with strong authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change. */
+        /** @description Suspend, reactivate or remove a membership with its observed version. Removal is terminal and affects only this company. Actor authority is rechecked under company-first transaction locks. The responsible administrator and last active administrator are protected. Reactivating an administrator requires the responsible administrator with an authentication no older than five minutes. An unchanged status is a no-op; a lost response requires reloading the member list before another change. */
         patch: operations["updateCompanyMemberStatus"];
         trace?: never;
     };
@@ -320,7 +337,7 @@ export interface paths {
         /** @description List companies with a current active membership, newest first by immutable creation time and ID, with the caller's effective roles. Cursors are bound to the caller and collection; membership is checked again on every page. The default page has 50 entries, with a maximum of 100. Other members' companies are never visible. */
         get: operations["listCompanies"];
         put?: never;
-        /** @description Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. Further administration requires two-step verification. */
+        /** @description Create a company whose creator becomes its responsible administrator. A repeated Idempotency-Key from the same person with the same content returns the same company; different content is rejected. */
         post: operations["createCompany"];
         delete?: never;
         options?: never;
@@ -342,7 +359,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Change company settings with the observed version. Requires company administration and two-step verification. */
+        /** @description Change company settings with the observed version. Requires company administration. */
         patch: operations["updateCompany"];
         trace?: never;
     };
@@ -356,7 +373,7 @@ export interface paths {
         /** @description List the branches the caller may see, active first and by name. Branch-scoped members see only their branches. Cursors are bound to the company and caller. */
         get: operations["listBranches"];
         put?: never;
-        /** @description Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration and two-step verification. */
+        /** @description Create a branch; the time zone defaults to the company's. Active branch names are unique within the company regardless of case. A lost response can be reconciled by listing branches. Requires company administration. */
         post: operations["createBranch"];
         delete?: never;
         options?: never;
@@ -378,7 +395,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration and two-step verification. */
+        /** @description Rename a branch or change its time zone with the observed version. Archived branches cannot change. Requires company administration. */
         patch: operations["updateBranch"];
         trace?: never;
     };
@@ -391,7 +408,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration and two-step verification. */
+        /** @description Archive a branch with the observed version, keeping it for references. A branch with active resources, such as paired screens, answers BRANCH_IN_USE. Requires company administration. */
         post: operations["archiveBranch"];
         delete?: never;
         options?: never;
@@ -406,7 +423,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch. Requires two-step verification. */
+        /** @description List the company's organization audit events, newest first. Company administrators read every event; branch managers read only events that concern their own branches and no other branch. */
         get: operations["listCompanyAuditEvents"];
         put?: never;
         post?: never;
@@ -423,10 +440,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration and two-step verification. */
+        /** @description List the company's customized access profiles with how many members and effective grants hold each, active first by name. Archived profiles are included only on request. Requires company administration. */
         get: operations["listAccessProfiles"];
         put?: never;
-        /** @description Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); devices.manage needs devices.view, media.upload and media.archive need media.view, programming.edit, programming.assign and publications.publish need programming.view, and catalogs.edit, catalogs.manage and prices.edit need catalogs.view. Company administration is never delegable through a profile. A profile containing a capability that needs two-step verification requires it of every holder. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration and two-step verification. */
+        /** @description Create a customized access profile from delegable capabilities (branches.view, invitations.manage, audit.view, devices.view, devices.manage, media.view, media.upload, media.archive, programming.view, programming.edit, programming.assign, publications.publish, catalogs.view, catalogs.edit, catalogs.manage, prices.edit); devices.manage needs devices.view, media.upload and media.archive need media.view, programming.edit, programming.assign and publications.publish need programming.view, and catalogs.edit, catalogs.manage and prices.edit need catalogs.view. Company administration is never delegable through a profile. Active names are unique per company and a company keeps at most 50 active profiles. Requires company administration. */
         post: operations["createAccessProfile"];
         delete?: never;
         options?: never;
@@ -441,14 +458,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration and two-step verification. */
+        /** @description Read an access profile with its current holders (members, scopes and branches of its effective grants, up to 500), so the reach of an edit is visible before it is made. Requires company administration. */
         get: operations["getAccessProfile"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration and two-step verification. */
+        /** @description Rename an active access profile or replace its capabilities with the observed version. Every holder's access follows the change on its next request, and the audit event records the added and removed capabilities and the affected grants. An unchanged request is a no-op. Requires company administration. */
         patch: operations["updateAccessProfile"];
         trace?: never;
     };
@@ -461,7 +478,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration and two-step verification. */
+        /** @description Archive an access profile with the observed version once no effective grant holds it; archived profiles stay for attribution and cannot be granted or edited. Requires company administration. */
         post: operations["archiveAccessProfile"];
         delete?: never;
         options?: never;
@@ -476,10 +493,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Requires two-step verification. Cursors are bound to the company, caller and visible scope. */
+        /** @description The company's invitations visible to the caller, newest first, with their delivery state: every invitation for administrators, and operator invitations within the branches they manage for branch managers. Cursors are bound to the company, caller and visible scope. */
         get: operations["listInvitations"];
         put?: never;
-        /** @description Invite a recipient address to the company with one grant: a role over the whole company or explicit active branches, optionally until an expiry instant. Company administrators invite operators and branch managers; only the responsible administrator, with strong authentication no older than five minutes, invites administrators (always company-wide); branch managers invite operators to branches they manage. The invitation is valid for seven days and its email is delivered at least once after commit. One pending invitation per address and company; abuse limits answer RATE_LIMITED. */
+        /** @description Invite a recipient address to the company with one grant: a role over the whole company or explicit active branches, optionally until an expiry instant. Company administrators invite operators and branch managers; only the responsible administrator, with an authentication no older than five minutes, invites administrators (always company-wide); branch managers invite operators to branches they manage. The invitation is valid for seven days and its email is delivered at least once after commit. One pending invitation per address and company; abuse limits answer RATE_LIMITED. */
         post: operations["createInvitation"];
         delete?: never;
         options?: never;
@@ -667,7 +684,7 @@ export interface paths {
         /** @description The company's screens the caller may view, newest pairing first: every screen for company-wide access, otherwise those in granted branches. Filter by branch or status. Cursors are bound to the company, caller, visible scope and filters. */
         get: operations["listDevices"];
         put?: never;
-        /** @description Pair the screen showing a code to an active branch the caller manages, with a name and one of the rotations the screen reported. Expired, used, unknown and concurrently claimed codes all answer PAIRING_CODE_INVALID; repeated failures answer RATE_LIMITED. Requires screen management and two-step verification. */
+        /** @description Pair the screen showing a code to an active branch the caller manages, with a name and one of the rotations the screen reported. Expired, used, unknown and concurrently claimed codes all answer PAIRING_CODE_INVALID; repeated failures answer RATE_LIMITED. Requires screen management. */
         post: operations["pairDevice"];
         delete?: never;
         options?: never;
@@ -1000,7 +1017,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope and strong authentication; the change is audited with the old and new amounts. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
+        /** @description Set or clear (null) the base price of an item's active money field, in the field currency's minor units, with the observed item version. Needs the prices capability over the catalog's scope; the change is audited with the old and new amounts. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
         put: operations["setCatalogBasePrice"];
         post?: never;
         delete?: never;
@@ -1017,7 +1034,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch and strong authentication. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
+        /** @description Set or clear (null) one branch's price of a company catalog's item, replacing the base price there, with the observed item version. Needs the prices capability on that branch. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
         put: operations["setCatalogBranchPrice"];
         post?: never;
         delete?: never;
@@ -1036,7 +1053,7 @@ export interface paths {
         /** @description Promotions of an item's money field that the caller may view (scope-wide ones and those of visible branches), by start. */
         get: operations["listCatalogPromotions"];
         put?: never;
-        /** @description Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects and strong authentication. At most 100 promotions per price. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
+        /** @description Add a promotional price for local times [startsAt, endsAt), evaluated in each screen's time zone, for the catalog's whole scope (null branch) or one branch of a company catalog. A promotion of the same price whose window overlaps and whose branches intersect answers CATALOG_PROMOTION_CONFLICT. Needs the prices capability on the scope it affects. At most 100 promotions per price. Screens show the change through automatic price publication: every program whose latest publication shows the catalog and reaches the change (a branch price or branch promotion only programs reaching that branch) gets a new generation with the catalog's current prices, so the caller also needs publications.publish on each such program; otherwise the change answers PRICE_TARGET_FORBIDDEN and nothing is saved. */
         post: operations["createCatalogPromotion"];
         delete?: never;
         options?: never;
@@ -1557,7 +1574,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program, with strong authentication. */
+        /** @description Authorizes a blocked or failed price publication again: it becomes pending at once on the caller's authority and keeps its author. When a pending intent of the same program and catalog exists, it publishes these prices too, and this one is skipped as SUPERSEDED. Any other state answers RESOURCE_VERSION_CONFLICT. Needs publications.publish on the program,. */
         post: operations["retryPricePublication"];
         delete?: never;
         options?: never;
@@ -1782,8 +1799,9 @@ export interface operations {
         parameters: {
             query?: {
                 returnTo?: string;
-                assurance?: "strong" | "recent";
+                reauthenticate?: "true";
                 intent?: "signup";
+                twoStep?: "enable" | "disable";
             };
             header?: never;
             path?: never;
@@ -1802,6 +1820,29 @@ export interface operations {
             };
             /** @description Response */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1905,6 +1946,8 @@ export interface operations {
                 iss?: string;
                 error?: string;
                 error_description?: string;
+                kc_action?: string;
+                kc_action_status?: string;
             };
             header?: never;
             path?: never;
@@ -1995,8 +2038,146 @@ export interface operations {
                         assuranceLevel: string;
                         /** Format: date-time */
                         authenticatedAt: string;
-                        strongAuthenticatedAt: string | null;
                         csrfToken: string;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                            issues?: {
+                                path: string;
+                                reason: string;
+                                fieldId?: string;
+                                count?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getTwoStepStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
                     };
                 };
             };
@@ -4704,7 +4885,6 @@ export interface operations {
                             profiles: string[];
                             responsible: boolean;
                             capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -4745,7 +4925,6 @@ export interface operations {
                             profiles: string[];
                             responsible: boolean;
                             capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         };
                         responsibilityTransfer: {
                             id: string;
@@ -4985,7 +5164,6 @@ export interface operations {
                             profiles: string[];
                             responsible: boolean;
                             capabilities: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
-                            capabilitiesAfterStrongAuthentication: ("company.view" | "company.settings.manage" | "branches.view" | "branches.manage" | "members.manage" | "invitations.manage" | "audit.view" | "devices.view" | "devices.manage" | "media.view" | "media.upload" | "media.archive" | "media.delete" | "programming.view" | "programming.edit" | "programming.assign" | "publications.publish" | "catalogs.view" | "catalogs.edit" | "catalogs.manage" | "prices.edit")[];
                         };
                         responsibilityTransfer: {
                             id: string;

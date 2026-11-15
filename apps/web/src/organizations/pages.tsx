@@ -75,21 +75,6 @@ function SignInPrompt({ returnTo }: { returnTo: string }) {
   );
 }
 
-function StepUpPrompt({ returnTo }: { returnTo: string }) {
-  const { t } = useOrganizationMessages();
-  return (
-    <div role="status" className="notice notice-error">
-      {t.stepUpNotice}
-      <a
-        className="button-link button-primary"
-        href={loginHref(returnTo, "strong")}
-      >
-        {t.stepUpButton}
-      </a>
-    </div>
-  );
-}
-
 function zoneChoices(): string[] {
   const own = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return timeZoneChoices.includes(own)
@@ -234,11 +219,9 @@ function CreateCompanyForm({
 /** Loads a company before rendering its form, for editing or duplication. */
 function CompanyRecord({
   companyId,
-  returnTo,
   children,
 }: {
   companyId: string;
-  returnTo: string;
   children: (company: CompanyWithAccess) => ReactNode;
 }) {
   const { t } = useOrganizationMessages();
@@ -248,10 +231,7 @@ function CompanyRecord({
   });
   if (company.isPending) return <p>{t.loading}</p>;
   if (company.isError)
-    return company.error instanceof ApiFailure &&
-      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-      <StepUpPrompt returnTo={returnTo} />
-    ) : (
+    return (
       <Failure
         error={company.error}
         operation="read"
@@ -263,11 +243,9 @@ function CompanyRecord({
 
 function EditCompanyForm({
   record,
-  returnTo,
   onDirtyChange,
 }: {
   record: CompanyWithAccess;
-  returnTo: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useOrganizationMessages();
@@ -294,9 +272,6 @@ function EditCompanyForm({
     },
   });
   const canManage = access.capabilities.includes("company.settings.manage");
-  const needsStepUp = access.capabilitiesAfterStrongAuthentication.includes(
-    "company.settings.manage",
-  );
   const mustReload =
     Boolean(save.error) &&
     (!(save.error instanceof ApiFailure) ||
@@ -319,11 +294,7 @@ function EditCompanyForm({
         </Link>
       </p>
       {saved && <p role="status">{t.settingsSaved}</p>}
-      {needsStepUp ? (
-        <StepUpPrompt returnTo={returnTo} />
-      ) : (
-        !canManage && <p className="hint">{t.settingsReadOnly}</p>
-      )}
+      {!canManage && <p className="hint">{t.settingsReadOnly}</p>}
       <CompanyFields
         idPrefix="company"
         values={{
@@ -427,7 +398,7 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
   const select = (id: string) => go({ mode: search.mode, record: id }, true);
   return (
     <section
-      className="panel organization-panel"
+      className="panel organization-panel dataset-panel"
       aria-labelledby="companies-title"
       lang={locale}
     >
@@ -526,7 +497,6 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                   <CompanyRecord
                     key={`copy-${search.copy}`}
                     companyId={search.copy}
-                    returnTo={returnTo}
                   >
                     {({ company }) => (
                       <CreateCompanyForm
@@ -554,17 +524,9 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
                 )
               ) : (
                 record && (
-                  <CompanyRecord
-                    key={record}
-                    companyId={record}
-                    returnTo={returnTo}
-                  >
+                  <CompanyRecord key={record} companyId={record}>
                     {(data) => (
-                      <EditCompanyForm
-                        record={data}
-                        returnTo={returnTo}
-                        onDirtyChange={setDirty}
-                      />
+                      <EditCompanyForm record={data} onDirtyChange={setDirty} />
                     )}
                   </CompanyRecord>
                 )
@@ -594,30 +556,153 @@ export function CompaniesPage({ search }: { search: CompaniesSearch }) {
   );
 }
 
-function BranchRow({
+/** Shared form rows of a branch: its name, and for an existing one its state. */
+function BranchFields({
+  id,
+  name,
+  disabled,
+  onChange,
+  branch,
+}: {
+  id: string;
+  name: string;
+  disabled: boolean;
+  onChange: (name: string) => void;
+  branch?: Branch;
+}) {
+  const { t } = useOrganizationMessages();
+  return (
+    <>
+      <label htmlFor={id}>{t.fieldBranchName}</label>
+      <input
+        id={id}
+        required
+        maxLength={120}
+        value={name}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {branch && (
+        <dl className="company-settings">
+          <dt>{t.branchStatus}</dt>
+          <dd>
+            {branch.status === "ACTIVE" ? t.statusActive : t.statusArchived}
+          </dd>
+          <dt>{t.fieldTimeZone}</dt>
+          <dd>{branch.timeZone}</dd>
+        </dl>
+      )}
+    </>
+  );
+}
+
+function CreateBranchForm({
+  companyId,
+  onDirtyChange,
+  onCreated,
+  onCancel,
+}: {
+  companyId: string;
+  onDirtyChange: (dirty: boolean) => void;
+  onCreated: (branch: Branch) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useOrganizationMessages();
+  const queryClient = useQueryClient();
+  const [name, setName] = useState("");
+  useEffect(() => onDirtyChange(name !== ""), [name, onDirtyChange]);
+  const add = useMutation({
+    mutationFn: () => createBranch(companyId, name),
+    onSuccess: async (branch) => {
+      onDirtyChange(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: branchesKey(companyId) }),
+        queryClient.invalidateQueries({ queryKey: auditKey(companyId) }),
+      ]);
+      onCreated(branch);
+    },
+  });
+  return (
+    <form
+      className="form-stack branch-create"
+      onSubmit={(event) => {
+        event.preventDefault();
+        add.mutate();
+      }}
+    >
+      <BranchFields
+        id="new-branch-name"
+        name={name}
+        disabled={add.isPending}
+        onChange={setName}
+      />
+      {add.error && (
+        <Failure
+          error={add.error}
+          operation="write"
+          onReload={() =>
+            void queryClient.invalidateQueries({
+              queryKey: branchesKey(companyId),
+            })
+          }
+        />
+      )}
+      <div className="action-group">
+        <button
+          type="submit"
+          className="button-primary"
+          disabled={add.isPending}
+        >
+          {add.isPending ? t.adding : t.addBranch}
+        </button>
+        <button
+          type="button"
+          disabled={add.isPending}
+          onClick={() => {
+            setName("");
+            add.reset();
+            onCancel();
+          }}
+        >
+          {t.cancel}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function EditBranchForm({
   companyId,
   branch,
   manage,
+  onDirtyChange,
 }: {
   companyId: string;
   branch: Branch;
   manage: boolean;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const { t } = useOrganizationMessages();
   const queryClient = useQueryClient();
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(branch.name);
-  const [editingVersion, setEditingVersion] = useState(branch.version);
+  // Capture the version with the draft; background refetches cannot rebase it.
+  const [draft, setDraft] = useState<{ name: string; version: number } | null>(
+    null,
+  );
+  useEffect(() => onDirtyChange(draft !== null), [draft, onDirtyChange]);
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: branchesKey(companyId) }),
       queryClient.invalidateQueries({ queryKey: auditKey(companyId) }),
     ]);
   const rename = useMutation({
-    mutationFn: () =>
-      renameBranch(companyId, { ...branch, version: editingVersion }, name),
+    mutationFn: (input: { name: string; version: number }) =>
+      renameBranch(
+        companyId,
+        { ...branch, version: input.version },
+        input.name,
+      ),
     onSuccess: async () => {
-      setEditing(false);
+      setDraft(null);
       await refresh();
     },
   });
@@ -626,76 +711,33 @@ function BranchRow({
     onSuccess: refresh,
   });
   const error = rename.error ?? archive.error;
+  const editable = manage && branch.status === "ACTIVE";
   async function reload() {
-    await refresh();
-    setEditing(false);
+    setDraft(null);
     rename.reset();
     archive.reset();
+    await refresh();
   }
   return (
-    <li className="branch-item">
-      {editing ? (
-        <form
-          className="branch-edit"
-          onSubmit={(event) => {
-            event.preventDefault();
-            rename.mutate();
-          }}
-        >
-          <label htmlFor={`branch-name-${branch.id}`}>
-            {t.fieldBranchName}
-          </label>
-          <input
-            id={`branch-name-${branch.id}`}
-            required
-            maxLength={120}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          <button
-            type="submit"
-            className="button-primary"
-            disabled={rename.isPending}
-          >
-            {t.save}
-          </button>
-          <button type="button" onClick={() => setEditing(false)}>
-            {t.cancel}
-          </button>
-        </form>
-      ) : (
-        <div>
-          <strong>{branch.name}</strong>{" "}
-          <span className="hint">
-            {branch.status === "ACTIVE" ? t.statusActive : t.statusArchived} ·{" "}
-            {branch.timeZone}
-          </span>
-        </div>
-      )}
-      {manage && branch.status === "ACTIVE" && !editing && (
-        <div className="action-group">
-          <button
-            type="button"
-            aria-label={`${t.rename}: ${branch.name}`}
-            onClick={() => {
-              setName(branch.name);
-              setEditingVersion(branch.version);
-              rename.reset();
-              setEditing(true);
-            }}
-          >
-            {t.rename}
-          </button>
-          <button
-            type="button"
-            aria-label={`${t.archive}: ${branch.name}`}
-            onClick={() => archive.mutate()}
-            disabled={archive.isPending}
-          >
-            {t.archive}
-          </button>
-        </div>
-      )}
+    <form
+      className="form-stack"
+      aria-labelledby="branch-record-title"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (draft) rename.mutate(draft);
+      }}
+    >
+      <h3 id="branch-record-title">{branch.name}</h3>
+      <BranchFields
+        id={`branch-name-${branch.id}`}
+        name={draft?.name ?? branch.name}
+        disabled={!editable || rename.isPending}
+        onChange={(name) =>
+          setDraft({ name, version: draft?.version ?? branch.version })
+        }
+        branch={branch}
+      />
+      {!manage && <p className="hint">{t.branchReadOnly}</p>}
       {error && (
         <Failure
           error={error}
@@ -703,40 +745,96 @@ function BranchRow({
           onReload={() => void reload()}
         />
       )}
-    </li>
+      {editable && (
+        <div className="action-group">
+          <button
+            type="submit"
+            className="button-primary"
+            disabled={!draft || rename.isPending}
+          >
+            {rename.isPending ? t.saving : t.save}
+          </button>
+          <button
+            type="button"
+            disabled={!draft || rename.isPending}
+            onClick={() => {
+              setDraft(null);
+              rename.reset();
+            }}
+          >
+            {t.cancel}
+          </button>
+          <button
+            type="button"
+            aria-label={`${t.archive}: ${branch.name}`}
+            disabled={archive.isPending || draft !== null}
+            onClick={() => archive.mutate()}
+          >
+            {t.archive}
+          </button>
+        </div>
+      )}
+    </form>
   );
 }
+
+export type BranchesSearch = {
+  cursor?: string;
+  mode?: DataSetMode;
+  record?: string;
+};
 
 function Branches({
   companyId,
   manage,
-  cursor,
+  search,
 }: {
   companyId: string;
   manage: boolean;
-  cursor?: string;
+  search: BranchesSearch;
 }) {
-  const { t } = useOrganizationMessages();
+  const { cursor } = search;
+  const { locale, t } = useOrganizationMessages();
+  const navigate = useNavigate({ from: "/companies/$companyId" });
   const queryClient = useQueryClient();
-  const [name, setName] = useState("");
   const branches = useQuery({
     queryKey: [...branchesKey(companyId), { cursor }],
     queryFn: () => listBranches(companyId, cursor),
   });
-  const add = useMutation({
-    mutationFn: () => createBranch(companyId, name),
-    onSuccess: async () => {
-      setName("");
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: branchesKey(companyId) }),
-        queryClient.invalidateQueries({ queryKey: auditKey(companyId) }),
-      ]);
-    },
-  });
-  const items = branches.data?.items ?? [];
+  const refreshing = useIsFetching({ queryKey: branchesKey(companyId) }) > 0;
+  const [dirty, setDirty] = useState(false);
+  const rows = branches.data?.items ?? [];
+  // A manager with no branch yet starts on a new record.
+  const firstBranch =
+    manage && !cursor && branches.isSuccess && rows.length === 0;
+  const mode: DataSetMode = search.mode ?? (firstBranch ? "form" : "grid");
+  const index = rows.findIndex((row) => row.id === search.record);
+  const record =
+    search.record === "new" && manage
+      ? "new"
+      : index >= 0
+        ? rows[index].id
+        : mode === "form"
+          ? (rows[0]?.id ?? (manage ? "new" : undefined))
+          : undefined;
+  const go = (next: Omit<BranchesSearch, "cursor">, replace = false) => {
+    setDirty(false);
+    void navigate({
+      search: { ...(cursor ? { cursor } : {}), ...next },
+      replace,
+    });
+  };
+  // Pin the first branch's form in the URL, so it survives the branch it adds.
+  useEffect(() => {
+    if (firstBranch && !search.mode)
+      void navigate({ search: { mode: "form", record: "new" }, replace: true });
+  }, [firstBranch, search.mode, navigate]);
+  const idle = !dirty;
+  const selected = rows.find((row) => row.id === record);
   return (
-    <section aria-labelledby="branches-title">
+    <section className="dataset-region" aria-labelledby="branches-title">
       <h2 id="branches-title">{t.branchesTitle}</h2>
+      {dirty && <p className="hint">{t.unsavedChanges}</p>}
       {branches.isPending ? (
         <p>{t.loading}</p>
       ) : branches.isError ? (
@@ -745,71 +843,103 @@ function Branches({
           operation="read"
           onReload={() => void branches.refetch()}
         />
-      ) : items.length === 0 ? (
-        <p className="empty-state">{t.branchesEmpty}</p>
       ) : (
-        <ul className="branch-list">
-          {items.map((branch) => (
-            <BranchRow
-              key={branch.id}
-              companyId={companyId}
-              branch={branch}
-              manage={manage}
-            />
-          ))}
-        </ul>
-      )}
-      <nav className="pagination" aria-label={t.branchesTitle}>
-        {cursor && (
-          <Link to="/companies/$companyId" params={{ companyId }} search={{}}>
-            {t.firstPage}
-          </Link>
-        )}
-        {branches.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId"
-            params={{ companyId }}
-            search={{ cursor: branches.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
-      {manage && (
-        <form
-          className="form-stack branch-create"
-          onSubmit={(event) => {
-            event.preventDefault();
-            add.mutate();
-          }}
+        <DataSet
+          label={t.branchesRecords}
+          locale={locale}
+          mode={mode}
+          rows={rows}
+          rowId={(row) => row.id}
+          columns={[
+            {
+              key: "name",
+              header: t.fieldBranchName,
+              value: (row) => row.name,
+              width: 320,
+            },
+            {
+              key: "status",
+              header: t.branchStatus,
+              value: (row) =>
+                row.status === "ACTIVE" ? t.statusActive : t.statusArchived,
+              width: 160,
+            },
+            {
+              key: "timeZone",
+              header: t.fieldTimeZone,
+              value: (row) => row.timeZone,
+              width: 240,
+            },
+          ]}
+          selectedId={record}
+          onSelect={
+            idle
+              ? (id) => go({ mode: search.mode, record: id }, true)
+              : undefined
+          }
+          onModeChange={
+            idle
+              ? (next) => go({ mode: next, ...(record ? { record } : {}) })
+              : undefined
+          }
+          onAdd={
+            idle && manage
+              ? () => go({ mode: "form", record: "new" })
+              : undefined
+          }
+          onRefresh={
+            idle
+              ? () =>
+                  void queryClient.invalidateQueries({
+                    queryKey: branchesKey(companyId),
+                  })
+              : undefined
+          }
+          refreshing={refreshing}
+          exportName={t.branchesExport}
+          empty={
+            <p className="empty-state">
+              {cursor ? t.pageEmpty : t.branchesEmpty}
+            </p>
+          }
         >
-          <label htmlFor="new-branch-name">{t.fieldBranchName}</label>
-          <input
-            id="new-branch-name"
-            required
-            maxLength={120}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-          {add.error && (
-            <Failure
-              error={add.error}
-              operation="write"
-              onReload={() =>
-                void queryClient.invalidateQueries({
-                  queryKey: branchesKey(companyId),
-                })
-              }
+          {record === "new" ? (
+            <CreateBranchForm
+              companyId={companyId}
+              onDirtyChange={setDirty}
+              onCreated={(branch) => go({ record: branch.id })}
+              onCancel={() => go({ mode: "grid" })}
             />
+          ) : (
+            selected && (
+              <EditBranchForm
+                key={selected.id}
+                companyId={companyId}
+                branch={selected}
+                manage={manage}
+                onDirtyChange={setDirty}
+              />
+            )
           )}
-          <button
-            type="submit"
-            className="button-primary"
-            disabled={add.isPending}
-          >
-            {add.isPending ? t.adding : t.addBranch}
-          </button>
-        </form>
+        </DataSet>
+      )}
+      {mode === "grid" && (
+        <nav className="pagination" aria-label={t.branchesTitle}>
+          {cursor && (
+            <Link to="/companies/$companyId" params={{ companyId }} search={{}}>
+              {t.firstPage}
+            </Link>
+          )}
+          {branches.data?.nextCursor && (
+            <Link
+              to="/companies/$companyId"
+              params={{ companyId }}
+              search={{ cursor: branches.data.nextCursor }}
+            >
+              {t.nextPage}
+            </Link>
+          )}
+        </nav>
       )}
     </section>
   );
@@ -1043,10 +1173,15 @@ export function CompanyPage({
   companyId,
   cursor,
   view,
+  mode,
+  record,
 }: {
   companyId: string;
   cursor?: string;
   view?: "settings" | "history" | "members" | "invitations" | "profiles";
+  /** The branches dataset's mode and record, on the company's default view. */
+  mode?: DataSetMode;
+  record?: string;
 }) {
   const { locale, t } = useOrganizationMessages();
   const session = useQuery(sessionQuery);
@@ -1058,6 +1193,8 @@ export function CompanyPage({
   const search = new URLSearchParams({
     ...(view ? { view } : {}),
     ...(cursor ? { cursor } : {}),
+    ...(!view && mode ? { mode } : {}),
+    ...(!view && record ? { record } : {}),
   });
   const returnTo = `/companies/${companyId}${search.size ? `?${search}` : ""}`;
   if (session.isPending) return <p>{t.loading}</p>;
@@ -1082,25 +1219,21 @@ export function CompanyPage({
     return (
       <section className="panel organization-panel" lang={locale}>
         <h1>{t.companyUnavailableTitle}</h1>
-        {company.error instanceof ApiFailure &&
-        company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-          <StepUpPrompt returnTo={returnTo} />
-        ) : (
-          <Failure
-            error={company.error}
-            operation="read"
-            onReload={() => void company.refetch()}
-          />
-        )}
+        <Failure
+          error={company.error}
+          operation="read"
+          onReload={() => void company.refetch()}
+        />
         <Link to="/companies">{t.backToCompanies}</Link>
       </section>
     );
   const { access, responsibilityTransfer: transfer } = company.data;
-  const needsStepUp = access.capabilitiesAfterStrongAuthentication.length > 0;
   const canView = access.capabilities.includes("branches.view");
+  // The default view is the branches dataset, which uses the whole workspace.
+  const datasetView = !view && canView;
   return (
     <section
-      className="panel organization-panel"
+      className={`panel organization-panel${datasetView ? " dataset-panel" : ""}`}
       aria-labelledby="company-title"
       lang={locale}
     >
@@ -1116,7 +1249,6 @@ export function CompanyPage({
         ].join(", ")}
         {access.responsible ? ` · ${t.responsible}` : ""}
       </p>
-      {needsStepUp && <StepUpPrompt returnTo={returnTo} />}
       {transfer && (
         <ResponsibilityTransferNotice
           key={transfer.id}
@@ -1198,7 +1330,11 @@ export function CompanyPage({
         canView && (
           <Branches
             companyId={companyId}
-            cursor={cursor}
+            search={{
+              ...(cursor ? { cursor } : {}),
+              ...(mode ? { mode } : {}),
+              ...(record ? { record } : {}),
+            }}
             manage={access.capabilities.includes("branches.manage")}
           />
         )

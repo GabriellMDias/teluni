@@ -1,8 +1,15 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  keepPreviousData,
+  useIsFetching,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiFailure } from "../api-client.js";
-import { Button, TextField } from "../components.js";
+import { Button, DataSet, TextField } from "../components.js";
+import type { DataSetMode } from "../dataset.js";
 import { loginHref, sessionQuery } from "../identity/api.js";
 import { browserLocale } from "../locale.js";
 import {
@@ -61,21 +68,6 @@ function Failure({
   );
 }
 
-function StepUpPrompt({ returnTo }: { returnTo: string }) {
-  const { t } = useDeviceMessages();
-  return (
-    <div role="status" className="notice notice-error">
-      {t.stepUpNotice}
-      <a
-        className="button-link button-primary"
-        href={loginHref(returnTo, "strong")}
-      >
-        {t.stepUpButton}
-      </a>
-    </div>
-  );
-}
-
 /** A write whose outcome is unknown or stale needs a reload, not a retry. */
 function mustReload(error: unknown): boolean {
   return (
@@ -93,10 +85,13 @@ function mustReload(error: unknown): boolean {
 function CompanyGate({
   companyId,
   returnTo,
+  wide = false,
   children,
 }: {
   companyId: string;
   returnTo: string;
+  /** A dataset page that uses the whole workspace. */
+  wide?: boolean;
   children: (company: CompanyWithAccess) => React.ReactNode;
 }) {
   const { locale, t } = useDeviceMessages();
@@ -124,17 +119,13 @@ function CompanyGate({
       </a>
     );
   else if (company.isError)
-    body =
-      company.error instanceof ApiFailure &&
-      company.error.code === "STRONG_AUTHENTICATION_REQUIRED" ? (
-        <StepUpPrompt returnTo={returnTo} />
-      ) : (
-        <Failure
-          error={company.error}
-          operation="read"
-          onReload={() => void company.refetch()}
-        />
-      );
+    body = (
+      <Failure
+        error={company.error}
+        operation="read"
+        onReload={() => void company.refetch()}
+      />
+    );
   else if (
     company.data &&
     !company.data.access.capabilities.includes("devices.view")
@@ -147,7 +138,7 @@ function CompanyGate({
   else if (company.data) body = children(company.data);
   return (
     <section
-      className="panel organization-panel devices-panel"
+      className={`panel organization-panel devices-panel${wide ? " dataset-panel" : ""}`}
       aria-labelledby="devices-title"
       lang={locale}
     >
@@ -173,9 +164,11 @@ function deviceState(
 function PairForm({
   companyId,
   branches,
+  onCancel,
 }: {
   companyId: string;
   branches: { id: string; name: string }[];
+  onCancel: () => void;
 }) {
   const { t } = useDeviceMessages();
   const queryClient = useQueryClient();
@@ -283,145 +276,20 @@ function PairForm({
           </span>
         </p>
       )}
-      <Button
-        type="submit"
-        variant="primary"
-        pending={pair.isPending}
-        disabled={!branchId || mustReload(pair.error)}
-      >
-        {pair.isPending ? t.pairing : t.pair}
-      </Button>
-    </form>
-  );
-}
-
-function ScreenList({
-  companyId,
-  filter,
-  branches,
-}: {
-  companyId: string;
-  filter: DeviceFilter;
-  branches: { id: string; name: string }[];
-}) {
-  const { locale, t } = useDeviceMessages();
-  const navigate = useNavigate();
-  const devices = useQuery({
-    queryKey: [...devicesKey(companyId), filter],
-    queryFn: () => listDevices(companyId, filter),
-  });
-  const active = (devices.data?.items ?? [])
-    .filter((device) => device.status === "ACTIVE")
-    .map((device) => device.id);
-  const states = useQuery({
-    queryKey: screenStatesKey(companyId, active),
-    queryFn: () => listScreenStates(companyId, active),
-    enabled: active.length > 0,
-    refetchInterval: syncRefreshMs,
-  });
-  const setFilter = (next: DeviceFilter) =>
-    void navigate({
-      to: "/companies/$companyId/screens",
-      params: { companyId },
-      search: {
-        ...(next.branchId ? { branchId: next.branchId } : {}),
-        ...(next.status ? { status: next.status } : {}),
-      },
-    });
-  return (
-    <div className="devices-list-section">
-      <div className="devices-filters">
-        <label htmlFor="filter-branch">{t.filterBranch}</label>
-        <select
-          id="filter-branch"
-          value={filter.branchId ?? ""}
-          onChange={(event) =>
-            setFilter({ ...filter, branchId: event.target.value || undefined })
-          }
+      <div className="action-group">
+        <Button
+          type="submit"
+          variant="primary"
+          pending={pair.isPending}
+          disabled={!branchId || mustReload(pair.error)}
         >
-          <option value="">{t.filterAll}</option>
-          {branches.map((branch) => (
-            <option key={branch.id} value={branch.id}>
-              {branch.name}
-            </option>
-          ))}
-        </select>
-        <label htmlFor="filter-status">{t.filterStatus}</label>
-        <select
-          id="filter-status"
-          value={filter.status ?? ""}
-          onChange={(event) =>
-            setFilter({
-              ...filter,
-              status:
-                event.target.value === "ACTIVE" ||
-                event.target.value === "REVOKED"
-                  ? event.target.value
-                  : undefined,
-            })
-          }
-        >
-          <option value="">{t.filterAll}</option>
-          <option value="ACTIVE">{t.statusActive}</option>
-          <option value="REVOKED">{t.statusRevoked}</option>
-        </select>
+          {pair.isPending ? t.pairing : t.pair}
+        </Button>
+        <Button type="button" disabled={pair.isPending} onClick={onCancel}>
+          {t.cancel}
+        </Button>
       </div>
-      {devices.isPending ? (
-        <p>{t.loading}</p>
-      ) : devices.isError ? (
-        <Failure
-          error={devices.error}
-          operation="read"
-          onReload={() => void devices.refetch()}
-        />
-      ) : devices.data.items.length === 0 ? (
-        <p className="empty-state">{filter.cursor ? t.pageEmpty : t.empty}</p>
-      ) : (
-        <ul className="organization-list devices-list">
-          {devices.data.items.map((device) => (
-            <li key={device.id}>
-              <Link
-                to="/companies/$companyId/screens/$deviceId"
-                params={{ companyId, deviceId: device.id }}
-              >
-                {device.name}
-              </Link>
-              <span className="hint">
-                {device.branch.name} · {deviceState(device, t)} ·{" "}
-                {device.lastSeenAt
-                  ? `${t.lastSeen}: ${formatInstant(locale, device.lastSeenAt)}`
-                  : t.neverSeen}
-              </span>
-              {states.data?.get(device.id) && (
-                <span className="hint">
-                  {syncSummary(states.data.get(device.id)!, t)}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <nav className="pagination" aria-label={t.title}>
-        {filter.cursor && (
-          <Link
-            to="/companies/$companyId/screens"
-            params={{ companyId }}
-            search={{ ...filter, cursor: undefined }}
-          >
-            {t.firstPage}
-          </Link>
-        )}
-        {devices.data?.nextCursor && (
-          <Link
-            to="/companies/$companyId/screens"
-            params={{ companyId }}
-            search={{ ...filter, cursor: devices.data.nextCursor }}
-          >
-            {t.nextPage}
-          </Link>
-        )}
-      </nav>
-    </div>
+    </form>
   );
 }
 
@@ -432,75 +300,378 @@ function useBranchChoices(companyId: string) {
   });
 }
 
+/** The screens list's server-side filters, its page and the dataset's state. */
+export type ScreensSearch = DeviceFilter & {
+  mode?: DataSetMode;
+  record?: string;
+};
+
 function ScreensContent({
   companyId,
-  filter,
+  search,
   company,
-  returnTo,
 }: {
   companyId: string;
-  filter: DeviceFilter;
+  search: ScreensSearch;
   company: CompanyWithAccess;
-  returnTo: string;
 }) {
-  const { t } = useDeviceMessages();
+  const { locale, t } = useDeviceMessages();
+  const navigate = useNavigate({ from: "/companies/$companyId/screens" });
+  const queryClient = useQueryClient();
   const branches = useBranchChoices(companyId);
   const manage = company.access.capabilities.includes("devices.manage");
-  const stepUp =
-    company.access.capabilitiesAfterStrongAuthentication.includes(
-      "devices.manage",
-    );
   const choices = branches.data?.items ?? [];
+  const filter: DeviceFilter = {
+    ...(search.cursor ? { cursor: search.cursor } : {}),
+    ...(search.branchId ? { branchId: search.branchId } : {}),
+    ...(search.status ? { status: search.status } : {}),
+  };
+  const devices = useQuery({
+    queryKey: [...devicesKey(companyId), filter],
+    queryFn: () => listDevices(companyId, filter),
+    // Keep the dataset mounted while another filter or page loads, so focus
+    // stays on the action that changed it.
+    placeholderData: keepPreviousData,
+  });
+  const refreshing = useIsFetching({ queryKey: devicesKey(companyId) }) > 0;
+  const rows = devices.data?.items ?? [];
+  const active = rows
+    .filter((device) => device.status === "ACTIVE")
+    .map((device) => device.id);
+  const states = useQuery({
+    queryKey: screenStatesKey(companyId, active),
+    queryFn: () => listScreenStates(companyId, active),
+    enabled: active.length > 0,
+    refetchInterval: syncRefreshMs,
+  });
+  const syncOf = (device: Device) => {
+    const state = states.data?.get(device.id);
+    return state ? syncSummary(state, t) : "";
+  };
+  // A manager with no screen yet starts on pairing.
+  const firstScreen =
+    manage &&
+    !search.cursor &&
+    !search.branchId &&
+    !search.status &&
+    devices.isSuccess &&
+    rows.length === 0;
+  const mode: DataSetMode = search.mode ?? (firstScreen ? "form" : "grid");
+  const index = rows.findIndex((row) => row.id === search.record);
+  const record =
+    search.record === "new" && manage
+      ? "new"
+      : index >= 0
+        ? rows[index].id
+        : mode === "form"
+          ? (rows[0]?.id ?? (manage ? "new" : undefined))
+          : undefined;
+  const selected = rows.find((row) => row.id === record);
+  // Filters and pages change the server-side list and leave the dataset.
+  const setFilter = (next: DeviceFilter) =>
+    void navigate({
+      search: {
+        ...(next.branchId ? { branchId: next.branchId } : {}),
+        ...(next.status ? { status: next.status } : {}),
+      },
+    });
+  const go = (next: Pick<ScreensSearch, "mode" | "record">, replace = false) =>
+    void navigate({ search: { ...filter, ...next }, replace });
+  // Pin the first pairing in the URL, so the form survives the screen it adds.
+  useEffect(() => {
+    if (firstScreen && !search.mode)
+      void navigate({
+        search: { ...filter, mode: "form", record: "new" },
+        replace: true,
+      });
+  }, [firstScreen, search.mode, navigate, filter]);
   return (
     <>
       <h1 id="devices-title">{t.title}</h1>
       <p>{t.lead}</p>
-      {stepUp && <StepUpPrompt returnTo={returnTo} />}
-      <ScreenList companyId={companyId} filter={filter} branches={choices} />
-      {manage &&
-        (branches.isPending ? (
+      <div className="dataset-region devices-list-section">
+        {devices.isPending ? (
           <p>{t.loading}</p>
-        ) : branches.isError ? (
+        ) : devices.isError ? (
           <Failure
-            error={branches.error}
+            error={devices.error}
             operation="read"
-            onReload={() => void branches.refetch()}
+            onReload={() => void devices.refetch()}
           />
-        ) : choices.length === 0 ? (
-          <p className="empty-state">{t.noBranches}</p>
         ) : (
-          <>
-            {branches.data.truncated && (
-              <p className="hint">{t.branchesTruncated}</p>
+          <DataSet
+            label={t.screensRecords}
+            locale={locale}
+            mode={mode}
+            rows={rows}
+            rowId={(row) => row.id}
+            columns={[
+              {
+                key: "name",
+                header: t.fieldName,
+                value: (row) => row.name,
+                width: 260,
+                render: (row) => (
+                  <Link
+                    to="/companies/$companyId/screens/$deviceId"
+                    params={{ companyId, deviceId: row.id }}
+                  >
+                    {row.name}
+                  </Link>
+                ),
+              },
+              {
+                key: "branch",
+                header: t.fieldBranch,
+                value: (row) => row.branch.name,
+                width: 200,
+              },
+              {
+                key: "status",
+                header: t.statusColumn,
+                value: (row) => deviceState(row, t),
+                width: 200,
+              },
+              {
+                key: "lastSeen",
+                header: t.lastSeen,
+                value: (row) => row.lastSeenAt ?? "",
+                format: (value) =>
+                  value === ""
+                    ? t.neverSeen
+                    : formatInstant(locale, String(value)),
+                width: 200,
+              },
+              {
+                key: "sync",
+                header: t.sync.title,
+                value: syncOf,
+                width: 320,
+                filterable: false,
+              },
+            ]}
+            selectedId={record}
+            onSelect={(id) => go({ mode: search.mode, record: id }, true)}
+            onModeChange={(next) =>
+              go({ mode: next, ...(record ? { record } : {}) })
+            }
+            onAdd={
+              manage ? () => go({ mode: "form", record: "new" }) : undefined
+            }
+            onRefresh={() =>
+              void queryClient.invalidateQueries({
+                queryKey: devicesKey(companyId),
+              })
+            }
+            refreshing={refreshing}
+            exportName={t.screensExport}
+            filters={{
+              active: (filter.branchId ? 1 : 0) + (filter.status ? 1 : 0),
+              render: (close) => (
+                <ScreenFilters
+                  filter={filter}
+                  branches={choices}
+                  onApply={(next) => {
+                    setFilter(next);
+                    close();
+                  }}
+                />
+              ),
+            }}
+            empty={
+              <p className="empty-state">
+                {filter.cursor ? t.pageEmpty : t.empty}
+              </p>
+            }
+          >
+            {record === "new" ? (
+              branches.isPending ? (
+                <p>{t.loading}</p>
+              ) : branches.isError ? (
+                <Failure
+                  error={branches.error}
+                  operation="read"
+                  onReload={() => void branches.refetch()}
+                />
+              ) : choices.length === 0 ? (
+                <p className="empty-state">{t.noBranches}</p>
+              ) : (
+                <>
+                  {branches.data.truncated && (
+                    <p className="hint">{t.branchesTruncated}</p>
+                  )}
+                  <PairForm
+                    companyId={companyId}
+                    branches={choices}
+                    onCancel={() => go({ mode: "grid" })}
+                  />
+                </>
+              )
+            ) : (
+              selected && (
+                <ScreenSummary
+                  companyId={companyId}
+                  device={selected}
+                  sync={syncOf(selected)}
+                />
+              )
             )}
-            <PairForm companyId={companyId} branches={choices} />
-          </>
-        ))}
+          </DataSet>
+        )}
+        {mode === "grid" && (
+          <nav className="pagination" aria-label={t.title}>
+            {filter.cursor && (
+              <Link
+                to="/companies/$companyId/screens"
+                params={{ companyId }}
+                search={{ ...filter, cursor: undefined }}
+              >
+                {t.firstPage}
+              </Link>
+            )}
+            {devices.data?.nextCursor && (
+              <Link
+                to="/companies/$companyId/screens"
+                params={{ companyId }}
+                search={{ ...filter, cursor: devices.data.nextCursor }}
+              >
+                {t.nextPage}
+              </Link>
+            )}
+          </nav>
+        )}
+      </div>
     </>
+  );
+}
+
+/** The screens list's server-side filters, edited in the dataset's modal. */
+function ScreenFilters({
+  filter,
+  branches,
+  onApply,
+}: {
+  filter: DeviceFilter;
+  branches: { id: string; name: string }[];
+  onApply: (filter: DeviceFilter) => void;
+}) {
+  const { t } = useDeviceMessages();
+  const [branchId, setBranchId] = useState(filter.branchId ?? "");
+  const [status, setStatus] = useState(filter.status ?? "");
+  return (
+    <form
+      className="form-stack"
+      aria-label={t.filtersTitle}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onApply({
+          ...(branchId ? { branchId } : {}),
+          ...(status === "ACTIVE" || status === "REVOKED" ? { status } : {}),
+        });
+      }}
+    >
+      <label htmlFor="filter-branch">{t.fieldBranch}</label>
+      <select
+        id="filter-branch"
+        data-autofocus
+        value={branchId}
+        onChange={(event) => setBranchId(event.target.value)}
+      >
+        <option value="">{t.filterAll}</option>
+        {branches.map((branch) => (
+          <option key={branch.id} value={branch.id}>
+            {branch.name}
+          </option>
+        ))}
+      </select>
+      <label htmlFor="filter-status">{t.statusColumn}</label>
+      <select
+        id="filter-status"
+        value={status}
+        onChange={(event) => setStatus(event.target.value)}
+      >
+        <option value="">{t.filterAll}</option>
+        <option value="ACTIVE">{t.statusActive}</option>
+        <option value="REVOKED">{t.statusRevoked}</option>
+      </select>
+      <div className="action-group">
+        <Button type="submit" variant="primary">
+          {t.filtersApply}
+        </Button>
+        <Button type="button" onClick={() => onApply({})}>
+          {t.filtersClear}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * A screen in the dataset's form mode; configuring, moving, unlinking and
+ * the history stay on the screen's own page.
+ */
+function ScreenSummary({
+  companyId,
+  device,
+  sync,
+}: {
+  companyId: string;
+  device: Device;
+  sync: string;
+}) {
+  const { locale, t } = useDeviceMessages();
+  return (
+    <section aria-labelledby="screen-summary-title">
+      <h2 id="screen-summary-title">{device.name}</h2>
+      <dl className="company-settings">
+        <dt>{t.fieldBranch}</dt>
+        <dd>{device.branch.name}</dd>
+        <dt>{t.statusColumn}</dt>
+        <dd>{deviceState(device, t)}</dd>
+        <dt>{t.lastSeen}</dt>
+        <dd>
+          {device.lastSeenAt
+            ? formatInstant(locale, device.lastSeenAt)
+            : t.neverSeen}
+        </dd>
+        {sync && (
+          <>
+            <dt>{t.sync.title}</dt>
+            <dd>{sync}</dd>
+          </>
+        )}
+      </dl>
+      <Link
+        className="button-link button-primary"
+        to="/companies/$companyId/screens/$deviceId"
+        params={{ companyId, deviceId: device.id }}
+      >
+        {t.openScreen}
+      </Link>
+    </section>
   );
 }
 
 export function ScreensPage({
   companyId,
-  filter,
+  search,
 }: {
   companyId: string;
-  filter: DeviceFilter;
+  search: ScreensSearch;
 }) {
-  const search = new URLSearchParams(
-    Object.entries(filter).filter(
+  const query = new URLSearchParams(
+    Object.entries(search).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",
     ),
   );
-  const returnTo = `/companies/${companyId}/screens${search.size ? `?${search}` : ""}`;
+  const returnTo = `/companies/${companyId}/screens${query.size ? `?${query}` : ""}`;
   return (
-    <CompanyGate companyId={companyId} returnTo={returnTo}>
+    <CompanyGate companyId={companyId} returnTo={returnTo} wide>
       {(company) => (
         <ScreensContent
           companyId={companyId}
-          filter={filter}
+          search={search}
           company={company}
-          returnTo={returnTo}
         />
       )}
     </CompanyGate>
@@ -923,10 +1094,7 @@ function ScreenDetail({
         >
           {t.detailsTitle}
         </Link>
-        {(company.access.capabilities.includes("audit.view") ||
-          company.access.capabilitiesAfterStrongAuthentication.includes(
-            "audit.view",
-          )) && (
+        {company.access.capabilities.includes("audit.view") && (
           <Link
             to="/companies/$companyId/screens/$deviceId"
             params={{ companyId, deviceId }}
@@ -945,12 +1113,6 @@ function ScreenDetail({
             deviceId={deviceId}
             cursor={filter.cursor}
             accessScope={JSON.stringify([company.access, screen.branch.id])}
-          />
-        ) : company.access.capabilitiesAfterStrongAuthentication.includes(
-            "audit.view",
-          ) ? (
-          <StepUpPrompt
-            returnTo={`/companies/${companyId}/screens/${deviceId}?view=history`}
           />
         ) : (
           <p role="alert" className="notice notice-error">

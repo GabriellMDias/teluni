@@ -86,14 +86,8 @@
           "classification": "INTERNAL"
         },
         "authenticated_at": {
-          "description": "Provider-reported instant of the user's authentication (auth_time) for this session.",
+          "description": "Provider-reported instant of the user's authentication (auth_time) for this session, used for recent-authentication checks (at most five minutes old for sensitive operations).",
           "classification": "INTERNAL",
-          "unit": "UTC instant, millisecond precision"
-        },
-        "strong_authenticated_at": {
-          "description": "Instant of the latest strong authentication verified for this session, used for recent-authentication checks.",
-          "classification": "INTERNAL",
-          "nullMeaning": "No strong authentication has been verified for this session.",
           "unit": "UTC instant, millisecond precision"
         },
         "idle_timeout_seconds": {
@@ -186,11 +180,6 @@
         "return_to": {
           "description": "Validated same-origin relative path to open after a successful login.",
           "classification": "INTERNAL"
-        },
-        "requested_assurance": {
-          "description": "Authentication context class (acr) this login requested, such as the strong teluni-aal2 level for step-up.",
-          "classification": "INTERNAL",
-          "nullMeaning": "A standard login without a requested level."
         },
         "max_age_seconds": {
           "description": "Maximum authentication age requested from the provider; 0 forces a new authentication for recent-authentication checks.",

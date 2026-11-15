@@ -1,5 +1,392 @@
 [
   {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI secrets",
+    "anchor": "ci-secrets",
+    "text": "CI secrets\nOrdinary validation should require as few secrets as possible.\nTests should use ephemeral test credentials and local container infrastructure instead of external production-like credentials where practical.\nCI secrets must:\nfollow least privilege;\nbe scoped narrowly;\nnot be printed;\nnot be copied into artifacts;\nnot be required for unrelated validation jobs.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OIDC for future privileged workflows",
+    "anchor": "oidc-for-future-privileged-workflows",
+    "text": "OIDC for future privileged workflows\nFuture workflows that need to authenticate to supported cloud providers or publishing systems should prefer short-lived identity federation through OpenID Connect when practical.\nLong-lived cloud credentials stored as GitHub secrets should not be the preferred Orion pattern.\nThe intended model is:\nGitHub Actions identity\n    ↓\nOIDC\n    ↓\nshort-lived provider credential\n\nrather than:\nGitHub secret\n    ↓\nlong-lived cloud access key\n\nActual deployment authentication is outside the scope of this ADR and will be decided when deployment targets exist.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency automation",
+    "anchor": "dependency-automation",
+    "text": "Dependency automation\nOrion will use **Renovate as its primary dependency-update automation tool**.\nRenovate will manage relevant repository dependencies including, where supported:\nnpm/pnpm dependencies;\ndevelopment dependencies;\nruntime dependencies;\nGitHub Actions references;\ntoolchain versions represented in supported files;\nother machine-readable dependency declarations introduced later.\nDependabot version-update pull requests will not be enabled alongside Renovate for the same dependency ecosystem.\nRunning two competing version-update systems would create redundant pull requests and overlapping configuration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Renovate configuration",
+    "anchor": "renovate-configuration",
+    "text": "Renovate configuration\nRenovate configuration will be stored in the repository and treated as repository policy.\nThe configuration should begin from Renovate's recommended baseline and be customized deliberately.\nA **Dependency Dashboard** will be enabled to provide a machine-maintained overview of:\npending updates;\ndeferred updates;\nmajor upgrades;\ndeprecated dependencies;\ndependency-maintenance state.\nThis provides both human contributors and AI agents with an explicit view of dependency debt.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency update cadence",
+    "anchor": "dependency-update-cadence",
+    "text": "Dependency update cadence\nRoutine dependency updates will be grouped and scheduled to reduce unnecessary pull-request noise.\nThe initial approach will favor a **weekly routine update cadence** for ordinary dependency updates.\nSecurity remediation updates should not be intentionally delayed to the routine maintenance window when Renovate identifies them as security-related.\nUpdate frequency may later be adjusted based on repository activity and risk.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency grouping",
+    "anchor": "dependency-grouping",
+    "text": "Dependency grouping\nRelated dependency families may be grouped when they are expected to evolve together.\nExamples may include ecosystems such as:\nReact ecosystem\nTanStack ecosystem\nPrisma ecosystem\nOpenTelemetry ecosystem\nFastify ecosystem\nVitest ecosystem\nPlaywright ecosystem\n\nGrouping should reduce update noise without creating large unrelated upgrade pull requests.\nA generic \"update every dependency\" mega-group will not be the default.\nThe objective is:\ncoherent upgrade units\n\nrather than:\nminimum possible number of pull requests\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Major dependency upgrades",
+    "anchor": "major-dependency-upgrades",
+    "text": "Major dependency upgrades\nMajor-version upgrades require deliberate review.\nRenovate should expose pending major upgrades and may require Dependency Dashboard approval before opening selected major-upgrade pull requests when that improves signal.\nA major version must not be ignored indefinitely merely to keep automation quiet.\nMajor upgrades should remain visible even when they are intentionally deferred.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency automerge",
+    "anchor": "dependency-automerge",
+    "text": "Dependency automerge\nAutomatic merging of dependency updates will be **disabled by default initially**.\nPassing CI is necessary but does not prove that every dependency change is semantically harmless.\nSelective automerge may later be enabled for explicitly identified low-risk dependency classes when sufficient repository experience demonstrates that doing so is safe.\nExamples might eventually include narrowly scoped patch updates to development-only tooling.\nThere will be no blanket:\npatch update\n    → automerge\n\nrule initially.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Lockfile maintenance",
+    "anchor": "lockfile-maintenance",
+    "text": "Lockfile maintenance\nAutomated dependency updates must keep the shared pnpm lockfile synchronized with package manifests.\nThe lockfile remains committed repository state.\nDependency automation must not create manifest changes without the corresponding deterministic lockfile update.\nPeriodic lockfile maintenance may be enabled if it produces concrete value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency security alerts",
+    "anchor": "dependency-security-alerts",
+    "text": "Dependency security alerts\nOrion will enable GitHub's dependency graph and **Dependabot vulnerability alerts** where supported.\nThis use of Dependabot is distinct from Dependabot version-update automation.\nThe responsibility split is:\nRenovate\n    → routine/version dependency updates\n\nDependabot alerts / GitHub advisory data\n    → vulnerability visibility\n\nSecurity findings should result in explicit remediation, acceptance, or documented exception rather than being silently ignored.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency review",
+    "anchor": "dependency-review",
+    "text": "Dependency review\nWhere the repository's GitHub feature entitlement supports it, Orion will enable the GitHub dependency review capability for pull requests.\nDependency review should prevent newly introduced vulnerable dependencies from entering unnoticed.\nThe initial enforcement threshold should block newly introduced vulnerabilities rated **high or critical**, unless an explicitly reviewed exception exists.\nThe policy may become stricter for applications with higher risk or regulatory requirements.\nDependency review is an additional guardrail and does not replace repository tests or dependency update automation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Static security analysis",
+    "anchor": "static-security-analysis",
+    "text": "Static security analysis\nWhere available for the repository, Orion will enable **GitHub CodeQL for JavaScript and TypeScript security analysis**.\nCode scanning should be represented by repository-visible configuration when customization is required.\nThe initial objective is to detect actionable security defects without making a paid GitHub security product a mandatory dependency of the Orion architecture.\nIf CodeQL is unavailable for a particular private repository, the absence of that GitHub entitlement does not invalidate the Orion foundation.\nA different SAST implementation may be introduced when the risk profile of that application requires one.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Secret scanning and push protection",
+    "anchor": "secret-scanning-and-push-protection",
+    "text": "Secret scanning and push protection\nGitHub secret scanning and push protection should be enabled where available.\nThese capabilities complement Orion's existing secrets-management policies by detecting common credentials committed to repository history or preventing supported secrets from being pushed.\nThey do not eliminate the need to:\navoid committing secrets;\nrotate exposed credentials;\nscope credentials narrowly;\nuse environment or secret-management systems appropriately.\nA secret that reaches Git history must be treated as potentially exposed even if the commit is later removed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency audit commands",
+    "anchor": "dependency-audit-commands",
+    "text": "Dependency audit commands\nPackage-manager vulnerability-audit commands may be used for diagnostics or additional automation.\nThey will not initially serve as Orion's sole security gate.\nSecurity decisions should combine:\ndependency advisory visibility;\ndependency review when available;\nautomated remediation;\ntests;\napplication-specific risk assessment.\nThis avoids making one advisory command the complete definition of dependency security.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "License policy",
+    "anchor": "license-policy",
+    "text": "License policy\nThis ADR does not establish a global dependency-license allowlist or denylist.\nAcceptable licensing depends on how a specific Orion-based product is:\ndistributed;\nsold;\nembedded;\nhosted;\nmodified.\nLicense enforcement should be added when the product's legal/distribution model establishes the required policy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI-generated modifications",
+    "anchor": "ci-generated-modifications",
+    "text": "CI-generated modifications\nRequired validation workflows must not silently modify tracked source files to make CI pass.\nThis preserves ADR-0003's distinction between:\nvalidation\n    → check\n\nfixing\n    → explicit developer action\n\nCI may generate temporary artifacts for validation, but source corrections belong in a committed change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Reusable workflows and custom Actions",
+    "anchor": "reusable-workflows-and-custom-actions",
+    "text": "Reusable workflows and custom Actions\nOrion will not introduce reusable workflows, custom Actions, or a CI abstraction framework merely to make the initial workflow appear generic.\nThe initial workflow should remain understandable directly from the repository.\nReusable CI abstractions may be introduced when genuine duplication exists across:\nmultiple workflows;\nmultiple repositories;\nmultiple release pipelines.\nComplexity must provide measurable maintenance value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Continuous delivery",
+    "anchor": "continuous-delivery",
+    "text": "Continuous delivery\nThis ADR establishes **continuous integration**, not a global continuous-delivery strategy.\nSuccessful CI means:\nthe repository revision satisfies required validation\n\nIt does not imply:\nautomatically deploy revision to production\n\nDeployment targets, environments, release policies, approvals, rollbacks, and CD architecture remain deferred until an Orion application has concrete deployment requirements.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nGitHub Actions is selected because the repository already uses GitHub as its collaboration and source-management platform and Actions provides direct integration with pull requests, protected branches, repository permissions, artifacts, security capabilities, and repository automation.\nMore importantly, Orion does not make GitHub Actions the owner of validation semantics.\nThe repository remains authoritative.\nThis gives:\nlocal environment\nCI\nAI coding environment\nfuture alternative CI\n\na common validation interface.\nIf Orion later needs to move a project to another CI provider, repository commands such as:\npnpm validate\npnpm test:integration\npnpm test:e2e\n\nremain usable.\nGitHub-specific orchestration can therefore be replaced without redesigning the application's quality model.\nA stable aggregate CI gate prevents branch-protection configuration from becoming coupled to the current internal job topology.\nJobs can later be:\nsplit;\ncombined;\nsharded;\ncached;\nmigrated to another runner class;\nwhile the repository still exposes one stable required result.\nFrozen lockfile installation ensures CI evaluates the dependency graph actually committed to the repository instead of resolving a subtly different graph during validation.\nCaching only reconstructible package-manager state preserves deterministic behavior and avoids making mutable CI cache content part of correctness.\nFull validation is preferred initially because selective monorepo validation requires a sufficiently reliable dependency graph.\nOrion already permits adding a dedicated task runner later if repository scale justifies affected-project analysis and advanced caching.\nIntroducing these mechanisms only after measurement avoids increasing CI complexity before it provides meaningful value.\nRenovate is selected for dependency automation because Orion requires more than simple individual package bumping.\nA large monorepo benefits from configurable:\ngrouping;\nschedules;\ndependency dashboards;\nmajor-upgrade policies;\nGitHub Actions updates;\nlockfile maintenance;\nfuture custom dependency sources.\nThe Dependency Dashboard also improves discoverability of dependency maintenance work and makes intentionally deferred upgrades visible instead of silently forgotten.\nAutomerge remains disabled initially because dependency correctness cannot be inferred from semantic-version classification alone.\nA successful test suite is an important signal, but dependency changes can modify behavior outside the currently exercised test surface.\nOrion prefers deliberate automation over unconditional automation.\nPinning external GitHub Actions to immutable commit SHAs reduces dependency on mutable tags.\nCombining SHA pins with Renovate allows Orion to preserve both:\nimmutable execution\n\nand:\nmaintainable upgrades\n\nwithout manually monitoring every action repository.\nExplicit minimal `GITHUB_TOKEN` permissions reduce the blast radius of a compromised workflow dependency.\nThis becomes increasingly important as CI gains access to:\nartifacts;\npackages;\ndeployment systems;\nsecurity reports;\ncloud environments.\nSeparating ordinary validation from privileged workflows also makes pull requests from untrusted sources safer.\nOIDC is preferred for future deployment authentication because short-lived identity federation reduces dependence on long-lived cloud credentials stored in repository automation.\nDependency vulnerability alerts, dependency review, CodeQL, and secret scanning provide complementary security capabilities.\nNo single mechanism is treated as sufficient.\nAvailability-based GitHub security features remain optional capabilities because Orion must remain usable across repositories with different GitHub plans and hosting arrangements.\nFinally, CD is deliberately excluded.\nDeployment architecture depends heavily on the target environment, and Orion has explicitly chosen not to select a global cloud or deployment platform.\nCI can therefore become mature without prematurely deciding where applications must run.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "GitLab CI",
+    "anchor": "gitlab-ci",
+    "text": "GitLab CI\nGitLab CI provides a mature repository-integrated CI/CD platform and would be technically capable of implementing Orion's validation requirements.\nIt was not selected because Orion's current source-management and collaboration environment is GitHub.\nSelecting GitLab CI would introduce a second primary platform without a concrete benefit.\nRepository-owned validation commands preserve the possibility of using GitLab CI for a future project when necessary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Buildkite, CircleCI, or Similar External CI Platforms",
+    "anchor": "buildkite-circleci-or-similar-external-ci-platforms",
+    "text": "Buildkite, CircleCI, or Similar External CI Platforms\nDedicated CI platforms may provide advanced scaling, execution, or enterprise capabilities.\nThey were not selected as the foundation default because GitHub Actions is sufficient for Orion's current requirements and requires less platform integration.\nA future repository may adopt another CI provider if scale, compliance, runner requirements, or economics justify the change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dedicated Monorepo Task Runner for CI",
+    "anchor": "dedicated-monorepo-task-runner-for-ci",
+    "text": "Dedicated Monorepo Task Runner for CI\nOrion could introduce Nx, Turborepo, or another task-graph system specifically to optimize CI from the beginning.\nThis could provide affected-project detection, task caching, and remote execution.\nIt was not selected because ADR-0002 already established that such tooling should enter only when real repository scale makes it valuable.\nCI will initially execute the complete validation capabilities directly through pnpm workspace commands.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependabot Version Updates",
+    "anchor": "dependabot-version-updates",
+    "text": "Dependabot Version Updates\nDependabot can create dependency-update pull requests and integrates directly with GitHub.\nIt was not selected as Orion's primary version-update system because Renovate provides a broader and more configurable dependency-maintenance model suited to a growing monorepo.\nDependabot vulnerability alerts may still be used as a security signal.\nDependabot version-update automation and Renovate should not manage the same dependencies simultaneously.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Automatic Merge for All Patch Updates",
+    "anchor": "automatic-merge-for-all-patch-updates",
+    "text": "Automatic Merge for All Patch Updates\nOrion could automatically merge every dependency patch update that passes CI.\nThis would minimize maintenance effort.\nIt was not selected because semantic-version classification does not guarantee operational safety, and the initial foundation does not yet have enough production history to justify blanket dependency automerge.\nSelective automerge may be introduced later.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mutable GitHub Action Tags",
+    "anchor": "mutable-github-action-tags",
+    "text": "Mutable GitHub Action Tags\nGitHub Actions could be referenced through convenient tags such as:\nactions/checkout@vX\n\nThis is easy to read and update manually.\nIt was not selected as the Orion security baseline because a mutable reference allows workflow execution to change without a repository commit changing the reference.\nFull commit SHA pinning provides a stronger reproducibility boundary.\nReadable version comments preserve maintainability.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Long-Lived Cloud Credentials in Repository Secrets",
+    "anchor": "long-lived-cloud-credentials-in-repository-secrets",
+    "text": "Long-Lived Cloud Credentials in Repository Secrets\nFuture deployment workflows could store permanent cloud credentials in GitHub secrets.\nThis is broadly supported and straightforward.\nIt is not Orion's preferred future authentication model because long-lived credentials create greater rotation and exposure risk.\nOIDC-based short-lived federation should be preferred where supported.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mandatory Paid GitHub Security Features",
+    "anchor": "mandatory-paid-github-security-features",
+    "text": "Mandatory Paid GitHub Security Features\nOrion could require dependency review, private-repository CodeQL, secret scanning, and push protection as mandatory capabilities for every repository.\nThis would provide a stronger uniform security baseline.\nIt was not selected because feature availability depends on repository visibility and GitHub plan.\nOrion should take advantage of those capabilities when available without making a commercial GitHub product a prerequisite for adopting the foundation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Package Manager Audit as the Sole Vulnerability Gate",
+    "anchor": "package-manager-audit-as-the-sole-vulnerability-gate",
+    "text": "Package Manager Audit as the Sole Vulnerability Gate\nOrion could fail every pull request solely based on `pnpm audit` or an equivalent package-manager command.\nThis would provide a simple portable rule.\nIt was not selected because dependency-security assessment benefits from context including whether a vulnerability is newly introduced, its severity, available remediation, runtime exposure, and advisory quality.\nPackage-manager auditing remains useful but is not the complete supply-chain security strategy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI-Specific Validation Scripts",
+    "anchor": "ci-specific-validation-scripts",
+    "text": "CI-Specific Validation Scripts\nGitHub workflow steps could independently run tools with CI-specific arguments and configuration.\nThis might make workflow files self-contained.\nIt was not selected because it would make CI behavior harder to reproduce locally and risk divergence from `pnpm validate`.\nRepository scripts remain the authoritative interface.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion has a concrete CI platform integrated with the repository host.\nLocal development and CI use the same validation capabilities.\nAI agents can reproduce CI failures through repository commands.\n`pnpm validate` remains the stable validation contract.\nCI jobs can evolve independently behind a stable aggregate required check.\nPull requests receive mechanical validation before merge.\nThe exact merged primary-branch revision is validated again.\nDependency installation is deterministic through the committed frozen lockfile.\nCI caching cannot become an implicit source of correctness.\nReal PostgreSQL and browser testing remain supported in CI.\nSuperseded pull-request runs can be cancelled to control resource usage.\nRenovate provides one explicit dependency-update automation system.\nDependency Dashboard makes pending dependency maintenance visible.\nRelated technology ecosystems can be updated coherently.\nMajor upgrades remain visible and deliberate.\nGitHub Actions dependencies are immutable at the referenced commit.\nRenovate can maintain action pins without sacrificing reproducibility.\nExplicit workflow permissions reduce CI blast radius.\nUntrusted pull-request code remains separated from privileged credentials.\nFuture deployment workflows can use OIDC rather than long-lived credentials.\nGitHub dependency/security capabilities can be adopted without coupling application code to them.\nCI remains separate from deployment architecture.\nOrion does not require a specific paid GitHub security tier.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nGitHub Actions becomes the default CI orchestration platform.\nFull SHA action pins are less readable without accompanying version comments.\nRenovate introduces another repository automation configuration surface.\nWeekly dependency grouping may delay routine non-security upgrades compared with immediate per-release pull requests.\nManual dependency review creates some ongoing maintenance work because broad automerge is disabled.\nFull repository validation may become increasingly expensive as the monorepo grows.\nGitHub-hosted runner performance and cost may eventually require optimization.\nTestcontainers and Playwright increase CI resource requirements.\nSecurity capabilities may differ between public and private repositories depending on GitHub feature availability.\nA conditional security baseline provides less uniform enforcement than mandating one paid toolset.\nBranch-protection and repository-security settings exist partly outside version-controlled source and therefore require administrative configuration.\nCI hardening adds maintenance work when GitHub Actions dependencies release new versions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nThe repository will introduce GitHub Actions workflows under:\n.github/workflows/\n\nwhen implementation begins.\nInitial CI should include pull-request and primary-branch validation.\nThe workflow must install the repository-pinned Node.js and pnpm versions and perform a frozen-lockfile dependency installation.\nExternal GitHub Actions must be referenced by full commit SHA.\nThe repository should enable a protected primary branch with the aggregate Orion CI gate configured as a required status check.\nRenovate configuration must be committed to the repository.\nInitial Renovate behavior should include:\nrecommended baseline\nDependency Dashboard\nweekly routine updates\nsecurity updates without routine delay\ncoherent dependency grouping\nmajor upgrades requiring deliberate review\nautomerge disabled by default\nGitHub Actions update management\n\nDependabot version-update configuration should not be enabled for ecosystems already managed by Renovate.\nGitHub dependency vulnerability alerts should be enabled.\nDependency review, CodeQL, secret scanning, and push protection should be enabled where repository visibility, product entitlement, and platform capabilities permit.\nRequired validation jobs should use minimal `GITHUB_TOKEN` permissions.\nPull-request validation must not receive production deployment credentials.\nFuture privileged workflows should prefer OIDC-based authentication when the destination platform supports it.\nCI diagnostic artifacts must use bounded retention and must not contain secrets or sensitive production data.\nRepository validation should initially favor complete execution.\nCI optimization through:\naffected-project detection\nremote task caching\nadvanced path filtering\nlarge test matrices\ntest sharding\nself-hosted runners\n\nshould be introduced only when measured CI performance or cost demonstrates the need.\nNo deployment workflow is required by this ADR.\nSelecting a deployment target or establishing CD should occur only when a concrete application provides the necessary operational requirements.\nRoutine compatible GitHub Actions, Renovate, or CI configuration updates do not require a new ADR when they preserve the responsibilities defined here.\nChanging Orion's default CI platform, replacing Renovate as the primary dependency automation strategy, or materially changing the local-versus-CI validation contract should be documented by an ADR that supersedes this decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0009: Establish Testing Strategy and Tooling](0009-establish-testing-strategy-and-tooling.md)\nRelated ADR: [ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)\nRelated policy: [secrets management](../security/secrets-management.md)\nRelated policy: [continuous integration](../architecture/continuous-integration.md)\nRelated policy: [contributing](../contributing.md)\nExternal reference: GitHub Actions documentation.\nExternal reference: GitHub Actions secure-use guidance.\nExternal reference: GitHub `GITHUB_TOKEN` permission documentation.\nExternal reference: GitHub OpenID Connect documentation.\nExternal reference: GitHub Dependency Review documentation.\nExternal reference: GitHub CodeQL documentation.\nExternal reference: GitHub Secret Scanning and Push Protection documentation.\nExternal reference: Renovate documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "anchor": "adr-0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "text": "ADR-0012: Verify JWT Access Tokens at the First API Boundary\n**Status:** accepted\n**Date:** 2026-09-24\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe Approval Request feature requires every operation to authenticate a human before applying ownership and review-capability rules. H-05 selected a provider-independent OIDC/OAuth 2.0 bearer access-token boundary and deferred a concrete identity provider, password/session systems, and provider-specific refresh and revocation behavior. Phase 5 must verify tokens in a running API and in synthetic tests without provisioning an external service.\nThe existing [authentication policy](../security/authentication.md) left the token format and cryptographic mechanism to an explicit decision. This choice affects security and issuer interoperability beyond a local helper implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nFor the first Orion API, accept signed JWT bearer **access tokens** with `typ` of `at+jwt`, verified locally using the configured trusted issuer's JWKS. Require an exact issuer and API audience, a non-expired token, an issued-at time, a subject, a stable Orion application-principal UUID claim, and an issuer-validated human actor claim. Accept RS256 or ES256 signatures. Map an issuer-validated `approval:review` scope to the application capability; no unverified client-supplied identity or capability reaches the domain/application layer.\nKeep issuer, audience, JWKS endpoint, and runtime database URL in validated server-only configuration. The stable Orion principal ID is a provider-independent application contract: a later provider integration must preserve that ID across provider changes. No concrete provider, login/session store, introspection service, token issuance, or provider-specific revocation strategy is selected here. A later requirement for opaque tokens or a different trust mechanism needs a separate decision and compatibility review.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nLocal signature verification makes the boundary executable and testable with synthetic keys without depending on an external account or network call per business request. Explicit issuer/audience checks and an application-owned principal identifier keep authorization independent of provider-native claim types. A narrow algorithm allowlist and trusted JWKS reduce ambiguity in accepted credentials.\nThis accepts a JWT-shaped issuer contract for the first API. It does not establish JWT as a universal Orion credential format or decide browser login behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Opaque-token introspection",
+    "anchor": "opaque-token-introspection",
+    "text": "Opaque-token introspection\nIntrospection could support provider-side active-token checks but would require selecting and provisioning an external issuer/introspection service for Phase 5, contrary to the current provider deferral and offline synthetic-test requirement. It remains available if future revocation or provider constraints justify it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "API-owned session or password store",
+    "anchor": "api-owned-session-or-password-store",
+    "text": "API-owned session or password store\nThis would add credential and lifecycle responsibilities that H-05 explicitly excludes from the API.\n"
+  },
+  {
+    "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+    "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
     "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
     "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
     "group": "Decisions",
@@ -1177,437 +1564,5 @@
     "heading": "Context",
     "anchor": "context",
     "text": "Context\nThe owner answered PH-11's identity questionnaire, selecting self-hosted Keycloak as candidate, email/password with optional passkeys, Google as the only external login, and server-managed browser sessions. Public company activation, strong administrative assurance, safe recovery and bounded revocation must work within an initially unfunded residential deployment. A concrete provider/version has not been provisioned or qualified.\nAccepted ADR-0012 governs the existing API's signed JWT access-token boundary. Its header/claims are not ordinary provider defaults, and its current principal result does not expose session or authentication-assurance evidence. The web shell's in-memory bearer support is not a login/refresh implementation. This decision must distinguish product-policy approval from technical acceptance and implementation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt Keycloak as the human identity provider, self-hosted subject to PH-10 feasibility, with a server-managed browser session integrated into the modular backend where appropriate. Use established OIDC Authorization Code with PKCE and maintained session/security components; keep provider credentials server-side and an opaque protected session cookie in the browser. Do not introduce a new microservice by default or an API-owned password/cryptographic implementation.\nPreserve ADR-0012's API boundary and stable application principal. A reviewed session boundary must obtain legitimate issuer access tokens and establish trusted session/assurance context; a cookie or caller-supplied MFA/session assertion cannot bypass the existing verifier. Define protected cookies, explicit CSRF protection, OIDC state/nonce/redirect validation, session fixation defenses, refresh rotation/replay/concurrency and local/global logout reconciliation before implementation. No session library, route, schema or deployment image is selected by this decision. The pinned Keycloak source assessment in the provider evaluation is review evidence, not an installed production version.\nApply the owner's canonical identity policies, including strong/recent authentication, distinct platform accounts, recovery, inactivity/absolute expiry, session-count and 30-second revocation requirements. Current account/session/membership state must supplement JWT verification. Keep Google brokering/account linking and provider/email credentials at trusted boundaries. A human actor mapper must not accidentally make machine flows authenticate as humans.\nThe [pinned-source compatibility assessment](../project/identity-provider-evaluation.md#pinned-source-assessment) supports this architectural choice. Before integration readiness, implement and verify immutable principal mapping, every required token claim and trusted session/assurance linkage against the selected deployment version using the remaining qualification cases. Where evidence is insufficient, retain an explicit qualification task; do not modify accepted checks to make a default provider token pass. Review deployment/recovery resources separately under PH-10/PH-15. This decision neither supersedes ADR-0012 nor authorizes provisioning.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe provider matches the owner's control/budget direction and has relevant documented identity primitives. Server-managed sessions reduce browser exposure of provider tokens and permit accountable session lifecycle controls, at the cost of persistent state and CSRF/refresh coordination. A five-minute token alone cannot enforce the selected 30-second revocation bound. Local JWT verification can remain useful without pretending it provides a complete session or authorization system.\nThe documentation review establishes plausible compatibility, including Keycloak's configurable `at+jwt` header, not passed interoperability, recovery or capacity tests. Public signup still needs commercial/privacy and abuse readiness; choosing it does not authorize a free plan or immediate public exposure.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Managed OIDC provider:** may reduce some operating responsibilities, but costs/limits/claim compatibility require evaluation beyond the current no-procurement direction. No vendor benchmark or unconditional free-tier assumption is made.\n**Browser-token SPA with Authorization Code and PKCE:** preserves a simpler server session topology but leaves browser token exposure and refresh/lifecycle tradeoffs; the owner selected server-managed sessions instead. This does not reject the client-first React/Vite application or require server rendering.\n**Another established self-hosted provider:** fallback if qualification rejects Keycloak; no unperformed comparative assessment is claimed.\n**Custom issuer/password storage or relaxed JWT checks:** violates governing controls and is not an acceptable workaround.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nKeeps human credentials with an established provider and browser tokens out of JavaScript-accessible persistence.\nPreserves provider-independent identity and explicit failure/revocation/assurance boundaries.\nDefines compatibility and operational evidence before a production integration is claimed.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nSelf-hosting adds patching, resources, recovery and mail-delivery responsibilities despite no procurement budget.\nServer sessions introduce persistence, CSRF, concurrency and logout synchronization work.\nCurrent foundation principal/configuration contracts do not yet carry all needed session/assurance semantics.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo runtime, dependency, API contract, migration or deployment changes accompany this decision. Future delivery must pin a maintained provider version/image, define protected credentials/configuration, qualify claim/assurance/session behavior and reconcile revocations on restore. Provider migration preserves application IDs but may require password resets or factor reenrollment. PH-15–PH-17 track external identity, Google and mail prerequisites; PH-11 decision acceptance is complete; PJ-24 retains every unperformed interoperability/session/assurance test.\n"
-  },
-  {
-    "id": "repository/docs/adr/0024-propose-keycloak-and-server-managed-human-sessions",
-    "title": "ADR-0024: Adopt Keycloak and Server-Managed Human Sessions",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical identity and access policies](../project/identity-and-access.md)\n[Provider evidence and qualification gaps](../project/identity-provider-evaluation.md)\n[Existing JWT access-token decision](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\n[Authentication policy](../security/authentication.md)\n[Application boundaries](../architecture/application-boundaries.md)\n[OAuth security best current practice](https://www.rfc-editor.org/rfc/rfc9700.html)\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "anchor": "adr-0025-adopt-application-owned-scoped-access-profiles",
-    "text": "ADR-0025: Adopt Application-Owned Scoped Access Profiles\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved all pending Teluni ADRs on 2026-10-18. Acceptance establishes the architectural direction, not implementation or production readiness. The design reviews, security controls and qualification evidence below remain mandatory delivery gates in the [implementation plan](../project/implementation-plan.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nPH-11 approved multiple company memberships, branch-specific grants, customizable profiles and explicit resource sharing. A designated responsible administrator approves additional administrators. The backend must enforce the selected role matrix, strong authentication, 30-second revocation and publication impact, including automatically published prices. Company administration and platform operation must not imply unrestricted customer-content support.\nThe foundation verifies human identity but has no product membership/permission implementation. ADR-0018 establishes the accepted tenant-owned modular-data direction; its concrete constraints/enforcement remain design and implementation work. Provider-native groups or immutable token roles alone cannot express current resource scope, temporary grants and all-target price effects safely.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAdopt application-owned memberships, explicit scoped capability grants and company-customized profiles, with readable standard role presets. Scope grants to a company and explicit branches/resources; combine valid grants additively within their scopes. Account/membership suspension and grant expiration deny access regardless of profile labels. No implicit access to future branches, arbitrary negative-rule language, cyclic inheritance or universal administrator shortcut is selected.\nKeep authorization meaning with the owning application/module capabilities; identity/provider adapters establish trusted principals and assurance but do not own company permissions. The organizations capability owns membership/profile meaning. Modules use explicit public capabilities for authorization facts rather than arbitrary cross-module table reads or a generic global switch over domain rules. Exact schema, persistence constraints, caching/invalidation and any row-level-security design require review with ADR-0018 before implementation. No external permission engine or shared framework is selected.\nEnforce resource ownership, operation, current state, assurance and scope on every protected entry point, including reads/collections, media, imports, bulk work and delayed effects. Revalidate sensitive effects and ensure the selected freshness bound. Grantors cannot delegate authority they lack, responsible-administrator approval cannot be bypassed, and local membership administration cannot reset global identities.\nAuthorize every published dependency/target affected by a price save before accepting the mutation; deny the entire out-of-scope mutation without partial publication or automatic approval fallback. Optional company approval policies distinguish a proposal from an effective saved price and prohibit self-approval where required. Pending protected work rechecks authority; an already-issued valid publication continues its delivery lifecycle unless explicitly revoked by the appropriate control.\nRoutine support uses the real support identity and a visible, expiring customer-authorized scope, read-only by default and separate write grants. No impersonation is selected. Emergency access requires a separately reviewed, exceptional controlled procedure; there is no standing unrestricted content-browsing right.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nApplication ownership keeps mutable company permissions and resources independent of provider migration and stale identity claims. Explicit capabilities/scopes accommodate both small-business presets and teams working across branches without making every operator an administrator. Attributable publication/support checks preserve the approved product behavior and tenant boundaries.\nThe owner approved policy and required allow/deny cases, not a database model or proven permission evaluator. Custom profiles, optional approvals and bounded asynchronous revocation add real implementation work and must not be claimed merely from a matrix.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n**Fixed roles only:** simpler, but cannot satisfy the selected customizable capability/scoping policy without revisiting the product requirements.\n**Provider roles/groups as complete authorization:** insufficient for current memberships, mutable resource relationships, publication fan-out and tenant-safe support; would couple application permission meaning to identity infrastructure.\n**General-purpose policy engine:** no measured need or evaluation justifies another dependency or distributed component at this stage. Review if actual policy complexity warrants it later.\n**Platform superuser and silent price partial success:** obscure authority and violate selected customer-content boundaries and complete price-impact validation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nMakes granted authority, tenant/resource scope, responsibility and delegated support explainable and testable.\nKeeps identity migration independent from company permission ownership.\nPreserves safe all-target publication and attributable pending-work behavior.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nCustom profiles, shared resources and optional approvals increase UX, schema and test complexity.\nFreshness, grant races and background work require explicit consistency/invalidation design.\nA safe role matrix alone cannot prevent unsafe queries, caches or credential mapping.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo permission identifiers, schema, migration or running engine is created here. Implementation/release qualification under PJ-03/PJ-07/PJ-24 requires reviewed capability ownership, consistency/enforcement design and passing IA-01–IA-16 cases, including two-company negative fixtures and trustworthy session/assurance context. Later renaming persisted grants or broadening presets is a compatibility/security change. Audit/privacy retention and host recovery remain separate gates.\n"
-  },
-  {
-    "id": "repository/docs/adr/0025-propose-application-owned-scoped-access-profiles",
-    "title": "ADR-0025: Adopt Application-Owned Scoped Access Profiles",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Selected identity policy and permission matrix](../project/identity-and-access.md)\n[Tenant-owned data decision](0018-propose-tenant-owned-data-in-the-modular-backend.md)\n[Human provider/session decision](0024-propose-keycloak-and-server-managed-human-sessions.md)\n[Authorization policy](../security/authorization.md)\n[Release publication policies](../project/release-policies.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "anchor": "adr-0026-deliver-transactional-email-through-a-postgresql-outbox-and-an-smtp-relay",
-    "text": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay\n**Status:** accepted\n**Date:** 2026-10-18\n**Acceptance scope:** The owner explicitly approved this decision and the D-13 design on 2026-10-18 under PH-21. Acceptance establishes the architectural direction for local and CI implementation, not production readiness. Real sending still requires PH-17's sender, domain authentication and provider terms and PH-13's notices and retention, and the qualification evidence in the [implementation plan](../project/implementation-plan.md) remains mandatory.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nCompany invitations are the first Teluni workflow that must send email from the application: the selected identity policy requires recipient-bound, single-use invitations valid for seven days, and later notices will need the same capability. Keycloak sends its own verification and recovery messages but cannot send application messages, and memberships and grants are application-owned (ADR-0025).\nThe [delivery policy](../architecture/delivery-and-side-effects.md) requires a durable required side effect to record its intent with the state change, since sending after commit can lose the effect in a crash and sending before commit can announce a change that never happened. The API currently has no background processing, message broker or outbound-email path. Deployment is a single residential host with Docker Compose and PostgreSQL (ADR-0021), with no recurring procurement budget for identity or email services yet (P03). The real provider, sender domain and DNS authentication are not selected (PH-17), and legal retention is not set (PH-13).\nThis record decides the delivery mechanism. The invitation rules, credential handling, limits and retention proposals are specified in the [invitation and email delivery design](../project/invitation-delivery-design.md) (D-13).\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nTeluni will deliver transactional email through an application-owned outbox in PostgreSQL and an authenticated SMTP relay:\nA dedicated API capability owns an outbound-message table, a dispatcher and an SMTP adapter. Producers enqueue a message in the same database transaction as the business change it reports, through that capability's public port, and can cancel a message they enqueued. The producing capability owns the meaning of a message; the mail capability owns only delivery.\nThe dispatcher runs inside the API process. It claims due messages with row locks and `SKIP LOCKED` under expiring leases, submits them through SMTP, and records sent, failed or cancelled outcomes with bounded retries, so several instances never send one claim twice in normal operation.\nDelivery is at least once. A crash between the relay's acceptance and the local record can send a message again; consumers of the email (people following a link) must tolerate repeats, and exactly-once delivery is not claimed.\nThe SMTP client is the established `nodemailer` library. The relay is provider-neutral and configured, with TLS required in production; a provider's proprietary HTTP API or webhooks are not used in this version.\nMessage bodies are rendered from fixed templates when sent. Secret parameters are stored encrypted under a dedicated key ring only until the message is final. Recipient addresses and credentials never reach logs or telemetry.\nNo message broker, separate worker service or job-queue library is introduced. Bounce processing, delivery receipts and a separate worker deployment remain possible later without changing producers.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nPostgreSQL is already the system of record and provides transactional enqueueing and concurrent claiming, so the producer's change and its email commit or fail together without a second stateful system on the single host. In-process dispatch adds no deployment unit; when the API is down, messages wait rather than disappear, which fits low pilot volume and residential availability. Leases and `SKIP LOCKED` keep the design correct if more instances run later.\nSMTP submission is the most widely supported provider interface, which keeps PH-17 free to choose any service, including one already available to the owner, and keeps a provider change to configuration. `nodemailer` is the long-established Node.js SMTP client and avoids writing protocol code; it is a routine dependency added under the normal review and supply-chain rules.\nAt-least-once delivery is the honest guarantee for an external effect without provider-side idempotency. For invitations a repeated email contains the same still-valid link, so duplicates are harmless; later producers must state their own tolerance.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Send after commit in the request",
-    "anchor": "send-after-commit-in-the-request",
-    "text": "Send after commit in the request\nSimplest, but a crash or relay outage after commit silently loses the message, and retrying inside the request ties panel latency to the relay. Rejected by the delivery policy for required effects.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "PostgreSQL job library",
-    "anchor": "postgresql-job-library",
-    "text": "PostgreSQL job library\nLibraries such as pg-boss provide queues on PostgreSQL, but they own their schema and its migrations. Fitting that schema into the repository's reviewed SQL migrations, semantic metadata and least-privilege runtime grants would need adaptation and ongoing tracking of the library's internal tables. A small owned table covers the current need with explicit semantics. This was assessed from the libraries' documented design, not by a trial integration.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Broker or Redis-backed queue",
-    "anchor": "broker-or-redis-backed-queue",
-    "text": "Broker or Redis-backed queue\nAdds stateful infrastructure, backups and monitoring on the single host for low volume, and still needs an outbox to close the commit gap.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Provider HTTP API with webhooks",
-    "anchor": "provider-http-api-with-webhooks",
-    "text": "Provider HTTP API with webhooks\nOffers delivery events and bounce data, but couples code to one provider before PH-17 selects it and may require paid procurement. Can be reconsidered when a provider is chosen and bounce handling is needed.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nAn email intent commits or rolls back with the change it reports, and survives restarts and relay outages.\nNo new infrastructure beyond the existing API and PostgreSQL; the provider stays replaceable through configuration.\nDelivery state is queryable, so the panel can show failures and offer resend.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nDuplicate emails are possible after a crash; every producer must tolerate them.\nDispatch stops while the API is down, and the API process gains a background loop to drain, monitor and test.\nWithout bounce processing, \"sent\" means accepted by the relay, not delivered to the mailbox.\nThe outbox holds personal data and short-lived encrypted secrets, which need retention, cleanup and key rotation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNew `RESTRICTED` settings (relay credentials and the outbound-mail key ring) and monitoring of queue age and failures. Real sending requires PH-17's sender, domain authentication and provider terms, and PH-13's notices; local and CI use a disposable Mailpit sink.\nMoving dispatch to a separate worker later reuses the same table and claiming rules; adopting a provider API later replaces only the adapter.\n"
-  },
-  {
-    "id": "repository/docs/adr/0026-propose-a-postgresql-outbox-and-smtp-relay-for-transactional-email",
-    "title": "ADR-0026: Deliver Transactional Email through a PostgreSQL Outbox and an SMTP Relay",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Invitation and email delivery design (D-13)](../project/invitation-delivery-design.md)\n[Delivery and side effects](../architecture/delivery-and-side-effects.md)\n[Identity and access policies](../project/identity-and-access.md)\n[ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md), [ADR-0025](0025-propose-application-owned-scoped-access-profiles.md)\n[PH-17](../project/human-actions.md#ph-17), [PH-21](../project/human-actions.md#ph-21)\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "anchor": "adr-0027-adopt-device-generated-credentials-and-code-based-enrollment",
-    "text": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment\n**Status:** accepted\n**Date:** 2026-10-19\n**Acceptance scope:** The owner explicitly approved this decision and the nine decisions of the device enrollment and lifecycle design on 2026-10-19 under PH-22. Acceptance establishes the direction for local and CI implementation of PJ-08 with simulated players, not Android player delivery (PJ-12), hardware qualification (PH-08) or production readiness.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni screens are Android TV players without a keyboard that must be paired to one company and branch by a person who is already signed in to the panel (FR-02). Policies require temporary, single-use, rate-limited codes that are safe under concurrent claims, a separate revocable identity per device that is never a human principal, revocation that denies future server access, and no custom cryptography or token schemes ([security requirements](../project/security-and-i18n.md#pairing-and-device-lifecycle), [release policies](../project/release-policies.md#offline-authorization-and-clock-trust)). Keycloak holds only human identities ([ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)), and the pilot runs on a single host ([ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)).\nThis record decides how a device is enrolled and how it authenticates afterward. The detailed rules, limits, data and contracts are in the [device enrollment and lifecycle design](../project/device-enrollment-design.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nTeluni will enroll devices with an application-owned flow shaped like the OAuth 2.0 Device Authorization Grant (RFC 8628) and authenticate them with a device-generated bearer credential:\nThe player generates a 256-bit credential from the platform CSPRNG, keeps it in Android Keystore-backed storage and sends only its SHA-256 when it starts an enrollment. The API answers with a short user code to display and an enrollment ID to poll.\nA signed-in, authorized person enters the user code in the panel; one conditional transaction claims the enrollment and creates the device in the chosen company and branch.\nThe device then presents the credential as a bearer token on device routes only. The API stores only the hash, resolves it on every request without caching, and revokes it by state change. Human routes never accept it and device routes never accept a human session.\nUser codes are short-lived, single-use, stored only as a keyed HMAC and protected by attempt limits.\nThe API's devices module owns the flow; the shared runtime gains only a `device` operation access kind. No identity provider, certificate authority or proof-of-possession library is introduced now.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nRFC 8628 is the established pattern for input-constrained devices, so the user-facing shape and its code guidance (alphabet, length, expiry, rate limits) come from a reviewed standard rather than invention. Generating the credential on the device means no secret is ever returned by the server, so a lost response at any step is retried without issuing anything and without a re-issue path. A 256-bit random value needs only a plain hash for storage and lookup. A bearer credential over HTTPS fits the single-host pilot and the existing Fastify/PostgreSQL stack.\nThe accepted cost is that a copied credential is usable until revoked, unlike a key that never leaves hardware. Revocation on the next request, rotation and the `device` access kind as a single seam keep a later move to proof of possession contained.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Server-issued credential returned at pairing",
-    "anchor": "server-issued-credential-returned-at-pairing",
-    "text": "Server-issued credential returned at pairing\nReturning the only copy of a secret in one response makes a lost response either a stuck device or a reason to add a re-issue path with more secret-bearing responses.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Device key pair with signed requests or mutual TLS",
-    "anchor": "device-key-pair-with-signed-requests-or-mutual-tls",
-    "text": "Device key pair with signed requests or mutual TLS\nDPoP (RFC 9449) or client certificates would keep the private key in hardware and resist copying. They add proof verification or certificate issuance and renewal without a measured threat that requires them in the pilot. They remain the preferred upgrade if PH-08 devices offer usable hardware-backed keys and the threat model calls for it.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Keycloak device grant and service accounts",
-    "anchor": "keycloak-device-grant-and-service-accounts",
-    "text": "Keycloak device grant and service accounts\nIt reuses an established server, but makes each screen a Keycloak client or user, couples player operation to Keycloak availability and mixes device and human identities that the policies keep apart.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nNo secret leaves the server, and every enrollment step is safely retryable.\nRevocation is immediate for reachable devices and needs no token lists or expiry windows.\nDevice and human authentication stay separate at the operation level.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nA credential copied from a compromised or rooted device works until revoked; physical control of a player remains a residual risk, as the security requirements already state.\nTeluni owns the enrollment endpoints, limits and their tests instead of relying on an identity provider.\nA new `RESTRICTED` key ring for user-code HMACs must be configured and rotated.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nHost migration and restore must preserve credential hashes so devices keep working, without ever exporting the credentials themselves.\nMoving to proof of possession later requires a player update and an overlap period in which both schemes are accepted for already-paired devices.\n"
-  },
-  {
-    "id": "repository/docs/adr/0027-propose-device-generated-credentials-and-code-based-enrollment",
-    "title": "ADR-0027: Adopt Device-Generated Credentials and Code-Based Enrollment",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Device enrollment and lifecycle design](../project/device-enrollment-design.md)\n[Security requirements: pairing and device lifecycle](../project/security-and-i18n.md#pairing-and-device-lifecycle)\n[Release policies: offline authorization](../project/release-policies.md#offline-authorization-and-clock-trust)\n[ADR-0020](0020-propose-a-native-android-tv-player.md), [ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md), [ADR-0024](0024-propose-keycloak-and-server-managed-human-sessions.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "anchor": "adr-0028-adopt-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "text": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing\n**Status:** accepted\n**Date:** 2026-10-19\n**Acceptance scope:** The owner explicitly approved this decision and the nine decisions of the media library design on 2026-10-19 under PH-23. Acceptance establishes the direction for local and CI implementation of PJ-09 with generated fixtures, not device profile qualification (PH-08), the production image (PJ-13) or malware scanning (PH-13).\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nTeluni stores private customer images and videos, validates them against the selected ingestion bounds and turns them into renditions that Android TV screens can play offline (FR-04, AT-02, AT-03). The pilot runs on one residential host with durable mounted storage and no cloud budget, and media storage must stay a media-owned capability with replaceable filesystem I/O ([ADR-0021](0021-propose-a-single-host-pilot-with-portable-persistent-storage.md)). Security requirements ask for trustworthy inspection, parser isolation and no unvalidated transcoding framework ([security requirements](../project/security-and-i18n.md#media-and-audit-protections)); the release policies require preserved originals, compatible renditions, reference-safe deletion and a recoverable trash.\nThis record decides where media bytes live, how they are named and published, and which tool parses and converts untrusted files, and how it is isolated. The detailed rules, profiles, limits, data and contracts are in the [media library design](../project/media-library-design.md).\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-propose-local-content-addressed-media-storage-and-isolated-ffmpeg-processing",
-    "title": "ADR-0028: Adopt Local Content-Addressed Media Storage and Isolated FFmpeg Processing",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nTeluni will store media as immutable content-addressed objects on a local volume and process it only with FFmpeg in isolated child processes:\nThe media module owns an object interface (`put`, `open` with an optional byte range, `delete`, `list`) implemented over a configured directory on durable storage. Each object is named by the SHA-256 of its bytes inside its company and is never modified; identical bytes are stored once per company and never shared across companies.\nObjects are written to a work directory on the same filesystem, flushed, and published by an atomic rename while a transaction-scoped PostgreSQL advisory lock on the object is held, before the referencing asset commits. PostgreSQL is the authority for which objects exist and who may read them; paths never leave the module.\nUntrusted files are parsed and converted only by the FFmpeg executables (`ffprobe`, `ffmpeg`, version 6.1 or later), run without a shell, with a scrubbed environment, a forced demuxer, the file protocol only, bounded output and timeouts, and resource limits where the host offers them. No media parser or image library runs inside the API process.\nWork is queued in PostgreSQL and claimed by an in-process processor with leases, so several API processes can share it and interrupted work resumes.\n"
   }
 ]

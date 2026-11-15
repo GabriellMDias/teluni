@@ -72,8 +72,10 @@ afterAll(async () => {
 async function browserLogin(
   email: string,
   options: {
-    acrValues?: string;
     maxAge?: number;
+    /** An application-initiated action, such as CONFIGURE_TOTP. */
+    action?: string;
+    decision?: "accept" | "cancel";
     jar?: CookieJar;
     authenticator?: SyntheticAuthenticator;
   } = {},
@@ -88,7 +90,7 @@ async function browserLogin(
     code_challenge_method: "S256",
     state,
     nonce,
-    ...(options.acrValues ? { acr_values: options.acrValues } : {}),
+    ...(options.action ? { kc_action: options.action } : {}),
     ...(options.maxAge === undefined
       ? {}
       : { max_age: String(options.maxAge) }),
@@ -98,11 +100,15 @@ async function browserLogin(
     { username: email, password },
     options.jar,
     options.authenticator,
+    options.decision,
   );
-  return oidc.authorizationCodeGrant(web, callback, {
+  const tokens = await oidc.authorizationCodeGrant(web, callback, {
     pkceCodeVerifier: codeVerifier,
     expectedState: state,
     expectedNonce: nonce,
+  });
+  return Object.assign(tokens, {
+    actionStatus: callback.searchParams.get("kc_action_status"),
   });
 }
 
@@ -383,45 +389,87 @@ describe("pinned Keycloak realm contract", () => {
     expect(tokens.claims()?.acr).toBe("teluni-aal1");
   }, 60_000);
 
-  it("enrolls and then requires OTP for teluni-aal2, without silently upgrading a standard session", async () => {
-    const email = `strong-${randomUUID()}@example.test`;
-    await createSyntheticUser(admin, realm, { email, password });
+  it("keeps two-step verification optional: enrollment and removal are account actions, and an enrolled code is asked at every new sign-in", async () => {
+    const email = `two-step-${randomUUID()}@example.test`;
+    const userId = await createSyntheticUser(admin, realm, { email, password });
+    const provider = createKeycloakProvider({
+      environment: "test",
+      issuer,
+      publicOrigin,
+      clientId: webClientId,
+      clientSecret: webSecret,
+      provisionerClientId,
+      provisionerClientSecret: provisionerSecret,
+      sessionKeys: [{ id: "k1", key: randomBytes(32) }],
+    });
     const authenticator = new SyntheticAuthenticator();
     const jar = new CookieJar();
-    // A standard SSO session exists first.
-    expect((await browserLogin(email, { jar })).claims()?.acr).toBe(
-      "teluni-aal1",
-    );
-    // Requesting the strong level cannot reuse it: the user must enroll OTP.
-    const strong = await browserLogin(email, {
+    // Without an authenticator the password alone signs in.
+    const standard = await browserLogin(email, { jar });
+    expect(standard.claims()?.acr).toBe("teluni-aal1");
+    expect(await provider.otpCredentials(userId)).toEqual([]);
+
+    // Cancelling enrollment changes nothing and still returns a code.
+    const declined = await browserLogin(email, {
       jar,
-      acrValues: "teluni-aal2",
+      action: "CONFIGURE_TOTP",
+      decision: "cancel",
+    });
+    expect(declined.actionStatus).toBe("cancelled");
+    expect(await provider.otpCredentials(userId)).toEqual([]);
+
+    const enrolled = await browserLogin(email, {
+      jar,
+      action: "CONFIGURE_TOTP",
       authenticator,
     });
+    expect(enrolled.actionStatus).toBe("success");
     expect(authenticator.secret).toBeTruthy();
-    const strongClaims = strong.claims()!;
-    expect(strongClaims.acr).toBe("teluni-aal2");
-    expect(typeof strongClaims.auth_time).toBe("number");
+    const [credential] = await provider.otpCredentials(userId);
+    expect(credential).toBeTruthy();
 
-    // A fresh browser asks for the password and the enrolled code.
+    // Every new sign-in now asks for the code, which a browser without the
+    // authenticator cannot answer.
+    await expect(browserLogin(email, { jar: new CookieJar() })).rejects.toThrow(
+      "Unexpected provider page",
+    );
     const fresh = await browserLogin(email, {
       jar: new CookieJar(),
-      acrValues: "teluni-aal2",
       authenticator,
     });
-    expect(fresh.claims()?.acr).toBe("teluni-aal2");
+    expect(fresh.claims()?.acr).toBe("teluni-aal1");
 
     // max_age=0 forces a new authentication with a newer auth_time.
     await new Promise((resolve) => setTimeout(resolve, 1100));
     const recent = await browserLogin(email, {
       jar,
-      acrValues: "teluni-aal2",
       maxAge: 0,
       authenticator,
     });
-    expect(recent.claims()?.acr).toBe("teluni-aal2");
     expect(Number(recent.claims()?.auth_time)).toBeGreaterThan(
-      Number(strongClaims.auth_time),
+      Number(fresh.claims()?.auth_time),
     );
-  }, 180_000);
+
+    // Removal reauthenticates (password and code) and asks for confirmation.
+    const kept = await browserLogin(email, {
+      jar,
+      maxAge: 0,
+      action: `delete_credential:${credential}`,
+      decision: "cancel",
+      authenticator,
+    });
+    expect(kept.actionStatus).toBe("cancelled");
+    expect(await provider.otpCredentials(userId)).toEqual([credential]);
+    const removed = await browserLogin(email, {
+      jar,
+      maxAge: 0,
+      action: `delete_credential:${credential}`,
+      authenticator,
+    });
+    expect(removed.actionStatus).toBe("success");
+    expect(await provider.otpCredentials(userId)).toEqual([]);
+    expect(
+      (await browserLogin(email, { jar: new CookieJar() })).claims()?.acr,
+    ).toBe("teluni-aal1");
+  }, 300_000);
 });

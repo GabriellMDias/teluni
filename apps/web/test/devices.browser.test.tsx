@@ -53,7 +53,7 @@ function device(overrides: Partial<Device> = {}): Device {
   };
 }
 
-function company(capabilities: string[], afterStrong: string[] = []) {
+function company(capabilities: string[]) {
   return {
     company: { id: companyId, displayName: "Synthetic company" },
     access: {
@@ -61,7 +61,6 @@ function company(capabilities: string[], afterStrong: string[] = []) {
       profiles: [],
       responsible: true,
       capabilities: ["company.view", "branches.view", ...capabilities],
-      capabilitiesAfterStrongAuthentication: afterStrong,
     },
     responsibilityTransfer: null,
   };
@@ -199,11 +198,21 @@ test("lists screens with filters kept in the URL and no pairing for viewers", as
   await expect
     .element(screen.getByRole("button", { name: t.pair }))
     .not.toBeInTheDocument();
-  await screen.getByLabelText(t.filterStatus).selectOptions(t.statusRevoked);
+  // The server-side filters live in the dataset's Filter modal.
+  const filterLabel = locale === "pt-BR" ? "Filtrar" : "Filter";
+  await screen.getByRole("button", { name: filterLabel, exact: true }).click();
+  const filters = screen.getByRole("form", { name: t.filtersTitle });
+  await filters.getByLabelText(t.statusColumn).selectOptions(t.statusRevoked);
+  await filters.getByRole("button", { name: t.filtersApply }).click();
   await expect
     .element(screen.getByRole("link", { name: "Antiga" }))
     .toBeVisible();
   expect(router.state.location.search).toEqual({ status: "REVOKED" });
+  await expect
+    .element(
+      screen.getByRole("button", { name: new RegExp(`^${filterLabel} \\(1 `) }),
+    )
+    .toBeVisible();
   await expect
     .element(screen.getByText(t.erasure.PENDING, { exact: false }))
     .toBeVisible();
@@ -226,8 +235,11 @@ test("pairs a screen with the code only in the request body", async () => {
     if (url.pathname.endsWith("/branches")) return { body: branches };
     return { body: company(["devices.view", "devices.manage"]) };
   });
-  const { screen } = await open(screensPath);
-  await expect.element(screen.getByText(t.empty)).toBeVisible();
+  const { screen, router } = await open(screensPath);
+  // Without screens, a manager starts on pairing, pinned in the URL.
+  await expect
+    .poll(() => router.state.location.search)
+    .toEqual({ mode: "form", record: "new" });
   await screen.getByLabelText(t.fieldCode).fill("bcdf-ghjk");
   await screen.getByLabelText(t.fieldName).fill("Vitrine");
   await screen.getByLabelText(t.fieldBranch).selectOptions("Bairro");
@@ -317,32 +329,22 @@ test("blocks repeated pairing while pending and reconciles a lost response befor
     document.querySelector<HTMLFormElement>(".devices-pair")!.requestSubmit();
     expect(writes).toBe(1);
     await screen.getByRole("button", { name: t.reload, exact: true }).click();
+    // The form keeps its values; the grid shows the screen the lost write added.
+    await expect
+      .element(screen.getByLabelText(t.fieldCode))
+      .toHaveValue("BCDF-GHJK");
+    await screen
+      .getByRole("button", {
+        name: locale === "pt-BR" ? "Modo grade" : "Grid mode",
+      })
+      .click();
     await expect
       .element(screen.getByRole("link", { name: "Vitrine", exact: true }))
       .toBeVisible();
     expect(writes).toBe(1);
-    await expect
-      .element(screen.getByLabelText(t.fieldCode))
-      .toHaveValue("BCDF-GHJK");
   } finally {
     release();
   }
-});
-
-test("asks for step-up when managing screens needs strong authentication", async () => {
-  respond((url) => {
-    if (url.pathname.endsWith("/devices"))
-      return { body: { items: [], nextCursor: null } };
-    if (url.pathname.endsWith("/branches")) return { body: branches };
-    return { body: company(["devices.view"], ["devices.manage"]) };
-  });
-  const { screen } = await open(screensPath);
-  await expect
-    .element(screen.getByRole("link", { name: t.stepUpButton }))
-    .toHaveAttribute(
-      "href",
-      `/api/auth/login?returnTo=${encodeURIComponent(screensPath)}&assurance=strong`,
-    );
 });
 
 test("limits rotation to reported values and sends the edited version", async () => {
@@ -760,35 +762,24 @@ test("pages screen history through URL search and safely labels actors and unkno
   expect(requests).toEqual(["first", "older", "first"]);
 });
 
-test.each([false, true])(
-  "does not fetch screen audit without current permission (step-up: %s)",
-  async (stepUp) => {
-    let reads = 0;
-    respond((url) => {
-      if (url.pathname.endsWith("/audit-events")) {
-        reads++;
-        return { body: { items: [], nextCursor: null } };
-      }
-      if (url.pathname.endsWith(`/devices/${deviceId}`))
-        return { body: device() };
-      return { body: company(["devices.view"], stepUp ? ["audit.view"] : []) };
-    });
-    const { screen } = await open(`${screensPath}/${deviceId}?view=history`);
-    await expect
-      .element(screen.getByRole(stepUp ? "status" : "alert"))
-      .toBeVisible();
-    expect(reads).toBe(0);
-    if (stepUp) {
-      const link = screen.getByRole("link", { name: t.stepUpButton });
-      await expect
-        .element(link)
-        .toHaveAttribute("href", expect.stringContaining("view%3Dhistory"));
-    } else
-      await expect
-        .element(screen.getByRole("link", { name: t.historyTitle }))
-        .not.toBeInTheDocument();
-  },
-);
+test("does not fetch screen audit without current permission", async () => {
+  let reads = 0;
+  respond((url) => {
+    if (url.pathname.endsWith("/audit-events")) {
+      reads++;
+      return { body: { items: [], nextCursor: null } };
+    }
+    if (url.pathname.endsWith(`/devices/${deviceId}`))
+      return { body: device() };
+    return { body: company(["devices.view"]) };
+  });
+  const { screen } = await open(`${screensPath}/${deviceId}?view=history`);
+  await expect.element(screen.getByRole("alert")).toBeVisible();
+  expect(reads).toBe(0);
+  await expect
+    .element(screen.getByRole("link", { name: t.historyTitle }))
+    .not.toBeInTheDocument();
+});
 
 test("reloads a failed history read without showing private errors and supports a deep page link", async () => {
   let fail = true;

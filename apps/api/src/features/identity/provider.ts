@@ -76,7 +76,12 @@ export interface IdentityProvider {
   newChallenge(): Promise<LoginChallenge & { codeChallenge: string }>;
   authorizationUrl(
     challenge: LoginChallenge & { codeChallenge: string },
-    request?: { acrValues?: string; maxAgeSeconds?: number; prompt?: "create" },
+    request?: {
+      maxAgeSeconds?: number;
+      prompt?: "create";
+      /** An application-initiated provider action, such as authenticator enrollment. */
+      action?: string;
+    },
   ): Promise<URL>;
   completeLogin(
     callback: URL,
@@ -87,6 +92,8 @@ export interface IdentityProvider {
   endSession(refreshToken: string): Promise<void>;
   endAllSessions(subject: string): Promise<void>;
   ensurePrincipalAttribute(subject: string, principalId: string): Promise<void>;
+  /** Identifiers of the person's authenticator-app (OTP) credentials. */
+  otpCredentials(subject: string): Promise<readonly string[]>;
   verifyLogoutToken(token: string): Promise<LogoutTokenClaims>;
 }
 
@@ -241,7 +248,8 @@ export function createKeycloakProvider(
     },
     async authorizationUrl(challenge, request = {}) {
       return oidc.buildAuthorizationUrl(await webConfig(), {
-        ...(request.acrValues ? { acr_values: request.acrValues } : {}),
+        // Keycloak application-initiated actions run after authentication.
+        ...(request.action ? { kc_action: request.action } : {}),
         // OpenID Connect prompt=create opens the provider's account creation.
         ...(request.prompt ? { prompt: request.prompt } : {}),
         ...(request.maxAgeSeconds === undefined
@@ -373,6 +381,25 @@ export function createKeycloakProvider(
         throw new ProviderUnavailableError(
           new Error(`Provider principal update returned ${updated.status}`),
         );
+    },
+    async otpCredentials(subject) {
+      const response = await admin(
+        "GET",
+        `/users/${encodeURIComponent(subject)}/credentials`,
+      );
+      if (!response.ok)
+        throw new ProviderUnavailableError(
+          new Error(`Provider credential lookup returned ${response.status}`),
+        );
+      const credentials = (await response.json()) as {
+        id?: unknown;
+        type?: unknown;
+      }[];
+      return credentials.flatMap((credential) =>
+        credential.type === "otp" && typeof credential.id === "string"
+          ? [credential.id]
+          : [],
+      );
     },
     async verifyLogoutToken(token) {
       const config = await webConfig();

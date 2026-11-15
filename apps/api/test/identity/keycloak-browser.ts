@@ -95,12 +95,15 @@ async function postForm(
  * Drives the real Keycloak pages for a synthetic user, enrolling or using a
  * synthetic OTP authenticator when the flow asks for one, and returns the
  * redirect back to the relying party (the callback URL with code and state).
+ * `decision` answers an application-initiated action (authenticator
+ * enrollment or removal): accept it, or cancel it.
  */
 export async function signInAtProvider(
   authorizationUrl: string,
   credentials: { username: string; password: string },
   jar = new CookieJar(),
   authenticator?: SyntheticAuthenticator,
+  decision: "accept" | "cancel" = "accept",
 ): Promise<URL> {
   let response = await fetch(authorizationUrl, {
     redirect: "manual",
@@ -134,6 +137,14 @@ export async function signInAtProvider(
     const login = formAction(html, "kc-form-login");
     const enroll = formAction(html, "kc-totp-settings-form");
     const otp = formAction(html, "kc-otp-login-form");
+    // The credential-removal confirmation's form has no id of its own.
+    const removal = html.includes('id="kc-delete-text"')
+      ? decodeHtml(
+          /<form[^>]*\baction="([^"]+)"/.exec(
+            html.slice(html.indexOf('id="kc-delete-text"')),
+          )?.[1] ?? "",
+        )
+      : undefined;
     if (login)
       response = await postForm(
         login,
@@ -144,6 +155,8 @@ export async function signInAtProvider(
         },
         jar,
       );
+    else if (enroll && decision === "cancel")
+      response = await postForm(enroll, { "cancel-aia": "" }, jar);
     else if (enroll && authenticator) {
       authenticator.secret = decodeHtml(
         /id="totpSecret"[^>]*value="([^"]+)"/.exec(html)?.[1] ?? "",
@@ -159,6 +172,12 @@ export async function signInAtProvider(
       );
     } else if (otp && authenticator)
       response = await postForm(otp, { otp: await authenticator.code() }, jar);
+    else if (removal)
+      response = await postForm(
+        removal,
+        decision === "accept" ? { accept: "" } : { "cancel-aia": "" },
+        jar,
+      );
     else throw new Error("Unexpected provider page");
   }
   throw new Error("Provider sign-in did not finish");

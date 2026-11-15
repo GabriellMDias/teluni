@@ -13,7 +13,6 @@ export {
   isTimeZone,
   OrganizationFailure,
   requireCapability,
-  reachableWithStrongAuthentication,
   type AuditVisibility,
   type Capability,
   type CompanyAccess,
@@ -45,8 +44,7 @@ export type CompanyAccessPort = Readonly<{
    * As `lockForWrite`, for work a member authorized earlier and the API
    * effects later (an automatic price publication): rechecks that the
    * membership is still active and rebuilds its access from current grants.
-   * Capabilities that need strong authentication count as proven, because
-   * the member proved it when authorizing. Null without an active
+   * Null without an active
    * membership; it never resolves a person's current session.
    */
   lockForMembership(

@@ -1,7 +1,7 @@
 import { createRoute } from "@tanstack/react-router";
 import { rootRoute } from "../shell.js";
-import type { DeviceFilter, DeviceHistoryFilter } from "./api.js";
-import { ScreenPage, ScreensPage } from "./pages.js";
+import type { DeviceHistoryFilter } from "./api.js";
+import { ScreenPage, ScreensPage, type ScreensSearch } from "./pages.js";
 import "./devices.css";
 
 const uuidPattern =
@@ -10,7 +10,7 @@ const uuidPattern =
 const screensRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/companies/$companyId/screens",
-  validateSearch: (search: Record<string, unknown>): DeviceFilter => ({
+  validateSearch: (search: Record<string, unknown>): ScreensSearch => ({
     ...(typeof search.cursor === "string" &&
     search.cursor.length > 0 &&
     search.cursor.length <= 1024
@@ -22,12 +22,19 @@ const screensRoute = createRoute({
     ...(search.status === "ACTIVE" || search.status === "REVOKED"
       ? { status: search.status }
       : {}),
+    ...(search.mode === "grid" || search.mode === "form"
+      ? { mode: search.mode }
+      : {}),
+    ...(search.record === "new" ||
+    (typeof search.record === "string" && uuidPattern.test(search.record))
+      ? { record: search.record }
+      : {}),
   }),
   component: function ScreensRoute() {
     const { companyId } = screensRoute.useParams();
-    const filter = screensRoute.useSearch();
+    const search = screensRoute.useSearch();
     return (
-      <ScreensPage key={companyId} companyId={companyId} filter={filter} />
+      <ScreensPage key={companyId} companyId={companyId} search={search} />
     );
   },
 });
