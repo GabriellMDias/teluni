@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
+import { waitForCreatedCompany } from "../company.ts";
 import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
@@ -88,8 +89,7 @@ test("builds a playlist, schedules a group and previews a screen in it", async (
   await afterNavigation(page).toHaveURL(`${stack.webUrl}/companies`);
   await page.getByLabel("Nome da empresa").fill("Programação Central");
   await page.getByRole("button", { name: "Criar empresa" }).click();
-  await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
-  const companyUrl = page.url();
+  const companyUrl = await waitForCreatedCompany(page);
   await page.getByLabel("Nome da filial").fill("Centro");
   await page.getByRole("button", { name: "Adicionar filial" }).click();
   await expect(page.getByText("Centro", { exact: true })).toBeVisible();

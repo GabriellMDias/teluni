@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
+import { waitForCreatedCompany } from "../company.ts";
 import { actionLink, mailedLink } from "../identity/mail.ts";
 import {
   choosePassword,
@@ -74,8 +75,7 @@ test("creates a company and manages branches, settings, members, responsibility 
   await page.getByLabel("Nome da empresa").fill("Lanchonete Central");
   await page.getByLabel("Fuso horário").selectOption("America/Sao_Paulo");
   await page.getByRole("button", { name: "Criar empresa" }).click();
-  await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
-  const companyUrl = page.url();
+  const companyUrl = await waitForCreatedCompany(page);
 
   // Administration needs no two-step verification, which is optional.
   await afterNavigation(
@@ -176,7 +176,7 @@ test("creates a company and manages branches, settings, members, responsibility 
     await memberPage
       .getByRole("button", { name: "Criar empresa", exact: true })
       .click();
-    await afterNavigation(memberPage).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
+    await waitForCreatedCompany(memberPage);
     const independentId = new URL(memberPage.url()).pathname.split("/").at(-1)!;
     const sessionResponse = await memberPage.request.get(
       `${stack.webUrl}/api/auth/session`,

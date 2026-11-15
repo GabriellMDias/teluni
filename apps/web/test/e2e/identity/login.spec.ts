@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { randomBytes } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { waitForCreatedCompany } from "../company.ts";
 import { actionLink, mailedLink } from "./mail.ts";
 import {
   choosePassword,
@@ -193,7 +194,7 @@ test("creates an account, confirms the email, chooses a password and creates a c
   await page.getByLabel("Nome da empresa").fill("Empresa da Nova Pessoa");
   await page.getByLabel("Fuso horário").selectOption("America/Sao_Paulo");
   await page.getByRole("button", { name: "Criar empresa" }).click();
-  await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
+  await waitForCreatedCompany(page);
   await afterNavigation(
     page.getByText("Responsável pela empresa", { exact: false }),
   ).toBeVisible();

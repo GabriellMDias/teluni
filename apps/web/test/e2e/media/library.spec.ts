@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
+import { waitForCreatedCompany } from "../company.ts";
 import { enterCredentials } from "../identity/provider.ts";
 import { startIdentityStack, type IdentityStack } from "../identity/stack.ts";
 
@@ -76,8 +77,7 @@ test("uploads, prepares, previews, archives, trashes and restores media", async 
   await afterNavigation(page).toHaveURL(`${stack.webUrl}/companies`);
   await page.getByLabel("Nome da empresa").fill("Mídia Central");
   await page.getByRole("button", { name: "Criar empresa" }).click();
-  await afterNavigation(page).toHaveURL(/\/companies\/[0-9a-f-]{36}$/);
-  const companyUrl = page.url();
+  const companyUrl = await waitForCreatedCompany(page);
 
   await page.getByRole("link", { name: "Mídia", exact: true }).click();
   await afterNavigation(page).toHaveURL(`${companyUrl}/media`);
